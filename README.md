@@ -185,7 +185,7 @@ Note: this may be set via the `HEDERA_S3_SECRET_KEY` environment variable instea
 Setup your environment as per the section above, then run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
+java -cp mirrorNode.jar com.hedera.s3downloader.AccountBalancesDownloader
 ```
 
 Balance files will be downloaded from S3 to `./accountBalances/balance/0.0.x` where `x` is the account number of the node the balance files were downloaded from.
@@ -228,7 +228,7 @@ The java project contains a number of packages and classes for its various modes
 
 Contains a `MirrorNodeProxy` class which is responsible for running the proxy.
 
-- com.hedera.downloader
+- com.hedera.s3downloader
 
 Contains a `RecordFileDownloader` class which connects to an s3 bucket and downloads record files from the bucket.
 
