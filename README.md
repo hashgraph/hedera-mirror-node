@@ -31,6 +31,10 @@ docker run --name=hedera-mirrornode -p 127.0.0.1:8080:8080 hedera/mirrornode:lat
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Loggers now return true/false depending on success/failure to log
+
+Before this change, failure to log wasn't detected by the class calling the logger which resulted in files being moved when they shouldn't be.
+
 ### Addition of cloud storage as an alternative to AWS
 
 It is now possible to specify that files are downloaded from Google Compute Platform storage instead of Amazon S3.
@@ -234,6 +238,27 @@ The `defaultParseDir` value of the `./config/config.json` file specifies where t
 Parsed result will be shown in the Console as well as `output/recordStream.log` (depending on your `log4j2.xml` settings), a clear text version of the same will be output to `output/recordStream.txt`
 
 The files which has been parsed will be moved to `./recordstreams/parsedRecordFiles/` directory
+
+## To Parse Balance file(s)
+
+This project provides two balance file parsing and logging options.
+
+- Log only the latest balance - looks for the latest balance file and stores the balances in the database
+- Log balances with timestamp history - loads every available balance file and stores account balances against the file's timestamp.
+
+Note: You can run both, however it is imperative that 'latest' is run prior to 'history' since history moves files to a processed folder, thereby removing any files for 'latest' to process.
+
+To parse and log the latest files, run the following command:
+
+```
+java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger ./config/config.json
+```
+
+To parse and log balances with history, run the following command:
+
+```
+java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileHistoryLogger ./config/config.json
+```
 
 ## To Send Transactions or Queries to the BetaMirrorNode Proxy
 
