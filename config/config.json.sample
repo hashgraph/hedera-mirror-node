@@ -1,0 +1,17 @@
+{
+  "clientRegion": "us-east-2",
+  "bucketName": "hedera-export",
+  "accessKey": "",
+  "secretKey": "",
+  "downloadPeriodSec": 120,
+  "downloadToDir": "./",
+  "defaultParseDir": "./recordstreams/record0.0.3/",
+  "proxyPort": 50777,
+  "nodeInfoFile": "./config/nodesInfo.json",
+  "addressBookFile": "./config/0.0.102",
+  "accountBalancesS3Location": "accountBalances/balance",
+  "recordFilesS3Location": "recordstreams/record",
+  "dbUrl": "jdbc:mysql://127.0.0.1:3306/transactions2?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC",
+  "dbUsername": "admin",
+  "dbPassword": ""
+}
