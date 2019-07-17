@@ -1,4 +1,4 @@
-package com.hedera.downloader;
+package com.hedera.s3downloader;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
@@ -344,20 +344,14 @@ public abstract class Downloader {
 	 * @return
 	 */
 	protected static Pair<Boolean, File> saveToLocal(String bucket_name,
-			String s3ObjectKey, String localFilepath)  {
+		String s3ObjectKey, String localFilepath)  {
 
-			// ensure filePaths have OS specific separator
-			localFilepath = localFilepath.replace("/", "~");
-			localFilepath = localFilepath.replace("\\", "~");
-			localFilepath = localFilepath.replace("~", File.separator);
+		// ensure filePaths have OS specific separator
+		localFilepath = localFilepath.replace("/", "~");
+		localFilepath = localFilepath.replace("\\", "~");
+		localFilepath = localFilepath.replace("~", File.separator);
 		
-//			String universalLocalPath = localFilepath
-//                    .replaceAll("rcd_sig", "rcd.sig");
-//            universalLocalPath = universalLocalPath
-//                    .replaceAll(":", "-");
-//                    
-//          File f = new File(universalLocalPath).getAbsoluteFile();
-          File f = new File(localFilepath).getAbsoluteFile();
+        File f = new File(localFilepath).getAbsoluteFile();
                 
 		if (f.exists()) {
 			log.info(MARKER, "File exists: " + localFilepath);

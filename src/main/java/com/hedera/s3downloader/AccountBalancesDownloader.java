@@ -1,4 +1,4 @@
-package com.hedera.downloader;
+package com.hedera.s3downloader;
 
 import java.io.File;
 import java.io.IOException;

@@ -31,9 +31,13 @@ docker run --name=hedera-mirrornode -p 127.0.0.1:8080:8080 hedera/mirrornode:lat
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Refactored com.hedera.downloader
+
+`com.hedera.downloader` has been refactored to `com.hedera.s3downloader`
+
 ### Removal of command line arguments
 
-All configuration parameters are now sourced from `./config/config.json` by default.
+All configuration parameters are now sourced from `./config/config.json` by default, it no longer needs to be specified on the command line.
 
 ### Inclusion of logging to PostgreSQL database
 
@@ -155,7 +159,7 @@ the config.json contains the port number of BetaMirrorNode, and nodeInfoFile pat
 Run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.downloader.RecordFileDownloader
+java -cp mirrorNode.jar com.hedera.s3downloader.RecordFileDownloader
 ```
 
 `config.json` contains configurations for downloading:
