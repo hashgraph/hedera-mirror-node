@@ -250,6 +250,16 @@ public class ConfigLoader {
 	public String getRecordFilesS3Location() {
 		return recordFilesS3Location;
 	}
+	
+	public String getDBUrl() {
+		return dbUrl;
+	}
+	public String getDBUserName() {
+		return dbUserName;
+	}
+	public String getDBPassword() {
+		return dbPassword;
+	}
 
 	public void setLastValidBalanceFileName(String name) {
 		lastValidBalanceFileName = name;
