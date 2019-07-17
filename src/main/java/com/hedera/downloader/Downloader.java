@@ -1,4 +1,4 @@
-package com.hedera.s3downloader;
+package com.hedera.downloader;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;

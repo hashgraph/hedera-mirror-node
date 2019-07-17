@@ -31,10 +31,6 @@ docker run --name=hedera-mirrornode -p 127.0.0.1:8080:8080 hedera/mirrornode:lat
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
-### Refactored com.hedera.downloader
-
-`com.hedera.downloader` has been refactored to `com.hedera.s3downloader`
-
 ### Removal of command line arguments
 
 All configuration parameters are now sourced from `./config/config.json` by default, it no longer needs to be specified on the command line.
@@ -159,7 +155,7 @@ the config.json contains the port number of BetaMirrorNode, and nodeInfoFile pat
 Run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.s3downloader.RecordFileDownloader
+java -cp mirrorNode.jar com.hedera.downloader.RecordFileDownloader
 ```
 
 `config.json` contains configurations for downloading:
@@ -185,7 +181,7 @@ Note: this may be set via the `HEDERA_S3_SECRET_KEY` environment variable instea
 Setup your environment as per the section above, then run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.s3downloader.AccountBalancesDownloader
+java -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
 ```
 
 Balance files will be downloaded from S3 to `./accountBalances/balance/0.0.x` where `x` is the account number of the node the balance files were downloaded from.
@@ -228,7 +224,7 @@ The java project contains a number of packages and classes for its various modes
 
 Contains a `MirrorNodeProxy` class which is responsible for running the proxy.
 
-- com.hedera.s3downloader
+- com.hedera.downloader
 
 Contains a `RecordFileDownloader` class which connects to an s3 bucket and downloads record files from the bucket.
 
