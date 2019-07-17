@@ -6,17 +6,22 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 public interface LoggerInterface {
-	public static void initFile(String fileName) {
+	public static boolean initFile(String fileName) {
+		return true;
 	}
-	public static void completeFile() {
+	public static boolean completeFile() {
+		return true;
 	}
-	public static void storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord) {
+	public static boolean storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord) {
+		return true;
 	}
-	public static void storeSignature(String signature) {
+	public static boolean storeSignature(String signature) {
+		return true;
 	}
-	public static void start() {
+	public static boolean start() {
+		return true;
 	}
-	public static void finish() {
+	public static boolean finish() {
+		return true;
 	}
-	
 }

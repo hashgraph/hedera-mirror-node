@@ -64,15 +64,21 @@ public class RecordFileLogger implements LoggerInterface {
         ,AMOUNT
         ,PAYMENT_TYPE_ID
     }
-	public static void start() {
+	public static boolean start() {
         connect = DatabaseUtilities.openDatabase(connect);
+        if (connect == null) {
+        	return false;
+        }
+        return true;
 	}
-	public static void finish() {
+	public static boolean finish() {
         try {
             connect = DatabaseUtilities.closeDatabase(connect);
+        	return false;
         } catch (SQLException e) {
             log.error(LOGM_EXCEPTION, "Exception {}", e);
         }
+    	return true;
 	}
 	public static long createOrGetEntity(long shard, long realm, long num) throws SQLException {
 	    long entityId = 0;
@@ -112,7 +118,7 @@ public class RecordFileLogger implements LoggerInterface {
         return createOrGetEntity(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
     }
     
-	public static void initFile(String fileName) {
+	public static boolean initFile(String fileName) {
 	    
 		try {
 	        if (transactionTypes == null) {
@@ -137,13 +143,15 @@ public class RecordFileLogger implements LoggerInterface {
             fileId = newId.getLong(1);
             newId.close();
 			insertFile.close();
+			return true;
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
+			return false;
 		}
 	}
-	public static void completeFile() {
+	public static boolean completeFile() {
 		// update the file to processed
 		try {
 			PreparedStatement updateFile = connect.prepareStatement("update t_event_files set status = 'PROCESSED' where id = ?");
@@ -152,9 +160,11 @@ public class RecordFileLogger implements LoggerInterface {
 			updateFile.close();
 		} catch (SQLException e) {
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
+			return false;
 		}
+		return true;
 	}	
-	public static void storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord) throws Exception {
+	public static boolean storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord) throws Exception {
 		try {
 			PreparedStatement sqlInsertTransaction = connect.prepareStatement("insert into t_transactions "
 						+ "(node_account_id, memo, seconds, nanos, xfer_count, trans_type_id, trans_account_id, result, consensus_seconds, consensus_nanos, crud_entity_id, transaction_fee, initial_balance) "
@@ -365,13 +375,16 @@ public class RecordFileLogger implements LoggerInterface {
 		} catch (SQLException e) {
 			e.printStackTrace();
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
+			return false;
 		} catch (InvalidProtocolBufferException e) {
 			e.printStackTrace();
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
+			return false;
 		}
+		return true;
 	}
 	
-	public static void storeSignature(String signature) {
+	public static boolean storeSignature(String signature) {
 //		try {
 //			fw.write("SIGNATURE\n");
 //			fw.write(signature);
@@ -380,6 +393,8 @@ public class RecordFileLogger implements LoggerInterface {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
+		
+		return true;
 	}
 
 	private static int getTransactionTypeId (TransactionBody body) {

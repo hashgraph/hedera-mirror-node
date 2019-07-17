@@ -27,6 +27,7 @@ public class DatabaseUtilities {
             } catch (SQLException e) {
                 e.printStackTrace();
                 log.error(LOGM_EXCEPTION, "Exception {}", e);
+                return null;
             }
         }
         return connect;

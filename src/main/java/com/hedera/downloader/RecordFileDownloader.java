@@ -2,16 +2,10 @@ package com.hedera.downloader;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
 import com.hedera.mirrorNodeProxy.Utility;
 import com.hedera.recordFileParser.RecordFileParser;
 import org.apache.commons.codec.binary.Hex;
@@ -42,29 +36,7 @@ public class RecordFileDownloader extends Downloader {
 		RecordFileDownloader downloader = new RecordFileDownloader(configLoader);
 
 		while (true) {
-
-			if (configLoader.getCloudProvider() == CLOUD_PROVIDER.S3) {
-				s3Client = AmazonS3ClientBuilder.standard()
-						.withCredentials(new AWSStaticCredentialsProvider(
-								new BasicAWSCredentials(configLoader.getAccessKey(),
-										configLoader.getSecretKey())))
-						.withRegion(configLoader.getClientRegion())
-						.withClientConfiguration(clientConfiguration)
-						.build();
-			} else {
-				s3Client = AmazonS3ClientBuilder.standard()
-						.withEndpointConfiguration(
-				                new AwsClientBuilder.EndpointConfiguration(
-				                    "https://storage.googleapis.com", "auto"))
-						.withCredentials(new AWSStaticCredentialsProvider(
-								new BasicAWSCredentials(configLoader.getAccessKey(),
-										configLoader.getSecretKey())))
-						.withRegion(configLoader.getClientRegion())
-						.withClientConfiguration(clientConfiguration)
-						.build();
-			}
-			xfer_mgr = TransferManagerBuilder.standard()
-					.withS3Client(s3Client).build();
+			setupCloudConnection();
 
 			HashMap<String, List<File>> sigFilesMap;
 			try {

@@ -7,10 +7,6 @@ import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirrorNodeProxy.Utility;
 
@@ -25,15 +21,8 @@ public class AccountBalancesDownloader extends Downloader {
 		configLoader = new ConfigLoader("./config/config.json");
 
 		AccountBalancesDownloader downloader = new AccountBalancesDownloader(configLoader);
-		s3Client = AmazonS3ClientBuilder.standard()		
-					.withCredentials(new AWSStaticCredentialsProvider(		
-							new BasicAWSCredentials(configLoader.getAccessKey(),		
-									configLoader.getSecretKey())))		
-					.withRegion(configLoader.getClientRegion())		
-					.withClientConfiguration(clientConfiguration)		
-					.build();		
-		xfer_mgr = TransferManagerBuilder.standard()		
-				.withS3Client(s3Client).build();
+		
+		setupCloudConnection();
 
 		while (true) {
 

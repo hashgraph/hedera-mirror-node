@@ -10,9 +10,6 @@ import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,51 +59,53 @@ public class BalanceFileHistoryLogger {
         try {
             // process the file
             connect = DatabaseUtilities.openDatabase(connect);
-
-            PreparedStatement insertBalance;
-            insertBalance = connect.prepareStatement(
-                    "insert into t_account_balance_history (snapshot_time, account_shard, account_realm, account_num, balance) "
-                    + " values (to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss'), ?, ?, ?, ?) "
-                    + " ON CONFLICT (snapshot_time, account_shard, account_realm, account_num) "
-                    + " DO UPDATE set balance = ?");
-        
-            BufferedReader br = new BufferedReader(new FileReader(balanceFile));
-
-            String line;
-            String dateLine = "";
-            while ((line = br.readLine()) != null) {
-                if (processLine) {
-                    try {
-                        String[] balanceLine = line.split(",");
-                        
-                        insertBalance.setString(balance_fields.SNAPSHOT_TIME.ordinal(), dateLine);
-                        insertBalance.setLong(balance_fields.ACCOUNT_SHARD.ordinal(), Long.valueOf(balanceLine[0]));
-                        insertBalance.setLong(balance_fields.ACCOUNT_REALM.ordinal(), Long.valueOf(balanceLine[1]));
-                        insertBalance.setLong(balance_fields.ACCOUNT_NUM.ordinal(), Long.valueOf(balanceLine[2]));
-                        insertBalance.setLong(balance_fields.BALANCE_INSERT.ordinal(), Long.valueOf(balanceLine[3]));
-                        insertBalance.setLong(balance_fields.BALANCE_UPDATE.ordinal(), Long.valueOf(balanceLine[3]));
-
-                        insertBalance.execute();
-                        
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                        log.error(LOGM_EXCEPTION, "Exception {}", e);
-                        return false;
-                    }
-                } else if (getDate) {
-                    getDate = false;
-                    dateLine = line;
-                } else if (line.contentEquals("year,month,day,hour,minute,second")) {
-                    getDate = true;
-                } else if (line.contentEquals("shard,realm,number,balance")) {
-                    // skip all lines until shard,realm,number,balance
-                    processLine = true;
-                }
-            }
-            insertBalance.close();
-            br.close();
-            return true;
             
+            if (connect != null) {
+
+	            PreparedStatement insertBalance;
+	            insertBalance = connect.prepareStatement(
+	                    "insert into t_account_balance_history (snapshot_time, account_shard, account_realm, account_num, balance) "
+	                    + " values (to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss'), ?, ?, ?, ?) "
+	                    + " ON CONFLICT (snapshot_time, account_shard, account_realm, account_num) "
+	                    + " DO UPDATE set balance = ?");
+	        
+	            BufferedReader br = new BufferedReader(new FileReader(balanceFile));
+	
+	            String line;
+	            String dateLine = "";
+	            while ((line = br.readLine()) != null) {
+	                if (processLine) {
+	                    try {
+	                        String[] balanceLine = line.split(",");
+	                        
+	                        insertBalance.setString(balance_fields.SNAPSHOT_TIME.ordinal(), dateLine);
+	                        insertBalance.setLong(balance_fields.ACCOUNT_SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+	                        insertBalance.setLong(balance_fields.ACCOUNT_REALM.ordinal(), Long.valueOf(balanceLine[1]));
+	                        insertBalance.setLong(balance_fields.ACCOUNT_NUM.ordinal(), Long.valueOf(balanceLine[2]));
+	                        insertBalance.setLong(balance_fields.BALANCE_INSERT.ordinal(), Long.valueOf(balanceLine[3]));
+	                        insertBalance.setLong(balance_fields.BALANCE_UPDATE.ordinal(), Long.valueOf(balanceLine[3]));
+	
+	                        insertBalance.execute();
+	                        
+	                    } catch (SQLException e) {
+	                        e.printStackTrace();
+	                        log.error(LOGM_EXCEPTION, "Exception {}", e);
+	                        return false;
+	                    }
+	                } else if (getDate) {
+	                    getDate = false;
+	                    dateLine = line;
+	                } else if (line.contentEquals("year,month,day,hour,minute,second")) {
+	                    getDate = true;
+	                } else if (line.contentEquals("shard,realm,number,balance")) {
+	                    // skip all lines until shard,realm,number,balance
+	                    processLine = true;
+	                }
+	            }
+	            insertBalance.close();
+	            br.close();
+	            return true;
+            }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             log.error(LOGM_EXCEPTION, "Exception {}", e);

@@ -63,87 +63,103 @@ public class RecordFileParser {
 			return null;
 		}
 
-		RecordFileLogger.initFile(fileName);
+		if (RecordFileLogger.initFile(fileName)) {
 			
-		try {
-			long counter = 0;
-			stream = new FileInputStream(file);
-			DataInputStream dis = new DataInputStream(stream);
-
-			prevFileHash = new byte[48];
-			int record_format_version = dis.readInt();
-			int version = dis.readInt();
-
-			log.info(MARKER, "Record file format version " + record_format_version);
-			log.info(MARKER, "HAPI protocol version " + version);
-
-			while (dis.available() != 0) {
-
-				try {
-					byte typeDelimiter = dis.readByte();
-
-					switch (typeDelimiter) {
-						case TYPE_PREV_HASH:
-							dis.read(prevFileHash);
-							log.info(MARKER, "Previous file Hash = " + Hex.encodeHexString(prevFileHash));
-							break;
-						case TYPE_RECORD:
-							int byteLength = dis.readInt();
-							byte[] rawBytes = new byte[byteLength];
-
-							dis.readFully(rawBytes);
-							Transaction transaction = Transaction.parseFrom(rawBytes);
-
-							byteLength = dis.readInt();
-							rawBytes = new byte[byteLength];
-							dis.readFully(rawBytes);
-							TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
-
-							txList.add(Pair.of(transaction, txRecord));
-
-							counter++;
-							RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord);
-							log.info(MARKER, "record counter = {}\n=============================", counter);
-							log.info(MARKER, "Transaction Consensus Timestamp = {}\n", Utility.convertToInstant(txRecord.getConsensusTimestamp()));
-							log.info(MARKER, "Transaction = {}", Utility.printTransaction(transaction));
-							log.info(MARKER, "Record = {}\n=============================\n",  TextFormat.shortDebugString(txRecord));
-							break;
-						case TYPE_SIGNATURE:
-							int sigLength = dis.readInt();
-							log.info(MARKER, "sigLength = " + sigLength);
-							byte[] sigBytes = new byte[sigLength];
-							dis.readFully(sigBytes);
-							log.info(MARKER, "File {} Signature = {} ", fileName, Hex.encodeHexString(sigBytes));
-							RecordFileLogger.storeSignature(Hex.encodeHexString(sigBytes));
-							break;
-
-						default:
-							log.error(LOGM_EXCEPTION, "Exception Unknown record file delimiter {}", typeDelimiter);
+			try {
+				long counter = 0;
+				stream = new FileInputStream(file);
+				DataInputStream dis = new DataInputStream(stream);
+	
+				prevFileHash = new byte[48];
+				int record_format_version = dis.readInt();
+				int version = dis.readInt();
+	
+				log.info(MARKER, "Record file format version " + record_format_version);
+				log.info(MARKER, "HAPI protocol version " + version);
+	
+				while (dis.available() != 0) {
+	
+					try {
+						byte typeDelimiter = dis.readByte();
+	
+						switch (typeDelimiter) {
+							case TYPE_PREV_HASH:
+								dis.read(prevFileHash);
+								log.info(MARKER, "Previous file Hash = " + Hex.encodeHexString(prevFileHash));
+								break;
+							case TYPE_RECORD:
+								int byteLength = dis.readInt();
+								byte[] rawBytes = new byte[byteLength];
+	
+								dis.readFully(rawBytes);
+								Transaction transaction = Transaction.parseFrom(rawBytes);
+	
+								byteLength = dis.readInt();
+								rawBytes = new byte[byteLength];
+								dis.readFully(rawBytes);
+								TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
+	
+								txList.add(Pair.of(transaction, txRecord));
+	
+								counter++;
+								
+								if (RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord)) {
+									log.info(MARKER, "record counter = {}\n=============================", counter);
+									log.info(MARKER, "Transaction Consensus Timestamp = {}\n", Utility.convertToInstant(txRecord.getConsensusTimestamp()));
+									log.info(MARKER, "Transaction = {}", Utility.printTransaction(transaction));
+									log.info(MARKER, "Record = {}\n=============================\n",  TextFormat.shortDebugString(txRecord));
+									break;
+								} else {
+									return null;
+								}
+							case TYPE_SIGNATURE:
+								int sigLength = dis.readInt();
+								log.info(MARKER, "sigLength = " + sigLength);
+								byte[] sigBytes = new byte[sigLength];
+								dis.readFully(sigBytes);
+								log.info(MARKER, "File {} Signature = {} ", fileName, Hex.encodeHexString(sigBytes));
+								if (RecordFileLogger.storeSignature(Hex.encodeHexString(sigBytes))) {
+									break;
+								} else {
+									return null;
+								}
+	
+							default:
+								log.error(LOGM_EXCEPTION, "Exception Unknown record file delimiter {}", typeDelimiter);
+						}
+	
+					} catch (Exception e) {
+						log.error(LOGM_EXCEPTION, "Exception ", e);
+						return null;
 					}
-
-				} catch (Exception e) {
-					log.error(LOGM_EXCEPTION, "Exception ", e);
-					break;
+				}
+				dis.close();
+			} catch (FileNotFoundException e) {
+				log.error(MARKER, "File Not Found Error");
+				return null;
+			} catch (IOException e) {
+				log.error(MARKER, "IOException Error");
+				return null;
+			} catch (Exception e) {
+				log.error(MARKER, "Parsing Error");
+				return null;
+			} finally {
+				try {
+					if (stream != null)
+						stream.close();
+					if (!RecordFileLogger.completeFile()) {
+						return null;
+					}
+				} catch (IOException ex) {
+					log.error("Exception in close the stream {}", ex);
+					return null;
 				}
 			}
-			dis.close();
-		} catch (FileNotFoundException e) {
-			log.error(MARKER, "File Not Found Error");
-		} catch (IOException e) {
-			log.error(MARKER, "IOException Error");
-		} catch (Exception e) {
-			log.error(MARKER, "Parsing Error");
-		} finally {
-			try {
-				if (stream != null)
-					stream.close();
-			} catch (IOException ex) {
-				log.error("Exception in close the stream {}", ex);
-			}
-			RecordFileLogger.completeFile();
+			return Pair.of(prevFileHash, txList);
+		} else {
+			return null;
 		}
 		
-		return Pair.of(prevFileHash, txList);
 	}
 
 	/**
@@ -154,22 +170,24 @@ public class RecordFileParser {
 		byte[] calculatedPrevHash = null;
 		for (String name : fileNames) {
 			Pair<byte[], List<Pair<Transaction, TransactionRecord>>> result = loadRecordFile(name);
-			byte[] readPrevHash = result.getKey();
-			if (calculatedPrevHash != null) {
-				if (!Arrays.equals(calculatedPrevHash, readPrevHash)) {
-
-					log.error(LOGM_EXCEPTION, "calculatedPrevHash " + Hex.encodeHexString(calculatedPrevHash));
-					log.error(LOGM_EXCEPTION, "readPrevHash       " + Hex.encodeHexString(readPrevHash));
-					log.error(LOGM_EXCEPTION, "Error Exception, hash does not match: " + name);
-
+			if (result != null) {
+				byte[] readPrevHash = result.getKey();
+				if (calculatedPrevHash != null) {
+					if (!Arrays.equals(calculatedPrevHash, readPrevHash)) {
+	
+						log.error(LOGM_EXCEPTION, "calculatedPrevHash " + Hex.encodeHexString(calculatedPrevHash));
+						log.error(LOGM_EXCEPTION, "readPrevHash       " + Hex.encodeHexString(readPrevHash));
+						log.error(LOGM_EXCEPTION, "Error Exception, hash does not match: " + name);
+	
+					}
 				}
+				byte[] thisFileHash = getFileHash(name);
+				calculatedPrevHash = thisFileHash;
+	
+				moveFileToParsedDir(name);
+				log.info(MARKER, "File Hash = {} \n==========================================================",
+						Hex.encodeHexString(thisFileHash));
 			}
-			byte[] thisFileHash = getFileHash(name);
-			calculatedPrevHash = thisFileHash;
-
-			moveFileToParsedDir(name);
-			log.info(MARKER, "File Hash = {} \n==========================================================",
-					Hex.encodeHexString(thisFileHash));
 		}
 	}
 
@@ -197,37 +215,38 @@ public class RecordFileParser {
 
 		if (pathName != null) {
 			
-			RecordFileLogger.start();
+			if (RecordFileLogger.start()) {
 			
-			File file = new File(pathName);
-			if (file.isFile()) {
-				log.info(MARKER, "Loading record file {} " + pathName);
-
-				loadRecordFile(pathName);
-			} else if (file.isDirectory()) { //if it's a directory
-
-				String[] files = file.list(); // get all files under the directory
-				Arrays.sort(files);           // sorted by name (timestamp)
-
-				// add director prefix to get full path
-				List<String> fullPaths = Arrays.asList(files).stream()
-						.filter(f -> Utility.isRecordFile(f))
-						.map(s -> file + "/" + s)
-						.collect(Collectors.toList());
-
-				log.info(MARKER, "Loading record files from directory {} ", pathName);
-				
-				if (fullPaths != null) {
-					log.info(MARKER, "Files are " + fullPaths);
-					loadRecordFiles(fullPaths);
+				File file = new File(pathName);
+				if (file.isFile()) {
+					log.info(MARKER, "Loading record file {} " + pathName);
+	
+					loadRecordFile(pathName);
+				} else if (file.isDirectory()) { //if it's a directory
+	
+					String[] files = file.list(); // get all files under the directory
+					Arrays.sort(files);           // sorted by name (timestamp)
+	
+					// add director prefix to get full path
+					List<String> fullPaths = Arrays.asList(files).stream()
+							.filter(f -> Utility.isRecordFile(f))
+							.map(s -> file + "/" + s)
+							.collect(Collectors.toList());
+	
+					log.info(MARKER, "Loading record files from directory {} ", pathName);
+					
+					if (fullPaths != null) {
+						log.info(MARKER, "Files are " + fullPaths);
+						loadRecordFiles(fullPaths);
+					} else {
+						log.info(MARKER, "No files to parse");
+					}
 				} else {
-					log.info(MARKER, "No files to parse");
+					log.error(LOGM_EXCEPTION, "Exception file {} does not exist", pathName);
+	
 				}
-			} else {
-				log.error(LOGM_EXCEPTION, "Exception file {} does not exist", pathName);
-
+				RecordFileLogger.finish();
 			}
-			RecordFileLogger.finish();
 		}
 	}
 	/**
