@@ -24,6 +24,14 @@ public class ConfigLoader {
 	private static final Logger log = LogManager.getLogger("node-log");
 	private static final Marker MARKER = MarkerManager.getMarker("ConfigLoader");
 
+	public enum CLOUD_PROVIDER {
+		S3
+		,GCP
+	}
+	
+	// cloud provider, must be either S3 or GCP
+	private static CLOUD_PROVIDER cloudProvider = CLOUD_PROVIDER.S3;
+			
 	// clientRegion of the S3 bucket from which we download RecordStream files;
 	private static String clientRegion = "us-east-2";
 
@@ -90,6 +98,17 @@ public class ConfigLoader {
 		log.info(MARKER, "Loading configuration from {}", configPath);
 		try {
 			jsonObject = getJsonObject(configPath);
+			
+			if (jsonObject.has("cloud-provider")) {
+				String provider = jsonObject.get("cloud-provider").getAsString();
+				if (provider.contentEquals("GCP")) {
+					cloudProvider = CLOUD_PROVIDER.GCP;
+				} else if (provider.contentEquals("S3")) {
+					cloudProvider = CLOUD_PROVIDER.S3;
+				} else {
+					log.error(MARKER, "Cloud provider {} not recognized, must be one of S3 or GCP", provider);
+				}
+			}
 			if (jsonObject.has("clientRegion")) {
 				clientRegion = jsonObject.get("clientRegion").getAsString();
 			}
@@ -165,6 +184,9 @@ public class ConfigLoader {
 		}
 	}
 
+	public CLOUD_PROVIDER getCloudProvider() {
+		return cloudProvider;
+	}
 	public String getClientRegion() {
 		return clientRegion;
 	}

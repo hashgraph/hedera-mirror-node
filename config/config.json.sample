@@ -1,4 +1,5 @@
 {
+  "cloud-provider": "S3",
   "clientRegion": "us-east-2",
   "bucketName": "hedera-export",
   "accessKey": "",
