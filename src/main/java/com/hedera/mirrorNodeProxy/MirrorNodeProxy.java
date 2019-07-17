@@ -39,17 +39,8 @@ public class MirrorNodeProxy {
 	 * This accepts one parameter to start the proxy, a configuration file which specifies a port number to listen to as well as the json file name which contains a list of nodes's host and port.
 	 */
 	public static void main(String[] args) {
-		//System.out.println(args.length);
-		if (args.length == 0) {
-			ConfigLoader configLoader = new ConfigLoader("./config/config.json");
-			new MirrorNodeProxy(configLoader.getProxyPort(), configLoader.getNodeInfoFile());
-		} else if (args.length != 1) {
-			System.out.println("Please provide the configuration file path");
-			System.exit(0);
-		} else {
-			ConfigLoader configLoader = new ConfigLoader(args[0]);
-			new MirrorNodeProxy(configLoader.getProxyPort(), configLoader.getNodeInfoFile());
-		}
+		ConfigLoader configLoader = new ConfigLoader("./config/config.json");
+		new MirrorNodeProxy(configLoader.getProxyPort(), configLoader.getNodeInfoFile());
 	}
 
 	public MirrorNodeProxy(int port, String nodeInfoFileName) {

@@ -35,7 +35,7 @@ public class RecordFileDownloader extends Downloader {
 	}
 
 	public static void main(String[] args) {
-		initConfigLoader(args);
+		configLoader = new ConfigLoader("./config/config.json");
 
 		RecordFileDownloader downloader = new RecordFileDownloader(configLoader);
 

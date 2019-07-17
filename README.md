@@ -31,6 +31,10 @@ docker run --name=hedera-mirrornode -p 127.0.0.1:8080:8080 hedera/mirrornode:lat
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Removal of command line arguments
+
+All configuration parameters are now sourced from `./config/config.json` by default.
+
 ### Inclusion of logging to PostgreSQL database
 
 The `recordFileLogger`, `balanceFileHistoryLogger` and `balanceFileLogger` write transactions, records and balances to a PostgreSQL database. The scripts for creating the database are provided in the `postreSQL` folder.
@@ -89,7 +93,7 @@ Should you wish to enable logging, copy the `log4j2.xml` file from `src/main/res
 for example
 
 ```shell
-    java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser ./config/config.json
+    java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser
 ```
 
 This will ensure that the `log4j2.xml` file is used to direct logging accordingly.
@@ -141,7 +145,7 @@ Edit the `./config/config.json` file to specify the port number of BetaMirrorNod
 Run the following command:
 
 ```shell
-java -jar mirrorNode.jar ./config/config.json
+java -jar mirrorNode.jar
 ```
 
 the config.json contains the port number of BetaMirrorNode, and nodeInfoFile path which contains host and port of Hedera Nodes.
@@ -151,7 +155,7 @@ the config.json contains the port number of BetaMirrorNode, and nodeInfoFile pat
 Run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.downloader.RecordFileDownloader ./config/config.json
+java -cp mirrorNode.jar com.hedera.downloader.RecordFileDownloader
 ```
 
 `config.json` contains configurations for downloading:
@@ -177,7 +181,7 @@ Note: this may be set via the `HEDERA_S3_SECRET_KEY` environment variable instea
 Setup your environment as per the section above, then run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader ./config/config.json
+java -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
 ```
 
 Balance files will be downloaded from S3 to `./accountBalances/balance/0.0.x` where `x` is the account number of the node the balance files were downloaded from.
@@ -199,7 +203,7 @@ shard,realm,number,balance
 Run the following command:
 
 ``` shell
-java -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser ./config/config.json
+java -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser
 ```
 
 The `defaultParseDir` value of the `./config/config.json` file specifies where to find the record files to parse.

@@ -10,7 +10,6 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.configLoader.DBConfigLoader;
 
 public class DatabaseUtilities {
     private static final Logger log = LogManager.getLogger("recordStream-log");
@@ -19,13 +18,12 @@ public class DatabaseUtilities {
     public static Connection openDatabase(Connection connect) {
         if (connect == null) {
             try {
-            	private static ConfigLoader configLoader;
+            	ConfigLoader configLoader = new ConfigLoader("./config/config.json");
                 // Setup the connection with the DB
                 String url = configLoader.getDBUrl();
                 String userName = configLoader.getDBUserName();
                 String password = configLoader.getDBPassword();
                 connect = DriverManager.getConnection(url, userName, password);
-
             } catch (SQLException e) {
                 e.printStackTrace();
                 log.error(LOGM_EXCEPTION, "Exception {}", e);

@@ -191,18 +191,9 @@ public class RecordFileParser {
 	public static void main(String[] args) {
 		String pathName;
 
-		if (args.length == 0 ) {
-			configLoader = new ConfigLoader("./config/config.json");
-			log.info(MARKER, "No file name is given, parsing default folder: {}", configLoader.getDefaultParseDir());
-			pathName = configLoader.getDefaultParseDir();
-		} else if (args.length == 1 && args[0].endsWith(".json")) {
-			configLoader = new ConfigLoader(args[0]);
-			log.info(MARKER, "Record files folder got from configuration file: {}", configLoader.getDefaultParseDir());
-			pathName = configLoader.getDefaultParseDir();
-		} else {
-			pathName = args[0];
-			log.info(MARKER, "Path provided as input to command line: {}", pathName);
-		}
+		configLoader = new ConfigLoader("./config/config.json");
+		pathName = configLoader.getDefaultParseDir();
+		log.info(MARKER, "Record files folder got from configuration file: {}", configLoader.getDefaultParseDir());
 
 		if (pathName != null) {
 			

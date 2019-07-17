@@ -117,17 +117,6 @@ public abstract class Downloader {
 		return new ArrayList<>();
 	}
 
-	protected static void initConfigLoader(String[] args) {
-		if (args.length == 1) {
-			configLoader = new ConfigLoader(args[0]);
-		} else if (args.length == 0) {
-			configLoader = new ConfigLoader("./config/config.json");
-		} else {
-			System.out.println("Please provide configuration file path");
-			System.exit(0);
-		}
-	}
-
 	protected boolean isNeededSigFile(String s3ObjectKey, DownloadType type) {
 		boolean result = false;
 		switch (type) {

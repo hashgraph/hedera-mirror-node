@@ -22,7 +22,7 @@ public class AccountBalancesDownloader extends Downloader {
 	}
 
 	public static void main(String[] args) {
-		initConfigLoader(args);
+		configLoader = new ConfigLoader("./config/config.json");
 
 		AccountBalancesDownloader downloader = new AccountBalancesDownloader(configLoader);
 		s3Client = AmazonS3ClientBuilder.standard()		
