@@ -31,6 +31,29 @@ docker run --name=hedera-mirrornode -p 127.0.0.1:8080:8080 hedera/mirrornode:lat
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Addition of cloud storage as an alternative to AWS
+
+It is now possible to specify that files are downloaded from Google Compute Platform storage instead of Amazon S3.
+The switch is enabled via the `config/config.json` file.
+
+set `cloud-provider` to either `GCP` or `S3`, examples:
+
+Google
+
+```
+{
+  "cloud-provider": "GCP",
+...
+```
+
+Amazon S3
+
+```
+{
+  "cloud-provider": "S3",
+...
+```
+
 ### Removal of command line arguments
 
 All configuration parameters are now sourced from `./config/config.json` by default, it no longer needs to be specified on the command line.
