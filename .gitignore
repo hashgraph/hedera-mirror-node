@@ -27,3 +27,5 @@ config/config.json
 .settings/org.eclipse.m2e.core.prefs
 .project
 .classpath
+config/config.json.gcp
+config/config.json.s3
