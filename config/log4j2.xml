@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p  %-4L %c{1} - %m%n"/>
+		</Console>
+		<RollingFile name="node-log" fileName="output/mirrorNode.log"
+			filePattern="output/mirrorNode.log-%d{yyyy-MM-dd}-%i.log" >
+			<PatternLayout>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+			</PatternLayout>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="5 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="10"/>
+		</RollingFile>
+		<RollingFile name="recordStream-log" fileName="output/recordStream.log"
+					 filePattern="output/recordStream.log-%d{yyyy-MM-dd}-%i.log" >
+			<PatternLayout>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+			</PatternLayout>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="5 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="10"/>
+		</RollingFile>
+	</Appenders>
+	<Loggers>
+		<Root level="INFO">
+			<AppenderRef ref="Console"/>
+		</Root>
+		<Logger name="node-log" level="INFO">
+			<AppenderRef ref="node-log" level="INFO"/>
+		</Logger>
+		<Logger name="recordStream-log" level="INFO">
+			<AppenderRef ref="recordStream-log" level="INFO"/>
+		</Logger>
+	</Loggers>
+</Configuration>
