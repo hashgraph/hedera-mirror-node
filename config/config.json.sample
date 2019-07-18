@@ -12,7 +12,7 @@
   "addressBookFile": "./config/0.0.102",
   "accountBalancesS3Location": "accountBalances/balance",
   "recordFilesS3Location": "recordstreams/record",
-  "dbUrl": "jdbc:mysql://127.0.0.1:3306/transactions2?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC",
-  "dbUsername": "admin",
-  "dbPassword": ""
+  "dbUrl": "jdbc:mysql://127.0.0.1:3306/hederamirror?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC",
+  "dbUsername": "hederamirror",
+  "dbPassword": "mysecretpassword"
 }
