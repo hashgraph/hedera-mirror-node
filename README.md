@@ -15,7 +15,75 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 `cd target`
 
-## Docker image
+## Docker images
+
+### Volumes
+
+docker volume create MirrorNodePostgresData
+docker volume create MirrorNodeData
+
+### Database
+
+```shell
+cd docker
+docker build -t hedera/mirrornode-db -f Postgres ../
+docker run --name=hedera-mirrornode-db -d -p 127.0.0.1:5432:5432 --mount source=MirrorNodePostgresData,target=/var/lib/postgresql/data/pgdata hedera/mirrornode-db:latest
+```
+
+### Compile the mirror node software
+
+```shell
+mvn install -DskipTests
+```
+
+### Record files downloader
+
+```shell
+cd docker
+docker build -t hedera/mirrornode-rcd-down -f RecordsDownloader ../
+docker run --name=hedera-mirrornode-rcd-down -d --mount type=volume,source=MirrorNodeData,target=/mirrordata hedera/mirrornode-rcd-down:latest
+```
+
+### Record files parser and logger
+
+```shell
+cd docker
+docker build -t hedera/mirrornode-rcd-parse -f RecordsParser ../
+docker run --name=hedera-mirrornode-rcd-parse -d --mount source=MirrorNodeData,target=/mirrordata hedera/mirrornode-rcd-parse:latest
+```
+
+### Balance files downloader
+
+```shell
+cd docker
+docker build -t hedera/mirrornode-bal-down -f BalanceDownloader ../
+docker run --name=hedera-mirrornode-bal-down -d --mount source=MirrorNodeData,target=/mirrordata hedera/mirrornode-bal-down:latest
+```
+
+### Balance files parser and logger
+
+```shell
+cd docker
+docker build -t hedera/mirrornode-bal-parse -f BalanceParser ../
+docker run --name=hedera-mirrornode-bal-parse -d --mount source=MirrorNodeData,target=/mirrordata hedera/mirrornode-bal-parse:latest
+```
+
+### Proxy
+
+### Volume inspector
+
+Some operating systems won't enable you to look at the data mounted in volumes, this image will give you access to the data.
+
+- the `MirrorNodePostgresData` volume is mounted to `/databasedata`
+- the `MirrorNodeData` volume is mounted to `/mirrordata`
+
+```shell
+cd docker
+docker build -t hedera/mirrornode-vol-inspect -f VolumeInspector ../
+docker run --name=hedera-mirrornode-vol-inspect -d --mount source=MirrorNodeData,target=/mirrordata --mount source=MirrorNodePostgresData,target=/databasedata hedera/mirrornode-vol-inspect:latest
+```
+
+
 
 Assuming configuration files have been properly set up.
 
@@ -71,15 +139,15 @@ Note: this requires additional information to be stored in the `config.json`, `.
 config.json
 
 ```
-  "dbUrl": "jdbc:mysql://127.0.0.1:3306/hedera-mirror?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC",
-  "dbUsername": "hedera-mirror",
+  "dbUrl": "jdbc:mysql://127.0.0.1:3306/hederamirror?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC",
+  "dbUsername": "hederamirror",
   "dbPassword": "mysecretpassword"
 
 ```
 .env file
 
 ```
-HEDERA_MIRROR_DB_USER=hedera-mirror
+HEDERA_MIRROR_DB_USER=hederamirror
 HEDERA_MIRROR_DB_PASS=mysecretpassword
 ```
 
@@ -148,7 +216,7 @@ Ensure you have a postreSQL server running (versions 10 and 11 have been tested)
 
 Log into the database as an administrator and run the `postgres/postgresInit.sql` script to create the database and necessary entities.
 
-By default, this installation script creates a new database called `hedera-mirror`, with a user named `hedera-mirror` and a default password of `mysecretpassword`. Make the necessary changes to the script should you wish to use different values (and update the `config/config.json` or `.env` or environment variables accordingly).
+By default, this installation script creates a new database called `hederamirror`, with a user named `hederamirror` and a default password of `mysecretpassword`. Make the necessary changes to the script should you wish to use different values (and update the `config/config.json` or `.env` or environment variables accordingly).
 
 ## Note about error when running the software
 

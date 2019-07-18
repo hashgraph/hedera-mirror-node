@@ -1,0 +1,10 @@
+FROM postgres:11.4-alpine
+
+ENV POSTGRES_DB hederamirror
+ENV POSTGRES_USER hederamirror
+ENV POSTGRES_PASSWORD mysecretpassword
+ENV PGDATA /var/lib/postgresql/data/pgdata
+
+COPY ./postgres/postgresInit.sql /docker-entrypoint-initdb.d/
+
+EXPOSE 5432
