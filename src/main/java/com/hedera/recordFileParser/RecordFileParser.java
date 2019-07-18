@@ -306,6 +306,7 @@ public class RecordFileParser {
 				dis.read(prevFileHash);
 				String hexString = Hex.encodeHexString(prevFileHash);
 				log.info(MARKER, "readPrevFileHash :: Previous file Hash = {}, file name = {}", hexString, fileName);
+				dis.close();
 				return hexString;
 			} else {
 				log.error(MARKER, "readPrevFileHash :: Should read Previous file Hash, but found file delimiter {}, file name = {}", typeDelimiter, fileName);
