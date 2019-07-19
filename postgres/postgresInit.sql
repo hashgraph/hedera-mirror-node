@@ -42,6 +42,11 @@ INSERT INTO t_transfer_types (id, amount, description) values (4, 100000, 'TXFEE
 
 \echo Creating table t_transaction_types
 
+CREATE TABLE t_transfer_types (
+	id			  INTEGER PRIMARY KEY
+	,amount       BIGINT NOT NULL
+	,description  VARCHAR(10)
+);
 CREATE TABLE t_transaction_types (
 	id			  INTEGER PRIMARY KEY NOT NULL DEFAULT nextval('s_transaction_types_seq')
 	,name  VARCHAR(20)
@@ -172,6 +177,7 @@ ALTER TABLE t_cryptotransferlists ADD CONSTRAINT fk_ctl_account_id FOREIGN KEY (
 -- t_transactions
 \echo Creating indices on t_transactions
 
+CREATE INDEX idx_t_transactions_id ON t_transactions (id);
 CREATE INDEX idx_t_transactions_seconds ON t_transactions (seconds);
 CREATE INDEX idx_t_transactions_nanos ON t_transactions (nanos);
 CREATE INDEX idx_t_transactions_processed ON t_transactions (processed);
@@ -180,22 +186,30 @@ CREATE INDEX idx_t_transactions_acc_id ON t_transactions (trans_account_id);
 CREATE INDEX idx_t_transactions_cons_seconds ON t_transactions (consensus_seconds);
 CREATE INDEX idx_t_transactions_cons_nanos ON t_transactions (consensus_nanos);
 CREATE UNIQUE INDEX idx_t_transactions_transaction_id_unq ON t_transactions (seconds, nanos, trans_account_id);
+CREATE INDEX idx_t_transactions_trans_account ON t_transactions (trans_account_id);
+CREATE INDEX idx_t_transactions_node_account ON t_transactions (node_account_id);
+CREATE INDEX idx_t_transactions_crud_entity ON t_transactions (crud_entity_id);
 
 -- t_cryptotransfers
 \echo Creating indices on t_cryptotransfers
 
+CREATE INDEX idx_cryptotransfers_tx_id ON t_cryptotransfers (tx_id);
 CREATE INDEX idx_cryptotransfers_from_account ON t_cryptotransfers (from_account_id);
 CREATE INDEX idx_cryptotransfers_to_account ON t_cryptotransfers (to_account_id);
 CREATE INDEX idx_t_cryptotransfers_amount ON t_cryptotransfers (amount);
 CREATE INDEX idx_t_cryptotransfers_payment_type_id ON t_cryptotransfers (payment_type_id);
+ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_from_acc_id FOREIGN KEY (from_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_to_acc_id FOREIGN KEY (to_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- t_cryptotransferlists
 \echo Creating indices on t_cryptotransferlists
 
+CREATE INDEX idx_cryptotransferslist_tx_id ON t_cryptotransfers (tx_id);
 CREATE INDEX idx_cryptotransferlist_account ON t_cryptotransferlists (account_id);
 CREATE INDEX idx_t_cryptotransferlist_amount ON t_cryptotransferlists (amount);
 CREATE INDEX idx_t_cryptotransferlist_tx_id_amount ON t_cryptotransferlists (tx_id, amount);
 CREATE INDEX idx_t_cryptotransferlist_tx_id_account ON t_cryptotransferlists (tx_id, account_id);
+ALTER TABLE t_cryptotransferlists ADD CONSTRAINT fk_ctl_acc_id FOREIGN KEY (account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- t_event_files
 \echo Creating indices on t_event_files
@@ -312,6 +326,10 @@ GRANT ALL ON t_entities TO :db_user;
 GRANT ALL ON t_account_balances TO :db_user;
 GRANT ALL ON t_account_balance_history TO :db_user;
 
+GRANT SELECT ON v_cryptotransfers to :db_user;
+GRANT SELECT ON v_event_files to :db_user;
+GRANT SELECT ON v_transactions to :db_user;
+GRANT SELECT ON v_cryptotransferlist to :db_user;
 GRANT ALL ON s_transaction_types_seq TO :db_user;
 GRANT ALL ON s_event_files_seq TO :db_user;
 GRANT ALL ON s_transactions_seq TO :db_user;
