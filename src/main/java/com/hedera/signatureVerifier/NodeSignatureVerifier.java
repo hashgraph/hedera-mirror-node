@@ -262,6 +262,9 @@ public class NodeSignatureVerifier {
 					"verifySignature :: signature is being verified, publicKey={}", publicKey);
 			sig.initVerify(publicKey);
 			sig.update(data);
+			if (signature == null) {
+				log.error(MARKER, " verifySignature :: signature is null !");
+			}
 			return sig.verify(signature);
 		} catch (NoSuchAlgorithmException | NoSuchProviderException
 				| InvalidKeyException | SignatureException e) {
