@@ -98,6 +98,7 @@ CREATE TABLE t_account_balances (
 
 CREATE TABLE t_account_balance_history (
   snapshot_time        TIMESTAMP NULL
+	,seconds             BIGINT NOT NULL
   ,account_num         BIGINT NOT NULL
   ,account_realm       BIGINT NOT NULL
   ,account_shard       BIGINT NOT NULL

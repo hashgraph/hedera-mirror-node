@@ -31,6 +31,7 @@ public class BalanceFileHistoryLogger {
     enum balance_fields {
         ZERO
         ,SNAPSHOT_TIME
+        ,SECONDS
         ,ACCOUNT_SHARD
         ,ACCOUNT_REALM
         ,ACCOUNT_NUM
@@ -64,8 +65,8 @@ public class BalanceFileHistoryLogger {
 
 	            PreparedStatement insertBalance;
 	            insertBalance = connect.prepareStatement(
-	                    "insert into t_account_balance_history (snapshot_time, account_shard, account_realm, account_num, balance) "
-	                    + " values (to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss'), ?, ?, ?, ?) "
+	                    "insert into t_account_balance_history (snapshot_time, seconds, account_shard, account_realm, account_num, balance) "
+	                    + " values (to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss'), EXTRACT(EPOCH FROM to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss')), ?, ?, ?, ?) "
 	                    + " ON CONFLICT (snapshot_time, account_shard, account_realm, account_num) "
 	                    + " DO UPDATE set balance = ?");
 	        
@@ -79,6 +80,7 @@ public class BalanceFileHistoryLogger {
 	                        String[] balanceLine = line.split(",");
 	                        
 	                        insertBalance.setString(balance_fields.SNAPSHOT_TIME.ordinal(), dateLine);
+	                        insertBalance.setString(balance_fields.SECONDS.ordinal(), dateLine);
 	                        insertBalance.setLong(balance_fields.ACCOUNT_SHARD.ordinal(), Long.valueOf(balanceLine[0]));
 	                        insertBalance.setLong(balance_fields.ACCOUNT_REALM.ordinal(), Long.valueOf(balanceLine[1]));
 	                        insertBalance.setLong(balance_fields.ACCOUNT_NUM.ordinal(), Long.valueOf(balanceLine[2]));
