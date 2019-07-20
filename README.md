@@ -119,6 +119,14 @@ docker run --name=hedera-mirrornode -p 127.0.0.1:8080:8080 hedera/mirrornode:lat
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Addition of a postgresUpdate.sql script
+
+This script contains the incremental changes to the database in the event you need to upgrade an older version of the database to the current version.
+
+### The t_account_balance_history has a new `seconds` column
+
+The `seconds` column contains the number of seconds since epoch in addition to the `snapshot_time` which is a `timestamp`, both contain the same value in different formats.
+
 ### Loggers now return true/false depending on success/failure to log
 
 Before this change, failure to log wasn't detected by the class calling the logger which resulted in files being moved when they shouldn't be.
