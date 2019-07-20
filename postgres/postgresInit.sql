@@ -42,11 +42,6 @@ INSERT INTO t_transfer_types (id, amount, description) values (4, 100000, 'TXFEE
 
 \echo Creating table t_transaction_types
 
-CREATE TABLE t_transfer_types (
-	id			  INTEGER PRIMARY KEY
-	,amount       BIGINT NOT NULL
-	,description  VARCHAR(10)
-);
 CREATE TABLE t_transaction_types (
 	id			  INTEGER PRIMARY KEY NOT NULL DEFAULT nextval('s_transaction_types_seq')
 	,name  VARCHAR(20)
@@ -230,6 +225,19 @@ CREATE UNIQUE INDEX idx_t_account_bal_hist_unq ON t_account_balance_history (sna
 \echo Creating indices on t_entities
 
 CREATE UNIQUE INDEX idx_t_entities_unq ON t_entities (entity_num, entity_realm, entity_shard);
+CREATE INDEX idx_t_entities_num ON t_entities (entity_num);
+CREATE INDEX idx_t_entities_realm ON t_entities (entity_realm);
+CREATE INDEX idx_t_entities_shard ON t_entities (entity_shard);
+CREATE INDEX idx_t_entities_id_num ON t_entities (id, entity_num);
+
+
+--t_transfer_types
+\echo Creating indices on t_transfer_types
+CREATE UNIQUE INDEX idx_t_transfer_types_unq on t_transfer_types(id);
+
+--t_transaction_types
+\echo Creating indices on t_transaction_types
+CREATE UNIQUE INDEX idx_t_transaction_types_unq on t_transaction_types(id);
 
 -- VIEWS
 \echo Creating view v_event_files
