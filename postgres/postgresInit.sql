@@ -112,12 +112,12 @@ CREATE TABLE t_transactions (
   ,node_account_id     BIGINT NOT NULL
   ,tx_time_sec         TIMESTAMP NULL
   ,tx_time_hour        TIMESTAMP NULL
-  ,memo		           VARCHAR(100)
+  ,memo		             VARCHAR(100)
   ,seconds             BIGINT NOT NULL
   ,nanos               INT
   ,xfer_count          INT NOT NULL
   ,trans_type_id       INT
-  ,processed 	       BOOLEAN DEFAULT false
+  ,processed 	         BOOLEAN DEFAULT false
   ,result              VARCHAR(45) DEFAULT 'UNKNOWN'
   ,consensus_seconds   BIGINT NULL
   ,consensus_nanos     BIGINT NULL
@@ -126,6 +126,7 @@ CREATE TABLE t_transactions (
   ,initial_balance     BIGINT DEFAULT 0
   ,crud_entity_id      BIGINT
   ,consensus_time      TIMESTAMP NOT NULL
+	,transaction_id      VARCHAR(60) NOT NULL
 );
 
 \echo Creating table t_cryptotransfers
@@ -162,12 +163,16 @@ ALTER TABLE t_transactions ADD CONSTRAINT fk_crud_entity_id FOREIGN KEY (crud_en
 ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_tx_id FOREIGN KEY (tx_id) REFERENCES t_transactions (id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_from_account_id FOREIGN KEY (from_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_to_account_id FOREIGN KEY (to_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_from_acc_id FOREIGN KEY (from_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_to_acc_id FOREIGN KEY (to_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_to_account_id FOREIGN KEY (to_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- t_cryptotransferlists
 \echo Creating constraints on t_cryptotransferlists
 
 ALTER TABLE t_cryptotransferlists ADD CONSTRAINT fk_ctl_tx_id FOREIGN KEY (tx_id) REFERENCES t_transactions (id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE t_cryptotransferlists ADD CONSTRAINT fk_ctl_account_id FOREIGN KEY (account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE t_cryptotransferlists ADD CONSTRAINT fk_ctl_acc_id FOREIGN KEY (account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- INDICES
 -- t_transactions
@@ -175,16 +180,12 @@ ALTER TABLE t_cryptotransferlists ADD CONSTRAINT fk_ctl_account_id FOREIGN KEY (
 
 CREATE INDEX idx_t_transactions_id ON t_transactions (id);
 CREATE INDEX idx_t_transactions_seconds ON t_transactions (seconds);
-CREATE INDEX idx_t_transactions_nanos ON t_transactions (nanos);
 CREATE INDEX idx_t_transactions_processed ON t_transactions (processed);
-CREATE INDEX idx_t_transactions_tx_time_hour ON t_transactions (tx_time_hour);
-CREATE INDEX idx_t_transactions_acc_id ON t_transactions (trans_account_id);
-CREATE INDEX idx_t_transactions_cons_seconds ON t_transactions (consensus_seconds);
-CREATE INDEX idx_t_transactions_cons_nanos ON t_transactions (consensus_nanos);
 CREATE UNIQUE INDEX idx_t_transactions_transaction_id_unq ON t_transactions (seconds, nanos, trans_account_id);
-CREATE INDEX idx_t_transactions_trans_account ON t_transactions (trans_account_id);
+CREATE INDEX idx_t_transactions_acc_id ON t_transactions (trans_account_id);
 CREATE INDEX idx_t_transactions_node_account ON t_transactions (node_account_id);
 CREATE INDEX idx_t_transactions_crud_entity ON t_transactions (crud_entity_id);
+CREATE UNIQUE INDEX idx_t_transactions_transaction_id ON t_transactions (transaction_id);
 
 -- t_cryptotransfers
 \echo Creating indices on t_cryptotransfers
@@ -192,20 +193,17 @@ CREATE INDEX idx_t_transactions_crud_entity ON t_transactions (crud_entity_id);
 CREATE INDEX idx_cryptotransfers_tx_id ON t_cryptotransfers (tx_id);
 CREATE INDEX idx_cryptotransfers_from_account ON t_cryptotransfers (from_account_id);
 CREATE INDEX idx_cryptotransfers_to_account ON t_cryptotransfers (to_account_id);
-CREATE INDEX idx_t_cryptotransfers_amount ON t_cryptotransfers (amount);
 CREATE INDEX idx_t_cryptotransfers_payment_type_id ON t_cryptotransfers (payment_type_id);
-ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_from_acc_id FOREIGN KEY (from_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_to_acc_id FOREIGN KEY (to_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE UNIQUE INDEX idx_cryptotransfers_id_from_to_acc_typ ON t_cryptotransfers (tx_id, from_account_id,to_account_id, payment_type_id);
+CREATE UNIQUE INDEX idx_cryptotransfers_id_from_to_acc ON t_cryptotransfers (tx_id, from_account_id,to_account_id);
 
 -- t_cryptotransferlists
 \echo Creating indices on t_cryptotransferlists
 
-CREATE INDEX idx_cryptotransferslist_tx_id ON t_cryptotransfers (tx_id);
+CREATE INDEX idx_cryptotransferslist_tx_id ON t_cryptotransferlists (tx_id);
 CREATE INDEX idx_cryptotransferlist_account ON t_cryptotransferlists (account_id);
 CREATE INDEX idx_t_cryptotransferlist_amount ON t_cryptotransferlists (amount);
-CREATE INDEX idx_t_cryptotransferlist_tx_id_amount ON t_cryptotransferlists (tx_id, amount);
 CREATE INDEX idx_t_cryptotransferlist_tx_id_account ON t_cryptotransferlists (tx_id, account_id);
-ALTER TABLE t_cryptotransferlists ADD CONSTRAINT fk_ctl_acc_id FOREIGN KEY (account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- t_event_files
 \echo Creating indices on t_event_files
@@ -216,29 +214,25 @@ CREATE UNIQUE INDEX idx_t_event_files_name ON t_event_files (name);
 \echo Creating indices on t_account_balances
 
 CREATE UNIQUE INDEX idx_t_account_bal_unq ON t_account_balances (account_num, account_realm, account_shard);
+CREATE UNIQUE INDEX idx_t_account_bal_acc_num_unq ON t_account_balances (account_num);
 
 --t_account_balance_history
 \echo Creating indices on t_account_balance_history
 
-CREATE UNIQUE INDEX idx_t_account_bal_hist_unq ON t_account_balance_history (snapshot_time, account_num, account_realm, account_shard);
+CREATE UNIQUE INDEX idx_t_account_bal_hist_unq ON t_account_balance_history (snapshot_time, seconds, account_num, account_realm, account_shard);
+CREATE UNIQUE INDEX idx_t_account_bal_sec_accnum_unq ON t_account_balance_history (seconds, account_num);
 
 --t_entities
 \echo Creating indices on t_entities
 
 CREATE UNIQUE INDEX idx_t_entities_unq ON t_entities (entity_num, entity_realm, entity_shard);
-CREATE INDEX idx_t_entities_num ON t_entities (entity_num);
-CREATE INDEX idx_t_entities_realm ON t_entities (entity_realm);
-CREATE INDEX idx_t_entities_shard ON t_entities (entity_shard);
-CREATE INDEX idx_t_entities_id_num ON t_entities (id, entity_num);
-
+CREATE UNIQUE INDEX idx_t_entities_id_num_unq ON t_entities (id, entity_num);
 
 --t_transfer_types
 \echo Creating indices on t_transfer_types
-CREATE UNIQUE INDEX idx_t_transfer_types_unq on t_transfer_types(id);
 
 --t_transaction_types
 \echo Creating indices on t_transaction_types
-CREATE UNIQUE INDEX idx_t_transaction_types_unq on t_transaction_types(id);
 
 -- VIEWS
 \echo Creating view v_event_files

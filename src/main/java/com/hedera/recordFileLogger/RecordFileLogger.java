@@ -46,6 +46,7 @@ public class RecordFileLogger implements LoggerInterface {
         ,CRUD_ENTITY_ID
         ,TRANSACTION_FEE
         ,INITIAL_BALANCE
+        ,TRANSACTION_ID
     }
     
     enum F_TRANSFERLIST {
@@ -167,8 +168,8 @@ public class RecordFileLogger implements LoggerInterface {
 	public static boolean storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord) throws Exception {
 		try {
 			PreparedStatement sqlInsertTransaction = connect.prepareStatement("insert into t_transactions "
-						+ "(node_account_id, memo, seconds, nanos, xfer_count, trans_type_id, trans_account_id, result, consensus_seconds, consensus_nanos, crud_entity_id, transaction_fee, initial_balance) "
-						+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+						+ "(node_account_id, memo, seconds, nanos, xfer_count, trans_type_id, trans_account_id, result, consensus_seconds, consensus_nanos, crud_entity_id, transaction_fee, initial_balance, transaction_id) "
+						+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 						+ " RETURNING id");
 
 			PreparedStatement sqlInsertTransfer = connect.prepareStatement("insert into t_cryptotransfers "
@@ -204,8 +205,12 @@ public class RecordFileLogger implements LoggerInterface {
 			String result = ResponseCodeEnum.forNumber(txRecord.getReceipt().getStatus().getNumber()).name();
 			sqlInsertTransaction.setString(F_TRANSACTION.RESULT.ordinal(), result); 
 			sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_SECONDS.ordinal(), txRecord.getConsensusTimestamp().getSeconds()); 
-			sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NANOS.ordinal(), txRecord.getConsensusTimestamp().getSeconds());
+			sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NANOS.ordinal(), txRecord.getConsensusTimestamp().getNanos());
 			sqlInsertTransaction.setLong(F_TRANSACTION.TRANSACTION_FEE.ordinal(), txRecord.getTransactionFee());
+			
+			String transactionIdString = "0.0." + txAccountId + "-" + body.getTransactionID().getTransactionValidStart().getSeconds() + "-" + body.getTransactionID().getTransactionValidStart().getNanos();
+			
+			sqlInsertTransaction.setString(F_TRANSACTION.TRANSACTION_ID.ordinal(), transactionIdString);
 
             long entityId = 0;
             long initialBalance = 0;
