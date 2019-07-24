@@ -119,12 +119,23 @@ docker run --name=hedera-mirrornode -p 127.0.0.1:8080:8080 hedera/mirrornode:lat
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Added optional persistence of crypto transfers, file contents, contract creation and call results and claim data
+
+The `config.json` file now contains four addition parameters as follows:
+
+- persistClaims : set to `true` or `false` to determine whether claim hashes will be persisted to the database. Default value is `false` if not supplied.
+- persistFiles : set to `SYSTEM`, `ALL` or `NONE`. If set to `SYSTEM` only files with a file number below 1000 will be stored, if set to `ALL`, all files will be stored, if set to `NONE`, no file data will be stored. Default is `NONE`.
+- persistContracts : set to `true` or `false` to determine whether contract call parameters (and constructor parameters) along with results will be persisted to the database. Default value is `false` if not supplied.
+- persistCryptoTransferAmounts : set to `true` or `false` to determine whether individual `to` and `from` transfer amounts will be persisted to the database. Default value is `false` if not supplied.
+
 ### Addition of stopLoggingIfHashMismatch configuration item
 
 When processing files after they have been downloaded, this flag will determine whether file processing should continue or stop in the event of a mismatch between the hash of the last file processed and the hash held for the previous file in the file being processed.
 
 If set to `true` : Any mismatch in the sequence of file hashes will bring the processing to a stop, the missing file has to be downloaded in order for processing to be able to continue.
 If set to `false`: Hash sequence mismatches will be logged but ignored and processing will continue until there are no files to process.
+
+A file called `loggerStatus.json` will be created in the `./config` folder containing the hash of the last successfully processed file.
 
 ### node-log has been removes from log4.xml
 

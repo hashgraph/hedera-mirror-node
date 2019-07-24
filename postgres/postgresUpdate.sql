@@ -1,3 +1,7 @@
+\set db_name hederamirror
+\set db_user hederamirror
+\set db_password mysecretpassword
+
 -- July 20th 2019 - ADDITION OF "SECONDS" column to t_account_balance_history
 
 \echo Adding seconds column to t_account_balance_history
@@ -62,3 +66,56 @@ ALTER TABLE t_transactions ALTER COLUMN transaction_id SET NOT NULL;
 
 \echo Adding index idx_t_transactions_transaction_id to t_transactions
 CREATE UNIQUE INDEX idx_t_transactions_transaction_id ON t_transactions (transaction_id);
+
+-- July 24 2019
+
+\echo Creating table t_file_data
+
+CREATE TABLE t_file_data (
+	tx_id                BIGINT NOT NULL
+	,file_data           BYTEA
+);
+
+\echo Creating constraints on t_file_data
+ALTER TABLE t_file_data ADD CONSTRAINT fk_fd_tx_id FOREIGN KEY (tx_id) REFERENCES t_transactions (id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+\echo Creating indices on t_file_data
+CREATE INDEX idx_file_data_tx_id ON t_file_data (tx_id);
+
+\echo Granting access to t_file_data
+GRANT ALL ON t_file_data TO :db_user;
+
+\echo Creating table t_contract_result
+
+CREATE TABLE t_contract_result (
+	tx_id                BIGINT NOT NULL
+  ,function_params     BYTEA
+	,gas_supplied				 BIGINT
+	,call_result         BYTEA
+	,gas_used            BIGINT
+);
+
+\echo Creating constraints on t_contract_result
+ALTER TABLE t_contract_result ADD CONSTRAINT fk_cr_tx_id FOREIGN KEY (tx_id) REFERENCES t_transactions (id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+\echo Creating indices on t_contract_result
+CREATE INDEX idx_contract_result_tx_id ON t_contract_result (tx_id);
+
+\echo Granting access to t_contract_result
+GRANT ALL ON t_contract_result TO :db_user;
+
+\echo Creating table t_claim_data
+
+CREATE TABLE t_claim_data (
+	tx_id                BIGINT NOT NULL
+	,claim_data           BYTEA
+);
+
+\echo Creating constraints on t_claim_data
+ALTER TABLE t_claim_data ADD CONSTRAINT fk_cd_tx_id FOREIGN KEY (tx_id) REFERENCES t_transactions (id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+\echo Creating indices on t_claim_data
+CREATE INDEX idx_claim_data_tx_id ON t_claim_data (tx_id);
+
+\echo Granting access to t_claim_data
+GRANT ALL ON t_claim_data TO :db_user;

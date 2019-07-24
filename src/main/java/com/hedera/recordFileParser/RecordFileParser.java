@@ -102,7 +102,7 @@ public class RecordFileParser {
 								newFileHash = Hex.encodeHexString(readFileHash);
 								
 								if (!newFileHash.contentEquals(previousFileHash)) {
-									if (configLoader.stopLoggingIfHashMismatch()) {
+									if (configLoader.getStopLoggingIfHashMismatch()) {
 										log.error(MARKER, "Previous file Hash Mismatch - stopping loading. Previous = {}, Current = {}", previousFileHash, newFileHash);
 										return LoadResult.STOP;
 									}
@@ -123,7 +123,7 @@ public class RecordFileParser {
 	
 								counter++;
 								
-								if (RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord)) {
+								if (RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord, configLoader)) {
 									log.info(MARKER, "record counter = {}\n=============================", counter);
 									log.info(MARKER, "Transaction Consensus Timestamp = {}\n", Utility.convertToInstant(txRecord.getConsensusTimestamp()));
 									log.info(MARKER, "Transaction = {}", Utility.printTransaction(transaction));

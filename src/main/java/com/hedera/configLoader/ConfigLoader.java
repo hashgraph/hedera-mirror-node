@@ -81,7 +81,15 @@ public class ConfigLoader {
 	private static String recordFilesS3Location = "./recordstreams/record";
 
 	private static boolean stopLoggingIfHashMismatch = true;
+
+	private static boolean persistClaims = false;
 	
+	private static String persistFiles = "NONE";
+	
+	private static boolean persistContracts = false;
+	
+	private static boolean persistCryptoTransferAmounts = false;
+		
 	//database url
     private static String dbUrl = "";
     // database user
@@ -189,6 +197,19 @@ public class ConfigLoader {
 			if (jsonObject.has("stopLoggingIfHashMismatch")) {
 				stopLoggingIfHashMismatch = jsonObject.get("stopLoggingIfHashMismatch").getAsBoolean();
 			}
+			if (jsonObject.has("persistClaims")) {
+				persistClaims = jsonObject.get("persistClaims").getAsBoolean();
+			}
+			if (jsonObject.has("persistFiles")) {
+				persistFiles = jsonObject.get("persistFiles").getAsString();
+			}
+			if (jsonObject.has("persistContracts")) {
+				persistContracts = jsonObject.get("persistContracts").getAsBoolean();
+			}
+			if (jsonObject.has("persistCryptoTransferAmounts")) {
+				persistCryptoTransferAmounts = jsonObject.get("persistCryptoTransferAmounts").getAsBoolean();
+			}
+			
 		} catch (FileNotFoundException ex) {
 			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configPath, ex.getStackTrace());
 		}
@@ -297,10 +318,22 @@ public class ConfigLoader {
 		return maxDownloadItems;	
 	}
 	
-	public boolean stopLoggingIfHashMismatch() {
+	public boolean getPersistClaims() {
+		return persistClaims;
+	}
+	public boolean getStopLoggingIfHashMismatch() {
 		return stopLoggingIfHashMismatch;
 	}
-
+	public String getPersistFiles() {
+		return persistFiles;
+	}
+	public boolean getPersistContracts() {
+		return persistContracts;
+	}
+	public boolean getPersistCryptoTransferAmounts() {
+		return persistCryptoTransferAmounts;
+	}
+	
 	public void setLastValidBalanceFileName(String name) {
 		lastValidBalanceFileName = name;
 		jsonObject.addProperty("lastValidBalanceFileName", name);

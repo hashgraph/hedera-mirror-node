@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -65,6 +66,28 @@ public class RecordFileLogger implements LoggerInterface {
         ,AMOUNT
         ,PAYMENT_TYPE_ID
     }
+    
+    enum F_FILE_DATA {
+    	ZERO
+    	,TX_ID
+    	,FILE_DATA
+    }
+    
+    enum F_CONTRACT_CALL {
+    	ZERO
+    	,TX_ID
+    	,FUNCTION_PARAMS
+    	,GAS_SUPPLIED
+    	,CALL_RESULT
+    	,GAS_USED
+    }
+    
+    enum F_CLAIM_DATA {
+    	ZERO
+    	,TX_ID
+    	,CLAIM_DATA
+    }
+    
 	public static boolean start() {
         connect = DatabaseUtilities.openDatabase(connect);
         if (connect == null) {
@@ -165,22 +188,36 @@ public class RecordFileLogger implements LoggerInterface {
 		}
 		return true;
 	}	
-	public static boolean storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord) throws Exception {
+	public static boolean storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord, ConfigLoader configLoader) throws Exception {
 		try {
-			PreparedStatement sqlInsertTransaction = connect.prepareStatement("insert into t_transactions "
-						+ "(node_account_id, memo, seconds, nanos, xfer_count, trans_type_id, trans_account_id, result, consensus_seconds, consensus_nanos, crud_entity_id, transaction_fee, initial_balance, transaction_id) "
-						+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+			PreparedStatement sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
+						+ " (node_account_id, memo, seconds, nanos, xfer_count, trans_type_id, trans_account_id, result, consensus_seconds, consensus_nanos, crud_entity_id, transaction_fee, initial_balance, transaction_id)"
+						+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 						+ " RETURNING id");
 
-			PreparedStatement sqlInsertTransfer = connect.prepareStatement("insert into t_cryptotransfers "
-					+ "(tx_id, from_account_id, to_account_id, amount, payment_type_id) "
-					+ " values (?, ?, ?, ?, ?)");
+			PreparedStatement sqlInsertTransfer = connect.prepareStatement("INSERT INTO t_cryptotransfers"
+					+ " (tx_id, from_account_id, to_account_id, amount, payment_type_id)"
+					+ " VALUES (?, ?, ?, ?, ?)");
 	
-			PreparedStatement sqlInsertTransferList = connect.prepareStatement("insert into t_cryptotransferlists "
-					+ "(tx_id, account_id, amount, payment_type_id) "
-					+ " values (?, ?, ?, ?)");
+			PreparedStatement sqlInsertTransferList = connect.prepareStatement("insert into t_cryptotransferlists"
+					+ " (tx_id, account_id, amount, payment_type_id)"
+					+ " VALUES (?, ?, ?, ?)");
 	
+			PreparedStatement sqlInsertFileData = connect.prepareStatement("INSERT INTO t_file_data"
+					+ " (tx_id, file_data)"
+					+ " VALUES (?, ?)");
+			
+			PreparedStatement sqlInsertContractCall = connect.prepareStatement("INSERT INTO t_contract_result)"
+					+ " (tx_id, function_params, gas_supplied, call_result, gas_used)" 
+					+ " VALUES (?, ?, ?, ?, ?)");
+			
+			PreparedStatement sqlInsertClaimData = connect.prepareStatement("INSERT INTO t_claim_data"
+					+ " (tx_id, claim_data)"
+					+ " VALUES (?, ?)");
+			
+		
 			long transactionId = 0;
+			boolean duplicateTX = false;
 						
 			TransactionBody body = null;
 			if (transaction.hasBody()) {
@@ -253,10 +290,8 @@ public class RecordFileLogger implements LoggerInterface {
                 if (body.getCryptoDeleteClaim().hasAccountIDToDeleteFrom()) {
                     entityId = createOrGetEntity(body.getCryptoDeleteClaim().getAccountIDToDeleteFrom());
                 }
-            } else if (body.hasCryptoDelete()) {
-                if (body.getCryptoDelete().hasDeleteAccountID()) {
-                    entityId = createOrGetEntity(body.getCryptoDelete().getDeleteAccountID());
-                }
+            } else if (body.hasCryptoTransfer()) {
+            	// do nothing
             } else if (body.hasCryptoUpdateAccount()) {
                 if (body.getCryptoUpdateAccount().hasAccountIDToUpdate()) {
                     entityId = createOrGetEntity(body.getCryptoUpdateAccount().getAccountIDToUpdate());
@@ -269,7 +304,27 @@ public class RecordFileLogger implements LoggerInterface {
                 if (body.getFileDelete().hasFileID()) {
                     entityId = createOrGetEntity(body.getFileDelete().getFileID());
                 }
+            } else if (body.hasFileUpdate()) {
+                if (body.getCryptoDelete().hasDeleteAccountID()) {
+                    entityId = createOrGetEntity(body.getFileUpdate().getFileID());
+                }
+			} else if (body.hasFreeze()) {
+				//TODO:
+			} else if (body.hasSystemDelete()) {
+				if (body.getSystemDelete().hasContractID()) {
+					entityId = createOrGetEntity(body.getSystemDelete().getContractID());
+				} else if (body.getSystemDelete().hasFileID()) {
+					entityId = createOrGetEntity(body.getSystemDelete().getFileID());
+				}
+			} else if (body.hasSystemUndelete()) {
+				if (body.getSystemUndelete().hasContractID()) {
+					entityId = createOrGetEntity(body.getSystemUndelete().getContractID());
+				} else if (body.getSystemDelete().hasFileID()) {
+					entityId = createOrGetEntity(body.getSystemUndelete().getFileID());
+				}
+				
 			}
+				
             if (entityId == 0) {
                 // insert null
                 sqlInsertTransaction.setObject(F_TRANSACTION.CRUD_ENTITY_ID.ordinal(), null);
@@ -285,10 +340,12 @@ public class RecordFileLogger implements LoggerInterface {
 				
 				// allow for duplicates when processing files that contain the same transactions
 				try {
-				    sqlInsertTransaction.execute();
+                    transactionId = insertTransaction(sqlInsertTransaction);
+                    sqlInsertTransaction.close();
 				} catch (SQLException e) {
 				    if (e.getSQLState().contentEquals("23505")) {
                         // duplicate transaction id, that's ok
+				    	duplicateTX = true;
 				    } else {
 				        // Other SQL Exception
 				        throw e;
@@ -311,63 +368,59 @@ public class RecordFileLogger implements LoggerInterface {
 				sqlInsertTransaction.setInt(F_TRANSACTION.XFER_COUNT.ordinal(), pTransfer.getAccountAmountsCount()); 
                 // allow for duplicates when processing files that contain the same transactions
                 try {
-                    sqlInsertTransaction.execute();
-
-                    ResultSet newId = sqlInsertTransaction.getResultSet();
-                    newId.next();
-                    transactionId = newId.getLong(1);
-                    newId.close();
+                    transactionId = insertTransaction(sqlInsertTransaction);
                     sqlInsertTransaction.close();
-
-                    
-                    AccountID account = null;
-                    long amount = 0;
-                    for (int i = 0; i < pTransfer.getAccountAmountsCount(); i++) {
-                        amount = pTransfer.getAccountAmounts(i).getAmount();
-                        if (amount < 0) {
-                            negAmountCount += 1;
-                            negAmounts[negAmountCount] = amount;
-                            negAccounts[negAmountCount] = pTransfer.getAccountAmounts(i).getAccountID();
-                            account = negAccounts[negAmountCount];
-                        } else {
-                            posAmountCount += 1;
-                            posAmounts[posAmountCount] = amount;
-                            posAccounts[posAmountCount] = pTransfer.getAccountAmounts(i).getAccountID();
-                            account = posAccounts[posAmountCount];
-                        }
-                        // insert
-                        sqlInsertTransferList.setLong(F_TRANSFERLIST.TXID.ordinal(), transactionId);
-                        long xferAccountId = createOrGetEntity(account);
-                        sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), xferAccountId);
-                        sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
-                        sqlInsertTransferList.setInt(F_TRANSFERLIST.TYPE_ID.ordinal(), getTxType(amount));
-        
-                        doSqlInsertTransferList = true;
-                        sqlInsertTransferList.addBatch();
-                    }
-        
-                    if (negAmountCount == 0) {
-                        for (int i = 0; i <= posAmountCount; i++) {
-                            sqlInsertTransfer.setLong(F_TRANSFER.TX_ID.ordinal(), transactionId);
-                            long xferAccountId = createOrGetEntity(negAccounts[0]);
-                            sqlInsertTransfer.setLong(F_TRANSFER.FROM_ACCOUNT_ID.ordinal(), xferAccountId);
-                            xferAccountId = createOrGetEntity(posAccounts[i]);
-                            sqlInsertTransfer.setLong(F_TRANSFER.TO_ACCOUNT_ID.ordinal(), xferAccountId);
-                            sqlInsertTransfer.setLong(F_TRANSFER.AMOUNT.ordinal(), posAmounts[i]);
-                            sqlInsertTransfer.setInt(F_TRANSFER.PAYMENT_TYPE_ID.ordinal(), getTxType(posAmounts[i]));
-                            doSqlInsertTransfer = true;
-                            sqlInsertTransfer.addBatch();
-                        }
-                    }
-                    if (doSqlInsertTransfer) {
-                        sqlInsertTransfer.executeBatch();
-                    }
-                    if (doSqlInsertTransferList) {
-                        sqlInsertTransferList.executeBatch();
+                    if (configLoader.getPersistCryptoTransferAmounts()) {
+	                    AccountID account = null;
+	                    long amount = 0;
+	                    for (int i = 0; i < pTransfer.getAccountAmountsCount(); i++) {
+	                        amount = pTransfer.getAccountAmounts(i).getAmount();
+	                        if (amount < 0) {
+	                            negAmountCount += 1;
+	                            negAmounts[negAmountCount] = amount;
+	                            negAccounts[negAmountCount] = pTransfer.getAccountAmounts(i).getAccountID();
+	                            account = negAccounts[negAmountCount];
+	                        } else {
+	                            posAmountCount += 1;
+	                            posAmounts[posAmountCount] = amount;
+	                            posAccounts[posAmountCount] = pTransfer.getAccountAmounts(i).getAccountID();
+	                            account = posAccounts[posAmountCount];
+	                        }
+	                        // insert
+	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.TXID.ordinal(), transactionId);
+	                        long xferAccountId = createOrGetEntity(account);
+	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), xferAccountId);
+	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
+	                        sqlInsertTransferList.setInt(F_TRANSFERLIST.TYPE_ID.ordinal(), getTxType(amount));
+	        
+	                        doSqlInsertTransferList = true;
+	                        sqlInsertTransferList.addBatch();
+	                    }
+	        
+	                    if (negAmountCount == 0) {
+	                        for (int i = 0; i <= posAmountCount; i++) {
+	                            sqlInsertTransfer.setLong(F_TRANSFER.TX_ID.ordinal(), transactionId);
+	                            long xferAccountId = createOrGetEntity(negAccounts[0]);
+	                            sqlInsertTransfer.setLong(F_TRANSFER.FROM_ACCOUNT_ID.ordinal(), xferAccountId);
+	                            xferAccountId = createOrGetEntity(posAccounts[i]);
+	                            sqlInsertTransfer.setLong(F_TRANSFER.TO_ACCOUNT_ID.ordinal(), xferAccountId);
+	                            sqlInsertTransfer.setLong(F_TRANSFER.AMOUNT.ordinal(), posAmounts[i]);
+	                            sqlInsertTransfer.setInt(F_TRANSFER.PAYMENT_TYPE_ID.ordinal(), getTxType(posAmounts[i]));
+	                            doSqlInsertTransfer = true;
+	                            sqlInsertTransfer.addBatch();
+	                        }
+	                    }
+	                    if (doSqlInsertTransfer) {
+	                        sqlInsertTransfer.executeBatch();
+	                    }
+	                    if (doSqlInsertTransferList) {
+	                        sqlInsertTransferList.executeBatch();
+	                    }
                     }
                 } catch (SQLException e) {
                     if (e.getSQLState().contentEquals("23505")) {
                         // duplicate transaction id, that's ok
+                    	duplicateTX = true;
                     } else {
                         // Other SQL Exception
                         log.error(LOGM_EXCEPTION, "Exception {}", e);
@@ -376,6 +429,92 @@ public class RecordFileLogger implements LoggerInterface {
                     }               
                 }
 			}
+			
+			if (!duplicateTX) {
+				// now deal with transaction specifics
+	            if (body.hasContractCall()) {
+	            	if (configLoader.getPersistContracts()) {
+		            	byte[] functionParams = body.getContractCall().getFunctionParameters().toByteArray();
+		            	long gasSupplied = body.getContractCall().getGas();
+		            	byte[] callResult = new byte[0];
+		            	long gasUsed = 0;
+		            	if (txRecord.hasContractCallResult()) {
+		            		callResult = txRecord.getContractCallResult().toByteArray();
+		            		gasUsed = txRecord.getContractCallResult().getGasUsed();
+		            	}
+		            	
+		            	insertContractResults(sqlInsertContractCall, transactionId, functionParams, gasSupplied, callResult, gasUsed);
+	            	}
+	            } else if (body.hasContractCreateInstance()) {
+	            	if (configLoader.getPersistContracts()) {
+		            	byte[] functionParams = body.getContractCreateInstance().getConstructorParameters().toByteArray();
+		            	long gasSupplied = body.getContractCreateInstance().getGas();
+		            	byte[] callResult = new byte[0];
+		            	long gasUsed = 0;
+		            	if (txRecord.hasContractCreateResult()) {
+		            		callResult = txRecord.getContractCreateResult().toByteArray();
+		            		gasUsed = txRecord.getContractCreateResult().getGasUsed();
+		            	}
+		            	
+		            	insertContractResults(sqlInsertContractCall, transactionId, functionParams, gasSupplied, callResult, gasUsed);
+	            	}
+	            } else if (body.hasContractDeleteInstance()) {
+	            	//TODO: 
+	            } else if (body.hasContractUpdateInstance()) {
+	            	//TODO: 
+	            } else if (body.hasCryptoAddClaim()) {
+	            	if (configLoader.getPersistClaims()) {
+		            	byte[] claim = body.getCryptoAddClaim().getClaim().getHash().toByteArray();
+		            	sqlInsertClaimData.setLong(F_CLAIM_DATA.TX_ID.ordinal(), transactionId);
+		            	sqlInsertClaimData.setBytes(F_CLAIM_DATA.CLAIM_DATA.ordinal(), claim);
+		            	sqlInsertClaimData.execute();
+	            	}
+	            } else if (body.hasCryptoDeleteClaim()) {
+	            	//TODO: 
+	            } else if (body.hasCryptoCreateAccount()) {
+	            	//TODO: 
+	            } else if (body.hasCryptoDelete()) {
+	            	//TODO: 
+	            } else if (body.hasCryptoTransfer()) {
+	            	//TODO: 
+	            } else if (body.hasCryptoUpdateAccount()) {
+	            	//TODO: 
+	            } else if (body.hasFileAppend()) {
+	            	if (configLoader.getPersistFiles().contentEquals("ALL") || (configLoader.getPersistFiles().contentEquals("SYSTEM") && body.getFileAppend().getFileID().getFileNum() < 1000)) {
+		            	byte[] contents = body.getFileAppend().getContents().toByteArray();
+		            	sqlInsertFileData.setLong(F_FILE_DATA.TX_ID.ordinal(), transactionId);
+		            	sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
+		            	sqlInsertFileData.execute();
+	            	}
+	            } else if (body.hasFileCreate()) {
+	            	if (configLoader.getPersistFiles().contentEquals("ALL") || (configLoader.getPersistFiles().contentEquals("SYSTEM") && txRecord.getReceipt().getFileID().getFileNum() < 1000)) {
+		            	byte[] contents = body.getFileCreate().getContents().toByteArray();
+		            	sqlInsertFileData.setLong(F_FILE_DATA.TX_ID.ordinal(), transactionId);
+		            	sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
+		            	sqlInsertFileData.execute();
+	            	}
+	            } else if (body.hasFileDelete()) {
+	            	//TODO: 
+	            } else if (body.hasFileUpdate()) {
+	            	if (configLoader.getPersistFiles().contentEquals("ALL") || (configLoader.getPersistFiles().contentEquals("SYSTEM") && body.getFileUpdate().getFileID().getFileNum() < 1000)) {
+		            	byte[] contents = body.getFileUpdate().getContents().toByteArray();
+		            	sqlInsertFileData.setLong(F_FILE_DATA.TX_ID.ordinal(), transactionId);
+		            	sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
+		            	sqlInsertFileData.execute();
+	            	}
+	            } else if (body.hasFreeze()) {
+	            	//TODO: 
+	            } else if (body.hasSystemDelete()) {
+	            	//TODO: 
+	            } else if (body.hasSystemUndelete()) {
+	            	//TODO: 
+	            }
+			}            
+            sqlInsertFileData.close();
+            sqlInsertTransfer.close();
+            sqlInsertTransferList.close();
+            sqlInsertContractCall.close();
+            sqlInsertClaimData.close();
 	
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -386,6 +525,7 @@ public class RecordFileLogger implements LoggerInterface {
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
 			return false;
 		}
+		
 		return true;
 	}
 	
@@ -431,6 +571,14 @@ public class RecordFileLogger implements LoggerInterface {
 			return transactionTypes.get("filedelete");
 		} else if (body.hasFileUpdate()) {
 			return transactionTypes.get("fileupdate");
+		} else if (body.hasCryptoUpdateAccount()) {
+			return transactionTypes.get("cryptoUpdate");
+		} else if (body.hasFreeze()) {
+			return transactionTypes.get("freeze");
+		} else if (body.hasSystemDelete()) {
+			return transactionTypes.get("systemDelete");
+		} else if (body.hasSystemUndelete()) {
+			return transactionTypes.get("systemUndelete");
 		} else {
 			return transactionTypes.get("unknown");
 		}
@@ -452,5 +600,28 @@ public class RecordFileLogger implements LoggerInterface {
 			// OTHER
 			return 1;
 		}
+	}
+	
+	private static long insertTransaction(PreparedStatement insertTransaction) throws SQLException {
+		insertTransaction.execute();
+
+        ResultSet newId = insertTransaction.getResultSet();
+        newId.next();
+        Long txId = newId.getLong(1);
+        newId.close();
+        
+        return txId;
+	}
+	
+	public static void insertContractResults(PreparedStatement insert, long txId, byte[] functionParams, long gasSupplied, byte[] callResult, long gasUsed) throws SQLException {
+		
+		insert.setLong(F_CONTRACT_CALL.TX_ID.ordinal(), txId);
+		insert.setBytes(F_CONTRACT_CALL.FUNCTION_PARAMS.ordinal(), functionParams);
+		insert.setLong(F_CONTRACT_CALL.GAS_SUPPLIED.ordinal(), gasSupplied);
+		insert.setBytes(F_CONTRACT_CALL.CALL_RESULT.ordinal(), callResult);
+		insert.setLong(F_CONTRACT_CALL.GAS_USED.ordinal(), gasUsed);
+		
+		insert.execute();
+		
 	}
 }

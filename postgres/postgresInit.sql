@@ -148,6 +148,30 @@ CREATE TABLE t_cryptotransferlists (
   ,payment_type_id     INT NOT NULL
 );
 
+\echo Creating table t_file_data
+
+CREATE TABLE t_file_data (
+	tx_id                BIGINT NOT NULL
+	,file_data           BYTEA
+);
+
+\echo Creating table t_contract_result
+
+CREATE TABLE t_contract_result (
+	tx_id                BIGINT NOT NULL
+  ,function_params     BYTEA
+	,gas_supplied				 BIGINT
+	,call_result         BYTEA
+	,gas_used            BIGINT
+);
+
+\echo Creating table t_claim_data
+
+CREATE TABLE t_claim_data (
+	tx_id                BIGINT NOT NULL
+	,claim_data           BYTEA
+);
+
 -- CONSTRAINTS
 -- t_transactions
 \echo Creating constraints on t_transactions
@@ -172,6 +196,19 @@ ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_to_acc_id FOREIGN KEY (to_acc
 ALTER TABLE t_cryptotransferlists ADD CONSTRAINT fk_ctl_tx_id FOREIGN KEY (tx_id) REFERENCES t_transactions (id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE t_cryptotransferlists ADD CONSTRAINT fk_ctl_account_id FOREIGN KEY (account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE t_cryptotransferlists ADD CONSTRAINT fk_ctl_acc_id FOREIGN KEY (account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- t_file_data
+\echo Creating constraints on t_file_data
+
+ALTER TABLE t_file_data ADD CONSTRAINT fk_fd_tx_id FOREIGN KEY (tx_id) REFERENCES t_transactions (id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- t_contract_result
+\echo Creating constraints on t_contract_result
+
+ALTER TABLE t_contract_result ADD CONSTRAINT fk_cr_tx_id FOREIGN KEY (tx_id) REFERENCES t_transactions (id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+\echo Creating constraints on t_claim_data
+ALTER TABLE t_claim_data ADD CONSTRAINT fk_cd_tx_id FOREIGN KEY (tx_id) REFERENCES t_transactions (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- INDICES
 -- t_transactions
@@ -232,6 +269,17 @@ CREATE UNIQUE INDEX idx_t_entities_id_num_unq ON t_entities (id, entity_num);
 
 --t_transaction_types
 \echo Creating indices on t_transaction_types
+
+-- t_file_data
+\echo Creating indices on t_file_data
+CREATE INDEX idx_file_data_tx_id ON t_file_data (tx_id);
+
+-- t_contract_result
+\echo Creating indices on t_contract_result
+CREATE INDEX idx_contract_result_tx_id ON t_contract_result (tx_id);
+
+\echo Creating indices on t_claim_data
+CREATE INDEX idx_claim_data_tx_id ON t_claim_data (tx_id);
 
 -- VIEWS
 \echo Creating view v_event_files
@@ -327,6 +375,9 @@ GRANT ALL ON t_transaction_types TO :db_user;
 GRANT ALL ON t_entities TO :db_user;
 GRANT ALL ON t_account_balances TO :db_user;
 GRANT ALL ON t_account_balance_history TO :db_user;
+GRANT ALL ON t_file_data TO :db_user;
+GRANT ALL ON t_contract_result TO :db_user;
+GRANT ALL ON t_claim_data TO :db_user;
 
 GRANT SELECT ON v_cryptotransfers to :db_user;
 GRANT SELECT ON v_event_files to :db_user;
