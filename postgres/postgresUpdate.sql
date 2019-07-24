@@ -48,12 +48,13 @@ ALTER TABLE t_transactions ADD COLUMN transaction_id VARCHAR(60);
 
 \echo migrating data to t_transactions.transaction_id
 UPDATE t_transactions t
-set transaction_id =
-  SELECT '0.0.' || e.account_num || '-' || t2.seconds || '-' || t2.nanos
-  FROM t_transactions t2
-  , t_entities e
-  WHERE e.entity_id = t2.trans_account_id
-  AND   t.id = t2.id
+set transaction_id = (
+    SELECT '0.0.' || e.entity_num || '-' || t2.seconds || '-' || t2.nanos
+    FROM t_transactions t2
+    , t_entities e
+    WHERE e.id = t2.trans_account_id
+    AND   t.id = t2.id
+  )
 WHERE t.transaction_id IS NULL;
 
 \echo Setting t_transactions.transaction_id to NOT NULL
