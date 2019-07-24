@@ -62,7 +62,7 @@ public class NodeSignatureVerifier {
 			loadNodePubKey(nodeAddressBook);
 			//System.out.println(nodeAddressBook);
 		} catch (InvalidProtocolBufferException ex) {
-			log.error(MARKER, "Fail to parse NodeAddressBook from {}", nodeAddressBookLocation);
+			log.error(MARKER, "Fail to parse NodeAddressBook from {}, error {}", nodeAddressBookLocation, ex.getMessage());
 		}
 	}
 
