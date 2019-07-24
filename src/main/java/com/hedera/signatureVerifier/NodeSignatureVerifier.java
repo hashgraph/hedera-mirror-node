@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class NodeSignatureVerifier {
-	private static final Logger log = LogManager.getLogger("node-log");
+	private static final Logger log = LogManager.getLogger("recordStream-log");
 	private static final Marker MARKER = MarkerManager.getMarker("NodeSignatureVerifier");
 
 	private static String nodeAddressBookLocation;
