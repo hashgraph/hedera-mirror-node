@@ -325,11 +325,11 @@ public abstract class Downloader {
 			} catch(AmazonServiceException e) {
 				// The call was transmitted successfully, but Amazon S3 couldn't process
 				// it, so it returned an error response.
-	            log.error(MARKER, "Balance download failed, Exception: {}", e.getStackTrace());
+	            log.error(MARKER, "Signatures download failed, Exception: {}", e.getStackTrace());
 			} catch(SdkClientException e) {
 				// Amazon S3 couldn't be contacted for a response, or the client
 				// couldn't parse the response from Amazon S3.
-	            log.error(MARKER, "Balance download failed, Exception: {}", e.getStackTrace());
+	            log.error(MARKER, "Signatures download failed, Exception: {}", e.getStackTrace());
 			}
 		}
 
