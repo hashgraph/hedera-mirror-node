@@ -15,6 +15,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.Download;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
+import com.amazonaws.services.s3.transfer.internal.DownloadMonitor;
 import com.google.gson.JsonObject;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
@@ -41,7 +42,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class Downloader {
-	protected static final Logger log = LogManager.getLogger("node-log");
+	protected static final Logger log = LogManager.getLogger("recordStream-log");
 
 	protected static final Marker MARKER = MarkerManager.getMarker("DOWNLOADER");
 
@@ -161,6 +162,9 @@ public abstract class Downloader {
 			}
 			String prefix = s3Prefix + nodeAccountId + "/";
 			int count = 0;
+			int downloadCount = 0;
+			int maxDownloadCount = configLoader.getMaxDownloadItems();
+			
 			ListObjectsRequest listRequest = new ListObjectsRequest()
 					.withBucketName(bucketName)
 					.withPrefix(prefix)
@@ -170,13 +174,15 @@ public abstract class Downloader {
 			
 			ObjectListing objects = s3Client.listObjects(listRequest);
 			try {
-				while(true) {
+				while(downloadCount <= maxDownloadCount) {
 					List<S3ObjectSummary> summaries = objects.getObjectSummaries();
 					for(S3ObjectSummary summary : summaries) {
 						String s3ObjectKey = summary.getKey();
 						if (!s3ObjectKey.contains("latest")) { // ignore latest.csv
 							if ((s3ObjectKey.compareTo(prefix + lastValidFileName) > 0) || (lastValidFileName.contentEquals(""))) {
 								Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey);
+								if (maxDownloadCount != 0) downloadCount++;
+								
 								if (result.getLeft()) {
 									count++;
 									File file = result.getRight();
@@ -276,6 +282,9 @@ public abstract class Downloader {
 			// Get a list of objects in the bucket, 100 at a time
 			String prefix = s3Prefix + nodeAccountId + "/";
 			int count = 0;
+			int downloadCount = 0;
+			int downloadMax = configLoader.getMaxDownloadItems();
+			
 			ListObjectsRequest listRequest = new ListObjectsRequest()
 					.withBucketName(bucketName)
 					.withPrefix(prefix)
@@ -284,15 +293,18 @@ public abstract class Downloader {
 					.withMaxKeys(100);
 			ObjectListing objects = s3Client.listObjects(listRequest);
 			try {
-				while(true) {
+				while(downloadCount <= downloadMax) {
 					List<S3ObjectSummary> summaries = objects.getObjectSummaries();
 					for(S3ObjectSummary summary : summaries) {
+						if (downloadCount > downloadMax) break;
+						
 						String s3ObjectKey = summary.getKey();
 						if (isNeededSigFile(s3ObjectKey, type) &&
 						s3KeyComparator.compare(s3ObjectKey, prefix + lastValidFileName) > 0) {
 							Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey);
 							if (result.getLeft()) count++;
-
+							if (downloadMax != 0) downloadCount++;
+							
 							File sigFile = result.getRight();
 							if (sigFile != null) {
 								String fileName = sigFile.getName();
@@ -335,7 +347,12 @@ public abstract class Downloader {
 	 */
 	protected static Pair<Boolean, File> saveToLocal(String bucket_name,
 			String s3ObjectKey) throws IOException {
-		String filePath = configLoader.getDownloadToDir() + s3ObjectKey;
+		String filePath = configLoader.getDownloadToDir();
+		if (!filePath.endsWith("/")) {
+			filePath += "/";
+		}
+		filePath += s3ObjectKey;
+		
 		return saveToLocal(bucket_name, s3ObjectKey, filePath);
 	}
 

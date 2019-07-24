@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 import static java.lang.System.out;
 
 public class Utility {
-	private static final Logger log = LogManager.getLogger("node-log");
+	private static final Logger log = LogManager.getLogger("recordStream-log");
 	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
 
 	public static AccountID stringToAccountID(final String string) throws IllegalArgumentException{

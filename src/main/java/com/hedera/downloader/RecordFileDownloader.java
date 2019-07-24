@@ -125,11 +125,14 @@ public class RecordFileDownloader extends Downloader {
 
 		String lastDownloadedRcdSigName_new = null;
 
+		int downloadMax = configLoader.getMaxDownloadItems();
+		
 		for (String nodeAccountId : nodeAccountIds) {
-			String latestRcdSigKey = null;
-
 			log.info(MARKER, "Start downloading RecordStream files of node " + nodeAccountId);
+
+			String latestRcdSigKey = null;
 			long count = 0;
+			int downloadCount = 0;
 			// Get a list of objects in the bucket, 100 at a time
 			String prefix = "recordstreams/record" + nodeAccountId + "/";
 
@@ -141,15 +144,17 @@ public class RecordFileDownloader extends Downloader {
 					.withMaxKeys(100);
 			ObjectListing objects = s3Client.listObjects(listRequest);
 			try {
-				while(true) {
+				while(downloadCount <= downloadMax) {
 					List<S3ObjectSummary> summaries = objects.getObjectSummaries();
 					for(S3ObjectSummary summary : summaries) {
+						if (downloadCount > downloadMax) break;
 						String s3ObjectKey = summary.getKey();
 						Pair<Boolean, File> result;
 						try {
 							result = saveToLocal(bucketName, s3ObjectKey);
 							if (result.getLeft()) {
 								count++;
+								if (downloadMax != 0) downloadCount++;
 							}
 							if (result.getRight() != null && Utility.isRecordSigFile(s3ObjectKey)
 									&& (latestRcdSigKey == null || s3KeyComparator.compare(s3ObjectKey, latestRcdSigKey) > 0)){

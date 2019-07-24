@@ -17,7 +17,7 @@ import org.apache.logging.log4j.MarkerManager;
 
 public class CryptoServiceMirror extends CryptoServiceGrpc.CryptoServiceImplBase {
 
-	private static final Logger log = LogManager.getLogger("node-log");
+	private static final Logger log = LogManager.getLogger("recordStream-log");
 	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
 
 	public CryptoServiceMirror() {

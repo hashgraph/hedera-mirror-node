@@ -119,6 +119,14 @@ docker run --name=hedera-mirrornode -p 127.0.0.1:8080:8080 hedera/mirrornode:lat
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### node-log has been removes from log4.xml
+
+All logging now goes to a single recordStream-log
+
+### Addition of maxDownloadItems parameter in config.json file
+
+For testing purposes, this value may be set to a number other than 0. This will limit the number of downloaded files accordingly. If set to 0, all files are downloaded from S3 or GCP.
+
 ### Addition of a postgresUpdate.sql script
 
 This script contains the incremental changes to the database in the event you need to upgrade an older version of the database to the current version.

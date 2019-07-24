@@ -30,7 +30,7 @@ import java.lang.reflect.Method;
 
 public class ServiceAgent {
 
-	private static final Logger log = LogManager.getLogger("node-log");
+	private static final Logger log = LogManager.getLogger("recordStream-log");
 	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
 
 	public ServiceAgent() {
