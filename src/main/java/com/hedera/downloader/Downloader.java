@@ -177,6 +177,9 @@ public abstract class Downloader {
 				while(downloadCount <= maxDownloadCount) {
 					List<S3ObjectSummary> summaries = objects.getObjectSummaries();
 					for(S3ObjectSummary summary : summaries) {
+						if (downloadCount > maxDownloadCount) {
+							break;
+						}
 						String s3ObjectKey = summary.getKey();
 						if (!s3ObjectKey.contains("latest")) { // ignore latest.csv
 							if ((s3ObjectKey.compareTo(prefix + lastValidFileName) > 0) || (lastValidFileName.contentEquals(""))) {
@@ -190,8 +193,8 @@ public abstract class Downloader {
 										String fileName = file.getName();
 										files.add(fileName);
 									}
-								} else {
-									log.error(MARKER, "File {} failed to download from S3", s3ObjectKey);
+								} else if (result.getRight() == null) {
+									log.error(MARKER, "File {} failed to download from cloud", s3ObjectKey);
 								}
 							}
 						}
