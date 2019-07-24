@@ -165,7 +165,6 @@ ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_from_account_id FOREIGN KEY (
 ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_to_account_id FOREIGN KEY (to_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_from_acc_id FOREIGN KEY (from_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_to_acc_id FOREIGN KEY (to_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_to_account_id FOREIGN KEY (to_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- t_cryptotransferlists
 \echo Creating constraints on t_cryptotransferlists
