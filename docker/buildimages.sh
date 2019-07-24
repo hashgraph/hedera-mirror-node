@@ -1,6 +1,16 @@
-docker build -t hedera/mirrornode-db -f Postgres ../
-docker build -t hedera/mirrornode-rcd-down -f RecordsDownloader ../
-docker build -t hedera/mirrornode-rcd-parse -f RecordsParser ../
-docker build -t hedera/mirrornode-bal-down -f BalanceDownloader ../
-docker build -t hedera/mirrornode-bal-parse -f BalanceParser ../
+#!/bin/sh
 
+mkdir runtime
+mkdir runtime/config
+
+cd ..
+
+mvn install -DskipTests
+
+cd docker
+
+cp -r ../postgres/postgresInit.sql .
+cp -r ../config/* runtime/config/
+cp -r ../target/* runtime
+
+docker-compose up

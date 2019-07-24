@@ -1,0 +1,5 @@
+POSTGRES_DB=hederamirror
+POSTGRES_USER=hederamirror
+POSTGRES_PASSWORD=mysecretpassword
+POSTGRES_PORT=5432
+PGDATA=/var/lib/postgresql/data/pgdata

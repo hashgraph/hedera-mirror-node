@@ -1,0 +1,31 @@
+version: '3.3'
+services:
+  mirror-node-postgres:
+    build:
+      context: ./
+      dockerfile: Postgres
+    env_file:
+      - .env
+    volumes:
+      - ./MirrorNodePostgresData:/var/lib/postgresql/data
+    ports:
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+  mirror-node-volume-inspector:
+    image: "alpine:latest"
+    tty: true
+    volumes:
+      - ./MirrorNodePostgresData:/PostgresData
+      - ./MirrorNodeData:/MirrorNodeData
+      - ./runtime:/MirrorNodeCode
+  mirror-node-balance-downloader:
+    build:
+      context: ./
+      dockerfile: BalanceDownloader
+    tty: true
+    working_dir: /MirrorNodeCode
+    env_file:
+      - .env
+    volumes:
+      - ./MirrorNodeData:/MirrorNodeData
+      - ./runtime:/MirrorNodeCode
+  #  command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
