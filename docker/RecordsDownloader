@@ -24,4 +24,4 @@ ADD ./config/config.json ./config/config.json
 # log configuration
 ADD ./config/log4j2.xml log4j2.xml
 
-CMD java -Dlog4j.configurationFile=./log4j2.xml -jar mirrorNode.jar com.hedera.downloader.RecordFileDownloader
+CMD java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.downloader.RecordFileDownloader
