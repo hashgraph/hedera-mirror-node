@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import com.google.protobuf.TextFormat;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirrorNodeProxy.Utility;
+import com.hedera.recordFileLogger.LoggerStatus;
 import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -44,20 +45,27 @@ public class RecordFileParser {
 	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 
 	private static ConfigLoader configLoader;
+	private static LoggerStatus loggerStatus;
+	
+	private enum LoadResult {
+		OK
+		,STOP
+		,ERROR
+	}
 	
 	/**
 	 * Given a service record name, read and parse and return as a list of service record pair
 	 *
 	 * @param fileName
 	 * 		the name of record file to read
-	 * @return return previous file hash and list of transaction and record pairs
+	 * @return return previous file hash 
 	 */
-	static public Pair<byte[], List<Pair<Transaction, TransactionRecord>>> loadRecordFile(String fileName) {
+	static public LoadResult loadRecordFile(String fileName, String previousFileHash) {
+
 		File file = new File(fileName);
 		FileInputStream stream = null;
-		List<Pair<Transaction, TransactionRecord>> txList = new LinkedList<>();
-		byte[] prevFileHash = null;
-
+		String newFileHash = "";
+		
 		if (file.exists() == false) {
 			log.info(MARKER, "File does not exist " + fileName);
 			return null;
@@ -70,7 +78,6 @@ public class RecordFileParser {
 				stream = new FileInputStream(file);
 				DataInputStream dis = new DataInputStream(stream);
 	
-				prevFileHash = new byte[48];
 				int record_format_version = dis.readInt();
 				int version = dis.readInt();
 	
@@ -84,8 +91,23 @@ public class RecordFileParser {
 	
 						switch (typeDelimiter) {
 							case TYPE_PREV_HASH:
-								dis.read(prevFileHash);
-								log.info(MARKER, "Previous file Hash = " + Hex.encodeHexString(prevFileHash));
+								byte[] readFileHash = new byte[48];
+								dis.read(readFileHash);
+								if (previousFileHash.isEmpty()) {
+									log.error(MARKER, "Previous file Hash not available");
+									previousFileHash = Hex.encodeHexString(readFileHash);
+								} else {
+									log.info(MARKER, "Previous file Hash = " + previousFileHash);
+								}
+								newFileHash = Hex.encodeHexString(readFileHash);
+								
+								if (!newFileHash.contentEquals(previousFileHash)) {
+									if (configLoader.stopLoggingIfHashMismatch()) {
+										log.error(MARKER, "Previous file Hash Mismatch - stopping loading. Previous = {}, Current = {}", previousFileHash, newFileHash);
+										return LoadResult.STOP;
+									}
+								}
+								
 								break;
 							case TYPE_RECORD:
 								int byteLength = dis.readInt();
@@ -99,8 +121,6 @@ public class RecordFileParser {
 								dis.readFully(rawBytes);
 								TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
 	
-								txList.add(Pair.of(transaction, txRecord));
-	
 								counter++;
 								
 								if (RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord)) {
@@ -110,7 +130,7 @@ public class RecordFileParser {
 									log.info(MARKER, "Record = {}\n=============================\n",  TextFormat.shortDebugString(txRecord));
 									break;
 								} else {
-									return null;
+									return LoadResult.ERROR;
 								}
 							case TYPE_SIGNATURE:
 								int sigLength = dis.readInt();
@@ -121,7 +141,7 @@ public class RecordFileParser {
 								if (RecordFileLogger.storeSignature(Hex.encodeHexString(sigBytes))) {
 									break;
 								} else {
-									return null;
+									return LoadResult.ERROR;
 								}
 	
 							default:
@@ -130,34 +150,38 @@ public class RecordFileParser {
 	
 					} catch (Exception e) {
 						log.error(LOGM_EXCEPTION, "Exception ", e);
-						return null;
+						return LoadResult.ERROR;
 					}
 				}
 				dis.close();
 			} catch (FileNotFoundException e) {
 				log.error(MARKER, "File Not Found Error");
-				return null;
+				return LoadResult.ERROR;
 			} catch (IOException e) {
 				log.error(MARKER, "IOException Error");
-				return null;
+				return LoadResult.ERROR;
 			} catch (Exception e) {
 				log.error(MARKER, "Parsing Error");
-				return null;
+				return LoadResult.ERROR;
 			} finally {
 				try {
 					if (stream != null)
 						stream.close();
 					if (!RecordFileLogger.completeFile()) {
-						return null;
+						return LoadResult.ERROR;
 					}
 				} catch (IOException ex) {
 					log.error("Exception in close the stream {}", ex);
-					return null;
+					loggerStatus.setLastProcessedRcdHash(newFileHash);
+					loggerStatus.saveToFile();
+					return LoadResult.OK;
 				}
 			}
-			return Pair.of(prevFileHash, txList);
+			loggerStatus.setLastProcessedRcdHash(newFileHash);
+			loggerStatus.saveToFile();
+			return LoadResult.OK;
 		} else {
-			return null;
+			return LoadResult.ERROR;
 		}
 		
 	}
@@ -167,26 +191,18 @@ public class RecordFileParser {
 	 */
 	static public void loadRecordFiles(List<String> fileNames) {
 
-		byte[] calculatedPrevHash = null;
+		String prevFileHash = loggerStatus.getLastProcessedRcdHash();
+
 		for (String name : fileNames) {
-			Pair<byte[], List<Pair<Transaction, TransactionRecord>>> result = loadRecordFile(name);
-			if (result != null) {
-				byte[] readPrevHash = result.getKey();
-				if (calculatedPrevHash != null) {
-					if (!Arrays.equals(calculatedPrevHash, readPrevHash)) {
-	
-						log.error(LOGM_EXCEPTION, "calculatedPrevHash " + Hex.encodeHexString(calculatedPrevHash));
-						log.error(LOGM_EXCEPTION, "readPrevHash       " + Hex.encodeHexString(readPrevHash));
-						log.error(LOGM_EXCEPTION, "Error Exception, hash does not match: " + name);
-	
-					}
-				}
-				byte[] thisFileHash = getFileHash(name);
-				calculatedPrevHash = thisFileHash;
-	
+			LoadResult result = loadRecordFile(name, prevFileHash);
+
+			if (result == LoadResult.STOP) {
+				return;
+			}
+
+			prevFileHash = Utility.bytesToHex(RecordFileParser.getFileHash(name));
+			if (result == LoadResult.OK) {
 				moveFileToParsedDir(name);
-				log.info(MARKER, "File Hash = {} \n==========================================================",
-						Hex.encodeHexString(thisFileHash));
 			}
 		}
 	}
@@ -210,6 +226,8 @@ public class RecordFileParser {
 		String pathName;
 
 		configLoader = new ConfigLoader("./config/config.json");
+		loggerStatus = new LoggerStatus("./config/loggerStatus.json");
+		
 		pathName = configLoader.getDefaultParseDir();
 		log.info(MARKER, "Record files folder got from configuration file: {}", configLoader.getDefaultParseDir());
 
@@ -220,8 +238,7 @@ public class RecordFileParser {
 				File file = new File(pathName);
 				if (file.isFile()) {
 					log.info(MARKER, "Loading record file {} " + pathName);
-	
-					loadRecordFile(pathName);
+					loadRecordFile(pathName, "");
 				} else if (file.isDirectory()) { //if it's a directory
 	
 					String[] files = file.list(); // get all files under the directory

@@ -119,6 +119,13 @@ docker run --name=hedera-mirrornode -p 127.0.0.1:8080:8080 hedera/mirrornode:lat
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Addition of stopLoggingIfHashMismatch configuration item
+
+When processing files after they have been downloaded, this flag will determine whether file processing should continue or stop in the event of a mismatch between the hash of the last file processed and the hash held for the previous file in the file being processed.
+
+If set to `true` : Any mismatch in the sequence of file hashes will bring the processing to a stop, the missing file has to be downloaded in order for processing to be able to continue.
+If set to `false`: Hash sequence mismatches will be logged but ignored and processing will continue until there are no files to process.
+
 ### node-log has been removes from log4.xml
 
 All logging now goes to a single recordStream-log

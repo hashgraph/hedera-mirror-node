@@ -68,7 +68,7 @@ public class RecordFileDownloader extends Downloader {
 
 	/**
 	 * Check if there is any missing .rcd file:
-	 * (1) Sort .rcd files by timetamp,
+	 * (1) Sort .rcd files by timestamp,
 	 * (2) Verify the .rcd files to see if the file Hash matches prevFileHash
 	 * @param validDir
 	 */

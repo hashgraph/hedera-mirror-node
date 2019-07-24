@@ -80,6 +80,8 @@ public class ConfigLoader {
 	//location of record files on S3
 	private static String recordFilesS3Location = "./recordstreams/record";
 
+	private static boolean stopLoggingIfHashMismatch = true;
+	
 	//database url
     private static String dbUrl = "";
     // database user
@@ -183,6 +185,9 @@ public class ConfigLoader {
 			}
 			if (jsonObject.has("maxDownloadItems")) {
 				maxDownloadItems = jsonObject.get("maxDownloadItems").getAsInt();
+			}
+			if (jsonObject.has("stopLoggingIfHashMismatch")) {
+				stopLoggingIfHashMismatch = jsonObject.get("stopLoggingIfHashMismatch").getAsBoolean();
 			}
 		} catch (FileNotFoundException ex) {
 			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configPath, ex.getStackTrace());
@@ -290,6 +295,10 @@ public class ConfigLoader {
 	
 	public int getMaxDownloadItems() {
 		return maxDownloadItems;	
+	}
+	
+	public boolean stopLoggingIfHashMismatch() {
+		return stopLoggingIfHashMismatch;
 	}
 
 	public void setLastValidBalanceFileName(String name) {

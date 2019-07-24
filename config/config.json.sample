@@ -15,5 +15,6 @@
   "dbUrl": "jdbc:mysql://127.0.0.1:3306/hederamirror?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC",
   "dbUsername": "hederamirror",
   "dbPassword": "mysecretpassword",
-  "maxDownloadItems": 0
+  "maxDownloadItems": 0,
+  "stopLoggingIfHashMismatch": true
 }
