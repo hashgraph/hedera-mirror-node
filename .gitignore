@@ -31,3 +31,8 @@ config/config.json.gcp
 config/config.json.s3
 recordstreams/
 output/
+docker/MirrorNodeData/
+docker/runtime/
+docker/postgresInit.sql
+docker/.env
+docker/MirrorNodePostgresData/
