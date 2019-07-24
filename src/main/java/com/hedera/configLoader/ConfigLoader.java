@@ -21,7 +21,7 @@ import java.io.IOException;
 
 public class ConfigLoader {
 
-	private static final Logger log = LogManager.getLogger("node-log");
+	private static final Logger log = LogManager.getLogger("recordStream-log");
 	private static final Marker MARKER = MarkerManager.getMarker("ConfigLoader");
 
 	public enum CLOUD_PROVIDER {
@@ -51,7 +51,7 @@ public class ConfigLoader {
 	private static String downloadToDir = "./recordstreams";
 
 	// the default directory to be parsed
-	private static String defaultParseDir = "./recordstreams/record0.0.3/";
+	private static String defaultParseDir = "./recordstreams/valid/";
 
 	// the port of mirrorNodeProxy;
 	private static int proxyPort = 50777;
@@ -86,6 +86,8 @@ public class ConfigLoader {
     private static String dbUserName = "";
     // database password
     private static String dbPassword = "";
+    // max download items for testing
+    private static int maxDownloadItems = 0;
 	
 	private static String configSavePath = "./config/config.json";
 
@@ -178,6 +180,9 @@ public class ConfigLoader {
 				if (jsonObject.has("dbPassword")) {
 					dbPassword = jsonObject.get("dbPassword").getAsString();
 				}
+			}
+			if (jsonObject.has("maxDownloadItems")) {
+				maxDownloadItems = jsonObject.get("maxDownloadItems").getAsInt();
 			}
 		} catch (FileNotFoundException ex) {
 			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configPath, ex.getStackTrace());
@@ -281,6 +286,10 @@ public class ConfigLoader {
 	}
 	public String getDBPassword() {
 		return dbPassword;
+	}
+	
+	public int getMaxDownloadItems() {
+		return maxDownloadItems;	
 	}
 
 	public void setLastValidBalanceFileName(String name) {
