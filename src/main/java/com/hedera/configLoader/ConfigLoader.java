@@ -176,6 +176,7 @@ public class ConfigLoader {
 			if (jsonObject.has("recordFilesS3Location")) {
 				recordFilesS3Location = jsonObject.get("recordFilesS3Location").getAsString();
 			}
+			dbUrl = dotEnv.get("HEDERA_MIRROR_DB_URL");
 			if (jsonObject.has("dbUrl")) {
 				dbUrl = jsonObject.get("dbUrl").getAsString();
 			}

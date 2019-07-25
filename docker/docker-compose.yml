@@ -1,5 +1,6 @@
 version: '3.3'
 services:
+  # this is the database container
   mirror-node-postgres:
     build:
       context: ./
@@ -8,24 +9,41 @@ services:
       - .env
     volumes:
       - ./MirrorNodePostgresData:/var/lib/postgresql/data
+      - ./runtime:/MirrorNodeCode
     ports:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
-  mirror-node-volume-inspector:
-    image: "alpine:latest"
-    tty: true
-    volumes:
-      - ./MirrorNodePostgresData:/PostgresData
-      - ./MirrorNodeData:/MirrorNodeData
-      - ./runtime:/MirrorNodeCode
+    command: ./MirrorNodeCode/wait-for-postgres.sh
+
+  # this downloads balance files, its behaviour is controlled by ./config/config.json
   mirror-node-balance-downloader:
     build:
       context: ./
-      dockerfile: BalanceDownloader
-    tty: true
+      dockerfile: MirrorNodeImage
     working_dir: /MirrorNodeCode
     env_file:
       - .env
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-  #  command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
+    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
+
+  # this processes balance files and puts the result in the database, its behaviour is controlled by ./config/config.json
+  mirror-node-balance-parser:
+    build:
+      context: ./
+      dockerfile: MirrorNodeImage
+    tty: true
+    depends_on:
+      - mirror-node-postgres
+    environment:
+      - HEDERA_MIRROR_DB_URL=jdbc:postgresql://mirror-node-postgres:${POSTGRES_PORT}/${POSTGRES_DB}
+      - HEDERA_MIRROR_DB_USER=${POSTGRES_USER}
+      - HEDERA_MIRROR_DB_PASS=${POSTGRES_PASSWORD}
+    working_dir: /MirrorNodeCode
+    env_file:
+      - .env
+    volumes:
+      - ./MirrorNodeData:/MirrorNodeData
+      - ./runtime:/MirrorNodeCode
+    # command: >
+    #   sh -c "while !</dev/tcp/mirror-node-postgres/${POSTGRES_PORT}; do sleep 1; done;"
