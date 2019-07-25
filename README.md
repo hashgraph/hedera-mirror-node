@@ -119,6 +119,10 @@ docker run --name=hedera-mirrornode -p 127.0.0.1:8080:8080 hedera/mirrornode:lat
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Database URL as environment parameter
+
+The connection to the database can be specified as an environment variable `HEDERA_MIRROR_DB_URL` or added to the `.env.` file.
+
 ### Added optional persistence of crypto transfers, file contents, contract creation and call results and claim data
 
 The `config.json` file now contains four addition parameters as follows:
