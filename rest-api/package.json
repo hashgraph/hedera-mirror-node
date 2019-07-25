@@ -1,0 +1,25 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "REST API for Hedera mirror node",
+  "main": "server.js",
+  "scripts": {
+    "test": "jest --watchAll",
+    "dev": "nodemon app.js"
+  },
+  "author": "Atul Mahamuni",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^8.0.0",
+    "express": "^4.17.1",
+    "log4js": "^4.3.1",
+    "pg": "^7.11.0"
+  },
+  "devDependencies": {
+    "jest": "^24.8.0",
+    "nodemon": "^1.19.1",
+    "supertest": "^4.0.2"
+  }
+}
