@@ -121,6 +121,10 @@ Besides bug fixes, some features may have changed with this release which need y
 
 ### Database URL as environment parameter
 
+Added columns to t_entities to record expiry time, autorenew period, keys and proxy account.
+
+### Database URL as environment parameter
+
 The connection to the database can be specified as an environment variable `HEDERA_MIRROR_DB_URL` or added to the `.env.` file.
 
 ### Added optional persistence of crypto transfers, file contents, contract creation and call results and claim data
