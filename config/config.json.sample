@@ -5,8 +5,8 @@
   "accessKey": "",
   "secretKey": "",
   "downloadPeriodSec": 120,
-  "downloadToDir": "./",
-  "defaultParseDir": "./recordstreams/valid/",
+  "downloadToDir": "/MirrorNodeData",
+  "defaultParseDir": "/MirrorNodeData/recordstreams/valid/",
   "proxyPort": 50777,
   "nodeInfoFile": "./config/nodesInfo.json",
   "addressBookFile": "./config/0.0.102",
@@ -18,7 +18,7 @@
   "maxDownloadItems": 0,
   "stopLoggingIfHashMismatch": true,
   "persistClaims": false,
-  "persistFiles": "NONE",
+  "persistFiles": "ALL",
   "persistContracts": false,
   "persistCryptoTransferAmounts": false
 }
