@@ -121,6 +121,12 @@ Besides bug fixes, some features may have changed with this release which need y
 
 ### Database URL as environment parameter
 
+Added version numbering to the database to make upgrades easier.
+The `t_version` table contains the current version of the database.
+The upgrade scripts only apply changes that pertain to the current version of the database and update it when complete.
+
+### Database URL as environment parameter
+
 Added columns to t_entities to record expiry time, autorenew period, keys and proxy account.
 
 ### Database URL as environment parameter
