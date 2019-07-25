@@ -37,87 +37,13 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 `cd target`
 
-## Docker images
-
-### Volumes
-
-docker volume create MirrorNodePostgresData
-docker volume create MirrorNodeData
-
-### Database
-
-```shell
-cd docker
-docker build -t hedera/mirrornode-db -f Postgres ../
-docker run --name=hedera-mirrornode-db -d -p 127.0.0.1:5432:5432 --mount source=MirrorNodePostgresData,target=/var/lib/postgresql/data/pgdata hedera/mirrornode-db:latest
-```
-
-### Compile the mirror node software
-
-```shell
-mvn install -DskipTests
-```
-
-### Record files downloader
-
-```shell
-cd docker
-docker build -t hedera/mirrornode-rcd-down -f RecordsDownloader ../
-docker run --name=hedera-mirrornode-rcd-down -d --mount type=volume,source=MirrorNodeData,target=/mirrordata hedera/mirrornode-rcd-down:latest
-```
-
-### Record files parser and logger
-
-```shell
-cd docker
-docker build -t hedera/mirrornode-rcd-parse -f RecordsParser ../
-docker run --name=hedera-mirrornode-rcd-parse -d --mount source=MirrorNodeData,target=/mirrordata hedera/mirrornode-rcd-parse:latest
-```
-
-### Balance files downloader
-
-```shell
-cd docker
-docker build -t hedera/mirrornode-bal-down -f BalanceDownloader ../
-docker run --name=hedera-mirrornode-bal-down -d --mount source=MirrorNodeData,target=/mirrordata hedera/mirrornode-bal-down:latest
-```
-
-### Balance files parser and logger
-
-```shell
-cd docker
-docker build -t hedera/mirrornode-bal-parse -f BalanceParser ../
-docker run --name=hedera-mirrornode-bal-parse -d --mount source=MirrorNodeData,target=/mirrordata hedera/mirrornode-bal-parse:latest
-```
-
-### Proxy
-
-### Volume inspector
-
-Some operating systems won't enable you to look at the data mounted in volumes, this image will give you access to the data.
-
-- the `MirrorNodePostgresData` volume is mounted to `/databasedata`
-- the `MirrorNodeData` volume is mounted to `/mirrordata`
-
-```shell
-cd docker
-docker build -t hedera/mirrornode-vol-inspect -f VolumeInspector ../
-docker run --name=hedera-mirrornode-vol-inspect -d --mount source=MirrorNodeData,target=/mirrordata --mount source=MirrorNodePostgresData,target=/databasedata hedera/mirrornode-vol-inspect:latest
-```
-
-Assuming configuration files have been properly set up.
-
-Run
-
-```shell
-mvn install -DskipTests
-docker build -t hedera/mirrornode .
-docker run --name=hedera-mirrornode -p 127.0.0.1:8080:8080 hedera/mirrornode:latest
-```
-
 ## Changes since last release
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
+
+### Switched from individual docker containers to docker-compose
+
+Docker compose scripts are available in the `docker` folder. A `buildImages.sh` script ensures the necessary data is available to the images via volumes.
 
 ### Database URL as environment parameter
 
