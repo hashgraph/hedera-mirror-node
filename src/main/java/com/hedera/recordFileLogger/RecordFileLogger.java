@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -16,8 +17,14 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -88,6 +95,19 @@ public class RecordFileLogger implements LoggerInterface {
     	,CLAIM_DATA
     }
     
+    enum F_ENTITIES {
+    	ZERO
+    	,SHARD
+    	,REALM
+    	,NUM
+    	,EXP_TIME_SECONDS
+    	,EXP_TIME_NANOS
+    	,AUTO_RENEW
+    	,ADMIN_KEY
+    	,KEY
+    	,PROXY_ACCOUNT_ID
+    }
+    
 	public static boolean start() {
         connect = DatabaseUtilities.openDatabase(connect);
         if (connect == null) {
@@ -104,7 +124,112 @@ public class RecordFileLogger implements LoggerInterface {
         }
     	return true;
 	}
-	public static long createOrGetEntity(long shard, long realm, long num) throws SQLException {
+	public static long updateEntity(long shard, long realm, long num, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long proxy_account_id) throws SQLException {
+	    
+		long entityId = 0;
+		
+	    if (shard + realm + num == 0 ) {
+	        return 0;
+	    }
+	    // build the SQL to prepare a statement
+	    String sqlUpdate = "UPDATE t_entities SET ";
+	    int fieldCount = 0;
+	    boolean bDoComma = false;
+	    
+	    if ((exp_time_seconds != 0) || (exp_time_nanos != 0)) {
+	    	sqlUpdate += " exp_time_seconds = ?";
+	    	sqlUpdate += ",exp_time_nanos = ?";
+	    	bDoComma = true;
+	    	
+	    }
+	    if (auto_renew_period != 0) {
+	    	if (bDoComma) sqlUpdate += ",";
+	    	sqlUpdate += "auto_renew_period = ?";
+	    	bDoComma = true;
+	    }
+	    
+	    if (admin_key != null) {
+	    	if (bDoComma) sqlUpdate += ",";
+	    	sqlUpdate += "admin_key = ?";
+	    	bDoComma = true;
+	    }
+
+	    if (key != null) {
+	    	if (bDoComma) sqlUpdate += ",";
+	    	sqlUpdate += "key = ?";
+	    	bDoComma = true;
+	    }
+
+	    if (proxy_account_id != 0) {
+	    	if (bDoComma) sqlUpdate += ",";
+	    	sqlUpdate += "proxy_account_id = ?";
+	    	bDoComma = true;
+	    }
+	    
+	    sqlUpdate += " WHERE entity_shard = ?";
+	    sqlUpdate += " AND entity_realm = ?";
+	    sqlUpdate += " AND entity_num = ?";
+	    sqlUpdate += " RETURNING id";
+
+	    // inserts or returns an existing entity
+        PreparedStatement updateEntity = connect.prepareStatement(sqlUpdate);
+
+	    if ((exp_time_seconds != 0) || (exp_time_nanos != 0)) {
+        	updateEntity.setLong(1, exp_time_seconds);        	
+        	updateEntity.setLong(2, exp_time_nanos);
+        	fieldCount = 2;
+	    }
+	    
+	    if (auto_renew_period != 0) {
+	    	fieldCount += 1;
+	    	updateEntity.setLong(fieldCount, auto_renew_period);
+	    }
+	    
+	    if (admin_key != null) {
+	    	fieldCount += 1;
+    		updateEntity.setBytes(fieldCount, admin_key);
+	    }
+
+	    if (key != null) {
+	    	fieldCount += 1;
+    		updateEntity.setBytes(fieldCount, key);
+	    }
+
+	    if (proxy_account_id != 0) {
+	    	fieldCount += 1;
+	    	updateEntity.setLong(fieldCount, proxy_account_id);
+	    }
+	    
+    	fieldCount += 1;
+	    updateEntity.setLong(fieldCount, shard);
+    	fieldCount += 1;
+        updateEntity.setLong(fieldCount, realm);
+    	fieldCount += 1;
+        updateEntity.setLong(fieldCount, num);
+
+        updateEntity.execute();
+        
+        ResultSet newId = updateEntity.getResultSet();
+        newId.next();
+        entityId = newId.getLong(1);
+        newId.close();
+        updateEntity.close();
+        
+        return entityId;
+	    
+	}
+
+	public static long updateEntity(FileID fileId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long proxy_account_id) throws SQLException {
+		return updateEntity(fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+	}
+	public static long updateEntity(ContractID contractId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long proxy_account_id) throws SQLException {
+		return updateEntity(contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+	}
+	public static long updateEntity(AccountID accountId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long proxy_account_id) throws SQLException {
+		return updateEntity(accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+	}
+
+	public static long createEntity(long shard, long realm, long num, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long proxy_account_id) throws SQLException {
 	    long entityId = 0;
 	    
 	    if (shard + realm + num == 0 ) {
@@ -113,15 +238,44 @@ public class RecordFileLogger implements LoggerInterface {
 	    
 	    // inserts or returns an existing entity
         PreparedStatement insertEntity = connect.prepareStatement(
-                "insert into t_entities (entity_shard, entity_realm, entity_num) values (?, ?, ?)"
+                "INSERT INTO t_entities (entity_shard, entity_realm, entity_num, exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, proxy_account_id)"
+        		+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 + " ON CONFLICT (entity_shard, entity_realm, entity_num) "
                 + " DO UPDATE"
                 + " SET entity_shard = EXCLUDED.entity_shard"
                 + " RETURNING id");
         
-        insertEntity.setLong(1, shard);
-        insertEntity.setLong(2, realm);
-        insertEntity.setLong(3, num);
+        insertEntity.setLong(F_ENTITIES.SHARD.ordinal(), shard);
+        insertEntity.setLong(F_ENTITIES.REALM.ordinal(), realm);
+        insertEntity.setLong(F_ENTITIES.NUM.ordinal(), num);
+        if ((exp_time_seconds == 0) && (exp_time_nanos == 0)) {
+        	insertEntity.setObject(F_ENTITIES.EXP_TIME_SECONDS.ordinal(), null);        	
+        	insertEntity.setObject(F_ENTITIES.EXP_TIME_NANOS.ordinal(), null);
+        } else {
+        	insertEntity.setLong(F_ENTITIES.EXP_TIME_SECONDS.ordinal(), exp_time_seconds);        	
+        	insertEntity.setLong(F_ENTITIES.EXP_TIME_NANOS.ordinal(), exp_time_nanos);
+        }
+        if (auto_renew_period == 0) {
+        	insertEntity.setObject(F_ENTITIES.AUTO_RENEW.ordinal(), null);
+        } else {
+        	insertEntity.setLong(F_ENTITIES.AUTO_RENEW.ordinal(), auto_renew_period);        	
+        }
+
+    	if (admin_key == null) {
+    		insertEntity.setObject(F_ENTITIES.ADMIN_KEY.ordinal(), null);
+    	} else {
+    		insertEntity.setBytes(F_ENTITIES.ADMIN_KEY.ordinal(), admin_key);
+    	}
+    	if (key == null) {
+    		insertEntity.setObject(F_ENTITIES.KEY.ordinal(), null);
+    	} else {
+    		insertEntity.setBytes(F_ENTITIES.KEY.ordinal(), key);
+    	}
+    	if (proxy_account_id == 0) {
+    		insertEntity.setObject(F_ENTITIES.PROXY_ACCOUNT_ID.ordinal(), null);
+    	} else {
+    		insertEntity.setLong(F_ENTITIES.PROXY_ACCOUNT_ID.ordinal(), proxy_account_id);
+    	}
         insertEntity.execute();
         ResultSet newId = insertEntity.getResultSet();
         newId.next();
@@ -132,7 +286,46 @@ public class RecordFileLogger implements LoggerInterface {
         return entityId;
 	    
 	}
-    public static long createOrGetEntity(FileID fileId) throws SQLException {
+
+	public static long createEntity(FileID fileId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long proxy_account_id) throws SQLException {
+		return createEntity(fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+	}
+	public static long createEntity(ContractID contractId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long proxy_account_id) throws SQLException {
+		return createEntity(contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+	}
+	public static long createEntity(AccountID accountId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long proxy_account_id) throws SQLException {
+		return createEntity(accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+	}
+	public static long createOrGetEntity(long shard, long realm, long num) throws SQLException {
+	    long entityId = 0;
+	    
+	    if (shard + realm + num == 0 ) {
+	        return 0;
+	    }
+	    
+	    // inserts or returns an existing entity
+        PreparedStatement insertEntity = connect.prepareStatement(
+                "INSERT INTO t_entities (entity_shard, entity_realm, entity_num)"
+        		+ " VALUES (?, ?, ?)"
+                + " ON CONFLICT (entity_shard, entity_realm, entity_num) "
+                + " DO UPDATE"
+                + " SET entity_shard = EXCLUDED.entity_shard"
+                + " RETURNING id");
+        
+        insertEntity.setLong(F_ENTITIES.SHARD.ordinal(), shard);
+        insertEntity.setLong(F_ENTITIES.REALM.ordinal(), realm);
+        insertEntity.setLong(F_ENTITIES.NUM.ordinal(), num);
+        insertEntity.execute();
+        ResultSet newId = insertEntity.getResultSet();
+        newId.next();
+        entityId = newId.getLong(1);
+        newId.close();
+        insertEntity.close();
+        
+        return entityId;
+	}
+
+	public static long createOrGetEntity(FileID fileId) throws SQLException {
         return createOrGetEntity(fileId.getShardNum(), fileId.getRealmNum(), fileId.getFileNum());
     }
     public static long createOrGetEntity(ContractID contractId) throws SQLException {
@@ -207,7 +400,7 @@ public class RecordFileLogger implements LoggerInterface {
 					+ " (tx_id, file_data)"
 					+ " VALUES (?, ?)");
 			
-			PreparedStatement sqlInsertContractCall = connect.prepareStatement("INSERT INTO t_contract_result)"
+			PreparedStatement sqlInsertContractCall = connect.prepareStatement("INSERT INTO t_contract_result"
 					+ " (tx_id, function_params, gas_supplied, call_result, gas_used)" 
 					+ " VALUES (?, ?, ?, ?, ?)");
 			
@@ -252,28 +445,55 @@ public class RecordFileLogger implements LoggerInterface {
             long entityId = 0;
             long initialBalance = 0;
             
-            if (txRecord.getReceipt().hasFileID()) {
-                entityId = createOrGetEntity(txRecord.getReceipt().getFileID());
-            } else if (txRecord.getReceipt().hasContractID()) {
-                entityId = createOrGetEntity(txRecord.getReceipt().getContractID());
-            } else if (txRecord.getReceipt().hasAccountID()) {
-                entityId = createOrGetEntity(txRecord.getReceipt().getAccountID());                
-            } 
-            
             if (body.hasContractCall()) {
                 if (body.getContractCall().hasContractID()) {
                     entityId = createOrGetEntity(body.getContractCall().getContractID());
                 }
             } else if (body.hasContractCreateInstance()) {
+            	if (txRecord.getReceipt().hasContractID()) {
+            		ContractCreateTransactionBody txMessage = body.getContractCreateInstance();
+	            	long expiration_time_sec = 0;
+	            	long expiration_time_nanos = 0;
+	            	long auto_renew_period = 0;
+	            	if (txMessage.hasAutoRenewPeriod()) {
+	            		auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
+	            	}
+	            	byte[] admin_key = null;
+	            	if (txMessage.hasAdminKey()) {
+	            		admin_key = txMessage.getAdminKey().toByteArray();
+	            	}
+	            	byte[] key = null;
+	            	long proxy_account_id = createOrGetEntity(txMessage.getProxyAccountID());
+	            	entityId = createEntity(txRecord.getReceipt().getContractID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+            	}
+            	
                 initialBalance = body.getContractCreateInstance().getInitialBalance();
             } else if (body.hasContractDeleteInstance()) {
                 if (body.getContractDeleteInstance().hasContractID()) {
                     entityId = createOrGetEntity(body.getContractDeleteInstance().getContractID());
                 }
             } else if (body.hasContractUpdateInstance()) {
-                if (body.getContractUpdateInstance().hasContractID()) {
-                    entityId = createOrGetEntity(body.getContractUpdateInstance().getContractID());
-                }
+        		ContractUpdateTransactionBody txMessage = body.getContractUpdateInstance();
+            	long expiration_time_sec = 0;
+            	long expiration_time_nanos = 0;
+            	if (txMessage.hasExpirationTime()) {
+            		expiration_time_sec = txMessage.getExpirationTime().getSeconds();
+            		expiration_time_nanos = txMessage.getExpirationTime().getNanos();
+            	}
+            	long auto_renew_period = 0;
+            	if (txMessage.hasAutoRenewPeriod()) {
+            		auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
+            	}
+
+            	byte[] admin_key = null;
+            	if (txMessage.hasAdminKey()) {
+            		admin_key = txMessage.getAdminKey().toByteArray();
+            	}
+
+            	byte[] key = null;
+            	long proxy_account_id = createOrGetEntity(txMessage.getProxyAccountID());
+            	
+            	entityId = updateEntity(txMessage.getContractID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
             } else if (body.hasCryptoAddClaim()) {
                 if (body.getCryptoAddClaim().hasClaim()) {
                     if (body.getCryptoAddClaim().getClaim().hasAccountID()) {
@@ -281,7 +501,24 @@ public class RecordFileLogger implements LoggerInterface {
                     }
                 }
             } else if (body.hasCryptoCreateAccount()) {
-                initialBalance = body.getCryptoCreateAccount().getInitialBalance();
+            	if (txRecord.getReceipt().hasAccountID()) {
+            		CryptoCreateTransactionBody txMessage = body.getCryptoCreateAccount();
+	            	long expiration_time_sec = 0;
+	            	long expiration_time_nanos = 0;
+	            	long auto_renew_period = 0;
+	            	if (txMessage.hasAutoRenewPeriod()) {
+	            		auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
+	            	}
+	            	byte[] admin_key = null;
+	            	byte[] key = null;
+	            	if (txMessage.hasKey()) {
+	            		key = txMessage.getKey().toByteArray();
+	            	}
+	            	long proxy_account_id = createOrGetEntity(txMessage.getProxyAccountID());
+	            	entityId = createEntity(txRecord.getReceipt().getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+            	}
+
+            	initialBalance = body.getCryptoCreateAccount().getInitialBalance();
             } else if (body.hasCryptoDelete()) {
                 if (body.getCryptoDelete().hasDeleteAccountID()) {
                     entityId = createOrGetEntity(body.getCryptoDelete().getDeleteAccountID());
@@ -293,9 +530,46 @@ public class RecordFileLogger implements LoggerInterface {
             } else if (body.hasCryptoTransfer()) {
             	// do nothing
             } else if (body.hasCryptoUpdateAccount()) {
-                if (body.getCryptoUpdateAccount().hasAccountIDToUpdate()) {
-                    entityId = createOrGetEntity(body.getCryptoUpdateAccount().getAccountIDToUpdate());
-                }
+        		CryptoUpdateTransactionBody txMessage = body.getCryptoUpdateAccount();
+            	long expiration_time_sec = 0;
+            	long expiration_time_nanos = 0;
+            	if (txMessage.hasExpirationTime()) {
+            		expiration_time_sec = txMessage.getExpirationTime().getSeconds();
+            		expiration_time_nanos = txMessage.getExpirationTime().getNanos();
+            	}
+            	long auto_renew_period = 0;
+            	if (txMessage.hasAutoRenewPeriod()) {
+            		auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
+            	}
+
+            	byte[] admin_key = null;
+
+            	byte[] key = null;
+            	if (txMessage.hasKey()) {
+            		key = txMessage.getKey().toByteArray();
+            	}
+
+            	long proxy_account_id = createOrGetEntity(txMessage.getProxyAccountID());
+            	
+            	entityId = updateEntity(body.getCryptoUpdateAccount().getAccountIDToUpdate(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+            } else if (body.hasFileCreate()) {
+            	if (txRecord.getReceipt().hasFileID()) {
+            		FileCreateTransactionBody txMessage = body.getFileCreate();
+	            	long expiration_time_sec = 0;
+	            	long expiration_time_nanos = 0;
+	            	if (txMessage.hasExpirationTime()) {
+	            		expiration_time_sec = txMessage.getExpirationTime().getSeconds();
+	            		expiration_time_nanos = txMessage.getExpirationTime().getNanos();
+	            	}
+	            	long auto_renew_period = 0;
+	            	byte[] admin_key = null;
+	            	byte[] key = null;
+	            	if (txMessage.hasKeys()) {
+	            		key = txMessage.getKeys().toByteArray();
+	            	}
+	            	long proxy_account_id = 0;
+	            	entityId = createEntity(txRecord.getReceipt().getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+            	}
             } else if (body.hasFileAppend()) {
                 if (body.getFileAppend().hasFileID()) {
                     entityId = createOrGetEntity(body.getFileAppend().getFileID());
@@ -305,9 +579,25 @@ public class RecordFileLogger implements LoggerInterface {
                     entityId = createOrGetEntity(body.getFileDelete().getFileID());
                 }
             } else if (body.hasFileUpdate()) {
-                if (body.getCryptoDelete().hasDeleteAccountID()) {
-                    entityId = createOrGetEntity(body.getFileUpdate().getFileID());
-                }
+        		FileUpdateTransactionBody txMessage = body.getFileUpdate();
+            	long expiration_time_sec = 0;
+            	long expiration_time_nanos = 0;
+            	if (txMessage.hasExpirationTime()) {
+            		expiration_time_sec = txMessage.getExpirationTime().getSeconds();
+            		expiration_time_nanos = txMessage.getExpirationTime().getNanos();
+            	}
+            	long auto_renew_period = 0;
+
+            	byte[] admin_key = null;
+
+            	byte[] key = null;
+            	if (txMessage.hasKeys()) {
+            		key = txMessage.getKeys().toByteArray();
+            	}
+
+            	long proxy_account_id = 0;
+            	
+            	entityId = updateEntity(txMessage.getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
 			} else if (body.hasFreeze()) {
 				//TODO:
 			} else if (body.hasSystemDelete()) {
@@ -322,7 +612,6 @@ public class RecordFileLogger implements LoggerInterface {
 				} else if (body.getSystemDelete().hasFileID()) {
 					entityId = createOrGetEntity(body.getSystemUndelete().getFileID());
 				}
-				
 			}
 				
             if (entityId == 0) {

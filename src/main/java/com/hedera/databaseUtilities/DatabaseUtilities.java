@@ -23,6 +23,7 @@ public class DatabaseUtilities {
                 String url = configLoader.getDBUrl();
                 String userName = configLoader.getDBUserName();
                 String password = configLoader.getDBPassword();
+                
                 connect = DriverManager.getConnection(url, userName, password);
             } catch (SQLException e) {
                 e.printStackTrace();

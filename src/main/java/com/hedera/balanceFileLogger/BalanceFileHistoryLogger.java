@@ -10,6 +10,8 @@ import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+
+import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,6 +29,7 @@ public class BalanceFileHistoryLogger {
 	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
     private static Connection connect = null;
+    private static ConfigLoader configLoader = new ConfigLoader("./config/config.json");
 	
     enum balance_fields {
         ZERO
@@ -67,7 +70,7 @@ public class BalanceFileHistoryLogger {
 	            insertBalance = connect.prepareStatement(
 	                    "insert into t_account_balance_history (snapshot_time, seconds, account_shard, account_realm, account_num, balance) "
 	                    + " values (to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss'), EXTRACT(EPOCH FROM to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss')), ?, ?, ?, ?) "
-	                    + " ON CONFLICT (snapshot_time, account_shard, account_realm, account_num) "
+	                    + " ON CONFLICT (snapshot_time, seconds, account_num, account_realm, account_shard) "
 	                    + " DO UPDATE set balance = ?");
 	        
 	            BufferedReader br = new BufferedReader(new FileReader(balanceFile));
@@ -78,17 +81,23 @@ public class BalanceFileHistoryLogger {
 	                if (processLine) {
 	                    try {
 	                        String[] balanceLine = line.split(",");
-	                        
-	                        insertBalance.setString(balance_fields.SNAPSHOT_TIME.ordinal(), dateLine);
-	                        insertBalance.setString(balance_fields.SECONDS.ordinal(), dateLine);
-	                        insertBalance.setLong(balance_fields.ACCOUNT_SHARD.ordinal(), Long.valueOf(balanceLine[0]));
-	                        insertBalance.setLong(balance_fields.ACCOUNT_REALM.ordinal(), Long.valueOf(balanceLine[1]));
-	                        insertBalance.setLong(balance_fields.ACCOUNT_NUM.ordinal(), Long.valueOf(balanceLine[2]));
-	                        insertBalance.setLong(balance_fields.BALANCE_INSERT.ordinal(), Long.valueOf(balanceLine[3]));
-	                        insertBalance.setLong(balance_fields.BALANCE_UPDATE.ordinal(), Long.valueOf(balanceLine[3]));
-	
-	                        insertBalance.execute();
-	                        
+	                        if (balanceLine.length != 4) {
+		                        log.error(LOGM_EXCEPTION, "Balance file {} appears truncated", balanceFile);
+		                        insertBalance.close();
+		                        br.close();
+		                        return false;
+	                        } else {
+		                        
+		                        insertBalance.setString(balance_fields.SNAPSHOT_TIME.ordinal(), dateLine);
+		                        insertBalance.setString(balance_fields.SECONDS.ordinal(), dateLine);
+		                        insertBalance.setLong(balance_fields.ACCOUNT_SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+		                        insertBalance.setLong(balance_fields.ACCOUNT_REALM.ordinal(), Long.valueOf(balanceLine[1]));
+		                        insertBalance.setLong(balance_fields.ACCOUNT_NUM.ordinal(), Long.valueOf(balanceLine[2]));
+		                        insertBalance.setLong(balance_fields.BALANCE_INSERT.ordinal(), Long.valueOf(balanceLine[3]));
+		                        insertBalance.setLong(balance_fields.BALANCE_UPDATE.ordinal(), Long.valueOf(balanceLine[3]));
+		
+		                        insertBalance.execute();
+	                        }	                        
 	                    } catch (SQLException e) {
 	                        e.printStackTrace();
 	                        log.error(LOGM_EXCEPTION, "Exception {}", e);
@@ -122,8 +131,11 @@ public class BalanceFileHistoryLogger {
 	}
 	public static void main(String[] args) {
 
-	    // balance files are in 
-        File balanceFilesPath = new File("./accountBalances/balance");
+		String balanceFolder = configLoader.getDownloadToDir();
+		if (!balanceFolder.endsWith("/")) {
+			balanceFolder += "/";
+		}
+	    File balanceFilesPath = new File(balanceFolder + "accountBalances/balance");
         String balanceFilePath = "";
         String donePath = "";
         try {

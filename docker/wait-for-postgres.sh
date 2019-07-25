@@ -20,4 +20,4 @@ done
 
 >&2 echo "Postgres is up - executing command"
 
-tail -f wait-for-postgres.sh
+tail -f ./MirrorNodeCode/wait-for-postgres.sh

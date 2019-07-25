@@ -177,8 +177,10 @@ public class ConfigLoader {
 				recordFilesS3Location = jsonObject.get("recordFilesS3Location").getAsString();
 			}
 			dbUrl = dotEnv.get("HEDERA_MIRROR_DB_URL");
-			if (jsonObject.has("dbUrl")) {
-				dbUrl = jsonObject.get("dbUrl").getAsString();
+			if (dbUrl == null) {
+				if (jsonObject.has("dbUrl")) {
+					dbUrl = jsonObject.get("dbUrl").getAsString();
+				}
 			}
 			dbUserName = dotEnv.get("HEDERA_MIRROR_DB_USER");
 			if (dbUserName == null) {

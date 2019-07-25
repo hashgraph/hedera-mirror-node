@@ -25,6 +25,14 @@ CREATE SEQUENCE s_event_files_seq;
 CREATE SEQUENCE s_transactions_seq;
 CREATE SEQUENCE s_entities_seq;
 
+\echo Creating table t_version (
+	version       INTEGER
+);
+
+\echo Inserting into t_version
+
+INSERT INTO t_version (2);
+
 \echo Creating table t_transfer_types
 
 CREATE TABLE t_transfer_types (
@@ -83,6 +91,12 @@ CREATE TABLE t_entities (
   ,entity_num         BIGINT NOT NULL
   ,entity_realm       BIGINT NOT NULL DEFAULT 0
   ,entity_shard       BIGINT NOT NULL DEFAULT 0
+	,exp_time_seconds	  BIGINT
+	,exp_time_nanos	    BIGINT
+	,auto_renew_period  BIGINT
+	,admin_key          BYTEA
+	,key                BYTEA
+	,proxy_account_id   BIGINT
 );
 
 \echo Creating table t_account_balances

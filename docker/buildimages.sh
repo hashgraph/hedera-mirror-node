@@ -17,4 +17,5 @@ cp ../target/mirrorNode.jar runtime/mirrorNode.jar
 cp ./wait-for-postgres.sh runtime/
 chmod +x runtime/wait-for-postgres.sh
 
+docker-compose build
 docker-compose up

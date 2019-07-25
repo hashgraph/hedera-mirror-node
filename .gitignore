@@ -36,3 +36,4 @@ docker/runtime/
 docker/postgresInit.sql
 docker/.env
 docker/MirrorNodePostgresData/
+config/loggerStatus.json

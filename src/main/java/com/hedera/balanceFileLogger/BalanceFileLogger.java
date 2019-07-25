@@ -13,6 +13,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,6 +32,7 @@ public class BalanceFileLogger {
 
     private static Connection connect = null;
 	
+    private static ConfigLoader configLoader = new ConfigLoader("./config/config.json");
     enum balance_fields {
         ZERO
         ,ACCOUNT_SHARD
@@ -88,8 +91,11 @@ public class BalanceFileLogger {
 
 	public static void main(String[] args) {
 
-	    // balance files are in 
-	    File balanceFilesPath = new File("./accountBalances/balance");
+		String balanceFolder = configLoader.getDownloadToDir();
+		if (!balanceFolder.endsWith("/")) {
+			balanceFolder += "/";
+		}
+	    File balanceFilesPath = new File(balanceFolder + "accountBalances/balance");
 	    boolean processLine = false;
 	    
         try {
@@ -113,14 +119,17 @@ public class BalanceFileLogger {
 		                if (processLine) {
 		                    try {
 		                        String[] balanceLine = line.split(",");
-		                        
-	                            insertBalance.setLong(balance_fields.ACCOUNT_SHARD.ordinal(), Long.valueOf(balanceLine[0]));
-	                            insertBalance.setLong(balance_fields.ACCOUNT_REALM.ordinal(), Long.valueOf(balanceLine[1]));
-	                            insertBalance.setLong(balance_fields.ACCOUNT_NUM.ordinal(), Long.valueOf(balanceLine[2]));
-	                            insertBalance.setLong(balance_fields.BALANCE_INSERT.ordinal(), Long.valueOf(balanceLine[3]));
-	                            insertBalance.setLong(balance_fields.BALANCE_UPDATE.ordinal(), Long.valueOf(balanceLine[3]));
-	
-	                            insertBalance.execute();
+		                        if (balanceLine.length != 4) {
+			                        log.error(LOGM_EXCEPTION, "Balance file {} appears truncated", balanceFile);
+		                        } else {
+		                            insertBalance.setLong(balance_fields.ACCOUNT_SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+		                            insertBalance.setLong(balance_fields.ACCOUNT_REALM.ordinal(), Long.valueOf(balanceLine[1]));
+		                            insertBalance.setLong(balance_fields.ACCOUNT_NUM.ordinal(), Long.valueOf(balanceLine[2]));
+		                            insertBalance.setLong(balance_fields.BALANCE_INSERT.ordinal(), Long.valueOf(balanceLine[3]));
+		                            insertBalance.setLong(balance_fields.BALANCE_UPDATE.ordinal(), Long.valueOf(balanceLine[3]));
+		
+		                            insertBalance.execute();
+		                        }
 		                        
 		                    } catch (SQLException e) {
 		                        e.printStackTrace();
