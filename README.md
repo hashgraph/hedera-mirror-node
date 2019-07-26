@@ -41,6 +41,10 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Added address book download capability
+
+The address book may be downloaded from the network using this software.
+
 ### Addition of a REST api
 
 A REST api written in `node` is now available in this project.
@@ -405,49 +409,29 @@ Use the command `docker exec -it <container name> /bin/sh` to get a shell in the
 
 You may now power down the docker image itself.
 
-## Creating the address book file (0.0.102 file)
+## Creating or updating the address book file (0.0.102 file)
 
-The java code below was used with the java SDK in order to create the file.
+Set the following environment variables or add them to a `.env` file.
 
-```java
-package com.hedera.hashgraph.sdk.examples.advanced;
-
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.hashgraph.sdk.HederaException;
-import com.hedera.hashgraph.sdk.examples.ExampleHelper;
-import com.hedera.hashgraph.sdk.file.FileId;
-import com.hedera.hashgraph.sdk.file.FileContentsQuery;
-
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
-public final class GetHederaAddressBook {
-    private GetHederaAddressBook() { }
-
-    public static void main(String[] args) throws HederaException, InvalidProtocolBufferException {
-
-        // Build the Hedera client using ExampleHelper class
-        var client = ExampleHelper.createHederaClient();
-
-        // Get file contents
-        var contents = new FileContentsQuery(client)
-            .setFileId(new FileId(0, 0, 102))
-            .execute();
-        try {
-            FileOutputStream fos = new FileOutputStream("0.0.102");
-            fos.write(contents.getFileContents().getContents().toByteArray());
-            fos.close();
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-}
+```text
+NODE_ADDRESS=127.0.0.1:50211
+NODE_ID=0.0.x
+OPERATOR_ID=0.0.x
+OPERATOR_KEY=your account's private key
 ```
+
+`NODE_ADDRESS` is the IP address/url + port of the node you wish to request the file from.
+`NODE_ID` is the account number of the node (0.0.x).
+`OPERATOR_ID` is your own account number on the network (0.0.x).
+`OPERATOR_KEY` is your private key for the above account.
+
+Run the following command to update the address book at the location specified in `config.json`.
+
+```shell
+java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook 
+```
+
+If no errors are output, the file specified by the `addressBookFile` parameter of the `config.json` file will now contain the network's address book.
 
 ## REST API
 
