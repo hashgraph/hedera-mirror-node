@@ -229,6 +229,92 @@ public class RecordFileLogger implements LoggerInterface {
 		return updateEntity(accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
 	}
 
+	public static long deleteEntity(long shard, long realm, long num) throws SQLException {
+	    
+		long entityId = 0;
+		
+	    if (shard + realm + num == 0 ) {
+	        return 0;
+	    }
+	    // build the SQL to prepare a statement
+	    String sqlDelete = "UPDATE t_entities SET deleted = true";
+	    sqlDelete += " WHERE entity_shard = ?";
+	    sqlDelete += " AND entity_realm = ?";
+	    sqlDelete += " AND entity_num = ?";
+	    sqlDelete += " RETURNING id";
+
+	    // inserts or returns an existing entity
+        PreparedStatement deleteEntity = connect.prepareStatement(sqlDelete);
+
+	    deleteEntity.setLong(1, shard);
+        deleteEntity.setLong(2, realm);
+        deleteEntity.setLong(3, num);
+
+        deleteEntity.execute();
+        
+        ResultSet newId = deleteEntity.getResultSet();
+        newId.next();
+        entityId = newId.getLong(1);
+        newId.close();
+        deleteEntity.close();
+        
+        return entityId;
+	    
+	}
+
+	public static long deleteEntity(FileID fileId) throws SQLException {
+		return deleteEntity(fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum());
+	}
+	public static long deleteEntity(ContractID contractId) throws SQLException {
+		return deleteEntity(contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum());
+	}
+	public static long deleteEntity(AccountID accountId) throws SQLException {
+		return deleteEntity(accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum());
+	}
+	
+	public static long unDeleteEntity(long shard, long realm, long num) throws SQLException {
+	    
+		long entityId = 0;
+		
+	    if (shard + realm + num == 0 ) {
+	        return 0;
+	    }
+	    // build the SQL to prepare a statement
+	    String sqlDelete = "UPDATE t_entities SET deleted = false";
+	    sqlDelete += " WHERE entity_shard = ?";
+	    sqlDelete += " AND entity_realm = ?";
+	    sqlDelete += " AND entity_num = ?";
+	    sqlDelete += " RETURNING id";
+
+	    // inserts or returns an existing entity
+        PreparedStatement deleteEntity = connect.prepareStatement(sqlDelete);
+
+	    deleteEntity.setLong(1, shard);
+        deleteEntity.setLong(2, realm);
+        deleteEntity.setLong(3, num);
+
+        deleteEntity.execute();
+        
+        ResultSet newId = deleteEntity.getResultSet();
+        newId.next();
+        entityId = newId.getLong(1);
+        newId.close();
+        deleteEntity.close();
+        
+        return entityId;
+	    
+	}
+
+	public static long unDeleteEntity(FileID fileId) throws SQLException {
+		return unDeleteEntity(fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum());
+	}
+	public static long unDeleteEntity(ContractID contractId) throws SQLException {
+		return unDeleteEntity(contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum());
+	}
+	public static long unDeleteEntity(AccountID accountId) throws SQLException {
+		return unDeleteEntity(accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum());
+	}
+
 	public static long createEntity(long shard, long realm, long num, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long proxy_account_id) throws SQLException {
 	    long entityId = 0;
 	    
@@ -471,6 +557,7 @@ public class RecordFileLogger implements LoggerInterface {
             } else if (body.hasContractDeleteInstance()) {
                 if (body.getContractDeleteInstance().hasContractID()) {
                     entityId = createOrGetEntity(body.getContractDeleteInstance().getContractID());
+                    entityId = deleteEntity(body.getContractDeleteInstance().getContractID());
                 }
             } else if (body.hasContractUpdateInstance()) {
         		ContractUpdateTransactionBody txMessage = body.getContractUpdateInstance();
@@ -522,6 +609,7 @@ public class RecordFileLogger implements LoggerInterface {
             } else if (body.hasCryptoDelete()) {
                 if (body.getCryptoDelete().hasDeleteAccountID()) {
                     entityId = createOrGetEntity(body.getCryptoDelete().getDeleteAccountID());
+                    entityId = deleteEntity(body.getCryptoDelete().getDeleteAccountID());
                 }
             } else if (body.hasCryptoDeleteClaim()) {
                 if (body.getCryptoDeleteClaim().hasAccountIDToDeleteFrom()) {
@@ -577,6 +665,7 @@ public class RecordFileLogger implements LoggerInterface {
             } else if (body.hasFileDelete()) {
                 if (body.getFileDelete().hasFileID()) {
                     entityId = createOrGetEntity(body.getFileDelete().getFileID());
+                    entityId = deleteEntity(body.getFileDelete().getFileID());
                 }
             } else if (body.hasFileUpdate()) {
         		FileUpdateTransactionBody txMessage = body.getFileUpdate();
@@ -603,14 +692,18 @@ public class RecordFileLogger implements LoggerInterface {
 			} else if (body.hasSystemDelete()) {
 				if (body.getSystemDelete().hasContractID()) {
 					entityId = createOrGetEntity(body.getSystemDelete().getContractID());
+                    entityId = deleteEntity(body.getSystemDelete().getContractID());
 				} else if (body.getSystemDelete().hasFileID()) {
 					entityId = createOrGetEntity(body.getSystemDelete().getFileID());
+                    entityId = deleteEntity(body.getSystemDelete().getFileID());
 				}
 			} else if (body.hasSystemUndelete()) {
 				if (body.getSystemUndelete().hasContractID()) {
 					entityId = createOrGetEntity(body.getSystemUndelete().getContractID());
+                    entityId = unDeleteEntity(body.getSystemDelete().getContractID());
 				} else if (body.getSystemDelete().hasFileID()) {
 					entityId = createOrGetEntity(body.getSystemUndelete().getFileID());
+                    entityId = unDeleteEntity(body.getSystemDelete().getFileID());
 				}
 			}
 				
