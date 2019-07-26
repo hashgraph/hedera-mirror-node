@@ -5,7 +5,7 @@ services:
     build:
       context: ./
       dockerfile: Postgres
-    stop_signal: SIGTERM 
+    stop_signal: SIGTERM
     tty: true
     env_file:
       - .env
@@ -13,7 +13,7 @@ services:
       - ./MirrorNodePostgresData:/var/lib/postgresql/data
       - ./runtime:/MirrorNodeCode
     ports:
-      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+      - 5433:5432
     command: ./MirrorNodeCode/wait-for-postgres.sh
 
   # this downloads balance files, its behaviour is controlled by ./config/config.json
@@ -37,7 +37,7 @@ services:
     depends_on:
       - mirror-node-postgres
     environment:
-      - HEDERA_MIRROR_DB_URL=jdbc:postgresql://mirror-node-postgres:${POSTGRES_PORT}/${POSTGRES_DB}
+      - HEDERA_MIRROR_DB_URL=jdbc:postgresql://mirror-node-postgres:5432/${POSTGRES_DB}
       - HEDERA_MIRROR_DB_USER=${POSTGRES_USER}
       - HEDERA_MIRROR_DB_PASS=${POSTGRES_PASSWORD}
     working_dir: /MirrorNodeCode
