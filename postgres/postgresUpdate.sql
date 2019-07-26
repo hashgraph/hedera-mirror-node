@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS t_version (
 	version       INTEGER
 );
 
+GRANT ALL ON t_version TO :db_user;
+
 \echo Inserting into t_version
 
 \unset rcount
@@ -151,5 +153,13 @@ SELECT version <= 1 AS version
   ALTER TABLE t_entities ADD COLUMN proxy_account_id BIGINT;
 
   UPDATE t_version set version = 2;
+
+	-- July 26 2019
+
+	ALTER TABLE t_entities ADD COLUMN deleted BOOLEAN DEFAULT false;
+
+	ALTER TABLE t_cryptotransfers DROP CONSTRAINT fk_ct_from_acc_id;
+	ALTER TABLE t_cryptotransfers DROP CONSTRAINT fk_ct_to_acc_id;
+
 \endif
 # end of version 1->2  upgrades
