@@ -100,6 +100,7 @@ public class RecordFileParser {
 									log.info(MARKER, "Previous file Hash = " + previousFileHash);
 								}
 								newFileHash = Hex.encodeHexString(readFileHash);
+								log.info(MARKER, "New file Hash = " + newFileHash);
 								
 								if (!newFileHash.contentEquals(previousFileHash)) {
 									if (configLoader.getStopLoggingIfHashMismatch()) {
@@ -172,9 +173,6 @@ public class RecordFileParser {
 					}
 				} catch (IOException ex) {
 					log.error("Exception in close the stream {}", ex);
-					loggerStatus.setLastProcessedRcdHash(newFileHash);
-					loggerStatus.saveToFile();
-					return LoadResult.OK;
 				}
 			}
 			loggerStatus.setLastProcessedRcdHash(newFileHash);
