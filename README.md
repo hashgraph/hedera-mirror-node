@@ -41,6 +41,10 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Addition of a REST api
+
+A REST api written in `node` is now available in this project.
+
 ### Switched from individual docker containers to `docker-compose`
 
 See below for instructions
@@ -444,6 +448,28 @@ public final class GetHederaAddressBook {
     }
 }
 ```
+
+## REST API
+
+A REST API to the database is available under `rest-api`.
+
+To start it, `cd rest-api` then `npm install`.
+
+Create a `.env` file as per below and run with `npm start`.
+
+You can also unittest using jest by using `npm test`.
+
+example `.env` file:
+
+```TEXT
+DB_HOST='localhost'
+DB_USER='hederamirror'
+DB_PASS='mysecretpassword'
+DB_NAME='hederamirror'
+PORT=5551
+```
+
+`PORT` is the port number the REST API will listen onto.
 
 ## Notes about the java project structure
 
