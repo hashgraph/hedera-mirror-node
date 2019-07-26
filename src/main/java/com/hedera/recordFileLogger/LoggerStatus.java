@@ -49,8 +49,10 @@ public class LoggerStatus {
 
 	public void setLastProcessedRcdHash(String name) {
 		lastProcessedRcdHash = name;
-		jsonObject.addProperty("lastProcessedRcdHash", name);
-		log.info(MARKER, "Update lastProcessedRcdHash to be {}", name);
+		if (!name.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
+			jsonObject.addProperty("lastProcessedRcdHash", name);
+			log.info(MARKER, "Update lastProcessedRcdHash to be {}", name);
+		}
 	}
 
 	public void saveToFile() {
