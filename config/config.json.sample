@@ -19,6 +19,6 @@
   "stopLoggingIfHashMismatch": true,
   "persistClaims": false,
   "persistFiles": "ALL",
-  "persistContracts": false,
-  "persistCryptoTransferAmounts": false
+  "persistContracts": true,
+  "persistCryptoTransferAmounts": true
 }
