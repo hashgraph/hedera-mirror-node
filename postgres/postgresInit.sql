@@ -97,6 +97,7 @@ CREATE TABLE t_entities (
 	,admin_key          BYTEA
 	,key                BYTEA
 	,proxy_account_id   BIGINT
+	,deleted            BOOLEAN DEFAULT false
 );
 
 \echo Creating table t_account_balances
@@ -201,8 +202,6 @@ ALTER TABLE t_transactions ADD CONSTRAINT fk_crud_entity_id FOREIGN KEY (crud_en
 ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_tx_id FOREIGN KEY (tx_id) REFERENCES t_transactions (id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_from_account_id FOREIGN KEY (from_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_to_account_id FOREIGN KEY (to_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_from_acc_id FOREIGN KEY (from_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE t_cryptotransfers ADD CONSTRAINT fk_ct_to_acc_id FOREIGN KEY (to_account_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- t_cryptotransferlists
 \echo Creating constraints on t_cryptotransferlists
@@ -392,6 +391,7 @@ GRANT ALL ON t_account_balance_history TO :db_user;
 GRANT ALL ON t_file_data TO :db_user;
 GRANT ALL ON t_contract_result TO :db_user;
 GRANT ALL ON t_claim_data TO :db_user;
+GRANT ALL ON t_version TO :db_user;
 
 GRANT SELECT ON v_cryptotransfers to :db_user;
 GRANT SELECT ON v_event_files to :db_user;
