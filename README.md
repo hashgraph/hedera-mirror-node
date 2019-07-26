@@ -37,9 +37,18 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 `cd target`
 
-## Changes history
+## Todo
+
+- Update address book automatically from transaction history
+- REST api in docker
+
+## Change history
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
+
+### Addded `deleted` column on `t_entities`
+
+This column defaults to false on creation, and is set to true when a `delete` transaction is processed. It is unset when an `undelete` transaction is processed.
 
 ### Added address book download capability
 
@@ -458,6 +467,10 @@ PORT=5551
 ## Notes about the java project structure
 
 The java project contains a number of packages and classes for its various modes of operation
+
+- com.hedera.addressBook
+
+Contains a `NetworkAddressBook` class which is responsible for updating the local address book file subject to being provided the appropriate network credentials via a `.env` file or environment variables.
 
 - com.hedera.mirrorNodeProxy
 
