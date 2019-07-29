@@ -138,7 +138,7 @@ Should you wish to enable logging, copy the `log4j2.xml` file from `src/main/res
 for example
 
 ```shell
-    java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser
+    java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.parser.RecordFileParser
 ```
 
 This will ensure that the `log4j2.xml` file is used to direct logging accordingly.
@@ -337,7 +337,7 @@ shard,realm,number,balance
 Run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser
+java -cp mirrorNode.jar com.hedera.parser.RecordFileParser
 ```
 
 ### To Parse Balance file(s)
@@ -469,7 +469,7 @@ Contains a `RecordFileDownloader` class which connects to an s3 bucket and downl
 
 Contains a `AccountBalancesDownloader` class which connects to an s3 bucket and downloads account balance files from the bucket.
 
-- com.hedera.recordFileParser
+- com.hedera.parser
 
 Contains a `RecordFileParser` class which given a number of record files will process them, it calls the static class below which is responsible for processing the output itself.
 

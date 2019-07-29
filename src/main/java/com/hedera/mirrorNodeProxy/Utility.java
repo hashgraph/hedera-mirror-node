@@ -300,6 +300,10 @@ public class Utility {
 		return filename.endsWith(".rcd");
 	}
 
+	public static boolean isEventStreamFile(String filename) {
+		return filename.endsWith(".evts");
+	}
+
 	public static boolean isRecordSigFile(String filename) {
 		return filename.endsWith(".rcd_sig");
 	}

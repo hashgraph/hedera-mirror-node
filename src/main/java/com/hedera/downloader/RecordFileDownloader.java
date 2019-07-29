@@ -7,7 +7,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirrorNodeProxy.Utility;
-import com.hedera.recordFileParser.RecordFileParser;
+import com.hedera.parser.RecordFileParser;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 

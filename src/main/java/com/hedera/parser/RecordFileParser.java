@@ -1,5 +1,17 @@
+package com.hedera.parser;
 
-package com.hedera.recordFileParser;
+import com.google.protobuf.TextFormat;
+import com.hedera.configLoader.ConfigLoader;
+import com.hedera.mirrorNodeProxy.Utility;
+import com.hedera.recordFileLogger.LoggerStatus;
+import com.hedera.recordFileLogger.RecordFileLogger;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -12,23 +24,8 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import com.google.protobuf.TextFormat;
-import com.hedera.configLoader.ConfigLoader;
-import com.hedera.mirrorNodeProxy.Utility;
-import com.hedera.recordFileLogger.LoggerStatus;
-import com.hedera.recordFileLogger.RecordFileLogger;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 
 
 /**
@@ -46,49 +43,49 @@ public class RecordFileParser {
 
 	private static ConfigLoader configLoader;
 	private static LoggerStatus loggerStatus;
-	
+
 	private enum LoadResult {
 		OK
 		,STOP
 		,ERROR
 	}
-	
+
 	/**
 	 * Given a service record name, read and parse and return as a list of service record pair
 	 *
 	 * @param fileName
 	 * 		the name of record file to read
-	 * @return return previous file hash 
+	 * @return return previous file hash
 	 */
 	static public LoadResult loadRecordFile(String fileName, String previousFileHash) {
 
 		File file = new File(fileName);
 		FileInputStream stream = null;
 		String newFileHash = "";
-		
+
 		if (file.exists() == false) {
 			log.info(MARKER, "File does not exist " + fileName);
 			return null;
 		}
 
 		if (RecordFileLogger.initFile(fileName)) {
-			
+
 			try {
 				long counter = 0;
 				stream = new FileInputStream(file);
 				DataInputStream dis = new DataInputStream(stream);
-	
+
 				int record_format_version = dis.readInt();
 				int version = dis.readInt();
-	
+
 				log.info(MARKER, "Record file format version " + record_format_version);
 				log.info(MARKER, "HAPI protocol version " + version);
-	
+
 				while (dis.available() != 0) {
-	
+
 					try {
 						byte typeDelimiter = dis.readByte();
-	
+
 						switch (typeDelimiter) {
 							case TYPE_PREV_HASH:
 								byte[] readFileHash = new byte[48];
@@ -100,29 +97,30 @@ public class RecordFileParser {
 									log.info(MARKER, "Previous file Hash = " + previousFileHash);
 								}
 								newFileHash = Hex.encodeHexString(readFileHash);
-								
+								log.info(MARKER, "New file Hash = " + newFileHash);
+
 								if (!newFileHash.contentEquals(previousFileHash)) {
 									if (configLoader.getStopLoggingIfHashMismatch()) {
 										log.error(MARKER, "Previous file Hash Mismatch - stopping loading. Previous = {}, Current = {}", previousFileHash, newFileHash);
 										return LoadResult.STOP;
 									}
 								}
-								
+
 								break;
 							case TYPE_RECORD:
 								int byteLength = dis.readInt();
 								byte[] rawBytes = new byte[byteLength];
-	
+
 								dis.readFully(rawBytes);
 								Transaction transaction = Transaction.parseFrom(rawBytes);
-	
+
 								byteLength = dis.readInt();
 								rawBytes = new byte[byteLength];
 								dis.readFully(rawBytes);
 								TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
-	
+
 								counter++;
-								
+
 								if (RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord, configLoader)) {
 									log.info(MARKER, "record counter = {}\n=============================", counter);
 									log.info(MARKER, "Transaction Consensus Timestamp = {}\n", Utility.convertToInstant(txRecord.getConsensusTimestamp()));
@@ -143,11 +141,11 @@ public class RecordFileParser {
 								} else {
 									return LoadResult.ERROR;
 								}
-	
+
 							default:
 								log.error(LOGM_EXCEPTION, "Exception Unknown record file delimiter {}", typeDelimiter);
 						}
-	
+
 					} catch (Exception e) {
 						log.error(LOGM_EXCEPTION, "Exception ", e);
 						return LoadResult.ERROR;
@@ -172,9 +170,6 @@ public class RecordFileParser {
 					}
 				} catch (IOException ex) {
 					log.error("Exception in close the stream {}", ex);
-					loggerStatus.setLastProcessedRcdHash(newFileHash);
-					loggerStatus.saveToFile();
-					return LoadResult.OK;
 				}
 			}
 			loggerStatus.setLastProcessedRcdHash(newFileHash);
@@ -183,7 +178,7 @@ public class RecordFileParser {
 		} else {
 			return LoadResult.ERROR;
 		}
-		
+
 	}
 
 	/**
@@ -227,31 +222,31 @@ public class RecordFileParser {
 
 		configLoader = new ConfigLoader("./config/config.json");
 		loggerStatus = new LoggerStatus("./config/loggerStatus.json");
-		
+
 		pathName = configLoader.getDefaultParseDir();
 		log.info(MARKER, "Record files folder got from configuration file: {}", configLoader.getDefaultParseDir());
 
 		if (pathName != null) {
-			
+
 			if (RecordFileLogger.start()) {
-			
+
 				File file = new File(pathName);
 				if (file.isFile()) {
 					log.info(MARKER, "Loading record file {} " + pathName);
 					loadRecordFile(pathName, "");
 				} else if (file.isDirectory()) { //if it's a directory
-	
+
 					String[] files = file.list(); // get all files under the directory
 					Arrays.sort(files);           // sorted by name (timestamp)
-	
+
 					// add director prefix to get full path
 					List<String> fullPaths = Arrays.asList(files).stream()
 							.filter(f -> Utility.isRecordFile(f))
 							.map(s -> file + "/" + s)
 							.collect(Collectors.toList());
-	
+
 					log.info(MARKER, "Loading record files from directory {} ", pathName);
-					
+
 					if (fullPaths != null) {
 						log.info(MARKER, "Files are " + fullPaths);
 						loadRecordFiles(fullPaths);
@@ -260,7 +255,7 @@ public class RecordFileParser {
 					}
 				} else {
 					log.error(LOGM_EXCEPTION, "Exception file {} does not exist", pathName);
-	
+
 				}
 				RecordFileLogger.finish();
 			}

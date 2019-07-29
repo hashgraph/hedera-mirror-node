@@ -3,7 +3,7 @@ package com.hedera.signatureVerifier;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirrorNodeProxy.Utility;
-import com.hedera.recordFileParser.RecordFileParser;
+import com.hedera.parser.RecordFileParser;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import org.apache.commons.codec.DecoderException;

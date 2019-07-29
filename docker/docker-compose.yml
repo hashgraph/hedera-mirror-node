@@ -80,4 +80,4 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser
+    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.parser.RecordFileParser
