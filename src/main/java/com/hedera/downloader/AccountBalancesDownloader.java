@@ -9,6 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirrorNodeProxy.Utility;
+import com.hedera.signatureVerifier.NodeSignatureVerifier;
 
 public class AccountBalancesDownloader extends Downloader {
 
@@ -63,6 +64,9 @@ public class AccountBalancesDownloader extends Downloader {
 		String lastValidBalanceFileName = configLoader.getLastValidBalanceFileName();
 		String newLastValidBalanceFileName = lastValidBalanceFileName;
 
+		// reload address book and keys
+		NodeSignatureVerifier verifier = new NodeSignatureVerifier(configLoader);
+		
 		for (String fileName : sigFilesMap.keySet()) {
 			List<File> sigFiles = sigFilesMap.get(fileName);
 			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them

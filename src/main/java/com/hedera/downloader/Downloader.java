@@ -15,12 +15,10 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.Download;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
-import com.amazonaws.services.s3.transfer.internal.DownloadMonitor;
 import com.google.gson.JsonObject;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
 import com.hedera.mirrorNodeProxy.Utility;
-import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,8 +52,6 @@ public abstract class Downloader {
 
 	protected static AmazonS3 s3Client;
 
-	protected static NodeSignatureVerifier verifier;
-
 	protected Comparator<String> s3KeyComparator;
 
 	protected static Comparator<String> fileNameComparator;
@@ -78,7 +74,6 @@ public abstract class Downloader {
 		clientConfiguration.setRetryPolicy(
 				PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(5));
 
-		verifier = new NodeSignatureVerifier(configLoader);
 		nodeAccountIds = loadNodeAccountIDs(configLoader.getNodeInfoFile());
 
 		s3KeyComparator = new Comparator<String>() {
@@ -152,6 +147,8 @@ public abstract class Downloader {
 		fileType = ".csv";
 		lastValidFileName = configLoader.getLastValidBalanceFileName();
 
+		// refresh node account ids
+		nodeAccountIds = loadNodeAccountIDs(configLoader.getNodeInfoFile());
 
 		for (String nodeAccountId : nodeAccountIds) {
 			ArrayList<String> files = new ArrayList<String>();
@@ -279,7 +276,8 @@ public abstract class Downloader {
 
 		HashMap<String, List<File>> sigFilesMap = new HashMap<>();
 
-
+		// refresh node account ids
+		nodeAccountIds = loadNodeAccountIDs(configLoader.getNodeInfoFile());
 		for (String nodeAccountId : nodeAccountIds) {
 			log.info(MARKER, "Start downloading {} files of node {}", fileType, nodeAccountId);
 			// Get a list of objects in the bucket, 100 at a time

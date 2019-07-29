@@ -8,6 +8,8 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirrorNodeProxy.Utility;
 import com.hedera.recordFileParser.RecordFileParser;
+import com.hedera.signatureVerifier.NodeSignatureVerifier;
+
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -209,6 +211,9 @@ public class RecordFileDownloader extends Downloader {
 	 */
 	String verifySigsAndDownloadRCFiles(Map<String, List<File>> sigFilesMap) {
 
+		// reload address book and keys
+		NodeSignatureVerifier verifier = new NodeSignatureVerifier(configLoader);
+		
 		for (String fileName : sigFilesMap.keySet()) {
 			List<File> sigFiles = sigFilesMap.get(fileName);
 			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
