@@ -197,7 +197,7 @@ public class NodeSignatureVerifier {
 		String nodeAccountID = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
 		byte[] signature = hashAndSig.getRight();
 
-		boolean isValid = verifySignature(signedData, signature, nodeAccountID);
+		boolean isValid = verifySignature(signedData, signature, nodeAccountID, sigFile.getPath());
 		if (!isValid) {
 			log.info(MARKER, "{} contains invalid signature", sigFile.getPath());
 		}
@@ -249,7 +249,7 @@ public class NodeSignatureVerifier {
 	 * @return true if the signature is valid
 	 */
 	public boolean verifySignature(byte[] data, byte[] signature,
-			String nodeAccountID) {
+			String nodeAccountID, String filePath) {
 		PublicKey publicKey = nodeIDPubKeyMap.get(nodeAccountID);
 		if (publicKey == null) {
 			log.debug(MARKER, "verifySignature :: missing PublicKey of node{}", nodeAccountID);
@@ -263,14 +263,13 @@ public class NodeSignatureVerifier {
 			sig.initVerify(publicKey);
 			sig.update(data);
 			if (signature == null) {
-				log.error(MARKER, " verifySignature :: signature is null !");
+				log.error(MARKER, " verifySignature :: signature is null for file {}", filePath);
 				return false;
 			}
 			return sig.verify(signature);
 		} catch (NoSuchAlgorithmException | NoSuchProviderException
 				| InvalidKeyException | SignatureException e) {
-			log.error(MARKER, " verifySignature :: Fail to verify Signature: {}, PublicKey: {}, NodeID: {}, Exception: {}", signature, publicKey, nodeAccountID,
-					e.getStackTrace());
+			log.error(MARKER, " verifySignature :: Fail to verify Signature: {}, PublicKey: {}, NodeID: {}, File: {}, Exception: {}", signature, publicKey, nodeAccountID, e.getStackTrace());
 		}
 		return false;
 	}
