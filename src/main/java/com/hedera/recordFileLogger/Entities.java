@@ -263,7 +263,7 @@ public class Entities {
                 + " ON CONFLICT (entity_shard, entity_realm, entity_num) "
                 + " DO UPDATE"
                 + " SET exp_time_seconds = EXCLUDED.exp_time_seconds"
-                + ", exp_time_nano = EXCLUDED.exp_time_nano"
+                + ", exp_time_nanos = EXCLUDED.exp_time_nanos"
                 + ", auto_renew_period = EXCLUDED.auto_renew_period"
                 + ", admin_key = EXCLUDED.admin_key"
                 + ", key = EXCLUDED.key"
