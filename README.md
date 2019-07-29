@@ -49,6 +49,18 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### `stopLoggingIfHashMismatch` change
+
+This field was a boolean, it's now a string. See details on configuration files for additional information.
+
+### Database transaction control
+
+Database transactions are now used to ensure a file cannot be partially saved to the database. If an error occurs during file processing, all changes are rolled back.
+
+### Database storage optimisation
+
+The database schema has been changed to maximise denormalisation in order to optimise storage and data integrity.
+
 ### Addded `deleted` column on `t_entities`
 
 This column defaults to false on creation, and is set to true when a `delete` transaction is processed. It is unset when an `undelete` transaction is processed.
@@ -85,12 +97,7 @@ See section on configuration for additional details.
 
 ### Addition of `stopLoggingIfHashMismatch` configuration item
 
-When processing files after they have been downloaded, this flag will determine whether file processing should continue or stop in the event of a mismatch between the hash of the last file processed and the hash held for the previous file in the file being processed.
-
-If set to `true` : Any mismatch in the sequence of file hashes will bring the processing to a stop, the missing file has to be downloaded in order for processing to be able to continue.
-If set to `false`: Hash sequence mismatches will be logged but ignored and processing will continue until there are no files to process.
-
-A file called `loggerStatus.json` will be created in the `./config` folder containing the hash of the last successfully processed file.
+When processing files after they have been downloaded, this value will determine if a hash mismatch should result in processing stopping. If the currently processed file name is greater than the value stored, processing will stop. Insert the name of the file which failed the hash check in this field in order to allow processing to continue (data loss will result).
 
 ### `node-log` has been removed from `log4.xml`
 
@@ -229,7 +236,7 @@ Note: Changes to this file while downloading or processing is taking place may b
 | dbUsername | `"hederamirror"` | The username to access the database |
 | dbPassword | `"mysecretpassword"` | The password to access the database |
 | maxDownloadItems | `0` | The maximum number of new files to download, set to `0` in production, change to `10` or other low number for testing. Note, you may also reduce the number of nodes in `nodesInfo.json` so that only files from the nodes listed will be downloaded |
-| stopLoggingIfHashMismatch | `true` | Set to `true`, processing of files will stop of a mismatch in found between the last processed file and the hash in the current file. If set to `false` processing will continue after logging an error |
+| stopLoggingIfHashMismatch | "" | If you wish to skip past a file as a result of a hash mismatch, you can input the name of the record file before which hash mismatches will be ignored. e.g. `2019-06-12T18/05/22.198241001Z.rcd` will allow hash mismatches on any files prior to that file name, after this file, a hash mismatch will result in an error being logged and processing to stop.
 | persistClaims | `false` | Determines whether claim data is persisted to the database or not |
 | persistFiles | `"ALL"` | Determines whether file data is persisted to the database or not, can be set to `ALL`, `NONE` or `SYSTEM`. `SYSTEM` means only files with a file number lower than `1000` will be persisted |
 | persistContracts | `true` | Determines whether contract data is persisted to the database or not |

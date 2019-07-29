@@ -80,7 +80,7 @@ public class ConfigLoader {
 	//location of record files on S3
 	private static String recordFilesS3Location = "./recordstreams/record";
 
-	private static boolean stopLoggingIfHashMismatch = true;
+	private static String stopLoggingIfHashMismatchAfter = "";
 
 	private static boolean persistClaims = false;
 	
@@ -198,7 +198,7 @@ public class ConfigLoader {
 				maxDownloadItems = jsonObject.get("maxDownloadItems").getAsInt();
 			}
 			if (jsonObject.has("stopLoggingIfHashMismatch")) {
-				stopLoggingIfHashMismatch = jsonObject.get("stopLoggingIfHashMismatch").getAsBoolean();
+				stopLoggingIfHashMismatchAfter = jsonObject.get("stopLoggingIfHashMismatch").getAsString();
 			}
 			if (jsonObject.has("persistClaims")) {
 				persistClaims = jsonObject.get("persistClaims").getAsBoolean();
@@ -324,8 +324,8 @@ public class ConfigLoader {
 	public boolean getPersistClaims() {
 		return persistClaims;
 	}
-	public boolean getStopLoggingIfHashMismatch() {
-		return stopLoggingIfHashMismatch;
+	public String getStopLoggingIfHashMismatchAfter() {
+		return stopLoggingIfHashMismatchAfter;
 	}
 	public String getPersistFiles() {
 		return persistFiles;
