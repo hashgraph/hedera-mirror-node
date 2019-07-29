@@ -47,12 +47,6 @@ public class RecordFileParser {
 	private static ConfigLoader configLoader;
 	private static LoggerStatus loggerStatus;
 	
-	private enum LoadResult {
-		OK
-		,STOP
-		,ERROR
-	}
-	
 	/**
 	 * Given a service record name, read and parse and return as a list of service record pair
 	 *
@@ -60,7 +54,7 @@ public class RecordFileParser {
 	 * 		the name of record file to read
 	 * @return return previous file hash 
 	 */
-	static public LoadResult loadRecordFile(String fileName, String previousFileHash) {
+	static public boolean loadRecordFile(String fileName, String previousFileHash) {
 
 		File file = new File(fileName);
 		FileInputStream stream = null;
@@ -68,7 +62,7 @@ public class RecordFileParser {
 		
 		if (file.exists() == false) {
 			log.info(MARKER, "File does not exist " + fileName);
-			return null;
+			return false;
 		}
 
 		if (RecordFileLogger.initFile(fileName)) {
@@ -105,7 +99,7 @@ public class RecordFileParser {
 								if (!newFileHash.contentEquals(previousFileHash)) {
 									if (configLoader.getStopLoggingIfHashMismatch()) {
 										log.error(MARKER, "Previous file Hash Mismatch - stopping loading. Previous = {}, Current = {}", previousFileHash, newFileHash);
-										return LoadResult.STOP;
+										return false;
 									}
 								}
 								
@@ -132,7 +126,7 @@ public class RecordFileParser {
 									break;
 								} else {
 									RecordFileLogger.rollback();
-									return LoadResult.ERROR;
+									return false;
 								}
 							case TYPE_SIGNATURE:
 								int sigLength = dis.readInt();
@@ -143,7 +137,7 @@ public class RecordFileParser {
 								if (RecordFileLogger.storeSignature(Hex.encodeHexString(sigBytes))) {
 									break;
 								} else {
-									return LoadResult.ERROR;
+									return false;
 								}
 	
 							default:
@@ -154,20 +148,20 @@ public class RecordFileParser {
 					} catch (Exception e) {
 						log.error(LOGM_EXCEPTION, "Exception ", e);
 						RecordFileLogger.rollback();
-						return LoadResult.ERROR;
+						return false;
 					}
 				}
 				dis.close();
 				RecordFileLogger.completeFile();
 			} catch (FileNotFoundException e) {
 				log.error(MARKER, "File Not Found Error");
-				return LoadResult.ERROR;
+				return false;
 			} catch (IOException e) {
 				log.error(MARKER, "IOException Error");
-				return LoadResult.ERROR;
+				return false;
 			} catch (Exception e) {
 				log.error(MARKER, "Parsing Error");
-				return LoadResult.ERROR;
+				return false;
 			} finally {
 				try {
 					if (stream != null)
@@ -178,9 +172,9 @@ public class RecordFileParser {
 			}
 			loggerStatus.setLastProcessedRcdHash(newFileHash);
 			loggerStatus.saveToFile();
-			return LoadResult.OK;
+			return true;
 		} else {
-			return LoadResult.ERROR;
+			return false;
 		}
 		
 	}
@@ -193,15 +187,11 @@ public class RecordFileParser {
 		String prevFileHash = loggerStatus.getLastProcessedRcdHash();
 
 		for (String name : fileNames) {
-			LoadResult result = loadRecordFile(name, prevFileHash);
-
-			if (result == LoadResult.STOP) {
-				return;
-			}
-
-			prevFileHash = Utility.bytesToHex(RecordFileParser.getFileHash(name));
-			if (result == LoadResult.OK) {
+			if (loadRecordFile(name, prevFileHash)) {
+				prevFileHash = Utility.bytesToHex(RecordFileParser.getFileHash(name));
 				moveFileToParsedDir(name);
+			} else {
+				return;
 			}
 		}
 	}
