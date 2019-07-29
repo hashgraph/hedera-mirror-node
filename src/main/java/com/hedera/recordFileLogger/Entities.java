@@ -144,10 +144,15 @@ public class Entities {
         updateEntity.execute();
         
         ResultSet newId = updateEntity.getResultSet();
-        newId.next();
-        entityId = newId.getLong(1);
-        newId.close();
-        updateEntity.close();
+        if (newId.next()) {
+        	entityId = newId.getLong(1);
+        	newId.close();
+        	updateEntity.close();
+        } else {
+        	// expected entity not found
+        	updateEntity.close();
+        	throw new IllegalStateException("Expected entity not found, shard " + shard + ", realm " + realm + ", num " + num);
+        }
         
         return entityId;
 	    
@@ -186,11 +191,18 @@ public class Entities {
 
         deleteEntity.execute();
         
+        
+        
         ResultSet newId = deleteEntity.getResultSet();
-        newId.next();
-        entityId = newId.getLong(1);
-        newId.close();
-        deleteEntity.close();
+        if (newId.next()) {
+            entityId = newId.getLong(1);
+            newId.close();
+            deleteEntity.close();
+        } else {
+        	// expected entity not found
+            deleteEntity.close();
+        	throw new IllegalStateException("Expected entity not found, shard " + shard + ", realm " + realm + ", num " + num);
+        }
         
         return entityId;
 	    
@@ -230,10 +242,15 @@ public class Entities {
         deleteEntity.execute();
         
         ResultSet newId = deleteEntity.getResultSet();
-        newId.next();
-        entityId = newId.getLong(1);
-        newId.close();
-        deleteEntity.close();
+        if (newId.next()) {
+            entityId = newId.getLong(1);
+            newId.close();
+            deleteEntity.close();
+        } else {
+        	// expected entity not found
+            deleteEntity.close();
+        	throw new IllegalStateException("Expected entity not found, shard " + shard + ", realm " + realm + ", num " + num);
+        }
         
         return entityId;
 	    
@@ -304,10 +321,15 @@ public class Entities {
     	insertEntity.setInt(F_ENTITIES.FK_ENTITY_TYPE_ID.ordinal(), fk_entity_type);
         insertEntity.execute();
         ResultSet newId = insertEntity.getResultSet();
-        newId.next();
-        entityId = newId.getLong(1);
-        newId.close();
-        insertEntity.close();
+        if (newId.next()) {
+            entityId = newId.getLong(1);
+            newId.close();
+            insertEntity.close();
+        } else {
+        	// expected entity not found
+            insertEntity.close();
+        	throw new IllegalStateException("Expected entity not found, shard " + shard + ", realm " + realm + ", num " + num);
+        }
         
         return entityId;
 	    
