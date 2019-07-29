@@ -49,6 +49,9 @@ public class LoggerStatus {
 
 	public void setLastProcessedRcdHash(String name) {
 		lastProcessedRcdHash = name;
+		if (name.isEmpty()) {
+			return;
+		}
 		if (!name.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
 			jsonObject.addProperty("lastProcessedRcdHash", name);
 			log.info(MARKER, "Update lastProcessedRcdHash to be {}", name);

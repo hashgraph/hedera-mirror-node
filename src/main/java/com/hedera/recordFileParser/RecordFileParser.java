@@ -97,8 +97,10 @@ public class RecordFileParser {
 								log.info(MARKER, "New file Hash = " + newFileHash);
 								
 								if (!newFileHash.contentEquals(previousFileHash)) {
-									if (configLoader.getStopLoggingIfHashMismatch()) {
+									if (configLoader.getStopLoggingIfHashMismatchAfter().compareTo(fileName) < 0) {
+										// last file for which mismatch is allowed is in the past
 										log.error(MARKER, "Previous file Hash Mismatch - stopping loading. Previous = {}, Current = {}", previousFileHash, newFileHash);
+										log.error(MARKER, "Mismatching file {}", fileName);
 										return false;
 									}
 								}
