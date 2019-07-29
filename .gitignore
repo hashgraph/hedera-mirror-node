@@ -38,3 +38,4 @@ docker/.env
 docker/MirrorNodePostgresData/
 config/loggerStatus.json
 .env
+mirrordata/
