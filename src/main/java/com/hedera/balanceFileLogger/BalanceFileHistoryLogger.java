@@ -10,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.HashMap;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
@@ -33,7 +34,8 @@ public class BalanceFileHistoryLogger {
 
     private static Connection connect = null;
     private static ConfigLoader configLoader = new ConfigLoader("./config/config.json");
-	
+	private static HashMap<String, Long> mapEntities = new HashMap<String, Long>();
+
     enum balance_fields {
         ZERO
         ,FK_ENTITY_ID
@@ -115,7 +117,14 @@ public class BalanceFileHistoryLogger {
 	                        	accountId.setRealmNum(Long.valueOf(balanceLine[1]));
 	                        	accountId.setAccountNum(Long.valueOf(balanceLine[2]));
 
-	                        	long entityId = entities.createOrGetEntity(accountId.build());
+	                        	long entityId = 0;
+	                        	String entitySRN = balanceLine[0] + "." + balanceLine[1] + "." + balanceLine[2];
+	                        	if (mapEntities.containsKey(entitySRN)) {
+	                        		entityId = mapEntities.get(entitySRN);
+	                        	} else {
+	                        		entityId = entities.createOrGetEntity(accountId.build());
+	                        		mapEntities.put(entitySRN, entityId);
+	                        	}
 
 	                        	insertBalance.setLong(balance_fields.FK_ENTITY_ID.ordinal(), entityId);
 	                        	
