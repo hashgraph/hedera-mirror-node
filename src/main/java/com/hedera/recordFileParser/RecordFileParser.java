@@ -21,6 +21,7 @@ import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirrorNodeProxy.Utility;
 import com.hedera.recordFileLogger.LoggerStatus;
 import com.hedera.recordFileLogger.RecordFileLogger;
+import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.commons.codec.binary.Hex;
@@ -65,8 +66,8 @@ public class RecordFileParser {
 			return false;
 		}
 
-		if (RecordFileLogger.initFile(fileName)) {
-			
+		INIT_RESULT initFileResult = RecordFileLogger.initFile(fileName);
+		if (initFileResult == INIT_RESULT.OK) {
 			try {
 				long counter = 0;
 				stream = new FileInputStream(file);
@@ -172,10 +173,10 @@ public class RecordFileParser {
 					log.error("Exception in close the stream {}", ex);
 				}
 			}
-			loggerStatus.setLastProcessedRcdHash(newFileHash);
-			loggerStatus.saveToFile();
 			return true;
-		} else {
+		} else if (initFileResult == INIT_RESULT.SKIP) {
+			return true;
+		} else {			
 			return false;
 		}
 		

@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.addressBook.NetworkAddressBook;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
@@ -20,6 +21,7 @@ import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -38,6 +40,11 @@ public class RecordFileLogger {
 	
 	private static long fileId = 0;
 
+	public enum INIT_RESULT {
+		OK
+		,FAIL
+		,SKIP
+	}
     enum F_TRANSACTION {
         ZERO // column indices start at 1, this creates the necessary offset
         ,FK_NODE_ACCOUNT_ID
@@ -144,7 +151,7 @@ public class RecordFileLogger {
     	return true;
 	}
     
-	public static boolean initFile(String fileName) {
+	public static INIT_RESULT initFile(String fileName) {
 	    
 		try {
 			fileId = 0;
@@ -157,7 +164,7 @@ public class RecordFileLogger {
             while (resultSet.next()) {
             	fileId = resultSet.getLong(1);
         		log.info("File {} already processed successfully", fileName);
-        		return false;
+        		return INIT_RESULT.SKIP;
             }       
             resultSet.close();      
 			
@@ -174,13 +181,13 @@ public class RecordFileLogger {
 	            newId.close();
 				insertFile.close();
 				
-				return true;
+				return INIT_RESULT.OK;
             }
 			
 		} catch (SQLException e) {
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
 		}
-		return false;
+		return INIT_RESULT.FAIL;
 	}
 	public static boolean completeFile() {
 		// update the file to processed
@@ -237,7 +244,7 @@ public class RecordFileLogger {
 			long fkNodeAccountId = entities.createOrGetEntity(body.getNodeAccountID());
 	
 			sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), fkNodeAccountId);
-			sqlInsertTransaction.setString(F_TRANSACTION.MEMO.ordinal(), body.getMemo());
+			sqlInsertTransaction.setString(F_TRANSACTION.MEMO.ordinal(), body.getMemo().replaceAll("\u0000", ""));
 			sqlInsertTransaction.setLong(F_TRANSACTION.VS_SECONDS.ordinal(), body.getTransactionID().getTransactionValidStart().getSeconds());
 			sqlInsertTransaction.setLong(F_TRANSACTION.VS_NANOS.ordinal(), body.getTransactionID().getTransactionValidStart().getNanos());
 			sqlInsertTransaction.setInt(F_TRANSACTION.FK_TRANS_TYPE_ID.ordinal(), getTransactionTypeId(body));
@@ -417,6 +424,7 @@ public class RecordFileLogger {
             	long proxy_account_id = 0;
             	
             	entityId = entities.updateEntity(txMessage.getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+            	
 			} else if (body.hasFreeze()) {
 				//TODO:
 			} else if (body.hasSystemDelete()) {
@@ -571,7 +579,15 @@ public class RecordFileLogger {
 	            	sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
 	            	sqlInsertFileData.execute();
             	}
-            	//TODO:Address book + proxy amounts for nodes
+            
+            	// update the local address book
+            	FileID updatedFile = body.getFileUpdate().getFileID();
+            			
+            	if ((updatedFile.getFileNum() == 102) && (updatedFile.getShardNum() == 0) && (updatedFile.getRealmNum() == 0)) {
+            		// we have an address book update, refresh the local file
+            		NetworkAddressBook.writeFile(body.getFileUpdate().getContents().toByteArray());
+            	}
+
             } else if (body.hasFreeze()) {
             	// Do nothing 
             } else if (body.hasSystemDelete()) {
@@ -619,46 +635,6 @@ public class RecordFileLogger {
 		} else {
 			return transactionTypes.get("unknown");
 		}
-		
-//		if (body.hasContractCall()) {
-//			return transactionTypes.get("contractcall");
-//		} else if (body.hasContractCreateInstance()) {
-//			return transactionTypes.get("contractcreate");
-//		} else if (body.hasContractDeleteInstance()) {
-//			return transactionTypes.get("contractdelete");
-//		} else if (body.hasContractUpdateInstance()) {
-//			return transactionTypes.get("contractupdate");
-//		} else if (body.hasCryptoCreateAccount()) {
-//			return transactionTypes.get("cryptocreate");
-//		} else if (body.hasCryptoDelete()) {
-//			return transactionTypes.get("cryptodelete");
-//        } else if (body.hasCryptoTransfer()) {
-//            return transactionTypes.get("cryptotransfer");
-//        } else if (body.hasCryptoUpdateAccount()) {
-//            return transactionTypes.get("cryptoupdate");
-//        } else if (body.hasCryptoAddClaim()) {
-//            return transactionTypes.get("cryptoaddclaim");
-//		} else if (body.hasCryptoDeleteClaim()) {
-//			return transactionTypes.get("cryptodeleteclaim");
-//		} else if (body.hasFileAppend()) {
-//			return transactionTypes.get("fileappend");
-//		} else if (body.hasFileCreate()) {
-//			return transactionTypes.get("filecreate");
-//		} else if (body.hasFileDelete()) {
-//			return transactionTypes.get("filedelete");
-//		} else if (body.hasFileUpdate()) {
-//			return transactionTypes.get("fileupdate");
-//		} else if (body.hasCryptoUpdateAccount()) {
-//			return transactionTypes.get("cryptoUpdate");
-//		} else if (body.hasFreeze()) {
-//			return transactionTypes.get("freeze");
-//		} else if (body.hasSystemDelete()) {
-//			return transactionTypes.get("systemDelete");
-//		} else if (body.hasSystemUndelete()) {
-//			return transactionTypes.get("systemUndelete");
-//		} else {
-//			return transactionTypes.get("unknown");
-//		}
 	}
 	
 	private static long insertTransaction(PreparedStatement insertTransaction) throws SQLException {
