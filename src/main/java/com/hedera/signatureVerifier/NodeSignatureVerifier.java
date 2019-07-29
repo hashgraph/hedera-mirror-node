@@ -264,6 +264,7 @@ public class NodeSignatureVerifier {
 			sig.update(data);
 			if (signature == null) {
 				log.error(MARKER, " verifySignature :: signature is null !");
+				return false;
 			}
 			return sig.verify(signature);
 		} catch (NoSuchAlgorithmException | NoSuchProviderException
