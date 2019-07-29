@@ -17,6 +17,8 @@
 
 package com.hedera.platform;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+
 import javax.swing.text.Utilities;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -32,22 +34,15 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * A hashgraph transaction that consists of an array of bytes and a list of immutable {@link Signature} objects. The
- * contents of the transaction is completely immutable; however, the list of signatures features controlled mutability
- * with a thread-safe and atomic implementation. The transaction internally uses a {@link ReadWriteLock} to provide
- * atomic reads and writes to the underlying list of signatures.
- * <p>
- * Selectively combining controlled mutability for certain aspects while using immutability for the rest grants a
- * significant performance improvement over a completely mutable or completely immutable object.
+ * A hashgraph transaction that consists of an array of bytes and a list of immutable {@link Signature} objects.
  * </p>
  */
 public class Transaction {
 
-	/** A per-transaction read/write lock to ensure thread safety of the signature list */
-	private final ReadWriteLock readWriteLock;
-
 	/** The content (payload) of the transaction */
 	private byte[] contents;
+
+	private com.hederahashgraph.api.proto.java.Transaction transaction;
 
 	/** The list of optional signatures attached to this transaction */
 	private List<Signature> signatures;
@@ -63,50 +58,8 @@ public class Transaction {
 	 * @throws NullPointerException
 	 * 		if the {@code contents} parameter is null or a zero-length array
 	 */
-	public Transaction(final byte[] contents) {
+	public Transaction(final byte[] contents) throws InvalidProtocolBufferException {
 		this(contents, false, (List<Signature>) null);
-	}
-
-	/**
-	 * Constructs a new application transaction with an optional list of signatures.
-	 *
-	 * @param contents
-	 * 		the binary content/payload of the Swirld transaction
-	 * @param signatures
-	 * 		an optional list of signatures to be included with this transaction
-	 * @throws NullPointerException
-	 * 		if the {@code contents} parameter is null or a zero-length array
-	 */
-	Transaction(final byte[] contents, final Signature... signatures) {
-		this(contents, false, signatures);
-	}
-
-	/**
-	 * Constructs a new application transaction with an optional list of signatures.
-	 *
-	 * @param contents
-	 * 		the binary content/payload of the Swirld transaction
-	 * @param signatures
-	 * 		an optional list of signatures to be included with this transaction
-	 * @throws NullPointerException
-	 * 		if the {@code contents} parameter is null or a zero-length array
-	 */
-	Transaction(final byte[] contents, final List<Signature> signatures) {
-		this(contents, false, signatures);
-	}
-
-	/**
-	 * Constructs a new transaction with no associated signatures.
-	 *
-	 * @param contents
-	 * 		the binary content/payload of the Swirld transaction
-	 * @param system
-	 *        {@code true} if this is a system transaction; {@code false} if this is an application transaction
-	 * @throws NullPointerException
-	 * 		if the {@code contents} parameter is null or a zero-length array
-	 */
-	Transaction(final byte[] contents, final boolean system) {
-		this(contents, system, (List<Signature>) null);
 	}
 
 	/**
@@ -122,7 +75,7 @@ public class Transaction {
 	 * @throws NullPointerException
 	 * 		if the {@code contents} parameter is null or a zero-length array
 	 */
-	Transaction(final byte[] contents, final boolean system, final Signature... signatures) {
+	Transaction(final byte[] contents, final boolean system, final Signature... signatures) throws InvalidProtocolBufferException {
 		this(contents, system, (signatures != null && signatures.length > 0) ? Arrays.asList(signatures) : null);
 	}
 
@@ -139,19 +92,19 @@ public class Transaction {
 	 * @throws NullPointerException
 	 * 		if the {@code contents} parameter is null or a zero-length array
 	 */
-	Transaction(final byte[] contents, final boolean system, final List<Signature> signatures) {
+	Transaction(final byte[] contents, final boolean system, final List<Signature> signatures) throws InvalidProtocolBufferException {
 		if (contents == null || contents.length == 0) {
 			throw new NullPointerException("contents");
 		}
 
 		this.contents = contents.clone();
+		//this.transaction = com.hederahashgraph.api.proto.java.Transaction.parseFrom(contents);
+
 		this.system = system;
 
 		if (signatures != null && !signatures.isEmpty()) {
 			this.signatures = new ArrayList<>(signatures);
 		}
-
-		this.readWriteLock = new ReentrantReadWriteLock(false);
 	}
 
 	/**
@@ -324,25 +277,6 @@ public class Transaction {
 	}
 
 	/**
-	 * Returns a {@link List} of {@link Signature} objects associated with this transaction. This method returns a
-	 * shallow copy of the original list.
-	 *
-	 * This method is thread-safe and guaranteed to be atomic in nature.
-	 *
-	 * @return a shallow copy of the original signature list
-	 */
-	public List<Signature> getSignatures() {
-		final Lock readLock = readWriteLock.readLock();
-
-		try {
-			readLock.lock();
-			return (signatures != null) ? new ArrayList<>(signatures) : new ArrayList<>(1);
-		} finally {
-			readLock.unlock();
-		}
-	}
-
-	/**
 	 * Internal use accessor that returns a flag indicating whether this is a system transaction.
 	 *
 	 * @return {@code true} if this is a system transaction; otherwise {@code false} if this is an application
@@ -352,179 +286,11 @@ public class Transaction {
 		return system;
 	}
 
-	/**
-	 * Efficiently extracts and adds a new signature to this transaction bypassing the need to make copies of the
-	 * underlying byte arrays.
-	 *
-	 * @param signatureOffset
-	 * 		the offset in the transaction payload where the signature begins
-	 * @param signatureLength
-	 * 		the length in bytes of the signature
-	 * @param publicKeyOffset
-	 * 		the offset in the transaction payload where the public key begins
-	 * @param publicKeyLength
-	 * 		the length in bytes of the public key
-	 * @param messageOffset
-	 * 		the offset in the transaction payload where the message begins
-	 * @param messageLength
-	 * 		the length of the message in bytes
-	 * @throws IllegalArgumentException
-	 * 		if any of the provided offsets or lengths falls outside the array bounds
-	 * @throws NullPointerException
-	 * 		if the internal payload of this transaction is null or a zero length array
-	 */
-	public void extractSignature(final int signatureOffset, final int signatureLength, final int publicKeyOffset,
-			final int publicKeyLength, final int messageOffset, final int messageLength) {
-		add(new Signature(contents, signatureOffset, signatureLength, publicKeyOffset, publicKeyLength, messageOffset,
-				messageLength));
-	}
-
-	/**
-	 * Efficiently extracts and adds a new signature to this transaction bypassing the need to make copies of the
-	 * underlying byte arrays. If the optional expanded public key is provided then the public key offset and length are
-	 * indices into this array instead of the transaction payload.
-	 *
-	 * @param signatureOffset
-	 * 		the offset in the transaction payload where the signature begins
-	 * @param signatureLength
-	 * 		the length in bytes of the signature
-	 * @param expandedPublicKey
-	 * 		an optional expanded form of the public key
-	 * @param publicKeyOffset
-	 * 		the offset where the public key begins
-	 * @param publicKeyLength
-	 * 		the length in bytes of the public key
-	 * @param messageOffset
-	 * 		the offset in the transaction payload where the message begins
-	 * @param messageLength
-	 * 		the length of the message in bytes
-	 * @throws IllegalArgumentException
-	 * 		if any of the provided offsets or lengths falls outside the array bounds
-	 * @throws NullPointerException
-	 * 		if the internal payload of this transaction is null or a zero length array
-	 */
-	public void extractSignature(final int signatureOffset, final int signatureLength, final byte[] expandedPublicKey,
-			final int publicKeyOffset, final int publicKeyLength, final int messageOffset, final int messageLength) {
-		add(new Signature(contents, signatureOffset, signatureLength, expandedPublicKey, publicKeyOffset,
-				publicKeyLength, messageOffset, messageLength));
-	}
-
-	/**
-	 * Adds a new {@link Signature} to this transaction.
-	 *
-	 * This method is thread-safe and guaranteed to be atomic in nature.
-	 *
-	 * @param signature
-	 * 		the signature to be added
-	 * @throws NullPointerException
-	 * 		if the {@code signature} parameter is null
-	 */
-	public void add(final Signature signature) {
-		if (signature == null) {
-			throw new NullPointerException("signature");
-		}
-
-		final Lock writeLock = readWriteLock.writeLock();
-
-		try {
-			writeLock.lock();
-			if (signatures == null) {
-				signatures = new ArrayList<>(5);
-			}
-
-			signatures.add(signature);
-		} finally {
-			writeLock.unlock();
-		}
-	}
-
-	/**
-	 * Adds a list of new {@link Signature} objects to this transaction.
-	 *
-	 * This method is thread-safe and guaranteed to be atomic in nature.
-	 *
-	 * @param signatures
-	 * 		the list of signatures to be added
-	 */
-	public void addAll(final Signature... signatures) {
-		if (signatures == null || signatures.length == 0) {
-			return;
-		}
-
-		final Lock writeLock = readWriteLock.writeLock();
-
-		try {
-			writeLock.lock();
-			if (this.signatures == null) {
-				this.signatures = new ArrayList<>(signatures.length);
-			}
-
-			this.signatures.addAll(Arrays.asList(signatures));
-		} finally {
-			writeLock.unlock();
-		}
-	}
-
-	/**
-	 * Removes a {@link Signature} from this transaction.
-	 *
-	 * This method is thread-safe and guaranteed to be atomic in nature.
-	 *
-	 * @param signature
-	 * 		the signature to be removed
-	 * @return {@code true} if the underlying list was modified; {@code false} otherwise
-	 */
-	public boolean remove(final Signature signature) {
-		if (signature == null) {
-			return false;
-		}
-
-		final Lock writeLock = readWriteLock.writeLock();
-
-		try {
-			writeLock.lock();
-			if (signatures == null) {
-				return false;
-			}
-
-			return signatures.remove(signature);
-		} finally {
-			writeLock.unlock();
-		}
-	}
-
-	/**
-	 * Removes a list of {@link Signature} objects from this transaction.
-	 *
-	 * This method is thread-safe and guaranteed to be atomic in nature.
-	 *
-	 * @param signatures
-	 * 		the list of signatures to be removed
-	 * @return {@code true} if the underlying list was modified; {@code false} otherwise
-	 */
-	public boolean removeAll(final Signature... signatures) {
-		if (signatures == null || signatures.length == 0) {
-			return false;
-		}
-
-		final Lock writeLock = readWriteLock.writeLock();
-
-		try {
-			writeLock.lock();
-			if (this.signatures == null) {
-				return false;
-			}
-
-			return this.signatures.removeAll(Arrays.asList(signatures));
-		} finally {
-			writeLock.unlock();
-		}
-	}
 
 	@Override
 	public String toString() {
 		return "Transaction{" +
-				"contents=" + Arrays.toString(contents) +
+				"contents =" + contents +
 				", signatures=" + signatures +
 				", system=" + system +
 				'}';

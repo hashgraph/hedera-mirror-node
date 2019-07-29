@@ -47,11 +47,14 @@ public class ConfigLoader {
 	// download period in seconds
 	private static long downloadPeriodSec = 120;
 
-	// the directory where we store the RecordStream files
-	private static String downloadToDir = "./recordstreams";
+	// the directory where we store the files
+	private static String downloadToDir = "/MirrorNodeData";
 
 	// the default directory to be parsed
-	private static String defaultParseDir = "./recordstreams/valid/";
+	private static String defaultParseDir_RecordStream = "/MirrorNodeData/recordstreams/valid/";
+
+	// the default directory to be parsed
+	private static String defaultParseDir_EventStream = "/MirrorNodeData/eventstreams/valid/";
 
 	// the port of mirrorNodeProxy;
 	private static int proxyPort = 50777;
@@ -146,8 +149,11 @@ public class ConfigLoader {
 			if (jsonObject.has("downloadToDir")) {
 				downloadToDir = jsonObject.get("downloadToDir").getAsString();
 			}
-			if (jsonObject.has("defaultParseDir")) {
-				defaultParseDir = jsonObject.get("defaultParseDir").getAsString();
+			if (jsonObject.has("defaultParseDir_RecordStream")) {
+				defaultParseDir_RecordStream = jsonObject.get("defaultParseDir_RecordStream").getAsString();
+			}
+			if (jsonObject.has("defaultParseDir_EventStream")) {
+				defaultParseDir_EventStream = jsonObject.get("defaultParseDir_EventStream").getAsString();
 			}
 			if (jsonObject.has("proxyPort")) {
 				proxyPort = jsonObject.get("proxyPort").getAsInt();
@@ -245,8 +251,12 @@ public class ConfigLoader {
 		return downloadToDir;
 	}
 
-	public String getDefaultParseDir() {
-		return defaultParseDir;
+	public String getDefaultParseDir_RecordStream() {
+		return defaultParseDir_RecordStream;
+	}
+
+	public String getDefaultParseDir_EventStream() {
+		return defaultParseDir_EventStream;
 	}
 
 	public int getProxyPort() {

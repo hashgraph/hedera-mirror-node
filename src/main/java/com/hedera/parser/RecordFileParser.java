@@ -223,8 +223,8 @@ public class RecordFileParser {
 		configLoader = new ConfigLoader("./config/config.json");
 		loggerStatus = new LoggerStatus("./config/loggerStatus.json");
 
-		pathName = configLoader.getDefaultParseDir();
-		log.info(MARKER, "Record files folder got from configuration file: {}", configLoader.getDefaultParseDir());
+		pathName = configLoader.getDefaultParseDir_RecordStream();
+		log.info(MARKER, "Record files folder got from configuration file: {}", configLoader.getDefaultParseDir_RecordStream());
 
 		if (pathName != null) {
 

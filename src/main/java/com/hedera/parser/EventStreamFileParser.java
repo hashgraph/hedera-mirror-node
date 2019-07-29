@@ -55,89 +55,86 @@ public class EventStreamFileParser {
 			return false;
 		}
 
-		if (RecordFileLogger.initFile(fileName)) {
+		try {
+			long counter = 0;
+			stream = new FileInputStream(file);
+			DataInputStream dis = new DataInputStream(stream);
 
-			try {
-				long counter = 0;
-				stream = new FileInputStream(file);
-				DataInputStream dis = new DataInputStream(stream);
+			int eventStreamFileVersion = dis.readInt();
 
-				int eventStreamFileVersion = dis.readInt();
+			log.info(MARKER, "EventStream file format version " + eventStreamFileVersion);
+			if (eventStreamFileVersion != EVENT_STREAM_FILE_VERSION) {
+				log.error(MARKER, "EventStream file format version doesn't match.");
+				return false;
+			}
+			while (dis.available() != 0) {
+				try {
+					byte typeDelimiter = dis.readByte();
+					switch (typeDelimiter) {
+						case TYPE_PREV_HASH:
+							byte[] readFileHash = new byte[48];
+							dis.read(readFileHash);
+							if (previousFileHash.isEmpty()) {
+								log.error(MARKER, "Previous file Hash not available");
+								previousFileHash = Hex.encodeHexString(readFileHash);
+							} else {
+								log.info(MARKER, "Previous file Hash = " + previousFileHash);
+							}
+							newFileHash = Hex.encodeHexString(readFileHash);
 
-				log.info(MARKER, "EventStream file format version " + eventStreamFileVersion);
-				if (eventStreamFileVersion != EVENT_STREAM_FILE_VERSION) {
-					log.error(MARKER, "EventStream file format version doesn't match.");
+							if (!Arrays.equals(new byte[48], readFileHash) && !newFileHash.contentEquals(previousFileHash)) {
+								if (configLoader.getStopLoggingIfHashMismatch()) {
+									log.error(MARKER, "Previous file Hash Mismatch - stopping loading. fileName = {}, Previous = {}, Current = {}", fileName, previousFileHash, newFileHash);
+									return false;
+								}
+							}
+							break;
+
+						case STREAM_EVENT_START_NO_TRANS_WITH_VERSION:
+							loadEvent(dis, true);
+							counter++;
+							break;
+						case STREAM_EVENT_START_WITH_VERSION:
+							loadEvent(dis, false);
+							counter++;
+							break;
+						default:
+							log.error(LOGM_EXCEPTION, "Exception Unknown record file delimiter {}", typeDelimiter);
+					}
+
+				} catch (Exception e) {
+					log.error(LOGM_EXCEPTION, "Exception ", e);
 					return false;
 				}
-				while (dis.available() != 0) {
-					try {
-						byte typeDelimiter = dis.readByte();
-						switch (typeDelimiter) {
-							case TYPE_PREV_HASH:
-								byte[] readFileHash = new byte[48];
-								dis.read(readFileHash);
-								if (previousFileHash.isEmpty()) {
-									log.error(MARKER, "Previous file Hash not available");
-									previousFileHash = Hex.encodeHexString(readFileHash);
-								} else {
-									log.info(MARKER, "Previous file Hash = " + previousFileHash);
-								}
-								newFileHash = Hex.encodeHexString(readFileHash);
-
-								if (!newFileHash.contentEquals(previousFileHash)) {
-									if (configLoader.getStopLoggingIfHashMismatch()) {
-										log.error(MARKER, "Previous file Hash Mismatch - stopping loading. Previous = {}, Current = {}", previousFileHash, newFileHash);
-										return false;
-									}
-								}
-								break;
-
-							case STREAM_EVENT_START_NO_TRANS_WITH_VERSION:
-								loadEvent(dis, true);
-								counter++;
-								break;
-							case STREAM_EVENT_START_WITH_VERSION:
-								loadEvent(dis, false);
-								counter++;
-								break;
-							default:
-								log.error(LOGM_EXCEPTION, "Exception Unknown record file delimiter {}", typeDelimiter);
-						}
-
-					} catch (Exception e) {
-						log.error(LOGM_EXCEPTION, "Exception ", e);
-						return false;
-					}
-				}
-				dis.close();
-			} catch (FileNotFoundException e) {
-				log.error(MARKER, "File Not Found Error");
-				return false;
-			} catch (IOException e) {
-				log.error(MARKER, "IOException Error");
-				return false;
-			} catch (Exception e) {
-				log.error(MARKER, "Parsing Error");
-				return false;
-			} finally {
-				try {
-					if (stream != null)
-						stream.close();
-				} catch (IOException ex) {
-					log.error("Exception in close the stream {}", ex);
-					return true;
-				}
 			}
-			return true;
-		} else {
+			dis.close();
+			log.info(MARKER,"Loaded {} events successfully from {}", counter, fileName);
+		} catch (FileNotFoundException e) {
+			log.error(MARKER, "File Not Found Error");
 			return false;
+		} catch (IOException e) {
+			log.error(MARKER, "IOException Error");
+			return false;
+		} catch (Exception e) {
+			log.error(MARKER, "Parsing Error");
+			return false;
+		} finally {
+			try {
+				if (stream != null)
+					stream.close();
+			} catch (IOException ex) {
+				log.error(MARKER, "Exception in close the stream {}", ex);
+				return true;
+			}
 		}
 
+		return true;
 	}
 
 	static void loadEvent(DataInputStream dis, boolean noTxs) throws IOException {
 		if (dis.readInt() != STREAM_EVENT_VERSION) {
 			log.error(MARKER, "EventStream format version doesn't match.");
+			return;
 		}
 		long creatorId = dis.readLong();
 		long creatorSeq = dis.readLong();
@@ -147,8 +144,9 @@ public class EventStreamFileParser {
 		long otherParentGen = dis.readLong();
 		byte[] selfParentHash = readNullableByteArray(dis);
 		byte[] otherParentHash = readNullableByteArray(dis);
+		Transaction[] transactions = new Transaction[0];
 		if (!noTxs) {
-			Transaction[] transactions = Transaction.readArray(dis);
+			transactions = Transaction.readArray(dis);
 		}
 		Instant timeCreated = readInstant(dis);
 		byte[] signature = readByteArray(dis);
@@ -161,6 +159,7 @@ public class EventStreamFileParser {
 		byte[] hash = readByteArray(dis);
 		Instant consensusTimeStamp = readInstant(dis);
 		long consensusOrder = dis.readLong();
+		log.info(MARKER, "Loaded Event: creatorId: {}, creatorSeq: {}, otherId: {}, otherSeq: {}, selfParentGen: {}, otherParentGen: {}, selfParentHash: {}, otherParentHash: {}, transactions: {}, timeCreated: {}, signature: {}, hash: {}, consensusTimeStamp: {}, consensusOrder: {}", creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, Utility.bytesToHex(selfParentHash), Utility.bytesToHex(otherParentHash), transactions, timeCreated, Utility.bytesToHex(signature), Utility.bytesToHex(hash), consensusTimeStamp, consensusOrder);
 	}
 
 
@@ -226,41 +225,37 @@ public class EventStreamFileParser {
 
 		configLoader = new ConfigLoader("./config/config.json");
 
-		pathName = configLoader.getDefaultParseDir();
-		log.info(MARKER, "EventStream files folder got from configuration file: {}", configLoader.getDefaultParseDir());
+		pathName = configLoader.getDefaultParseDir_EventStream();
+		log.info(MARKER, "EventStream files folder got from configuration file: {}", configLoader.getDefaultParseDir_EventStream());
 
 		if (pathName != null) {
 
-			if (RecordFileLogger.start()) {
+			File file = new File(pathName);
+			if (file.isFile()) {
+				log.info(MARKER, "Loading eventStream file {} ", pathName);
+				loadEventStreamFile(pathName, "");
+			} else if (file.isDirectory()) { //if it's a directory
 
-				File file = new File(pathName);
-				if (file.isFile()) {
-					log.info(MARKER, "Loading eventStream file {} " + pathName);
-					loadEventStreamFile(pathName, "");
-				} else if (file.isDirectory()) { //if it's a directory
+				String[] files = file.list(); // get all files under the directory
+				Arrays.sort(files);           // sorted by name (timestamp)
 
-					String[] files = file.list(); // get all files under the directory
-					Arrays.sort(files);           // sorted by name (timestamp)
+				// add director prefix to get full path
+				List<String> fullPaths = Arrays.asList(files).stream()
+						.filter(f -> Utility.isEventStreamFile(f))
+						.map(s -> file + "/" + s)
+						.collect(Collectors.toList());
 
-					// add director prefix to get full path
-					List<String> fullPaths = Arrays.asList(files).stream()
-							.filter(f -> Utility.isEventStreamFile(f))
-							.map(s -> file + "/" + s)
-							.collect(Collectors.toList());
+				log.info(MARKER, "Loading eventStream files from directory {} ", pathName);
 
-					log.info(MARKER, "Loading eventStream files from directory {} ", pathName);
-
-					if (fullPaths != null) {
-						log.info(MARKER, "Files are " + fullPaths);
-						loadRecordFiles(fullPaths);
-					} else {
-						log.info(MARKER, "No files to parse");
-					}
+				if (fullPaths != null) {
+					log.info(MARKER, "Files are " + fullPaths);
+					loadRecordFiles(fullPaths);
 				} else {
-					log.error(LOGM_EXCEPTION, "Exception file {} does not exist", pathName);
-
+					log.info(MARKER, "No files to parse");
 				}
-				RecordFileLogger.finish();
+			} else {
+				log.error(LOGM_EXCEPTION, "Exception file {} does not exist", pathName);
+
 			}
 		}
 	}
