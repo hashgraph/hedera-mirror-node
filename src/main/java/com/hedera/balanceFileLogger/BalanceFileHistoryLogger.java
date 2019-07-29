@@ -13,6 +13,9 @@ import java.sql.SQLException;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
+import com.hedera.recordFileLogger.Entities;
+import com.hederahashgraph.api.proto.java.AccountID;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -33,11 +36,9 @@ public class BalanceFileHistoryLogger {
 	
     enum balance_fields {
         ZERO
+        ,FK_ENTITY_ID
         ,SNAPSHOT_TIME
         ,SECONDS
-        ,ACCOUNT_SHARD
-        ,ACCOUNT_REALM
-        ,ACCOUNT_NUM
         ,BALANCE_INSERT 
         ,BALANCE_UPDATE        
     }
@@ -59,6 +60,7 @@ public class BalanceFileHistoryLogger {
 	public static boolean processFile(File balanceFile) {
         boolean processLine = false;
         boolean getDate = false;
+        Entities entities;
         
         try {
             // process the file
@@ -66,11 +68,30 @@ public class BalanceFileHistoryLogger {
             
             if (connect != null) {
 
-	            PreparedStatement insertBalance;
+                try {
+        			entities = new Entities(connect);
+        		} catch (SQLException e) {
+                    log.error(LOGM_EXCEPTION, "Unable to fetch entity types, Exception: {}", e.getMessage());
+                	return false;
+        		}
+
+                try {
+        			connect.setAutoCommit(false);
+        		} catch (SQLException e) {
+                    log.error(LOGM_EXCEPTION, "Unable to unset database auto commit, Exception: {}", e.getMessage());
+                	return false;
+        		}
+                
+            	PreparedStatement insertBalance;
 	            insertBalance = connect.prepareStatement(
-	                    "insert into t_account_balance_history (snapshot_time, seconds, account_shard, account_realm, account_num, balance) "
-	                    + " values (to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss'), EXTRACT(EPOCH FROM to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss')), ?, ?, ?, ?) "
-	                    + " ON CONFLICT (snapshot_time, seconds, account_num, account_realm, account_shard) "
+	                    "insert into t_account_balance_history (fk_entity_id, snapshot_time, seconds, balance) "
+	                    + " values ("
+	                    + " ?" // entity_id
+	                    + ", to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss')" // snapsho
+	                    + ", EXTRACT(EPOCH FROM to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss'))" //seconds
+	                    + ", ?"
+	                    + ")"
+	                    + " ON CONFLICT (snapshot_time, seconds, fk_entity_id) "
 	                    + " DO UPDATE set balance = ?");
 	        
 	            BufferedReader br = new BufferedReader(new FileReader(balanceFile));
@@ -83,24 +104,31 @@ public class BalanceFileHistoryLogger {
 	                        String[] balanceLine = line.split(",");
 	                        if (balanceLine.length != 4) {
 		                        log.error(LOGM_EXCEPTION, "Balance file {} appears truncated", balanceFile);
+		                        connect.rollback();
 		                        insertBalance.close();
 		                        br.close();
 		                        return false;
 	                        } else {
-		                        
+	                        	// get entity id
+	                        	AccountID.Builder accountId = AccountID.newBuilder();
+	                        	accountId.setShardNum(Long.valueOf(balanceLine[0]));
+	                        	accountId.setRealmNum(Long.valueOf(balanceLine[1]));
+	                        	accountId.setAccountNum(Long.valueOf(balanceLine[2]));
+
+	                        	long entityId = entities.createOrGetEntity(accountId.build());
+
+	                        	insertBalance.setLong(balance_fields.FK_ENTITY_ID.ordinal(), entityId);
+	                        	
 		                        insertBalance.setString(balance_fields.SNAPSHOT_TIME.ordinal(), dateLine);
 		                        insertBalance.setString(balance_fields.SECONDS.ordinal(), dateLine);
-		                        insertBalance.setLong(balance_fields.ACCOUNT_SHARD.ordinal(), Long.valueOf(balanceLine[0]));
-		                        insertBalance.setLong(balance_fields.ACCOUNT_REALM.ordinal(), Long.valueOf(balanceLine[1]));
-		                        insertBalance.setLong(balance_fields.ACCOUNT_NUM.ordinal(), Long.valueOf(balanceLine[2]));
 		                        insertBalance.setLong(balance_fields.BALANCE_INSERT.ordinal(), Long.valueOf(balanceLine[3]));
 		                        insertBalance.setLong(balance_fields.BALANCE_UPDATE.ordinal(), Long.valueOf(balanceLine[3]));
 		
 		                        insertBalance.execute();
 	                        }	                        
 	                    } catch (SQLException e) {
-	                        e.printStackTrace();
 	                        log.error(LOGM_EXCEPTION, "Exception {}", e);
+	                        connect.rollback();
 	                        return false;
 	                    }
 	                } else if (getDate) {
@@ -113,18 +141,16 @@ public class BalanceFileHistoryLogger {
 	                    processLine = true;
 	                }
 	            }
+	            connect.commit();
 	            insertBalance.close();
 	            br.close();
 	            return true;
             }
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
             log.error(LOGM_EXCEPTION, "Exception {}", e);
         } catch (IOException e) {
-            e.printStackTrace();
             log.error(LOGM_EXCEPTION, "Exception {}", e);
         } catch (SQLException e) {
-            e.printStackTrace();
             log.error(LOGM_EXCEPTION, "Exception {}", e);
         }
         return false;

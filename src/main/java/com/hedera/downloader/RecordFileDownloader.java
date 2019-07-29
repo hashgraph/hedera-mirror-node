@@ -46,9 +46,9 @@ public class RecordFileDownloader extends Downloader {
 				downloader.verifySigsAndDownloadRCFiles(sigFilesMap);
 
 				if (validRcdDir != null) {
-					new Thread(() -> {
+//					new Thread(() -> {
 						verifyValidRcdFiles(validRcdDir);
-					}).start();
+//					}).start();
 				}
 
 				xfer_mgr.shutdownNow();

@@ -93,7 +93,7 @@ public class RecordFileParser {
 							case TYPE_PREV_HASH:
 								byte[] readFileHash = new byte[48];
 								dis.read(readFileHash);
-								if (previousFileHash.isEmpty()) {
+								if (previousFileHash.isEmpty() || previousFileHash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
 									log.error(MARKER, "Previous file Hash not available");
 									previousFileHash = Hex.encodeHexString(readFileHash);
 								} else {
@@ -131,6 +131,7 @@ public class RecordFileParser {
 									log.info(MARKER, "Record = {}\n=============================\n",  TextFormat.shortDebugString(txRecord));
 									break;
 								} else {
+									RecordFileLogger.rollback();
 									return LoadResult.ERROR;
 								}
 							case TYPE_SIGNATURE:
@@ -148,13 +149,16 @@ public class RecordFileParser {
 							default:
 								log.error(LOGM_EXCEPTION, "Exception Unknown record file delimiter {}", typeDelimiter);
 						}
+						
 	
 					} catch (Exception e) {
 						log.error(LOGM_EXCEPTION, "Exception ", e);
+						RecordFileLogger.rollback();
 						return LoadResult.ERROR;
 					}
 				}
 				dis.close();
+				RecordFileLogger.completeFile();
 			} catch (FileNotFoundException e) {
 				log.error(MARKER, "File Not Found Error");
 				return LoadResult.ERROR;
@@ -168,9 +172,6 @@ public class RecordFileParser {
 				try {
 					if (stream != null)
 						stream.close();
-					if (!RecordFileLogger.completeFile()) {
-						return LoadResult.ERROR;
-					}
 				} catch (IOException ex) {
 					log.error("Exception in close the stream {}", ex);
 				}
