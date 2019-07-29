@@ -41,6 +41,9 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 - Update address book automatically from transaction history
 - REST api in docker
+- Add CI for build
+- Create unit tests
+- Add CI for unit tests
 
 ## Change history
 
@@ -204,6 +207,8 @@ The `0.0.102` file contains the address book, that is the list of nodes, their a
 See instructions below on how to generate this file for a network.
 
 ### config.json
+
+Note: Changes to this file while downloading or processing is taking place may be overwritten by the software. Make sure all processes are stopped before making changes.
 
 | Parameter name  | Default value  | Description  |
 |---|---|---|
