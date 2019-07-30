@@ -474,7 +474,6 @@ public class RecordFileLogger {
                 try {
                     if (configLoader.getPersistCryptoTransferAmounts()) {
 	                    for (int i = 0; i < pTransfer.getAccountAmountsCount(); i++) {
-	                        long amount = pTransfer.getAccountAmounts(i).getAmount();
 	                        // insert
 	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.TXID.ordinal(), fkTransactionId);
 	                        long xferAccountId = entities.createOrGetEntity(pTransfer.getAccountAmounts(i).getAccountID());
