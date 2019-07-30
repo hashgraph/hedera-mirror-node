@@ -48,6 +48,21 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Removal of `downloadPeriodSec` parameter from config.json
+
+Download and processing (logging) activities now run in a continuous loop, restarting as soon as they finished to lower the latency for data availability in the database as much as possible.
+To gracefully stop a running process, create a file called `stop` in the folder where the application was launched from. 
+For example in Unix systems
+```
+touch stop
+```
+
+Remember to remove this file once you are ready to restart the processes.
+
+### All balance logging is now done in a single class
+
+Logging latest balance and balance history is now done sequentially from a single class.
+
 ### Performance optimisations to balance tables
 
 Balance tables (t_account_balances and t_balance_history) were using the same t_entities table as other tables for referential integrity.
