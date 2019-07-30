@@ -44,9 +44,6 @@ public class ConfigLoader {
 	// AWS_SECRET_ACCESS_KEY
 	private static String secretKey = null;
 
-	// download period in seconds
-	private static long downloadPeriodSec = 120;
-
 	// the directory where we store the RecordStream files
 	private static String downloadToDir = "./recordstreams";
 
@@ -140,9 +137,6 @@ public class ConfigLoader {
 					secretKey = jsonObject.get("secretKey").getAsString();
 				}
 			}
-			if (jsonObject.has("downloadPeriodSec")) {
-				downloadPeriodSec = jsonObject.get("downloadPeriodSec").getAsLong();
-			}
 			if (jsonObject.has("downloadToDir")) {
 				downloadToDir = jsonObject.get("downloadToDir").getAsString();
 			}
@@ -235,10 +229,6 @@ public class ConfigLoader {
 
 	public String getSecretKey() {
 		return secretKey;
-	}
-
-	public long getDownloadPeriodSec() {
-		return downloadPeriodSec;
 	}
 
 	public String getDownloadToDir() {
