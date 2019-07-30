@@ -4,7 +4,6 @@
   "bucketName": "hedera-export",
   "accessKey": "",
   "secretKey": "",
-  "downloadPeriodSec": 120,
   "downloadToDir": "/MirrorNodeData",
   "defaultParseDir": "/MirrorNodeData/recordstreams/valid/",
   "proxyPort": 50777,
