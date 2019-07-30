@@ -250,7 +250,6 @@ Note: Changes to this file while downloading or processing is taking place may b
 | bucketName | `"hedera-export"` | The name of the bucket containing the files to download |
 | accessKey | `""` | Your S3 or GCP access key |
 | secretKey | `""` | Your S3 or GCP secret key |
-| downloadPeriodSec | `120` | When a file download completes, wait this many seconds before the next one. If set to 0, downloading will only occur once and stop |
 | downloadToDir | `"/MirrorNodeData"` | The location where downloaded files will reside |
 | defaultParseDir | `"/MirrorNodeData/recordstreams/valid/"` | The location from which files will be processed |
 | proxyPort | `50777` | The port the mirror node proxy will listen onto |
@@ -389,23 +388,12 @@ java -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser
 
 ### To Parse Balance file(s)
 
-This project provides two balance file parsing and logging options.
+This project provides the ability to log balances for all accounts, including history of balance changes
 
-- Log only the latest balance - looks for the latest balance file and stores the balances in the database
-- Log balances with timestamp history - loads every available balance file and stores account balances against the file's timestamp.
-
-Note: You can run both, however it is **imperative** that 'latest' is run prior to 'history' since history moves files to a processed folder, thereby removing any files for 'latest' to process.
-
-To parse and log the latest files, run the following command:
+Run the following command:
 
 ```shell
 java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger 
-```
-
-To parse and log balances with history, run the following command:
-
-```shell
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileHistoryLogger 
 ```
 
 ### To Send Transactions or Queries to the BetaMirrorNode Proxy
@@ -501,55 +489,3 @@ PORT=5551
 ```
 
 `PORT` is the port number the REST API will listen onto.
-
-## Notes about the java project structure
-
-The java project contains a number of packages and classes for its various modes of operation
-
-- com.hedera.addressBook
-
-Contains a `NetworkAddressBook` class which is responsible for updating the local address book file subject to being provided the appropriate network credentials via a `.env` file or environment variables.
-
-- com.hedera.mirrorNodeProxy
-
-Contains a `MirrorNodeProxy` class which is responsible for running the proxy.
-
-- com.hedera.downloader
-
-Contains a `RecordFileDownloader` class which connects to an s3 bucket and downloads record files from the bucket.
-
-Contains a `AccountBalancesDownloader` class which connects to an s3 bucket and downloads account balance files from the bucket.
-
-- com.hedera.recordFileParser
-
-Contains a `RecordFileParser` class which given a number of record files will process them, it calls the static class below which is responsible for processing the output itself.
-
-- com.hedera.recordFileLogger
-
-Contains a `RecordFileLogger` class which is an example of how to receive transactions and records from `RecordFileParser` and output to a text file. It is recommended you modify this class for your purposes while leaving the other packages and classes untouched so that future updates do not impact your own development
-
-`RecordFileLogger` contains the following public methods:
-
-- public static void start()
-
-Called whenever the `RecordFileParser` class starts running.
-
-- public static void finish()
-
-Called whenever the `RecordFileParser` class ends running.
-
-- public static void initFile(String fileName)
-
-Called whenever a new file starts processing
-
-- public static void completeFile()
-
-Called whenever a file completes processing
-
-- public static void storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord)
-
-Called for each record found in the record files such that you can decide whether to store that transaction and its record in your own files or database.
-
-- public static void storeSignature(String signature)
-
-Called for each signature that is processed.
