@@ -52,11 +52,11 @@ public class NetworkAddressBook {
         } catch (FileNotFoundException e) {
     		log.error(LOGM_EXCEPTION, "Address book file {} not found.", addressBookFile);
         } catch (IOException e) {
-    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e.getMessage());
+    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e);
         } catch (HederaNetworkException e) {
-    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e.getMessage());
+    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e);
 		} catch (HederaException e) {
-    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e.getMessage());
+    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e);
 		}
 		log.info("New address book successfully saved to {}.", addressBookFile);
 	}
