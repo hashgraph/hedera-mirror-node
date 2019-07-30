@@ -2,8 +2,8 @@ package com.hedera.signatureVerifier;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.mirrorNodeProxy.Utility;
 import com.hedera.recordFileParser.RecordFileParser;
+import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import org.apache.commons.codec.DecoderException;
@@ -105,7 +105,7 @@ public class NodeSignatureVerifier {
 			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 			publicKey = keyFactory.generatePublic(publicKeySpec);
 		} catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-			log.error(MARKER, " Fail to convert to PublicKey - {}", e.getStackTrace());
+			log.error(MARKER, " Fail to convert to PublicKey - {}", e);
 		}
 		return publicKey;
 	}
@@ -170,7 +170,6 @@ public class NodeSignatureVerifier {
 
 			return Pair.of(fileHash, sig);
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			log.error(MARKER, "extractHashAndSigFromFile :: File Not Found Error");
 		} catch (IOException e) {
 			log.error(MARKER, "extractHashAndSigFromFile :: IOException Error");
