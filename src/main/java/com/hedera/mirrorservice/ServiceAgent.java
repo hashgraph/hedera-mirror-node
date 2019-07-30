@@ -1,8 +1,7 @@
 package com.hedera.mirrorservice;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.mirrorNodeProxy.MirrorNodeProxy;
-import com.hedera.mirrorNodeProxy.Utility;
+import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -107,7 +106,7 @@ public class ServiceAgent {
 			return getDefaultNodeAccountID();
 
 		} catch (Exception ex) {
-			log.error(MARKER, "ServiceAgent :: extractNodeAccountID: {}", ex.getStackTrace());
+			log.error(MARKER, "ServiceAgent :: extractNodeAccountID: {}", ex);
 		}
 
 		return null;
