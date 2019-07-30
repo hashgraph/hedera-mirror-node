@@ -210,7 +210,7 @@ CREATE TABLE t_entities (
 	,key                BYTEA
 	,fk_prox_acc_id     BIGINT
 	,deleted            BOOLEAN DEFAULT false
-	,balance						BIGINT
+	,balance            BIGINT
 );
 
 \echo Creating table t_account_balances
@@ -362,7 +362,7 @@ CREATE INDEX idx_t_account_bal_id_num ON t_account_balances (id, num);
 
 CREATE UNIQUE INDEX idx_t_entities_unq ON t_entities (entity_shard, entity_realm, entity_num);
 CREATE INDEX idx_t_entities_id_num ON t_entities (id, entity_num);
-CREATE INDEX idx_t_entities_id_num ON t_entities (id, entity_num, fk_entity_type_id);
+CREATE INDEX idx_t_entities_id_num_id ON t_entities (id, entity_num, fk_entity_type_id);
 CREATE INDEX idx_t_entities_id ON t_entities (id);
 
 --t_transaction_types
