@@ -39,7 +39,7 @@ public class LoggerStatus {
 				lastProcessedRcdHash = jsonObject.get("lastProcessedRcdHash").getAsString();
 			}
 		} catch (FileNotFoundException ex) {
-			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configPath, ex.getStackTrace());
+			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configPath, ex);
 		}
 	}
 
