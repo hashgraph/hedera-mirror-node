@@ -18,7 +18,8 @@ import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.google.gson.JsonObject;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
-import com.hedera.mirrorNodeProxy.Utility;
+import com.hedera.utilities.Utility;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -151,6 +152,10 @@ public abstract class Downloader {
 		nodeAccountIds = loadNodeAccountIDs(configLoader.getNodeInfoFile());
 
 		for (String nodeAccountId : nodeAccountIds) {
+			if (Utility.checkStopFile()) {
+				log.info(MARKER, "Stop file found, stopping.");
+				break;
+			}
 			ArrayList<String> files = new ArrayList<String>();
 			log.info(MARKER, "Start downloading {} files of node {}", fileType, nodeAccountId);
 			// Get a list of objects in the bucket, 100 at a time
@@ -172,8 +177,16 @@ public abstract class Downloader {
 			ObjectListing objects = s3Client.listObjects(listRequest);
 			try {
 				while(downloadCount <= maxDownloadCount) {
+					if (Utility.checkStopFile()) {
+						log.info(MARKER, "Stop file found, stopping.");
+						break;
+					}
 					List<S3ObjectSummary> summaries = objects.getObjectSummaries();
 					for(S3ObjectSummary summary : summaries) {
+						if (Utility.checkStopFile()) {
+							log.info(MARKER, "Stop file found, stopping.");
+							break;
+						}
 						if (downloadCount > maxDownloadCount) {
 							break;
 						}
@@ -196,7 +209,10 @@ public abstract class Downloader {
 							}
 						}
 					}
-					if(objects.isTruncated()) {
+					if (Utility.checkStopFile()) {
+						log.info(MARKER, "Stop file found, stopping.");
+						break;
+					} else if (objects.isTruncated()) {
 						objects = s3Client.listNextBatchOfObjects(objects);
 					}
 					else {
@@ -224,11 +240,11 @@ public abstract class Downloader {
 			} catch(AmazonServiceException e) {
 				// The call was transmitted successfully, but Amazon S3 couldn't process
 				// it, so it returned an error response.
-	            log.error(MARKER, "Balance download failed, Exception: {}", e.getStackTrace());
+	            log.error(MARKER, "Balance download failed, Exception: {}", e);
 			} catch(SdkClientException e) {
 				// Amazon S3 couldn't be contacted for a response, or the client
 				// couldn't parse the response from Amazon S3.
-	            log.error(MARKER, "Balance download failed, Exception: {}", e.getStackTrace());
+	            log.error(MARKER, "Balance download failed, Exception: {}", e);
 			}
 		}
 	}
@@ -279,6 +295,10 @@ public abstract class Downloader {
 		// refresh node account ids
 		nodeAccountIds = loadNodeAccountIDs(configLoader.getNodeInfoFile());
 		for (String nodeAccountId : nodeAccountIds) {
+			if (Utility.checkStopFile()) {
+				log.info(MARKER, "Stop file found, stopping.");
+				break;
+			}
 			log.info(MARKER, "Start downloading {} files of node {}", fileType, nodeAccountId);
 			// Get a list of objects in the bucket, 100 at a time
 			String prefix = s3Prefix + nodeAccountId + "/";
@@ -295,9 +315,18 @@ public abstract class Downloader {
 			ObjectListing objects = s3Client.listObjects(listRequest);
 			try {
 				while(downloadCount <= downloadMax) {
+					if (Utility.checkStopFile()) {
+						log.info(MARKER, "Stop file found, stopping.");
+						break;
+					}
 					List<S3ObjectSummary> summaries = objects.getObjectSummaries();
 					for(S3ObjectSummary summary : summaries) {
-						if (downloadCount > downloadMax) break;
+						if (Utility.checkStopFile()) {
+							log.info(MARKER, "Stop file found, stopping.");
+							break;
+						} else if (downloadCount > downloadMax) {
+							break;
+						}
 						
 						String s3ObjectKey = summary.getKey();
 						if (isNeededSigFile(s3ObjectKey, type) &&
@@ -315,7 +344,10 @@ public abstract class Downloader {
 							}
 						}
 					}
-					if(objects.isTruncated()) {
+					if (Utility.checkStopFile()) {
+						log.info(MARKER, "Stop file found, stopping.");
+						break;
+					} else if (objects.isTruncated()) {
 						objects = s3Client.listNextBatchOfObjects(objects);
 					}
 					else {
@@ -326,11 +358,11 @@ public abstract class Downloader {
 			} catch(AmazonServiceException e) {
 				// The call was transmitted successfully, but Amazon S3 couldn't process
 				// it, so it returned an error response.
-	            log.error(MARKER, "Signatures download failed, Exception: {}", e.getStackTrace());
+	            log.error(MARKER, "Signatures download failed, Exception: {}", e);
 			} catch(SdkClientException e) {
 				// Amazon S3 couldn't be contacted for a response, or the client
 				// couldn't parse the response from Amazon S3.
-	            log.error(MARKER, "Signatures download failed, Exception: {}", e.getStackTrace());
+	            log.error(MARKER, "Signatures download failed, Exception: {}", e);
 			}
 		}
 
