@@ -5,11 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
-
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -33,9 +28,6 @@ public class Entities {
     	,FK_PROXY_ACCOUNT_ID
     }
 
-	private static final Logger log = LogManager.getLogger("recordStream-log");
-	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
-	
 	private static Connection connect = null;
 	
 	public Entities(Connection connect) throws SQLException {
