@@ -244,7 +244,7 @@ public class RecordFileLogger {
 			long fkNodeAccountId = entities.createOrGetEntity(body.getNodeAccountID());
 	
 			sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), fkNodeAccountId);
-			sqlInsertTransaction.setString(F_TRANSACTION.MEMO.ordinal(), body.getMemo().replaceAll("\u0000", ""));
+			sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), body.getMemo().getBytes());
 			sqlInsertTransaction.setLong(F_TRANSACTION.VS_SECONDS.ordinal(), body.getTransactionID().getTransactionValidStart().getSeconds());
 			sqlInsertTransaction.setLong(F_TRANSACTION.VS_NANOS.ordinal(), body.getTransactionID().getTransactionValidStart().getNanos());
 			sqlInsertTransaction.setInt(F_TRANSACTION.FK_TRANS_TYPE_ID.ordinal(), getTransactionTypeId(body));

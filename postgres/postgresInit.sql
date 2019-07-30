@@ -237,7 +237,7 @@ CREATE TABLE t_account_balance_history (
 CREATE TABLE t_transactions (
   id                   BIGINT PRIMARY KEY NOT NULL DEFAULT nextval('s_transactions_seq')
   ,fk_node_acc_id      BIGINT NOT NULL
-  ,memo		             VARCHAR(100)
+  ,memo		             BYTEA
   ,vs_seconds          BIGINT NOT NULL
   ,vs_nanos            INT
   ,fk_trans_type_id    INT
