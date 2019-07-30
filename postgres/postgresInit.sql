@@ -33,10 +33,11 @@ CREATE USER :api_user WITH
 \echo Creating sequences
 
 CREATE SEQUENCE s_transaction_types_seq;
-CREATE SEQUENCE s_event_files_seq;
+CREATE SEQUENCE s_record_files_seq;
 CREATE SEQUENCE s_transactions_seq;
 CREATE SEQUENCE s_entities_seq;
 CREATE SEQUENCE s_transaction_results_seq;
+CREATE SEQUENCE s_account_balances_seq;
 
 \echo Creating table t_version
 CREATE TABLE t_version (
@@ -177,7 +178,7 @@ INSERT INTO t_transaction_results (result, proto_id) VALUES ('ACCOUNT_IS_NOT_GEN
 \echo Creating table t_record_files
 
 CREATE TABLE t_record_files (
-  id                   BIGINT PRIMARY KEY NOT NULL DEFAULT nextval('s_event_files_seq')
+  id                   BIGINT PRIMARY KEY NOT NULL DEFAULT nextval('s_record_files_seq')
   ,name                VARCHAR(250) NOT NULL
 	,load_start          BIGINT
 	,load_end            BIGINT
@@ -215,6 +216,7 @@ CREATE TABLE t_entities (
 \echo Creating table t_account_balances
 
 CREATE TABLE t_account_balances (
+	id			             BIGINT PRIMARY KEY NOT NULL DEFAULT nextval('s_account_balances_seq')
 	,shard               BIGINT NOT NULL
 	,realm               BIGINT NOT NULL
 	,num                 BIGINT NOT NULL
@@ -224,12 +226,10 @@ CREATE TABLE t_account_balances (
 \echo Creating table t_account_balance_history
 
 CREATE TABLE t_account_balance_history (
-  snapshot_time        TIMESTAMP NULL
+  snapshot_time        TIMESTAMP NOT NULL
 	,seconds             BIGINT NOT NULL
   ,balance             BIGINT NOT NULL
-	,shard               BIGINT NOT NULL;
-	,realm               BIGINT NOT NULL;
-	,num                 BIGINT NOT NULL;
+  ,fk_balance_id       BIGINT NOT NULL
 );
 
 \echo Creating table t_transactions
@@ -288,10 +288,10 @@ CREATE TABLE t_livehashes (
 
 ALTER TABLE t_entities ADD CONSTRAINT fk_ent_type_id FOREIGN KEY (fk_entity_type_id) REFERENCES t_entity_types (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
--- t_account_balance_history
+--t_account_balance_history
 \echo Creating constraints on t_account_balance_history
 
-ALTER TABLE t_account_balance_history ADD CONSTRAINT fk_acc_bal_hist_fk FOREIGN KEY (fk_entity_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE t_account_balance_history ADD CONSTRAINT fk_acc_bal_id FOREIGN KEY (fk_balance_id) REFERENCES t_account_balances (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- t_transactions
 \echo Creating constraints on t_transactions
@@ -349,12 +349,13 @@ CREATE UNIQUE INDEX idx_t_record_files_name ON t_record_files (name);
 --t_account_balance_history
 \echo Creating indices on t_account_balance_history
 
-CREATE UNIQUE INDEX idx_t_account_bal_hist_unq ON t_account_balance_history (snapshot_time, seconds, fk_entity_id);
+CREATE UNIQUE INDEX t_acc_bal_hist_unique ON t_account_balance_history (snapshot_time, seconds, fk_balance_id);
 
 --t_account_balances
 \echo Creating indices on t_account_balances
 
-CREATE UNIQUE INDEX idx_t_account_bal_unq ON t_account_balance_history (shard, realm, num);
+CREATE UNIQUE INDEX idx_t_account_bal_unq ON t_account_balances (shard, realm, num);
+CREATE INDEX idx_t_account_bal_id_num ON t_account_balances (id, num);
 
 --t_entities
 \echo Creating indices on t_entities
@@ -428,7 +429,8 @@ GRANT SELECT ON t_entity_types TO :api_user;
 GRANT SELECT ON v_entities TO :api_user;
 
 GRANT ALL ON s_transaction_types_seq TO :db_user;
-GRANT ALL ON s_event_files_seq TO :db_user;
+GRANT ALL ON s_record_files_seq TO :db_user;
 GRANT ALL ON s_transactions_seq TO :db_user;
 GRANT ALL ON s_entities_seq TO :db_user;
-GRANT ALL ON s_transaction_results_seq to :db_user;
+GRANT ALL ON s_transaction_results_seq TO :db_user;
+GRANT ALL ON s_account_balances_seq TO :db_user;

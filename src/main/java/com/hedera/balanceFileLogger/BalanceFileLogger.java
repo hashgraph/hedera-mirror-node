@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,7 +39,6 @@ public class BalanceFileLogger {
         ,ACCOUNT_REALM
         ,ACCOUNT_NUM
         ,BALANCE_INSERT 
-        ,ENTITY_TYPE_ID
         ,BALANCE_UPDATE        
     }
 	static void moveFileToParsedDir(String fileName) {
@@ -107,63 +105,48 @@ public class BalanceFileLogger {
                 connect = DatabaseUtilities.openDatabase(connect);
                 
                 if (connect != null) {
-                	// get the entity type for account
-    	            ResultSet resultSet;
-    	            int accountEntityType = 0;
-    				resultSet = connect.createStatement().executeQuery("SELECT id, name FROM t_entity_types WHERE name = 'account'");
-    	            while (resultSet.next()) {
-    	            	accountEntityType = resultSet.getInt("id");
-    	            }       
-    	            resultSet.close();
-    	            
-    	            if (accountEntityType == 0) {
-                        log.error("Unable to fetch entity type id for account from database");
-    	            } else {
-                	
-	                    connect.setAutoCommit(false);
-		                PreparedStatement insertBalance;
-		                insertBalance = connect.prepareStatement(
-		                        "insert into t_entities (entity_shard, entity_realm, entity_num, balance, fk_entity_type_id) "
-		                        + " values (?, ?, ?, ?, ?) "
-		                        + " ON CONFLICT (entity_shard, entity_realm, entity_num) "
-		                        + " DO UPDATE set balance = ?");
-			        
-		                BufferedReader br = new BufferedReader(new FileReader(balanceFile));
-		
-		                String line;
-			            while ((line = br.readLine()) != null) {
-			                if (processLine) {
-			                    try {
-			                        String[] balanceLine = line.split(",");
-			                        if (balanceLine.length != 4) {
-				                        log.error(LOGM_EXCEPTION, "Balance file {} appears truncated", balanceFile);
-				                        connect.rollback();
-				                        break;
-			                        } else {
-			                            insertBalance.setLong(balance_fields.ACCOUNT_SHARD.ordinal(), Long.valueOf(balanceLine[0]));
-			                            insertBalance.setLong(balance_fields.ACCOUNT_REALM.ordinal(), Long.valueOf(balanceLine[1]));
-			                            insertBalance.setLong(balance_fields.ACCOUNT_NUM.ordinal(), Long.valueOf(balanceLine[2]));
-			                            insertBalance.setLong(balance_fields.BALANCE_INSERT.ordinal(), Long.valueOf(balanceLine[3]));
-			                            insertBalance.setInt(balance_fields.ENTITY_TYPE_ID.ordinal(), accountEntityType);
-			                            insertBalance.setLong(balance_fields.BALANCE_UPDATE.ordinal(), Long.valueOf(balanceLine[3]));
-			
-			                            insertBalance.execute();
-			                        }
-			                        
-			                    } catch (SQLException e) {
+                    connect.setAutoCommit(false);
+	                PreparedStatement insertBalance;
+	                insertBalance = connect.prepareStatement(
+	                        "INSERT INTO t_account_balances (shard, realm, num, balance) "
+	                        + " VALUES (?, ?, ?, ?) "
+	                        + " ON CONFLICT (shard, realm, num) "
+	                        + " DO UPDATE set balance = ?");
+		        
+	                BufferedReader br = new BufferedReader(new FileReader(balanceFile));
+	
+	                String line;
+		            while ((line = br.readLine()) != null) {
+		                if (processLine) {
+		                    try {
+		                        String[] balanceLine = line.split(",");
+		                        if (balanceLine.length != 4) {
+			                        log.error(LOGM_EXCEPTION, "Balance file {} appears truncated", balanceFile);
 			                        connect.rollback();
-			                        log.error(LOGM_EXCEPTION, "Exception {}", e);
 			                        break;
-			                    }
-			                } else if (line.contentEquals("shard,realm,number,balance")) {
-			                    // skip all lines until shard,realm,number,balance
-		                        processLine = true;
+		                        } else {
+		                            insertBalance.setLong(balance_fields.ACCOUNT_SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+		                            insertBalance.setLong(balance_fields.ACCOUNT_REALM.ordinal(), Long.valueOf(balanceLine[1]));
+		                            insertBalance.setLong(balance_fields.ACCOUNT_NUM.ordinal(), Long.valueOf(balanceLine[2]));
+		                            insertBalance.setLong(balance_fields.BALANCE_INSERT.ordinal(), Long.valueOf(balanceLine[3]));
+		                            insertBalance.setLong(balance_fields.BALANCE_UPDATE.ordinal(), Long.valueOf(balanceLine[3]));
+		
+		                            insertBalance.execute();
+		                        }
+		                        
+		                    } catch (SQLException e) {
+		                        connect.rollback();
+		                        log.error(LOGM_EXCEPTION, "Exception {}", e);
+		                        break;
 		                    }
-			            }
-		                connect.commit();
-		                insertBalance.close();
-		                br.close();
-    	            }
+		                } else if (line.contentEquals("shard,realm,number,balance")) {
+		                    // skip all lines until shard,realm,number,balance
+	                        processLine = true;
+	                    }
+		            }
+	                connect.commit();
+	                insertBalance.close();
+	                br.close();
 	            }
 	        } else {
 	            log.info("No balance file to parse found");

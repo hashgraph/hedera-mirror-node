@@ -9,14 +9,11 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.recordFileLogger.Entities;
-import com.hederahashgraph.api.proto.java.AccountID;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -34,17 +31,23 @@ public class BalanceFileHistoryLogger {
 
     private static Connection connect = null;
     private static ConfigLoader configLoader = new ConfigLoader("./config/config.json");
-	private static HashMap<String, Long> mapEntities = new HashMap<String, Long>();
+
+    enum balance_history_fields {
+        ZERO
+        ,SNAPSHOT_TIME
+        ,SECONDS
+        ,FK_BAL_ID
+        ,BALANCE 
+    }
 
     enum balance_fields {
         ZERO
-        ,FK_ENTITY_ID
-        ,SNAPSHOT_TIME
-        ,SECONDS
-        ,BALANCE_INSERT 
-        ,BALANCE_UPDATE        
+        ,SHARD
+        ,REALM
+        ,NUM 
     }
-	static void moveFileToParsedDir(String fileName) {
+
+    static void moveFileToParsedDir(String fileName) {
 		File sourceFile = new File(fileName);
 		File parsedDir = new File(sourceFile.getParentFile().getParentFile().getPath() + "/parsedRecordFiles/");
 		parsedDir.mkdirs();
@@ -71,30 +74,30 @@ public class BalanceFileHistoryLogger {
             if (connect != null) {
 
                 try {
-        			entities = new Entities(connect);
-        		} catch (SQLException e) {
-                    log.error(LOGM_EXCEPTION, "Unable to fetch entity types, Exception: {}", e.getMessage());
-                	return false;
-        		}
-
-                try {
         			connect.setAutoCommit(false);
         		} catch (SQLException e) {
                     log.error(LOGM_EXCEPTION, "Unable to unset database auto commit, Exception: {}", e.getMessage());
                 	return false;
         		}
                 
-            	PreparedStatement insertBalance;
-	            insertBalance = connect.prepareStatement(
-	                    "insert into t_account_balance_history (fk_entity_id, snapshot_time, seconds, balance) "
+                PreparedStatement insertBalance = connect.prepareStatement(
+                        "INSERT INTO t_account_balances (shard, realm, num, balance) "
+                        + " VALUES (?, ?, ?, 0) "
+                        + " ON CONFLICT (shard, realm, num) "
+                        + " DO UPDATE set shard = EXCLUDED.shard"
+                        + " RETURNING id");
+
+            	PreparedStatement insertBalanceHistory;
+	            insertBalanceHistory = connect.prepareStatement(
+	                    "insert into t_account_balance_history (snapshot_time, seconds, fk_balance_id, balance) "
 	                    + " values ("
-	                    + " ?" // entity_id
-	                    + ", to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss')" // snapsho
+	                    + " to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss')" // snapshot
 	                    + ", EXTRACT(EPOCH FROM to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss'))" //seconds
-	                    + ", ?"
+	                    + ", ?" // balance_id
+	                    + ", ?" // balance
 	                    + ")"
-	                    + " ON CONFLICT (snapshot_time, seconds, fk_entity_id) "
-	                    + " DO UPDATE set balance = ?");
+	                    + " ON CONFLICT (snapshot_time, seconds, fk_balance_id)"
+	                    + " DO UPDATE set balance = EXCLUDED.balance");
 	        
 	            BufferedReader br = new BufferedReader(new FileReader(balanceFile));
 	
@@ -107,33 +110,35 @@ public class BalanceFileHistoryLogger {
 	                        if (balanceLine.length != 4) {
 		                        log.error(LOGM_EXCEPTION, "Balance file {} appears truncated", balanceFile);
 		                        connect.rollback();
-		                        insertBalance.close();
+		                        insertBalanceHistory.close();
 		                        br.close();
 		                        return false;
 	                        } else {
-	                        	// get entity id
-	                        	AccountID.Builder accountId = AccountID.newBuilder();
-	                        	accountId.setShardNum(Long.valueOf(balanceLine[0]));
-	                        	accountId.setRealmNum(Long.valueOf(balanceLine[1]));
-	                        	accountId.setAccountNum(Long.valueOf(balanceLine[2]));
-
-	                        	long entityId = 0;
-	                        	String entitySRN = balanceLine[0] + "." + balanceLine[1] + "." + balanceLine[2];
-	                        	if (mapEntities.containsKey(entitySRN)) {
-	                        		entityId = mapEntities.get(entitySRN);
-	                        	} else {
-	                        		entityId = entities.createOrGetEntity(accountId.build());
-	                        		mapEntities.put(entitySRN, entityId);
-	                        	}
-
-	                        	insertBalance.setLong(balance_fields.FK_ENTITY_ID.ordinal(), entityId);
 	                        	
-		                        insertBalance.setString(balance_fields.SNAPSHOT_TIME.ordinal(), dateLine);
-		                        insertBalance.setString(balance_fields.SECONDS.ordinal(), dateLine);
-		                        insertBalance.setLong(balance_fields.BALANCE_INSERT.ordinal(), Long.valueOf(balanceLine[3]));
-		                        insertBalance.setLong(balance_fields.BALANCE_UPDATE.ordinal(), Long.valueOf(balanceLine[3]));
+	                        	// get the account id from t_Account_balances
+	                        	long accountId = 0;
+	                        	
+	                        	insertBalance.setLong(balance_fields.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+	                        	insertBalance.setLong(balance_fields.REALM.ordinal(), Long.valueOf(balanceLine[1]));
+	                        	insertBalance.setLong(balance_fields.NUM.ordinal(), Long.valueOf(balanceLine[2]));
+	                        	
+	                        	insertBalance.execute();
+	                            ResultSet newId = insertBalance.getResultSet();
+	                            if (newId.next()) {
+	                            	accountId = newId.getLong(1);
+	                                newId.close();
+	                            } else {
+	                            	// failed to create or fetch the account from t_account_balances
+	                            	insertBalance.close();
+	                            	throw new IllegalStateException("Unable to create or find, shard " + balanceLine[0] + ", realm " + balanceLine[1] + ", num " + balanceLine[2]);
+	                            }
+	                        	
+		                        insertBalanceHistory.setString(balance_history_fields.SNAPSHOT_TIME.ordinal(), dateLine);
+		                        insertBalanceHistory.setString(balance_history_fields.SECONDS.ordinal(), dateLine);
+	                        	insertBalanceHistory.setLong(balance_history_fields.FK_BAL_ID.ordinal(), accountId);
+		                        insertBalanceHistory.setLong(balance_history_fields.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
 		
-		                        insertBalance.execute();
+		                        insertBalanceHistory.execute();
 	                        }	                        
 	                    } catch (SQLException e) {
 	                        log.error(LOGM_EXCEPTION, "Exception {}", e);
@@ -151,7 +156,8 @@ public class BalanceFileHistoryLogger {
 	                }
 	            }
 	            connect.commit();
-	            insertBalance.close();
+	            insertBalanceHistory.close();
+            	insertBalance.close();
 	            br.close();
 	            return true;
             }
