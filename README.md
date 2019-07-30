@@ -39,7 +39,6 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 ## Todo
 
-- Update address book automatically from transaction history
 - REST api in docker
 - Add CI for build
 - Create unit tests
@@ -48,6 +47,16 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 ## Change history
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
+
+### Performance optimisations to balance tables
+
+Balance tables (t_account_balances and t_balance_history) were using the same t_entities table as other tables for referential integrity.
+This lead to contention and deadlocks that could impact latency on delivery of transaction data.
+The balance tables are now independent to avoid this resource contention.
+
+### The Address book file automatically refreshes
+
+Changes to the address book file (0.0.102) through fileUpdate transactions now update the 0.0.102 file with the new contents stipulated by the transaction.
 
 ### `stopLoggingIfHashMismatch` change
 
@@ -212,6 +221,8 @@ Edit the `./config/nodesInfo.json` file to match the nodes on the network you ar
 
 The `0.0.102` file contains the address book, that is the list of nodes, their account number and public key(s). This file is different on every network so it is imperative to ensure you have the correct one for each network, else the signature verification process will fail.
 See instructions below on how to generate this file for a network.
+
+Once setup, the file will be automatically updated as the mirror node software parses fileUpdate transactions that pertain to this file.
 
 ### config.json
 
