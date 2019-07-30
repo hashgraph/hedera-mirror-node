@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,17 +31,30 @@ public class BalanceFileLogger {
 	private static final Marker MARKER = MarkerManager.getMarker("SERVICE_RECORD");
 	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
+	enum select {
+		ZERO
+		,SHARD
+		,REALM
+		,NUM
+	}
+	
+	enum update {
+		ZERO
+		,BALANCE
+		,ID
+	}
+	
+	enum insert {
+		ZERO
+		,SHARD
+		,REALM
+		,NUM
+		,BALANCE
+	}
     private static Connection connect = null;
 	
     private static ConfigLoader configLoader = new ConfigLoader("./config/config.json");
-    enum balance_fields {
-        ZERO
-        ,ACCOUNT_SHARD
-        ,ACCOUNT_REALM
-        ,ACCOUNT_NUM
-        ,BALANCE_INSERT 
-        ,BALANCE_UPDATE        
-    }
+
 	static void moveFileToParsedDir(String fileName) {
 		File sourceFile = new File(fileName);
 		File parsedDir = new File(sourceFile.getParentFile().getParentFile().getPath() + "/parsedRecordFiles/");
@@ -106,12 +120,23 @@ public class BalanceFileLogger {
                 
                 if (connect != null) {
                     connect.setAutoCommit(false);
-	                PreparedStatement insertBalance;
-	                insertBalance = connect.prepareStatement(
+                    
+                    PreparedStatement selectBalance = connect.prepareStatement(
+                    		"SELECT id"
+                    		+ " FROM t_account_balances"
+                    		+ " WHERE shard = ?"
+                    		+ " AND realm = ?"
+                    		+ " AND num = ?");
+
+	                PreparedStatement updateBalance =  connect.prepareStatement(
+	                        "UPDATE t_account_balances"
+	                        + " SET balance = ?"
+	                        + " WHERE id = ?");
+    	                
+    	            
+                    PreparedStatement insertBalance =  connect.prepareStatement(
 	                        "INSERT INTO t_account_balances (shard, realm, num, balance) "
-	                        + " VALUES (?, ?, ?, ?) "
-	                        + " ON CONFLICT (shard, realm, num) "
-	                        + " DO UPDATE set balance = ?");
+	                        + " VALUES (?, ?, ?, ?)");
 		        
 	                BufferedReader br = new BufferedReader(new FileReader(balanceFile));
 	
@@ -125,13 +150,26 @@ public class BalanceFileLogger {
 			                        connect.rollback();
 			                        break;
 		                        } else {
-		                            insertBalance.setLong(balance_fields.ACCOUNT_SHARD.ordinal(), Long.valueOf(balanceLine[0]));
-		                            insertBalance.setLong(balance_fields.ACCOUNT_REALM.ordinal(), Long.valueOf(balanceLine[1]));
-		                            insertBalance.setLong(balance_fields.ACCOUNT_NUM.ordinal(), Long.valueOf(balanceLine[2]));
-		                            insertBalance.setLong(balance_fields.BALANCE_INSERT.ordinal(), Long.valueOf(balanceLine[3]));
-		                            insertBalance.setLong(balance_fields.BALANCE_UPDATE.ordinal(), Long.valueOf(balanceLine[3]));
-		
-		                            insertBalance.execute();
+		                        	selectBalance.setLong(select.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+		                        	selectBalance.setLong(select.REALM.ordinal(), Long.valueOf(balanceLine[1]));
+		                        	selectBalance.setLong(select.NUM.ordinal(), Long.valueOf(balanceLine[2]));
+
+		                        	selectBalance.execute();
+		                            ResultSet balanceRow = selectBalance.getResultSet();
+		                            if (balanceRow.next()) {
+		                            	// update the balance
+		                            	updateBalance.setLong(update.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
+		                            	updateBalance.setLong(update.ID.ordinal(), balanceRow.getLong(1));
+		                            	updateBalance.execute();
+		                            } else {
+		                            	// insert new row
+		                            	insertBalance.setLong(insert.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+			                            insertBalance.setLong(insert.REALM.ordinal(), Long.valueOf(balanceLine[1]));
+			                            insertBalance.setLong(insert.NUM.ordinal(), Long.valueOf(balanceLine[2]));
+			                            insertBalance.setLong(insert.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
+			                            insertBalance.execute();
+		                            }
+		                            balanceRow.close();
 		                        }
 		                        
 		                    } catch (SQLException e) {
@@ -146,6 +184,8 @@ public class BalanceFileLogger {
 		            }
 	                connect.commit();
 	                insertBalance.close();
+	                updateBalance.close();
+	                selectBalance.close();
 	                br.close();
 	            }
 	        } else {

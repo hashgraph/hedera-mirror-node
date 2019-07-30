@@ -47,6 +47,13 @@ public class BalanceFileHistoryLogger {
         ,NUM 
     }
 
+	enum select {
+		ZERO
+		,SHARD
+		,REALM
+		,NUM
+	}
+
     static void moveFileToParsedDir(String fileName) {
 		File sourceFile = new File(fileName);
 		File parsedDir = new File(sourceFile.getParentFile().getParentFile().getPath() + "/parsedRecordFiles/");
@@ -80,11 +87,16 @@ public class BalanceFileHistoryLogger {
                 	return false;
         		}
                 
+                PreparedStatement selectBalance = connect.prepareStatement(
+                		"SELECT id"
+                		+ " FROM t_account_balances"
+                		+ " WHERE shard = ?"
+                		+ " AND realm = ?"
+                		+ " AND num = ?");
+                
                 PreparedStatement insertBalance = connect.prepareStatement(
                         "INSERT INTO t_account_balances (shard, realm, num, balance) "
                         + " VALUES (?, ?, ?, 0) "
-                        + " ON CONFLICT (shard, realm, num) "
-                        + " DO UPDATE set shard = EXCLUDED.shard"
                         + " RETURNING id");
 
             	PreparedStatement insertBalanceHistory;
@@ -111,6 +123,8 @@ public class BalanceFileHistoryLogger {
 		                        log.error(LOGM_EXCEPTION, "Balance file {} appears truncated", balanceFile);
 		                        connect.rollback();
 		                        insertBalanceHistory.close();
+		                        selectBalance.close();
+		                        insertBalance.close();
 		                        br.close();
 		                        return false;
 	                        } else {
@@ -118,20 +132,34 @@ public class BalanceFileHistoryLogger {
 	                        	// get the account id from t_Account_balances
 	                        	long accountId = 0;
 	                        	
-	                        	insertBalance.setLong(balance_fields.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
-	                        	insertBalance.setLong(balance_fields.REALM.ordinal(), Long.valueOf(balanceLine[1]));
-	                        	insertBalance.setLong(balance_fields.NUM.ordinal(), Long.valueOf(balanceLine[2]));
+	                        	selectBalance.setLong(select.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+	                        	selectBalance.setLong(select.REALM.ordinal(), Long.valueOf(balanceLine[1]));
+	                        	selectBalance.setLong(select.NUM.ordinal(), Long.valueOf(balanceLine[2]));
 	                        	
-	                        	insertBalance.execute();
-	                            ResultSet newId = insertBalance.getResultSet();
-	                            if (newId.next()) {
-	                            	accountId = newId.getLong(1);
-	                                newId.close();
-	                            } else {
-	                            	// failed to create or fetch the account from t_account_balances
-	                            	insertBalance.close();
-	                            	throw new IllegalStateException("Unable to create or find, shard " + balanceLine[0] + ", realm " + balanceLine[1] + ", num " + balanceLine[2]);
-	                            }
+	                        	selectBalance.execute();
+	                        	ResultSet balanceRow = selectBalance.getResultSet();
+	                        	
+	                        	if (balanceRow.next()) {
+	                        		accountId = balanceRow.getLong(1);
+	                        	} else {
+	                        		insertBalance.setLong(balance_fields.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+	                        		insertBalance.setLong(balance_fields.REALM.ordinal(), Long.valueOf(balanceLine[1]));
+	                        		insertBalance.setLong(balance_fields.NUM.ordinal(), Long.valueOf(balanceLine[2]));
+	                        	
+		                        	insertBalance.execute();
+
+		                        	ResultSet newId = insertBalance.getResultSet();
+		                            if (newId.next()) {
+		                            	accountId = newId.getLong(1);
+		                                newId.close();
+		                            } else {
+		                            	// failed to create or fetch the account from t_account_balances
+		                                newId.close();
+			                        	balanceRow.close();
+		                            	throw new IllegalStateException("Unable to create or find, shard " + balanceLine[0] + ", realm " + balanceLine[1] + ", num " + balanceLine[2]);
+		                            }
+	                        	}
+	                        	balanceRow.close();
 	                        	
 		                        insertBalanceHistory.setString(balance_history_fields.SNAPSHOT_TIME.ordinal(), dateLine);
 		                        insertBalanceHistory.setString(balance_history_fields.SECONDS.ordinal(), dateLine);
@@ -143,6 +171,10 @@ public class BalanceFileHistoryLogger {
 	                    } catch (SQLException e) {
 	                        log.error(LOGM_EXCEPTION, "Exception {}", e);
 	                        connect.rollback();
+	                        insertBalanceHistory.close();
+	                        selectBalance.close();
+	                        insertBalance.close();
+	                        br.close();
 	                        return false;
 	                    }
 	                } else if (getDate) {
@@ -157,6 +189,7 @@ public class BalanceFileHistoryLogger {
 	            }
 	            connect.commit();
 	            insertBalanceHistory.close();
+                selectBalance.close();
             	insertBalance.close();
 	            br.close();
 	            return true;

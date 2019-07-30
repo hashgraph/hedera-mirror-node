@@ -39,11 +39,11 @@ public class Entities {
 	private static Connection connect = null;
 	
 	public Entities(Connection connect) throws SQLException {
-		this.connect = connect;
-		if (this.connect != null) {
+		Entities.connect = connect;
+		if (Entities.connect != null) {
 	        if (FK_ACCOUNT + FK_CONTRACT + FK_FILE == 0) {
 	            ResultSet resultSet;
-				resultSet = this.connect.createStatement().executeQuery("SELECT id, name FROM t_entity_types ORDER BY id");
+				resultSet = Entities.connect.createStatement().executeQuery("SELECT id, name FROM t_entity_types ORDER BY id");
 	            while (resultSet.next()) {
 	            	if (resultSet.getString("name").contentEquals("account")) {
 	            		FK_ACCOUNT = resultSet.getInt("id");
@@ -106,7 +106,7 @@ public class Entities {
 	    sqlUpdate += " RETURNING id";
 
 	    // inserts or returns an existing entity
-        PreparedStatement updateEntity = this.connect.prepareStatement(sqlUpdate);
+        PreparedStatement updateEntity = Entities.connect.prepareStatement(sqlUpdate);
 
 	    if ((exp_time_seconds != 0) || (exp_time_nanos != 0)) {
         	updateEntity.setLong(1, exp_time_seconds);        	
@@ -183,15 +183,13 @@ public class Entities {
 	    sqlDelete += " RETURNING id";
 
 	    // inserts or returns an existing entity
-        PreparedStatement deleteEntity = this.connect.prepareStatement(sqlDelete);
+        PreparedStatement deleteEntity = Entities.connect.prepareStatement(sqlDelete);
 
 	    deleteEntity.setLong(1, shard);
         deleteEntity.setLong(2, realm);
         deleteEntity.setLong(3, num);
 
         deleteEntity.execute();
-        
-        
         
         ResultSet newId = deleteEntity.getResultSet();
         if (newId.next()) {
@@ -233,7 +231,7 @@ public class Entities {
 	    sqlDelete += " RETURNING id";
 
 	    // inserts or returns an existing entity
-        PreparedStatement deleteEntity = this.connect.prepareStatement(sqlDelete);
+        PreparedStatement deleteEntity = Entities.connect.prepareStatement(sqlDelete);
 
 	    deleteEntity.setLong(1, shard);
         deleteEntity.setLong(2, realm);
@@ -274,17 +272,9 @@ public class Entities {
 	    }
 	    
 	    // inserts or returns an existing entity
-        PreparedStatement insertEntity = this.connect.prepareStatement(
+        PreparedStatement insertEntity = Entities.connect.prepareStatement(
                 "INSERT INTO t_entities (entity_shard, entity_realm, entity_num, fk_entity_type_id, exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_prox_acc_id)"
         		+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                + " ON CONFLICT (entity_shard, entity_realm, entity_num) "
-                + " DO UPDATE"
-                + " SET exp_time_seconds = EXCLUDED.exp_time_seconds"
-                + ", exp_time_nanos = EXCLUDED.exp_time_nanos"
-                + ", auto_renew_period = EXCLUDED.auto_renew_period"
-                + ", admin_key = EXCLUDED.admin_key"
-                + ", key = EXCLUDED.key"
-                + ", fk_prox_acc_id = EXCLUDED.fk_prox_acc_id"
                 + " RETURNING id");
         
         insertEntity.setLong(F_ENTITIES.SHARD.ordinal(), shard);
@@ -350,28 +340,46 @@ public class Entities {
 	    if (shard + realm + num == 0 ) {
 	        return 0;
 	    }
-	    
-	    // inserts or returns an existing entity
-        PreparedStatement insertEntity = this.connect.prepareStatement(
-                "INSERT INTO t_entities (entity_shard, entity_realm, entity_num, fk_entity_type_id)"
-        		+ " VALUES (?, ?, ?, ?)"
-                + " ON CONFLICT (entity_shard, entity_realm, entity_num) "
-                + " DO UPDATE"
-                + " SET entity_shard = EXCLUDED.entity_shard"
-                + " RETURNING id");
-        
-        insertEntity.setLong(F_ENTITIES.SHARD.ordinal(), shard);
-        insertEntity.setLong(F_ENTITIES.REALM.ordinal(), realm);
-        insertEntity.setLong(F_ENTITIES.NUM.ordinal(), num);
-        insertEntity.setInt(F_ENTITIES.FK_ENTITY_TYPE_ID.ordinal(), fk_entity_type);
 
-        insertEntity.execute();
-        ResultSet newId = insertEntity.getResultSet();
-        newId.next();
-        entityId = newId.getLong(1);
-        newId.close();
-        insertEntity.close();
+        PreparedStatement selectEntity = Entities.connect.prepareStatement(
+                "SELECT id FROM t_entities"
+                + " WHERE entity_shard = ?"
+                + " AND entity_realm = ?"
+                + " AND entity_num = ?"
+                + " AND fk_entity_type_id = ?");
+	    
+        selectEntity.setLong(1, shard);
+        selectEntity.setLong(2, realm);
+        selectEntity.setLong(3, num);
+        selectEntity.setLong(4, fk_entity_type);
         
+        selectEntity.execute();
+        
+        ResultSet selectedEntity = selectEntity.getResultSet();
+        if (selectedEntity.next()) {
+        	entityId = selectedEntity.getLong(1);
+        } else {
+        
+		    // inserts or returns an existing entity
+	        PreparedStatement insertEntity = Entities.connect.prepareStatement(
+	                "INSERT INTO t_entities (entity_shard, entity_realm, entity_num, fk_entity_type_id)"
+	        		+ " VALUES (?, ?, ?, ?)"
+	                + " RETURNING id");
+	        
+	        insertEntity.setLong(F_ENTITIES.SHARD.ordinal(), shard);
+	        insertEntity.setLong(F_ENTITIES.REALM.ordinal(), realm);
+	        insertEntity.setLong(F_ENTITIES.NUM.ordinal(), num);
+	        insertEntity.setInt(F_ENTITIES.FK_ENTITY_TYPE_ID.ordinal(), fk_entity_type);
+	
+	        insertEntity.execute();
+	        ResultSet newId = insertEntity.getResultSet();
+	        if (newId.next()) {
+		        entityId = newId.getLong(1);
+	        }
+	        newId.close();
+	        insertEntity.close();
+        }        
+        selectedEntity.close();
         return entityId;
 	}
 
