@@ -12,20 +12,18 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import com.google.protobuf.TextFormat;
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.mirrorNodeProxy.Utility;
 import com.hedera.recordFileLogger.LoggerStatus;
 import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
+import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -151,6 +149,7 @@ public class RecordFileParser {
 					} catch (Exception e) {
 						log.error(LOGM_EXCEPTION, "Exception ", e);
 						RecordFileLogger.rollback();
+						dis.close();
 						return false;
 					}
 				}
@@ -179,7 +178,6 @@ public class RecordFileParser {
 		} else {			
 			return false;
 		}
-		
 	}
 
 	/**
@@ -190,6 +188,10 @@ public class RecordFileParser {
 		String prevFileHash = loggerStatus.getLastProcessedRcdHash();
 
 		for (String name : fileNames) {
+			if (Utility.checkStopFile()) {
+				log.info(MARKER, "Stop file found, stopping.");
+				return;
+			}
 			if (loadRecordFile(name, prevFileHash)) {
 				prevFileHash = Utility.bytesToHex(RecordFileParser.getFileHash(name));
 				moveFileToParsedDir(name);
@@ -217,44 +219,55 @@ public class RecordFileParser {
 	public static void main(String[] args) {
 		String pathName;
 
-		configLoader = new ConfigLoader("./config/config.json");
-		loggerStatus = new LoggerStatus("./config/loggerStatus.json");
+		while (true) {
+			if (Utility.checkStopFile()) {
+				log.info(MARKER, "Stop file found, exiting.");
+				System.exit(0);
+			}
+	
+			configLoader = new ConfigLoader("./config/config.json");
+			loggerStatus = new LoggerStatus("./config/loggerStatus.json");
+			
+			pathName = configLoader.getDefaultParseDir();
+			log.info(MARKER, "Record files folder got from configuration file: {}", configLoader.getDefaultParseDir());
+	
+			if (pathName != null) {
+				
+				if (RecordFileLogger.start()) {
+				
+					File file = new File(pathName);
+					if (file.isFile()) {
+						log.info(MARKER, "Loading record file {} " + pathName);
+						loadRecordFile(pathName, "");
+					} else if (file.isDirectory()) { //if it's a directory
 		
-		pathName = configLoader.getDefaultParseDir();
-		log.info(MARKER, "Record files folder got from configuration file: {}", configLoader.getDefaultParseDir());
-
-		if (pathName != null) {
-			
-			if (RecordFileLogger.start()) {
-			
-				File file = new File(pathName);
-				if (file.isFile()) {
-					log.info(MARKER, "Loading record file {} " + pathName);
-					loadRecordFile(pathName, "");
-				} else if (file.isDirectory()) { //if it's a directory
-	
-					String[] files = file.list(); // get all files under the directory
-					Arrays.sort(files);           // sorted by name (timestamp)
-	
-					// add director prefix to get full path
-					List<String> fullPaths = Arrays.asList(files).stream()
-							.filter(f -> Utility.isRecordFile(f))
-							.map(s -> file + "/" + s)
-							.collect(Collectors.toList());
-	
-					log.info(MARKER, "Loading record files from directory {} ", pathName);
-					
-					if (fullPaths != null) {
-						log.info(MARKER, "Files are " + fullPaths);
-						loadRecordFiles(fullPaths);
+						String[] files = file.list(); // get all files under the directory
+						Arrays.sort(files);           // sorted by name (timestamp)
+		
+						// add director prefix to get full path
+						List<String> fullPaths = Arrays.asList(files).stream()
+								.filter(f -> Utility.isRecordFile(f))
+								.map(s -> file + "/" + s)
+								.collect(Collectors.toList());
+		
+						log.info(MARKER, "Loading record files from directory {} ", pathName);
+						
+						if (fullPaths != null) {
+							log.info(MARKER, "Files are " + fullPaths);
+							loadRecordFiles(fullPaths);
+						} else {
+							log.info(MARKER, "No files to parse");
+						}
 					} else {
-						log.info(MARKER, "No files to parse");
+						log.error(LOGM_EXCEPTION, "Exception file {} does not exist", pathName);
+		
 					}
-				} else {
-					log.error(LOGM_EXCEPTION, "Exception file {} does not exist", pathName);
-	
+					RecordFileLogger.finish();
 				}
-				RecordFileLogger.finish();
+				if (Utility.checkStopFile()) {
+					log.info(MARKER, "Stop file found, stopping.");
+					break;
+				}
 			}
 		}
 	}
