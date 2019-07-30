@@ -1,9 +1,9 @@
 \set db_name hederamirror
 \set db_user hederamirror
-\set db_password mysecretpassword
+\set db_password MdM*6-zsdx
 
 \set api_user api
-\set api_password mysecretpassword
+\set api_password pdP_mFe6gB
 
 CREATE DATABASE :db_name
      WITH
@@ -212,13 +212,24 @@ CREATE TABLE t_entities (
 	,balance						BIGINT
 );
 
+\echo Creating table t_account_balances
+
+CREATE TABLE t_account_balances (
+	,shard               BIGINT NOT NULL
+	,realm               BIGINT NOT NULL
+	,num                 BIGINT NOT NULL
+  ,balance             BIGINT NOT NULL
+);
+
 \echo Creating table t_account_balance_history
 
 CREATE TABLE t_account_balance_history (
   snapshot_time        TIMESTAMP NULL
 	,seconds             BIGINT NOT NULL
   ,balance             BIGINT NOT NULL
-	,fk_entity_id        BIGINT
+	,shard               BIGINT NOT NULL;
+	,realm               BIGINT NOT NULL;
+	,num                 BIGINT NOT NULL;
 );
 
 \echo Creating table t_transactions
@@ -340,15 +351,22 @@ CREATE UNIQUE INDEX idx_t_record_files_name ON t_record_files (name);
 
 CREATE UNIQUE INDEX idx_t_account_bal_hist_unq ON t_account_balance_history (snapshot_time, seconds, fk_entity_id);
 
+--t_account_balances
+\echo Creating indices on t_account_balances
+
+CREATE UNIQUE INDEX idx_t_account_bal_unq ON t_account_balance_history (shard, realm, num);
+
 --t_entities
 \echo Creating indices on t_entities
 
 CREATE UNIQUE INDEX idx_t_entities_unq ON t_entities (entity_shard, entity_realm, entity_num);
 CREATE INDEX idx_t_entities_id_num ON t_entities (id, entity_num);
+CREATE INDEX idx_t_entities_id_num ON t_entities (id, entity_num, fk_entity_type_id);
 CREATE INDEX idx_t_entities_id ON t_entities (id);
 
 --t_transaction_types
 \echo Creating indices on t_transaction_types
+CREATE INDEX idx_t_trans_type_id ON t_transaction_types (id);
 
 -- t_file_data
 \echo Creating indices on t_file_data
@@ -360,6 +378,19 @@ CREATE INDEX idx_contract_result_tx_id ON t_contract_result (fk_trans_id);
 
 \echo Creating indices on t_livehashes
 CREATE INDEX idx_livehash_tx_id ON t_livehashes (fk_trans_id);
+
+--t_transaction_results
+\echo Creating indices on t_transaction_results
+CREATE INDEX idx_t_trans_result_id ON t_transaction_results (id);
+
+\echo Creating views
+
+\echo v_entities
+create or replace view v_entities as
+    select e.id, e.entity_num, et.name as type
+from t_entities e
+, t_entity_types et
+where e.fk_entity_type_id = et.id;
 
 --
 \echo Issuing grants
@@ -373,12 +404,14 @@ GRANT ALL ON t_cryptotransferlists TO :db_user;
 GRANT ALL ON t_transaction_types TO :db_user;
 GRANT ALL ON t_entities TO :db_user;
 GRANT ALL ON t_account_balance_history TO :db_user;
+GRANT ALL ON t_account_balances TO :db_user;
 GRANT ALL ON t_file_data TO :db_user;
 GRANT ALL ON t_contract_result TO :db_user;
 GRANT ALL ON t_livehashes TO :db_user;
 GRANT ALL ON t_version TO :db_user;
 GRANT ALL ON t_transaction_results TO :db_user;
 GRANT ALL ON t_entity_types TO :db_user;
+GRANT ALL ON v_entities to :db_user;
 
 GRANT SELECT ON t_record_files TO :api_user;
 GRANT SELECT ON t_transactions TO :api_user;
@@ -386,11 +419,13 @@ GRANT SELECT ON t_cryptotransferlists TO :api_user;
 GRANT SELECT ON t_transaction_types TO :api_user;
 GRANT SELECT ON t_entities TO :api_user;
 GRANT SELECT ON t_account_balance_history TO :api_user;
+GRANT SELECT ON t_account_balances TO :api_user;
 GRANT SELECT ON t_file_data TO :api_user;
 GRANT SELECT ON t_contract_result TO :api_user;
 GRANT SELECT ON t_livehashes TO :api_user;
 GRANT SELECT ON t_transaction_results TO :api_user;
 GRANT SELECT ON t_entity_types TO :api_user;
+GRANT SELECT ON v_entities TO :api_user;
 
 GRANT ALL ON s_transaction_types_seq TO :db_user;
 GRANT ALL ON s_event_files_seq TO :db_user;
