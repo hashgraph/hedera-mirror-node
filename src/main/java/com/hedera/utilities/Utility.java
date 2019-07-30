@@ -1,4 +1,4 @@
-package com.hedera.mirrorNodeProxy;
+package com.hedera.utilities;
 
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
@@ -26,16 +26,18 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static java.lang.System.out;
 
 public class Utility {
 	private static final Logger log = LogManager.getLogger("recordStream-log");
 	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
 
+	public static boolean checkStopFile() {
+		File stopFile = new File("./stop");
+		return stopFile.exists();
+	}
+	
 	public static AccountID stringToAccountID(final String string) throws IllegalArgumentException{
 		if (string == null || string.isEmpty()) {
 			throw new IllegalArgumentException("Cannot parse empty string to AccountID");
@@ -155,8 +157,7 @@ public class Utility {
 		try (final FileInputStream fis = new FileInputStream(new File(location))) {
 			bytes = fis.readAllBytes();
 		} catch (IOException ex) {
-            log.error(MARKER, "getBytes() failed, Exception: {}", ex.getStackTrace());
-			out.println(Arrays.toString(ex.getStackTrace()));
+            log.error(MARKER, "getBytes() failed, Exception: {}", ex);
 		}
 		return bytes;
 	}
