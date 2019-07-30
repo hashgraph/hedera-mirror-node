@@ -8,8 +8,8 @@ import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.mirrorNodeProxy.Utility;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
+import com.hedera.utilities.Utility;
 
 public class AccountBalancesDownloader extends Downloader {
 
@@ -19,13 +19,24 @@ public class AccountBalancesDownloader extends Downloader {
 	}
 
 	public static void main(String[] args) {
+
+		if (Utility.checkStopFile()) {
+			log.info(MARKER, "Stop file found, exiting.");
+			System.exit(0);
+		}
+
 		configLoader = new ConfigLoader("./config/config.json");
 
 		AccountBalancesDownloader downloader = new AccountBalancesDownloader(configLoader);
 		
-		setupCloudConnection();
-
 		while (true) {
+			
+			if (Utility.checkStopFile()) {
+				log.info(MARKER, "Stop file found, stopping.");
+				break;
+			}
+			
+			setupCloudConnection();
 
 			// balance files with sig verification - TBD
 //			HashMap<String, List<File>> sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
@@ -37,15 +48,8 @@ public class AccountBalancesDownloader extends Downloader {
 				
 				xfer_mgr.shutdownNow();
 
-				if (configLoader.getDownloadPeriodSec() == 0) {
-					break;
-				} else {
-					Thread.sleep(configLoader.getDownloadPeriodSec() * 1000);
-				}
-			} catch (InterruptedException ex) {
-				log.error(MARKER, "InterruptedException: {}", ex.getStackTrace());
 			} catch (IOException e) {
-				log.error(MARKER, "IOException: {}", e.getStackTrace());
+				log.error(MARKER, "IOException: {}", e);
 			}
 		}
 	}
@@ -68,6 +72,10 @@ public class AccountBalancesDownloader extends Downloader {
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier(configLoader);
 		
 		for (String fileName : sigFilesMap.keySet()) {
+			if (Utility.checkStopFile()) {
+				log.info(MARKER, "Stop file found, stopping.");
+				break;
+			}
 			List<File> sigFiles = sigFilesMap.get(fileName);
 			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
 			if (!Utility.greaterThanSuperMajorityNum(sigFiles.size(), nodeAccountIds.size())) {
@@ -76,6 +84,10 @@ public class AccountBalancesDownloader extends Downloader {
 				// validSigFiles are signed by node'key and contains the same Hash which has been agreed by more than 2/3 nodes
 				List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
 				for (File validSigFile : validSigFiles) {
+					if (Utility.checkStopFile()) {
+						log.info(MARKER, "Stop file found, stopping.");
+						break;
+					}
 					if (validDir == null) {
 						validDir = validSigFile.getParentFile().getParent() + "/valid/";
 					}
