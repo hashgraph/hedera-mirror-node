@@ -418,7 +418,7 @@ CREATE TABLE t_events
     "otherSeq" bigint,
     "selfParentGen" bigint,
     "otherParentGen" bigint,
-    generation bigint,
+    "generation" bigint,
     "selfParentHash" bytea,
     "otherParentHash" bytea,
     "timeCreated" timestamp with time zone,
