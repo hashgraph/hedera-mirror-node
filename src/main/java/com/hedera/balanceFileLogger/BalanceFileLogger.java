@@ -102,7 +102,7 @@ public class BalanceFileLogger {
             File balanceFile = getLatestBalancefile(balanceFilesPath);
             if (balanceFile != null) {
                 // process the file
-                connect = DatabaseUtilities.getConnection();
+                connect = DatabaseUtilities.openDatabase(connect);
 
                 if (connect != null) {
 	                PreparedStatement insertBalance;

@@ -108,7 +108,7 @@ public class RecordFileLogger implements LoggerInterface {
     }
     
 	public static boolean start() {
-        connect = DatabaseUtilities.getConnection();
+        connect = DatabaseUtilities.openDatabase(connect);
         if (connect == null) {
         	return false;
         }
@@ -116,7 +116,7 @@ public class RecordFileLogger implements LoggerInterface {
 	}
 	public static boolean finish() {
         try {
-            DatabaseUtilities.closeDatabase();
+            connect = DatabaseUtilities.closeDatabase(connect);
         	return false;
         } catch (SQLException e) {
             log.error(LOGM_EXCEPTION, "Exception {}", e);

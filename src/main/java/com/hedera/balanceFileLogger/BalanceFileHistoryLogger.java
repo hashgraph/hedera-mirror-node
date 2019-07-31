@@ -62,7 +62,7 @@ public class BalanceFileHistoryLogger {
         
         try {
             // process the file
-            connect = DatabaseUtilities.getConnection();
+            connect = DatabaseUtilities.openDatabase(connect);
             
             if (connect != null) {
 
