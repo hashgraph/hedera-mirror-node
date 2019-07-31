@@ -447,4 +447,39 @@ public abstract class Downloader {
 		xfer_mgr = TransferManagerBuilder.standard()		
 				.withS3Client(s3Client).build();
 	}
+
+	protected void listObjects() {
+		ListObjectsRequest listRequest = new ListObjectsRequest()
+				.withBucketName(bucketName)
+				.withPrefix("eventstreams/")
+				.withDelimiter("/")
+				.withMaxKeys(100);
+		ObjectListing objects = s3Client.listObjects(listRequest);
+		try {
+			while (true) {
+				List<S3ObjectSummary> summaries = objects.getObjectSummaries();
+				for(S3ObjectSummary summary : summaries) {
+
+					String s3ObjectKey = summary.getKey();
+					System.out.println(s3ObjectKey);
+				}
+				if(objects.isTruncated()) {
+					objects = s3Client.listNextBatchOfObjects(objects);
+				}
+				else {
+					break;
+				}
+			}
+
+		} catch(AmazonServiceException e) {
+			// The call was transmitted successfully, but Amazon S3 couldn't process
+			// it, so it returned an error response.
+			log.error(MARKER, "Signatures download failed, Exception: {}", e.getStackTrace());
+		} catch(SdkClientException e) {
+			// Amazon S3 couldn't be contacted for a response, or the client
+			// couldn't parse the response from Amazon S3.
+			log.error(MARKER, "Signatures download failed, Exception: {}", e.getStackTrace());
+		}
+
+	}
 }

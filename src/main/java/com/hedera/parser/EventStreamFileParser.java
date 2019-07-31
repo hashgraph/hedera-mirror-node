@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.Connection;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +34,7 @@ public class EventStreamFileParser {
 	static final byte STREAM_EVENT_START_WITH_VERSION = 0x5a;
 	static final byte commEventLast = 0x46;
 
+	private static Connection connect = null;
 
 	private static ConfigLoader configLoader;
 
@@ -221,12 +223,10 @@ public class EventStreamFileParser {
 	}
 
 	public static void main(String[] args) {
-		String pathName;
-
 		configLoader = new ConfigLoader("./config/config.json");
 
-		pathName = configLoader.getDefaultParseDir_EventStream();
-		log.info(MARKER, "EventStream files folder got from configuration file: {}", configLoader.getDefaultParseDir_EventStream());
+		String pathName = configLoader.getDefaultParseDir_EventStream();
+		log.info(MARKER, "EventStream files folder got from configuration file: {}", pathName);
 
 		if (pathName != null) {
 

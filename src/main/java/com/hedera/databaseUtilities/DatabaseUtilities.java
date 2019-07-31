@@ -14,8 +14,9 @@ import com.hedera.configLoader.ConfigLoader;
 public class DatabaseUtilities {
     private static final Logger log = LogManager.getLogger("recordStream-log");
     static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
+    private static Connection connect = null;
 
-    public static Connection openDatabase(Connection connect) {
+    public static Connection getConnection() {
         if (connect == null) {
             try {
             	ConfigLoader configLoader = new ConfigLoader("./config/config.json");
@@ -34,8 +35,8 @@ public class DatabaseUtilities {
         return connect;
     }
 
-    public static Connection closeDatabase(Connection connect) throws SQLException {
+    public static void closeDatabase() throws SQLException {
         connect.close();
-        return null;
+        connect = null;
     }
 }

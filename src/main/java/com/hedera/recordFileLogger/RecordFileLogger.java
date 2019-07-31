@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -109,7 +108,7 @@ public class RecordFileLogger implements LoggerInterface {
     }
     
 	public static boolean start() {
-        connect = DatabaseUtilities.openDatabase(connect);
+        connect = DatabaseUtilities.getConnection();
         if (connect == null) {
         	return false;
         }
@@ -117,7 +116,7 @@ public class RecordFileLogger implements LoggerInterface {
 	}
 	public static boolean finish() {
         try {
-            connect = DatabaseUtilities.closeDatabase(connect);
+            DatabaseUtilities.closeDatabase();
         	return false;
         } catch (SQLException e) {
             log.error(LOGM_EXCEPTION, "Exception {}", e);
