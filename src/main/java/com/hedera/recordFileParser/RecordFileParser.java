@@ -61,6 +61,7 @@ public class RecordFileParser {
 			return false;
 		}
 
+		byte[] readFileHash = new byte[48];
 		INIT_RESULT initFileResult = RecordFileLogger.initFile(fileName);
 		if (initFileResult == INIT_RESULT.OK) {
 			try {
@@ -81,7 +82,6 @@ public class RecordFileParser {
 	
 						switch (typeDelimiter) {
 							case TYPE_PREV_HASH:
-								byte[] readFileHash = new byte[48];
 								dis.read(readFileHash);
 								if (previousFileHash.isEmpty() || previousFileHash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
 									log.error(MARKER, "Previous file Hash not available");
@@ -151,7 +151,7 @@ public class RecordFileParser {
 					}
 				}
 				dis.close();
-				RecordFileLogger.completeFile();
+				RecordFileLogger.completeFile(newFileHash, previousFileHash);
 			} catch (FileNotFoundException e) {
 				log.error(MARKER, "File Not Found Error {}", e);
 				return false;

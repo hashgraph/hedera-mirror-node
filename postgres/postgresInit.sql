@@ -182,6 +182,8 @@ CREATE TABLE t_record_files (
   ,name                VARCHAR(250) NOT NULL
 	,load_start          BIGINT
 	,load_end            BIGINT
+	,file_hash           VARCHAR(96)
+	,prev_hash           VARCHAR(96)
 );
 
 \echo creating table t_entity_types
@@ -248,6 +250,7 @@ CREATE TABLE t_transactions (
   ,charged_tx_fee      BIGINT
   ,initial_balance     BIGINT DEFAULT 0
   ,fk_cud_entity_id    BIGINT
+	,fk_rec_file_id      BIGINT NOT NULL
 );
 
 \echo Creating table t_cryptotransferlists
@@ -301,6 +304,7 @@ ALTER TABLE t_transactions ADD CONSTRAINT fk_node_account_id FOREIGN KEY (fk_nod
 ALTER TABLE t_transactions ADD CONSTRAINT fk_payer_account_id FOREIGN KEY (fk_payer_acc_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE t_transactions ADD CONSTRAINT fk_cud_entity_id FOREIGN KEY (fk_cud_entity_id) REFERENCES t_entities (id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE t_transactions ADD CONSTRAINT fk_result_id FOREIGN KEY (fk_result_id) REFERENCES t_transaction_results (id) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE t_transactions ADD CONSTRAINT fk_rec_file_id FOREIGN KEY (fk_rec_file_id) REFERENCES t_record_files (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- t_cryptotransferlists
 \echo Creating constraints on t_cryptotransferlists
@@ -332,6 +336,7 @@ CREATE UNIQUE INDEX idx_t_transactions_transaction_id_unq ON t_transactions (vs_
 CREATE INDEX idx_t_transactions_payer_id ON t_transactions (fk_payer_acc_id);
 CREATE INDEX idx_t_transactions_node_account ON t_transactions (fk_node_acc_id);
 CREATE INDEX idx_t_transactions_crud_entity ON t_transactions (fk_cud_entity_id);
+CREATE INDEX idx_t_transactions_rec_file ON t_transactions (fk_rec_file_id);
 
 -- t_cryptotransferlists
 \echo Creating indices on t_cryptotransferlists
@@ -345,11 +350,14 @@ CREATE INDEX idx_t_cryptotransferlist_tx_id_account ON t_cryptotransferlists (fk
 \echo Creating indices on t_record_files
 
 CREATE UNIQUE INDEX idx_t_record_files_name ON t_record_files (name);
+CREATE UNIQUE INDEX idx_file_data_hash_unq ON t_record_files (file_hash);
+CREATE INDEX idx_file_data_prev_hash_unq ON t_record_files (prev_hash);
 
 --t_account_balance_history
 \echo Creating indices on t_account_balance_history
 
 CREATE UNIQUE INDEX t_acc_bal_hist_unique ON t_account_balance_history (snapshot_time, seconds, fk_balance_id);
+CREATE INDEX t_acc_bal_hist_sec ON t_account_balance_history (seconds);
 
 --t_account_balances
 \echo Creating indices on t_account_balances

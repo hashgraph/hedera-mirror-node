@@ -59,6 +59,7 @@ public class RecordFileLogger {
         ,CUD_ENTITY_ID
         ,CHARGED_TX_FEE
         ,INITIAL_BALANCE
+        ,FK_REC_FILE_ID
     }
     
     enum F_TRANSFERLIST {
@@ -189,12 +190,15 @@ public class RecordFileLogger {
 		}
 		return INIT_RESULT.FAIL;
 	}
-	public static boolean completeFile() {
+	public static boolean completeFile(String fileHash, String previousHash) {
 		// update the file to processed
 		try {
-			PreparedStatement updateFile = connect.prepareStatement("UPDATE t_record_files SET load_end = ? WHERE id = ?");
+			PreparedStatement updateFile = connect.prepareStatement("UPDATE t_record_files SET load_end = ?, file_hash = ?, prev_hash = ? WHERE id = ?");
+			
 			updateFile.setLong(1, Instant.now().getEpochSecond());
-			updateFile.setLong(2, fileId);
+			updateFile.setString(2, fileHash);
+			updateFile.setString(3, previousHash);
+			updateFile.setLong(4, fileId);
 			updateFile.execute();
 			updateFile.close();
 			// commit the changes to the database
@@ -216,8 +220,10 @@ public class RecordFileLogger {
 	public static boolean storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord, ConfigLoader configLoader) throws Exception {
 		try {
 			PreparedStatement sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
-						+ " (fk_node_acc_id, memo, vs_seconds, vs_nanos, fk_trans_type_id, fk_payer_acc_id, fk_result_id, consensus_seconds, consensus_nanos, fk_cud_entity_id, charged_tx_fee, initial_balance)"
-						+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+						+ " (fk_node_acc_id, memo, vs_seconds, vs_nanos, fk_trans_type_id, fk_payer_acc_id"
+						+ ", fk_result_id, consensus_seconds, consensus_nanos, fk_cud_entity_id, charged_tx_fee"
+						+ ", initial_balance, fk_rec_file_id)"
+						+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 						+ " RETURNING id");
 
 			PreparedStatement sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
@@ -248,6 +254,7 @@ public class RecordFileLogger {
 			sqlInsertTransaction.setLong(F_TRANSACTION.VS_SECONDS.ordinal(), body.getTransactionID().getTransactionValidStart().getSeconds());
 			sqlInsertTransaction.setLong(F_TRANSACTION.VS_NANOS.ordinal(), body.getTransactionID().getTransactionValidStart().getNanos());
 			sqlInsertTransaction.setInt(F_TRANSACTION.FK_TRANS_TYPE_ID.ordinal(), getTransactionTypeId(body));
+			sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), fileId);
 
 	        long fkPayerAccountId = entities.createOrGetEntity(body.getTransactionID().getAccountID());
 
