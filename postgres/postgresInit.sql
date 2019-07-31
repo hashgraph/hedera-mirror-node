@@ -401,3 +401,33 @@ GRANT ALL ON s_transaction_types_seq TO :db_user;
 GRANT ALL ON s_event_files_seq TO :db_user;
 GRANT ALL ON s_transactions_seq TO :db_user;
 GRANT ALL ON s_entities_seq TO :db_user;
+
+
+\echo Creating table t_events
+
+-- Table: t_events
+
+-- DROP TABLE t_events;
+
+CREATE TABLE t_events
+(
+    "consensusOrder" bigint NOT NULL,
+    "creatorId" bigint,
+    "creatorSeq" bigint,
+    "otherId" bigint,
+    "otherSeq" bigint,
+    "selfParentGen" bigint,
+    "otherParentGen" bigint,
+    generation bigint,
+    "selfParentHash" bytea,
+    "otherParentHash" bytea,
+    "timeCreated" timestamp with time zone,
+		"signature" bytea,
+		"hash" bytea,
+		"consensusTimestamp" timestamp with time zone,
+		"size" integer,
+		"platformTxCount" integer,
+		"appTxCount" integer,
+    CONSTRAINT t_events_pkey PRIMARY KEY ("consensusOrder")
+)
+
