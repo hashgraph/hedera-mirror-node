@@ -27,7 +27,7 @@ The Beta mirror node works as follows:
 
 ## Prerequisites
 
-This mirror node beta requires Java version 10.
+This mirror node beta requires Java version 10 or above.
 
 ## Compile from source code
 
@@ -304,7 +304,7 @@ This isn't strictly speaking a configuration file, it is created at runtime by t
 
 Ensure you have a postgreSQL server running (versions 10 and 11 have been tested) with the mirror node software.
 
-Log into the database as an administrator and run the `postgres/postgresInit.sql` script to create the database and necessary entities.
+Log into the database as an administrator and run the `src/main/resources/postgres/postgresInit.sql` script to create the database and necessary entities.
 
 Ensure you change the default values in the first few lines of this script to match your environment.
 
@@ -319,7 +319,7 @@ Check the output of the script carefully to ensure no errors occurred.
 
 ## Upgrading the database
 
-If you have already installed the database and wish to upgrade it, you may run the `postgres/postgresUpdate.sql` script against your database.
+If you have already installed the database and wish to upgrade it, you may run the `src/main/resources/postgres/postgresUpdate.sql` script against your database.
 
 Ensure you change the default values in the first few lines of this script to match your environment.
 
@@ -428,7 +428,7 @@ POSTGRES_PORT=5432
 PGDATA=/var/lib/postgresql/data/pgdata
 ```
 
-If this is the first time you run the environment (or during a rebuild of the containers) in `docker-compose` you will need to update the `postgres/postgresInit.sql` script's fires few lines to set the database name, user and password you wish to use.
+If this is the first time you run the environment (or during a rebuild of the containers) in `docker-compose` you will need to update the `src/main/resources/postgres/postgresInit.sql` script's fires few lines to set the database name, user and password you wish to use.
 
 ```sql
 \set db_name hederamirror
