@@ -40,8 +40,8 @@ public class RecordFileParser {
 	static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
 	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 
-	private static ConfigLoader configLoader;
-	private static LoggerStatus loggerStatus;
+	private static ConfigLoader configLoader = new ConfigLoader("./config/config.json");
+	private static LoggerStatus loggerStatus = new LoggerStatus("./config/loggerStatus.json");
 	
 	/**
 	 * Given a service record name, read and parse and return as a list of service record pair
@@ -169,6 +169,8 @@ public class RecordFileParser {
 					log.error("Exception in close the stream {}", ex);
 				}
 			}
+			loggerStatus.setLastProcessedRcdHash(newFileHash);
+			loggerStatus.saveToFile();
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
 			return true;
@@ -212,6 +214,40 @@ public class RecordFileParser {
 					ex);
 		}
 	}
+	
+	public static void parseNewFiles(String pathName) {
+		if (RecordFileLogger.start()) {
+			
+			File file = new File(pathName);
+			if (file.isFile()) {
+				log.info(MARKER, "Loading record file {} " + pathName);
+				loadRecordFile(pathName, "");
+			} else if (file.isDirectory()) { //if it's a directory
+
+				String[] files = file.list(); // get all files under the directory
+				Arrays.sort(files);           // sorted by name (timestamp)
+
+				// add directory prefix to get full path
+				List<String> fullPaths = Arrays.asList(files).stream()
+						.filter(f -> Utility.isRecordFile(f))
+						.map(s -> file + "/" + s)
+						.collect(Collectors.toList());
+
+				log.info(MARKER, "Loading record files from directory {} ", pathName);
+				
+				if (fullPaths != null) {
+					log.info(MARKER, "Files are " + fullPaths);
+					loadRecordFiles(fullPaths);
+				} else {
+					log.info(MARKER, "No files to parse");
+				}
+			} else {
+				log.error(LOGM_EXCEPTION, "Exception file {} does not exist", pathName);
+
+			}
+			RecordFileLogger.finish();
+		}
+	}
 
 	public static void main(String[] args) {
 		String pathName;
@@ -223,48 +259,12 @@ public class RecordFileParser {
 			}
 	
 			configLoader = new ConfigLoader("./config/config.json");
-			loggerStatus = new LoggerStatus("./config/loggerStatus.json");
 			
 			pathName = configLoader.getDefaultParseDir();
 			log.info(MARKER, "Record files folder got from configuration file: {}", configLoader.getDefaultParseDir());
 	
 			if (pathName != null) {
-				
-				if (RecordFileLogger.start()) {
-				
-					File file = new File(pathName);
-					if (file.isFile()) {
-						log.info(MARKER, "Loading record file {} " + pathName);
-						loadRecordFile(pathName, "");
-					} else if (file.isDirectory()) { //if it's a directory
-		
-						String[] files = file.list(); // get all files under the directory
-						Arrays.sort(files);           // sorted by name (timestamp)
-		
-						// add director prefix to get full path
-						List<String> fullPaths = Arrays.asList(files).stream()
-								.filter(f -> Utility.isRecordFile(f))
-								.map(s -> file + "/" + s)
-								.collect(Collectors.toList());
-		
-						log.info(MARKER, "Loading record files from directory {} ", pathName);
-						
-						if (fullPaths != null) {
-							log.info(MARKER, "Files are " + fullPaths);
-							loadRecordFiles(fullPaths);
-						} else {
-							log.info(MARKER, "No files to parse");
-						}
-					} else {
-						log.error(LOGM_EXCEPTION, "Exception file {} does not exist", pathName);
-		
-					}
-					RecordFileLogger.finish();
-				}
-				if (Utility.checkStopFile()) {
-					log.info(MARKER, "Stop file found, stopping.");
-					break;
-				}
+				parseNewFiles(pathName);
 			}
 		}
 	}

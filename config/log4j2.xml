@@ -20,6 +20,9 @@
 			<AppenderRef ref="Console"/>
 		</Root>
 		
+		<Logger name="downloadandparserecordfiles" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
 
 		<Logger name="networkaddressbook" level="WARN">
 			<AppenderRef ref="recordStream-log" level="WARN"/>

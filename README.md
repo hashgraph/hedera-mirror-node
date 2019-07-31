@@ -48,6 +48,10 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Added class to download and parse record files in one step
+
+This class will download record files and parse the newly downloaded files immediately, then loop back to downloading available record files.
+
 ### Increased logging granularity
 
 Each class outputs its category in the common log for ease of debugging.
@@ -398,6 +402,12 @@ Run the following command:
 
 ```shell
 java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger 
+```
+
+### To download and parse record files in one command
+
+```shell
+java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseRecordFiles
 ```
 
 ### To Send Transactions or Queries to the BetaMirrorNode Proxy

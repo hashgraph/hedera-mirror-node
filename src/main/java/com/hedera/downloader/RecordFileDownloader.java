@@ -25,6 +25,29 @@ public class RecordFileDownloader extends Downloader {
 	public RecordFileDownloader(ConfigLoader configLoader) {
 		super(configLoader);
 	}
+	
+	public static void downloadNewRecordfiles(RecordFileDownloader downloader) {
+		setupCloudConnection();
+
+		HashMap<String, List<File>> sigFilesMap;
+		try {
+			sigFilesMap = downloader.downloadSigFiles(DownloadType.RCD);
+
+			// Verify signature files and download .rcd files of valid signature files
+			downloader.verifySigsAndDownloadRecordFiles(sigFilesMap);
+
+			if (validRcdDir != null) {
+//				new Thread(() -> {
+					verifyValidRecordFiles(validRcdDir);
+//				}).start();
+			}
+
+			xfer_mgr.shutdownNow();
+
+		} catch (IOException e) {
+			log.error(MARKER, "IOException: {}", e);
+		}
+	}
 
 	public static void main(String[] args) {
 		if (Utility.checkStopFile()) {
@@ -36,30 +59,11 @@ public class RecordFileDownloader extends Downloader {
 		RecordFileDownloader downloader = new RecordFileDownloader(configLoader);
 
 		while (true) {
-			setupCloudConnection();
-
-			HashMap<String, List<File>> sigFilesMap;
-			try {
-				sigFilesMap = downloader.downloadSigFiles(DownloadType.RCD);
-
-				// Verify signature files and download .rcd files of valid signature files
-				downloader.verifySigsAndDownloadRecordFiles(sigFilesMap);
-
-				if (validRcdDir != null) {
-//					new Thread(() -> {
-						verifyValidRecordFiles(validRcdDir);
-//					}).start();
-				}
-
-				xfer_mgr.shutdownNow();
-
-				if (Utility.checkStopFile()) {
-					log.info(MARKER, "Stop file found, stopping.");
-					break;
-				}
-			} catch (IOException e) {
-				log.error(MARKER, "IOException: {}", e);
+			if (Utility.checkStopFile()) {
+				log.info(MARKER, "Stop file found, stopping.");
+				break;
 			}
+			downloadNewRecordfiles(downloader);
 		}
 	}
 
