@@ -16,7 +16,7 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
 public class FileServiceMirror extends FileServiceGrpc.FileServiceImplBase {
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("fileservicemirror");
 	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
 
 	public FileServiceMirror() {

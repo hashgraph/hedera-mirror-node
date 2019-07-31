@@ -28,7 +28,7 @@ import java.io.FileOutputStream;
  */
 public class NetworkAddressBook {
 
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("networkaddressbook");
 	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
     private static ConfigLoader configLoader = new ConfigLoader("./config/config.json");

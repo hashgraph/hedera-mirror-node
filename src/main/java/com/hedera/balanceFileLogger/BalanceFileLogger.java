@@ -26,7 +26,7 @@ import org.apache.logging.log4j.MarkerManager;
 
 public class BalanceFileLogger {
 
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("balancelogger");
 	private static final Marker MARKER = MarkerManager.getMarker("BALANCE");
 	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
@@ -83,7 +83,7 @@ public class BalanceFileLogger {
 		} catch (IOException ex) {
 			log.error(MARKER, "Fail to move {} to {} : {}",
 					fileName, parsedDir.getName(),
-					ex.getStackTrace());
+					ex);
 		}
 	}
 	
@@ -166,7 +166,7 @@ public class BalanceFileLogger {
                 }
             } 
         } catch (IOException ex) {
-            log.error(MARKER, "Fail to move {} to {} : {}",balanceFilePath, donePath, ex.getStackTrace());
+            log.error(MARKER, "Fail to move {} to {} : {}",balanceFilePath, donePath, ex);
         }
         log.info(MARKER, "Balance History processing done");
 	}

@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 public class RecordFileLogger {
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("recordfilelogger");
 	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
 	public static Connection connect = null;

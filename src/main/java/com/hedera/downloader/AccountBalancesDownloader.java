@@ -94,7 +94,7 @@ public class AccountBalancesDownloader extends Downloader {
 					Pair<Boolean, File> fileResult = downloadBalanceFile(validSigFile, validDir);
 					File file = fileResult.getRight();
 					if (file != null &&
-							verifier.hashMatch(validSigFile, file)) {
+							Utility.hashMatch(validSigFile, file)) {
 						if (newLastValidBalanceFileName.isEmpty() ||
 								fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
 							newLastValidBalanceFileName = file.getName();

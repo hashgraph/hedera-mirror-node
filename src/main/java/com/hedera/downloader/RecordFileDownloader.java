@@ -58,7 +58,7 @@ public class RecordFileDownloader extends Downloader {
 					break;
 				}
 			} catch (IOException e) {
-				log.error(MARKER, "IOException: {}", e.getMessage());
+				log.error(MARKER, "IOException: {}", e);
 			}
 		}
 	}
@@ -100,7 +100,7 @@ public class RecordFileDownloader extends Downloader {
 				if (newLastValidRcdFileHash.isEmpty() ||
 						newLastValidRcdFileHash.equals(prevFileHash) ||
 						prevFileHash.equals(Hex.encodeHexString(new byte[48]))) {
-					newLastValidRcdFileHash = Utility.bytesToHex(RecordFileParser.getFileHash(rcdName));
+					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(rcdName));
 					newLastValidRcdFileName = new File(rcdName).getName();
 				} else {
 					break;
@@ -114,7 +114,7 @@ public class RecordFileDownloader extends Downloader {
 			}
 
 		} catch (IOException ex) {
-			log.error(MARKER, "verifyValidRcdFiles :: An Exception occurs while traversing {} : {}", validDir, ex.getStackTrace());
+			log.error(MARKER, "verifyValidRcdFiles :: An Exception occurs while traversing {} : {}", validDir, ex);
 		}
 	}
 
@@ -239,7 +239,7 @@ public class RecordFileDownloader extends Downloader {
 						Pair<Boolean, File> rcdFileResult = downloadRcdFile(validSigFile, validRcdDir);
 						File rcdFile = rcdFileResult.getRight();
 						if (rcdFile != null &&
-								verifier.hashMatch(validSigFile, rcdFile)) {
+								Utility.hashMatch(validSigFile, rcdFile)) {
 							break;
 						} else if (rcdFile != null) {
 							log.warn(MARKER, "{}'s Hash doesn't match the Hash contained in valid signature file. Will try to download a rcd file with same timestamp from other nodes and check the Hash.", rcdFile.getPath());
@@ -306,11 +306,11 @@ public class RecordFileDownloader extends Downloader {
 //			} catch(AmazonServiceException e) {
 //				// The call was transmitted successfully, but Amazon S3 couldn't process
 //				// it, so it returned an error response.
-//	            log.error(MARKER, "Record download failed, Exception: {}", e.getMessage());
+//	            log.error(MARKER, "Record download failed, Exception: {}", e);
 //			} catch(SdkClientException e) {
 //				// Amazon S3 couldn't be contacted for a response, or the client
 //				// couldn't parse the response from Amazon S3.
-//	            log.error(MARKER, "Record download failed, Exception: {}", e.getMessage());
+//	            log.error(MARKER, "Record download failed, Exception: {}", e);
 //			}
 //		}
 //
@@ -329,7 +329,7 @@ public class RecordFileDownloader extends Downloader {
 //					files.add(file);
 //				}
 //			} catch (IOException e) {
-//				log.error(MARKER, "IOException: {}", e.getMessage());
+//				log.error(MARKER, "IOException: {}", e);
 //			}
 //		}
 //

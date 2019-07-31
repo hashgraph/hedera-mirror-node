@@ -7,10 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,7 +32,7 @@ import org.apache.logging.log4j.MarkerManager;
  */
 public class RecordFileParser {
 
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("recordfileparser");
 	private static final Marker MARKER = MarkerManager.getMarker("SERVICE_RECORD");
 	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
@@ -147,7 +144,7 @@ public class RecordFileParser {
 						
 	
 					} catch (Exception e) {
-						log.error(LOGM_EXCEPTION, "Exception ", e);
+						log.error(LOGM_EXCEPTION, "Exception {}", e);
 						RecordFileLogger.rollback();
 						dis.close();
 						return false;
@@ -156,13 +153,13 @@ public class RecordFileParser {
 				dis.close();
 				RecordFileLogger.completeFile();
 			} catch (FileNotFoundException e) {
-				log.error(MARKER, "File Not Found Error");
+				log.error(MARKER, "File Not Found Error {}", e);
 				return false;
 			} catch (IOException e) {
-				log.error(MARKER, "IOException Error");
+				log.error(MARKER, "IOException Error {}", e);
 				return false;
 			} catch (Exception e) {
-				log.error(MARKER, "Parsing Error");
+				log.error(MARKER, "Parsing Error {}", e);
 				return false;
 			} finally {
 				try {
@@ -193,7 +190,7 @@ public class RecordFileParser {
 				return;
 			}
 			if (loadRecordFile(name, prevFileHash)) {
-				prevFileHash = Utility.bytesToHex(RecordFileParser.getFileHash(name));
+				prevFileHash = Utility.bytesToHex(Utility.getFileHash(name));
 				moveFileToParsedDir(name);
 			} else {
 				return;
@@ -212,7 +209,7 @@ public class RecordFileParser {
 		} catch (IOException ex) {
 			log.error(MARKER, "Fail to move {} to {} : {}",
 					fileName, parsedDir.getName(),
-					ex.getStackTrace());
+					ex);
 		}
 	}
 
@@ -271,32 +268,6 @@ public class RecordFileParser {
 			}
 		}
 	}
-	/**
-	 * Calculate SHA384 hash of a binary file
-	 *
-	 * @param fileName
-	 * 		file name
-	 * @return byte array of hash value
-	 */
-	public static byte[] getFileHash(String fileName) {
-		MessageDigest md;
-		try {
-			md = MessageDigest.getInstance("SHA-384");
-
-			byte[] array = new byte[0];
-			try {
-				array = Files.readAllBytes(Paths.get(fileName));
-			} catch (IOException e) {
-				log.error("Exception ", e);
-			}
-			byte[] fileHash = md.digest(array);
-			return fileHash;
-
-		} catch (NoSuchAlgorithmException e) {
-			log.error(LOGM_EXCEPTION, "Exception ", e);
-			return null;
-		}
-	}
 
 	/**
 	 * Given a service record name, read its prevFileHash
@@ -338,9 +309,9 @@ public class RecordFileParser {
 		} catch (FileNotFoundException e) {
 			log.error(MARKER, "readPrevFileHash :: File Not Found Error, file name = {}",  fileName);
 		} catch (IOException e) {
-			log.error(MARKER, "readPrevFileHash :: IOException Error, file name = {}",  fileName);
+			log.error(MARKER, "readPrevFileHash :: IOException Error, file name = {}, Exception {}",  fileName, e);
 		} catch (Exception e) {
-			log.error(MARKER, "readPrevFileHash :: Parsing Error, file name = {}",  fileName);
+			log.error(MARKER, "readPrevFileHash :: Parsing Error, file name = {}, Exception {}",  fileName, e);
 		} finally {
 			try {
 				if (stream != null)

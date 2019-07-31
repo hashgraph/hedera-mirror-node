@@ -19,7 +19,7 @@ import java.io.IOException;
 
 public class LoggerStatus {
 
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("loggerstatus");
 	private static final Marker MARKER = MarkerManager.getMarker("LoggerStatus");
 
 	// Hash of last last successfully processed rcd file
@@ -64,7 +64,7 @@ public class LoggerStatus {
 			gson.toJson(jsonObject, file);
 			log.info(MARKER, "Successfully wrote configuration to {}", configSavePath);
 		} catch (IOException ex) {
-			log.warn(MARKER, "Fail to write configuration to {}, Exception: {}", configSavePath, ex.getStackTrace());
+			log.warn(MARKER, "Fail to write configuration to {}, Exception: {}", configSavePath, ex);
 		}
 	}
 

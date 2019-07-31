@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class Downloader {
-	protected static final Logger log = LogManager.getLogger("recordStream-log");
+	protected static final Logger log = LogManager.getLogger("downloader");
 
 	protected static final Marker MARKER = MarkerManager.getMarker("DOWNLOADER");
 
@@ -115,7 +115,7 @@ public abstract class Downloader {
 					.map(i -> i.getKey())
 					.collect(Collectors.toCollection(ArrayList::new));
 		} catch (IOException ex) {
-			log.warn(MARKER, "loadNodeAccountIDs - Fail to load from {}. Exception: {}", fileName, ex.getStackTrace());
+			log.warn(MARKER, "loadNodeAccountIDs - Fail to load from {}. Exception: {}", fileName, ex);
 		}
 		return new ArrayList<>();
 	}
@@ -428,11 +428,11 @@ public abstract class Downloader {
 				return Pair.of(false, null);
 			}
 		} catch (AmazonServiceException ex) {
-			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex.getErrorMessage());
+			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex);
 		} catch (InterruptedException ex) {
-			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex.getStackTrace());
+			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex);
 		} catch (IOException ex) {
-            log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex.getStackTrace());
+            log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex);
         }
 		return Pair.of(false, null);
 	}

@@ -17,7 +17,7 @@ import org.apache.logging.log4j.MarkerManager;
 
 public class SmartContractServiceMirror extends SmartContractServiceGrpc.SmartContractServiceImplBase {
 
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("smartcontractservicemirror");
 	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
 
 	/**

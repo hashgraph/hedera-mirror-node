@@ -21,7 +21,7 @@ import java.io.IOException;
 
 public class ConfigLoader {
 
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("configloader");
 	private static final Marker MARKER = MarkerManager.getMarker("ConfigLoader");
 
 	public enum CLOUD_PROVIDER {
@@ -339,7 +339,7 @@ public class ConfigLoader {
 			gson.toJson(jsonObject, file);
 			log.info(MARKER, "Successfully wrote configuration to {}", configSavePath);
 		} catch (IOException ex) {
-			log.warn(MARKER, "Fail to write configuration to {}, Exception: {}", configSavePath, ex.getStackTrace());
+			log.warn(MARKER, "Fail to write configuration to {}, Exception: {}", configSavePath, ex);
 		}
 	}
 

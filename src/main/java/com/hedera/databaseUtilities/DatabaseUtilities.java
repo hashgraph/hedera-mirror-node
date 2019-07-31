@@ -12,7 +12,7 @@ import org.apache.logging.log4j.MarkerManager;
 import com.hedera.configLoader.ConfigLoader;
 
 public class DatabaseUtilities {
-    private static final Logger log = LogManager.getLogger("recordStream-log");
+    private static final Logger log = LogManager.getLogger("databaseUtilities");
     static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
     public static Connection openDatabase(Connection connect) {

@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * The MirrorNodeProxy runs a grpc server that accepts HAPI transactions, and forwards them unchanged to the node specified in the transaction body. 
  */
 public class MirrorNodeProxy {
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("proxy");
 	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
 	private static String nodeInfoFile;
 
