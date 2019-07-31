@@ -1,6 +1,7 @@
 package com.hedera.mirrorservice;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.mirrorNodeProxy.MirrorNodeProxy;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
