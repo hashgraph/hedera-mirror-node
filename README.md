@@ -37,13 +37,6 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 `cd target`
 
-## Todo
-
-- REST api in docker
-- Add CI for build
-- Create unit tests
-- Add CI for unit tests
-
 ## Change history
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.

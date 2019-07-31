@@ -10,7 +10,7 @@ mvn install -DskipTests
 
 cd docker
 
-cp -r ../postgres/postgresInit.sql .
+cp -r ../src/main/resources/postgres/postgresInit.sql .
 cp -r ../config/* runtime/config/
 cp -r ../target/lib/* runtime/lib
 cp ../target/mirrorNode.jar runtime/mirrorNode.jar
