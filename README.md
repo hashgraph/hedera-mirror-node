@@ -48,6 +48,10 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Increased logging granularity
+
+Each class outputs its category in the common log for ease of debugging.
+
 ### Removal of `downloadPeriodSec` parameter from config.json
 
 Download and processing (logging) activities now run in a continuous loop, restarting as soon as they finished to lower the latency for data availability in the database as much as possible.
