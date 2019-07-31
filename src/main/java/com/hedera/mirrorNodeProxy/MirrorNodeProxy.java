@@ -84,7 +84,7 @@ public class MirrorNodeProxy {
 			}
 			log.info(MARKER, "Loaded nodes info successfully");
 		} catch (Exception ex) {
-			log.error(MARKER, "Get an exception while loading NodesInfo {}", ex.getStackTrace());
+			log.error(MARKER, "Get an exception while loading NodesInfo {}", ex);
 		}
 	}
 
@@ -101,7 +101,7 @@ public class MirrorNodeProxy {
 			log.info(MARKER, "NettyServer SHUTTING DOWN .");
 			this.server.awaitTermination(5, TimeUnit.SECONDS);
 		} catch (InterruptedException ex) {
-			log.error(MARKER, "Error in shutdownNetty {}", ex.getStackTrace());
+			log.error(MARKER, "Error in shutdownNetty {}", ex);
 		}
 	}
 }
