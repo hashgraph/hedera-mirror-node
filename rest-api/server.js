@@ -11,7 +11,6 @@ const cors = require('cors')
 const log4js = require('log4js');
 const logger = log4js.getLogger();
 
-const analytics = require('./analytics.js');
 const transactions = require('./transactions.js');
 const balances = require('./balances.js');
 
@@ -67,7 +66,6 @@ let apiPrefix = '/api/v1';
 app.get(apiPrefix + '/transactions', transactions.getTransactions);
 app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
 app.get(apiPrefix + '/balances', balances.getBalances);
-app.get(apiPrefix + '/analytics', analytics.getAnalytics);
 
 if (process.env.NODE_ENV !== 'test') {
     app.listen(port, () => {
