@@ -20,7 +20,7 @@ const createTransferLists = function (rows, arr)  {
         if (!(row.transaction_id in transactions)) {
             transactions[row.transaction_id] = {};
             for (let key of ["transaction_id", "id", "memo", "consensus_seconds", 
-                "consensus_nanos", "result", "name", "node"]) {
+                "consensus_nanos", "result", "name", "node", "charged_tx_fee"]) {
                 transactions[row.transaction_id][key] = row[key];
                 if (anchorSeconds === null) {
                     anchorSeconds = row.consensus_seconds;
@@ -125,6 +125,7 @@ const getTransactions = function (req, res) {
         "   , concat(eaccount.entity_shard, '.', eaccount.entity_realm, " +
         "       '.', eaccount.entity_num) as account\n" +
         "   , amount\n" +
+        "   , t.charged_tx_fee\n" +
 	    " from (" + innerQuery + ") as tlist\n" +
         "   join t_transactions t on tlist.id = t.id\n" +
         "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +

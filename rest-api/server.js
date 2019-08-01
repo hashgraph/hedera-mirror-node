@@ -65,6 +65,7 @@ let apiPrefix = '/api/v1';
 // routes 
 app.get(apiPrefix + '/transactions', transactions.getTransactions);
 app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
+app.get(apiPrefix + '/balances/history', balances.getBalancesHistory);
 app.get(apiPrefix + '/balances', balances.getBalances);
 
 if (process.env.NODE_ENV !== 'test') {
