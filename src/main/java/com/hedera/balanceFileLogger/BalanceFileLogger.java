@@ -93,28 +93,32 @@ public class BalanceFileLogger {
         // find all files in path
         // return the greatest file name
 	    
-	    for (final File nodeFolders : balanceFilesPath.listFiles()) {
-	        if (nodeFolders.isDirectory()) {
-	            
-	            List<String> balancefiles = new ArrayList<String>();
-
-	            for (final File balanceFile : nodeFolders.listFiles()) {
-	                balancefiles.add(balanceFile.getName());
-	            }
-	            if (balancefiles.size() != 0) {
-    	            Collections.sort(balancefiles);
-    	            File lastFound = new File(nodeFolders.getCanonicalPath() + File.separator + balancefiles.get(balancefiles.size()-1));
-    	            System.out.println (nodeFolders.getCanonicalPath());
-    	            System.out.println (balancefiles.get(balancefiles.size()-1));
-    	            
-    	            if (lastFile == null) {
-    	                lastFile = lastFound;
-    	            } else if (lastFile.getName().compareTo(lastFound.getName()) < 0) {
-    	                lastFile = lastFound;
-    	            }
-	            }
-	        }
-	    }	    
+	    if (balanceFilesPath.exists()) {
+		    for (final File nodeFolders : balanceFilesPath.listFiles()) {
+		        if (nodeFolders.isDirectory()) {
+		            
+		            List<String> balancefiles = new ArrayList<String>();
+	
+		            for (final File balanceFile : nodeFolders.listFiles()) {
+		                balancefiles.add(balanceFile.getName());
+		            }
+		            if (balancefiles.size() != 0) {
+	    	            Collections.sort(balancefiles);
+	    	            File lastFound = new File(nodeFolders.getCanonicalPath() + File.separator + balancefiles.get(balancefiles.size()-1));
+	    	            System.out.println (nodeFolders.getCanonicalPath());
+	    	            System.out.println (balancefiles.get(balancefiles.size()-1));
+	    	            
+	    	            if (lastFile == null) {
+	    	                lastFile = lastFound;
+	    	            } else if (lastFile.getName().compareTo(lastFound.getName()) < 0) {
+	    	                lastFile = lastFound;
+	    	            }
+		            }
+		        }
+		    }
+	    } else {
+			log.error(MARKER, balanceFilesPath.getPath() + " does not exist.");
+	    }
 	    return lastFile;
 	}
 
