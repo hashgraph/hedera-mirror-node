@@ -20,33 +20,35 @@ describe('/balances tests', () => {
         expect(response.status).toEqual(200);
         let balances = JSON.parse(response.text).balances;
 
-        testBalanceTs = Object.keys(balances)[0];
-        testAccountNum = balances[testBalanceTs][0].account_num;
+        testBalanceTs = balances[0].seconds;
+        testAccountNum = balances[0].accountbalances[0].account.replace('0.0.', '');;
 
-        expect(balances[testBalanceTs].length).toBeGreaterThan(10);
+        expect(balances[0].accountbalances.length).toBeGreaterThan(10);
     });
 
     test('Get balances with limit parameters', async () => {
         const response = await request(server).get(apiPrefix + '/balances?limit=10');
         expect(response.status).toEqual(200);
         let balances = JSON.parse(response.text).balances;
-        expect(balances[Object.keys(balances)[0]].length).toEqual(10);
+        expect(balances[0].accountbalances.length).toEqual(10);
+
     });
 
-    test('Get transactions with timestamp & limit parameters', async () => {
+    test('Get balances with timestamp & limit parameters', async () => {
         const response = await request(server).get(apiPrefix + '/balances' +
             '?timestamp=gt:' + (testBalanceTs - 1) +
             '&timestamp=lt:' + (testBalanceTs + 1) + '&limit=1');
         expect(response.status).toEqual(200);
         let balances = JSON.parse(response.text).balances;
-        expect(balances[Object.keys(balances)[0]].length).toEqual(1);
+        expect(balances[0].accountbalances.length).toEqual(1);
+
     });
 
-    test('Get transactions with account id parameters', async () => {
+    test('Get balances with account id parameters', async () => {
         const response = await request(server).get(apiPrefix + '/balances' +
             '?account.id=' + testAccountNum + '&limit=1');
         expect(response.status).toEqual(200);
         let balances = JSON.parse(response.text).balances;
-        expect(balances[Object.keys(balances)[0]].length).toEqual(1);
+        expect(balances[0].accountbalances.length).toEqual(1);
     });
 });
