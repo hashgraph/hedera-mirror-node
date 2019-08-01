@@ -93,6 +93,9 @@ public class BalanceFileLogger {
         // find all files in path
         // return the greatest file name
 	    
+        if (!balanceFilesPath.exists()) {
+        	balanceFilesPath.mkdirs();
+        }
 	    if (balanceFilesPath.exists()) {
 		    for (final File nodeFolders : balanceFilesPath.listFiles()) {
 		        if (nodeFolders.isDirectory()) {
@@ -143,6 +146,9 @@ public class BalanceFileLogger {
         String balanceFilePath = "";
         String donePath = "";
         
+        if (!balanceFilesPath.exists()) {
+        	balanceFilesPath.mkdirs();
+        }
         if (balanceFilesPath.exists()) {
 	        try {
 	        
