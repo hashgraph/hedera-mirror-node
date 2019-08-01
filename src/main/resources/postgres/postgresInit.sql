@@ -1,34 +1,23 @@
- -- Change the values below if you are not installing via Docker
- -- environment variable values come from .env file
- -- name of the database
-\set db_name `echo "$POSTGRES_DB"`
--- username
-\set db_user `echo "$POSTGRES_USER"`
--- user password
-\set db_password `echo "$POSTGRES_PASSWORD"`
--- owner of the database (usually postgres)
-\set db_owner `echo "$POSTGRES_USER"`
+\set db_name hederamirror
+\set db_user hederamirror
+\set db_password MdM*6-zsdx
 
--- Change the values below to your preferred API user name and password
 \set api_user api
-\set api_password mysecretpassword
+\set api_password pdP_mFe6gB
 
+CREATE DATABASE :db_name
+     WITH
+     OWNER = postgres
+     CONNECTION LIMIT = -1;
 
--- Uncomment below if you are not installing via Docker
---
--- CREATE DATABASE :db_name
---      WITH
---      OWNER = :'db_owner'
---      CONNECTION LIMIT = -1;
---
--- CREATE USER :db_user WITH
--- 	LOGIN
--- 	NOCREATEDB
--- 	NOCREATEROLE
--- 	NOINHERIT
--- 	NOREPLICATION
--- 	CONNECTION LIMIT -1
--- 	PASSWORD :'db_password';
+CREATE USER :db_user WITH
+	LOGIN
+	NOCREATEDB
+	NOCREATEROLE
+	NOINHERIT
+	NOREPLICATION
+	CONNECTION LIMIT -1
+	PASSWORD :'db_password';
 
 CREATE USER :api_user WITH
 	LOGIN
@@ -226,6 +215,16 @@ CREATE TABLE t_entities (
 	,balance            BIGINT
 );
 
+\echo Creating t_account_balance_refresh_time
+
+CREATE TABLE t_account_balance_refresh_time (
+  seconds             BIGINT NOT NULL
+  ,nanos              BIGINT NOT NULL
+);
+
+INSERT INTO t_account_balance_refresh_time
+VALUES (0,0);
+
 \echo Creating table t_account_balances
 
 CREATE TABLE t_account_balances (
@@ -241,6 +240,7 @@ CREATE TABLE t_account_balances (
 CREATE TABLE t_account_balance_history (
   snapshot_time        TIMESTAMP NOT NULL
 	,seconds             BIGINT NOT NULL
+  ,nanos               BIGINT NOT NULL
   ,balance             BIGINT NOT NULL
   ,fk_balance_id       BIGINT NOT NULL
 );
@@ -367,7 +367,8 @@ CREATE INDEX idx_file_data_prev_hash_unq ON t_record_files (prev_hash);
 --t_account_balance_history
 \echo Creating indices on t_account_balance_history
 
-CREATE UNIQUE INDEX t_acc_bal_hist_unique ON t_account_balance_history (snapshot_time, seconds, fk_balance_id);
+CREATE UNIQUE INDEX t_acc_bal_hist_unique ON t_account_balance_history (seconds, fk_balance_id);
+CREATE UNIQUE INDEX t_acc_bal_hist_unique2 ON t_account_balance_history (snapshot_time, seconds, fk_balance_id);
 CREATE INDEX t_acc_bal_hist_sec ON t_account_balance_history (seconds);
 
 --t_account_balances
@@ -375,6 +376,7 @@ CREATE INDEX t_acc_bal_hist_sec ON t_account_balance_history (seconds);
 
 CREATE UNIQUE INDEX idx_t_account_bal_unq ON t_account_balances (shard, realm, num);
 CREATE INDEX idx_t_account_bal_id_num ON t_account_balances (id, num);
+CREATE UNIQUE INDEX idx_t_account_bal_unq2 ON t_account_balances (id, shard, realm, num);
 
 --t_entities
 \echo Creating indices on t_entities
@@ -425,12 +427,14 @@ GRANT ALL ON t_transaction_types TO :db_user;
 GRANT ALL ON t_entities TO :db_user;
 GRANT ALL ON t_account_balance_history TO :db_user;
 GRANT ALL ON t_account_balances TO :db_user;
+GRANT ALL ON t_account_balance_refresh_time to :db_user;
 GRANT ALL ON t_file_data TO :db_user;
 GRANT ALL ON t_contract_result TO :db_user;
 GRANT ALL ON t_livehashes TO :db_user;
 GRANT ALL ON t_version TO :db_user;
 GRANT ALL ON t_transaction_results TO :db_user;
 GRANT ALL ON t_entity_types TO :db_user;
+
 GRANT ALL ON v_entities to :db_user;
 
 GRANT SELECT ON t_record_files TO :api_user;
@@ -438,6 +442,7 @@ GRANT SELECT ON t_transactions TO :api_user;
 GRANT SELECT ON t_cryptotransferlists TO :api_user;
 GRANT SELECT ON t_transaction_types TO :api_user;
 GRANT SELECT ON t_entities TO :api_user;
+GRANT SELECT ON t_account_balance_refresh_time to :api_user;
 GRANT SELECT ON t_account_balance_history TO :api_user;
 GRANT SELECT ON t_account_balances TO :api_user;
 GRANT SELECT ON t_file_data TO :api_user;
@@ -445,6 +450,7 @@ GRANT SELECT ON t_contract_result TO :api_user;
 GRANT SELECT ON t_livehashes TO :api_user;
 GRANT SELECT ON t_transaction_results TO :api_user;
 GRANT SELECT ON t_entity_types TO :api_user;
+
 GRANT SELECT ON v_entities TO :api_user;
 
 GRANT ALL ON s_transaction_types_seq TO :db_user;

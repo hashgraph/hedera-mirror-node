@@ -11,7 +11,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 
@@ -23,6 +28,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
+
+import java.time.Instant;
 
 public class BalanceFileLogger {
 
@@ -55,10 +62,11 @@ public class BalanceFileLogger {
         ZERO
         ,SNAPSHOT_TIME
         ,SECONDS
+        ,NANOS
         ,FK_BAL_ID
         ,BALANCE 
     }
-
+    
     enum BalanceHistoryInsertBalance {
         ZERO
         ,SHARD
@@ -70,7 +78,63 @@ public class BalanceFileLogger {
 	
     private static ConfigLoader configLoader = new ConfigLoader("./config/config.json");
 	private static String balanceFolder = configLoader.getDownloadToDir();
-	private static File balanceFilesPath ;
+	private static File balanceFilesPath;
+	
+	private static long fileSeconds = 0;
+	private static long fileNanos = 0;
+	private static Instant fileTimestamp;
+	
+	static void parseFileName(File fileName) {
+
+		String shortFileName = fileName.getName().replace(".csv", "");
+		if (shortFileName.contains("Balances.csv")) {
+			// new format -- yyyy-MM-ddT12:09:00.0Z + "_Balances"
+			shortFileName = shortFileName.replace("_Balances", "");
+			
+			DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+				    .appendPattern("yyyy-MM-ddTHH:mm:ss'")
+				    // optional nanos with 9 digits (including decimal point)
+				    .optionalStart()
+				    .appendFraction(ChronoField.NANO_OF_SECOND, 9, 9, true)
+				    .optionalEnd()
+				    // optional nanos with 6 digits (including decimal point)
+				    .optionalStart()
+				    .appendFraction(ChronoField.NANO_OF_SECOND, 6, 6, true)
+				    .optionalEnd()
+				    // optional nanos with 3 digits (including decimal point)
+				    .optionalStart()
+				    .appendFraction(ChronoField.NANO_OF_SECOND, 3, 3, true)
+				    .optionalEnd()
+				    // offset
+				    .appendOffset("+HH:mm", "Z")
+				    // create formatter
+				    .toFormatter();
+			
+			fileTimestamp = Instant.from(formatter.parse(shortFileName));
+			fileSeconds = fileTimestamp.getEpochSecond();
+			fileNanos = fileTimestamp.getNano();
+		} else {
+			// old format -- 2019-06-28-22-05.csv
+			String[] fileParts = shortFileName.split("-");
+			if (fileParts.length != 5) {
+				log.error(MARKER, "File {} is not named as expected, should be like 2019-06-28-22-05.csv", fileName);
+			} else {
+				Calendar c = Calendar.getInstance();
+				c.clear();
+				
+				c.set(Integer.parseInt(fileParts[0])
+						, Integer.parseInt(fileParts[1]) -1 
+						, Integer.parseInt(fileParts[2])
+						, Integer.parseInt(fileParts[3])
+						, Integer.parseInt(fileParts[4])
+						,0
+				);  
+				fileTimestamp = c.toInstant();
+				fileSeconds = fileTimestamp.getEpochSecond();
+				fileNanos = fileTimestamp.getNano();
+			}
+		}
+	}
 	
     static void moveFileToParsedDir(String fileName) {
 		File sourceFile = new File(fileName);
@@ -108,8 +172,6 @@ public class BalanceFileLogger {
 		            if (balancefiles.size() != 0) {
 	    	            Collections.sort(balancefiles);
 	    	            File lastFound = new File(nodeFolders.getCanonicalPath() + File.separator + balancefiles.get(balancefiles.size()-1));
-	    	            System.out.println (nodeFolders.getCanonicalPath());
-	    	            System.out.println (balancefiles.get(balancefiles.size()-1));
 	    	            
 	    	            if (lastFile == null) {
 	    	                lastFile = lastFound;
@@ -188,7 +250,6 @@ public class BalanceFileLogger {
 	
 	public static boolean processFileForHistory(File balanceFile) {
         boolean processLine = false;
-        boolean getDate = false;
         
         try {
             // process the file
@@ -202,6 +263,8 @@ public class BalanceFileLogger {
                     log.error(LOGM_EXCEPTION, "Unable to unset database auto commit, Exception: {}", e.getMessage());
                 	return false;
         		}
+
+                parseFileName(balanceFile);
                 
                 PreparedStatement selectBalance = connect.prepareStatement(
                 		"SELECT id"
@@ -217,10 +280,11 @@ public class BalanceFileLogger {
 
             	PreparedStatement insertBalanceHistory;
 	            insertBalanceHistory = connect.prepareStatement(
-	                    "insert into t_account_balance_history (snapshot_time, seconds, fk_balance_id, balance) "
+	                    "insert into t_account_balance_history (snapshot_time, seconds, nanos, fk_balance_id, balance) "
 	                    + " values ("
-	                    + " to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss')" // snapshot
-	                    + ", EXTRACT(EPOCH FROM to_timestamp(?, 'YYYY,MONTH,DD,hh24,mi,ss'))" //seconds
+	                    + " ?" // snapshot
+	                    + ", ?" // seconds
+	                    + ", ?" // nanos
 	                    + ", ?" // balance_id
 	                    + ", ?" // balance
 	                    + ")"
@@ -230,7 +294,6 @@ public class BalanceFileLogger {
 	            BufferedReader br = new BufferedReader(new FileReader(balanceFile));
 	
 	            String line;
-	            String dateLine = "";
 	            while ((line = br.readLine()) != null) {
 	                if (processLine) {
 	                    try {
@@ -276,9 +339,10 @@ public class BalanceFileLogger {
 		                            }
 	                        	}
 	                        	balanceRow.close();
-	                        	
-		                        insertBalanceHistory.setString(BalanceHistoryInsert.SNAPSHOT_TIME.ordinal(), dateLine);
-		                        insertBalanceHistory.setString(BalanceHistoryInsert.SECONDS.ordinal(), dateLine);
+	                        	Timestamp timestamp = Timestamp.from(fileTimestamp);
+		                        insertBalanceHistory.setTimestamp(BalanceHistoryInsert.SNAPSHOT_TIME.ordinal(), timestamp);
+		                        insertBalanceHistory.setLong(BalanceHistoryInsert.SECONDS.ordinal(), fileSeconds);
+		                        insertBalanceHistory.setLong(BalanceHistoryInsert.NANOS.ordinal(), fileNanos);
 	                        	insertBalanceHistory.setLong(BalanceHistoryInsert.FK_BAL_ID.ordinal(), accountId);
 		                        insertBalanceHistory.setLong(BalanceHistoryInsert.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
 		
@@ -293,11 +357,6 @@ public class BalanceFileLogger {
 	                        br.close();
 	                        return false;
 	                    }
-	                } else if (getDate) {
-	                    getDate = false;
-	                    dateLine = line;
-	                } else if (line.contentEquals("year,month,day,hour,minute,second")) {
-	                    getDate = true;
 	                } else if (line.contentEquals("shard,realm,number,balance")) {
 	                    // skip all lines until shard,realm,number,balance
 	                    processLine = true;
@@ -322,7 +381,7 @@ public class BalanceFileLogger {
 	
 	private static void processLastBalanceFile() {
 
-	    boolean processLine = false;
+        boolean processLine = false;
 	    
         try {
             File balanceFile = getLatestBalancefile(balanceFilesPath);
@@ -330,8 +389,15 @@ public class BalanceFileLogger {
                 // process the file
                 connect = DatabaseUtilities.openDatabase(connect);
                 
+                parseFileName(balanceFile);
+
                 if (connect != null) {
                     connect.setAutoCommit(false);
+                    
+            		PreparedStatement updateLastBalanceTime = connect.prepareStatement(
+                    		"UPDATE t_account_balance_refresh_time"
+                    		+ " SET seconds = ?"
+            				+ ",nanos = ?");
                     
                     PreparedStatement selectBalance = connect.prepareStatement(
                     		"SELECT id"
@@ -349,7 +415,12 @@ public class BalanceFileLogger {
                     PreparedStatement insertBalance =  connect.prepareStatement(
 	                        "INSERT INTO t_account_balances (shard, realm, num, balance) "
 	                        + " VALUES (?, ?, ?, ?)");
-		        
+                    
+                    // update last file update time
+    				updateLastBalanceTime.setLong(1, fileSeconds);
+    				updateLastBalanceTime.setLong(2, fileNanos);
+    				updateLastBalanceTime.execute();
+                    
 	                BufferedReader br = new BufferedReader(new FileReader(balanceFile));
 	
 	                String line;
@@ -391,13 +462,14 @@ public class BalanceFileLogger {
 		                    }
 		                } else if (line.contentEquals("shard,realm,number,balance")) {
 		                    // skip all lines until shard,realm,number,balance
-	                        processLine = true;
-	                    }
+		                    processLine = true;
+		                }
 		            }
 	                connect.commit();
 	                insertBalance.close();
 	                updateBalance.close();
 	                selectBalance.close();
+	                updateLastBalanceTime.close();
 	                br.close();
 	            }
 	        } else {
@@ -408,7 +480,7 @@ public class BalanceFileLogger {
         } catch (SQLException e) {
             log.error(LOGM_EXCEPTION, "Exception {}", e);
             try {
-				connect.rollback();
+            	connect.rollback();
 			} catch (SQLException e1) {
 	            log.error(LOGM_EXCEPTION, "Exception {}", e1);
 			}
