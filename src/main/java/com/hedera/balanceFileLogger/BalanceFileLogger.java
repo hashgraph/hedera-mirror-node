@@ -142,35 +142,40 @@ public class BalanceFileLogger {
 	    File balanceFilesPath = new File(balanceFolder + "accountBalances/balance");
         String balanceFilePath = "";
         String donePath = "";
-        try {
         
-            for (final File nodeFolders : balanceFilesPath.listFiles()) {
-    			if (Utility.checkStopFile()) {
-    				log.info(MARKER, "Stop file found, stopping.");
-    				break;
-    			}            	
-                donePath = nodeFolders.getCanonicalPath().toString().replace("/balance", "/processed");
-                File targetPath = new File (donePath);
-                targetPath.mkdirs();
-                if (nodeFolders.isDirectory()) {
-                    for (final File balanceFile : nodeFolders.listFiles()) {
-            			if (Utility.checkStopFile()) {
-            				log.info(MARKER, "Stop file found, stopping.");
-            				break;
-            			}            	
-                        if (processFileForHistory(balanceFile)) {
-                            // move it
-                            File destFile = new File(targetPath.getCanonicalPath() + File.separator + balanceFile.getName());
-
-                            Files.move(balanceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                            log.info(MARKER, balanceFile.toPath() + " has been moved to " + destFile.getPath());
-                            balanceFilePath = balanceFile.getCanonicalFile().toString();
-                        }
-                    }
-                }
-            } 
-        } catch (IOException ex) {
-            log.error(MARKER, "Fail to move {} to {} : {}",balanceFilePath, donePath, ex);
+        if (balanceFilesPath.exists()) {
+	        try {
+	        
+	            for (final File nodeFolders : balanceFilesPath.listFiles()) {
+	    			if (Utility.checkStopFile()) {
+	    				log.info(MARKER, "Stop file found, stopping.");
+	    				break;
+	    			}            	
+	                donePath = nodeFolders.getCanonicalPath().toString().replace("/balance", "/processed");
+	                File targetPath = new File (donePath);
+	                targetPath.mkdirs();
+	                if (nodeFolders.isDirectory()) {
+	                    for (final File balanceFile : nodeFolders.listFiles()) {
+	            			if (Utility.checkStopFile()) {
+	            				log.info(MARKER, "Stop file found, stopping.");
+	            				break;
+	            			}            	
+	                        if (processFileForHistory(balanceFile)) {
+	                            // move it
+	                            File destFile = new File(targetPath.getCanonicalPath() + File.separator + balanceFile.getName());
+	
+	                            Files.move(balanceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+	                            log.info(MARKER, balanceFile.toPath() + " has been moved to " + destFile.getPath());
+	                            balanceFilePath = balanceFile.getCanonicalFile().toString();
+	                        }
+	                    }
+	                }
+	            } 
+	        } catch (IOException ex) {
+	            log.error(MARKER, "Fail to move {} to {} : {}",balanceFilePath, donePath, ex);
+	        }
+        } else {
+			log.error(MARKER, balanceFilesPath.getPath() + " does not exist.");
         }
         log.info(MARKER, "Balance History processing done");
 	}
