@@ -263,6 +263,25 @@ public class Entities {
 	        return 0;
 	    }
 	    
+        PreparedStatement selectEntity = Entities.connect.prepareStatement(
+                "SELECT id FROM t_entities"
+                + " WHERE entity_shard = ?"
+                + " AND entity_realm = ?"
+                + " AND entity_num = ?"
+                + " AND fk_entity_type_id = ?");
+	    
+        selectEntity.setLong(1, shard);
+        selectEntity.setLong(2, realm);
+        selectEntity.setLong(3, num);
+        selectEntity.setLong(4, fk_entity_type);
+        
+        selectEntity.execute();
+        
+        ResultSet selectedEntity = selectEntity.getResultSet();
+        if (selectedEntity.next()) {
+        	return selectedEntity.getLong(1);
+        }
+	    
 	    // inserts or returns an existing entity
         PreparedStatement insertEntity = Entities.connect.prepareStatement(
                 "INSERT INTO t_entities (entity_shard, entity_realm, entity_num, fk_entity_type_id, exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_prox_acc_id)"
