@@ -412,22 +412,35 @@ GRANT ALL ON s_entities_seq TO :db_user;
 CREATE TABLE t_events
 (
     "consensusOrder" bigint NOT NULL,
-    "creatorId" bigint,
-    "creatorSeq" bigint,
-    "otherId" bigint,
+    "creatorNodeId" bigint NOT NULL,
+    "creatorSeq" bigint NOT NULL,
+    "otherNodeId" bigint,
     "otherSeq" bigint,
     "selfParentGen" bigint,
     "otherParentGen" bigint,
-    "generation" bigint,
-    "selfParentHash" bytea,
-    "otherParentHash" bytea,
-    "timeCreated" timestamp with time zone,
-		"signature" bytea,
-		"hash" bytea,
-		"consensusTimestamp" timestamp with time zone,
-		"size" integer,
-		"platformTxCount" integer,
-		"appTxCount" integer,
+    "generation" bigint NOT NULL,
+    "selfParentConsensusOrder" bytea,
+    "otherParentConsensusOrder" bytea,
+    "timeCreatedInNanos" bigint NOT NULL,
+		"signature" bytea NOT NULL,
+		"consensusTimestampInNanos" bigint NOT NULL,
+		"txsBytesCount" integer NOT NULL,
+		"platformTxCount" integer NOT NULL,
+		"appTxCount" integer NOT NULL,
     CONSTRAINT t_events_pkey PRIMARY KEY ("consensusOrder")
-)
+);
+
+\echo Creating table t_eventHashes
+
+-- Table: t_eventHashes
+
+-- DROP TABLE t_eventHashes;
+
+CREATE TABLE t_eventHashes
+(
+    "consensusOrder" bigint NOT NULL REFERENCES t_events ON DELETE CASCADE ON UPDATE CASCADE,
+    "hash" bytea NOT NULL
+);
+
+
 
