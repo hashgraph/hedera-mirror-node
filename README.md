@@ -28,6 +28,8 @@ The Beta mirror node works as follows:
 ## Prerequisites
 
 This mirror node beta requires Java version 10 or above.
+If you are planning on using the docker compose images, you'll need `Docker` installed.
+Without `Docker`, you will need to install `PostgreSQL` versions 10 or 11.
 
 ## Compile from source code
 
@@ -258,7 +260,7 @@ Note: Changes to this file while downloading or processing is taking place may b
 | addressBookFile | `"./config/0.0.102"` | The location of the address book file file |
 | accountBalancesS3Location | `"accountBalances/balance"` | The location of the account balances files in the cloud bucket |
 | recordFilesS3Location | `"recordstreams/record"` | The location of the record files in the cloud bucket |
-| dbUrl | `"jdbc:mysql://127.0.0.1:3306/hederamirror?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"` | The connection string to access the database |
+| dbUrl | `"jdbc:postgresql://localhost:5433/hederamirror"` | The connection string to access the database |
 | dbUsername | `"hederamirror"` | The username to access the database |
 | dbPassword | `"mysecretpassword"` | The password to access the database |
 | maxDownloadItems | `0` | The maximum number of new files to download, set to `0` in production, change to `10` or other low number for testing. Note, you may also reduce the number of nodes in `nodesInfo.json` so that only files from the nodes listed will be downloaded |
@@ -295,19 +297,23 @@ This isn't strictly speaking a configuration file, it is created at runtime by t
 
 ## Installing the database
 
+You can skip this step if you're using Docker containers.
+
 Ensure you have a postgreSQL server running (versions 10 and 11 have been tested) with the mirror node software.
 
-Log into the database as an administrator and run the `src/main/resources/postgres/postgresInit.sql` script to create the database and necessary entities.
+Setup the following environment variables:
 
-Ensure you change the default values in the first few lines of this script to match your environment.
-
-```sql
-\set db_name hederamirror
-\set db_user hederamirror
-\set db_password mysecretpassword
+```text
+POSTGRES_DB = the name of the database you wish to create
+POSTGRES_USER = the name of the user you wish to create
+POSTGRES_PASSWORD = the password for the user above
 ```
 
-By default, this installation script creates a new database called `hederamirror`, with a user named `hederamirror` and a default password of `mysecretpassword`. Make the necessary changes to the script should you wish to use different values (and update the `config/config.json` or `.env` or environment variables accordingly).
+You will also need to uncomment a few lines to enable the creation of the database and user as described in the `src/main/resources/postgres/postgresInit.sql` script.
+Log into the database as an administrator and run the `src/main/resources/postgres/postgresInit.sql` script to create the database and necessary entities.
+
+Make sure the `config/config.json` or `.env` file have values that match the above.
+
 Check the output of the script carefully to ensure no errors occurred.
 
 ## Upgrading the database
@@ -316,15 +322,11 @@ If you have already installed the database and wish to upgrade it, you may run t
 
 Ensure you change the default values in the first few lines of this script to match your environment.
 
-```sql
-\set db_name hederamirror
-\set db_user hederamirror
-\set db_password mysecretpassword
-```
-
 Check the output of the script carefully to ensure no errors occurred.
 
 ## Running the various mirror node components
+
+You can skip this section if you're running docker containers.
 
 ### Note about error when running the software
 
@@ -421,17 +423,11 @@ POSTGRES_PORT=5432
 PGDATA=/var/lib/postgresql/data/pgdata
 ```
 
-If this is the first time you run the environment (or during a rebuild of the containers) in `docker-compose` you will need to update the `src/main/resources/postgres/postgresInit.sql` script's fires few lines to set the database name, user and password you wish to use.
-
-```sql
-\set db_name hederamirror
-\set db_user hederamirror
-\set db_password mysecretpassword
-```
-
 Containers use persisted volumes as follows:
 
 - `./MirrorNodePostgresData` on your local machine maps to `/var/lib/postgresql/data` in the containers. This contains the files for the Postgres database.
+Note: If you database container fails to initialise properly and the database fails to run, you will have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will not be run.
+
 - `./runtime` on your local machine maps to `/MirrorNodeCode` in the containers. This contains the runtime and configuration files for loading and parsing files.
 - `./MirrorNodeData` on your local machine maps to `/MirrorNodeData` in the containers. This contains files downloaded from S3 or GCP.
 
