@@ -6,3 +6,7 @@ RUN \
 apt-get update -y && \
 # Install Java
 apt-get install default-jre -y
+
+RUN \
+# Install psql client
+apt-get install postgresql-client -y

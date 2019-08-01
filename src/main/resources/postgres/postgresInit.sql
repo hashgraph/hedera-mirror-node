@@ -1,23 +1,34 @@
-\set db_name hederamirror
-\set db_user hederamirror
-\set db_password MdM*6-zsdx
+ -- Change the values below if you are not installing via Docker
+ -- environment variable values come from .env file
+ -- name of the database
+\set db_name `echo "$POSTGRES_DB"`
+-- username
+\set db_user `echo "$POSTGRES_USER"`
+-- user password
+\set db_password `echo "$POSTGRES_PASSWORD"`
+-- owner of the database (usually postgres)
+\set db_owner `echo "$POSTGRES_USER"`
 
+-- Change the values below to your preferred API user name and password
 \set api_user api
-\set api_password pdP_mFe6gB
+\set api_password mysecretpassword
 
-CREATE DATABASE :db_name
-     WITH
-     OWNER = postgres
-     CONNECTION LIMIT = -1;
 
-CREATE USER :db_user WITH
-	LOGIN
-	NOCREATEDB
-	NOCREATEROLE
-	NOINHERIT
-	NOREPLICATION
-	CONNECTION LIMIT -1
-	PASSWORD :'db_password';
+-- Uncomment below if you are not installing via Docker
+--
+-- CREATE DATABASE :db_name
+--      WITH
+--      OWNER = :'db_owner'
+--      CONNECTION LIMIT = -1;
+--
+-- CREATE USER :db_user WITH
+-- 	LOGIN
+-- 	NOCREATEDB
+-- 	NOCREATEROLE
+-- 	NOINHERIT
+-- 	NOREPLICATION
+-- 	CONNECTION LIMIT -1
+-- 	PASSWORD :'db_password';
 
 CREATE USER :api_user WITH
 	LOGIN
@@ -368,7 +379,7 @@ CREATE INDEX idx_t_account_bal_id_num ON t_account_balances (id, num);
 --t_entities
 \echo Creating indices on t_entities
 
-CREATE UNIQUE INDEX idx_t_entities_unq ON t_entities (entity_shard, entity_realm, entity_num);
+CREATE UNIQUE INDEX idx_t_entities_unq ON t_entities (entity_shard, entity_realm, entity_num, fk_entity_type_id);
 CREATE INDEX idx_t_entities_id_num ON t_entities (id, entity_num);
 CREATE INDEX idx_t_entities_id_num_id ON t_entities (id, entity_num, fk_entity_type_id);
 CREATE INDEX idx_t_entities_id ON t_entities (id);
