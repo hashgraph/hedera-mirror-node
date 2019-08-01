@@ -14,13 +14,12 @@ services:
       - ./runtime:/MirrorNodeCode
     ports:
       - 5433:5432
-    command: ./MirrorNodeCode/wait-for-postgres.sh
 
   # this downloads balance files, its behaviour is controlled by ./config/config.json
   mirror-node-balance-downloader:
     build:
       context: ./
-      dockerfile: MirrorNodeImage
+      dockerfile: MirrorNodeClientImage
     working_dir: /MirrorNodeCode
     env_file:
       - .env
@@ -33,51 +32,38 @@ services:
   mirror-node-balance-parser:
     build:
       context: ./
-      dockerfile: MirrorNodeImage
+      dockerfile: MirrorNodeClientImage
     depends_on:
       - mirror-node-postgres
     environment:
       - HEDERA_MIRROR_DB_URL=jdbc:postgresql://mirror-node-postgres:5432/${POSTGRES_DB}
       - HEDERA_MIRROR_DB_USER=${POSTGRES_USER}
       - HEDERA_MIRROR_DB_PASS=${POSTGRES_PASSWORD}
+      - DB_HOST=mirror-node-postgres
     working_dir: /MirrorNodeCode
     env_file:
       - .env
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: >
-      bash -c "java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
-      && java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileHistoryLogger"
+    command: ./balanceParse.sh
 
-  # this downloads record files, its behaviour is controlled by ./config/config.json
-  mirror-node-record-downloader:
+  # this downloads and processes record files and puts the result in the database, its behaviour is controlled by ./config/config.json
+  mirror-node-record-download-parse:
     build:
       context: ./
-      dockerfile: MirrorNodeImage
-    working_dir: /MirrorNodeCode
-    env_file:
-      - .env
-    volumes:
-      - ./MirrorNodeData:/MirrorNodeData
-      - ./runtime:/MirrorNodeCode
-    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.RecordFileDownloader
-
-  # this processes record files and puts the result in the database, its behaviour is controlled by ./config/config.json
-  mirror-node-record-parser:
-    build:
-      context: ./
-      dockerfile: MirrorNodeImage
+      dockerfile: MirrorNodeClientImage
     depends_on:
       - mirror-node-postgres
     environment:
-      - HEDERA_MIRROR_DB_URL=jdbc:postgresql://mirror-node-postgres:${POSTGRES_PORT}/${POSTGRES_DB}
+      - HEDERA_MIRROR_DB_URL=jdbc:postgresql://mirror-node-postgres:5432/${POSTGRES_DB}
       - HEDERA_MIRROR_DB_USER=${POSTGRES_USER}
       - HEDERA_MIRROR_DB_PASS=${POSTGRES_PASSWORD}
+      - DB_HOST=mirror-node-postgres
     working_dir: /MirrorNodeCode
     env_file:
       - .env
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser
+    command: ./recordDownloadParse.sh
