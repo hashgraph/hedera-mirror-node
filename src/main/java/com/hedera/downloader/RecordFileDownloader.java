@@ -99,7 +99,7 @@ public class RecordFileDownloader extends Downloader {
 				if (newLastValidRcdFileHash.isEmpty() ||
 						newLastValidRcdFileHash.equals(prevFileHash) ||
 						prevFileHash.equals(Hex.encodeHexString(new byte[48]))) {
-					newLastValidRcdFileHash = Utility.bytesToHex(RecordFileParser.getFileHash(rcdName));
+					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(rcdName));
 					newLastValidRcdFileName = new File(rcdName).getName();
 				} else {
 					break;

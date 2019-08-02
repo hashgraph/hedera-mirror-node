@@ -41,20 +41,6 @@ public class BalanceFileLogger {
         ,BALANCE_INSERT 
         ,BALANCE_UPDATE        
     }
-	static void moveFileToParsedDir(String fileName) {
-		File sourceFile = new File(fileName);
-		File parsedDir = new File(sourceFile.getParentFile().getParentFile().getPath() + "/parsedRecordFiles/");
-		parsedDir.mkdirs();
-		File destFile = new File(parsedDir.getPath() + "/" + sourceFile.getName());
-		try {
-			Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			log.info(MARKER, sourceFile.toPath() + " has been moved to " + destFile.getPath());
-		} catch (IOException ex) {
-			log.error(MARKER, "Fail to move {} to {} : {}",
-					fileName, parsedDir.getName(),
-					ex.getStackTrace());
-		}
-	}
 	
 	private static File getLatestBalancefile(File balanceFilesPath) throws IOException {
 	    

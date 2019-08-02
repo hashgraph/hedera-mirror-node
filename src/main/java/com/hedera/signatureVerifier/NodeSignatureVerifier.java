@@ -3,7 +3,6 @@ package com.hedera.signatureVerifier;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirrorNodeProxy.Utility;
-import com.hedera.parser.RecordFileParser;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import org.apache.commons.codec.DecoderException;
@@ -279,7 +278,7 @@ public class NodeSignatureVerifier {
 	 * @return
 	 */
 	public boolean hashMatch(File sigFile, File rcdFile) {
-		byte[] fileHash = RecordFileParser.getFileHash(rcdFile.getPath());
+		byte[] fileHash = Utility.getFileHash(rcdFile.getPath());
 		return Arrays.equals(fileHash, extractHashAndSigFromFile(sigFile).getLeft());
 	}
 

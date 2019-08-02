@@ -4,7 +4,6 @@ import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.mirrorNodeProxy.Utility;
 import com.hedera.platform.Transaction;
-import com.hedera.recordFileLogger.RecordFileLogger;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,7 +20,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -30,14 +28,14 @@ import java.util.stream.Collectors;
 public class EventStreamFileParser {
 	private static final Logger log = LogManager.getLogger("eventStream-log");
 	private static final Marker MARKER = MarkerManager.getMarker("EVENT_STREAM");
-	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
+	private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
-	static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 or previous files
-	static final byte EVENT_STREAM_FILE_VERSION = 2;
-	static final byte STREAM_EVENT_VERSION = 2;
-	static final byte STREAM_EVENT_START_NO_TRANS_WITH_VERSION = 0x5b;
-	static final byte STREAM_EVENT_START_WITH_VERSION = 0x5a;
-	static final byte commEventLast = 0x46;
+	private static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 or previous files
+	private static final byte EVENT_STREAM_FILE_VERSION = 2;
+	private static final byte STREAM_EVENT_VERSION = 2;
+	private static final byte STREAM_EVENT_START_NO_TRANS_WITH_VERSION = 0x5b;
+	private static final byte STREAM_EVENT_START_WITH_VERSION = 0x5a;
+	private static final byte commEventLast = 0x46;
 
 	private static Connection connect = null;
 
@@ -45,6 +43,14 @@ public class EventStreamFileParser {
 
 	private static final long PARENT_HASH_NULL = -1;
 	private static final long PARENT_HASH_NOT_FOUND_MATCH = -2;
+
+	private enum LoadResult {
+		OK
+		,STOP
+		,ERROR
+	}
+
+	private static final String PARSED_DIR = "/parsedEventStreamFiles/";
 
 	/**
 	 * Given a EventStream file name, read and parse and return as a list of service record pair
@@ -54,48 +60,44 @@ public class EventStreamFileParser {
 	 * @param previousFileHash
 	 * 		previous file hash
 	 */
-	static public boolean loadEventStreamFile(String fileName, String previousFileHash) {
+	static public LoadResult loadEventStreamFile(String fileName, String previousFileHash) {
 
 		File file = new File(fileName);
-		FileInputStream stream = null;
-		String newFileHash = "";
+		String readPrevFileHash;
 
 		if (file.exists() == false) {
 			log.info(MARKER, "File does not exist " + fileName);
-			return false;
+			return LoadResult.ERROR;
 		}
 
-		try {
+		try (DataInputStream dis = new DataInputStream(new FileInputStream(file))){
 			long counter = 0;
-			stream = new FileInputStream(file);
-			DataInputStream dis = new DataInputStream(stream);
-
 			int eventStreamFileVersion = dis.readInt();
 
 			log.info(MARKER, "EventStream file format version " + eventStreamFileVersion);
 			if (eventStreamFileVersion != EVENT_STREAM_FILE_VERSION) {
 				log.error(MARKER, "EventStream file format version doesn't match.");
-				return false;
+				return LoadResult.ERROR;
 			}
 			while (dis.available() != 0) {
 				try {
 					byte typeDelimiter = dis.readByte();
 					switch (typeDelimiter) {
 						case TYPE_PREV_HASH:
-							byte[] readFileHash = new byte[48];
-							dis.read(readFileHash);
+							byte[] readPrevFileHashBytes = new byte[48];
+							dis.read(readPrevFileHashBytes);
 							if (previousFileHash.isEmpty()) {
 								log.error(MARKER, "Previous file Hash not available");
-								previousFileHash = Hex.encodeHexString(readFileHash);
+								previousFileHash = Hex.encodeHexString(readPrevFileHashBytes);
 							} else {
 								log.info(MARKER, "Previous file Hash = " + previousFileHash);
 							}
-							newFileHash = Hex.encodeHexString(readFileHash);
+							readPrevFileHash = Hex.encodeHexString(readPrevFileHashBytes);
 
-							if (!Arrays.equals(new byte[48], readFileHash) && !newFileHash.contentEquals(previousFileHash)) {
+							if (!Arrays.equals(new byte[48], readPrevFileHashBytes) && !readPrevFileHash.contentEquals(previousFileHash)) {
 								if (configLoader.getStopLoggingIfHashMismatch()) {
-									log.error(MARKER, "Previous file Hash Mismatch - stopping loading. fileName = {}, Previous = {}, Current = {}", fileName, previousFileHash, newFileHash);
-									return false;
+									log.error(MARKER, "Previous file Hash Mismatch - stopping loading. fileName = {}, Previous = {}, Current = {}", fileName, previousFileHash, readPrevFileHash);
+									return LoadResult.STOP;
 								}
 							}
 							break;
@@ -114,31 +116,19 @@ public class EventStreamFileParser {
 
 				} catch (Exception e) {
 					log.error(LOGM_EXCEPTION, "Exception ", e);
-					return false;
+					return LoadResult.ERROR;
 				}
 			}
-			dis.close();
 			log.info(MARKER,"Loaded {} events successfully from {}", counter, fileName);
 		} catch (FileNotFoundException e) {
 			log.error(MARKER, "File Not Found Error");
-			return false;
+			return LoadResult.ERROR;
 		} catch (IOException e) {
 			log.error(MARKER, "IOException Error");
-			return false;
-		} catch (Exception e) {
-			log.error(MARKER, "Parsing Error");
-			return false;
-		} finally {
-			try {
-				if (stream != null)
-					stream.close();
-			} catch (IOException ex) {
-				log.error(MARKER, "Exception in close the stream {}", ex);
-				return true;
-			}
+			return LoadResult.ERROR;
 		}
 
-		return true;
+		return LoadResult.OK;
 	}
 
 	static void loadEvent(DataInputStream dis, boolean noTxs) throws IOException {
@@ -169,10 +159,28 @@ public class EventStreamFileParser {
 		byte[] hash = readByteArray(dis);
 		Instant consensusTimeStamp = readInstant(dis);
 		long consensusOrder = dis.readLong();
-		log.info(MARKER, "Loaded Event: creatorId: {}, creatorSeq: {}, otherId: {}, otherSeq: {}, selfParentGen: {}, otherParentGen: {}, selfParentHash: {}, otherParentHash: {}, transactions: {}, timeCreated: {}, signature: {}, hash: {}, consensusTimeStamp: {}, consensusOrder: {}", creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, Utility.bytesToHex(selfParentHash), Utility.bytesToHex(otherParentHash), transactions, timeCreated, Utility.bytesToHex(signature), Utility.bytesToHex(hash), consensusTimeStamp, consensusOrder);
+		log.debug(MARKER, "Loaded Event: creatorId: {}, creatorSeq: {}, otherId: {}, otherSeq: {}, selfParentGen: {}, otherParentGen: {}, selfParentHash: {}, otherParentHash: {}, transactions: {}, timeCreated: {}, signature: {}, hash: {}, consensusTimeStamp: {}, consensusOrder: {}", creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, Utility.bytesToHex(selfParentHash), Utility.bytesToHex(otherParentHash), transactions, timeCreated, Utility.bytesToHex(signature), Utility.bytesToHex(hash), consensusTimeStamp, consensusOrder);
 		storeEvent(creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, selfParentHash, otherParentHash, transactions, timeCreated, signature, hash, consensusTimeStamp, consensusOrder);
 	}
 
+	/**
+	 * Store parsed Event information into database
+	 * @param creatorId
+	 * @param creatorSeq
+	 * @param otherId
+	 * @param otherSeq
+	 * @param selfParentGen
+	 * @param otherParentGen
+	 * @param selfParentHash
+	 * @param otherParentHash
+	 * @param transactions
+	 * @param timeCreated
+	 * @param signature
+	 * @param hash
+	 * @param consensusTimeStamp
+	 * @param consensusOrder
+	 * @return
+	 */
 	static boolean storeEvent(long creatorId, long creatorSeq, long otherId, long otherSeq, long selfParentGen, long otherParentGen, byte[] selfParentHash, byte[] otherParentHash, Transaction[] transactions, Instant timeCreated, byte[] signature, byte[] hash, Instant consensusTimeStamp, long consensusOrder) {
 		try {
 			long generation = Math.max(selfParentGen, otherParentGen) + 1;
@@ -217,6 +225,7 @@ public class EventStreamFileParser {
 			insertEvent.setInt(16, appTxCount);
 			insertEvent.execute();
 			log.info(MARKER, "Finished insert to Event, consensusOrder: {}", consensusOrder);
+			insertEvent.close();
 
 			// store hash
 			PreparedStatement insertEventHash = connect.prepareStatement(
@@ -226,6 +235,7 @@ public class EventStreamFileParser {
 			insertEventHash.setBytes(2, hash);
 			insertEventHash.execute();
 			log.info(MARKER, "Finished insert to EventHash, consensusOrder: {}", consensusOrder);
+			insertEventHash.close();
 		} catch (SQLException ex) {
 			log.error(LOGM_EXCEPTION, "Exception {}", ex);
 			return false;
@@ -251,12 +261,16 @@ public class EventStreamFileParser {
 			queryParentConsensusOrder.setBytes(1, hash);
 			queryParentConsensusOrder.execute();
 			ResultSet resultSet = queryParentConsensusOrder.getResultSet();
+			long consensusOrder;
 			if (resultSet.next()) {
-				return resultSet.getLong(1);
+				consensusOrder = resultSet.getLong(1);
 			} else {
 				log.error(MARKER, "There isn't an event's Hash in t_eventHashes matches {} : {}", name, hash);
-				return PARENT_HASH_NOT_FOUND_MATCH;
+				consensusOrder = PARENT_HASH_NOT_FOUND_MATCH;
 			}
+			resultSet.close();
+			queryParentConsensusOrder.close();
+			return consensusOrder;
 		}
 	}
 
@@ -303,15 +317,19 @@ public class EventStreamFileParser {
 	}
 
 	/**
-	 * read and parse a list of record files
+	 * read and parse a list of EventStream files
 	 */
-	static public void loadRecordFiles(List<String> fileNames) {
+	static public void loadEventStreamFiles(List<String> fileNames) {
 		String prevFileHash = "";
 		for (String name : fileNames) {
-			if (!loadEventStreamFile(name, prevFileHash)){
+			LoadResult loadResult = loadEventStreamFile(name, prevFileHash);
+			if (loadResult == LoadResult.STOP){
 				return;
 			}
-			prevFileHash = Utility.bytesToHex(RecordFileParser.getFileHash(name));
+			prevFileHash = Utility.bytesToHex(Utility.getFileHash(name));
+			if (loadResult == LoadResult.OK) {
+				Utility.moveFileToParsedDir(name, PARSED_DIR);
+			}
 		}
 	}
 
@@ -344,7 +362,7 @@ public class EventStreamFileParser {
 
 				if (fullPaths != null) {
 					log.info(MARKER, "Files are " + fullPaths);
-					loadRecordFiles(fullPaths);
+					loadEventStreamFiles(fullPaths);
 				} else {
 					log.info(MARKER, "No files to parse");
 				}
@@ -353,59 +371,6 @@ public class EventStreamFileParser {
 
 			}
 		}
-	}
-
-	/**
-	 * Given a event stream file name, read its prevFileHash
-	 *
-	 * @param fileName
-	 * 		the name of event stream file to read
-	 * @return return previous file hash's Hex String
-	 */
-	static public String readPrevFileHash(String fileName) {
-		File file = new File(fileName);
-		FileInputStream stream = null;
-		if (file.exists() == false) {
-			log.info(MARKER, "File does not exist " + fileName);
-			return null;
-		}
-		byte[] prevFileHash = new byte[48];
-		try {
-			stream = new FileInputStream(file);
-			DataInputStream dis = new DataInputStream(stream);
-
-			// record_file format_version
-			dis.readInt();
-
-			byte typeDelimiter = dis.readByte();
-
-			if (typeDelimiter == TYPE_PREV_HASH) {
-				dis.read(prevFileHash);
-				String hexString = Hex.encodeHexString(prevFileHash);
-				log.info(MARKER, "readPrevFileHash :: Previous file Hash = {}, file name = {}", hexString, fileName);
-				dis.close();
-				return hexString;
-			} else {
-				log.error(MARKER, "readPrevFileHash :: Should read Previous file Hash, but found file delimiter {}, file name = {}", typeDelimiter, fileName);
-			}
-			dis.close();
-
-		} catch (FileNotFoundException e) {
-			log.error(MARKER, "readPrevFileHash :: File Not Found Error, file name = {}",  fileName);
-		} catch (IOException e) {
-			log.error(MARKER, "readPrevFileHash :: IOException Error, file name = {}",  fileName);
-		} catch (Exception e) {
-			log.error(MARKER, "readPrevFileHash :: Parsing Error, file name = {}",  fileName);
-		} finally {
-			try {
-				if (stream != null)
-					stream.close();
-			} catch (IOException ex) {
-				log.error("readPrevFileHash :: Exception in close the stream {}", ex);
-			}
-		}
-
-		return null;
 	}
 }
 

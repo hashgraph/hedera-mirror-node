@@ -7,6 +7,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hedera.parser.RecordFileParser;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -24,6 +25,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
@@ -33,7 +39,7 @@ import java.util.regex.Pattern;
 import static java.lang.System.out;
 
 public class Utility {
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger();
 	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
 	private static final Long SCALAR = 1_000_000_000L;
 
@@ -347,5 +353,47 @@ public class Utility {
 		long seconds = bigint / SCALAR;
 		int nanos = (int) (bigint % SCALAR);
 		return Instant.ofEpochSecond(seconds, nanos);
+	}
+
+	/**
+	 * Calculate SHA384 hash of a binary file
+	 *
+	 * @param fileName
+	 * 		file name
+	 * @return byte array of hash value
+	 */
+	public static byte[] getFileHash(String fileName) {
+		MessageDigest md;
+		try {
+			md = MessageDigest.getInstance("SHA-384");
+
+			byte[] array = new byte[0];
+			try {
+				array = Files.readAllBytes(Paths.get(fileName));
+			} catch (IOException e) {
+				log.error("Exception ", e);
+			}
+			byte[] fileHash = md.digest(array);
+			return fileHash;
+
+		} catch (NoSuchAlgorithmException e) {
+			log.error( "Exception ", e);
+			return null;
+		}
+	}
+
+	public static void moveFileToParsedDir(String fileName, String dirName) {
+		File sourceFile = new File(fileName);
+		File parsedDir = new File(sourceFile.getParentFile().getParentFile().getPath() + dirName);
+		parsedDir.mkdirs();
+		File destFile = new File(parsedDir.getPath() + "/" + sourceFile.getName());
+		try {
+			Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			log.info( sourceFile.toPath() + " has been moved to " + destFile.getPath());
+		} catch (IOException ex) {
+			log.error( "Fail to move {} to {} : {}",
+					fileName, parsedDir.getName(),
+					ex.getStackTrace());
+		}
 	}
 }
