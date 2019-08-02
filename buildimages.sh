@@ -65,7 +65,7 @@ DOUPDATE=1
 touch runtime/.102env
 cat /dev/null > runtime/.102env
 
-echo "Would you like to update the 0.0.102 file from the network (enter 1 or 2)?"
+echo "Would you like to update the address book file (0.0.102) from the network (enter 1 or 2)?"
 select yn in "Yes" "No"; do
     case $yn in
         Yes )
