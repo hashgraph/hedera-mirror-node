@@ -43,6 +43,20 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Removed unnecessary defaultParseDir parameter from config.json
+
+This parameter was not necessary.
+
+### Added prompt to update 0.0.102 file from network during docker build
+
+./buildimages.sh will prompt whether you want to download the 0.0.102 file from the network (it is recommended you do so the first time).
+If you answer 2 (no), the file will not be downloaded, if you answer 1 (yes), you will be prompted for the following information:
+
+-Node address in the format of `ip:port` or `host:port`. E.g. 192.168.0.2:50211
+-Node ID, the Hedera account for the node (e.g. 0.0.3).
+-Operator ID, your account (e.g. 0.0.2031)
+-Operator key, the private key for your account
+
 ### Added class to download and parse record files in one step
 
 This class will download record files and parse the newly downloaded files immediately, then loop back to downloading available record files.
@@ -238,7 +252,30 @@ Edit the `./config/nodesInfo.json` file to match the nodes on the network you ar
 ### 0.0.102 file
 
 The `0.0.102` file contains the address book, that is the list of nodes, their account number and public key(s). This file is different on every network so it is imperative to ensure you have the correct one for each network, else the signature verification process will fail.
-See instructions below on how to generate this file for a network.
+
+#### Creating or updating the address book file (0.0.102 file)
+
+Set the following environment variables or add them to a `.env` file.
+
+```text
+NODE_ADDRESS=127.0.0.1:50211
+NODE_ID=0.0.x
+OPERATOR_ID=0.0.x
+OPERATOR_KEY=your account's private key
+```
+
+`NODE_ADDRESS` is the IP address/url + port of the node you wish to request the file from.
+`NODE_ID` is the account number of the node (0.0.x).
+`OPERATOR_ID` is your own account number on the network (0.0.x).
+`OPERATOR_KEY` is your private key for the above account.
+
+Run the following command to update the address book at the location specified in `config.json`.
+
+```shell
+java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook 
+```
+
+If no errors are output, the file specified by the `addressBookFile` parameter of the `config.json` file will now contain the network's address book.
 
 Once setup, the file will be automatically updated as the mirror node software parses fileUpdate transactions that pertain to this file.
 
@@ -254,7 +291,6 @@ Note: Changes to this file while downloading or processing is taking place may b
 | accessKey | `""` | Your S3 or GCP access key |
 | secretKey | `""` | Your S3 or GCP secret key |
 | downloadToDir | `"/MirrorNodeData"` | The location where downloaded files will reside |
-| defaultParseDir | `"/MirrorNodeData/recordstreams/valid/"` | The location from which files will be processed |
 | proxyPort | `50777` | The port the mirror node proxy will listen onto |
 | nodeInfoFile | `"./config/nodesInfo.json"` | The location of the `nodesInfo.json` file |
 | addressBookFile | `"./config/0.0.102"` | The location of the address book file file |
@@ -263,7 +299,7 @@ Note: Changes to this file while downloading or processing is taking place may b
 | dbUrl | `"jdbc:postgresql://localhost:5433/hederamirror"` | The connection string to access the database |
 | dbUsername | `"hederamirror"` | The username to access the database |
 | dbPassword | `"mysecretpassword"` | The password to access the database |
-| maxDownloadItems | `0` | The maximum number of new files to download, set to `0` in production, change to `10` or other low number for testing. Note, you may also reduce the number of nodes in `nodesInfo.json` so that only files from the nodes listed will be downloaded |
+| maxDownloadItems | `0` | The maximum number of new files to download at a time, set to `0` in production, change to `10` or other low number for testing or catching up with a large number of files. Note, you may also reduce the number of nodes in `nodesInfo.json` so that only files from the nodes listed will be downloaded, although this reduces the number of signature validations too |
 | stopLoggingIfHashMismatch | "" | If you wish to skip past a file as a result of a hash mismatch, you can input the name of the record file before which hash mismatches will be ignored. e.g. `2019-06-12T18/05/22.198241001Z.rcd` will allow hash mismatches on any files prior to that file name, after this file, a hash mismatch will result in an error being logged and processing to stop.
 | persistClaims | `false` | Determines whether claim data is persisted to the database or not |
 | persistFiles | `"ALL"` | Determines whether file data is persisted to the database or not, can be set to `ALL`, `NONE` or `SYSTEM`. `SYSTEM` means only files with a file number lower than `1000` will be persisted |
@@ -435,6 +471,14 @@ These are necessary not only for the database data to be persisted, but also so 
 
 Docker compose scripts are available in the `docker` folder. A `buildImages.sh` script ensures the necessary data is available to the images via volumes, builds the images and starts the containers.
 
+./buildimages.sh will prompt whether you want to download the 0.0.102 file from the network (it is recommended you do so the first time).
+If you answer 2 (no), the file will not be downloaded, if you answer 1 (yes), you will be prompted for the following information:
+
+-Node address in the format of `ip:port` or `host:port`. E.g. 192.168.0.2:50211
+-Node ID, the Hedera account for the node (e.g. 0.0.3).
+-Operator ID, your account (e.g. 0.0.2031)
+-Operator key, the private key for your account
+
 Note: Shutting down the database container via `docker-compose down` may result in a corrupted database that may not restart or may take longer than usual to restart.
 
 In order to avoid this, shell into the container and issue the following command:
@@ -446,30 +490,6 @@ Use the command `docker exec -it <container name> /bin/sh` to get a shell in the
 `su - postgres -c "PGDATA=$PGDATA /usr/local/bin/pg_ctl -w stop"`
 
 You may now power down the docker image itself.
-
-## Creating or updating the address book file (0.0.102 file)
-
-Set the following environment variables or add them to a `.env` file.
-
-```text
-NODE_ADDRESS=127.0.0.1:50211
-NODE_ID=0.0.x
-OPERATOR_ID=0.0.x
-OPERATOR_KEY=your account's private key
-```
-
-`NODE_ADDRESS` is the IP address/url + port of the node you wish to request the file from.
-`NODE_ID` is the account number of the node (0.0.x).
-`OPERATOR_ID` is your own account number on the network (0.0.x).
-`OPERATOR_KEY` is your private key for the above account.
-
-Run the following command to update the address book at the location specified in `config.json`.
-
-```shell
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook 
-```
-
-If no errors are output, the file specified by the `addressBookFile` parameter of the `config.json` file will now contain the network's address book.
 
 ## REST API
 
@@ -492,3 +512,24 @@ PORT=5551
 ```
 
 `PORT` is the port number the REST API will listen onto.
+
+## If things don't appear to be working properly
+
+### Checking for errors
+
+Set log levels to WARN as a minimum to start with. INFO is very verbose.
+
+Check for errors in the `output/recordStream.log` file.
+
+### Record files
+
+* Recordstream files that have successfully been validated against signatures will be placed in the `"downloadToDir"/recordstreams/valid` directory.
+If there are no files in this folder, it's possible that either you `0.0.102` file is incorrect for this network, or signature files are still being downloaded.
+
+* Recordstream files that have successfully been parsed will be moved to `"downloadToDir"/recordstreams/parsedRecordFiles'
+
+* If your `maxDownloadItems` is set to 0 in the `config.json` file, the docker image downloads all new signature files from all nodes before starting processing into the database. If there are many files to catch up, it may be a long while before processing of these files takes place.
+You may try to set the `maxDownloadItems` to a number such as 10 or 20 to download and process new files in batches.
+
+* The above also applies if you are running the `downloader.DownloadAndParseRecordFiles` java class.
+
