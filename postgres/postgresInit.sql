@@ -411,23 +411,23 @@ GRANT ALL ON s_entities_seq TO :db_user;
 
 CREATE TABLE t_events
 (
-    "consensusOrder" bigint NOT NULL,
-    "creatorNodeId" bigint NOT NULL,
-    "creatorSeq" bigint NOT NULL,
-    "otherNodeId" bigint,
-    "otherSeq" bigint,
-    "selfParentGen" bigint,
-    "otherParentGen" bigint,
-    "generation" bigint NOT NULL,
-    "selfParentConsensusOrder" bytea,
-    "otherParentConsensusOrder" bytea,
-    "timeCreatedInNanos" bigint NOT NULL,
-		"signature" bytea NOT NULL,
-		"consensusTimestampInNanos" bigint NOT NULL,
-		"txsBytesCount" integer NOT NULL,
-		"platformTxCount" integer NOT NULL,
-		"appTxCount" integer NOT NULL,
-    CONSTRAINT t_events_pkey PRIMARY KEY ("consensusOrder")
+    consensusOrder bigint NOT NULL,
+    creatorNodeId bigint NOT NULL,
+    creatorSeq bigint NOT NULL,
+    otherNodeId bigint,
+    otherSeq bigint,
+    selfParentGen bigint,
+    otherParentGen bigint,
+    generation bigint NOT NULL,
+    selfParentConsensusOrder bigint,
+    otherParentConsensusOrder bigint,
+    timeCreatedInNanos bigint NOT NULL,
+		signature bytea NOT NULL,
+		consensusTimestampInNanos bigint NOT NULL,
+		txsBytesCount integer NOT NULL,
+		platformTxCount integer NOT NULL,
+		appTxCount integer NOT NULL,
+    CONSTRAINT t_events_pkey PRIMARY KEY (consensusOrder)
 );
 
 \echo Creating table t_eventHashes
@@ -438,9 +438,6 @@ CREATE TABLE t_events
 
 CREATE TABLE t_eventHashes
 (
-    "consensusOrder" bigint NOT NULL REFERENCES t_events ON DELETE CASCADE ON UPDATE CASCADE,
-    "hash" bytea NOT NULL
+    consensusOrder bigint NOT NULL REFERENCES t_events ON DELETE CASCADE ON UPDATE CASCADE,
+    hash bytea NOT NULL
 );
-
-
-
