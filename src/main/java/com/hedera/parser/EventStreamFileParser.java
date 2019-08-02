@@ -45,9 +45,7 @@ public class EventStreamFileParser {
 	private static final long PARENT_HASH_NOT_FOUND_MATCH = -2;
 
 	private enum LoadResult {
-		OK
-		,STOP
-		,ERROR
+		OK, STOP, ERROR
 	}
 
 	private static final String PARSED_DIR = "/parsedEventStreamFiles/";
@@ -70,7 +68,7 @@ public class EventStreamFileParser {
 			return LoadResult.ERROR;
 		}
 
-		try (DataInputStream dis = new DataInputStream(new FileInputStream(file))){
+		try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
 			long counter = 0;
 			int eventStreamFileVersion = dis.readInt();
 
@@ -94,9 +92,13 @@ public class EventStreamFileParser {
 							}
 							readPrevFileHash = Hex.encodeHexString(readPrevFileHashBytes);
 
-							if (!Arrays.equals(new byte[48], readPrevFileHashBytes) && !readPrevFileHash.contentEquals(previousFileHash)) {
+							if (!Arrays.equals(new byte[48], readPrevFileHashBytes) && !readPrevFileHash.contentEquals(
+									previousFileHash)) {
 								if (configLoader.getStopLoggingIfHashMismatch()) {
-									log.error(MARKER, "Previous file Hash Mismatch - stopping loading. fileName = {}, Previous = {}, Current = {}", fileName, previousFileHash, readPrevFileHash);
+									log.error(MARKER,
+											"Previous file Hash Mismatch - stopping loading. fileName = {}, Previous = " +
+													"{}, Current = {}",
+											fileName, previousFileHash, readPrevFileHash);
 									return LoadResult.STOP;
 								}
 							}
@@ -119,7 +121,7 @@ public class EventStreamFileParser {
 					return LoadResult.ERROR;
 				}
 			}
-			log.info(MARKER,"Loaded {} events successfully from {}", counter, fileName);
+			log.info(MARKER, "Loaded {} events successfully from {}", counter, fileName);
 		} catch (FileNotFoundException e) {
 			log.error(MARKER, "File Not Found Error");
 			return LoadResult.ERROR;
@@ -159,12 +161,20 @@ public class EventStreamFileParser {
 		byte[] hash = readByteArray(dis);
 		Instant consensusTimeStamp = readInstant(dis);
 		long consensusOrder = dis.readLong();
-		log.debug(MARKER, "Loaded Event: creatorId: {}, creatorSeq: {}, otherId: {}, otherSeq: {}, selfParentGen: {}, otherParentGen: {}, selfParentHash: {}, otherParentHash: {}, transactions: {}, timeCreated: {}, signature: {}, hash: {}, consensusTimeStamp: {}, consensusOrder: {}", creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, Utility.bytesToHex(selfParentHash), Utility.bytesToHex(otherParentHash), transactions, timeCreated, Utility.bytesToHex(signature), Utility.bytesToHex(hash), consensusTimeStamp, consensusOrder);
-		storeEvent(creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, selfParentHash, otherParentHash, transactions, timeCreated, signature, hash, consensusTimeStamp, consensusOrder);
+		log.debug(MARKER,
+				"Loaded Event: creatorId: {}, creatorSeq: {}, otherId: {}, otherSeq: {}, selfParentGen: {}, " +
+						"otherParentGen: {}, selfParentHash: {}, otherParentHash: {}, transactions: {}, timeCreated: " +
+						"{}, signature: {}, hash: {}, consensusTimeStamp: {}, consensusOrder: {}",
+				creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen,
+				Utility.bytesToHex(selfParentHash), Utility.bytesToHex(otherParentHash), transactions, timeCreated,
+				Utility.bytesToHex(signature), Utility.bytesToHex(hash), consensusTimeStamp, consensusOrder);
+		storeEvent(creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, selfParentHash,
+				otherParentHash, transactions, timeCreated, signature, hash, consensusTimeStamp, consensusOrder);
 	}
 
 	/**
 	 * Store parsed Event information into database
+	 *
 	 * @param creatorId
 	 * @param creatorSeq
 	 * @param otherId
@@ -181,7 +191,9 @@ public class EventStreamFileParser {
 	 * @param consensusOrder
 	 * @return
 	 */
-	static boolean storeEvent(long creatorId, long creatorSeq, long otherId, long otherSeq, long selfParentGen, long otherParentGen, byte[] selfParentHash, byte[] otherParentHash, Transaction[] transactions, Instant timeCreated, byte[] signature, byte[] hash, Instant consensusTimeStamp, long consensusOrder) {
+	static boolean storeEvent(long creatorId, long creatorSeq, long otherId, long otherSeq, long selfParentGen,
+			long otherParentGen, byte[] selfParentHash, byte[] otherParentHash, Transaction[] transactions,
+			Instant timeCreated, byte[] signature, byte[] hash, Instant consensusTimeStamp, long consensusOrder) {
 		try {
 			long generation = Math.max(selfParentGen, otherParentGen) + 1;
 			long selfParentConsensusOrder = getConsensusOrderForParent(selfParentHash, "selfParentHash");
@@ -204,7 +216,10 @@ public class EventStreamFileParser {
 			long timeCreatedInNanos = Utility.convertInstantToNanos(timeCreated);
 			long consensusTimestampInNanos = Utility.convertInstantToNanos(consensusTimeStamp);
 			PreparedStatement insertEvent = connect.prepareStatement(
-					"insert into t_events (consensusOrder, creatorNodeId, creatorSeq, otherNodeId, otherSeq, selfParentGen, otherParentGen, generation, selfParentConsensusOrder, otherParentConsensusOrder, timeCreatedInNanos, signature, consensusTimestampInNanos, txsBytesCount, platformTxCount, appTxCount) "
+					"insert into t_events (consensusOrder, creatorNodeId, creatorSeq, otherNodeId, otherSeq, " +
+							"selfParentGen, otherParentGen, generation, selfParentConsensusOrder, " +
+							"otherParentConsensusOrder, timeCreatedInNanos, signature, consensusTimestampInNanos, " +
+							"txsBytesCount, platformTxCount, appTxCount) "
 							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
 
 			insertEvent.setLong(1, consensusOrder);
@@ -247,6 +262,7 @@ public class EventStreamFileParser {
 	 * Find an event's consensusOrder in t_eventHashes table which hash value matches the given byte array
 	 * return PARENT_HASH_NULL if the byte array is empty;
 	 * return PARENT_HASH_NOT_FOUND_MATCH if didn't find a match;
+	 *
 	 * @param hash
 	 * @param name
 	 * @return
@@ -323,7 +339,7 @@ public class EventStreamFileParser {
 		String prevFileHash = "";
 		for (String name : fileNames) {
 			LoadResult loadResult = loadEventStreamFile(name, prevFileHash);
-			if (loadResult == LoadResult.STOP){
+			if (loadResult == LoadResult.STOP) {
 				return;
 			}
 			prevFileHash = Utility.bytesToHex(Utility.getFileHash(name));
