@@ -137,7 +137,7 @@ const parseResultParams = function (req) {
  * @param {HTTPRequest} req HTTP query request object
  * @return {Object} {query, params, order} SQL query, values and order
  */
-const parsePaginationAndOrderParams = function (req) {
+const parsePaginationAndOrderParams = function (req, defaultOrder = 'desc') {
     // Parse the pagination parameters (i.e. limit/offset)
     let limitOffsetQuery = '';
     let limitOffsetParams = [];
@@ -155,9 +155,9 @@ const parsePaginationAndOrderParams = function (req) {
     }
 
     // Parse the order parameters (default; descending)
-    let order = 'desc';
-    if (req.query['order'] === 'asc') {
-        order = 'asc';
+    let order = defaultOrder;
+    if (['asc', 'desc'].includes(req.query['order'])) {
+        order = req.query['order'];
     }
 
     return ({
@@ -246,7 +246,7 @@ const getTimeQueryForPagination = function (req, order, anchorSeconds) {
     //          add anchorSeconds = anchorSeconds
     //
     if (order === 'desc') {
-        if (!req.query.pageanchor) {
+        if (anchorSeconds !== undefined && !req.query.pageanchor) {
             req.query.pageanchor = anchorSeconds;
         }
     }

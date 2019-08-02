@@ -92,7 +92,8 @@ describe('transaction tests', () => {
         for (let accOptions of ['', 'account.id=gte:1', 'account.id=gte:1&account.id=lt:99999999']) {
             for (let orderOptions of ['', 'order=desc', 'order=asc']) {
 
-                test('Pagination test', async () => {
+                test('/transactions tests with options: ' +
+                    '[' + tsOptions + ' - ' + accOptions + ' - ' + orderOptions + ']', async () => {
                     //let extraParams = tsOptions + accOptions + orderOptions;
                     let extraParams = tsOptions;
                     extraParams += ((extraParams !== '' && accOptions !== '') ? '&' : '') + accOptions;
