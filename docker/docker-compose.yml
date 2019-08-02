@@ -67,3 +67,16 @@ services:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
     command: ./recordDownloadParse.sh
+
+  # this downloads the latest 0.0.102 file from the network if the .env file contains the necessary information
+  mirror-node-102-file-update:
+    build:
+      context: ./
+      dockerfile: MirrorNodeClientImage
+    working_dir: /MirrorNodeCode
+    env_file:
+      - runtime/.102env
+    volumes:
+      - ./MirrorNodeData:/MirrorNodeData
+      - ./runtime:/MirrorNodeCode
+    command: ./update102.sh
