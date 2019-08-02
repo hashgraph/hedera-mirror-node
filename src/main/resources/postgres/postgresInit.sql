@@ -1,5 +1,5 @@
--- Change the values below if you are not installing via Docker
--- environment variable values come from .env file
+-- Change the values below if you are not installing via Docker (environment variable values come from .env file)
+-- e.g. `\set db_name=mydatabasename`
 -- name of the database
 \set db_name `echo "$POSTGRES_DB"`
 -- username
@@ -8,10 +8,11 @@
 \set db_password `echo "$POSTGRES_PASSWORD"`
 -- owner of the database (usually postgres)
 \set db_owner `echo "$POSTGRES_USER"`
+-- REST API user
+\set api_user `echo "$DB_USER"`
+-- REST API password
+\set api_password `echo "$DB_PASS"`
 
--- Change the values below to your preferred API user name and password
-\set api_user api
-\set api_password mysecretpassword
 -- Uncomment below if you are not installing via Docker
 --
 -- CREATE DATABASE :db_name

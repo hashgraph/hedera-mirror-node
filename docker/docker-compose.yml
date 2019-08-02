@@ -80,3 +80,20 @@ services:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
     command: ./update102.sh
+
+  # this runs the REST API for mirror node
+  mirror-node-rest-api:
+    build:
+      context: ./
+      dockerfile: RestClientImage
+    working_dir: /MirrorNodeCode
+    environment:
+      - DB_HOST=mirror-node-postgres
+    tty: true
+    env_file:
+      - .env
+    volumes:
+      - ./runtime:/MirrorNodeCode
+    command: ./restapi.sh
+    ports:
+      - ${PORT}:${PORT}

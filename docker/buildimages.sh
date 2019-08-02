@@ -3,6 +3,8 @@
 mkdir runtime
 mkdir runtime/config
 mkdir runtime/lib
+rm -rf runtime/rest-api
+mkdir runtime/rest-api
 
 cd ..
 
@@ -14,6 +16,8 @@ cp -r ../src/main/resources/postgres/postgresInit.sql .
 cp -r ../config/* runtime/config/
 cp -r ../target/lib/* runtime/lib
 cp ../target/mirrorNode.jar runtime/mirrorNode.jar
+cp -r ../rest-api/* runtime/rest-api
+
 cp ./wait-for-postgres.sh runtime/
 chmod +x runtime/wait-for-postgres.sh
 
@@ -25,6 +29,11 @@ chmod +x runtime/recordDownloadParse.sh
 
 cp ./update102.sh runtime/
 chmod +x runtime/update102.sh
+
+cp ./restapi.sh runtime/
+chmod +x runtime/restapi.sh
+
+cp .env runtime/rest-api/.env
 
 DOUPDATE=1
 

@@ -4,9 +4,8 @@ POSTGRES_PASSWORD=mysecretpassword
 POSTGRES_PORT=5432
 PGDATA=/var/lib/postgresql/data/pgdata
 
-#Uncomment lines below to enable load of 0.0.102 file
-#when docker starts 
-#NODE_ADDRESS=35.232.131.251:50211
-#NODE_ID=0.0.x
-#OPERATOR_ID=0.0.x
-#OPERATOR_KEY=your account's private key
+# REST API parameters
+DB_USER=api
+DB_PASS=apipass
+DB_NAME=postgres
+PORT=5551

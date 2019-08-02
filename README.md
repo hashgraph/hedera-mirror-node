@@ -296,8 +296,8 @@ Note: Changes to this file while downloading or processing is taking place may b
 | addressBookFile | `"./config/0.0.102"` | The location of the address book file file |
 | accountBalancesS3Location | `"accountBalances/balance"` | The location of the account balances files in the cloud bucket |
 | recordFilesS3Location | `"recordstreams/record"` | The location of the record files in the cloud bucket |
-| dbUrl | `"jdbc:postgresql://localhost:5433/hederamirror"` | The connection string to access the database |
-| dbUsername | `"hederamirror"` | The username to access the database |
+| dbUrl | `"jdbc:postgresql://localhost:5433/postgres"` | The connection string to access the database |
+| dbUsername | `"postgres"` | The username to access the database |
 | dbPassword | `"mysecretpassword"` | The password to access the database |
 | maxDownloadItems | `0` | The maximum number of new files to download at a time, set to `0` in production, change to `10` or other low number for testing or catching up with a large number of files. Note, you may also reduce the number of nodes in `nodesInfo.json` so that only files from the nodes listed will be downloaded, although this reduces the number of signature validations too |
 | stopLoggingIfHashMismatch | "" | If you wish to skip past a file as a result of a hash mismatch, you can input the name of the record file before which hash mismatches will be ignored. e.g. `2019-06-12T18/05/22.198241001Z.rcd` will allow hash mismatches on any files prior to that file name, after this file, a hash mismatch will result in an error being logged and processing to stop.
@@ -447,21 +447,53 @@ Using a client which is able to generate and send transactions to a Hedera node,
 
 ## Docker compose
 
-Follow instructions above for setting up the `config.json` file. And edit the `.env` file in the `docker` folder to ensure environment variables are set correctly.
+Docker compose scripts are provided and run all the mirror node components:
+
+- PostgreSQL database
+- Balance files downloader
+- Balance files processor
+- Record files downloader and parser
+- 102 file updater
+- REST API
+
+### Quick start
+
+This should get you going in mere minutes.
+
+```
+git clone git@github.com:hashgraph/hedera-mirror-node.git
+cd hedera-mirror-node
+cp config/config.json.sample config/config.json
+nano config/config.json
+# Add S3/GCP credentials and check other settings
+cd docker
+cp dotenv.sample .env
+nano .env
+# Edit environment variable defaults
+./buildimages.sh
+```
+
+Follow instructions above for setting up the `config.json` file and the `.env` file in the `docker` folder to ensure environment variables are set correctly.
 
 example `.env` file.
 
 ```text
-POSTGRES_DB=hederamirror
-POSTGRES_USER=hederamirror
+POSTGRES_DB=postgres
+POSTGRES_USER=postgres
 POSTGRES_PASSWORD=mysecretpassword
 POSTGRES_PORT=5432
 PGDATA=/var/lib/postgresql/data/pgdata
+# This user is used by the REST API to gain read only access to the necessary database tables
+DB_USER=api
+DB_PASS=apipass
+DB_NAME=postgres
+# This is the port the REST API will listen onto
+PORT=5551
 ```
 
 Containers use persisted volumes as follows:
 
-- `./MirrorNodePostgresData` on your local machine maps to `/var/lib/postgresql/data` in the containers. This contains the files for the Postgres database.
+- `./MirrorNodePostgresData` on your local machine maps to `/var/lib/postgresql/data` in the containers. This contains the files for the PostgreSQL database.
 Note: If you database container fails to initialise properly and the database fails to run, you will have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will not be run.
 
 - `./runtime` on your local machine maps to `/MirrorNodeCode` in the containers. This contains the runtime and configuration files for loading and parsing files.
@@ -504,11 +536,13 @@ You can also unittest using jest by using `npm test`.
 example `.env` file:
 
 ```TEXT
-DB_HOST='localhost'
-DB_USER='hederamirror'
-DB_PASS='mysecretpassword'
-DB_NAME='hederamirror'
+DB_USER=api
+DB_PASS=apipass
+DB_NAME=postgres
+# This is the port the REST API will listen onto
 PORT=5551
+# server hosting the database
+DB_HOST=localhost
 ```
 
 `PORT` is the port number the REST API will listen onto.

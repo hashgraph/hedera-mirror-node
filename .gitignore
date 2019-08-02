@@ -43,3 +43,5 @@ postgres/Done.txt
 postgres/TODO.TXT
 config/0.0.102
 MirrorNodeData/
+docker/stop
+docker/dropPostgres.sh
