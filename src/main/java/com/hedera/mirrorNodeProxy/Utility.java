@@ -35,6 +35,7 @@ import static java.lang.System.out;
 public class Utility {
 	private static final Logger log = LogManager.getLogger("recordStream-log");
 	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
+	private static final Long SCALAR = 1_000_000_000L;
 
 	public static AccountID stringToAccountID(final String string) throws IllegalArgumentException{
 		if (string == null || string.isEmpty()) {
@@ -320,5 +321,31 @@ public class Utility {
 
 	public static boolean greaterThanSuperMajorityNum(long n, long N) {
 		return n > N * 2 / 3.0;
+	}
+
+	/**
+	 * Convert an Instant to a Long type timestampInNanos
+	 * @param instant
+	 * @return
+	 */
+	public static Long convertInstantToNanos(Instant instant) {
+		if (instant == null) {
+			return null;
+		}
+		return instant.getEpochSecond() * SCALAR + instant.getNano();
+	}
+
+	/**
+	 * Convert a Long type timestampInNanos to an Instant
+	 * @param bigint
+	 * @return
+	 */
+	public static Instant convertNanosToInstant(Long bigint) {
+		if (bigint == null) {
+			return null;
+		}
+		long seconds = bigint / SCALAR;
+		int nanos = (int) (bigint % SCALAR);
+		return Instant.ofEpochSecond(seconds, nanos);
 	}
 }

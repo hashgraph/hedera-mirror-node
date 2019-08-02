@@ -282,7 +282,7 @@ public class Transaction {
 	 * @return {@code true} if this is a system transaction; otherwise {@code false} if this is an application
 	 * 		transaction
 	 */
-	boolean isSystem() {
+	public boolean isSystem() {
 		return system;
 	}
 

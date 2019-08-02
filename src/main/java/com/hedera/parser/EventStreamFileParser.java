@@ -1,6 +1,7 @@
 package com.hedera.parser;
 
 import com.hedera.configLoader.ConfigLoader;
+import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.mirrorNodeProxy.Utility;
 import com.hedera.platform.Transaction;
 import com.hedera.recordFileLogger.RecordFileLogger;
@@ -17,6 +18,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -37,6 +42,9 @@ public class EventStreamFileParser {
 	private static Connection connect = null;
 
 	private static ConfigLoader configLoader;
+
+	private static final long PARENT_HASH_NULL = -1;
+	private static final long PARENT_HASH_NOT_FOUND_MATCH = -2;
 
 	/**
 	 * Given a EventStream file name, read and parse and return as a list of service record pair
@@ -162,8 +170,95 @@ public class EventStreamFileParser {
 		Instant consensusTimeStamp = readInstant(dis);
 		long consensusOrder = dis.readLong();
 		log.info(MARKER, "Loaded Event: creatorId: {}, creatorSeq: {}, otherId: {}, otherSeq: {}, selfParentGen: {}, otherParentGen: {}, selfParentHash: {}, otherParentHash: {}, transactions: {}, timeCreated: {}, signature: {}, hash: {}, consensusTimeStamp: {}, consensusOrder: {}", creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, Utility.bytesToHex(selfParentHash), Utility.bytesToHex(otherParentHash), transactions, timeCreated, Utility.bytesToHex(signature), Utility.bytesToHex(hash), consensusTimeStamp, consensusOrder);
+		storeEvent(creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, selfParentHash, otherParentHash, transactions, timeCreated, signature, hash, consensusTimeStamp, consensusOrder);
 	}
 
+	static boolean storeEvent(long creatorId, long creatorSeq, long otherId, long otherSeq, long selfParentGen, long otherParentGen, byte[] selfParentHash, byte[] otherParentHash, Transaction[] transactions, Instant timeCreated, byte[] signature, byte[] hash, Instant consensusTimeStamp, long consensusOrder) {
+		try {
+			long generation = Math.max(selfParentGen, otherParentGen) + 1;
+			long selfParentConsensusOrder = getConsensusOrderForParent(selfParentHash, "selfParentHash");
+			long otherParentConsensusOrder = getConsensusOrderForParent(otherParentHash, "otherParentHash");
+
+			int txsBytesCount = 0;
+			int platformTxCount = 0;
+			int appTxCount = 0;
+
+			if (transactions != null && transactions.length > 0) {
+				for (Transaction transaction : transactions) {
+					if (transaction.isSystem()) {
+						platformTxCount++;
+					} else {
+						appTxCount++;
+					}
+				}
+			}
+
+			long timeCreatedInNanos = Utility.convertInstantToNanos(timeCreated);
+			long consensusTimestampInNanos = Utility.convertInstantToNanos(consensusTimeStamp);
+			PreparedStatement insertEvent = connect.prepareStatement(
+					"insert into t_events (consensusOrder, creatorNodeId, creatorSeq, otherNodeId, otherSeq, selfParentGen, otherParentGen, generation, selfParentConsensusOrder, otherParentConsensusOrder, timeCreatedInNanos, signature, consensusTimestampInNanos, txsBytesCount, platformTxCount, appTxCount) "
+							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
+
+			insertEvent.setLong(1, consensusOrder);
+			insertEvent.setLong(2, creatorId);
+			insertEvent.setLong(3, creatorSeq);
+			insertEvent.setLong(4, otherId);
+			insertEvent.setLong(5, otherSeq);
+			insertEvent.setLong(6, selfParentGen);
+			insertEvent.setLong(7, otherParentGen);
+			insertEvent.setLong(8, generation);
+			insertEvent.setLong(9, selfParentConsensusOrder);
+			insertEvent.setLong(10, otherParentConsensusOrder);
+			insertEvent.setLong(11, timeCreatedInNanos);
+			insertEvent.setBytes(12, signature);
+			insertEvent.setLong(13, consensusTimestampInNanos);
+			insertEvent.setInt(14, txsBytesCount);
+			insertEvent.setInt(15, platformTxCount);
+			insertEvent.setInt(16, appTxCount);
+			insertEvent.execute();
+			log.info(MARKER, "Finished insert to Event, consensusOrder: {}", consensusOrder);
+
+			// store hash
+			PreparedStatement insertEventHash = connect.prepareStatement(
+					"insert into t_eventHashes (consensusOrder, hash) "
+							+ " values (?, ?) ");
+			insertEventHash.setLong(1, consensusOrder);
+			insertEventHash.setBytes(2, hash);
+			insertEventHash.execute();
+			log.info(MARKER, "Finished insert to EventHash, consensusOrder: {}", consensusOrder);
+		} catch (SQLException ex) {
+			log.error(LOGM_EXCEPTION, "Exception {}", ex);
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Find an event's consensusOrder in t_eventHashes table which hash value matches the given byte array
+	 * return PARENT_HASH_NULL if the byte array is empty;
+	 * return PARENT_HASH_NOT_FOUND_MATCH if didn't find a match;
+	 * @param hash
+	 * @param name
+	 * @return
+	 * @throws SQLException
+	 */
+	static long getConsensusOrderForParent(byte[] hash, String name) throws SQLException {
+		if (hash == null) {
+			return PARENT_HASH_NULL;
+		} else {
+			PreparedStatement queryParentConsensusOrder = connect.prepareStatement(
+					"SELECT consensusOrder FROM t_eventHashes WHERE hash = ?");
+			queryParentConsensusOrder.setBytes(1, hash);
+			queryParentConsensusOrder.execute();
+			ResultSet resultSet = queryParentConsensusOrder.getResultSet();
+			if (resultSet.next()) {
+				return resultSet.getLong(1);
+			} else {
+				log.error(MARKER, "There isn't an event's Hash in t_eventHashes matches {} : {}", name, hash);
+				return PARENT_HASH_NOT_FOUND_MATCH;
+			}
+		}
+	}
 
 	/** read an Instant from a data stream */
 	static Instant readInstant(DataInput dis)
@@ -211,9 +306,7 @@ public class EventStreamFileParser {
 	 * read and parse a list of record files
 	 */
 	static public void loadRecordFiles(List<String> fileNames) {
-
 		String prevFileHash = "";
-
 		for (String name : fileNames) {
 			if (!loadEventStreamFile(name, prevFileHash)){
 				return;
@@ -227,6 +320,8 @@ public class EventStreamFileParser {
 
 		String pathName = configLoader.getDefaultParseDir_EventStream();
 		log.info(MARKER, "EventStream files folder got from configuration file: {}", pathName);
+
+		connect = DatabaseUtilities.openDatabase(connect);
 
 		if (pathName != null) {
 
