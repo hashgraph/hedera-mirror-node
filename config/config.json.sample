@@ -5,7 +5,6 @@
   "accessKey": "",
   "secretKey": "",
   "downloadToDir": "/MirrorNodeData",
-  "defaultParseDir": "/MirrorNodeData/recordstreams/valid/",
   "proxyPort": 50777,
   "nodeInfoFile": "./config/nodesInfo.json",
   "addressBookFile": "./config/0.0.102",

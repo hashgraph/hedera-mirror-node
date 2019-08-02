@@ -41,3 +41,5 @@ config/loggerStatus.json
 mirrordata/
 postgres/Done.txt
 postgres/TODO.TXT
+config/0.0.102
+MirrorNodeData/

@@ -47,9 +47,6 @@ public class ConfigLoader {
 	// the directory where we store the RecordStream files
 	private static String downloadToDir = "./recordstreams";
 
-	// the default directory to be parsed
-	private static String defaultParseDir = "./recordstreams/valid/";
-
 	// the port of mirrorNodeProxy;
 	private static int proxyPort = 50777;
 
@@ -139,9 +136,6 @@ public class ConfigLoader {
 			}
 			if (jsonObject.has("downloadToDir")) {
 				downloadToDir = jsonObject.get("downloadToDir").getAsString();
-			}
-			if (jsonObject.has("defaultParseDir")) {
-				defaultParseDir = jsonObject.get("defaultParseDir").getAsString();
 			}
 			if (jsonObject.has("proxyPort")) {
 				proxyPort = jsonObject.get("proxyPort").getAsInt();
@@ -236,7 +230,13 @@ public class ConfigLoader {
 	}
 
 	public String getDefaultParseDir() {
-		return defaultParseDir;
+		String parseDir = downloadToDir;
+		if (!parseDir.endsWith("/")) {
+			parseDir += "/recordstreams/valid";
+		} else {
+			parseDir += "recordstreams/valid";
+		}
+		return parseDir;
 	}
 
 	public int getProxyPort() {
