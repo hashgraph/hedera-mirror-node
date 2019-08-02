@@ -1,14 +1,39 @@
 #!/bin/sh
 
-mkdir runtime
-mkdir runtime/config
-mkdir runtime/lib
-rm -rf runtime/rest-api
-mkdir runtime/rest-api
+mkdir docker/runtime
+mkdir docker/runtime/config
+mkdir docker/runtime/lib
+rm -rf docker/runtime/rest-api
+mkdir docker/runtime/rest-api
 
-cd ..
+DOCOMPILE=3
+echo "Compile source via 1-docker-compose, 2-local maven, 3-skip?"
+select comp in "Docker" "Local" "Skip"; do
+    case $comp in
+        Docker )
+          DOCOMPILE=1
+          break
+          ;;
+        Local )
+          DOCOMPILE=2
+          break
+          ;;
+        Skip )
+          DOCOMPILE=3
+          break
+          ;;
+    esac
+done
 
-mvn install -DskipTests
+if [ $DOCOMPILE -eq 1 ]
+then
+  docker-compose up
+fi
+
+if [ $DOCOMPILE -eq 2 ]
+then
+  mvn install -DskipTests
+fi
 
 cd docker
 
@@ -75,4 +100,6 @@ fi
 docker-compose build
 docker-compose up
 
-rm -f runtime/.102env
+rm -f docker/runtime/.102env
+
+cd ..

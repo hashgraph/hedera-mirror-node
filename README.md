@@ -43,6 +43,18 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### buildimages.sh now prompts for project compilation
+
+Prompts to compile either with
+
+- A docker container
+- Your local maven 
+- Skip
+
+### Moved buildimages.sh script back to root of project
+
+Makes it easier to find
+
 ### Removed unnecessary defaultParseDir parameter from config.json
 
 This parameter was not necessary.
@@ -470,6 +482,7 @@ cd docker
 cp dotenv.sample .env
 nano .env
 # Edit environment variable defaults
+cd ..
 ./buildimages.sh
 ```
 
@@ -501,9 +514,11 @@ Note: If you database container fails to initialise properly and the database fa
 
 These are necessary not only for the database data to be persisted, but also so that the parsing containers can access file obtained via the downloading containers
 
-Docker compose scripts are available in the `docker` folder. A `buildImages.sh` script ensures the necessary data is available to the images via volumes, builds the images and starts the containers.
+Docker compose scripts are available in the `docker` folder. 
 
-./buildimages.sh will prompt whether you want to download the 0.0.102 file from the network (it is recommended you do so the first time).
+A `buildImages.sh` script ensures the necessary data is available to the images via volumes, builds the images and starts the containers.
+
+`buildimages.sh` will first prompt whether youd like to compile sources either using a docker container, your local maven installation or skip the compilation, then prompt whether you want to download the 0.0.102 file from the network (it is recommended you do so the first time).
 If you answer 2 (no), the file will not be downloaded, if you answer 1 (yes), you will be prompted for the following information:
 
 -Node address in the format of `ip:port` or `host:port`. E.g. 192.168.0.2:50211
@@ -517,7 +532,7 @@ In order to avoid this, shell into the container and issue the following command
 
 Use `docker ps` to get the name of the database container, it should be something like `mirror-node-postgres`.
 
-Use the command `docker exec -it <container name> /bin/sh` to get a shell in the container.
+Use the command `docker exec -it docker_mirror-node-postgres_1 /bin/sh` to get a shell in the container.
 
 `su - postgres -c "PGDATA=$PGDATA /usr/local/bin/pg_ctl -w stop"`
 
