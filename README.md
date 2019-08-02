@@ -25,6 +25,108 @@ The Beta mirror node works as follows:
 - The files are also signed by the nodes.
 - This mirror node software can download the balance files, validate 2/3rd of nodes have signed and then process the balance files for long term storage.
 
+----
+
+## Quickstart
+
+### Requirements
+
+* Docker
+* Docker-compose
+* Address book update information:
+  [] Node ID - your node of choice (e.g. 0.0.3)
+  [] Node Address - IP address and port number of your node of choice (e.g. 35.232.131.251:50211)
+  [] Operator ID - Your Hedera Account ID
+  [] Operator Secret Key - The secret key that can sign transactions on behalf of your Operator ID.
+
+```
+  $> git clone git@github.com:hashgraph/hedera-mirror-node.git
+  $> cd hedera-mirror-node
+  $> cp config/config.json.sample config/config.json
+  $> nano config/config.json
+  // Insert AWS S3 credentials. Update any other settings as needed.
+  $> cp docker/dotenv.sample docker/.env
+  $> nano docker/.env
+  // Update database and API settings as needed
+  $> ./buildimages.sh
+
+  // You'll now be asked a few questions to finalize automated mirror node configuration.
+
+  Compile source via 1-docker-compose, 2-local maven, 3-skip?
+  1) Docker
+  2) Local
+  3) Skip
+  #? 1
+
+  Would you like to update the address book file (0.0.102) from the network (enter 1 or 2)?
+  1) Yes
+  2) No
+  #? 1
+
+  Input node address (x.x.x.x:port)
+  {{Node Address}}
+  Input node ID (0.0.x)
+  {{Node ID}}
+  Input operator ID (0.0.x)
+  {{Operator ID}}
+  Input operator key (302...)
+  {{Operator Secret Key}}
+```
+
+Follow instructions above for setting up the `config.json` file and the `.env` file in the `docker` folder to ensure environment variables are set correctly.
+
+example `.env` file.
+
+```text
+POSTGRES_DB=postgres
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=mysecretpassword
+POSTGRES_PORT=5432
+PGDATA=/var/lib/postgresql/data/pgdata
+# This user is used by the REST API to gain read only access to the necessary database tables
+DB_USER=api
+DB_PASS=apipass
+DB_NAME=postgres
+# This is the port the REST API will listen onto
+PORT=5551
+```
+
+Containers use persisted volumes as follows:
+
+- `./MirrorNodePostgresData` on your local machine maps to `/var/lib/postgresql/data` in the containers. This contains the files for the PostgreSQL database.
+Note: If you database container fails to initialise properly and the database fails to run, you will have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will not be run.
+
+- `./runtime` on your local machine maps to `/MirrorNodeCode` in the containers. This contains the runtime and configuration files for loading and parsing files.
+- `./MirrorNodeData` on your local machine maps to `/MirrorNodeData` in the containers. This contains files downloaded from S3 or GCP.
+
+These are necessary not only for the database data to be persisted, but also so that the parsing containers can access file obtained via the downloading containers
+
+Docker compose scripts are available in the `docker` folder. 
+
+A `buildImages.sh` script ensures the necessary data is available to the images via volumes, builds the images and starts the containers.
+
+`buildimages.sh` will first prompt whether youd like to compile sources either using a docker container, your local maven installation or skip the compilation, then prompt whether you want to download the 0.0.102 file from the network (it is recommended you do so the first time).
+If you answer 2 (no), the file will not be downloaded, if you answer 1 (yes), you will be prompted for the following information:
+
+-Node address in the format of `ip:port` or `host:port`. (e.g. 192.168.0.2:50211)
+-Node ID, the Hedera account for the node (e.g. 0.0.3).
+-Operator ID, your account (e.g. 0.0.2031)
+-Operator key, the private key for your account
+
+Note: Shutting down the database container via `docker-compose down` may result in a corrupted database that may not restart or may take longer than usual to restart.
+
+In order to avoid this, shell into the container and issue the following command:
+
+Use `docker ps` to get the name of the database container, it should be something like `mirror-node-postgres`.
+
+Use the command `docker exec -it docker_mirror-node-postgres_1 /bin/sh` to get a shell in the container.
+
+`su - postgres -c "PGDATA=$PGDATA /usr/local/bin/pg_ctl -w stop"`
+
+You may now power down the docker image itself.
+
+----
+
 ## Prerequisites
 
 This mirror node beta requires Java version 10 or above.
@@ -64,7 +166,7 @@ This parameter was not necessary.
 ./buildimages.sh will prompt whether you want to download the 0.0.102 file from the network (it is recommended you do so the first time).
 If you answer 2 (no), the file will not be downloaded, if you answer 1 (yes), you will be prompted for the following information:
 
--Node address in the format of `ip:port` or `host:port`. E.g. 192.168.0.2:50211
+-Node address in the format of `ip:port` or `host:port`. (e.g. 192.168.0.2:50211)
 -Node ID, the Hedera account for the node (e.g. 0.0.3).
 -Operator ID, your account (e.g. 0.0.2031)
 -Operator key, the private key for your account
@@ -467,76 +569,6 @@ Docker compose scripts are provided and run all the mirror node components:
 - Record files downloader and parser
 - 102 file updater
 - REST API
-
-### Quick start
-
-This should get you going in mere minutes.
-
-```
-git clone git@github.com:hashgraph/hedera-mirror-node.git
-cd hedera-mirror-node
-cp config/config.json.sample config/config.json
-nano config/config.json
-# Add S3/GCP credentials and check other settings
-cd docker
-cp dotenv.sample .env
-nano .env
-# Edit environment variable defaults
-cd ..
-./buildimages.sh
-```
-
-Follow instructions above for setting up the `config.json` file and the `.env` file in the `docker` folder to ensure environment variables are set correctly.
-
-example `.env` file.
-
-```text
-POSTGRES_DB=postgres
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=mysecretpassword
-POSTGRES_PORT=5432
-PGDATA=/var/lib/postgresql/data/pgdata
-# This user is used by the REST API to gain read only access to the necessary database tables
-DB_USER=api
-DB_PASS=apipass
-DB_NAME=postgres
-# This is the port the REST API will listen onto
-PORT=5551
-```
-
-Containers use persisted volumes as follows:
-
-- `./MirrorNodePostgresData` on your local machine maps to `/var/lib/postgresql/data` in the containers. This contains the files for the PostgreSQL database.
-Note: If you database container fails to initialise properly and the database fails to run, you will have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will not be run.
-
-- `./runtime` on your local machine maps to `/MirrorNodeCode` in the containers. This contains the runtime and configuration files for loading and parsing files.
-- `./MirrorNodeData` on your local machine maps to `/MirrorNodeData` in the containers. This contains files downloaded from S3 or GCP.
-
-These are necessary not only for the database data to be persisted, but also so that the parsing containers can access file obtained via the downloading containers
-
-Docker compose scripts are available in the `docker` folder. 
-
-A `buildImages.sh` script ensures the necessary data is available to the images via volumes, builds the images and starts the containers.
-
-`buildimages.sh` will first prompt whether youd like to compile sources either using a docker container, your local maven installation or skip the compilation, then prompt whether you want to download the 0.0.102 file from the network (it is recommended you do so the first time).
-If you answer 2 (no), the file will not be downloaded, if you answer 1 (yes), you will be prompted for the following information:
-
--Node address in the format of `ip:port` or `host:port`. E.g. 192.168.0.2:50211
--Node ID, the Hedera account for the node (e.g. 0.0.3).
--Operator ID, your account (e.g. 0.0.2031)
--Operator key, the private key for your account
-
-Note: Shutting down the database container via `docker-compose down` may result in a corrupted database that may not restart or may take longer than usual to restart.
-
-In order to avoid this, shell into the container and issue the following command:
-
-Use `docker ps` to get the name of the database container, it should be something like `mirror-node-postgres`.
-
-Use the command `docker exec -it docker_mirror-node-postgres_1 /bin/sh` to get a shell in the container.
-
-`su - postgres -c "PGDATA=$PGDATA /usr/local/bin/pg_ctl -w stop"`
-
-You may now power down the docker image itself.
 
 ## REST API
 
