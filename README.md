@@ -31,13 +31,13 @@ The Beta mirror node works as follows:
 
 ### Requirements
 
-* Docker
-* Docker-compose
-* Address book update information:
-  [] Node ID - your node of choice (e.g. 0.0.3)
-  [] Node Address - IP address and port number of your node of choice (e.g. 35.232.131.251:50211)
-  [] Operator ID - Your Hedera Account ID
-  [] Operator Secret Key - The secret key that can sign transactions on behalf of your Operator ID.
+- [ ] Docker
+- [ ] Docker-compose
+- [ ] Address book update information:
+  - [ ] Node ID - your node of choice (e.g. 0.0.3)
+  - [ ] Node Address - IP address and port number of your node of choice (e.g. 35.232.131.251:50211)
+  - [ ] Operator ID - Your Hedera Account ID
+  - [ ] Operator Secret Key - The secret key that can sign transactions on behalf of your Operator ID.
 
 ```
   $> git clone git@github.com:hashgraph/hedera-mirror-node.git
