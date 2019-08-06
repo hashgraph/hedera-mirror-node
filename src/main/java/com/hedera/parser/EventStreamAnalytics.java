@@ -104,6 +104,8 @@ public class EventStreamAnalytics {
 	}
 
 	/**
+	 * Get the number of System Transactions and Application Transactions in Reached Consensus Events Per time window
+	 * Per Node
 	 * @param periodStartInNanos
 	 * @param periodEndInNanos
 	 * @param nodeId
