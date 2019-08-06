@@ -20,6 +20,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLType;
+import java.sql.Types;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -41,7 +43,7 @@ public class EventStreamFileParser {
 
 	private static ConfigLoader configLoader;
 
-	private static final long PARENT_HASH_NULL = -1;
+	private static final Long PARENT_HASH_NULL = null;
 	private static final long PARENT_HASH_NOT_FOUND_MATCH = -2;
 
 	private enum LoadResult {
@@ -96,7 +98,9 @@ public class EventStreamFileParser {
 									previousFileHash)) {
 								if (configLoader.getStopLoggingIfHashMismatch()) {
 									log.error(MARKER,
-											"Previous file Hash Mismatch - stopping loading. fileName = {}, Previous = " +
+											"Previous file Hash Mismatch - stopping loading. fileName = {}, Previous " +
+													"=" +
+													" " +
 													"{}, Current = {}",
 											fileName, previousFileHash, readPrevFileHash);
 									return LoadResult.STOP;
@@ -146,9 +150,15 @@ public class EventStreamFileParser {
 		long otherParentGen = dis.readLong();
 		byte[] selfParentHash = readNullableByteArray(dis);
 		byte[] otherParentHash = readNullableByteArray(dis);
+
+		//counts[0] denotes the number of bytes in the Transaction Array
+		//counts[1] denotes the number of system Transactions
+		//counts[2] denotes the number of application Transactions
+		int[] counts = new int[3];
+
 		Transaction[] transactions = new Transaction[0];
 		if (!noTxs) {
-			transactions = Transaction.readArray(dis);
+			transactions = Transaction.readArray(dis, counts);
 		}
 		Instant timeCreated = readInstant(dis);
 		byte[] signature = readByteArray(dis);
@@ -169,7 +179,7 @@ public class EventStreamFileParser {
 				Utility.bytesToHex(selfParentHash), Utility.bytesToHex(otherParentHash), transactions, timeCreated,
 				Utility.bytesToHex(signature), Utility.bytesToHex(hash), consensusTimeStamp, consensusOrder);
 		storeEvent(creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, selfParentHash,
-				otherParentHash, transactions, timeCreated, signature, hash, consensusTimeStamp, consensusOrder);
+				otherParentHash, counts, timeCreated, signature, hash, consensusTimeStamp, consensusOrder);
 	}
 
 	/**
@@ -183,7 +193,7 @@ public class EventStreamFileParser {
 	 * @param otherParentGen
 	 * @param selfParentHash
 	 * @param otherParentHash
-	 * @param transactions
+	 * @param txCounts
 	 * @param timeCreated
 	 * @param signature
 	 * @param hash
@@ -192,35 +202,32 @@ public class EventStreamFileParser {
 	 * @return
 	 */
 	static boolean storeEvent(long creatorId, long creatorSeq, long otherId, long otherSeq, long selfParentGen,
-			long otherParentGen, byte[] selfParentHash, byte[] otherParentHash, Transaction[] transactions,
+			long otherParentGen, byte[] selfParentHash, byte[] otherParentHash, int[] txCounts,
 			Instant timeCreated, byte[] signature, byte[] hash, Instant consensusTimeStamp, long consensusOrder) {
 		try {
 			long generation = Math.max(selfParentGen, otherParentGen) + 1;
-			long selfParentConsensusOrder = getConsensusOrderForParent(selfParentHash, "selfParentHash");
-			long otherParentConsensusOrder = getConsensusOrderForParent(otherParentHash, "otherParentHash");
-
-			int txsBytesCount = 0;
-			int platformTxCount = 0;
-			int appTxCount = 0;
-
-			if (transactions != null && transactions.length > 0) {
-				for (Transaction transaction : transactions) {
-					if (transaction.isSystem()) {
-						platformTxCount++;
-					} else {
-						appTxCount++;
-					}
-				}
+			Long self_parent_id = null;
+			if (selfParentHash != null) {
+				self_parent_id = getIdForParent(selfParentHash, "selfParentHash");
 			}
+			Long other_parent_id = null;
+			if (otherParentHash != null) {
+				other_parent_id = getIdForParent(otherParentHash, "otherParentHash");
+			}
+
+			int txsBytesCount = txCounts[0];
+			int platformTxCount = txCounts[1];
+			int appTxCount = txCounts[2];
 
 			long timeCreatedInNanos = Utility.convertInstantToNanos(timeCreated);
 			long consensusTimestampInNanos = Utility.convertInstantToNanos(consensusTimeStamp);
 			PreparedStatement insertEvent = connect.prepareStatement(
-					"insert into t_events (consensusOrder, creatorNodeId, creatorSeq, otherNodeId, otherSeq, " +
-							"selfParentGen, otherParentGen, generation, selfParentConsensusOrder, " +
-							"otherParentConsensusOrder, timeCreatedInNanos, signature, consensusTimestampInNanos, " +
-							"txsBytesCount, platformTxCount, appTxCount, latencyInNanos) "
-							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
+					"insert into t_events (consensus_order, creator_node_id, creator_seq, other_node_id, other_seq, " +
+							"self_parent_generation, other_parent_generation, generation, self_parent_id, " +
+							"other_parent_id, created_timestamp_ns, signature, consensus_timestamp_ns, " +
+							"txs_bytes_count, platform_tx_count, app_tx_count, latency_ns, hash, self_parent_hash, " +
+							"other_parent_hash) "
+							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
 
 			insertEvent.setLong(1, consensusOrder);
 			insertEvent.setLong(2, creatorId);
@@ -230,8 +237,16 @@ public class EventStreamFileParser {
 			insertEvent.setLong(6, selfParentGen);
 			insertEvent.setLong(7, otherParentGen);
 			insertEvent.setLong(8, generation);
-			insertEvent.setLong(9, selfParentConsensusOrder);
-			insertEvent.setLong(10, otherParentConsensusOrder);
+			if (self_parent_id != null) {
+				insertEvent.setLong(9, self_parent_id);
+			} else {
+				insertEvent.setNull(9, Types.BIGINT);
+			}
+			if (other_parent_id != null) {
+				insertEvent.setLong(10, other_parent_id);
+			} else {
+				insertEvent.setNull(10, Types.BIGINT);
+			}
 			insertEvent.setLong(11, timeCreatedInNanos);
 			insertEvent.setBytes(12, signature);
 			insertEvent.setLong(13, consensusTimestampInNanos);
@@ -239,19 +254,12 @@ public class EventStreamFileParser {
 			insertEvent.setInt(15, platformTxCount);
 			insertEvent.setInt(16, appTxCount);
 			insertEvent.setLong(17, consensusTimestampInNanos - timeCreatedInNanos);
+			insertEvent.setBytes(18, hash);
+			insertEvent.setBytes(19, selfParentHash);
+			insertEvent.setBytes(20, otherParentHash);
 			insertEvent.execute();
 			log.info(MARKER, "Finished insert to Event, consensusOrder: {}", consensusOrder);
 			insertEvent.close();
-
-			// store hash
-			PreparedStatement insertEventHash = connect.prepareStatement(
-					"insert into t_eventHashes (consensusOrder, hash) "
-							+ " values (?, ?) ");
-			insertEventHash.setLong(1, consensusOrder);
-			insertEventHash.setBytes(2, hash);
-			insertEventHash.execute();
-			log.info(MARKER, "Finished insert to EventHash, consensusOrder: {}", consensusOrder);
-			insertEventHash.close();
 		} catch (SQLException ex) {
 			log.error(LOGM_EXCEPTION, "Exception {}", ex);
 			return false;
@@ -260,7 +268,7 @@ public class EventStreamFileParser {
 	}
 
 	/**
-	 * Find an event's consensusOrder in t_eventHashes table which hash value matches the given byte array
+	 * Find an event's id in t_events table which hash value matches the given byte array
 	 * return PARENT_HASH_NULL if the byte array is empty;
 	 * return PARENT_HASH_NOT_FOUND_MATCH if didn't find a match;
 	 *
@@ -269,25 +277,25 @@ public class EventStreamFileParser {
 	 * @return
 	 * @throws SQLException
 	 */
-	static long getConsensusOrderForParent(byte[] hash, String name) throws SQLException {
+	static long getIdForParent(byte[] hash, String name) throws SQLException {
 		if (hash == null) {
 			return PARENT_HASH_NULL;
 		} else {
-			PreparedStatement queryParentConsensusOrder = connect.prepareStatement(
-					"SELECT consensusOrder FROM t_eventHashes WHERE hash = ?");
-			queryParentConsensusOrder.setBytes(1, hash);
-			queryParentConsensusOrder.execute();
-			ResultSet resultSet = queryParentConsensusOrder.getResultSet();
-			long consensusOrder;
+			PreparedStatement query = connect.prepareStatement(
+					"SELECT id FROM t_events WHERE hash = ?");
+			query.setBytes(1, hash);
+			query.execute();
+			ResultSet resultSet = query.getResultSet();
+			long id;
 			if (resultSet.next()) {
-				consensusOrder = resultSet.getLong(1);
+				id = resultSet.getLong(1);
 			} else {
-				log.error(MARKER, "There isn't an event's Hash in t_eventHashes matches {} : {}", name, hash);
-				consensusOrder = PARENT_HASH_NOT_FOUND_MATCH;
+				log.error(MARKER, "There isn't an event's Hash in t_events matches {} : {}", name, hash);
+				id = PARENT_HASH_NOT_FOUND_MATCH;
 			}
 			resultSet.close();
-			queryParentConsensusOrder.close();
-			return consensusOrder;
+			query.close();
+			return id;
 		}
 	}
 
@@ -387,6 +395,11 @@ public class EventStreamFileParser {
 				log.error(LOGM_EXCEPTION, "Exception file {} does not exist", pathName);
 
 			}
+		}
+		try {
+			connect = DatabaseUtilities.closeDatabase(connect);
+		} catch (SQLException e) {
+			log.error(LOGM_EXCEPTION, "Exception {}", e);
 		}
 	}
 }

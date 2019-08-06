@@ -112,6 +112,10 @@ public class Transaction {
 	 *
 	 * @param dis
 	 * 		the {@link DataInputStream} from which to read
+	 * @param counts
+	 * 		counts[0] denotes the number of bytes in the Transaction Array
+	 * 		counts[1] denotes the number of system Transactions
+	 * 		counts[2] denotes the number of application Transactions
 	 * @return the {@link Transaction} that was read from the input stream
 	 * @throws IOException
 	 * 		if any error occurs while reading from the {@link DataInputStream}
@@ -121,7 +125,7 @@ public class Transaction {
 	 * 		if the internal checksum cannot be
 	 * 		validated
 	 */
-	static Transaction deserialize(final DataInputStream dis) throws IOException {
+	static Transaction deserialize(final DataInputStream dis, final int[] counts) throws IOException {
 		if (dis == null) {
 			throw new NullPointerException("dis");
 		}
@@ -160,6 +164,8 @@ public class Transaction {
 				sigs[i] = Signature.deserialize(dis, totalBytes);
 			}
 		}
+		//add number of bytes in current Transaction into counts[0]
+		counts[0] += totalBytes[0];
 		return new Transaction(contents, system, sigs);
 	}
 
@@ -169,6 +175,10 @@ public class Transaction {
 	 *
 	 * @param dis
 	 * 		the {@link DataInputStream} from which to read
+	 * @param counts
+	 * 		counts[0] denotes the number of bytes in the Transaction Array
+	 * 		counts[1] denotes the number of system Transactions
+	 * 		counts[2] denotes the number of application Transactions
 	 * @return the array of {@link Transaction} objects that was read from the input stream
 	 * @throws IOException
 	 * 		if any error occurs while reading from the {@link DataInputStream}
@@ -178,7 +188,7 @@ public class Transaction {
 	 * 		if the internal checksum cannot be
 	 * 		validated
 	 */
-	public static Transaction[] readArray(final DataInputStream dis) throws IOException {
+	public static Transaction[] readArray(final DataInputStream dis, int[] counts) throws IOException {
 		if (dis == null) {
 			throw new NullPointerException("dis");
 		}
@@ -192,9 +202,13 @@ public class Transaction {
 		}
 
 		final Transaction[] trans = new Transaction[txLen];
-
 		for (int i = 0; i < trans.length; i++) {
-			trans[i] = deserialize(dis);
+			trans[i] = deserialize(dis, counts);
+			if (trans[i].isSystem()) {
+				counts[1]++;
+			} else {
+				counts[2]++;
+			}
 		}
 
 		return trans;
