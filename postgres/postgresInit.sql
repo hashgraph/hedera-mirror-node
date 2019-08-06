@@ -402,43 +402,44 @@ GRANT ALL ON s_event_files_seq TO :db_user;
 GRANT ALL ON s_transactions_seq TO :db_user;
 GRANT ALL ON s_entities_seq TO :db_user;
 
-
-\echo Creating table t_events
-
 -- Table: t_events
 
--- DROP TABLE t_events;
+\echo Cleaning existing tables
+drop table if exists t_events;
 
-CREATE TABLE t_events
+\echo Creating events table
+create table t_events
 (
-    consensusOrder bigint NOT NULL,
-    creatorNodeId bigint NOT NULL,
-    creatorSeq bigint NOT NULL,
-    otherNodeId bigint,
-    otherSeq bigint,
-    selfParentGen bigint,
-    otherParentGen bigint,
-    generation bigint NOT NULL,
-    selfParentConsensusOrder bigint,
-    otherParentConsensusOrder bigint,
-    timeCreatedInNanos bigint NOT NULL,
-		signature bytea NOT NULL,
-		consensusTimestampInNanos bigint NOT NULL,
-		latencyInNanos bigint NOT NULL,
-		txsBytesCount integer NOT NULL,
-		platformTxCount integer NOT NULL,
-		appTxCount integer NOT NULL,
-    CONSTRAINT t_events_pkey PRIMARY KEY (consensusOrder)
+    id                      bigint  not null,
+    consensus_order         bigint  not null,
+    creator_node_id         bigint  not null,
+    creator_seq             bigint  not null,
+    other_node_id           bigint,
+    other_seq               bigint,
+    signature               bytea   not null,
+    hash                    bytea   not null,
+    self_parent_id          bigint,
+    other_parent_id         bigint,
+    self_parent_hash        bytea,
+    other_parent_hash       bytea,
+    self_parent_generation  bigint,
+    other_parent_generation bigint,
+    generation              bigint  not null,
+    created_timestamp_ns    bigint  not null,
+    consensus_timestamp_ns  bigint  not null,
+    latency_ns              bigint  not null,
+    txs_bytes_count         integer not null,
+    platform_tx_count       integer not null,
+    app_tx_count            integer not null,
+    constraint pk_events_id primary key (id)
 );
+create sequence if not exists pk_events_id_seq as bigint owned by t_events.id;
+alter table t_events
+    alter column id set default nextval('pk_events_id_seq');
+alter table t_events
+    add constraint fk_events_self_parent_id foreign key (self_parent_id) references t_events (id);
+alter table t_events
+    add constraint fk_events_other_parent_id foreign key (other_parent_id) references t_events (id);
 
-\echo Creating table t_eventHashes
-
--- Table: t_eventHashes
-
--- DROP TABLE t_eventHashes;
-
-CREATE TABLE t_eventHashes
-(
-    consensusOrder bigint NOT NULL REFERENCES t_events ON DELETE CASCADE ON UPDATE CASCADE,
-    hash bytea NOT NULL
-);
+GRANT ALL ON t_events TO :db_user;
+GRANT ALL ON pk_events_id_seq TO :db_user;
