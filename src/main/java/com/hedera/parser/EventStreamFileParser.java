@@ -219,8 +219,8 @@ public class EventStreamFileParser {
 					"insert into t_events (consensusOrder, creatorNodeId, creatorSeq, otherNodeId, otherSeq, " +
 							"selfParentGen, otherParentGen, generation, selfParentConsensusOrder, " +
 							"otherParentConsensusOrder, timeCreatedInNanos, signature, consensusTimestampInNanos, " +
-							"txsBytesCount, platformTxCount, appTxCount) "
-							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
+							"txsBytesCount, platformTxCount, appTxCount, latencyInNanos) "
+							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
 
 			insertEvent.setLong(1, consensusOrder);
 			insertEvent.setLong(2, creatorId);
@@ -238,6 +238,7 @@ public class EventStreamFileParser {
 			insertEvent.setInt(14, txsBytesCount);
 			insertEvent.setInt(15, platformTxCount);
 			insertEvent.setInt(16, appTxCount);
+			insertEvent.setLong(17, consensusTimestampInNanos - timeCreatedInNanos);
 			insertEvent.execute();
 			log.info(MARKER, "Finished insert to Event, consensusOrder: {}", consensusOrder);
 			insertEvent.close();

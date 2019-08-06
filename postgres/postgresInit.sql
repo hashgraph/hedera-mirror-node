@@ -424,6 +424,7 @@ CREATE TABLE t_events
     timeCreatedInNanos bigint NOT NULL,
 		signature bytea NOT NULL,
 		consensusTimestampInNanos bigint NOT NULL,
+		latencyInNanos bigint NOT NULL,
 		txsBytesCount integer NOT NULL,
 		platformTxCount integer NOT NULL,
 		appTxCount integer NOT NULL,
