@@ -50,7 +50,7 @@ public class RecordFileParser {
 	 * 		the name of record file to read
 	 * @return return previous file hash 
 	 */
-	static public boolean loadRecordFile(String fileName, String previousFileHash) {
+	static public boolean loadRecordFile(String fileName, String previousFileHash, String thisFileHash) {
 
 		File file = new File(fileName);
 		FileInputStream stream = null;
@@ -83,7 +83,7 @@ public class RecordFileParser {
 						switch (typeDelimiter) {
 							case TYPE_PREV_HASH:
 								dis.read(readFileHash);
-								if (previousFileHash.isEmpty() || previousFileHash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
+								if (Utility.hashIsEmpty(previousFileHash)) {
 									log.error(MARKER, "Previous file Hash not available");
 									previousFileHash = Hex.encodeHexString(readFileHash);
 								} else {
@@ -151,7 +151,7 @@ public class RecordFileParser {
 					}
 				}
 				dis.close();
-				RecordFileLogger.completeFile(newFileHash, previousFileHash);
+				RecordFileLogger.completeFile(thisFileHash, previousFileHash);
 			} catch (FileNotFoundException e) {
 				log.error(MARKER, "File Not Found Error {}", e);
 				return false;
@@ -191,8 +191,9 @@ public class RecordFileParser {
 				log.info(MARKER, "Stop file found, stopping.");
 				return;
 			}
-			if (loadRecordFile(name, prevFileHash)) {
-				prevFileHash = Utility.bytesToHex(Utility.getFileHash(name));
+			String thisFileHash = Utility.bytesToHex(Utility.getFileHash(name));
+			if (loadRecordFile(name, prevFileHash, thisFileHash)) {
+				prevFileHash = thisFileHash;
 				moveFileToParsedDir(name);
 			} else {
 				return;
@@ -202,9 +203,14 @@ public class RecordFileParser {
 
 	static void moveFileToParsedDir(String fileName) {
 		File sourceFile = new File(fileName);
-		File parsedDir = new File(sourceFile.getParentFile().getParentFile().getPath() + "/parsedRecordFiles/");
+		String pathToSaveTo = sourceFile.getParentFile().getParentFile().getPath() + "/parsedRecordFiles/";
+		String shortFileName = sourceFile.getName().substring(0, 10).replace("-", "/");
+		pathToSaveTo += shortFileName;
+		
+		File parsedDir = new File(pathToSaveTo);
 		parsedDir.mkdirs();
-		File destFile = new File(parsedDir.getPath() + "/" + sourceFile.getName());
+
+		File destFile = new File(pathToSaveTo + "/" + sourceFile.getName());
 		try {
 			Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			log.info(MARKER, sourceFile.toPath() + " has been moved to " + destFile.getPath());
@@ -221,7 +227,7 @@ public class RecordFileParser {
 			File file = new File(pathName);
 			if (file.isFile()) {
 				log.info(MARKER, "Loading record file {} " + pathName);
-				loadRecordFile(pathName, "");
+				loadRecordFile(pathName, "", "");
 			} else if (file.isDirectory()) { //if it's a directory
 
 				String[] files = file.list(); // get all files under the directory

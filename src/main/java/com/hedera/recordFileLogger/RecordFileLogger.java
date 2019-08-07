@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLType;
 import java.time.Instant;
 import java.util.HashMap;
 import org.apache.logging.log4j.LogManager;
@@ -16,6 +17,7 @@ import com.hedera.addressBook.NetworkAddressBook;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
+import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -196,8 +198,17 @@ public class RecordFileLogger {
 			PreparedStatement updateFile = connect.prepareStatement("UPDATE t_record_files SET load_end = ?, file_hash = ?, prev_hash = ? WHERE id = ?");
 			
 			updateFile.setLong(1, Instant.now().getEpochSecond());
-			updateFile.setString(2, fileHash);
-			updateFile.setString(3, previousHash);
+			if (Utility.hashIsEmpty(fileHash)) {
+				updateFile.setObject(2, null);
+			} else {
+				updateFile.setString(2, fileHash);
+			}
+			
+			if (Utility.hashIsEmpty(previousHash)) {
+				updateFile.setObject(3, null);
+			} else {
+				updateFile.setString(3, previousHash);
+			}
 			updateFile.setLong(4, fileId);
 			updateFile.execute();
 			updateFile.close();

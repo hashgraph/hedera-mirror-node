@@ -145,6 +145,14 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### t_transactions relation to t_record_files
+
+The `t_transactions.fk_rec_file_id` column contains the `id` of the record file that contained this transaction from the `t_record_files` table.
+
+### valid files moved to nested folder structure
+
+In order to avoid the risk of the number of files in a single folder exceeding operating system limits, parsed record files are moved to a nested folder structure such as `MirrorNodeData/recordstreams/parsedRecordFiles/2019/07/18`.
+
 ### buildimages.sh now prompts for project compilation
 
 Prompts to compile either with

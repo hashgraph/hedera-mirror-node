@@ -440,4 +440,8 @@ public class Utility {
 	public static boolean greaterThanSuperMajorityNum(long n, long N) {
 		return n > N * 2 / 3.0;
 	}
+	
+	public static boolean hashIsEmpty(String hash) {
+		return (hash.isEmpty() || hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"));		
+	}
 }
