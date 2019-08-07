@@ -237,12 +237,12 @@ public class EventStreamFileParser {
 			insertEvent.setLong(6, selfParentGen);
 			insertEvent.setLong(7, otherParentGen);
 			insertEvent.setLong(8, generation);
-			if (self_parent_id != null) {
+			if (self_parent_id != null && self_parent_id >= 0) {
 				insertEvent.setLong(9, self_parent_id);
 			} else {
 				insertEvent.setNull(9, Types.BIGINT);
 			}
-			if (other_parent_id != null) {
+			if (other_parent_id != null && other_parent_id >= 0) {
 				insertEvent.setLong(10, other_parent_id);
 			} else {
 				insertEvent.setNull(10, Types.BIGINT);
@@ -269,7 +269,7 @@ public class EventStreamFileParser {
 
 	/**
 	 * Find an event's id in t_events table which hash value matches the given byte array
-	 * return PARENT_HASH_NULL if the byte array is empty;
+	 * return PARENT_HASH_NULL if the byte array is null;
 	 * return PARENT_HASH_NOT_FOUND_MATCH if didn't find a match;
 	 *
 	 * @param hash
