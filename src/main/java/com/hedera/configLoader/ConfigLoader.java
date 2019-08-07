@@ -74,6 +74,15 @@ public class ConfigLoader {
 	// Hash of last last valid rcd file
 	private static String lastValidRcdFileHash = "";
 
+	// file name of last downloaded evts_sig file
+	private static String lastDownloadedEventSigName = "";
+
+	// file name of last valid evts file
+	private static String lastValidEventFileName = "";
+
+	// Hash of last last valid evts file
+	private static String lastValidEventFileHash = "";
+
 	// file name of last valid account balance file
 	private static String lastValidBalanceFileName = "";
 	
@@ -81,7 +90,10 @@ public class ConfigLoader {
 	private static String accountBalanceS3Location = "accountBalances/balance";
 
 	//location of record files on S3
-	private static String recordFilesS3Location = "./recordstreams/record";
+	private static String recordFilesS3Location = "recordstreams/record";
+
+	//location of eventStream files on S3
+	private static String eventFilesS3Location = "eventstreams/events_";
 
 	private static boolean stopLoggingIfHashMismatch = true;
 
@@ -149,12 +161,6 @@ public class ConfigLoader {
 			if (jsonObject.has("downloadToDir")) {
 				downloadToDir = jsonObject.get("downloadToDir").getAsString();
 			}
-			if (jsonObject.has("defaultParseDir_RecordStream")) {
-				defaultParseDir_RecordStream = jsonObject.get("defaultParseDir_RecordStream").getAsString();
-			}
-			if (jsonObject.has("defaultParseDir_EventStream")) {
-				defaultParseDir_EventStream = jsonObject.get("defaultParseDir_EventStream").getAsString();
-			}
 			if (jsonObject.has("proxyPort")) {
 				proxyPort = jsonObject.get("proxyPort").getAsInt();
 			}
@@ -173,6 +179,15 @@ public class ConfigLoader {
 			if (jsonObject.has("lastValidRcdFileHash")) {
 				lastValidRcdFileHash = jsonObject.get("lastValidRcdFileHash").getAsString();
 			}
+			if (jsonObject.has("lastDownloadedEventSigName")) {
+				lastDownloadedEventSigName = jsonObject.get("lastDownloadedEventSigName").getAsString();
+			}
+			if (jsonObject.has("lastValidEventFileName")) {
+				lastValidEventFileName = jsonObject.get("lastValidEventFileName").getAsString();
+			}
+			if (jsonObject.has("lastValidEventFileHash")) {
+				lastValidEventFileHash = jsonObject.get("lastValidEventFileHash").getAsString();
+			}
 			if (jsonObject.has("lastValidBalanceFileName")) {
 				lastValidBalanceFileName = jsonObject.get("lastValidBalanceFileName").getAsString();
 			}
@@ -181,6 +196,9 @@ public class ConfigLoader {
 			}
 			if (jsonObject.has("recordFilesS3Location")) {
 				recordFilesS3Location = jsonObject.get("recordFilesS3Location").getAsString();
+			}
+			if (jsonObject.has("eventFilesS3Location")) {
+				eventFilesS3Location = jsonObject.get("eventFilesS3Location").getAsString();
 			}
 			dbUrl = dotEnv.get("HEDERA_MIRROR_DB_URL");
 			if (dbUrl == null) {
@@ -252,11 +270,23 @@ public class ConfigLoader {
 	}
 
 	public String getDefaultParseDir_RecordStream() {
-		return defaultParseDir_RecordStream;
+		String parseDir = downloadToDir;
+		if (!parseDir.endsWith("/")) {
+			parseDir += "/recordstreams/valid";
+		} else {
+			parseDir += "recordstreams/valid";
+		}
+		return parseDir;
 	}
 
 	public String getDefaultParseDir_EventStream() {
-		return defaultParseDir_EventStream;
+		String parseDir = downloadToDir;
+		if (!parseDir.endsWith("/")) {
+			parseDir += "/eventstreams/valid";
+		} else {
+			parseDir += "eventstreams/valid";
+		}
+		return parseDir;
 	}
 
 	public int getProxyPort() {
@@ -305,6 +335,37 @@ public class ConfigLoader {
 		log.info(MARKER, "Update lastValidRcdFileHash to be {}", name);
 	}
 
+	public String getLastDownloadedEventSigName() {
+		return lastDownloadedEventSigName;
+	}
+
+	public void setLastDownloadedEventSigName(String name) {
+		lastDownloadedEventSigName = name;
+		jsonObject.addProperty("lastDownloadedEventSigName", name);
+		log.info(MARKER, "Update lastDownloadedEventSigName to be {}", name);
+	}
+
+	public String getLastValidEventFileName() {
+		return lastValidEventFileName;
+	}
+
+	public void setLastValidEventFileName(String name) {
+		lastValidEventFileName = name;
+		jsonObject.addProperty("lastValidEventFileName", name);
+		log.info(MARKER, "Update lastValidEventFileName to be {}", name);
+	}
+
+	public String getLastValidEventFileHash() {
+		return lastValidEventFileHash;
+	}
+
+	public void setLastValidEventFileHash(String name) {
+		lastValidEventFileHash = name;
+		jsonObject.addProperty("lastValidEventFileHash", name);
+		log.info(MARKER, "Update lastValidEventFileHash to be {}", name);
+	}
+
+
 	public String getLastValidBalanceFileName() {
 		return lastValidBalanceFileName;
 	}
@@ -315,6 +376,10 @@ public class ConfigLoader {
 
 	public String getRecordFilesS3Location() {
 		return recordFilesS3Location;
+	}
+
+	public String getEventFilesS3Location() {
+		return eventFilesS3Location;
 	}
 	
 	public String getDBUrl() {

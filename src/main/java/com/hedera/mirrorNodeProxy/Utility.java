@@ -7,6 +7,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hedera.downloader.Downloader;
 import com.hedera.parser.RecordFileParser;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -227,8 +228,10 @@ public class Utility {
 		String regex;
 		if (isRecordSigFile(s3ObjectSummaryKey) || isRecordFile(s3ObjectSummaryKey)) {
 			regex = "record([\\d]+[.][\\d]+[.][\\d]+)/(.*Z).(.+)";
-		} else if (isBalanceSigFile(s3ObjectSummaryKey) || isBalanceFile(s3ObjectSummaryKey)){
+		} else if (isBalanceSigFile(s3ObjectSummaryKey) || isBalanceFile(s3ObjectSummaryKey)) {
 			regex = "balance([\\d]+[.][\\d]+[.][\\d]+)/(.*Z)_(.+)";
+		} else if (isEventStreamFile(s3ObjectSummaryKey) || isEventStreamSigFile(s3ObjectSummaryKey)) {
+			regex = "events_([\\d]+[.][\\d]+[.][\\d]+)/(.*Z).(.+)";
 		} else {
 			return Triple.of(null, null, null);
 		}
@@ -249,7 +252,7 @@ public class Utility {
 	}
 
 	public static Instant getInstantFromFileName(String name) {
-		if (isRecordFile(name) || isRecordSigFile(name)) {
+		if (isRecordFile(name) || isRecordSigFile(name) || isEventStreamFile(name) || isEventStreamSigFile(name)) {
 			return parseToInstant(name.substring(0, name.lastIndexOf(".")));
 		} else {
 			return parseToInstant(name.substring(0, name.lastIndexOf("_Balances")));
@@ -258,26 +261,24 @@ public class Utility {
 
 	public static String getAccountIDStringFromFilePath(String path) {
 		if (isRecordFile(path) || isRecordSigFile(path)) {
-			return getAccountIDStringFromFilePath_Record(path);
+			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.RCD);
+		} else if (isEventStreamFile(path) || isEventStreamSigFile(path)) {
+			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.EVENT);
 		} else {
-			return getAccountIDStringFromFilePath_AccountBalance(path);
+			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.BALANCE);
 		}
 	}
 
-	public static String getAccountIDStringFromFilePath_Record(String path) {
-		String regex = "record([\\d]+[.][\\d]+[.][\\d]+)";
-		Pattern pattern = Pattern.compile(regex);
-		Matcher matcher = pattern.matcher(path);
-
-		String match = null;
-		while(matcher.find()) {
-			match = matcher.group(1);
+	public static String getAccountIDStringFromFilePath(String path, Downloader.DownloadType type) {
+		String regex;
+		if (type == Downloader.DownloadType.RCD) {
+			regex = "record([\\d]+[.][\\d]+[.][\\d]+)";
+		} else if (type == Downloader.DownloadType.EVENT) {
+			regex = "events_([\\d]+[.][\\d]+[.][\\d]+)";
+		} else {
+			//account balance
+			regex = "([\\d]+[.][\\d]+[.][\\d]+)/(.+)Z";
 		}
-		return match;
-	}
-
-	public static String getAccountIDStringFromFilePath_AccountBalance(String path) {
-		String regex = "([\\d]+[.][\\d]+[.][\\d]+)/(.+)Z";
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher(path);
 
@@ -310,6 +311,10 @@ public class Utility {
 
 	public static boolean isEventStreamFile(String filename) {
 		return filename.endsWith(".evts");
+	}
+
+	public static boolean isEventStreamSigFile(String filename) {
+		return filename.endsWith(".evts_sig");
 	}
 
 	public static boolean isRecordSigFile(String filename) {
@@ -395,5 +400,20 @@ public class Utility {
 					fileName, parsedDir.getName(),
 					ex.getStackTrace());
 		}
+	}
+
+	/**
+	 * return false if the directory doesn't exist and we fail to create it;
+	 * return true if the directory exists or we create it successfully
+	 *
+	 * @param path
+	 * @return
+	 */
+	public static boolean createDirIfNotExists(String path) {
+		File file = new File(path);
+		if (!file.exists()) {
+			return file.mkdirs();
+		}
+		return true;
 	}
 }

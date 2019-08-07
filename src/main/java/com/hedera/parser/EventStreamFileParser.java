@@ -4,6 +4,7 @@ import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.mirrorNodeProxy.Utility;
 import com.hedera.platform.Transaction;
+import com.hedera.recordFileLogger.LoggerStatus;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,7 +21,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.SQLType;
 import java.sql.Types;
 import java.time.Instant;
 import java.util.Arrays;
@@ -42,6 +42,7 @@ public class EventStreamFileParser {
 	private static Connection connect = null;
 
 	private static ConfigLoader configLoader;
+	private static LoggerStatus loggerStatus;
 
 	private static final Long PARENT_HASH_NULL = null;
 	private static final long PARENT_HASH_NOT_FOUND_MATCH = -2;
@@ -137,7 +138,8 @@ public class EventStreamFileParser {
 			log.error(MARKER, "IOException Error");
 			return LoadResult.ERROR;
 		}
-
+		loggerStatus.setLastProcessedEventHash(Utility.bytesToHex(Utility.getFileHash(fileName)));
+		loggerStatus.saveToFile();
 		return LoadResult.OK;
 	}
 
@@ -354,7 +356,7 @@ public class EventStreamFileParser {
 	 * read and parse a list of EventStream files
 	 */
 	static public void loadEventStreamFiles(List<String> fileNames) {
-		String prevFileHash = "";
+		String prevFileHash = loggerStatus.getLastProcessedEventHash();
 		for (String name : fileNames) {
 			LoadResult loadResult = loadEventStreamFile(name, prevFileHash);
 			if (loadResult == LoadResult.STOP) {
@@ -367,8 +369,55 @@ public class EventStreamFileParser {
 		}
 	}
 
+	/**
+	 * Given a eventStream file name, read its prevFileHash
+	 *
+	 * @param fileName
+	 * 		the name of eventStream file to read
+	 * @return return previous file hash's Hex String
+	 */
+	static public String readPrevFileHash(String fileName) {
+		File file = new File(fileName);
+		String readPrevFileHash;
+
+		if (file.exists() == false) {
+			log.info(MARKER, "File does not exist " + fileName);
+			return null;
+		}
+
+		try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
+			int eventStreamFileVersion = dis.readInt();
+
+			log.info(MARKER, "EventStream file format version " + eventStreamFileVersion);
+			if (eventStreamFileVersion != EVENT_STREAM_FILE_VERSION) {
+				log.error(MARKER, "EventStream file format version doesn't match.");
+				return null;
+			}
+			while (dis.available() != 0) {
+				byte typeDelimiter = dis.readByte();
+				if (typeDelimiter == TYPE_PREV_HASH) {
+					byte[] readPrevFileHashBytes = new byte[48];
+					dis.read(readPrevFileHashBytes);
+					readPrevFileHash = Hex.encodeHexString(readPrevFileHashBytes);
+					return readPrevFileHash;
+				} else {
+					log.error(LOGM_EXCEPTION, "Exception Unknown record file delimiter {}", typeDelimiter);
+					return null;
+				}
+			}
+		} catch (FileNotFoundException e) {
+			log.error(MARKER, "File Not Found Error");
+			return null;
+		} catch (IOException e) {
+			log.error(MARKER, "IOException Error");
+			return null;
+		}
+		return null;
+	}
+
 	public static void main(String[] args) {
 		configLoader = new ConfigLoader("./config/config.json");
+		loggerStatus = new LoggerStatus("./config/loggerStatus.json");
 
 		String pathName = configLoader.getDefaultParseDir_EventStream();
 		log.info(MARKER, "EventStream files folder got from configuration file: {}", pathName);

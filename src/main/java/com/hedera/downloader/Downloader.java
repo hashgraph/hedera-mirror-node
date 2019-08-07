@@ -66,7 +66,9 @@ public abstract class Downloader {
 
 	protected static ClientConfiguration clientConfiguration;
 
-	enum DownloadType {RCD, BALANCE};
+	public enum DownloadType {RCD, BALANCE, EVENT}
+
+	;
 
 
 	public Downloader(ConfigLoader myConfigLoader) {
@@ -133,6 +135,9 @@ public abstract class Downloader {
 			case RCD:
 				result = Utility.isRecordSigFile(s3ObjectKey);
 				break;
+			case EVENT:
+				result = Utility.isEventStreamSigFile(s3ObjectKey);
+				break;
 			default:
 				break;
 		}
@@ -184,6 +189,9 @@ public abstract class Downloader {
 						if (!s3ObjectKey.contains("latest")) { // ignore latest.csv
 							if ((s3ObjectKey.compareTo(prefix + lastValidFileName) > 0) || (lastValidFileName.contentEquals(""))) {
 								Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey);
+								if (result == null) {
+									return;
+								}
 								if (maxDownloadCount != 0) downloadCount++;
 								
 								if (result.getLeft()) {
@@ -273,6 +281,12 @@ public abstract class Downloader {
 				lastValidFileName = configLoader.getLastValidBalanceFileName();
 				break;
 
+			case EVENT:
+				s3Prefix = configLoader.getEventFilesS3Location();
+				fileType = ".evts_sig";
+				lastValidFileName = configLoader.getLastValidEventFileName();
+				break;
+
 			default:
 				log.error(MARKER, "Invalid DownloadType {}", type);
 		}
@@ -354,8 +368,13 @@ public abstract class Downloader {
 		if (!filePath.endsWith("/")) {
 			filePath += "/";
 		}
+
+		if (!Utility.createDirIfNotExists(filePath)) {
+			log.error(MARKER, "{} doesn't exist and we fail to create this directory", filePath);
+			return null;
+		}
+
 		filePath += s3ObjectKey;
-		
 		return saveToLocal(bucket_name, s3ObjectKey, filePath);
 	}
 
@@ -371,14 +390,13 @@ public abstract class Downloader {
 	 */
 	protected static Pair<Boolean, File> saveToLocal(String bucket_name,
 		String s3ObjectKey, String localFilepath)  {
-
 		// ensure filePaths have OS specific separator
 		localFilepath = localFilepath.replace("/", "~");
 		localFilepath = localFilepath.replace("\\", "~");
 		localFilepath = localFilepath.replace("~", File.separator);
 		
         File f = new File(localFilepath).getAbsoluteFile();
-                
+
 		if (f.exists()) {
 			log.info(MARKER, "File exists: " + localFilepath);
 			return Pair.of(false, f);
@@ -387,7 +405,7 @@ public abstract class Downloader {
             if( ! f.getParentFile().exists() ) {
                 f.getParentFile().mkdirs();
             }
-            f.createNewFile();
+			//f.createNewFile();
 			Download download = xfer_mgr.download(bucket_name, s3ObjectKey, f);
 			download.waitForCompletion();
 			if (download.isDone()) {
@@ -401,9 +419,7 @@ public abstract class Downloader {
 			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex.getErrorMessage());
 		} catch (InterruptedException ex) {
 			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex.getStackTrace());
-		} catch (IOException ex) {
-            log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex.getStackTrace());
-        }
+		}
 		return Pair.of(false, null);
 	}
 
