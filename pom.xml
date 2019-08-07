@@ -42,9 +42,9 @@
             <version>5.0.1</version>
         </dependency>
 		<dependency>
-		    <groupId>postgresql</groupId>
-		    <artifactId>postgresql</artifactId>
-		    <version>9.1-901-1.jdbc4</version>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>42.2.6</version>
 		</dependency>
  		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>

@@ -109,11 +109,15 @@ public class EventStreamFileParser {
 							break;
 
 						case STREAM_EVENT_START_NO_TRANS_WITH_VERSION:
-							loadEvent(dis, true);
+							if (!loadEvent(dis, true)) {
+								return LoadResult.STOP;
+							}
 							counter++;
 							break;
 						case STREAM_EVENT_START_WITH_VERSION:
-							loadEvent(dis, false);
+							if (!loadEvent(dis, false)) {
+								return LoadResult.STOP;
+							}
 							counter++;
 							break;
 						default:
@@ -137,10 +141,10 @@ public class EventStreamFileParser {
 		return LoadResult.OK;
 	}
 
-	static void loadEvent(DataInputStream dis, boolean noTxs) throws IOException {
+	static boolean loadEvent(DataInputStream dis, boolean noTxs) throws IOException {
 		if (dis.readInt() != STREAM_EVENT_VERSION) {
 			log.error(MARKER, "EventStream format version doesn't match.");
-			return;
+			return false;
 		}
 		long creatorId = dis.readLong();
 		long creatorSeq = dis.readLong();
@@ -164,7 +168,7 @@ public class EventStreamFileParser {
 		byte[] signature = readByteArray(dis);
 		if (dis.readByte() != commEventLast) {
 			log.warn(MARKER, "event end marker incorrect");
-			return;
+			return false;
 		}
 
 		// event's hash
@@ -178,8 +182,13 @@ public class EventStreamFileParser {
 				creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen,
 				Utility.bytesToHex(selfParentHash), Utility.bytesToHex(otherParentHash), transactions, timeCreated,
 				Utility.bytesToHex(signature), Utility.bytesToHex(hash), consensusTimeStamp, consensusOrder);
-		storeEvent(creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, selfParentHash,
-				otherParentHash, counts, timeCreated, signature, hash, consensusTimeStamp, consensusOrder);
+
+		if (storeEvent(creatorId, creatorSeq, otherId, otherSeq, selfParentGen, otherParentGen, selfParentHash,
+				otherParentHash, counts, timeCreated, signature, hash, consensusTimeStamp, consensusOrder)) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	/**
