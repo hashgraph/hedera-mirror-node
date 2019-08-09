@@ -321,11 +321,11 @@ public class ConfigLoader {
 		// always return trailing "/"
 		switch (operation) {
 		case BALANCE:
-			return downloadToDir + "/accountBalances/";
+			return downloadToDir + "accountBalances/";
 		case EVENTS:
-			return downloadToDir + "/recordStreams/";
+			return downloadToDir + "eventStreams/";
 		case RECORDS:
-			return downloadToDir + "/eventStreams/";
+			return downloadToDir + "recordStreams/";
 		}
 		return "";
 	}
@@ -337,11 +337,11 @@ public class ConfigLoader {
 		// always return trailing "/"
 		switch (operation) {
 		case BALANCE:
-			return downloadToDir + "/accountBalances/valid/";
+			return downloadToDir + "accountBalances/valid/";
 		case EVENTS:
-			return downloadToDir + "/recordStreams/valid/";
+			return downloadToDir + "eventStreams/valid/";
 		case RECORDS:
-			return downloadToDir + "/eventStreams/valid";
+			return downloadToDir + "recordStreams/valid";
 		}
 		return "";
 	}
