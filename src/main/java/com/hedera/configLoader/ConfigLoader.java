@@ -318,16 +318,17 @@ public class ConfigLoader {
 		if (!downloadToDir.endsWith("/")) {
 			downloadToDir += "/";
 		}
+		return downloadToDir;
 		// always return trailing "/"
-		switch (operation) {
-		case BALANCE:
-			return downloadToDir + "accountBalances/";
-		case EVENTS:
-			return downloadToDir + "eventStreams/";
-		case RECORDS:
-			return downloadToDir + "recordStreams/";
-		}
-		return "";
+//		switch (operation) {
+//		case BALANCE:
+//			return downloadToDir + "accountBalances/";
+//		case EVENTS:
+//			return downloadToDir + "eventStreams/";
+//		case RECORDS:
+//			return downloadToDir + "recordStreams/";
+//		}
+//		return "";
 	}
 
 	public String getDefaultParseDir(OPERATION_TYPE operation) {
@@ -341,7 +342,7 @@ public class ConfigLoader {
 		case EVENTS:
 			return downloadToDir + "eventStreams/valid/";
 		case RECORDS:
-			return downloadToDir + "recordStreams/valid";
+			return downloadToDir + "recordstreams/valid";
 		}
 		return "";
 	}

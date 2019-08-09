@@ -181,8 +181,8 @@ public class RecordFileDownloader extends Downloader {
 		String sigFileName = sigFile.getName();
 		String rcdFileName = sigFileName.replace(".rcd_sig", ".rcd");
 		String s3ObjectKey = "recordstreams/record" + nodeAccountId + "/" + rcdFileName;
-		String localFileName = validRcdDir + rcdFileName;
-		return saveToLocal(bucketName, s3ObjectKey, localFileName);
+//		String localFileName = validRcdDir + rcdFileName;
+		return saveToLocal(bucketName, s3ObjectKey, validRcdDir + rcdFileName);
 	}
 
 }

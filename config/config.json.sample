@@ -9,6 +9,7 @@
   "nodeInfoFile": "./config/nodesInfo.json",
   "addressBookFile": "./config/0.0.102",
   "accountBalancesS3Location": "accountBalances/balance",
+  "eventFilesS3Location": "eventstreams/events_",
   "recordFilesS3Location": "recordstreams/record",
   "dbUrl": "jdbc:postgresql://127.0.0.1:5432/hederamirror?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC",
   "dbUsername": "hederamirror",

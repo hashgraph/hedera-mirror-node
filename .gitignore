@@ -136,3 +136,5 @@ local.properties
 
 # End of https://www.gitignore.io/api/eclipse
 config/records.json
+config/loggerStatus.json
+config/balance.json
