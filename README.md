@@ -40,15 +40,14 @@ The Beta mirror node works as follows:
   - [ ] Operator Secret Key - The secret key that can sign transactions on behalf of your Operator ID.
 
 ```
-  $> git clone git@github.com:hashgraph/hedera-mirror-node.git
-  $> cd hedera-mirror-node
-  $> cp config/config.json.sample config/config.json
-  $> nano config/config.json
-  // Insert AWS S3 credentials. Update any other settings as needed.
-  $> cp docker/dotenv.sample docker/.env
-  $> nano docker/.env
-  // Update database and API settings as needed
-  $> ./buildimages.sh
+git clone git@github.com:hashgraph/hedera-mirror-node.git
+cd hedera-mirror-node
+cp config/config.json.sample config/config.json
+nano config/config.json// Insert AWS S3 credentials. Update any other settings as needed.
+cp docker/dotenv.sample docker/.env
+nano docker/.env
+Update database and API settings as needed
+./buildimages.sh
 
   // You'll now be asked a few questions to finalize automated mirror node configuration.
 
