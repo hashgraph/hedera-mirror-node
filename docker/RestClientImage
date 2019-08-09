@@ -1,7 +1,4 @@
 FROM node:11
 
-# Update
-RUN apt-get update || true
-
 # Install psql client
-RUN apt-get install postgresql-client || true
+RUN apt-get update && apt-get install -y postgresql-client
