@@ -2,6 +2,7 @@ package com.hedera.downloader;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +26,7 @@ public class AccountBalancesDownloader extends Downloader {
 			System.exit(0);
 		}
 
-		configLoader = new ConfigLoader("./config/config.json");
+		configLoader = new ConfigLoader();
 
 		AccountBalancesDownloader downloader = new AccountBalancesDownloader(configLoader);
 		
@@ -38,13 +39,14 @@ public class AccountBalancesDownloader extends Downloader {
 			
 			setupCloudConnection();
 
-			// balance files with sig verification - TBD
-//			HashMap<String, List<File>> sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
-//			//Verify signature files and download corresponding files of valid signature files
-//			downloader.verifySigsAndDownloadBalanceFiles(sigFilesMap);
 
 			try {
-				downloader.downloadBalanceFiles();
+				// balance files with sig verification 
+				HashMap<String, List<File>> sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
+				//Verify signature files and download corresponding files of valid signature files
+				downloader.verifySigsAndDownloadBalanceFiles(sigFilesMap);
+
+//				downloader.downloadBalanceFiles();
 				
 				xfer_mgr.shutdownNow();
 

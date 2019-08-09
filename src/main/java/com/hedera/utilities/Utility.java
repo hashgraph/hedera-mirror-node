@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -443,5 +444,24 @@ public class Utility {
 	
 	public static boolean hashIsEmpty(String hash) {
 		return (hash.isEmpty() || hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"));		
+	}
+	public static void moveFileToParsedDir(String fileName, String subDir) {
+		File sourceFile = new File(fileName);
+		String pathToSaveTo = sourceFile.getParentFile().getParentFile().getPath() + subDir;
+		String shortFileName = sourceFile.getName().substring(0, 10).replace("-", "/");
+		pathToSaveTo += shortFileName;
+		
+		File parsedDir = new File(pathToSaveTo);
+		parsedDir.mkdirs();
+
+		File destFile = new File(pathToSaveTo + "/" + sourceFile.getName());
+		try {
+			Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			log.info(MARKER, sourceFile.toPath() + " has been moved to " + destFile.getPath());
+		} catch (IOException ex) {
+			log.error(MARKER, "Fail to move {} to {} : {}",
+					fileName, parsedDir.getName(),
+					ex);
+		}
 	}
 }

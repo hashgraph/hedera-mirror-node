@@ -76,41 +76,20 @@ public class BalanceFileLogger {
 
     private static Connection connect = null;
 	
-    private static ConfigLoader configLoader = new ConfigLoader("./config/config.json");
+    private static ConfigLoader configLoader = new ConfigLoader();
 	private static String balanceFolder = configLoader.getDownloadToDir();
-	private static File balanceFilesPath;
-	
+	private static Instant fileTimestamp;
 	private static long fileSeconds = 0;
 	private static long fileNanos = 0;
-	private static Instant fileTimestamp;
 	
 	static void parseFileName(File fileName) {
 
 		String shortFileName = fileName.getName().replace(".csv", "");
-		if (shortFileName.contains("Balances.csv")) {
-			// new format -- yyyy-MM-ddT12:09:00.0Z + "_Balances"
+		if (shortFileName.contains("_Balances")) {
 			shortFileName = shortFileName.replace("_Balances", "");
+			shortFileName = shortFileName.replace("_",":");
+			fileTimestamp = Instant.parse(shortFileName);
 			
-			DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-				    .appendPattern("yyyy-MM-ddTHH:mm:ss'")
-				    // optional nanos with 9 digits (including decimal point)
-				    .optionalStart()
-				    .appendFraction(ChronoField.NANO_OF_SECOND, 9, 9, true)
-				    .optionalEnd()
-				    // optional nanos with 6 digits (including decimal point)
-				    .optionalStart()
-				    .appendFraction(ChronoField.NANO_OF_SECOND, 6, 6, true)
-				    .optionalEnd()
-				    // optional nanos with 3 digits (including decimal point)
-				    .optionalStart()
-				    .appendFraction(ChronoField.NANO_OF_SECOND, 3, 3, true)
-				    .optionalEnd()
-				    // offset
-				    .appendOffset("+HH:mm", "Z")
-				    // create formatter
-				    .toFormatter();
-			
-			fileTimestamp = Instant.from(formatter.parse(shortFileName));
 			fileSeconds = fileTimestamp.getEpochSecond();
 			fileNanos = fileTimestamp.getNano();
 		} else {
@@ -153,7 +132,7 @@ public class BalanceFileLogger {
 	
 	private static File getLatestBalancefile(File balanceFilesPath) throws IOException {
 	    
-	    File lastFile = null;
+		File lastFile = null;
         // find all files in path
         // return the greatest file name
 	    
@@ -161,26 +140,15 @@ public class BalanceFileLogger {
         	balanceFilesPath.mkdirs();
         }
 	    if (balanceFilesPath.exists()) {
-		    for (final File nodeFolders : balanceFilesPath.listFiles()) {
-		        if (nodeFolders.isDirectory()) {
-		            
-		            List<String> balancefiles = new ArrayList<String>();
-	
-		            for (final File balanceFile : nodeFolders.listFiles()) {
-		                balancefiles.add(balanceFile.getName());
-		            }
-		            if (balancefiles.size() != 0) {
-	    	            Collections.sort(balancefiles);
-	    	            File lastFound = new File(nodeFolders.getCanonicalPath() + File.separator + balancefiles.get(balancefiles.size()-1));
-	    	            
-	    	            if (lastFile == null) {
-	    	                lastFile = lastFound;
-	    	            } else if (lastFile.getName().compareTo(lastFound.getName()) < 0) {
-	    	                lastFile = lastFound;
-	    	            }
-		            }
-		        }
+            List<String> balancefiles = new ArrayList<String>();
+		    for (final File balanceFile : balanceFilesPath.listFiles()) {
+                balancefiles.add(balanceFile.getName());
 		    }
+            if (balancefiles.size() != 0) {
+	            Collections.sort(balancefiles);
+
+	            lastFile = new File(balanceFilesPath + File.separator + balancefiles.get(balancefiles.size()-1));
+            }
 	    } else {
 			log.error(MARKER, balanceFilesPath.getPath() + " does not exist.");
 	    }
@@ -196,55 +164,34 @@ public class BalanceFileLogger {
 			if (!balanceFolder.endsWith("/")) {
 				balanceFolder += "/";
 			}
-		    balanceFilesPath = new File(balanceFolder + "accountBalances/balance");
+		    File balanceFilesPath = new File(balanceFolder + "accountBalances/valid");
+	        if (!balanceFilesPath.exists()) {
+	        	balanceFilesPath.mkdirs();
+	        }
 
-		    processLastBalanceFile();
-		    processAllFilesForHistory();
+		    processLastBalanceFile(balanceFilesPath);
+		    processAllFilesForHistory(balanceFilesPath);
 	    }
 	}
 	
-	private static void processAllFilesForHistory() {
-	    File balanceFilesPath = new File(balanceFolder + "accountBalances/balance");
-        String balanceFilePath = "";
+	private static void processAllFilesForHistory(File balanceFilesPath) {
         String donePath = "";
         
-        if (!balanceFilesPath.exists()) {
-        	balanceFilesPath.mkdirs();
-        }
-        if (balanceFilesPath.exists()) {
-	        try {
-	        
-	            for (final File nodeFolders : balanceFilesPath.listFiles()) {
-	    			if (Utility.checkStopFile()) {
-	    				log.info(MARKER, "Stop file found, stopping.");
-	    				break;
-	    			}            	
-	                donePath = nodeFolders.getCanonicalPath().toString().replace("/balance", "/processed");
-	                File targetPath = new File (donePath);
-	                targetPath.mkdirs();
-	                if (nodeFolders.isDirectory()) {
-	                    for (final File balanceFile : nodeFolders.listFiles()) {
-	            			if (Utility.checkStopFile()) {
-	            				log.info(MARKER, "Stop file found, stopping.");
-	            				break;
-	            			}            	
-	                        if (processFileForHistory(balanceFile)) {
-	                            // move it
-	                            File destFile = new File(targetPath.getCanonicalPath() + File.separator + balanceFile.getName());
-	
-	                            Files.move(balanceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-	                            log.info(MARKER, balanceFile.toPath() + " has been moved to " + destFile.getPath());
-	                            balanceFilePath = balanceFile.getCanonicalFile().toString();
-	                        }
-	                    }
-	                }
-	            } 
-	        } catch (IOException ex) {
-	            log.error(MARKER, "Fail to move {} to {} : {}",balanceFilePath, donePath, ex);
+        try {
+	        for (final File balanceFile : balanceFilesPath.listFiles()) {
+				if (Utility.checkStopFile()) {
+					log.info(MARKER, "Stop file found, stopping.");
+					break;
+				}            	
+				donePath = balanceFile.getCanonicalPath().toString().replace("/valid", "/processed");
+				if (processFileForHistory(balanceFile)) {
+					// move it
+					Utility.moveFileToParsedDir(balanceFile.getCanonicalPath(), "/parsedBalanceFiles/"); //donePath);
+				}
 	        }
-        } else {
-			log.error(MARKER, balanceFilesPath.getPath() + " does not exist.");
-        }
+		} catch (IOException e) {
+            log.error(MARKER, "Exception : ", e);
+		}
         log.info(MARKER, "Balance History processing done");
 	}
 	
@@ -360,6 +307,9 @@ public class BalanceFileLogger {
 	                } else if (line.contentEquals("shard,realm,number,balance")) {
 	                    // skip all lines until shard,realm,number,balance
 	                    processLine = true;
+	                } else if (line.contentEquals("shardNum,realmNum,accountNum,balance")) {
+	                	// new file format
+	                	processLine = true;
 	                }
 	            }
 	            connect.commit();
@@ -379,7 +329,7 @@ public class BalanceFileLogger {
         return false;
 	}
 	
-	private static void processLastBalanceFile() {
+	private static void processLastBalanceFile(File balanceFilesPath) {
 
         boolean processLine = false;
 	    
@@ -461,6 +411,9 @@ public class BalanceFileLogger {
 		                        break;
 		                    }
 		                } else if (line.contentEquals("shard,realm,number,balance")) {
+		                    // skip all lines until shard,realm,number,balance
+		                    processLine = true;
+		                } else if (line.contentEquals("shardNum,realmNum,accountNum,balance")) {
 		                    // skip all lines until shard,realm,number,balance
 		                    processLine = true;
 		                }

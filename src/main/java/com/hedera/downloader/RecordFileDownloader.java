@@ -54,7 +54,7 @@ public class RecordFileDownloader extends Downloader {
 			log.info(MARKER, "Stop file found, exiting.");
 			System.exit(0);
 		}
-		configLoader = new ConfigLoader("./config/config.json");
+		configLoader = new ConfigLoader();
 
 		RecordFileDownloader downloader = new RecordFileDownloader(configLoader);
 

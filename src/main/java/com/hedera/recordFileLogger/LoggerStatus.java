@@ -29,17 +29,16 @@ public class LoggerStatus {
 
 	private static JsonObject jsonObject = new JsonObject();
 
-	public LoggerStatus(String configPath) {
-		configSavePath = configPath;
-		log.info(MARKER, "Loading configuration from {}", configPath);
+	public LoggerStatus() {
+		log.info(MARKER, "Loading configuration from {}", configSavePath);
 		try {
-			jsonObject = getJsonObject(configPath);
+			jsonObject = getJsonObject(configSavePath);
 			
 			if (jsonObject.has("lastProcessedRcdHash")) {
 				lastProcessedRcdHash = jsonObject.get("lastProcessedRcdHash").getAsString();
 			}
 		} catch (FileNotFoundException ex) {
-			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configPath, ex);
+			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configSavePath, ex);
 		}
 	}
 

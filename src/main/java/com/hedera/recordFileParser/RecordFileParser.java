@@ -40,8 +40,8 @@ public class RecordFileParser {
 	static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
 	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 
-	private static ConfigLoader configLoader = new ConfigLoader("./config/config.json");
-	private static LoggerStatus loggerStatus = new LoggerStatus("./config/loggerStatus.json");
+	private static ConfigLoader configLoader = new ConfigLoader();
+	private static LoggerStatus loggerStatus = new LoggerStatus();
 	
 	/**
 	 * Given a service record name, read and parse and return as a list of service record pair
@@ -194,33 +194,13 @@ public class RecordFileParser {
 			String thisFileHash = Utility.bytesToHex(Utility.getFileHash(name));
 			if (loadRecordFile(name, prevFileHash, thisFileHash)) {
 				prevFileHash = thisFileHash;
-				moveFileToParsedDir(name);
+				Utility.moveFileToParsedDir(name, "/parsedRecordFiles/");
 			} else {
 				return;
 			}
 		}
 	}
 
-	static void moveFileToParsedDir(String fileName) {
-		File sourceFile = new File(fileName);
-		String pathToSaveTo = sourceFile.getParentFile().getParentFile().getPath() + "/parsedRecordFiles/";
-		String shortFileName = sourceFile.getName().substring(0, 10).replace("-", "/");
-		pathToSaveTo += shortFileName;
-		
-		File parsedDir = new File(pathToSaveTo);
-		parsedDir.mkdirs();
-
-		File destFile = new File(pathToSaveTo + "/" + sourceFile.getName());
-		try {
-			Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			log.info(MARKER, sourceFile.toPath() + " has been moved to " + destFile.getPath());
-		} catch (IOException ex) {
-			log.error(MARKER, "Fail to move {} to {} : {}",
-					fileName, parsedDir.getName(),
-					ex);
-		}
-	}
-	
 	public static void parseNewFiles(String pathName) {
 		if (RecordFileLogger.start()) {
 			
@@ -264,7 +244,7 @@ public class RecordFileParser {
 				System.exit(0);
 			}
 	
-			configLoader = new ConfigLoader("./config/config.json");
+			configLoader = new ConfigLoader();
 			
 			pathName = configLoader.getDefaultParseDir();
 			log.info(MARKER, "Record files folder got from configuration file: {}", configLoader.getDefaultParseDir());

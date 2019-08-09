@@ -455,23 +455,39 @@ public abstract class Downloader {
 	
 	protected static void setupCloudConnection() {
 		if (configLoader.getCloudProvider() == CLOUD_PROVIDER.S3) {
-			s3Client = AmazonS3ClientBuilder.standard()
-					.withCredentials(new AWSStaticCredentialsProvider(
-							new BasicAWSCredentials(configLoader.getAccessKey(),
-									configLoader.getSecretKey())))
-					.withRegion(configLoader.getClientRegion())
-					.withClientConfiguration(clientConfiguration)
-					.build();
+			if (configLoader.getAccessKey().contentEquals("")) {
+				s3Client = AmazonS3ClientBuilder.standard()
+						.withRegion(configLoader.getClientRegion())
+						.withClientConfiguration(clientConfiguration)
+						.build();
+			} else {
+				s3Client = AmazonS3ClientBuilder.standard()
+						.withCredentials(new AWSStaticCredentialsProvider(
+								new BasicAWSCredentials(configLoader.getAccessKey(),
+										configLoader.getSecretKey())))
+						.withRegion(configLoader.getClientRegion())
+						.withClientConfiguration(clientConfiguration)
+						.build();
+			}
 		} else {
-			s3Client = AmazonS3ClientBuilder.standard()
-					.withEndpointConfiguration(
-			                new AwsClientBuilder.EndpointConfiguration(
-			                    "https://storage.googleapis.com", configLoader.getClientRegion()))
-					.withCredentials(new AWSStaticCredentialsProvider(
-							new BasicAWSCredentials(configLoader.getAccessKey(),
-									configLoader.getSecretKey())))
-					.withClientConfiguration(clientConfiguration)
-					.build();
+			if (configLoader.getAccessKey().contentEquals("")) {
+				s3Client = AmazonS3ClientBuilder.standard()
+						.withEndpointConfiguration(
+				                new AwsClientBuilder.EndpointConfiguration(
+				                    "https://storage.googleapis.com", configLoader.getClientRegion()))
+						.withClientConfiguration(clientConfiguration)
+						.build();
+			} else {
+				s3Client = AmazonS3ClientBuilder.standard()
+						.withEndpointConfiguration(
+				                new AwsClientBuilder.EndpointConfiguration(
+				                    "https://storage.googleapis.com", configLoader.getClientRegion()))
+						.withCredentials(new AWSStaticCredentialsProvider(
+								new BasicAWSCredentials(configLoader.getAccessKey(),
+										configLoader.getSecretKey())))
+						.withClientConfiguration(clientConfiguration)
+						.build();
+			}
 		}
 		xfer_mgr = TransferManagerBuilder.standard()		
 				.withS3Client(s3Client).build();
