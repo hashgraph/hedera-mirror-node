@@ -7,6 +7,8 @@ import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hedera.downloader.Downloader;
+import com.hedera.parser.RecordFileParser;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -40,16 +42,16 @@ import java.util.regex.Pattern;
 
 public class Utility {
 	private static final Logger log = LogManager.getLogger("utility");
-	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
-	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
+	private static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
+	private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
+  private static final Long SCALAR = 1_000_000_000L;
 
-	
-	static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 of previous files
-	static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
-	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
-	static final byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of corresponding RecordFile
+	private static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 of previous files
+	private static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
+	private static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
+	private static final byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of corresponding RecordFile
 
-	
+
 	public static boolean checkStopFile() {
 		File stopFile = new File("./stop");
 		return stopFile.exists();
@@ -155,7 +157,7 @@ public class Utility {
 			return null;
 		}
 	}
-	
+
 	public static AccountID stringToAccountID(final String string) throws IllegalArgumentException{
 		if (string == null || string.isEmpty()) {
 			throw new IllegalArgumentException("Cannot parse empty string to AccountID");
@@ -183,7 +185,7 @@ public class Utility {
 		b.putInt(number);
 		return b.array();
 	}
-	
+
 	/**
 	 * return a string which represents an AccountID
 	 * @param accountID
@@ -231,7 +233,7 @@ public class Utility {
 	}
 
 	/**
-	 * print a Transaction's content to a formatted (Readable) String 
+	 * print a Transaction's content to a formatted (Readable) String
 	 * @param transaction
 	 * @return
 	 * @throws InvalidProtocolBufferException
@@ -304,6 +306,7 @@ public class Utility {
 	 * @return converted HexString
 	 */
 	public static String bytesToHex(byte[] bytes) {
+		if (bytes == null || bytes.length == 0) return null;
 		return Hex.encodeHexString(bytes);
 	}
 
@@ -344,8 +347,10 @@ public class Utility {
 		String regex;
 		if (isRecordSigFile(s3ObjectSummaryKey) || isRecordFile(s3ObjectSummaryKey)) {
 			regex = "record([\\d]+[.][\\d]+[.][\\d]+)/(.*Z).(.+)";
-		} else if (isBalanceSigFile(s3ObjectSummaryKey) || isBalanceFile(s3ObjectSummaryKey)){
+		} else if (isBalanceSigFile(s3ObjectSummaryKey) || isBalanceFile(s3ObjectSummaryKey)) {
 			regex = "balance([\\d]+[.][\\d]+[.][\\d]+)/(.*Z)_(.+)";
+		} else if (isEventStreamFile(s3ObjectSummaryKey) || isEventStreamSigFile(s3ObjectSummaryKey)) {
+			regex = "events_([\\d]+[.][\\d]+[.][\\d]+)/(.*Z).(.+)";
 		} else {
 			return Triple.of(null, null, null);
 		}
@@ -366,7 +371,7 @@ public class Utility {
 	}
 
 	public static Instant getInstantFromFileName(String name) {
-		if (isRecordFile(name) || isRecordSigFile(name)) {
+		if (isRecordFile(name) || isRecordSigFile(name) || isEventStreamFile(name) || isEventStreamSigFile(name)) {
 			return parseToInstant(name.substring(0, name.lastIndexOf(".")));
 		} else {
 			return parseToInstant(name.substring(0, name.lastIndexOf("_Balances")));
@@ -375,26 +380,24 @@ public class Utility {
 
 	public static String getAccountIDStringFromFilePath(String path) {
 		if (isRecordFile(path) || isRecordSigFile(path)) {
-			return getAccountIDStringFromFilePath_Record(path);
+			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.RCD);
+		} else if (isEventStreamFile(path) || isEventStreamSigFile(path)) {
+			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.EVENT);
 		} else {
-			return getAccountIDStringFromFilePath_AccountBalance(path);
+			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.BALANCE);
 		}
 	}
 
-	public static String getAccountIDStringFromFilePath_Record(String path) {
-		String regex = "record([\\d]+[.][\\d]+[.][\\d]+)";
-		Pattern pattern = Pattern.compile(regex);
-		Matcher matcher = pattern.matcher(path);
-
-		String match = null;
-		while(matcher.find()) {
-			match = matcher.group(1);
+	public static String getAccountIDStringFromFilePath(String path, Downloader.DownloadType type) {
+		String regex;
+		if (type == Downloader.DownloadType.RCD) {
+			regex = "record([\\d]+[.][\\d]+[.][\\d]+)";
+		} else if (type == Downloader.DownloadType.EVENT) {
+			regex = "events_([\\d]+[.][\\d]+[.][\\d]+)";
+		} else {
+			//account balance
+			regex = "([\\d]+[.][\\d]+[.][\\d]+)/(.+)Z";
 		}
-		return match;
-	}
-
-	public static String getAccountIDStringFromFilePath_AccountBalance(String path) {
-		String regex = "([\\d]+[.][\\d]+[.][\\d]+)/(.+)Z";
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher(path);
 
@@ -425,6 +428,14 @@ public class Utility {
 		return filename.endsWith(".rcd");
 	}
 
+	public static boolean isEventStreamFile(String filename) {
+		return filename.endsWith(".evts");
+	}
+
+	public static boolean isEventStreamSigFile(String filename) {
+		return filename.endsWith(".evts_sig");
+	}
+
 	public static boolean isRecordSigFile(String filename) {
 		return filename.endsWith(".rcd_sig");
 	}
@@ -441,16 +452,70 @@ public class Utility {
 	public static boolean greaterThanSuperMajorityNum(long n, long N) {
 		return n > N * 2 / 3.0;
 	}
-	
-	public static boolean hashIsEmpty(String hash) {
-		return (hash.isEmpty() || hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"));		
+
+	/**
+	 * Convert an Instant to a Long type timestampInNanos
+	 * @param instant
+	 * @return
+	 */
+	public static Long convertInstantToNanos(Instant instant) {
+		if (instant == null) {
+			return null;
+		}
+		return instant.getEpochSecond() * SCALAR + instant.getNano();
 	}
+
+	/**
+	 * Convert a Long type timestampInNanos to an Instant
+	 * @param bigint
+	 * @return
+	 */
+	public static Instant convertNanosToInstant(Long bigint) {
+		if (bigint == null) {
+			return null;
+		}
+		long seconds = bigint / SCALAR;
+		int nanos = (int) (bigint % SCALAR);
+		return Instant.ofEpochSecond(seconds, nanos);
+	}
+
+	/**
+	 * Calculate SHA384 hash of a binary file
+	 *
+	 * @param fileName
+	 * 		file name
+	 * @return byte array of hash value
+	 */
+	public static byte[] getFileHash(String fileName) {
+		MessageDigest md;
+		try {
+			md = MessageDigest.getInstance("SHA-384");
+
+			byte[] array = new byte[0];
+			try {
+				array = Files.readAllBytes(Paths.get(fileName));
+			} catch (IOException e) {
+				log.error("Exception ", e);
+			}
+			byte[] fileHash = md.digest(array);
+			return fileHash;
+
+		} catch (NoSuchAlgorithmException e) {
+			log.error( "Exception ", e);
+			return null;
+		}
+	}
+
+	public static boolean hashIsEmpty(String hash) {
+		return (hash.isEmpty() || hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"));
+	}
+	
 	public static void moveFileToParsedDir(String fileName, String subDir) {
 		File sourceFile = new File(fileName);
 		String pathToSaveTo = sourceFile.getParentFile().getParentFile().getPath() + subDir;
 		String shortFileName = sourceFile.getName().substring(0, 10).replace("-", "/");
 		pathToSaveTo += shortFileName;
-		
+
 		File parsedDir = new File(pathToSaveTo);
 		parsedDir.mkdirs();
 
@@ -463,5 +528,19 @@ public class Utility {
 					fileName, parsedDir.getName(),
 					ex);
 		}
+
+	/**
+	 * return false if the directory doesn't exist and we fail to create it;
+	 * return true if the directory exists or we create it successfully
+	 *
+	 * @param path
+	 * @return
+	 */
+	public static boolean createDirIfNotExists(String path) {
+		File file = new File(path);
+		if (!file.exists()) {
+			return file.mkdirs();
+		}
+		return true;
 	}
 }

@@ -25,6 +25,9 @@ public class LoggerStatus {
 	// Hash of last last successfully processed rcd file
 	private static String lastProcessedRcdHash = "";
 
+	// Hash of last last successfully processed eventStream file
+	private static String lastProcessedEventHash = "";
+
 	private static String configSavePath = "./config/loggerStatus.json";
 
 	private static JsonObject jsonObject = new JsonObject();
@@ -36,6 +39,9 @@ public class LoggerStatus {
 			
 			if (jsonObject.has("lastProcessedRcdHash")) {
 				lastProcessedRcdHash = jsonObject.get("lastProcessedRcdHash").getAsString();
+			}
+			if (jsonObject.has("lastProcessedEventHash")) {
+				lastProcessedEventHash = jsonObject.get("lastProcessedEventHash").getAsString();
 			}
 		} catch (FileNotFoundException ex) {
 			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configSavePath, ex);
@@ -55,6 +61,16 @@ public class LoggerStatus {
 			jsonObject.addProperty("lastProcessedRcdHash", name);
 			log.info(MARKER, "Update lastProcessedRcdHash to be {}", name);
 		}
+	}
+
+	public String getLastProcessedEventHash() {
+		return lastProcessedEventHash;
+	}
+
+	public void setLastProcessedEventHash(String name) {
+		lastProcessedEventHash = name;
+		jsonObject.addProperty("lastProcessedEventHash", name);
+		log.info(MARKER, "Update lastProcessedEventHash to be {}", name);
 	}
 
 	public void saveToFile() {

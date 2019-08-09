@@ -10,7 +10,7 @@
   "addressBookFile": "./config/0.0.102",
   "accountBalancesS3Location": "accountBalances/balance",
   "recordFilesS3Location": "recordstreams/record",
-  "dbUrl": "jdbc:postgresql://localhost:5433/hederamirror",
+  "dbUrl": "jdbc:postgresql://127.0.0.1:5432/hederamirror?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC",
   "dbUsername": "hederamirror",
   "dbPassword": "mysecretpassword",
   "maxDownloadItems": 10,

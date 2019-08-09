@@ -25,7 +25,7 @@ public class RecordFileDownloader extends Downloader {
 	public RecordFileDownloader(ConfigLoader configLoader) {
 		super(configLoader);
 	}
-	
+
 	public static void downloadNewRecordfiles(RecordFileDownloader downloader) {
 		setupCloudConnection();
 
@@ -131,7 +131,7 @@ public class RecordFileDownloader extends Downloader {
 //		String lastDownloadedRcdSigName_new = null;
 //
 //		int downloadMax = configLoader.getMaxDownloadItems();
-//		
+//
 //		for (String nodeAccountId : nodeAccountIds) {
 //			log.info(MARKER, "Start downloading RecordStream files of node " + nodeAccountId);
 //
@@ -216,9 +216,9 @@ public class RecordFileDownloader extends Downloader {
 
 		// reload address book and keys
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier(configLoader);
-		
+
 		validRcdDir = null;
-		
+
 		for (String fileName : sigFilesMap.keySet()) {
 			if (Utility.checkStopFile()) {
 				log.info(MARKER, "Stop file found, stopping");

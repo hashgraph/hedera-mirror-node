@@ -14,6 +14,16 @@
 			</Policies>
 			<DefaultRolloverStrategy max="10"/>
 		</RollingFile>
+		<RollingFile name="eventStream-log" fileName="output/eventStream.log"
+					 filePattern="output/eventStream.log-%d{yyyy-MM-dd}-%i.log" >
+			<PatternLayout>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+			</PatternLayout>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="5 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="10"/>
+		</RollingFile>
 	</Appenders>
 	<Loggers>
 		<Root level="WARN">
@@ -80,6 +90,9 @@
 		</Logger>
 		<Logger name="recordStream-log" level="WARN">
 			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+		<Logger name="eventStream-log" level="INFO">
+			<AppenderRef ref="eventStream-log" level="INFO"/>
 		</Logger>
 	</Loggers>
 </Configuration>

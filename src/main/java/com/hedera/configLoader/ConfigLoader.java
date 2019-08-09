@@ -29,10 +29,10 @@ public class ConfigLoader {
 		S3
 		,GCP
 	}
-	
+
 	// cloud provider, must be either S3 or GCP
 	private static CLOUD_PROVIDER cloudProvider = CLOUD_PROVIDER.S3;
-			
+
 	// clientRegion of the S3 bucket from which we download RecordStream files;
 	private static String clientRegion = "us-east-2";
 
@@ -46,7 +46,7 @@ public class ConfigLoader {
 	private static String secretKey = null;
 
 	// the directory where we store the RecordStream files
-	private static String downloadToDir = "./recordstreams";
+	private static String downloadToDir = "./MirrorNodeData";
 
 	// the port of mirrorNodeProxy;
 	private static int proxyPort = 50777;
@@ -66,25 +66,37 @@ public class ConfigLoader {
 	// Hash of last last valid rcd file
 	private static String lastValidRcdFileHash = "";
 
+	// file name of last downloaded evts_sig file
+	private static String lastDownloadedEventSigName = "";
+
+	// file name of last valid evts file
+	private static String lastValidEventFileName = "";
+
+	// Hash of last last valid evts file
+	private static String lastValidEventFileHash = "";
+
 	// file name of last valid account balance file
 	private static String lastValidBalanceFileName = "";
-	
+
 	// location of account balances on S3
 	private static String accountBalanceS3Location = "accountBalances/balance";
 
 	//location of record files on S3
-	private static String recordFilesS3Location = "./recordstreams/record";
+	private static String recordFilesS3Location = "recordstreams/record";
+
+	//location of eventStream files on S3
+	private static String eventFilesS3Location = "eventstreams/events_";
 
 	private static String stopLoggingIfHashMismatchAfter = "";
 
 	private static boolean persistClaims = false;
-	
+
 	private static String persistFiles = "NONE";
-	
+
 	private static boolean persistContracts = false;
-	
+
 	private static boolean persistCryptoTransferAmounts = false;
-		
+
 	//database url
     private static String dbUrl = "";
     // database user
@@ -93,7 +105,7 @@ public class ConfigLoader {
     private static String dbPassword = "";
     // max download items for testing
     private static int maxDownloadItems = 0;
-	
+
 	private static String configSavePath = "./config/config.json";
 	private static String balanceSavePath = "./config/balance.json";
 	private static String recordsSavePath = "./config/records.json";
@@ -101,12 +113,12 @@ public class ConfigLoader {
 	private static JsonObject configJsonObject;
 	private static JsonObject balanceJsonObject;
 	private static JsonObject recordsJsonObject;
-	
+
     private static Dotenv dotEnv = Dotenv.configure().ignoreIfMissing().load();
-    
+
 	private static boolean bBalanceFileExists = true;
 	private static boolean bRecordsFileExists = true;
-	
+
 	public ConfigLoader() {
 		log.info(MARKER, "Loading configuration from {}", configSavePath);
 		try {
@@ -118,9 +130,9 @@ public class ConfigLoader {
 			if (!new File(recordsSavePath).exists()) {
 				bRecordsFileExists = false;
 			}
-			
+
 			configJsonObject = getJsonObject(configSavePath);
-			
+
 			if (configJsonObject.has("cloud-provider")) {
 				String provider = configJsonObject.get("cloud-provider").getAsString();
 				if (provider.contentEquals("GCP")) {
@@ -137,7 +149,7 @@ public class ConfigLoader {
 			if (configJsonObject.has("bucketName")) {
 				bucketName = configJsonObject.get("bucketName").getAsString();
 			}
-			
+
 			accessKey = dotEnv.get("HEDERA_S3_ACCESS_KEY");
 			if (accessKey == null) {
 				if (configJsonObject.has("accessKey")) {
@@ -167,6 +179,9 @@ public class ConfigLoader {
 			}
 			if (configJsonObject.has("recordFilesS3Location")) {
 				recordFilesS3Location = configJsonObject.get("recordFilesS3Location").getAsString();
+			}
+			if (jsonObject.has("eventFilesS3Location")) {
+				eventFilesS3Location = jsonObject.get("eventFilesS3Location").getAsString();
 			}
 			dbUrl = dotEnv.get("HEDERA_MIRROR_DB_URL");
 			if (dbUrl == null) {
@@ -204,7 +219,7 @@ public class ConfigLoader {
 			if (configJsonObject.has("persistCryptoTransferAmounts")) {
 				persistCryptoTransferAmounts = configJsonObject.get("persistCryptoTransferAmounts").getAsBoolean();
 			}
-			
+
 			if (bBalanceFileExists) {
 				balanceJsonObject = getJsonObject(balanceSavePath);
 				if (balanceJsonObject.has("lastValidBalanceFileName")) {
@@ -251,7 +266,7 @@ public class ConfigLoader {
 				recordsJsonObject.addProperty("lastValidRcdFileHash", lastValidRcdFileHash);
 				saveRecordsDataToFile();
 			}
-			
+
 		} catch (FileNotFoundException ex) {
 			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configSavePath, ex.getStackTrace());
 		}
@@ -283,9 +298,9 @@ public class ConfigLoader {
 	public String getDefaultParseDir() {
 		String parseDir = downloadToDir;
 		if (!parseDir.endsWith("/")) {
-			parseDir += "/recordstreams/valid";
+			parseDir += "/valid";
 		} else {
-			parseDir += "recordstreams/valid";
+			parseDir += "valid";
 		}
 		return parseDir;
 	}
@@ -336,10 +351,41 @@ public class ConfigLoader {
 		log.info(MARKER, "Update lastValidRcdFileHash to be {}", name);
 	}
 
+	public String getLastDownloadedEventSigName() {
+		return lastDownloadedEventSigName;
+	}
+
+	public void setLastDownloadedEventSigName(String name) {
+		lastDownloadedEventSigName = name;
+		jsonObject.addProperty("lastDownloadedEventSigName", name);
+		log.info(MARKER, "Update lastDownloadedEventSigName to be {}", name);
+	}
+
+	public String getLastValidEventFileName() {
+		return lastValidEventFileName;
+	}
+
+	public void setLastValidEventFileName(String name) {
+		lastValidEventFileName = name;
+		jsonObject.addProperty("lastValidEventFileName", name);
+		log.info(MARKER, "Update lastValidEventFileName to be {}", name);
+	}
+
+	public String getLastValidEventFileHash() {
+		return lastValidEventFileHash;
+	}
+
+	public void setLastValidEventFileHash(String name) {
+		lastValidEventFileHash = name;
+		jsonObject.addProperty("lastValidEventFileHash", name);
+		log.info(MARKER, "Update lastValidEventFileHash to be {}", name);
+	}
+
+
 	public String getLastValidBalanceFileName() {
 		return lastValidBalanceFileName;
 	}
-	
+
 	public String getAccountBalanceS3Location() {
 		return accountBalanceS3Location;
 	}
@@ -347,7 +393,11 @@ public class ConfigLoader {
 	public String getRecordFilesS3Location() {
 		return recordFilesS3Location;
 	}
-	
+
+	public String getEventFilesS3Location() {
+		return eventFilesS3Location;
+	}
+
 	public String getDBUrl() {
 		return dbUrl;
 	}
@@ -357,11 +407,11 @@ public class ConfigLoader {
 	public String getDBPassword() {
 		return dbPassword;
 	}
-	
+
 	public int getMaxDownloadItems() {
-		return maxDownloadItems;	
+		return maxDownloadItems;
 	}
-	
+
 	public boolean getPersistClaims() {
 		return persistClaims;
 	}
@@ -377,7 +427,7 @@ public class ConfigLoader {
 	public boolean getPersistCryptoTransferAmounts() {
 		return persistCryptoTransferAmounts;
 	}
-	
+
 	public void setLastValidBalanceFileName(String name) {
 		lastValidBalanceFileName = name;
 		balanceJsonObject.addProperty("lastValidBalanceFileName", name);
@@ -433,7 +483,7 @@ public class ConfigLoader {
 			log.warn(MARKER, "Fail to write update to {}, Exception: {}", recordsSavePath, ex);
 		}
 	}
-	
+
 	/***
 	 *
 	 * Reads a file into a Json object.

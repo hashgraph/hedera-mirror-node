@@ -43,13 +43,13 @@ public class BalanceFileLogger {
 		,REALM
 		,NUM
 	}
-	
+
 	enum BalanceUpdate {
 		ZERO
 		,BALANCE
 		,ID
 	}
-	
+
 	enum BalanceInsert {
 		ZERO
 		,SHARD
@@ -57,31 +57,31 @@ public class BalanceFileLogger {
 		,NUM
 		,BALANCE
 	}
-	
+
     enum BalanceHistoryInsert {
         ZERO
         ,SNAPSHOT_TIME
         ,SECONDS
         ,NANOS
         ,FK_BAL_ID
-        ,BALANCE 
+        ,BALANCE
     }
-    
+
     enum BalanceHistoryInsertBalance {
         ZERO
         ,SHARD
         ,REALM
-        ,NUM 
+        ,NUM
     }
 
     private static Connection connect = null;
-	
+
     private static ConfigLoader configLoader = new ConfigLoader();
 	private static String balanceFolder = configLoader.getDownloadToDir();
 	private static Instant fileTimestamp;
 	private static long fileSeconds = 0;
 	private static long fileNanos = 0;
-	
+
 	static void parseFileName(File fileName) {
 
 		String shortFileName = fileName.getName().replace(".csv", "");
@@ -89,7 +89,7 @@ public class BalanceFileLogger {
 			shortFileName = shortFileName.replace("_Balances", "");
 			shortFileName = shortFileName.replace("_",":");
 			fileTimestamp = Instant.parse(shortFileName);
-			
+
 			fileSeconds = fileTimestamp.getEpochSecond();
 			fileNanos = fileTimestamp.getNano();
 		} else {
@@ -100,21 +100,21 @@ public class BalanceFileLogger {
 			} else {
 				Calendar c = Calendar.getInstance();
 				c.clear();
-				
+
 				c.set(Integer.parseInt(fileParts[0])
-						, Integer.parseInt(fileParts[1]) -1 
+						, Integer.parseInt(fileParts[1]) -1
 						, Integer.parseInt(fileParts[2])
 						, Integer.parseInt(fileParts[3])
 						, Integer.parseInt(fileParts[4])
 						,0
-				);  
+				);
 				fileTimestamp = c.toInstant();
 				fileSeconds = fileTimestamp.getEpochSecond();
 				fileNanos = fileTimestamp.getNano();
 			}
 		}
 	}
-	
+
     static void moveFileToParsedDir(String fileName) {
 		File sourceFile = new File(fileName);
 		File parsedDir = new File(sourceFile.getParentFile().getParentFile().getPath() + "/parsedRecordFiles/");
@@ -129,13 +129,13 @@ public class BalanceFileLogger {
 					ex);
 		}
 	}
-	
+
 	private static File getLatestBalancefile(File balanceFilesPath) throws IOException {
-	    
+
 		File lastFile = null;
         // find all files in path
         // return the greatest file name
-	    
+
         if (!balanceFilesPath.exists()) {
         	balanceFilesPath.mkdirs();
         }
@@ -173,16 +173,16 @@ public class BalanceFileLogger {
 		    processAllFilesForHistory(balanceFilesPath);
 	    }
 	}
-	
+
 	private static void processAllFilesForHistory(File balanceFilesPath) {
         String donePath = "";
-        
+
         try {
 	        for (final File balanceFile : balanceFilesPath.listFiles()) {
 				if (Utility.checkStopFile()) {
 					log.info(MARKER, "Stop file found, stopping.");
 					break;
-				}            	
+				}
 				donePath = balanceFile.getCanonicalPath().toString().replace("/valid", "/processed");
 				if (processFileForHistory(balanceFile)) {
 					// move it
@@ -194,14 +194,14 @@ public class BalanceFileLogger {
 		}
         log.info(MARKER, "Balance History processing done");
 	}
-	
+
 	public static boolean processFileForHistory(File balanceFile) {
         boolean processLine = false;
-        
+
         try {
             // process the file
             connect = DatabaseUtilities.openDatabase(connect);
-            
+
             if (connect != null) {
 
                 try {
@@ -212,14 +212,14 @@ public class BalanceFileLogger {
         		}
 
                 parseFileName(balanceFile);
-                
+
                 PreparedStatement selectBalance = connect.prepareStatement(
                 		"SELECT id"
                 		+ " FROM t_account_balances"
                 		+ " WHERE shard = ?"
                 		+ " AND realm = ?"
                 		+ " AND num = ?");
-                
+
                 PreparedStatement insertBalance = connect.prepareStatement(
                         "INSERT INTO t_account_balances (shard, realm, num, balance) "
                         + " VALUES (?, ?, ?, 0) "
@@ -237,9 +237,9 @@ public class BalanceFileLogger {
 	                    + ")"
 	                    + " ON CONFLICT (snapshot_time, seconds, fk_balance_id)"
 	                    + " DO UPDATE set balance = EXCLUDED.balance");
-	        
+
 	            BufferedReader br = new BufferedReader(new FileReader(balanceFile));
-	
+
 	            String line;
 	            while ((line = br.readLine()) != null) {
 	                if (processLine) {
@@ -254,24 +254,24 @@ public class BalanceFileLogger {
 		                        br.close();
 		                        return false;
 	                        } else {
-	                        	
+
 	                        	// get the account id from t_Account_balances
 	                        	long accountId = 0;
-	                        	
+
 	                        	selectBalance.setLong(BalanceSelect.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
 	                        	selectBalance.setLong(BalanceSelect.REALM.ordinal(), Long.valueOf(balanceLine[1]));
 	                        	selectBalance.setLong(BalanceSelect.NUM.ordinal(), Long.valueOf(balanceLine[2]));
-	                        	
+
 	                        	selectBalance.execute();
 	                        	ResultSet balanceRow = selectBalance.getResultSet();
-	                        	
+
 	                        	if (balanceRow.next()) {
 	                        		accountId = balanceRow.getLong(1);
 	                        	} else {
 	                        		insertBalance.setLong(BalanceHistoryInsertBalance.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
 	                        		insertBalance.setLong(BalanceHistoryInsertBalance.REALM.ordinal(), Long.valueOf(balanceLine[1]));
 	                        		insertBalance.setLong(BalanceHistoryInsertBalance.NUM.ordinal(), Long.valueOf(balanceLine[2]));
-	                        	
+
 		                        	insertBalance.execute();
 
 		                        	ResultSet newId = insertBalance.getResultSet();
@@ -292,9 +292,9 @@ public class BalanceFileLogger {
 		                        insertBalanceHistory.setLong(BalanceHistoryInsert.NANOS.ordinal(), fileNanos);
 	                        	insertBalanceHistory.setLong(BalanceHistoryInsert.FK_BAL_ID.ordinal(), accountId);
 		                        insertBalanceHistory.setLong(BalanceHistoryInsert.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
-		
+
 		                        insertBalanceHistory.execute();
-	                        }	                        
+	                        }
 	                    } catch (SQLException e) {
 	                        log.error(LOGM_EXCEPTION, "Exception {}", e);
 	                        connect.rollback();
@@ -328,27 +328,27 @@ public class BalanceFileLogger {
         }
         return false;
 	}
-	
+
 	private static void processLastBalanceFile(File balanceFilesPath) {
 
         boolean processLine = false;
-	    
+
         try {
             File balanceFile = getLatestBalancefile(balanceFilesPath);
             if (balanceFile != null) {
                 // process the file
                 connect = DatabaseUtilities.openDatabase(connect);
-                
+
                 parseFileName(balanceFile);
 
                 if (connect != null) {
                     connect.setAutoCommit(false);
-                    
+
             		PreparedStatement updateLastBalanceTime = connect.prepareStatement(
                     		"UPDATE t_account_balance_refresh_time"
                     		+ " SET seconds = ?"
             				+ ",nanos = ?");
-                    
+
                     PreparedStatement selectBalance = connect.prepareStatement(
                     		"SELECT id"
                     		+ " FROM t_account_balances"
@@ -360,19 +360,19 @@ public class BalanceFileLogger {
 	                        "UPDATE t_account_balances"
 	                        + " SET balance = ?"
 	                        + " WHERE id = ?");
-    	                
-    	            
+
+
                     PreparedStatement insertBalance =  connect.prepareStatement(
 	                        "INSERT INTO t_account_balances (shard, realm, num, balance) "
 	                        + " VALUES (?, ?, ?, ?)");
-                    
+
                     // update last file update time
     				updateLastBalanceTime.setLong(1, fileSeconds);
     				updateLastBalanceTime.setLong(2, fileNanos);
     				updateLastBalanceTime.execute();
-                    
+
 	                BufferedReader br = new BufferedReader(new FileReader(balanceFile));
-	
+
 	                String line;
 		            while ((line = br.readLine()) != null) {
 		                if (processLine) {
@@ -404,7 +404,7 @@ public class BalanceFileLogger {
 		                            }
 		                            balanceRow.close();
 		                        }
-		                        
+
 		                    } catch (SQLException e) {
 		                        connect.rollback();
 		                        log.error(LOGM_EXCEPTION, "Exception {}", e);

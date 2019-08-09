@@ -100,7 +100,7 @@ Note: If you database container fails to initialise properly and the database fa
 
 These are necessary not only for the database data to be persisted, but also so that the parsing containers can access file obtained via the downloading containers
 
-Docker compose scripts are available in the `docker` folder. 
+Docker compose scripts are available in the `docker` folder.
 
 A `buildImages.sh` script ensures the necessary data is available to the images via volumes, builds the images and starts the containers.
 
@@ -157,7 +157,7 @@ In order to avoid the risk of the number of files in a single folder exceeding o
 Prompts to compile either with
 
 - A docker container
-- Your local maven 
+- Your local maven
 - Skip
 
 ### Moved buildimages.sh script back to root of project
@@ -189,7 +189,7 @@ Each class outputs its category in the common log for ease of debugging.
 ### Removal of `downloadPeriodSec` parameter from config.json
 
 Download and processing (logging) activities now run in a continuous loop, restarting as soon as they finished to lower the latency for data availability in the database as much as possible.
-To gracefully stop a running process, create a file called `stop` in the folder where the application was launched from. 
+To gracefully stop a running process, create a file called `stop` in the folder where the application was launched from.
 For example in Unix systems
 ```
 touch stop
@@ -319,7 +319,7 @@ Should you wish to enable logging, copy the `log4j2.xml` file from `src/main/res
 for example
 
 ```shell
-    java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser
+    java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.parser.RecordFileParser
 ```
 
 This will ensure that the `log4j2.xml` file is used to direct logging accordingly.
@@ -393,7 +393,7 @@ OPERATOR_KEY=your account's private key
 Run the following command to update the address book at the location specified in `config.json`.
 
 ```shell
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook 
+java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
 ```
 
 If no errors are output, the file specified by the `addressBookFile` parameter of the `config.json` file will now contain the network's address book.
@@ -543,7 +543,7 @@ shard,realm,number,balance
 Run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser
+java -cp mirrorNode.jar com.hedera.parser.RecordFileParser
 ```
 
 ### To Parse Balance file(s)
@@ -553,7 +553,7 @@ This project provides the ability to log balances for all accounts, including hi
 Run the following command:
 
 ```shell
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger 
+java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
 ```
 
 ### To download and parse record files in one command
@@ -620,4 +620,3 @@ If there are no files in this folder, it's possible that either you `0.0.102` fi
 You may try to set the `maxDownloadItems` to a number such as 10 or 20 to download and process new files in batches.
 
 * The above also applies if you are running the `downloader.DownloadAndParseRecordFiles` java class.
-

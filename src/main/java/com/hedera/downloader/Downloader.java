@@ -63,7 +63,9 @@ public abstract class Downloader {
 
 	protected static ClientConfiguration clientConfiguration;
 
-	enum DownloadType {RCD, BALANCE};
+	public enum DownloadType {RCD, BALANCE, EVENT}
+
+	;
 
 
 	public Downloader(ConfigLoader myConfigLoader) {
@@ -129,6 +131,9 @@ public abstract class Downloader {
 			case RCD:
 				result = Utility.isRecordSigFile(s3ObjectKey);
 				break;
+			case EVENT:
+				result = Utility.isEventStreamSigFile(s3ObjectKey);
+				break;
 			default:
 				break;
 		}
@@ -138,7 +143,7 @@ public abstract class Downloader {
 	/**
 	 *  Download all balance .csv files with timestamp later than lastValidBalanceFileName
 	 */
-	
+
 	protected void downloadBalanceFiles() throws IOException {
 		String s3Prefix = null;
 		String fileType = null;
@@ -166,14 +171,14 @@ public abstract class Downloader {
 			int count = 0;
 			int downloadCount = 0;
 			int maxDownloadCount = configLoader.getMaxDownloadItems();
-			
+
 			ListObjectsRequest listRequest = new ListObjectsRequest()
 					.withBucketName(bucketName)
 					.withPrefix(prefix)
 					.withDelimiter("/")
 					.withMarker(prefix + lastValidFileName)
 					.withMaxKeys(100);
-			
+
 			ObjectListing objects = s3Client.listObjects(listRequest);
 			try {
 				while(downloadCount <= maxDownloadCount) {
@@ -194,8 +199,11 @@ public abstract class Downloader {
 						if (!s3ObjectKey.contains("latest")) { // ignore latest.csv
 							if ((s3ObjectKey.compareTo(prefix + lastValidFileName) > 0) || (lastValidFileName.contentEquals(""))) {
 								Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey);
+								if (result == null) {
+									return;
+								}
 								if (maxDownloadCount != 0) downloadCount++;
-								
+
 								if (result.getLeft()) {
 									count++;
 									File file = result.getRight();
@@ -223,20 +231,20 @@ public abstract class Downloader {
 
 				if (files.size() != 0) {
 					String newLastValidBalanceFileName = lastValidFileName;
-	
+
 					Collections.sort(files);
-					
+
 					if (newLastValidBalanceFileName.isEmpty() ||
 							newLastValidBalanceFileName.compareTo(files.get(files.size()-1)) < 0) {
 						newLastValidBalanceFileName = files.get(files.size()-1);
 					}
-	
+
 					if (!newLastValidBalanceFileName.equals(lastValidFileName)) {
 						configLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
 						configLoader.saveToFile();
 					}
 				}
-				
+
 			} catch(AmazonServiceException e) {
 				// The call was transmitted successfully, but Amazon S3 couldn't process
 				// it, so it returned an error response.
@@ -248,7 +256,7 @@ public abstract class Downloader {
 			}
 		}
 	}
-	
+
 	/**
 	 *  If type is DownloadType.RCD:
 	 * 		Download all .rcd_sig files with timestamp later than lastValidRcdFileName
@@ -286,6 +294,12 @@ public abstract class Downloader {
 				lastValidFileName = configLoader.getLastValidBalanceFileName();
 				break;
 
+			case EVENT:
+				s3Prefix = configLoader.getEventFilesS3Location();
+				fileType = ".evts_sig";
+				lastValidFileName = configLoader.getLastValidEventFileName();
+				break;
+
 			default:
 				log.error(MARKER, "Invalid DownloadType {}", type);
 		}
@@ -305,7 +319,7 @@ public abstract class Downloader {
 			int count = 0;
 			int downloadCount = 0;
 			int downloadMax = configLoader.getMaxDownloadItems();
-			
+
 			ListObjectsRequest listRequest = new ListObjectsRequest()
 					.withBucketName(bucketName)
 					.withPrefix(prefix)
@@ -327,14 +341,14 @@ public abstract class Downloader {
 						} else if (downloadCount >= downloadMax) {
 							break;
 						}
-						
+
 						String s3ObjectKey = summary.getKey();
 						if (isNeededSigFile(s3ObjectKey, type) &&
 						s3KeyComparator.compare(s3ObjectKey, prefix + lastValidFileName) > 0) {
 							Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey);
 							if (result.getLeft()) count++;
 							if (downloadMax != 0) downloadCount++;
-							
+
 							File sigFile = result.getRight();
 							if (sigFile != null) {
 								String fileName = sigFile.getName();
@@ -384,8 +398,13 @@ public abstract class Downloader {
 		if (!filePath.endsWith("/")) {
 			filePath += "/";
 		}
+
+		if (!Utility.createDirIfNotExists(filePath)) {
+			log.error(MARKER, "{} doesn't exist and we fail to create this directory", filePath);
+			return null;
+		}
+
 		filePath += s3ObjectKey;
-		
 		return saveToLocal(bucket_name, s3ObjectKey, filePath);
 	}
 
@@ -401,14 +420,13 @@ public abstract class Downloader {
 	 */
 	protected static Pair<Boolean, File> saveToLocal(String bucket_name,
 		String s3ObjectKey, String localFilepath)  {
-
 		// ensure filePaths have OS specific separator
 		localFilepath = localFilepath.replace("/", "~");
 		localFilepath = localFilepath.replace("\\", "~");
 		localFilepath = localFilepath.replace("~", File.separator);
-		
+
         File f = new File(localFilepath).getAbsoluteFile();
-                
+
 		if (f.exists()) {
 			log.info(MARKER, "File exists: " + localFilepath);
 			return Pair.of(false, f);
@@ -417,7 +435,7 @@ public abstract class Downloader {
             if( ! f.getParentFile().exists() ) {
                 f.getParentFile().mkdirs();
             }
-            f.createNewFile();
+			//f.createNewFile();
 			Download download = xfer_mgr.download(bucket_name, s3ObjectKey, f);
 			download.waitForCompletion();
 			if (download.isDone()) {
@@ -452,7 +470,7 @@ public abstract class Downloader {
 		System.out.println();
 		input.close();
 	}
-	
+
 	protected static void setupCloudConnection() {
 		if (configLoader.getCloudProvider() == CLOUD_PROVIDER.S3) {
 			if (configLoader.getAccessKey().contentEquals("")) {
@@ -489,7 +507,7 @@ public abstract class Downloader {
 						.build();
 			}
 		}
-		xfer_mgr = TransferManagerBuilder.standard()		
+		xfer_mgr = TransferManagerBuilder.standard()
 				.withS3Client(s3Client).build();
 	}
 }
