@@ -63,7 +63,7 @@ public class NodeSignatureVerifier {
 				PublicKey publicKey = loadPublicKey(nodeAddress.getRSAPubKey());
 				nodeIDPubKeyMap.put(accountID, publicKey);
 			} catch(DecoderException ex) {
-				log.error(MARKER, "Faild to load PublicKey from: {} for {}", nodeAddress.getRSAPubKey(), accountID);
+				log.error(MARKER, "Failed to load PublicKey from: {} for {}", nodeAddress.getRSAPubKey(), accountID);
 			}
 		}
 	}

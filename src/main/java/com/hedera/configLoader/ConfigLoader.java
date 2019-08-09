@@ -58,7 +58,7 @@ public class ConfigLoader {
 	private static String addressBookFile = "./config/0.0.102";
 
 	// file name of last downloaded rcd_sig file
-	private static String lastDownloadedRcdSigName = "";
+//	private static String lastDownloadedRcdSigName = "";
 
 	// file name of last valid rcd file
 	private static String lastValidRcdFileName = "";
@@ -96,13 +96,16 @@ public class ConfigLoader {
 	
 	private static String configSavePath = "./config/config.json";
 	private static String balanceSavePath = "./config/balance.json";
+	private static String recordsSavePath = "./config/records.json";
 
 	private static JsonObject configJsonObject;
 	private static JsonObject balanceJsonObject;
-
+	private static JsonObject recordsJsonObject;
+	
     private static Dotenv dotEnv = Dotenv.configure().ignoreIfMissing().load();
     
 	private static boolean bBalanceFileExists = true;
+	private static boolean bRecordsFileExists = true;
 	
 	public ConfigLoader() {
 		log.info(MARKER, "Loading configuration from {}", configSavePath);
@@ -111,6 +114,9 @@ public class ConfigLoader {
 			if (!new File(balanceSavePath).exists()) {
 				// create the file
 				bBalanceFileExists = false;
+			}
+			if (!new File(recordsSavePath).exists()) {
+				bRecordsFileExists = false;
 			}
 			
 			configJsonObject = getJsonObject(configSavePath);
@@ -155,15 +161,6 @@ public class ConfigLoader {
 			}
 			if (configJsonObject.has("addressBookFile")) {
 				addressBookFile = configJsonObject.get("addressBookFile").getAsString();
-			}
-			if (configJsonObject.has("lastDownloadedRcdSigName")) {
-				lastDownloadedRcdSigName = configJsonObject.get("lastDownloadedRcdSigName").getAsString();
-			}
-			if (configJsonObject.has("lastValidRcdFileName")) {
-				lastValidRcdFileName = configJsonObject.get("lastValidRcdFileName").getAsString();
-			}
-			if (configJsonObject.has("lastValidRcdFileHash")) {
-				lastValidRcdFileHash = configJsonObject.get("lastValidRcdFileHash").getAsString();
 			}
 			if (configJsonObject.has("accountBalancesS3Location")) {
 				accountBalanceS3Location = configJsonObject.get("accountBalancesS3Location").getAsString();
@@ -210,18 +207,49 @@ public class ConfigLoader {
 			
 			if (bBalanceFileExists) {
 				balanceJsonObject = getJsonObject(balanceSavePath);
-				if (balanceJsonObject.has("")) {
+				if (balanceJsonObject.has("lastValidBalanceFileName")) {
 					lastValidBalanceFileName = balanceJsonObject.get("lastValidBalanceFileName").getAsString();
 				}
 			} else {
 				if (configJsonObject.has("lastValidBalanceFileName")) {
 					lastValidBalanceFileName = configJsonObject.get("lastValidBalanceFileName").getAsString();
+					configJsonObject.remove("lastValidBalanceFileName");
 				}
-				configJsonObject.remove("lastValidBalanceFileName");
 				saveToFile();
 				balanceJsonObject = new JsonObject();
 				balanceJsonObject.addProperty("lastValidBalanceFileName", lastValidBalanceFileName);
 				saveBalanceDataToFile();
+			}
+			if (bRecordsFileExists) {
+				recordsJsonObject = getJsonObject(recordsSavePath);
+//				if (recordsJsonObject.has("lastDownloadedRcdSigName")) {
+//					lastDownloadedRcdSigName = recordsJsonObject.get("lastDownloadedRcdSigName").getAsString();
+//				}
+				if (recordsJsonObject.has("lastValidRcdFileName")) {
+					lastValidRcdFileName = recordsJsonObject.get("lastValidRcdFileName").getAsString();
+				}
+				if (recordsJsonObject.has("lastValidRcdFileHash")) {
+					lastValidRcdFileHash = recordsJsonObject.get("lastValidRcdFileHash").getAsString();
+				}
+			} else {
+//				if (configJsonObject.has("lastDownloadedRcdSigName")) {
+//					lastDownloadedRcdSigName = configJsonObject.get("lastDownloadedRcdSigName").getAsString();
+//					configJsonObject.remove("lastDownloadedRcdSigName");
+//				}
+				if (configJsonObject.has("lastValidRcdFileName")) {
+					lastValidRcdFileName = configJsonObject.get("lastValidRcdFileName").getAsString();
+					configJsonObject.remove("lastValidRcdFileName");
+				}
+				if (configJsonObject.has("lastValidRcdFileHash")) {
+					lastValidRcdFileHash = configJsonObject.get("lastValidRcdFileHash").getAsString();
+					configJsonObject.remove("lastValidRcdFileHash");
+				}
+				saveToFile();
+				recordsJsonObject = new JsonObject();
+//				recordsJsonObject.addProperty("lastDownloadedRcdSigName", lastDownloadedRcdSigName);
+				recordsJsonObject.addProperty("lastValidRcdFileName", lastValidRcdFileName);
+				recordsJsonObject.addProperty("lastValidRcdFileHash", lastValidRcdFileHash);
+				saveRecordsDataToFile();
 			}
 			
 		} catch (FileNotFoundException ex) {
@@ -278,15 +306,15 @@ public class ConfigLoader {
 		addressBookFile = newAddressBookFile;
 	}
 
-	public String getLastDownloadedRcdSigName() {
-		return lastDownloadedRcdSigName;
-	}
+//	public String getLastDownloadedRcdSigName() {
+//		return lastDownloadedRcdSigName;
+//	}
 
-	public void setLastDownloadedRcdSigName(String name) {
-		lastDownloadedRcdSigName = name;
-		configJsonObject.addProperty("lastDownloadedRcdSigName", name);
-		log.info(MARKER, "Update lastDownloadedRcdSigName to be {}", name);
-	}
+//	public void setLastDownloadedRcdSigName(String name) {
+//		lastDownloadedRcdSigName = name;
+//		recordsJsonObject.addProperty("lastDownloadedRcdSigName", name);
+//		log.info(MARKER, "Update lastDownloadedRcdSigName to be {}", name);
+//	}
 
 	public String getLastValidRcdFileName() {
 		return lastValidRcdFileName;
@@ -294,7 +322,7 @@ public class ConfigLoader {
 
 	public void setLastValidRcdFileName(String name) {
 		lastValidRcdFileName = name;
-		configJsonObject.addProperty("lastValidRcdFileName", name);
+		recordsJsonObject.addProperty("lastValidRcdFileName", name);
 		log.info(MARKER, "Update lastValidRcdFileName to be {}", name);
 	}
 
@@ -304,7 +332,7 @@ public class ConfigLoader {
 
 	public void setLastValidRcdFileHash(String name) {
 		lastValidRcdFileHash = name;
-		configJsonObject.addProperty("lastValidRcdFileHash", name);
+		recordsJsonObject.addProperty("lastValidRcdFileHash", name);
 		log.info(MARKER, "Update lastValidRcdFileHash to be {}", name);
 	}
 
@@ -384,6 +412,25 @@ public class ConfigLoader {
 			log.info(MARKER, "Successfully wrote update to {}", balanceSavePath);
 		} catch (IOException ex) {
 			log.warn(MARKER, "Fail to write update to {}, Exception: {}", balanceSavePath, ex);
+		}
+	}
+	public void saveRecordsDataToFile() {
+		if (!bRecordsFileExists) {
+			File recordsFile = new File(recordsSavePath);
+			try {
+				recordsFile.createNewFile();
+				bRecordsFileExists = true;
+			} catch (IOException e) {
+				log.error(MARKER, "Unable to create records data file {}, Exception: {}", balanceSavePath, e);
+				return;
+			}
+		}
+		try (FileWriter file = new FileWriter(recordsSavePath)) {
+			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			gson.toJson(recordsJsonObject, file);
+			log.info(MARKER, "Successfully wrote update to {}", recordsSavePath);
+		} catch (IOException ex) {
+			log.warn(MARKER, "Fail to write update to {}, Exception: {}", recordsSavePath, ex);
 		}
 	}
 	
