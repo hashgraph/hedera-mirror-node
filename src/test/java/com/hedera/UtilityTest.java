@@ -1,6 +1,6 @@
 package com.hedera;
 
-import com.hedera.mirrorNodeProxy.Utility;
+import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 import org.apache.commons.lang3.tuple.Triple;
