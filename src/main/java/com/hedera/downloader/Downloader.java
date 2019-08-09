@@ -314,7 +314,7 @@ public abstract class Downloader {
 					.withMaxKeys(100);
 			ObjectListing objects = s3Client.listObjects(listRequest);
 			try {
-				while(downloadCount <= downloadMax) {
+				while(downloadCount <= downloadMax - 1) {
 					if (Utility.checkStopFile()) {
 						log.info(MARKER, "Stop file found, stopping.");
 						break;
@@ -324,7 +324,7 @@ public abstract class Downloader {
 						if (Utility.checkStopFile()) {
 							log.info(MARKER, "Stop file found, stopping.");
 							break;
-						} else if (downloadCount > downloadMax) {
+						} else if (downloadCount >= downloadMax) {
 							break;
 						}
 						

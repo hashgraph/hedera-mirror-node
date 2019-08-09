@@ -14,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -101,9 +102,17 @@ public class ConfigLoader {
 
     private static Dotenv dotEnv = Dotenv.configure().ignoreIfMissing().load();
     
+	private static boolean bBalanceFileExists = true;
+	
 	public ConfigLoader() {
 		log.info(MARKER, "Loading configuration from {}", configSavePath);
 		try {
+			// migration from config.json to balance.json for some properties related to balances only
+			if (!new File(balanceSavePath).exists()) {
+				// create the file
+				bBalanceFileExists = false;
+			}
+			
 			configJsonObject = getJsonObject(configSavePath);
 			
 			if (configJsonObject.has("cloud-provider")) {
@@ -156,9 +165,6 @@ public class ConfigLoader {
 			if (configJsonObject.has("lastValidRcdFileHash")) {
 				lastValidRcdFileHash = configJsonObject.get("lastValidRcdFileHash").getAsString();
 			}
-			if (configJsonObject.has("lastValidBalanceFileName")) {
-				lastValidBalanceFileName = configJsonObject.get("lastValidBalanceFileName").getAsString();
-			}
 			if (configJsonObject.has("accountBalancesS3Location")) {
 				accountBalanceS3Location = configJsonObject.get("accountBalancesS3Location").getAsString();
 			}
@@ -200,6 +206,22 @@ public class ConfigLoader {
 			}
 			if (configJsonObject.has("persistCryptoTransferAmounts")) {
 				persistCryptoTransferAmounts = configJsonObject.get("persistCryptoTransferAmounts").getAsBoolean();
+			}
+			
+			if (bBalanceFileExists) {
+				balanceJsonObject = getJsonObject(balanceSavePath);
+				if (balanceJsonObject.has("")) {
+					lastValidBalanceFileName = balanceJsonObject.get("lastValidBalanceFileName").getAsString();
+				}
+			} else {
+				if (configJsonObject.has("lastValidBalanceFileName")) {
+					lastValidBalanceFileName = configJsonObject.get("lastValidBalanceFileName").getAsString();
+				}
+				configJsonObject.remove("lastValidBalanceFileName");
+				saveToFile();
+				balanceJsonObject = new JsonObject();
+				balanceJsonObject.addProperty("lastValidBalanceFileName", lastValidBalanceFileName);
+				saveBalanceDataToFile();
 			}
 			
 		} catch (FileNotFoundException ex) {
@@ -330,8 +352,9 @@ public class ConfigLoader {
 	
 	public void setLastValidBalanceFileName(String name) {
 		lastValidBalanceFileName = name;
-		configJsonObject.addProperty("lastValidBalanceFileName", name);
+		balanceJsonObject.addProperty("lastValidBalanceFileName", name);
 		log.info(MARKER, "Update lastValidBalanceFileName to be {}", name);
+		saveBalanceDataToFile();
 	}
 
 	public void saveToFile() {
@@ -344,6 +367,26 @@ public class ConfigLoader {
 		}
 	}
 
+	public void saveBalanceDataToFile() {
+		if (!bBalanceFileExists) {
+			File balanceFile = new File(balanceSavePath);
+			try {
+				balanceFile.createNewFile();
+				bBalanceFileExists = true;
+			} catch (IOException e) {
+				log.error(MARKER, "Unable to create balance data file {}, Exception: {}", balanceSavePath, e);
+				return;
+			}
+		}
+		try (FileWriter file = new FileWriter(balanceSavePath)) {
+			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			gson.toJson(balanceJsonObject, file);
+			log.info(MARKER, "Successfully wrote update to {}", balanceSavePath);
+		} catch (IOException ex) {
+			log.warn(MARKER, "Fail to write update to {}, Exception: {}", balanceSavePath, ex);
+		}
+	}
+	
 	/***
 	 *
 	 * Reads a file into a Json object.
