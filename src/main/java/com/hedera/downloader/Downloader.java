@@ -18,6 +18,7 @@ import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.google.gson.JsonObject;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
+import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.utilities.Utility;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -63,10 +64,9 @@ public abstract class Downloader {
 
 	protected static ClientConfiguration clientConfiguration;
 
-	public enum DownloadType {RCD, BALANCE, EVENT}
+	String saveFilePath = "";
 
-	;
-
+	public enum DownloadType {RCD, BALANCE, EVENT};
 
 	public Downloader(ConfigLoader myConfigLoader) {
 		configLoader = myConfigLoader;
@@ -148,11 +148,12 @@ public abstract class Downloader {
 		String s3Prefix = null;
 		String fileType = null;
 		String lastValidFileName = null;
-
+		
 		s3Prefix = configLoader.getAccountBalanceS3Location();
 		fileType = ".csv";
 		lastValidFileName = configLoader.getLastValidBalanceFileName();
 
+		
 		// refresh node account ids
 		nodeAccountIds = loadNodeAccountIDs(configLoader.getNodeInfoFile());
 
@@ -198,7 +199,7 @@ public abstract class Downloader {
 						String s3ObjectKey = summary.getKey();
 						if (!s3ObjectKey.contains("latest")) { // ignore latest.csv
 							if ((s3ObjectKey.compareTo(prefix + lastValidFileName) > 0) || (lastValidFileName.contentEquals(""))) {
-								Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey);
+								Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey, saveFilePath);
 								if (result == null) {
 									return;
 								}
@@ -286,18 +287,21 @@ public abstract class Downloader {
 				s3Prefix = configLoader.getRecordFilesS3Location();
 				fileType = ".rcd_sig";
 				lastValidFileName = configLoader.getLastValidRcdFileName();
+				saveFilePath = configLoader.getDownloadToDir(OPERATION_TYPE.RECORDS);
 				break;
 
 			case BALANCE:
 				s3Prefix = "accountBalances/balance";
 				fileType = "_Balances.csv_sig";
 				lastValidFileName = configLoader.getLastValidBalanceFileName();
+				saveFilePath = configLoader.getDownloadToDir(OPERATION_TYPE.BALANCE);
 				break;
 
 			case EVENT:
 				s3Prefix = configLoader.getEventFilesS3Location();
 				fileType = ".evts_sig";
 				lastValidFileName = configLoader.getLastValidEventFileName();
+				saveFilePath = configLoader.getDownloadToDir(OPERATION_TYPE.EVENTS);
 				break;
 
 			default:
@@ -345,7 +349,7 @@ public abstract class Downloader {
 						String s3ObjectKey = summary.getKey();
 						if (isNeededSigFile(s3ObjectKey, type) &&
 						s3KeyComparator.compare(s3ObjectKey, prefix + lastValidFileName) > 0) {
-							Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey);
+							Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey, saveFilePath);
 							if (result.getLeft()) count++;
 							if (downloadMax != 0) downloadCount++;
 
@@ -383,30 +387,26 @@ public abstract class Downloader {
 		return sigFilesMap;
 	}
 
-	/**
-	 * return a pair of download result:
-	 * boolean: download it or not.
-	 * True means we download it successfully; False means it already exists or we fail to download it;
-	 * File is the local file
-	 * @param bucket_name
-	 * @param s3ObjectKey
-	 * @return
-	 */
-	protected static Pair<Boolean, File> saveToLocal(String bucket_name,
-			String s3ObjectKey) throws IOException {
-		String filePath = configLoader.getDownloadToDir();
-		if (!filePath.endsWith("/")) {
-			filePath += "/";
-		}
-
-		if (!Utility.createDirIfNotExists(filePath)) {
-			log.error(MARKER, "{} doesn't exist and we fail to create this directory", filePath);
-			return null;
-		}
-
-		filePath += s3ObjectKey;
-		return saveToLocal(bucket_name, s3ObjectKey, filePath);
-	}
+//	/**
+//	 * return a pair of download result:
+//	 * boolean: download it or not.
+//	 * True means we download it successfully; False means it already exists or we fail to download it;
+//	 * File is the local file
+//	 * @param bucket_name
+//	 * @param s3ObjectKey
+//	 * @return
+//	 */
+//	protected static Pair<Boolean, File> saveToLocal(String bucket_name,
+//			String s3ObjectKey, String filePath) throws IOException {
+//
+//		if (!Utility.createDirIfNotExists(filePath)) {
+//			log.error(MARKER, "{} doesn't exist and we fail to create this directory", filePath);
+//			return null;
+//		}
+//
+//		filePath += s3ObjectKey;
+//		return saveToLocal(bucket_name, s3ObjectKey, filePath);
+//	}
 
 	/**
 	 * return a pair of download result:
@@ -449,8 +449,6 @@ public abstract class Downloader {
 			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex);
 		} catch (InterruptedException ex) {
 			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex);
-		} catch (IOException ex) {
-            log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex);
         }
 		return Pair.of(false, null);
 	}

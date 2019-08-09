@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.hedera.configLoader.ConfigLoader;
+import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.utilities.Utility;
 
@@ -77,7 +78,7 @@ public class BalanceFileLogger {
     private static Connection connect = null;
 
     private static ConfigLoader configLoader = new ConfigLoader();
-	private static String balanceFolder = configLoader.getDownloadToDir();
+	private static String balanceFolder = configLoader.getDownloadToDir(OPERATION_TYPE.BALANCE);
 	private static Instant fileTimestamp;
 	private static long fileSeconds = 0;
 	private static long fileNanos = 0;
@@ -115,21 +116,6 @@ public class BalanceFileLogger {
 		}
 	}
 
-    static void moveFileToParsedDir(String fileName) {
-		File sourceFile = new File(fileName);
-		File parsedDir = new File(sourceFile.getParentFile().getParentFile().getPath() + "/parsedRecordFiles/");
-		parsedDir.mkdirs();
-		File destFile = new File(parsedDir.getPath() + "/" + sourceFile.getName());
-		try {
-			Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			log.info(MARKER, sourceFile.toPath() + " has been moved to " + destFile.getPath());
-		} catch (IOException ex) {
-			log.error(MARKER, "Fail to move {} to {} : {}",
-					fileName, parsedDir.getName(),
-					ex);
-		}
-	}
-
 	private static File getLatestBalancefile(File balanceFilesPath) throws IOException {
 
 		File lastFile = null;
@@ -161,10 +147,7 @@ public class BalanceFileLogger {
 				log.info(MARKER, "Stop file found, exiting.");
 				System.exit(0);
 			}
-			if (!balanceFolder.endsWith("/")) {
-				balanceFolder += "/";
-			}
-		    File balanceFilesPath = new File(balanceFolder + "accountBalances/valid");
+		    File balanceFilesPath = new File(configLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE));
 	        if (!balanceFilesPath.exists()) {
 	        	balanceFilesPath.mkdirs();
 	        }
@@ -175,18 +158,15 @@ public class BalanceFileLogger {
 	}
 
 	private static void processAllFilesForHistory(File balanceFilesPath) {
-        String donePath = "";
-
         try {
 	        for (final File balanceFile : balanceFilesPath.listFiles()) {
 				if (Utility.checkStopFile()) {
 					log.info(MARKER, "Stop file found, stopping.");
 					break;
 				}
-				donePath = balanceFile.getCanonicalPath().toString().replace("/valid", "/processed");
 				if (processFileForHistory(balanceFile)) {
 					// move it
-					Utility.moveFileToParsedDir(balanceFile.getCanonicalPath(), "/parsedBalanceFiles/"); //donePath);
+					Utility.moveFileToParsedDir(balanceFile.getCanonicalPath(), "/parsedBalanceFiles/"); 
 				}
 	        }
 		} catch (IOException e) {

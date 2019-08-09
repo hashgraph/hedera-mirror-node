@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import com.google.protobuf.TextFormat;
 import com.hedera.configLoader.ConfigLoader;
+import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.recordFileLogger.LoggerStatus;
 import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
@@ -102,7 +103,7 @@ public class RecordFileParser {
 								log.info(MARKER, "New file Hash = " + newFileHash);
 
 								if (!newFileHash.contentEquals(previousFileHash)) {
-									if (configLoader.getStopLoggingIfHashMismatchAfter().compareTo(fileName) < 0) {
+									if (configLoader.getStopLoggingIfRecordHashMismatchAfter().compareTo(fileName) < 0) {
 										// last file for which mismatch is allowed is in the past
 										log.error(MARKER, "Previous file Hash Mismatch - stopping loading. Previous = {}, Current = {}", previousFileHash, newFileHash);
 										log.error(MARKER, "Mismatching file {}", fileName);
@@ -255,8 +256,8 @@ public class RecordFileParser {
 
 			configLoader = new ConfigLoader();
 
-			pathName = configLoader.getDefaultParseDir();
-			log.info(MARKER, "Record files folder got from configuration file: {}", configLoader.getDefaultParseDir());
+			pathName = configLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
+			log.info(MARKER, "Record files folder got from configuration file: {}", pathName);
 
 			if (pathName != null) {
 				parseNewFiles(pathName);

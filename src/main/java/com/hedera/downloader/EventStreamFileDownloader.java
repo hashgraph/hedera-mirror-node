@@ -1,8 +1,11 @@
 package com.hedera.downloader;
 
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.mirrorNodeProxy.Utility;
+import com.hedera.downloader.Downloader.DownloadType;
 import com.hedera.parser.EventStreamFileParser;
+import com.hedera.signatureVerifier.NodeSignatureVerifier;
+import com.hedera.utilities.Utility;
+
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -23,41 +26,57 @@ public class EventStreamFileDownloader extends Downloader {
 	public EventStreamFileDownloader(ConfigLoader configLoader) {
 		super(configLoader);
 	}
+	
+	public static void downloadNewEventfiles(EventStreamFileDownloader downloader) {
+		setupCloudConnection();
+		if (Utility.checkStopFile()) {
+			log.info(MARKER, "Stop file found, exiting.");
+			System.exit(0);
+		}
+
+		HashMap<String, List<File>> sigFilesMap;
+		try {
+			sigFilesMap = downloader.downloadSigFiles(DownloadType.EVENT);
+
+			if (Utility.checkStopFile()) {
+				xfer_mgr.shutdownNow();
+				log.info(MARKER, "Stop file found, exiting.");
+				System.exit(0);
+			}
+			
+			// Verify signature files and download .evts files of valid signature files
+			downloader.verifySigsAndDownloadEventStreamFiles(sigFilesMap);
+
+			if (validDir != null) {
+//				new Thread(() -> {
+					verifyValidFiles(validDir);
+//				}).start();
+			}
+
+			xfer_mgr.shutdownNow();
+
+		} catch (IOException e) {
+			log.error(MARKER, "IOException: {}", e);
+		}
+	}
 
 	public static void main(String[] args) {
-		configLoader = new ConfigLoader("./config/config.json");
+		if (Utility.checkStopFile()) {
+			log.info(MARKER, "Stop file found, exiting.");
+			System.exit(0);
+		}
+		configLoader = new ConfigLoader();
 
 		EventStreamFileDownloader downloader = new EventStreamFileDownloader(configLoader);
 
 		while (true) {
-			setupCloudConnection();
-
-			HashMap<String, List<File>> sigFilesMap;
-			try {
-				sigFilesMap = downloader.downloadSigFiles(DownloadType.EVENT);
-
-				// Verify signature files and download .evts files of valid signature files
-				downloader.verifySigsAndDownloadEventStreamFiles(sigFilesMap);
-
-				if (validDir != null) {
-					new Thread(() -> {
-						verifyValidFiles(validDir);
-					}).start();
-				}
-
-				xfer_mgr.shutdownNow();
-
-				if (configLoader.getDownloadPeriodSec() == 0) {
-					break;
-				} else {
-					Thread.sleep(configLoader.getDownloadPeriodSec() * 1000);
-				}
-			} catch (IOException e) {
-				log.error(MARKER, "IOException: {}", e.getStackTrace());
-			} catch (InterruptedException e) {
-				log.error(MARKER, "InterruptedException: {}", e.getStackTrace());
+			if (Utility.checkStopFile()) {
+				log.info(MARKER, "Stop file found, stopping.");
+				break;
 			}
+			downloadNewEventfiles(downloader);
 		}
+		
 	}
 
 	/**
@@ -104,7 +123,7 @@ public class EventStreamFileDownloader extends Downloader {
 			if (!newLastValidEventFileName.equals(lastValidEventFileName)) {
 				configLoader.setLastValidEventFileHash(newLastValidEventFileHash);
 				configLoader.setLastValidEventFileName(newLastValidEventFileName);
-				configLoader.saveToFile();
+				configLoader.saveEventsDataToFile();
 			}
 
 		} catch (IOException ex) {
@@ -128,6 +147,7 @@ public class EventStreamFileDownloader extends Downloader {
 	 */
 	String verifySigsAndDownloadEventStreamFiles(Map<String, List<File>> sigFilesMap) {
 
+		NodeSignatureVerifier verifier = new NodeSignatureVerifier(configLoader);
 		for (String fileName : sigFilesMap.keySet()) {
 			List<File> sigFiles = sigFilesMap.get(fileName);
 			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
@@ -145,7 +165,7 @@ public class EventStreamFileDownloader extends Downloader {
 						Pair<Boolean, File> fileResult = downloadFile(validSigFile, validDir);
 						File file = fileResult.getRight();
 						if (file != null &&
-								verifier.hashMatch(validSigFile, file)) {
+								Utility.hashMatch(validSigFile, file)) {
 							break;
 						} else if (file != null) {
 							log.warn(MARKER,

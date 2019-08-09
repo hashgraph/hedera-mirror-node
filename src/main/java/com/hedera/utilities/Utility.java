@@ -479,33 +479,6 @@ public class Utility {
 		return Instant.ofEpochSecond(seconds, nanos);
 	}
 
-	/**
-	 * Calculate SHA384 hash of a binary file
-	 *
-	 * @param fileName
-	 * 		file name
-	 * @return byte array of hash value
-	 */
-	public static byte[] getFileHash(String fileName) {
-		MessageDigest md;
-		try {
-			md = MessageDigest.getInstance("SHA-384");
-
-			byte[] array = new byte[0];
-			try {
-				array = Files.readAllBytes(Paths.get(fileName));
-			} catch (IOException e) {
-				log.error("Exception ", e);
-			}
-			byte[] fileHash = md.digest(array);
-			return fileHash;
-
-		} catch (NoSuchAlgorithmException e) {
-			log.error( "Exception ", e);
-			return null;
-		}
-	}
-
 	public static boolean hashIsEmpty(String hash) {
 		return (hash.isEmpty() || hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"));
 	}
@@ -528,6 +501,7 @@ public class Utility {
 					fileName, parsedDir.getName(),
 					ex);
 		}
+	}
 
 	/**
 	 * return false if the directory doesn't exist and we fail to create it;

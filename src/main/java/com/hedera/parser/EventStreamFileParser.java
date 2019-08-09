@@ -1,10 +1,13 @@
 package com.hedera.parser;
 
 import com.hedera.configLoader.ConfigLoader;
+import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.databaseUtilities.DatabaseUtilities;
-import com.hedera.mirrorNodeProxy.Utility;
 import com.hedera.platform.Transaction;
 import com.hedera.recordFileLogger.LoggerStatus;
+import com.hedera.recordFileLogger.RecordFileLogger;
+import com.hedera.utilities.Utility;
+
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -97,7 +100,8 @@ public class EventStreamFileParser {
 
 							if (!Arrays.equals(new byte[48], readPrevFileHashBytes) && !readPrevFileHash.contentEquals(
 									previousFileHash)) {
-								if (configLoader.getStopLoggingIfHashMismatch()) {
+								if (configLoader.getStopLoggingIfRecordHashMismatchAfter().compareTo(fileName) < 0) {
+									// last file for which mismatch is allowed is in the past
 									log.error(MARKER,
 											"Previous file Hash Mismatch - stopping loading. fileName = {}, Previous " +
 													"=" +
@@ -358,6 +362,10 @@ public class EventStreamFileParser {
 	static public void loadEventStreamFiles(List<String> fileNames) {
 		String prevFileHash = loggerStatus.getLastProcessedEventHash();
 		for (String name : fileNames) {
+			if (Utility.checkStopFile()) {
+				log.info(MARKER, "Stop file found, stopping.");
+				return;
+			}
 			LoadResult loadResult = loadEventStreamFile(name, prevFileHash);
 			if (loadResult == LoadResult.STOP) {
 				return;
@@ -415,12 +423,15 @@ public class EventStreamFileParser {
 		return null;
 	}
 
-	public static void main(String[] args) {
-		configLoader = new ConfigLoader("./config/config.json");
-		loggerStatus = new LoggerStatus("./config/loggerStatus.json");
+	public static void parseNewFiles(String pathName) {
+		configLoader = new ConfigLoader();
 
-		String pathName = configLoader.getDefaultParseDir_EventStream();
 		log.info(MARKER, "EventStream files folder got from configuration file: {}", pathName);
+
+		if (Utility.checkStopFile()) {
+			log.info(MARKER, "Stop file found, stopping.");
+			return;
+		}
 
 		connect = DatabaseUtilities.openDatabase(connect);
 
@@ -458,6 +469,26 @@ public class EventStreamFileParser {
 			connect = DatabaseUtilities.closeDatabase(connect);
 		} catch (SQLException e) {
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
+		}
+	}
+
+	public static void main(String[] args) {
+		String pathName;
+
+		while (true) {
+			if (Utility.checkStopFile()) {
+				log.info(MARKER, "Stop file found, exiting.");
+				System.exit(0);
+			}
+
+			configLoader = new ConfigLoader();
+
+			pathName = configLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
+			log.info(MARKER, "Event files folder got from configuration file: {}", pathName);
+
+			if (pathName != null) {
+				parseNewFiles(pathName);
+			}
 		}
 	}
 }

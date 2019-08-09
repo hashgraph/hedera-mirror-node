@@ -7,11 +7,12 @@ import org.apache.logging.log4j.MarkerManager;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.parser.EventStreamFileParser;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.utilities.Utility;
 
-public class DownloadAndParseRecordFiles {
-	protected static final Logger log = LogManager.getLogger("downloadandparserecordfiles");
+public class DownloadAndParseEventFiles {
+	protected static final Logger log = LogManager.getLogger("downloadandparseeventfiles");
 	protected static final Marker MARKER = MarkerManager.getMarker("DOWNLOADER");
 
 	protected static ConfigLoader configLoader;
@@ -23,7 +24,7 @@ public class DownloadAndParseRecordFiles {
 		}
 		configLoader = new ConfigLoader();
 
-		RecordFileDownloader downloader = new RecordFileDownloader(configLoader);
+		EventStreamFileDownloader downloader = new EventStreamFileDownloader(configLoader);
 
 		while (true) {
 			if (Utility.checkStopFile()) {
@@ -32,7 +33,7 @@ public class DownloadAndParseRecordFiles {
 			}
 			// download files
 			System.out.println("Downloading");
-			RecordFileDownloader.downloadNewRecordfiles(downloader);
+			EventStreamFileDownloader.downloadNewEventfiles(downloader);
 			System.out.println("Downloading Done");
 
 			// process files
@@ -41,11 +42,11 @@ public class DownloadAndParseRecordFiles {
 				break;
 			}
 			
-			String pathName = configLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
-			log.info(MARKER, "Record files folder got from configuration file: {}", pathName);
+			String pathName = configLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
+			log.info(MARKER, "Event files folder got from configuration file: {}", pathName);
 	
 			if (pathName != null) {
-				RecordFileParser.parseNewFiles(pathName);
+				EventStreamFileParser.parseNewFiles(pathName);
 				System.out.println("Parsing Done");
 			}
 		}

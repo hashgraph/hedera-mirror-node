@@ -87,8 +87,9 @@ public class ConfigLoader {
 	//location of eventStream files on S3
 	private static String eventFilesS3Location = "eventstreams/events_";
 
-	private static String stopLoggingIfHashMismatchAfter = "";
-
+	private static String stopLoggingIfRecordHashMismatchAfter = "";
+	private static String stopLoggingIfEventHashMismatchAfter = "";
+	
 	private static boolean persistClaims = false;
 
 	private static String persistFiles = "NONE";
@@ -109,15 +110,24 @@ public class ConfigLoader {
 	private static String configSavePath = "./config/config.json";
 	private static String balanceSavePath = "./config/balance.json";
 	private static String recordsSavePath = "./config/records.json";
+	private static String eventsSavePath = "./config/events.json";
 
 	private static JsonObject configJsonObject;
 	private static JsonObject balanceJsonObject;
 	private static JsonObject recordsJsonObject;
+	private static JsonObject eventsJsonObject;
 
     private static Dotenv dotEnv = Dotenv.configure().ignoreIfMissing().load();
 
 	private static boolean bBalanceFileExists = true;
 	private static boolean bRecordsFileExists = true;
+	private static boolean bEventsFileExists = true;
+	
+	public enum OPERATION_TYPE {
+		BALANCE
+		,RECORDS
+		,EVENTS
+	}
 
 	public ConfigLoader() {
 		log.info(MARKER, "Loading configuration from {}", configSavePath);
@@ -129,6 +139,9 @@ public class ConfigLoader {
 			}
 			if (!new File(recordsSavePath).exists()) {
 				bRecordsFileExists = false;
+			}
+			if (!new File(eventsSavePath).exists()) {
+				bEventsFileExists = false;
 			}
 
 			configJsonObject = getJsonObject(configSavePath);
@@ -180,8 +193,8 @@ public class ConfigLoader {
 			if (configJsonObject.has("recordFilesS3Location")) {
 				recordFilesS3Location = configJsonObject.get("recordFilesS3Location").getAsString();
 			}
-			if (jsonObject.has("eventFilesS3Location")) {
-				eventFilesS3Location = jsonObject.get("eventFilesS3Location").getAsString();
+			if (configJsonObject.has("eventFilesS3Location")) {
+				eventFilesS3Location = configJsonObject.get("eventFilesS3Location").getAsString();
 			}
 			dbUrl = dotEnv.get("HEDERA_MIRROR_DB_URL");
 			if (dbUrl == null) {
@@ -204,8 +217,11 @@ public class ConfigLoader {
 			if (configJsonObject.has("maxDownloadItems")) {
 				maxDownloadItems = configJsonObject.get("maxDownloadItems").getAsInt();
 			}
-			if (configJsonObject.has("stopLoggingIfHashMismatch")) {
-				stopLoggingIfHashMismatchAfter = configJsonObject.get("stopLoggingIfHashMismatch").getAsString();
+			if (configJsonObject.has("stopLoggingIfRecordHashMismatch")) {
+				stopLoggingIfRecordHashMismatchAfter = configJsonObject.get("stopLoggingIfRecordHashMismatch").getAsString();
+			}
+			if (configJsonObject.has("stopLoggingIfEventHashMismatch")) {
+				stopLoggingIfEventHashMismatchAfter = configJsonObject.get("stopLoggingIfEventHashMismatch").getAsString();
 			}
 			if (configJsonObject.has("persistClaims")) {
 				persistClaims = configJsonObject.get("persistClaims").getAsBoolean();
@@ -237,9 +253,6 @@ public class ConfigLoader {
 			}
 			if (bRecordsFileExists) {
 				recordsJsonObject = getJsonObject(recordsSavePath);
-//				if (recordsJsonObject.has("lastDownloadedRcdSigName")) {
-//					lastDownloadedRcdSigName = recordsJsonObject.get("lastDownloadedRcdSigName").getAsString();
-//				}
 				if (recordsJsonObject.has("lastValidRcdFileName")) {
 					lastValidRcdFileName = recordsJsonObject.get("lastValidRcdFileName").getAsString();
 				}
@@ -247,10 +260,6 @@ public class ConfigLoader {
 					lastValidRcdFileHash = recordsJsonObject.get("lastValidRcdFileHash").getAsString();
 				}
 			} else {
-//				if (configJsonObject.has("lastDownloadedRcdSigName")) {
-//					lastDownloadedRcdSigName = configJsonObject.get("lastDownloadedRcdSigName").getAsString();
-//					configJsonObject.remove("lastDownloadedRcdSigName");
-//				}
 				if (configJsonObject.has("lastValidRcdFileName")) {
 					lastValidRcdFileName = configJsonObject.get("lastValidRcdFileName").getAsString();
 					configJsonObject.remove("lastValidRcdFileName");
@@ -261,10 +270,24 @@ public class ConfigLoader {
 				}
 				saveToFile();
 				recordsJsonObject = new JsonObject();
-//				recordsJsonObject.addProperty("lastDownloadedRcdSigName", lastDownloadedRcdSigName);
 				recordsJsonObject.addProperty("lastValidRcdFileName", lastValidRcdFileName);
 				recordsJsonObject.addProperty("lastValidRcdFileHash", lastValidRcdFileHash);
 				saveRecordsDataToFile();
+			}
+			
+			if (bEventsFileExists) {
+				eventsJsonObject = getJsonObject(recordsSavePath);
+				if (recordsJsonObject.has("lastDownloadedEventSigName")) {
+					lastDownloadedEventSigName = eventsJsonObject.get("lastDownloadedEventSigName").getAsString();
+				}
+				if (recordsJsonObject.has("lastValidEventFileName")) {
+					lastValidEventFileName = eventsJsonObject.get("lastValidEventFileName").getAsString();
+				}				
+				if (recordsJsonObject.has("lastValidEventFileHash")) {
+				    lastValidEventFileHash = recordsJsonObject.get("lastValidEventFileHash").getAsString();
+				}
+			} else {
+				eventsJsonObject = new JsonObject();
 			}
 
 		} catch (FileNotFoundException ex) {
@@ -291,20 +314,38 @@ public class ConfigLoader {
 		return secretKey;
 	}
 
-	public String getDownloadToDir() {
-		return downloadToDir;
-	}
-
-	public String getDefaultParseDir() {
-		String parseDir = downloadToDir;
-		if (!parseDir.endsWith("/")) {
-			parseDir += "/valid";
-		} else {
-			parseDir += "valid";
+	public String getDownloadToDir(OPERATION_TYPE operation) {
+		if (!downloadToDir.endsWith("/")) {
+			downloadToDir += "/";
 		}
-		return parseDir;
+		// always return trailing "/"
+		switch (operation) {
+		case BALANCE:
+			return downloadToDir + "/accountBalances/";
+		case EVENTS:
+			return downloadToDir + "/recordStreams/";
+		case RECORDS:
+			return downloadToDir + "/eventStreams/";
+		}
+		return "";
 	}
 
+	public String getDefaultParseDir(OPERATION_TYPE operation) {
+		if (!downloadToDir.endsWith("/")) {
+			downloadToDir += "/";
+		}
+		// always return trailing "/"
+		switch (operation) {
+		case BALANCE:
+			return downloadToDir + "/accountBalances/valid/";
+		case EVENTS:
+			return downloadToDir + "/recordStreams/valid/";
+		case RECORDS:
+			return downloadToDir + "/eventStreams/valid";
+		}
+		return "";
+	}
+	
 	public int getProxyPort() {
 		return proxyPort;
 	}
@@ -320,16 +361,6 @@ public class ConfigLoader {
 	public void setAddressBookFile(String newAddressBookFile) {
 		addressBookFile = newAddressBookFile;
 	}
-
-//	public String getLastDownloadedRcdSigName() {
-//		return lastDownloadedRcdSigName;
-//	}
-
-//	public void setLastDownloadedRcdSigName(String name) {
-//		lastDownloadedRcdSigName = name;
-//		recordsJsonObject.addProperty("lastDownloadedRcdSigName", name);
-//		log.info(MARKER, "Update lastDownloadedRcdSigName to be {}", name);
-//	}
 
 	public String getLastValidRcdFileName() {
 		return lastValidRcdFileName;
@@ -357,7 +388,7 @@ public class ConfigLoader {
 
 	public void setLastDownloadedEventSigName(String name) {
 		lastDownloadedEventSigName = name;
-		jsonObject.addProperty("lastDownloadedEventSigName", name);
+		eventsJsonObject.addProperty("lastDownloadedEventSigName", name);
 		log.info(MARKER, "Update lastDownloadedEventSigName to be {}", name);
 	}
 
@@ -367,7 +398,7 @@ public class ConfigLoader {
 
 	public void setLastValidEventFileName(String name) {
 		lastValidEventFileName = name;
-		jsonObject.addProperty("lastValidEventFileName", name);
+		eventsJsonObject.addProperty("lastValidEventFileName", name);
 		log.info(MARKER, "Update lastValidEventFileName to be {}", name);
 	}
 
@@ -377,7 +408,7 @@ public class ConfigLoader {
 
 	public void setLastValidEventFileHash(String name) {
 		lastValidEventFileHash = name;
-		jsonObject.addProperty("lastValidEventFileHash", name);
+		eventsJsonObject.addProperty("lastValidEventFileHash", name);
 		log.info(MARKER, "Update lastValidEventFileHash to be {}", name);
 	}
 
@@ -415,8 +446,11 @@ public class ConfigLoader {
 	public boolean getPersistClaims() {
 		return persistClaims;
 	}
-	public String getStopLoggingIfHashMismatchAfter() {
-		return stopLoggingIfHashMismatchAfter;
+	public String getStopLoggingIfRecordHashMismatchAfter() {
+		return stopLoggingIfRecordHashMismatchAfter;
+	}
+	public String getStopLoggingIfEventHashMismatchAfter() {
+		return stopLoggingIfEventHashMismatchAfter;
 	}
 	public String getPersistFiles() {
 		return persistFiles;
@@ -471,7 +505,7 @@ public class ConfigLoader {
 				recordsFile.createNewFile();
 				bRecordsFileExists = true;
 			} catch (IOException e) {
-				log.error(MARKER, "Unable to create records data file {}, Exception: {}", balanceSavePath, e);
+				log.error(MARKER, "Unable to create records data file {}, Exception: {}", recordsSavePath, e);
 				return;
 			}
 		}
@@ -484,6 +518,25 @@ public class ConfigLoader {
 		}
 	}
 
+	public void saveEventsDataToFile() {
+		if (!bEventsFileExists) {
+			File eventsFile = new File(eventsSavePath);
+			try {
+				eventsFile.createNewFile();
+				bEventsFileExists = true;
+			} catch (IOException e) {
+				log.error(MARKER, "Unable to create events data file {}, Exception: {}", eventsSavePath, e);
+				return;
+			}
+		}
+		try (FileWriter file = new FileWriter(eventsSavePath)) {
+			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			gson.toJson(eventsJsonObject, file);
+			log.info(MARKER, "Successfully wrote update to {}", eventsSavePath);
+		} catch (IOException ex) {
+			log.warn(MARKER, "Fail to write update to {}, Exception: {}", eventsSavePath, ex);
+		}
+	}
 	/***
 	 *
 	 * Reads a file into a Json object.
