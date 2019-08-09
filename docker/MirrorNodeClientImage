@@ -1,0 +1,11 @@
+# Pull base image.
+FROM ubuntu:latest
+
+# Update
+RUN apt-get update || true
+
+# Install Java
+RUN apt-get install default-jre || true
+
+# Install psql client
+RUN apt-get install postgresql-client || true

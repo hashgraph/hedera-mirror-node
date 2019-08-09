@@ -19,7 +19,7 @@ import java.io.IOException;
 
 public class LoggerStatus {
 
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("loggerstatus");
 	private static final Marker MARKER = MarkerManager.getMarker("LoggerStatus");
 
 	// Hash of last last successfully processed rcd file
@@ -32,11 +32,10 @@ public class LoggerStatus {
 
 	private static JsonObject jsonObject = new JsonObject();
 
-	public LoggerStatus(String configPath) {
-		configSavePath = configPath;
-		log.info(MARKER, "Loading configuration from {}", configPath);
+	public LoggerStatus() {
+		log.info(MARKER, "Loading configuration from {}", configSavePath);
 		try {
-			jsonObject = getJsonObject(configPath);
+			jsonObject = getJsonObject(configSavePath);
 			
 			if (jsonObject.has("lastProcessedRcdHash")) {
 				lastProcessedRcdHash = jsonObject.get("lastProcessedRcdHash").getAsString();
@@ -45,7 +44,7 @@ public class LoggerStatus {
 				lastProcessedEventHash = jsonObject.get("lastProcessedEventHash").getAsString();
 			}
 		} catch (FileNotFoundException ex) {
-			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configPath, ex.getStackTrace());
+			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configSavePath, ex);
 		}
 	}
 
@@ -55,8 +54,13 @@ public class LoggerStatus {
 
 	public void setLastProcessedRcdHash(String name) {
 		lastProcessedRcdHash = name;
-		jsonObject.addProperty("lastProcessedRcdHash", name);
-		log.info(MARKER, "Update lastProcessedRcdHash to be {}", name);
+		if (name.isEmpty()) {
+			return;
+		}
+		if (!name.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
+			jsonObject.addProperty("lastProcessedRcdHash", name);
+			log.info(MARKER, "Update lastProcessedRcdHash to be {}", name);
+		}
 	}
 
 	public String getLastProcessedEventHash() {
@@ -75,7 +79,7 @@ public class LoggerStatus {
 			gson.toJson(jsonObject, file);
 			log.info(MARKER, "Successfully wrote configuration to {}", configSavePath);
 		} catch (IOException ex) {
-			log.warn(MARKER, "Fail to write configuration to {}, Exception: {}", configSavePath, ex.getStackTrace());
+			log.warn(MARKER, "Fail to write configuration to {}, Exception: {}", configSavePath, ex);
 		}
 	}
 

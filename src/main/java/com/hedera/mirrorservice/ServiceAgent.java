@@ -2,7 +2,7 @@ package com.hedera.mirrorservice;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirrorNodeProxy.MirrorNodeProxy;
-import com.hedera.mirrorNodeProxy.Utility;
+import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -30,7 +30,7 @@ import java.lang.reflect.Method;
 
 public class ServiceAgent {
 
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("serviceagent");
 	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
 
 	public ServiceAgent() {
@@ -107,7 +107,7 @@ public class ServiceAgent {
 			return getDefaultNodeAccountID();
 
 		} catch (Exception ex) {
-			log.error(MARKER, "ServiceAgent :: extractNodeAccountID: {}", ex.getStackTrace());
+			log.error(MARKER, "ServiceAgent :: extractNodeAccountID: {}", ex);
 		}
 
 		return null;

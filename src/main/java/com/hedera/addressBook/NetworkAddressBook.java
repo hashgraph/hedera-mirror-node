@@ -28,17 +28,16 @@ import java.io.FileOutputStream;
  */
 public class NetworkAddressBook {
 
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("networkaddressbook");
 	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
-    private static ConfigLoader configLoader = new ConfigLoader("./config/config.json");
+    private static ConfigLoader configLoader = new ConfigLoader();
+	private static String addressBookFile = configLoader.getAddressBookFile();
 
 	static Client client;
 	static Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
     
     public static void main(String[] args) {
-
-		String addressBookFile = configLoader.getAddressBookFile();
 
         var client = createHederaClient();
 
@@ -49,24 +48,38 @@ public class NetworkAddressBook {
                     .setFileId(new FileId(0, 0, 102))
                     .execute();
 
-            FileOutputStream fos = new FileOutputStream(addressBookFile);
-            fos.write(contents.getFileContents().getContents().toByteArray());
-            fos.close();
+            writeFile(contents.getFileContents().getContents().toByteArray());
         } catch (FileNotFoundException e) {
     		log.error(LOGM_EXCEPTION, "Address book file {} not found.", addressBookFile);
         } catch (IOException e) {
-    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e.getMessage());
+    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e);
         } catch (HederaNetworkException e) {
-    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e.getMessage());
+    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e);
 		} catch (HederaException e) {
-    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e.getMessage());
+    		log.error(LOGM_EXCEPTION, "An error occurred fetching the address book file: {} ", e);
 		}
 		log.info("New address book successfully saved to {}.", addressBookFile);
+		System.out.println("");
+		System.out.println("**********************************************************************************");
+		System.out.println("***** New address book successfully saved to " + addressBookFile);
+		System.out.println("**********************************************************************************");
+		System.out.println("");
 	}
 
+    public static void writeFile(byte[] newContents) throws IOException {
+        FileOutputStream fos = new FileOutputStream(addressBookFile);
+        fos.write(newContents);
+        fos.close();
+    }
+    
 	private static Client createHederaClient() {
 	    // To connect to a network with more nodes, add additional entries to the network map
-	    var nodeAddress = dotenv.get("NODE_ADDRESS");
+		
+	    var nodeAddress = dotenv.get("NODE_ADDRESS","");
+	    if (nodeAddress.isEmpty()) {
+    		log.error(LOGM_EXCEPTION, "NODE_ADDRESS environment variable not set");
+    		System.exit(1);
+	    }
 	    var client = new Client(Map.of(getNodeId(), nodeAddress));
 	
 	    // Defaults the operator account ID and key such that all generated transactions will be paid for
@@ -77,16 +90,35 @@ public class NetworkAddressBook {
 	}
 	
     public static AccountId getNodeId() {
-        return AccountId.fromString(dotenv.get("NODE_ID"));
+    	try {
+    		return AccountId.fromString(dotenv.get("NODE_ID"));
+    	} catch (Exception e) {
+    		log.error(LOGM_EXCEPTION, "NODE_ID environment variable not set");
+    		System.exit(1);
+    	}
+    	return null;
     }
 
     public static AccountId getOperatorId() {
-        return AccountId.fromString(dotenv.get("OPERATOR_ID"));
+    	try {
+    		return AccountId.fromString(dotenv.get("OPERATOR_ID"));
+    	} catch (Exception e) {
+    		log.error(LOGM_EXCEPTION, "OPERATOR_ID environment variable not set");
+    		System.exit(1);
+    	}
+    	return null;
+    	
     }
 	
     public static Ed25519PrivateKey getOperatorKey() {
-        return Ed25519PrivateKey.fromString(dotenv.get("OPERATOR_KEY"));
-    }
+    	try {
+    		return Ed25519PrivateKey.fromString(dotenv.get("OPERATOR_KEY"));
+		} catch (Exception e) {
+			log.error(LOGM_EXCEPTION, "OPERATOR_KEY environment variable not set");
+			System.exit(1);
+		}
+		return null;
+	    }
 	
 }
 

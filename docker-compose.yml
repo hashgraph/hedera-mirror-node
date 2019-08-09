@@ -1,0 +1,11 @@
+version: '3.3'
+services:
+  compiler:
+    build:
+      context: ./
+      dockerfile: DockerSourceCompile
+    tty: true
+    volumes:
+      - .:/mirrornode
+
+    command: /mirrornode/docker/build.sh

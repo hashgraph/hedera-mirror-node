@@ -25,9 +25,112 @@ The Beta mirror node works as follows:
 - The files are also signed by the nodes.
 - This mirror node software can download the balance files, validate 2/3rd of nodes have signed and then process the balance files for long term storage.
 
+----
+
+## Quickstart
+
+### Requirements
+
+- [ ] Docker
+- [ ] Docker-compose
+- [ ] Address book update information:
+  - [ ] Node ID - your node of choice (e.g. 0.0.3)
+  - [ ] Node Address - IP address and port number of your node of choice (e.g. 35.232.131.251:50211)
+  - [ ] Operator ID - Your Hedera Account ID
+  - [ ] Operator Secret Key - The secret key that can sign transactions on behalf of your Operator ID.
+
+```
+git clone git@github.com:hashgraph/hedera-mirror-node.git
+cd hedera-mirror-node
+cp config/config.json.sample config/config.json
+nano config/config.json// Insert AWS S3 credentials. Update any other settings as needed.
+cp docker/dotenv.sample docker/.env
+nano docker/.env
+Update database and API settings as needed
+./buildimages.sh
+
+  // You'll now be asked a few questions to finalize automated mirror node configuration.
+
+  Compile source via 1-docker-compose, 2-local maven, 3-skip?
+  1) Docker
+  2) Local
+  3) Skip
+  #? 1
+
+  Would you like to update the address book file (0.0.102) from the network (enter 1 or 2)?
+  1) Yes
+  2) No
+  #? 1
+
+  Input node address (x.x.x.x:port)
+  {{Node Address}}
+  Input node ID (0.0.x)
+  {{Node ID}}
+  Input operator ID (0.0.x)
+  {{Operator ID}}
+  Input operator key (302...)
+  {{Operator Secret Key}}
+```
+
+Follow instructions above for setting up the `config.json` file and the `.env` file in the `docker` folder to ensure environment variables are set correctly.
+
+example `.env` file.
+
+```text
+POSTGRES_DB=postgres
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=mysecretpassword
+POSTGRES_PORT=5432
+PGDATA=/var/lib/postgresql/data/pgdata
+# This user is used by the REST API to gain read only access to the necessary database tables
+DB_USER=api
+DB_PASS=apipass
+DB_NAME=postgres
+# This is the port the REST API will listen onto
+PORT=5551
+```
+
+Containers use persisted volumes as follows:
+
+- `./MirrorNodePostgresData` on your local machine maps to `/var/lib/postgresql/data` in the containers. This contains the files for the PostgreSQL database.
+Note: If you database container fails to initialise properly and the database fails to run, you will have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will not be run.
+
+- `./runtime` on your local machine maps to `/MirrorNodeCode` in the containers. This contains the runtime and configuration files for loading and parsing files.
+- `./MirrorNodeData` on your local machine maps to `/MirrorNodeData` in the containers. This contains files downloaded from S3 or GCP.
+
+These are necessary not only for the database data to be persisted, but also so that the parsing containers can access file obtained via the downloading containers
+
+Docker compose scripts are available in the `docker` folder.
+
+A `buildImages.sh` script ensures the necessary data is available to the images via volumes, builds the images and starts the containers.
+
+`buildimages.sh` will first prompt whether youd like to compile sources either using a docker container, your local maven installation or skip the compilation, then prompt whether you want to download the 0.0.102 file from the network (it is recommended you do so the first time).
+If you answer 2 (no), the file will not be downloaded, if you answer 1 (yes), you will be prompted for the following information:
+
+-Node address in the format of `ip:port` or `host:port`. (e.g. 192.168.0.2:50211)
+-Node ID, the Hedera account for the node (e.g. 0.0.3).
+-Operator ID, your account (e.g. 0.0.2031)
+-Operator key, the private key for your account
+
+Note: Shutting down the database container via `docker-compose down` may result in a corrupted database that may not restart or may take longer than usual to restart.
+
+In order to avoid this, shell into the container and issue the following command:
+
+Use `docker ps` to get the name of the database container, it should be something like `mirror-node-postgres`.
+
+Use the command `docker exec -it docker_mirror-node-postgres_1 /bin/sh` to get a shell in the container.
+
+`su - postgres -c "PGDATA=$PGDATA /usr/local/bin/pg_ctl -w stop"`
+
+You may now power down the docker image itself.
+
+----
+
 ## Prerequisites
 
-This mirror node beta requires Java version 10.
+This mirror node beta requires Java version 10 or above.
+If you are planning on using the docker compose images, you'll need `Docker` installed.
+Without `Docker`, you will need to install `PostgreSQL` versions 10 or 11.
 
 ## Compile from source code
 
@@ -37,9 +140,92 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 `cd target`
 
-## Changes history
+## Change history
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
+
+### t_transactions relation to t_record_files
+
+The `t_transactions.fk_rec_file_id` column contains the `id` of the record file that contained this transaction from the `t_record_files` table.
+
+### valid files moved to nested folder structure
+
+In order to avoid the risk of the number of files in a single folder exceeding operating system limits, parsed record files are moved to a nested folder structure such as `MirrorNodeData/recordstreams/parsedRecordFiles/2019/07/18`.
+
+### buildimages.sh now prompts for project compilation
+
+Prompts to compile either with
+
+- A docker container
+- Your local maven
+- Skip
+
+### Moved buildimages.sh script back to root of project
+
+Makes it easier to find
+
+### Removed unnecessary defaultParseDir parameter from config.json
+
+This parameter was not necessary.
+
+### Added prompt to update 0.0.102 file from network during docker build
+
+./buildimages.sh will prompt whether you want to download the 0.0.102 file from the network (it is recommended you do so the first time).
+If you answer 2 (no), the file will not be downloaded, if you answer 1 (yes), you will be prompted for the following information:
+
+-Node address in the format of `ip:port` or `host:port`. (e.g. 192.168.0.2:50211)
+-Node ID, the Hedera account for the node (e.g. 0.0.3).
+-Operator ID, your account (e.g. 0.0.2031)
+-Operator key, the private key for your account
+
+### Added class to download and parse record files in one step
+
+This class will download record files and parse the newly downloaded files immediately, then loop back to downloading available record files.
+
+### Increased logging granularity
+
+Each class outputs its category in the common log for ease of debugging.
+
+### Removal of `downloadPeriodSec` parameter from config.json
+
+Download and processing (logging) activities now run in a continuous loop, restarting as soon as they finished to lower the latency for data availability in the database as much as possible.
+To gracefully stop a running process, create a file called `stop` in the folder where the application was launched from.
+For example in Unix systems
+```
+touch stop
+```
+
+Remember to remove this file once you are ready to restart the processes.
+
+### All balance logging is now done in a single class
+
+Logging latest balance and balance history is now done sequentially from a single class.
+
+### Performance optimisations to balance tables
+
+Balance tables (t_account_balances and t_balance_history) were using the same t_entities table as other tables for referential integrity.
+This lead to contention and deadlocks that could impact latency on delivery of transaction data.
+The balance tables are now independent to avoid this resource contention.
+
+### The Address book file automatically refreshes
+
+Changes to the address book file (0.0.102) through fileUpdate transactions now update the 0.0.102 file with the new contents stipulated by the transaction.
+
+### `stopLoggingIfHashMismatch` change
+
+This field was a boolean, it's now a string. See details on configuration files for additional information.
+
+### Database transaction control
+
+Database transactions are now used to ensure a file cannot be partially saved to the database. If an error occurs during file processing, all changes are rolled back.
+
+### Database storage optimisation
+
+The database schema has been changed to maximise denormalisation in order to optimise storage and data integrity.
+
+### Addded `deleted` column on `t_entities`
+
+This column defaults to false on creation, and is set to true when a `delete` transaction is processed. It is unset when an `undelete` transaction is processed.
 
 ### Added address book download capability
 
@@ -73,12 +259,7 @@ See section on configuration for additional details.
 
 ### Addition of `stopLoggingIfHashMismatch` configuration item
 
-When processing files after they have been downloaded, this flag will determine whether file processing should continue or stop in the event of a mismatch between the hash of the last file processed and the hash held for the previous file in the file being processed.
-
-If set to `true` : Any mismatch in the sequence of file hashes will bring the processing to a stop, the missing file has to be downloaded in order for processing to be able to continue.
-If set to `false`: Hash sequence mismatches will be logged but ignored and processing will continue until there are no files to process.
-
-A file called `loggerStatus.json` will be created in the `./config` folder containing the hash of the last successfully processed file.
+When processing files after they have been downloaded, this value will determine if a hash mismatch should result in processing stopping. If the currently processed file name is greater than the value stored, processing will stop. Insert the name of the file which failed the hash check in this field in order to allow processing to continue (data loss will result).
 
 ### `node-log` has been removed from `log4.xml`
 
@@ -192,9 +373,36 @@ Edit the `./config/nodesInfo.json` file to match the nodes on the network you ar
 ### 0.0.102 file
 
 The `0.0.102` file contains the address book, that is the list of nodes, their account number and public key(s). This file is different on every network so it is imperative to ensure you have the correct one for each network, else the signature verification process will fail.
-See instructions below on how to generate this file for a network.
+
+#### Creating or updating the address book file (0.0.102 file)
+
+Set the following environment variables or add them to a `.env` file.
+
+```text
+NODE_ADDRESS=127.0.0.1:50211
+NODE_ID=0.0.x
+OPERATOR_ID=0.0.x
+OPERATOR_KEY=your account's private key
+```
+
+`NODE_ADDRESS` is the IP address/url + port of the node you wish to request the file from.
+`NODE_ID` is the account number of the node (0.0.x).
+`OPERATOR_ID` is your own account number on the network (0.0.x).
+`OPERATOR_KEY` is your private key for the above account.
+
+Run the following command to update the address book at the location specified in `config.json`.
+
+```shell
+java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
+```
+
+If no errors are output, the file specified by the `addressBookFile` parameter of the `config.json` file will now contain the network's address book.
+
+Once setup, the file will be automatically updated as the mirror node software parses fileUpdate transactions that pertain to this file.
 
 ### config.json
+
+Note: Changes to this file while downloading or processing is taking place may be overwritten by the software. Make sure all processes are stopped before making changes.
 
 | Parameter name  | Default value  | Description  |
 |---|---|---|
@@ -203,19 +411,17 @@ See instructions below on how to generate this file for a network.
 | bucketName | `"hedera-export"` | The name of the bucket containing the files to download |
 | accessKey | `""` | Your S3 or GCP access key |
 | secretKey | `""` | Your S3 or GCP secret key |
-| downloadPeriodSec | `120` | When a file download completes, wait this many seconds before the next one. If set to 0, downloading will only occur once and stop |
 | downloadToDir | `"/MirrorNodeData"` | The location where downloaded files will reside |
-| defaultParseDir | `"/MirrorNodeData/recordstreams/valid/"` | The location from which files will be processed |
 | proxyPort | `50777` | The port the mirror node proxy will listen onto |
 | nodeInfoFile | `"./config/nodesInfo.json"` | The location of the `nodesInfo.json` file |
 | addressBookFile | `"./config/0.0.102"` | The location of the address book file file |
 | accountBalancesS3Location | `"accountBalances/balance"` | The location of the account balances files in the cloud bucket |
 | recordFilesS3Location | `"recordstreams/record"` | The location of the record files in the cloud bucket |
-| dbUrl | `"jdbc:mysql://127.0.0.1:3306/hederamirror?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"` | The connection string to access the database |
-| dbUsername | `"hederamirror"` | The username to access the database |
+| dbUrl | `"jdbc:postgresql://localhost:5433/postgres"` | The connection string to access the database |
+| dbUsername | `"postgres"` | The username to access the database |
 | dbPassword | `"mysecretpassword"` | The password to access the database |
-| maxDownloadItems | `0` | The maximum number of new files to download, set to `0` in production, change to `10` or other low number for testing. Note, you may also reduce the number of nodes in `nodesInfo.json` so that only files from the nodes listed will be downloaded |
-| stopLoggingIfHashMismatch | `true` | Set to `true`, processing of files will stop of a mismatch in found between the last processed file and the hash in the current file. If set to `false` processing will continue after logging an error |
+| maxDownloadItems | `0` | The maximum number of new files to download at a time, set to `0` in production, change to `10` or other low number for testing or catching up with a large number of files. Note, you may also reduce the number of nodes in `nodesInfo.json` so that only files from the nodes listed will be downloaded, although this reduces the number of signature validations too |
+| stopLoggingIfHashMismatch | "" | If you wish to skip past a file as a result of a hash mismatch, you can input the name of the record file before which hash mismatches will be ignored. e.g. `2019-06-12T18/05/22.198241001Z.rcd` will allow hash mismatches on any files prior to that file name, after this file, a hash mismatch will result in an error being logged and processing to stop.
 | persistClaims | `false` | Determines whether claim data is persisted to the database or not |
 | persistFiles | `"ALL"` | Determines whether file data is persisted to the database or not, can be set to `ALL`, `NONE` or `SYSTEM`. `SYSTEM` means only files with a file number lower than `1000` will be persisted |
 | persistContracts | `true` | Determines whether contract data is persisted to the database or not |
@@ -248,36 +454,36 @@ This isn't strictly speaking a configuration file, it is created at runtime by t
 
 ## Installing the database
 
+You can skip this step if you're using Docker containers.
+
 Ensure you have a postgreSQL server running (versions 10 and 11 have been tested) with the mirror node software.
 
-Log into the database as an administrator and run the `postgres/postgresInit.sql` script to create the database and necessary entities.
+Setup the following environment variables:
 
-Ensure you change the default values in the first few lines of this script to match your environment.
-
-```sql
-\set db_name hederamirror
-\set db_user hederamirror
-\set db_password mysecretpassword
+```text
+POSTGRES_DB = the name of the database you wish to create
+POSTGRES_USER = the name of the user you wish to create
+POSTGRES_PASSWORD = the password for the user above
 ```
 
-By default, this installation script creates a new database called `hederamirror`, with a user named `hederamirror` and a default password of `mysecretpassword`. Make the necessary changes to the script should you wish to use different values (and update the `config/config.json` or `.env` or environment variables accordingly).
+You will also need to uncomment a few lines to enable the creation of the database and user as described in the `src/main/resources/postgres/postgresInit.sql` script.
+Log into the database as an administrator and run the `src/main/resources/postgres/postgresInit.sql` script to create the database and necessary entities.
+
+Make sure the `config/config.json` or `.env` file have values that match the above.
+
 Check the output of the script carefully to ensure no errors occurred.
 
 ## Upgrading the database
 
-If you have already installed the database and wish to upgrade it, you may run the `postgres/postgresUpdate.sql` script against your database.
+If you have already installed the database and wish to upgrade it, you may run the `src/main/resources/postgres/postgresUpdate.sql` script against your database.
 
 Ensure you change the default values in the first few lines of this script to match your environment.
-
-```sql
-\set db_name hederamirror
-\set db_user hederamirror
-\set db_password mysecretpassword
-```
 
 Check the output of the script carefully to ensure no errors occurred.
 
 ## Running the various mirror node components
+
+You can skip this section if you're running docker containers.
 
 ### Note about error when running the software
 
@@ -342,23 +548,18 @@ java -cp mirrorNode.jar com.hedera.parser.RecordFileParser
 
 ### To Parse Balance file(s)
 
-This project provides two balance file parsing and logging options.
+This project provides the ability to log balances for all accounts, including history of balance changes
 
-- Log only the latest balance - looks for the latest balance file and stores the balances in the database
-- Log balances with timestamp history - loads every available balance file and stores account balances against the file's timestamp.
-
-Note: You can run both, however it is **imperative** that 'latest' is run prior to 'history' since history moves files to a processed folder, thereby removing any files for 'latest' to process.
-
-To parse and log the latest files, run the following command:
+Run the following command:
 
 ```shell
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger 
+java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
 ```
 
-To parse and log balances with history, run the following command:
+### To download and parse record files in one command
 
 ```shell
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileHistoryLogger 
+java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseRecordFiles
 ```
 
 ### To Send Transactions or Queries to the BetaMirrorNode Proxy
@@ -367,71 +568,14 @@ Using a client which is able to generate and send transactions to a Hedera node,
 
 ## Docker compose
 
-Follow instructions above for setting up the `config.json` file. And edit the `.env` file in the `docker` folder to ensure environment variables are set correctly.
+Docker compose scripts are provided and run all the mirror node components:
 
-example `.env` file.
-
-```text
-POSTGRES_DB=hederamirror
-POSTGRES_USER=hederamirror
-POSTGRES_PASSWORD=mysecretpassword
-POSTGRES_PORT=5432
-PGDATA=/var/lib/postgresql/data/pgdata
-```
-
-If this is the first time you run the environment (or during a rebuild of the containers) in `docker-compose` you will need to update the `postgres/postgresInit.sql` script's fires few lines to set the database name, user and password you wish to use.
-
-```sql
-\set db_name hederamirror
-\set db_user hederamirror
-\set db_password mysecretpassword
-```
-
-Containers use persisted volumes as follows:
-
-- `./MirrorNodePostgresData` on your local machine maps to `/var/lib/postgresql/data` in the containers. This contains the files for the Postgres database.
-- `./runtime` on your local machine maps to `/MirrorNodeCode` in the containers. This contains the runtime and configuration files for loading and parsing files.
-- `./MirrorNodeData` on your local machine maps to `/MirrorNodeData` in the containers. This contains files downloaded from S3 or GCP.
-
-These are necessary not only for the database data to be persisted, but also so that the parsing containers can access file obtained via the downloading containers
-
-Docker compose scripts are available in the `docker` folder. A `buildImages.sh` script ensures the necessary data is available to the images via volumes, builds the images and starts the containers.
-
-Note: Shutting down the database container via `docker-compose down` may result in a corrupted database that may not restart or may take longer than usual to restart.
-
-In order to avoid this, shell into the container and issue the following command:
-
-Use `docker ps` to get the name of the database container, it should be something like `mirror-node-postgres`.
-
-Use the command `docker exec -it <container name> /bin/sh` to get a shell in the container.
-
-`su - postgres -c "PGDATA=$PGDATA /usr/local/bin/pg_ctl -w stop"`
-
-You may now power down the docker image itself.
-
-## Creating or updating the address book file (0.0.102 file)
-
-Set the following environment variables or add them to a `.env` file.
-
-```text
-NODE_ADDRESS=127.0.0.1:50211
-NODE_ID=0.0.x
-OPERATOR_ID=0.0.x
-OPERATOR_KEY=your account's private key
-```
-
-`NODE_ADDRESS` is the IP address/url + port of the node you wish to request the file from.
-`NODE_ID` is the account number of the node (0.0.x).
-`OPERATOR_ID` is your own account number on the network (0.0.x).
-`OPERATOR_KEY` is your private key for the above account.
-
-Run the following command to update the address book at the location specified in `config.json`.
-
-```shell
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook 
-```
-
-If no errors are output, the file specified by the `addressBookFile` parameter of the `config.json` file will now contain the network's address book.
+- PostgreSQL database
+- Balance files downloader
+- Balance files processor
+- Record files downloader and parser
+- 102 file updater
+- REST API
 
 ## REST API
 
@@ -446,59 +590,33 @@ You can also unittest using jest by using `npm test`.
 example `.env` file:
 
 ```TEXT
-DB_HOST='localhost'
-DB_USER='hederamirror'
-DB_PASS='mysecretpassword'
-DB_NAME='hederamirror'
+DB_USER=api
+DB_PASS=apipass
+DB_NAME=postgres
+# This is the port the REST API will listen onto
 PORT=5551
+# server hosting the database
+DB_HOST=localhost
 ```
 
 `PORT` is the port number the REST API will listen onto.
 
-## Notes about the java project structure
+## If things don't appear to be working properly
 
-The java project contains a number of packages and classes for its various modes of operation
+### Checking for errors
 
-- com.hedera.mirrorNodeProxy
+Set log levels to WARN as a minimum to start with. INFO is very verbose.
 
-Contains a `MirrorNodeProxy` class which is responsible for running the proxy.
+Check for errors in the `output/recordStream.log` file.
 
-- com.hedera.downloader
+### Record files
 
-Contains a `RecordFileDownloader` class which connects to an s3 bucket and downloads record files from the bucket.
+* Recordstream files that have successfully been validated against signatures will be placed in the `"downloadToDir"/recordstreams/valid` directory.
+If there are no files in this folder, it's possible that either you `0.0.102` file is incorrect for this network, or signature files are still being downloaded.
 
-Contains a `AccountBalancesDownloader` class which connects to an s3 bucket and downloads account balance files from the bucket.
+* Recordstream files that have successfully been parsed will be moved to `"downloadToDir"/recordstreams/parsedRecordFiles'
 
-- com.hedera.parser
+* If your `maxDownloadItems` is set to 0 in the `config.json` file, the docker image downloads all new signature files from all nodes before starting processing into the database. If there are many files to catch up, it may be a long while before processing of these files takes place.
+You may try to set the `maxDownloadItems` to a number such as 10 or 20 to download and process new files in batches.
 
-Contains a `RecordFileParser` class which given a number of record files will process them, it calls the static class below which is responsible for processing the output itself.
-
-- com.hedera.recordFileLogger
-
-Contains a `RecordFileLogger` class which is an example of how to receive transactions and records from `RecordFileParser` and output to a text file. It is recommended you modify this class for your purposes while leaving the other packages and classes untouched so that future updates do not impact your own development
-
-`RecordFileLogger` contains the following public methods:
-
-- public static void start()
-
-Called whenever the `RecordFileParser` class starts running.
-
-- public static void finish()
-
-Called whenever the `RecordFileParser` class ends running.
-
-- public static void initFile(String fileName)
-
-Called whenever a new file starts processing
-
-- public static void completeFile()
-
-Called whenever a file completes processing
-
-- public static void storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord)
-
-Called for each record found in the record files such that you can decide whether to store that transaction and its record in your own files or database.
-
-- public static void storeSignature(String signature)
-
-Called for each signature that is processed.
+* The above also applies if you are running the `downloader.DownloadAndParseRecordFiles` java class.

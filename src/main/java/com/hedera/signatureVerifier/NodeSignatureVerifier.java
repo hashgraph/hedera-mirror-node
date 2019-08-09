@@ -2,7 +2,7 @@ package com.hedera.signatureVerifier;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.mirrorNodeProxy.Utility;
+import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import org.apache.commons.codec.DecoderException;
@@ -13,12 +13,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -30,7 +25,6 @@ import java.security.spec.EncodedKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,15 +33,10 @@ import java.util.Map;
 import java.util.Set;
 
 public class NodeSignatureVerifier {
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("nodesignatureverifier");
 	private static final Marker MARKER = MarkerManager.getMarker("NodeSignatureVerifier");
 
 	private static String nodeAddressBookLocation;
-
-	static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 of previous files
-	static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
-	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
-	static final byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of corresponding RecordFile
 
 	Map<String, PublicKey> nodeIDPubKeyMap;
 
@@ -74,7 +63,7 @@ public class NodeSignatureVerifier {
 				PublicKey publicKey = loadPublicKey(nodeAddress.getRSAPubKey());
 				nodeIDPubKeyMap.put(accountID, publicKey);
 			} catch(DecoderException ex) {
-				log.error(MARKER, "Faild to load PublicKey from: {} for {}", nodeAddress.getRSAPubKey(), accountID);
+				log.error(MARKER, "Failed to load PublicKey from: {} for {}", nodeAddress.getRSAPubKey(), accountID);
 			}
 		}
 	}
@@ -104,7 +93,7 @@ public class NodeSignatureVerifier {
 			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 			publicKey = keyFactory.generatePublic(publicKeySpec);
 		} catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-			log.error(MARKER, " Fail to convert to PublicKey - {}", e.getStackTrace());
+			log.error(MARKER, " Fail to convert to PublicKey - {}", e);
 		}
 		return publicKey;
 	}
@@ -113,82 +102,8 @@ public class NodeSignatureVerifier {
 		return bytesToPublicKey(Utility.hexToBytes(rsaPubKeyString));
 	}
 
-	private static byte[] integerToBytes(int number) {
-		ByteBuffer b = ByteBuffer.allocate(4);
-		b.putInt(number);
-		return b.array();
-	}
-
-	/**
-	 * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this signature
-	 * 2. Extract signature from the file.
-	 * @param file
-	 * @return
-	 */
-	public Pair<byte[], byte[]> extractHashAndSigFromFile(File file) {
-		FileInputStream stream = null;
-		byte[] sig = null;
-
-		if (file.exists() == false) {
-			log.info(MARKER, "File does not exist " + file.getPath());
-			return null;
-		}
-
-		try {
-			stream = new FileInputStream(file);
-			DataInputStream dis = new DataInputStream(stream);
-			byte[] fileHash = new byte[48];
-
-			while (dis.available() != 0) {
-				try {
-					byte typeDelimiter = dis.readByte();
-
-					switch (typeDelimiter) {
-						case TYPE_FILE_HASH:
-							dis.read(fileHash);
-							// log.info(MARKER, "File Hash = " + Hex.encodeHexString(fileHash));
-							break;
-
-						case TYPE_SIGNATURE:
-							int sigLength = dis.readInt();
-							// log.info(MARKER, "sigLength = " + sigLength);
-							byte[] sigBytes = new byte[sigLength];
-							dis.readFully(sigBytes);
-							// log.info(MARKER, "File {} Signature = {} ", file.getName(), Hex.encodeHexString(sigBytes));
-							sig = sigBytes;
-							break;
-						default:
-							log.error(MARKER, "extractHashAndSigFromFile :: Exception Unknown record file delimiter {}", typeDelimiter);
-					}
-
-				} catch (Exception e) {
-					log.error(MARKER, "extractHashAndSigFromFile :: Exception ", e);
-					break;
-				}
-			}
-
-			return Pair.of(fileHash, sig);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			log.error(MARKER, "extractHashAndSigFromFile :: File Not Found Error");
-		} catch (IOException e) {
-			log.error(MARKER, "extractHashAndSigFromFile :: IOException Error");
-		} catch (Exception e) {
-			log.error(MARKER, "extractHashAndSigFromFile :: Parsing Error");
-		} finally {
-			try {
-				if (stream != null)
-					stream.close();
-			} catch (IOException ex) {
-				log.error("extractHashAndSigFromFile :: Exception in close the stream {}", ex);
-			}
-		}
-
-		return null;
-	}
-
 	public boolean verifySignatureFile(File sigFile) {
-		Pair<byte[], byte[]> hashAndSig = extractHashAndSigFromFile(sigFile);
+		Pair<byte[], byte[]> hashAndSig = Utility.extractHashAndSigFromFile(sigFile);
 
 		//Signed Data is the Hash of unsigned File
 		byte[] signedData = hashAndSig.getLeft();
@@ -196,7 +111,7 @@ public class NodeSignatureVerifier {
 		String nodeAccountID = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
 		byte[] signature = hashAndSig.getRight();
 
-		boolean isValid = verifySignature(signedData, signature, nodeAccountID);
+		boolean isValid = verifySignature(signedData, signature, nodeAccountID, sigFile.getPath());
 		if (!isValid) {
 			log.info(MARKER, "{} contains invalid signature", sigFile.getPath());
 		}
@@ -217,7 +132,7 @@ public class NodeSignatureVerifier {
 		Map<String, Set<File>> hashToSigFiles = new HashMap<>();
 		for (File sigFile : sigFiles) {
 			if (verifySignatureFile(sigFile)) {
-				byte[] hash = extractHashAndSigFromFile(sigFile).getLeft();
+				byte[] hash = Utility.extractHashAndSigFromFile(sigFile).getLeft();
 				String hashString = Hex.encodeHexString(hash);
 				Set<File> files = hashToSigFiles.getOrDefault(hashString, new HashSet<>());
 				files.add(sigFile);
@@ -248,7 +163,7 @@ public class NodeSignatureVerifier {
 	 * @return true if the signature is valid
 	 */
 	public boolean verifySignature(byte[] data, byte[] signature,
-			String nodeAccountID) {
+			String nodeAccountID, String filePath) {
 		PublicKey publicKey = nodeIDPubKeyMap.get(nodeAccountID);
 		if (publicKey == null) {
 			log.debug(MARKER, "verifySignature :: missing PublicKey of node{}", nodeAccountID);
@@ -262,24 +177,15 @@ public class NodeSignatureVerifier {
 			sig.initVerify(publicKey);
 			sig.update(data);
 			if (signature == null) {
-				log.error(MARKER, " verifySignature :: signature is null !");
+				log.error(MARKER, " verifySignature :: signature is null for file {}", filePath);
+				return false;
 			}
 			return sig.verify(signature);
 		} catch (NoSuchAlgorithmException | NoSuchProviderException
 				| InvalidKeyException | SignatureException e) {
-			log.error(MARKER, " verifySignature :: Fail to verify Signature: {}, PublicKey: {}, NodeID: {}, Exception: {}", signature, publicKey, nodeAccountID,
-					e.getStackTrace());
+			log.error(MARKER, " verifySignature :: Fail to verify Signature: {}, PublicKey: {}, NodeID: {}, File: {}, Exception: {}", signature, publicKey, nodeAccountID, e.getStackTrace());
 		}
 		return false;
-	}
-
-	/**
-	 * Verify if a .rcd file's hash is equal to the hash contained in .rcd_sig file
-	 * @return
-	 */
-	public boolean hashMatch(File sigFile, File rcdFile) {
-		byte[] fileHash = Utility.getFileHash(rcdFile.getPath());
-		return Arrays.equals(fileHash, extractHashAndSigFromFile(sigFile).getLeft());
 	}
 
 	public List<String> getNodeAccountIDs() {

@@ -6,6 +6,7 @@ import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirrorservice.CryptoServiceMirror;
 import com.hedera.mirrorservice.FileServiceMirror;
 import com.hedera.mirrorservice.SmartContractServiceMirror;
+import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
@@ -24,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * The MirrorNodeProxy runs a grpc server that accepts HAPI transactions, and forwards them unchanged to the node specified in the transaction body. 
  */
 public class MirrorNodeProxy {
-	private static final Logger log = LogManager.getLogger("recordStream-log");
+	private static final Logger log = LogManager.getLogger("proxy");
 	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
 	private static String nodeInfoFile;
 
@@ -39,7 +40,7 @@ public class MirrorNodeProxy {
 	 * This accepts one parameter to start the proxy, a configuration file which specifies a port number to listen to as well as the json file name which contains a list of nodes's host and port.
 	 */
 	public static void main(String[] args) {
-		ConfigLoader configLoader = new ConfigLoader("./config/config.json");
+		ConfigLoader configLoader = new ConfigLoader();
 		new MirrorNodeProxy(configLoader.getProxyPort(), configLoader.getNodeInfoFile());
 	}
 
@@ -83,7 +84,7 @@ public class MirrorNodeProxy {
 			}
 			log.info(MARKER, "Loaded nodes info successfully");
 		} catch (Exception ex) {
-			log.error(MARKER, "Get an exception while loading NodesInfo {}", ex.getStackTrace());
+			log.error(MARKER, "Get an exception while loading NodesInfo {}", ex);
 		}
 	}
 
@@ -100,7 +101,7 @@ public class MirrorNodeProxy {
 			log.info(MARKER, "NettyServer SHUTTING DOWN .");
 			this.server.awaitTermination(5, TimeUnit.SECONDS);
 		} catch (InterruptedException ex) {
-			log.error(MARKER, "Error in shutdownNetty {}", ex.getStackTrace());
+			log.error(MARKER, "Error in shutdownNetty {}", ex);
 		}
 	}
 }

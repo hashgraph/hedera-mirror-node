@@ -1,0 +1,7 @@
+#*/1 * * * * /home/mirrornode/recorddownload.sh
+#*/1 * * * * /home/mirrornode/recordparse.sh
+*/1 * * * * /home/mirrornode/recorddownloadandparse.sh
+*/1 * * * * /home/mirrornode/balancedownload.sh
+*/1 * * * * /home/mirrornode/balanceparse.sh
+*/30 * * * * PGPASSFILE=/home/mirrornode/.pgpass psql -h x.x.x.x -U postgres -d hederamirror -c "vacuum analyze;" 1> /dev/null
+*/30 * * * * PGPASSFILE=/home/mirrornode/.pgpass psql -h x.x.x.x -U postgres -d hederamirror -c "REINDEX DATABASE hederamirror;" 1> /dev/null

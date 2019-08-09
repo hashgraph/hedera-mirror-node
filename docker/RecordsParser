@@ -1,11 +1,11 @@
 # Pull base image.
 FROM ubuntu:latest
 
-RUN \
 # Update
-apt-get update -y && \
+RUN apt-get update || true
+
 # Install Java
-apt-get install default-jre -y
+RUN apt-get install default-jre || true
 
 RUN mkdir -p /config
 RUN mkdir -p /lib

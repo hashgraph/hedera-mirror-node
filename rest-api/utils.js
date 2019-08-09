@@ -119,8 +119,7 @@ const parseCreditDebitParams = function (req) {
  * @param {HTTPRequest} req HTTP query request object
  * @return {String} Value of the resultType parameter
  */
-const parseResultParams = function (req)
-{
+const parseResultParams = function (req) {
     let resultType = req.query.result;
     let query = '';
 
@@ -130,7 +129,7 @@ const parseResultParams = function (req)
         query = '     and result != \'SUCCESS\'';
     }
     return (query);
-//    return ((req.query.result === 'successful') ? 'successful' : 'all');
+    //    return ((req.query.result === 'successful') ? 'successful' : 'all');
 }
 
 /**
@@ -138,30 +137,35 @@ const parseResultParams = function (req)
  * @param {HTTPRequest} req HTTP query request object
  * @return {Object} {query, params, order} SQL query, values and order
  */
-const parsePaginationAndOrderParams = function (req) {
+const parsePaginationAndOrderParams = function (req, defaultOrder = 'desc') {
     // Parse the pagination parameters (i.e. limit/offset)
     let limitOffsetQuery = '';
     let limitOffsetParams = [];
-    let limitVal = getIntegerParam(req.query['limit'], globals.MAX_LIMIT);
+    let lVal = getIntegerParam(req.query['limit'], globals.MAX_LIMIT);
+    let limitValue = lVal === '' ? globals.MAX_LIMIT : lVal;
     limitOffsetQuery = 'limit ? ';
-    limitOffsetParams.push(limitVal === '' ? globals.MAX_LIMIT : limitVal);
+    limitOffsetParams.push(limitValue);
 
-    let offsetVal = getIntegerParam(req.query['offset']);
-    if (offsetVal != '') {
+    let oVal = getIntegerParam(req.query['offset']);
+    let offsetValue = 0;
+    if (oVal != '') {
         limitOffsetQuery += 'offset ? ';
-        limitOffsetParams.push(offsetVal);
+        limitOffsetParams.push(oVal);
+        offsetValue = oVal;
     }
 
     // Parse the order parameters (default; descending)
-    let order = 'desc ';
-    if (req.query['order'] === 'asc') {
-        order = 'asc ';
+    let order = defaultOrder;
+    if (['asc', 'desc'].includes(req.query['order'])) {
+        order = req.query['order'];
     }
 
     return ({
         limitOffsetQuery: limitOffsetQuery,
         limitOffsetParams: limitOffsetParams,
-        order: order
+        order: order,
+        limit: Number(limitValue),
+        offset: Number(offsetValue)
     });
 }
 
@@ -182,12 +186,80 @@ const convertMySqlStyleQueryToPostgress = function (sqlQuery, sqlParams) {
     return (sqlQueryNonInject);
 }
 
+
+/**
+ * Create pagination (next) link
+ * @param {HTTPRequest} req HTTP query request object
+ * @param {Boolean} isEnd Is the next link valid or not
+ * @return {Integer} limit Limit value
+ * @return {Integer} offset Offset value
+ * @return {String} next Fully formed link to the next page
+ */
+const getPaginationLink = function (req, isEnd, limit, offset, order, anchorSeconds) {
+    const port = process.env.PORT;
+    const portquery = (Number(port) === 80) ? '' : (':' + port);
+    req = getTimeQueryForPagination(req, order, anchorSeconds);
+    var next = '';
+    if (!isEnd) {
+        // Remove the limit and offset parameters from the current query
+        for (const [q, v] of Object.entries(req.query)) {
+            if (q === 'limit' || q === 'offset') {
+                delete req.query[q];
+            }
+        }
+
+        // Reconstruct the query string without the limit and offset parameters
+        for (const [q, v] of Object.entries(req.query)) {
+            if (Array.isArray(v)) {
+                v.map(vv => (next += (next === '' ? '?' : '&') + q + '=' + vv));
+            } else {
+                next += (next === '' ? '?' : '&') + q + '=' + v;
+            }
+        }
+
+        // And add back the new limit and offset values
+        next = req.protocol + '://' + req.hostname + portquery + req.path + next +
+            (next === '' ? '?' : '&') +
+            'limit=' + limit + '&offset=' + (offset + limit);
+    }
+    return (next === '' ? null : next);
+}
+
+/**
+ * Create an additional timestamp based query to ensure the integrity of 
+ * paginated links results. The challege is that between consecutive paginated 
+ * calls, the database could have received more recent entries, and a subsequent 
+ * call could receive inconsistent data as a result.
+ * This is handled by anchoring the queries on the page anchor (consensus seconds)
+ * parameter.
+ * @param {Request} req HTTP query request object
+ * @param {String} order Order ('asc' or 'desc')
+ * @return {Integer} anchorSeconds consensus seconds of the query result of 
+ *          the call that started pagination
+ * @return {Request} req Updated HTTP request object with inserted pageanchor parameter
+ */
+const getTimeQueryForPagination = function (req, order, anchorSeconds) {
+    //  if descending
+    //      if query has anchorSeconds:
+    //          then just use that
+    //      else:
+    //          add anchorSeconds = anchorSeconds
+    //
+    if (order === 'desc') {
+        if (anchorSeconds !== undefined && !req.query.pageanchor) {
+            req.query.pageanchor = anchorSeconds;
+        }
+    }
+    return (req);
+}
+
 module.exports = {
     parseParams: parseParams,
     parseCreditDebitParams: parseCreditDebitParams,
     parsePaginationAndOrderParams: parsePaginationAndOrderParams,
     parseResultParams: parseResultParams,
-    convertMySqlStyleQueryToPostgress: convertMySqlStyleQueryToPostgress
+    convertMySqlStyleQueryToPostgress: convertMySqlStyleQueryToPostgress,
+    getPaginationLink: getPaginationLink
 }
 
 

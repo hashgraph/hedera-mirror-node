@@ -1,4 +1,4 @@
-package com.hedera.mirrorNodeProxy;
+package com.hedera.utilities;
 
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
@@ -15,17 +15,20 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -37,12 +40,123 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.lang.System.out;
-
 public class Utility {
-	private static final Logger log = LogManager.getLogger();
-	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
-	private static final Long SCALAR = 1_000_000_000L;
+	private static final Logger log = LogManager.getLogger("utility");
+	private static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
+	private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
+  private static final Long SCALAR = 1_000_000_000L;
+
+	private static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 of previous files
+	private static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
+	private static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
+	private static final byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of corresponding RecordFile
+
+
+	public static boolean checkStopFile() {
+		File stopFile = new File("./stop");
+		return stopFile.exists();
+	}
+	/**
+	 * Verify if a .rcd file's hash is equal to the hash contained in .rcd_sig file
+	 * @return
+	 */
+	public static boolean hashMatch(File sigFile, File rcdFile) {
+		byte[] fileHash = Utility.getFileHash(rcdFile.getPath());
+		return Arrays.equals(fileHash, extractHashAndSigFromFile(sigFile).getLeft());
+	}
+	/**
+	 * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this signature
+	 * 2. Extract signature from the file.
+	 * @param file
+	 * @return
+	 */
+	public static Pair<byte[], byte[]> extractHashAndSigFromFile(File file) {
+		FileInputStream stream = null;
+		byte[] sig = null;
+
+		if (file.exists() == false) {
+			log.info(MARKER, "File does not exist " + file.getPath());
+			return null;
+		}
+
+		try {
+			stream = new FileInputStream(file);
+			DataInputStream dis = new DataInputStream(stream);
+			byte[] fileHash = new byte[48];
+
+			while (dis.available() != 0) {
+				try {
+					byte typeDelimiter = dis.readByte();
+
+					switch (typeDelimiter) {
+						case TYPE_FILE_HASH:
+							dis.read(fileHash);
+							// log.info(MARKER, "File Hash = " + Hex.encodeHexString(fileHash));
+							break;
+
+						case TYPE_SIGNATURE:
+							int sigLength = dis.readInt();
+							// log.info(MARKER, "sigLength = " + sigLength);
+							byte[] sigBytes = new byte[sigLength];
+							dis.readFully(sigBytes);
+							// log.info(MARKER, "File {} Signature = {} ", file.getName(), Hex.encodeHexString(sigBytes));
+							sig = sigBytes;
+							break;
+						default:
+							log.error(MARKER, "extractHashAndSigFromFile :: Exception Unknown record file delimiter {}", typeDelimiter);
+					}
+
+				} catch (Exception e) {
+					log.error(MARKER, "extractHashAndSigFromFile :: Exception ", e);
+					break;
+				}
+			}
+
+			return Pair.of(fileHash, sig);
+		} catch (FileNotFoundException e) {
+			log.error(MARKER, "extractHashAndSigFromFile :: File Not Found Error");
+		} catch (IOException e) {
+			log.error(MARKER, "extractHashAndSigFromFile :: IOException Error");
+		} catch (Exception e) {
+			log.error(MARKER, "extractHashAndSigFromFile :: Parsing Error");
+		} finally {
+			try {
+				if (stream != null)
+					stream.close();
+			} catch (IOException ex) {
+				log.error("extractHashAndSigFromFile :: Exception in close the stream {}", ex);
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Calculate SHA384 hash of a binary file
+	 *
+	 * @param fileName
+	 * 		file name
+	 * @return byte array of hash value
+	 */
+	public static byte[] getFileHash(String fileName) {
+		MessageDigest md;
+		try {
+			md = MessageDigest.getInstance("SHA-384");
+
+			byte[] array = new byte[0];
+			try {
+				array = Files.readAllBytes(Paths.get(fileName));
+			} catch (IOException e) {
+				log.error("Exception {}", e);
+			}
+			byte[] fileHash = md.digest(array);
+			return fileHash;
+
+		} catch (NoSuchAlgorithmException e) {
+			log.error(LOGM_EXCEPTION, "Exception {}", e);
+			return null;
+		}
+	}
 
 	public static AccountID stringToAccountID(final String string) throws IllegalArgumentException{
 		if (string == null || string.isEmpty()) {
@@ -64,6 +178,12 @@ public class Utility {
 		JsonParser parser = new JsonParser();
 		FileReader file = new FileReader(location);
 		return (JsonObject)parser.parse(file);
+	}
+
+	private static byte[] integerToBytes(int number) {
+		ByteBuffer b = ByteBuffer.allocate(4);
+		b.putInt(number);
+		return b.array();
 	}
 
 	/**
@@ -113,7 +233,7 @@ public class Utility {
 	}
 
 	/**
-	 * print a Transaction's content to a formatted (Readable) String 
+	 * print a Transaction's content to a formatted (Readable) String
 	 * @param transaction
 	 * @return
 	 * @throws InvalidProtocolBufferException
@@ -163,8 +283,7 @@ public class Utility {
 		try (final FileInputStream fis = new FileInputStream(new File(location))) {
 			bytes = fis.readAllBytes();
 		} catch (IOException ex) {
-            log.error(MARKER, "getBytes() failed, Exception: {}", ex.getStackTrace());
-			out.println(Arrays.toString(ex.getStackTrace()));
+            log.error(MARKER, "getBytes() failed, Exception: {}", ex);
 		}
 		return bytes;
 	}
@@ -387,20 +506,28 @@ public class Utility {
 		}
 	}
 
-	public static void moveFileToParsedDir(String fileName, String dirName) {
+	public static boolean hashIsEmpty(String hash) {
+		return (hash.isEmpty() || hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"));
+	}
+	
+	public static void moveFileToParsedDir(String fileName, String subDir) {
 		File sourceFile = new File(fileName);
-		File parsedDir = new File(sourceFile.getParentFile().getParentFile().getPath() + dirName);
+		String pathToSaveTo = sourceFile.getParentFile().getParentFile().getPath() + subDir;
+		String shortFileName = sourceFile.getName().substring(0, 10).replace("-", "/");
+		pathToSaveTo += shortFileName;
+
+		File parsedDir = new File(pathToSaveTo);
 		parsedDir.mkdirs();
-		File destFile = new File(parsedDir.getPath() + "/" + sourceFile.getName());
+
+		File destFile = new File(pathToSaveTo + "/" + sourceFile.getName());
 		try {
 			Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			log.info( sourceFile.toPath() + " has been moved to " + destFile.getPath());
+			log.info(MARKER, sourceFile.toPath() + " has been moved to " + destFile.getPath());
 		} catch (IOException ex) {
-			log.error( "Fail to move {} to {} : {}",
+			log.error(MARKER, "Fail to move {} to {} : {}",
 					fileName, parsedDir.getName(),
-					ex.getStackTrace());
+					ex);
 		}
-	}
 
 	/**
 	 * return false if the directory doesn't exist and we fail to create it;

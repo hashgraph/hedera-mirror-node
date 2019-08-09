@@ -12,13 +12,13 @@ import org.apache.logging.log4j.MarkerManager;
 import com.hedera.configLoader.ConfigLoader;
 
 public class DatabaseUtilities {
-    private static final Logger log = LogManager.getLogger("recordStream-log");
+    private static final Logger log = LogManager.getLogger("databaseUtilities");
     static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
     public static Connection openDatabase(Connection connect) {
         if (connect == null) {
             try {
-            	ConfigLoader configLoader = new ConfigLoader("./config/config.json");
+            	ConfigLoader configLoader = new ConfigLoader();
                 // Setup the connection with the DB
                 String url = configLoader.getDBUrl();
                 String userName = configLoader.getDBUserName();

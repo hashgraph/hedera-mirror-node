@@ -26,11 +26,70 @@
 		</RollingFile>
 	</Appenders>
 	<Loggers>
-		<Root level="INFO">
+		<Root level="WARN">
 			<AppenderRef ref="Console"/>
 		</Root>
-		<Logger name="recordStream-log" level="INFO">
-			<AppenderRef ref="recordStream-log" level="INFO"/>
+		
+		<Logger name="downloadandparserecordfiles" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+
+		<Logger name="networkaddressbook" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+
+		<Logger name="proxy" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+
+		<Logger name="cryptoservicemirror" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+
+		<Logger name="fileservicemirror" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+
+		<Logger name="serviceagent" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+
+		<Logger name="smartcontractservicemirror" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+
+		<Logger name="loggerstatus" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+
+		<Logger name="recordfilelogger" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+
+		<Logger name="recordfileparser" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+
+		<Logger name="nodesignatureverifier" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+		<Logger name="balancelogger" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+		<Logger name="configloader" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+		<Logger name="databaseUtilities" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+		<Logger name="downloader" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+		<Logger name="utility" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
+		</Logger>
+		<Logger name="recordStream-log" level="WARN">
+			<AppenderRef ref="recordStream-log" level="WARN"/>
 		</Logger>
 		<Logger name="eventStream-log" level="INFO">
 			<AppenderRef ref="eventStream-log" level="INFO"/>
