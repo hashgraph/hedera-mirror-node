@@ -48,6 +48,7 @@ CREATE SEQUENCE s_transactions_seq;
 CREATE SEQUENCE s_entities_seq;
 CREATE SEQUENCE s_transaction_results_seq;
 CREATE SEQUENCE s_account_balances_seq;
+CREATE SEQUENCE s_events_id_seq;
 
 \echo Creating table t_version
 CREATE TABLE t_version (
@@ -56,7 +57,7 @@ CREATE TABLE t_version (
 
 \echo Inserting into t_version
 
-INSERT INTO t_version VALUES (1);
+INSERT INTO t_version VALUES (2);
 
 \echo Creating table t_transaction_types
 
@@ -306,6 +307,32 @@ CREATE TABLE t_livehashes (
 	,livehash          BYTEA
 );
 
+\echo Creating events table
+CREATE TABLE t_events
+(
+    id                       BIGINT  NOT NULL DEFAULT nextval('s_events_id_seq')
+    ,consensus_order         BIGINT  NOT NULL
+    ,creator_node_id         BIGINT  NOT NULL
+    ,creator_seq             BIGINT  NOT NULL
+    ,other_node_id           BIGINT
+    ,other_seq               BIGINT
+    ,signature               BYTEA   NOT NULL
+    ,hash                    BYTEA   NOT NULL
+    ,self_parent_id          BIGINT
+    ,other_parent_id         BIGINT
+    ,self_parent_hash        BYTEA
+    ,other_parent_hash       BYTEA
+    ,self_parent_generation  BIGINT
+    ,other_parent_generation BIGINT
+    ,generation              BIGINT  NOT NULL
+    ,created_timestamp_ns    BIGINT  NOT NULL
+    ,consensus_timestamp_ns  BIGINT  NOT NULL
+    ,latency_ns              BIGINT  NOT NULL
+    ,txs_bytes_count         INTEGER NOT NULL
+    ,platform_tx_count       INTEGER NOT NULL
+    ,app_tx_count            INTEGER NOT NULL
+);
+
 -- CONSTRAINTS
 -- t_entities
 \echo Creating constraints on t_entities
@@ -346,6 +373,11 @@ ALTER TABLE t_contract_result ADD CONSTRAINT fk_cr_tx_id FOREIGN KEY (fk_trans_i
 
 \echo Creating constraints on t_livehashes
 ALTER TABLE t_livehashes ADD CONSTRAINT fk_cd_tx_id FOREIGN KEY (fk_trans_id) REFERENCES t_transactions (id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+\echo Creating constraints on t_events
+ALTER TABLE t_events ADD CONSTRAINT pk_events_id PRIMARY KEY (id);
+ALTER TABLE t_events ADD CONSTRAINT fk_events_self_parent_id FOREIGN KEY (self_parent_id) REFERENCES t_events (id);
+ALTER TABLE t_events ADD CONSTRAINT fk_events_other_parent_id FOREIGN KEY (other_parent_id) REFERENCES t_events (id);
 
 -- INDICES
 -- t_transactions
@@ -444,6 +476,15 @@ GRANT ALL ON t_livehashes TO :db_user;
 GRANT ALL ON t_version TO :db_user;
 GRANT ALL ON t_transaction_results TO :db_user;
 GRANT ALL ON t_entity_types TO :db_user;
+GRANT ALL ON t_events TO :db_user;
+
+GRANT ALL ON s_transaction_types_seq TO :db_user;
+GRANT ALL ON s_record_files_seq TO :db_user;
+GRANT ALL ON s_transactions_seq TO :db_user;
+GRANT ALL ON s_entities_seq TO :db_user;
+GRANT ALL ON s_transaction_results_seq TO :db_user;
+GRANT ALL ON s_account_balances_seq TO :db_user;
+GRANT ALL ON s_events_id_seq TO :db_user;
 
 GRANT ALL ON v_entities to :db_user;
 
@@ -460,12 +501,6 @@ GRANT SELECT ON t_contract_result TO :api_user;
 GRANT SELECT ON t_livehashes TO :api_user;
 GRANT SELECT ON t_transaction_results TO :api_user;
 GRANT SELECT ON t_entity_types TO :api_user;
+GRANT SELECT ON t_events TO :api_user;
 
 GRANT SELECT ON v_entities TO :api_user;
-
-GRANT ALL ON s_transaction_types_seq TO :db_user;
-GRANT ALL ON s_record_files_seq TO :db_user;
-GRANT ALL ON s_transactions_seq TO :db_user;
-GRANT ALL ON s_entities_seq TO :db_user;
-GRANT ALL ON s_transaction_results_seq TO :db_user;
-GRANT ALL ON s_account_balances_seq TO :db_user;
