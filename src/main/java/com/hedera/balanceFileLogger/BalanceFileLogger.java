@@ -18,6 +18,7 @@ import java.util.List;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.databaseUtilities.DatabaseUtilities;
+import com.hedera.fileWatcher.FileWatcher;
 import com.hedera.utilities.Utility;
 
 import org.apache.logging.log4j.LogManager;
@@ -27,12 +28,12 @@ import org.apache.logging.log4j.MarkerManager;
 
 import java.time.Instant;
 
-public class BalanceFileLogger {
+public class BalanceFileLogger extends FileWatcher {
 
 	private static final Logger log = LogManager.getLogger("balancelogger");
 	private static final Marker MARKER = MarkerManager.getMarker("BALANCE");
 	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
-
+	
 	enum BalanceSelect {
 		ZERO
 		,SHARD
@@ -73,11 +74,15 @@ public class BalanceFileLogger {
     private static Connection connect = null;
 
     private static ConfigLoader configLoader = new ConfigLoader();
-	private static String balanceFolder = configLoader.getDownloadToDir(OPERATION_TYPE.BALANCE);
 	private static Instant fileTimestamp;
 	private static long fileSeconds = 0;
 	private static long fileNanos = 0;
-
+	private static File balanceFilePath = new File(configLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE));
+	
+	public BalanceFileLogger(File pathToWatch) {
+		super(pathToWatch);
+	}
+	
 	static void parseFileName(File fileName) {
 
 		String shortFileName = fileName.getName().replace(".csv", "");
@@ -111,49 +116,60 @@ public class BalanceFileLogger {
 		}
 	}
 
-	private static File getLatestBalancefile(File balanceFilesPath) throws IOException {
+	private static File getLatestBalancefile() throws IOException {
 
 		File lastFile = null;
         // find all files in path
         // return the greatest file name
 
-        if (!balanceFilesPath.exists()) {
-        	balanceFilesPath.mkdirs();
-        }
-	    if (balanceFilesPath.exists()) {
-            List<String> balancefiles = new ArrayList<String>();
-		    for (final File balanceFile : balanceFilesPath.listFiles()) {
-                balancefiles.add(balanceFile.getName());
-		    }
-            if (balancefiles.size() != 0) {
-	            Collections.sort(balancefiles);
-
-	            lastFile = new File(balanceFilesPath + File.separator + balancefiles.get(balancefiles.size()-1));
-            }
-	    } else {
-			log.error(MARKER, balanceFilesPath.getPath() + " does not exist.");
+        List<String> balancefiles = new ArrayList<String>();
+	    for (final File balanceFile : balanceFilePath.listFiles()) {
+	        if (balanceFile.getName().toString().endsWith(".csv") ) {
+	            balancefiles.add(balanceFile.getName());
+	        }
+	    	
 	    }
-	    return lastFile;
+        if (balancefiles.size() != 0) {
+            Collections.sort(balancefiles);
+
+            lastFile = new File(balanceFilePath + File.separator + balancefiles.get(balancefiles.size()-1));
+        }
+
+        return lastFile;
 	}
 
 	public static void main(String[] args) {
-	    while (true) {
-			if (Utility.checkStopFile()) {
-				log.info(MARKER, "Stop file found, exiting.");
-				System.exit(0);
-			}
-		    File balanceFilesPath = new File(configLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE));
-	        if (!balanceFilesPath.exists()) {
-	        	balanceFilesPath.mkdirs();
-	        }
+		// fileWatcher doesn't work on mac ?
+		String OS = System.getProperty("os.name").toLowerCase();
+		if (OS.indexOf("mac") >= 0) {
+		    while (true) {
+				if (Utility.checkStopFile()) {
+					log.info(MARKER, "Stop file found, exiting.");
+					System.exit(0);
+				}
+		        if (!balanceFilePath.exists()) {
+		        	balanceFilePath.mkdirs();
+		        }
 
-		    processLastBalanceFile(balanceFilesPath);
-		    processAllFilesForHistory(balanceFilesPath);
-	    }
+			    processLastBalanceFile();
+			    processAllFilesForHistory();
+		    }
+			
+		} else {
+			FileWatcher fileWatcher = new BalanceFileLogger(balanceFilePath);
+			fileWatcher.watch();
+		}
+	}
+	
+	@Override
+	public void onCreate() {
+	    processLastBalanceFile();
+	    processAllFilesForHistory();
 	}
 
-	private static void processAllFilesForHistory(File balanceFilesPath) {
+	private static void processAllFilesForHistory() {
         try {
+        	File balanceFilesPath = balanceFilePath;
 	        for (final File balanceFile : balanceFilesPath.listFiles()) {
 				if (Utility.checkStopFile()) {
 					log.info(MARKER, "Stop file found, stopping.");
@@ -165,7 +181,7 @@ public class BalanceFileLogger {
 				}
 	        }
 		} catch (IOException e) {
-            log.error(MARKER, "Exception : ", e);
+            log.error(MARKER, "Exception : {}", e);
 		}
         log.info(MARKER, "Balance History processing done");
 	}
@@ -173,6 +189,9 @@ public class BalanceFileLogger {
 	public static boolean processFileForHistory(File balanceFile) {
         boolean processLine = false;
 
+        if ( ! balanceFile.toString().endsWith(".csv") ) {
+        	return false;
+        }
         try {
             // process the file
             connect = DatabaseUtilities.openDatabase(connect);
@@ -279,12 +298,8 @@ public class BalanceFileLogger {
 	                        br.close();
 	                        return false;
 	                    }
-	                } else if (line.contentEquals("shard,realm,number,balance")) {
-	                    // skip all lines until shard,realm,number,balance
+	                } else if (line.contains("shard")) {
 	                    processLine = true;
-	                } else if (line.contentEquals("shardNum,realmNum,accountNum,balance")) {
-	                	// new file format
-	                	processLine = true;
 	                }
 	            }
 	            connect.commit();
@@ -304,12 +319,13 @@ public class BalanceFileLogger {
         return false;
 	}
 
-	private static void processLastBalanceFile(File balanceFilesPath) {
+	private static void processLastBalanceFile() {
 
         boolean processLine = false;
 
         try {
-            File balanceFile = getLatestBalancefile(balanceFilesPath);
+            File balanceFile = getLatestBalancefile();
+
             if (balanceFile != null) {
                 // process the file
                 connect = DatabaseUtilities.openDatabase(connect);
