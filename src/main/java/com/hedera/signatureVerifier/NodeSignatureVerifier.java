@@ -46,8 +46,13 @@ public class NodeSignatureVerifier {
 		nodeIDPubKeyMap = new HashMap<>();
 		//load Node Details
 		try {
-			NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(Utility.getBytes(nodeAddressBookLocation));
-			loadNodePubKey(nodeAddressBook);
+			byte[] addressBookBytes = Utility.getBytes(nodeAddressBookLocation);
+			if (addressBookBytes != null) {
+				NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
+				loadNodePubKey(nodeAddressBook);
+			} else {
+				log.error(MARKER, "Address book file {}, empty or unavailable", nodeAddressBookLocation);
+			}
 			//System.out.println(nodeAddressBook);
 		} catch (InvalidProtocolBufferException ex) {
 			log.error(MARKER, "Fail to parse NodeAddressBook from {}, error {}", nodeAddressBookLocation, ex.getMessage());

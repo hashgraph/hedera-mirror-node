@@ -282,6 +282,8 @@ public class Utility {
 		byte[] bytes = null;
 		try (final FileInputStream fis = new FileInputStream(new File(location))) {
 			bytes = fis.readAllBytes();
+		} catch (FileNotFoundException ex) {
+            log.error(MARKER, "getBytes() failed - file {} not found", location);
 		} catch (IOException ex) {
             log.error(MARKER, "getBytes() failed, Exception: {}", ex);
 		}
