@@ -204,10 +204,11 @@ public class RecordFileParser {
 		if (RecordFileLogger.start()) {
 
 			File file = new File(pathName);
-			if (file.isFile()) {
-				log.info(MARKER, "Loading record file {} " + pathName);
-				loadRecordFile(pathName, "", "");
-			} else if (file.isDirectory()) { //if it's a directory
+			if ( ! file.exists()) {
+				file.mkdirs();
+			}
+			
+			if (file.isDirectory()) { //if it's a directory
 
 				String[] files = file.list(); // get all files under the directory
 				Arrays.sort(files);           // sorted by name (timestamp)
@@ -227,7 +228,7 @@ public class RecordFileParser {
 					log.info(MARKER, "No files to parse");
 				}
 			} else {
-				log.error(LOGM_EXCEPTION, "Exception file {} does not exist", pathName);
+				log.error(LOGM_EXCEPTION, "Input parameter {} is not a folder", pathName);
 
 			}
 			RecordFileLogger.finish();
