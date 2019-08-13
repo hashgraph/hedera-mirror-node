@@ -341,6 +341,7 @@ public class ConfigLoader {
 		if (!downloadToDir.endsWith("/")) {
 			downloadToDir += "/";
 		}
+		
 		// always return trailing "/"
 		switch (operation) {
 		case BALANCE:
@@ -348,7 +349,9 @@ public class ConfigLoader {
 		case EVENTS:
 			return downloadToDir + "eventStreams/valid/";
 		case RECORDS:
-			return downloadToDir + "recordstreams/valid";
+			String recordFileLoc = recordFilesS3Location.replace("/record", "");
+			recordFileLoc = recordFileLoc.replace("/", "");
+			return downloadToDir + recordFileLoc + "/valid";
 		}
 		return "";
 	}

@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 public class RecordFileDownloader extends Downloader {
 
 	private static String validRcdDir = null;
+	private static String s3prefix = "";
 
 	public RecordFileDownloader(ConfigLoader configLoader) {
 		super(configLoader);
@@ -137,6 +138,10 @@ public class RecordFileDownloader extends Downloader {
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier(configLoader);
 
 		validRcdDir = null;
+		s3prefix = configLoader.getRecordFilesS3Location();
+		if (s3prefix.endsWith("/")) {
+			s3prefix = s3prefix.substring(0, s3prefix.length()-2);
+		}
 
 		for (String fileName : sigFilesMap.keySet()) {
 			if (Utility.checkStopFile()) {
@@ -180,7 +185,8 @@ public class RecordFileDownloader extends Downloader {
 		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
 		String sigFileName = sigFile.getName();
 		String rcdFileName = sigFileName.replace(".rcd_sig", ".rcd");
-		String s3ObjectKey = "recordstreams/record" + nodeAccountId + "/" + rcdFileName;
+//		String s3ObjectKey = "recordstreams/record" + nodeAccountId + "/" + rcdFileName;
+		String s3ObjectKey =  s3prefix + nodeAccountId + "/" + rcdFileName;
 //		String localFileName = validRcdDir + rcdFileName;
 		return saveToLocal(bucketName, s3ObjectKey, validRcdDir + rcdFileName);
 	}
