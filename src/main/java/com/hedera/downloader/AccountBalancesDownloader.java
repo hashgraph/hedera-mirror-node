@@ -86,26 +86,28 @@ public class AccountBalancesDownloader extends Downloader {
 				continue;
 			} else {
 				// validSigFiles are signed by node'key and contains the same Hash which has been agreed by more than 2/3 nodes
-				List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
-				for (File validSigFile : validSigFiles) {
-					if (Utility.checkStopFile()) {
-						log.info(MARKER, "Stop file found, stopping.");
-						break;
-					}
-					if (validDir == null) {
-						validDir = validSigFile.getParentFile().getParent() + "/valid/";
-					}
-					Pair<Boolean, File> fileResult = downloadBalanceFile(validSigFile, validDir);
-					File file = fileResult.getRight();
-					if (file != null &&
-							Utility.hashMatch(validSigFile, file)) {
-						if (newLastValidBalanceFileName.isEmpty() ||
-								fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
-							newLastValidBalanceFileName = file.getName();
+				if (sigFiles != null) {
+					List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
+					for (File validSigFile : validSigFiles) {
+						if (Utility.checkStopFile()) {
+							log.info(MARKER, "Stop file found, stopping.");
+							break;
 						}
-						break;
-					} else if (file != null) {
-						log.warn(MARKER, "{}'s Hash doesn't match the Hash contained in valid signature file. Will try to download a balance file with same timestamp from other nodes and check the Hash.", file.getPath());
+						if (validDir == null) {
+							validDir = validSigFile.getParentFile().getParent() + "/valid/";
+						}
+						Pair<Boolean, File> fileResult = downloadBalanceFile(validSigFile, validDir);
+						File file = fileResult.getRight();
+						if (file != null &&
+								Utility.hashMatch(validSigFile, file)) {
+							if (newLastValidBalanceFileName.isEmpty() ||
+									fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
+								newLastValidBalanceFileName = file.getName();
+							}
+							break;
+						} else if (file != null) {
+							log.warn(MARKER, "{}'s Hash doesn't match the Hash contained in valid signature file. Will try to download a balance file with same timestamp from other nodes and check the Hash.", file.getPath());
+						}
 					}
 				}
 			}
