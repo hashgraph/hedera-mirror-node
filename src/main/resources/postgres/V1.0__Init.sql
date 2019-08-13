@@ -1,22 +1,3 @@
--- Change the values below if you are not installing via Docker (environment variable values come from .env file)
--- e.g. `\set db_name=mydatabasename`
--- name of the database
-
--- Uncomment below if you are not installing via Docker
---
--- CREATE DATABASE :db_name
---      WITH
---      OWNER = ‘:db_owner’
---      CONNECTION LIMIT = -1;
---
--- CREATE USER :db_user WITH
---     LOGIN
---     NOCREATEDB
---     NOCREATEROLE
---     NOINHERIT
---     NOREPLICATION
---     CONNECTION LIMIT -1
---     PASSWORD ‘:db_password’;
 
 CREATE USER :api_user WITH
 	LOGIN

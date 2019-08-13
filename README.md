@@ -144,6 +144,15 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Deletion of the database version table
+
+This table is no longer necessary due to the change to flyway for database schema management.
+
+### Switched to Flyway for database schema management
+
+Now using https://flywaydb.org/getstarted/ for schema management. This is fully integrated in docker images. 
+Starting the `mirror-node-flyway` container will automatically patch the database
+
 ### t_transactions relation to t_record_files
 
 The `t_transactions.fk_rec_file_id` column contains the `id` of the record file that contained this transaction from the `t_record_files` table.
@@ -458,16 +467,15 @@ You can skip this step if you're using Docker containers.
 
 Ensure you have a postgreSQL server running (versions 10 and 11 have been tested) with the mirror node software.
 
-Setup the following environment variables:
+Flyway (https://flywaydb.org/getstarted/) is used to manage the database schema.
 
-```text
-POSTGRES_DB = the name of the database you wish to create
-POSTGRES_USER = the name of the user you wish to create
-POSTGRES_PASSWORD = the password for the user above
-```
+All database scripts reside in `src/main/resources/postgres`.
 
-You will also need to uncomment a few lines to enable the creation of the database and user as described in the `src/main/resources/postgres/postgresInit.sql` script.
-Log into the database as an administrator and run the `src/main/resources/postgres/postgresInit.sql` script to create the database and necessary entities.
+`postgresInit.sql` should be used to initialise the database and owner. Please edit the file with usernames, passwords, etc... you wish to use.
+
+Then flyway should be used to biuld the initial set of tables, and apply any changes. Those are determined by files names `Vx.x__`.
+Note: The `Vx.x` scripts use variables which you should set prior to running the scripts.
+Example: `\set db_name='mydatabasename'`
 
 Make sure the `config/config.json` or `.env` file have values that match the above.
 
@@ -475,11 +483,7 @@ Check the output of the script carefully to ensure no errors occurred.
 
 ## Upgrading the database
 
-If you have already installed the database and wish to upgrade it, you may run the `src/main/resources/postgres/postgresUpdate.sql` script against your database.
-
-Ensure you change the default values in the first few lines of this script to match your environment.
-
-Check the output of the script carefully to ensure no errors occurred.
+Upgrades are performed by running the `migrate` command of the Flyway utility.
 
 ## Running the various mirror node components
 
