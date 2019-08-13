@@ -180,7 +180,7 @@ public class Utility {
 		return (JsonObject)parser.parse(file);
 	}
 
-	private static byte[] integerToBytes(int number) {
+	public static byte[] integerToBytes(int number) {
 		ByteBuffer b = ByteBuffer.allocate(4);
 		b.putInt(number);
 		return b.array();

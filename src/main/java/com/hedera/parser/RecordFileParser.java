@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,13 +35,15 @@ public class RecordFileParser {
 	private static final Logger log = LogManager.getLogger("recordfileparser");
 	private static final Marker MARKER = MarkerManager.getMarker("SERVICE_RECORD");
 	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
-
+	static final int RECORD_FORMAT_VERSION = 2;
 	static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 or previous files
 	static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
 	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 
+
 	private static ConfigLoader configLoader = new ConfigLoader();
 	private static LoggerStatus loggerStatus = new LoggerStatus();
+	private static String thisFileHash = "";
 
 	/**
 	 * Given a service record name, read and parse and return as a list of service record pair
@@ -49,7 +52,7 @@ public class RecordFileParser {
 	 * 		the name of record file to read
 	 * @return return previous file hash
 	 */
-	static public boolean loadRecordFile(String fileName, String previousFileHash, String thisFileHash) {
+	static public boolean loadRecordFile(String fileName, String previousFileHash) {
 
 		File file = new File(fileName);
 		FileInputStream stream = null;
@@ -65,11 +68,16 @@ public class RecordFileParser {
 		if (initFileResult == INIT_RESULT.OK) {
 			try {
 				long counter = 0;
+				MessageDigest md = MessageDigest.getInstance("SHA-384");
+				MessageDigest mdForContent = MessageDigest.getInstance("SHA-384");
 				stream = new FileInputStream(file);
 				DataInputStream dis = new DataInputStream(stream);
 
 				int record_format_version = dis.readInt();
 				int version = dis.readInt();
+
+				md.update(Utility.integerToBytes(record_format_version));
+				md.update(Utility.integerToBytes(version));
 
 				log.info(MARKER, "Record file format version " + record_format_version);
 				log.info(MARKER, "HAPI protocol version " + version);
@@ -81,7 +89,10 @@ public class RecordFileParser {
 
 						switch (typeDelimiter) {
 							case TYPE_PREV_HASH:
+								md.update(typeDelimiter);
 								dis.read(readFileHash);
+								md.update(readFileHash);
+
 								if (Utility.hashIsEmpty(previousFileHash)) {
 									log.error(MARKER, "Previous file Hash not available");
 									previousFileHash = Hex.encodeHexString(readFileHash);
@@ -92,7 +103,7 @@ public class RecordFileParser {
 								log.info(MARKER, "New file Hash = " + newFileHash);
 
 								if (!newFileHash.contentEquals(previousFileHash)) {
-									
+
 									if (configLoader.getStopLoggingIfRecordHashMismatchAfter().compareTo(Utility.getFileName(fileName)) < 0) {
 										// last file for which mismatch is allowed is in the past
 										log.error(MARKER, "Previous file Hash Mismatch - stopping loading. Previous = {}, Current = {}", previousFileHash, newFileHash);
@@ -107,11 +118,31 @@ public class RecordFileParser {
 								byte[] rawBytes = new byte[byteLength];
 
 								dis.readFully(rawBytes);
+								if (record_format_version >= RECORD_FORMAT_VERSION) {
+									mdForContent.update(typeDelimiter);
+									mdForContent.update(Utility.integerToBytes(byteLength));
+									mdForContent.update(rawBytes);
+
+								} else {
+									md.update(typeDelimiter);
+									md.update(Utility.integerToBytes(byteLength));
+									md.update(rawBytes);
+								}
 								Transaction transaction = Transaction.parseFrom(rawBytes);
 
 								byteLength = dis.readInt();
 								rawBytes = new byte[byteLength];
 								dis.readFully(rawBytes);
+
+								if (record_format_version >= RECORD_FORMAT_VERSION) {
+									mdForContent.update(Utility.integerToBytes(byteLength));
+									mdForContent.update(rawBytes);
+
+								} else {
+									md.update(Utility.integerToBytes(byteLength));
+									md.update(rawBytes);
+								}
+
 								TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
 
 								counter++;
@@ -124,18 +155,7 @@ public class RecordFileParser {
 									break;
 								} else {
 									RecordFileLogger.rollback();
-									return false;
-								}
-							case TYPE_SIGNATURE:
-								int sigLength = dis.readInt();
-								log.info(MARKER, "sigLength = " + sigLength);
-								byte[] sigBytes = new byte[sigLength];
-								dis.readFully(sigBytes);
-								log.info(MARKER, "File {} Signature = {} ", fileName, Hex.encodeHexString(sigBytes));
-								if (RecordFileLogger.storeSignature(Hex.encodeHexString(sigBytes))) {
 									break;
-								} else {
-									return false;
 								}
 
 							default:
@@ -151,6 +171,15 @@ public class RecordFileParser {
 					}
 				}
 				dis.close();
+
+				if (record_format_version >= RECORD_FORMAT_VERSION) {
+					md.update(mdForContent.digest());
+				}
+				byte[] fileHash = md.digest();
+				thisFileHash = Utility.bytesToHex(fileHash);
+
+				log.info("Calculated File hash for the current file {}", thisFileHash);
+
 				RecordFileLogger.completeFile(thisFileHash, previousFileHash);
 			} catch (FileNotFoundException e) {
 				log.error(MARKER, "File Not Found Error {}", e);
@@ -169,7 +198,7 @@ public class RecordFileParser {
 					log.error("Exception in close the stream {}", ex);
 				}
 			}
-			loggerStatus.setLastProcessedRcdHash(newFileHash);
+			loggerStatus.setLastProcessedRcdHash(thisFileHash);
 			loggerStatus.saveToFile();
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
@@ -191,8 +220,8 @@ public class RecordFileParser {
 				log.info(MARKER, "Stop file found, stopping.");
 				return;
 			}
-			String thisFileHash = Utility.bytesToHex(Utility.getFileHash(name));
-			if (loadRecordFile(name, prevFileHash, thisFileHash)) {
+
+			if (loadRecordFile(name, prevFileHash)) {
 				prevFileHash = thisFileHash;
 				Utility.moveFileToParsedDir(name, "/parsedRecordFiles/");
 			} else {
@@ -208,7 +237,7 @@ public class RecordFileParser {
 			if ( ! file.exists()) {
 				file.mkdirs();
 			}
-			
+
 			if (file.isDirectory()) { //if it's a directory
 
 				String[] files = file.list(); // get all files under the directory
