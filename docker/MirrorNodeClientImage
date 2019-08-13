@@ -1,5 +1,5 @@
 # Pull base image.
 FROM ubuntu:latest
 
-# Install Java && psql client
+# Install psql client
 RUN apt-get update && apt-get install -y default-jre postgresql-client

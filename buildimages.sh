@@ -3,6 +3,8 @@
 mkdir docker/runtime
 mkdir docker/runtime/config
 mkdir docker/runtime/lib
+rm -rf docker/runtime/sql
+mkdir docker/runtime/sql
 rm -rf docker/runtime/rest-api
 mkdir docker/runtime/rest-api
 
@@ -37,7 +39,8 @@ fi
 
 cd docker
 
-cp -r ../src/main/resources/postgres/postgresInit.sql .
+cp ../src/main/resources/postgres/postgresInit.sql .
+cp ../src/main/resources/postgres/V*.sql runtime/sql
 cp -r ../config/* runtime/config/
 cp -r ../target/lib/* runtime/lib
 cp ../target/mirrorNode.jar runtime/mirrorNode.jar
@@ -51,6 +54,9 @@ chmod +x runtime/balanceParse.sh
 
 cp ./recordDownloadParse.sh runtime/
 chmod +x runtime/recordDownloadParse.sh
+
+cp ./eventDownloadParse.sh runtime/
+chmod +x runtime/eventDownloadParse.sh
 
 cp ./update102.sh runtime/
 chmod +x runtime/update102.sh

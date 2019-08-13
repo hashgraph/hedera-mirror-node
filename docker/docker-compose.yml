@@ -15,6 +15,20 @@ services:
     ports:
       - 5433:5432
 
+  # manages the database schema
+  mirror-node-flyway:
+    build:
+      context: ./
+      dockerfile: Flyway
+    tty: true
+    env_file:
+      - .env
+    volumes:
+      - ./runtime:/MirrorNodeCode
+    entrypoint: ["bash", "/flyway/bin/flyway-wait-for-postgres.sh"]
+    depends_on:
+      - mirror-node-postgres
+
   # this downloads balance files, its behaviour is controlled by ./config/config.json
   mirror-node-balance-downloader:
     build:
@@ -67,6 +81,26 @@ services:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
     command: ./recordDownloadParse.sh
+
+  # this downloads and processes event files and puts the result in the database, its behaviour is controlled by ./config/config.json
+  mirror-node-event-download-parse:
+    build:
+      context: ./
+      dockerfile: MirrorNodeClientImage
+    depends_on:
+      - mirror-node-postgres
+    environment:
+      - HEDERA_MIRROR_DB_URL=jdbc:postgresql://mirror-node-postgres:5432/${POSTGRES_DB}
+      - HEDERA_MIRROR_DB_USER=${POSTGRES_USER}
+      - HEDERA_MIRROR_DB_PASS=${POSTGRES_PASSWORD}
+      - DB_HOST=mirror-node-postgres
+    working_dir: /MirrorNodeCode
+    env_file:
+      - .env
+    volumes:
+      - ./MirrorNodeData:/MirrorNodeData
+      - ./runtime:/MirrorNodeCode
+    command: ./eventDownloadParse.sh
 
   # this downloads the latest 0.0.102 file from the network if the .env file contains the necessary information
   mirror-node-102-file-update:
