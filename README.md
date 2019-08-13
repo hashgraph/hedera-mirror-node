@@ -144,6 +144,16 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Addition of event parsing
+
+Event files from the network may now be parsed with the mirror node.
+
+### Updates to config.json
+
+  Renamed `stopLoggingIfHashMismatch` to `stopLoggingIfRecordHashMismatch`.
+  Added `stopLoggingIfRecordHashMismatch`. Behaves in the same manner as `stopLoggingIfRecordHashMismatch` for events.
+  Added `balanceVerifySigs=false`. This is temporary while we have networks which don't generate signatures for balance files. If the network you are using does generate signatures for balance files, you should change this to `true`.
+
 ### Deletion of the database version table
 
 This table is no longer necessary due to the change to flyway for database schema management.
