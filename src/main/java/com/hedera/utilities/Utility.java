@@ -180,9 +180,25 @@ public class Utility {
 		return (JsonObject)parser.parse(file);
 	}
 
-	private static byte[] integerToBytes(int number) {
+	public static byte[] integerToBytes(int number) {
 		ByteBuffer b = ByteBuffer.allocate(4);
 		b.putInt(number);
+		return b.array();
+	}
+
+	public static byte[] longToBytes(long number) {
+		ByteBuffer b = ByteBuffer.allocate(8);
+		b.putLong(number);
+		return b.array();
+	}
+
+	public static byte booleanToByte(boolean value) {
+		return value ? (byte)1 : (byte)0;
+	}
+
+	public static byte[] instantToBytes(Instant instant) {
+		ByteBuffer b = ByteBuffer.allocate(16);
+		b.putLong(instant.getEpochSecond()).putLong(instant.getNano());
 		return b.array();
 	}
 

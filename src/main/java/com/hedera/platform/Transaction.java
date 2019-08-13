@@ -18,6 +18,7 @@
 package com.hedera.platform;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.utilities.Utility;
 
 import javax.swing.text.Utilities;
 import java.io.DataInputStream;
@@ -125,7 +126,7 @@ public class Transaction {
 	 * 		if the internal checksum cannot be
 	 * 		validated
 	 */
-	static Transaction deserialize(final DataInputStream dis, final int[] counts) throws IOException {
+	static Transaction deserialize(final DataInputStream dis, final int[] counts, MessageDigest md) throws IOException {
 		if (dis == null) {
 			throw new NullPointerException("dis");
 		}
@@ -134,7 +135,10 @@ public class Transaction {
 
 		// Read Content Length w/ Simple Prime Number Checksum
 		final int txLen = dis.readInt();
+		md.update(Utility.integerToBytes(txLen));
+
 		final int txChecksum = dis.readInt();
+		md.update(Utility.integerToBytes(txChecksum));
 
 		if (txLen < 0 || txChecksum != (277 - txLen)) {
 			throw new IOException("Transaction.deserialize tried to create contents array of length "
@@ -143,13 +147,20 @@ public class Transaction {
 
 		// Read Content
 		final boolean system = dis.readBoolean();
+		md.update(Utility.booleanToByte(system));
+
 		final byte[] contents = new byte[txLen];
 		dis.readFully(contents);
+		md.update(contents);
+
 		totalBytes[0] += contents.length;
 
 		// Read Signature Length w/ Simple Prime Number Checksum
 		final int sigLen = dis.readInt();
+		md.update(Utility.integerToBytes(sigLen));
+
 		final int sigChecksum = dis.readInt();
+		md.update(Utility.integerToBytes(sigChecksum));
 
 		if (sigLen < 0 || sigChecksum != (353 - sigLen)) {
 			throw new IOException("Transaction.deserialize tried to create signature array of length "
@@ -161,7 +172,7 @@ public class Transaction {
 
 		if (sigLen > 0) {
 			for (int i = 0; i < sigs.length; i++) {
-				sigs[i] = Signature.deserialize(dis, totalBytes);
+				sigs[i] = Signature.deserialize(dis, totalBytes, md);
 			}
 		}
 		//add number of bytes in current Transaction into counts[0]
@@ -188,13 +199,16 @@ public class Transaction {
 	 * 		if the internal checksum cannot be
 	 * 		validated
 	 */
-	public static Transaction[] readArray(final DataInputStream dis, int[] counts) throws IOException {
+	public static Transaction[] readArray(final DataInputStream dis, int[] counts, MessageDigest md) throws IOException {
 		if (dis == null) {
 			throw new NullPointerException("dis");
 		}
 
 		final int txLen = dis.readInt();
+		md.update(Utility.integerToBytes(txLen));
+
 		final int txChecksum = dis.readInt();
+		md.update(Utility.integerToBytes(txChecksum));
 
 		if (txLen < 0 || txChecksum != (1873 - txLen)) {
 			throw new IOException("Transaction.readArray tried to create transaction array of length "
@@ -203,7 +217,7 @@ public class Transaction {
 
 		final Transaction[] trans = new Transaction[txLen];
 		for (int i = 0; i < trans.length; i++) {
-			trans[i] = deserialize(dis, counts);
+			trans[i] = deserialize(dis, counts, md);
 			if (trans[i].isSystem()) {
 				counts[1]++;
 			} else {

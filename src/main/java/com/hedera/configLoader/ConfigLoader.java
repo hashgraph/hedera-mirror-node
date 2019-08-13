@@ -342,7 +342,7 @@ public class ConfigLoader {
 		case EVENTS:
 			return downloadToDir + "eventStreams/valid/";
 		case RECORDS:
-			return downloadToDir + "recordstreams/valid";
+			return downloadToDir + "recordstreams/valid/";
 		}
 		return "";
 	}
