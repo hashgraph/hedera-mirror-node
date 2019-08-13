@@ -8,7 +8,6 @@ import org.apache.logging.log4j.MarkerManager;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.parser.EventStreamFileParser;
-import com.hedera.parser.RecordFileParser;
 import com.hedera.utilities.Utility;
 
 public class DownloadAndParseEventFiles {

@@ -22,6 +22,7 @@ public abstract class FileWatcher
 	private final File pathToWatch;
 
     public FileWatcher(File pathToWatch) {
+    	
         this.pathToWatch = pathToWatch;
     	if (! this.pathToWatch.exists()) {
     		this.pathToWatch.mkdirs();
@@ -32,11 +33,11 @@ public abstract class FileWatcher
     	while (true) {
 	        try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
 	            Path path = pathToWatch.toPath();
-	            path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE);
+	            path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.OVERFLOW);
 	
 	            WatchKey key;
 	            try { 
-	            	key = watcher.poll(100, TimeUnit.MILLISECONDS); 
+	        		key = watcher.poll(100, TimeUnit.MILLISECONDS); 
 	            } catch (InterruptedException e) { 
 	            	return; 
 	            }
@@ -53,11 +54,8 @@ public abstract class FileWatcher
 	            for (WatchEvent<?> event : key.pollEvents()) {
 	                WatchEvent.Kind<?> kind = event.kind();
 	
-	                if (kind == StandardWatchEventKinds.OVERFLOW) {
-	                    continue;
-	                } else if (kind == java.nio.file.StandardWatchEventKinds.ENTRY_CREATE) {
-	                	onCreate();
-	                }
+                	onCreate();
+
 	                boolean valid = key.reset();
 	                if (!valid) { 
 	                	break; 

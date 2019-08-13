@@ -41,12 +41,14 @@ public class AccountBalancesDownloader extends Downloader {
 
 
 			try {
-				// balance files with sig verification 
-				HashMap<String, List<File>> sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
-				//Verify signature files and download corresponding files of valid signature files
-				downloader.verifySigsAndDownloadBalanceFiles(sigFilesMap);
-
-//				downloader.downloadBalanceFiles();
+				if (configLoader.getBalanceVerifySigs()) {
+					// balance files with sig verification 
+					HashMap<String, List<File>> sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
+					//Verify signature files and download corresponding files of valid signature files
+					downloader.verifySigsAndDownloadBalanceFiles(sigFilesMap);
+				} else { 
+					downloader.downloadBalanceFiles();
+				}
 				
 				xfer_mgr.shutdownNow();
 

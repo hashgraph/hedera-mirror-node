@@ -152,6 +152,7 @@ public abstract class Downloader {
 		s3Prefix = configLoader.getAccountBalanceS3Location();
 		fileType = ".csv";
 		lastValidFileName = configLoader.getLastValidBalanceFileName();
+		saveFilePath = configLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
 
 		
 		// refresh node account ids
@@ -199,7 +200,7 @@ public abstract class Downloader {
 						String s3ObjectKey = summary.getKey();
 						if (!s3ObjectKey.contains("latest")) { // ignore latest.csv
 							if ((s3ObjectKey.compareTo(prefix + lastValidFileName) > 0) || (lastValidFileName.contentEquals(""))) {
-								Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey, saveFilePath);
+								Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey, saveFilePath + "/" + s3ObjectKey.replace("accountBalances/balance/0.0.3/", ""));
 								if (result == null) {
 									return;
 								}

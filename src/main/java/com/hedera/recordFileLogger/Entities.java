@@ -4,7 +4,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 
+import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -22,6 +24,7 @@ public class Entities {
     	,FK_ENTITY_TYPE_ID
     	,EXP_TIME_SECONDS
     	,EXP_TIME_NANOS
+    	,EXP_TIME_NS
     	,AUTO_RENEW
     	,ADMIN_KEY
     	,KEY
@@ -65,6 +68,7 @@ public class Entities {
 	    if ((exp_time_seconds != 0) || (exp_time_nanos != 0)) {
 	    	sqlUpdate += " exp_time_seconds = ?";
 	    	sqlUpdate += ",exp_time_nanos = ?";
+	    	sqlUpdate += ",exp_time_ns = ?";
 	    	bDoComma = true;
 	    	
 	    }
@@ -103,7 +107,9 @@ public class Entities {
 	    if ((exp_time_seconds != 0) || (exp_time_nanos != 0)) {
         	updateEntity.setLong(1, exp_time_seconds);        	
         	updateEntity.setLong(2, exp_time_nanos);
-        	fieldCount = 2;
+        	Instant expiryTime = Instant.ofEpochSecond(exp_time_seconds, exp_time_nanos);
+        	updateEntity.setLong(3, Utility.convertInstantToNanos(expiryTime));
+        	fieldCount = 3;
 	    }
 	    
 	    if (auto_renew_period != 0) {
@@ -284,8 +290,8 @@ public class Entities {
 	    
 	    // inserts or returns an existing entity
         PreparedStatement insertEntity = Entities.connect.prepareStatement(
-                "INSERT INTO t_entities (entity_shard, entity_realm, entity_num, fk_entity_type_id, exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_prox_acc_id)"
-        		+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                "INSERT INTO t_entities (entity_shard, entity_realm, entity_num, fk_entity_type_id, exp_time_seconds, exp_time_nanos, exp_time_ns, auto_renew_period, admin_key, key, fk_prox_acc_id)"
+        		+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 + " RETURNING id");
         
         insertEntity.setLong(F_ENTITIES.SHARD.ordinal(), shard);
@@ -294,9 +300,12 @@ public class Entities {
         if ((exp_time_seconds == 0) && (exp_time_nanos == 0)) {
         	insertEntity.setObject(F_ENTITIES.EXP_TIME_SECONDS.ordinal(), null);        	
         	insertEntity.setObject(F_ENTITIES.EXP_TIME_NANOS.ordinal(), null);
+        	insertEntity.setObject(F_ENTITIES.EXP_TIME_NS.ordinal(), null);
         } else {
         	insertEntity.setLong(F_ENTITIES.EXP_TIME_SECONDS.ordinal(), exp_time_seconds);        	
         	insertEntity.setLong(F_ENTITIES.EXP_TIME_NANOS.ordinal(), exp_time_nanos);
+        	Instant expiryTime = Instant.ofEpochSecond(exp_time_seconds, exp_time_nanos);
+        	insertEntity.setLong(F_ENTITIES.EXP_TIME_NS.ordinal(), Utility.convertInstantToNanos(expiryTime));
         }
         if (auto_renew_period == 0) {
         	insertEntity.setObject(F_ENTITIES.AUTO_RENEW.ordinal(), null);

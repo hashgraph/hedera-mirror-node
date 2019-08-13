@@ -60,6 +60,7 @@ public class BalanceFileLogger extends FileWatcher {
         ,SNAPSHOT_TIME
         ,SECONDS
         ,NANOS
+        ,SNAPSHOT_TIME_NS
         ,FK_BAL_ID
         ,BALANCE
     }
@@ -221,11 +222,12 @@ public class BalanceFileLogger extends FileWatcher {
 
             	PreparedStatement insertBalanceHistory;
 	            insertBalanceHistory = connect.prepareStatement(
-	                    "insert into t_account_balance_history (snapshot_time, seconds, nanos, fk_balance_id, balance) "
+	                    "insert into t_account_balance_history (snapshot_time, seconds, nanos, snapshot_time_ns, fk_balance_id, balance) "
 	                    + " values ("
 	                    + " ?" // snapshot
 	                    + ", ?" // seconds
 	                    + ", ?" // nanos
+	                    + ", ?" // snapshot_time_ns
 	                    + ", ?" // balance_id
 	                    + ", ?" // balance
 	                    + ")"
@@ -284,6 +286,7 @@ public class BalanceFileLogger extends FileWatcher {
 		                        insertBalanceHistory.setTimestamp(BalanceHistoryInsert.SNAPSHOT_TIME.ordinal(), timestamp);
 		                        insertBalanceHistory.setLong(BalanceHistoryInsert.SECONDS.ordinal(), fileSeconds);
 		                        insertBalanceHistory.setLong(BalanceHistoryInsert.NANOS.ordinal(), fileNanos);
+		                        insertBalanceHistory.setLong(BalanceHistoryInsert.SNAPSHOT_TIME_NS.ordinal(), Utility.convertInstantToNanos(fileTimestamp));
 	                        	insertBalanceHistory.setLong(BalanceHistoryInsert.FK_BAL_ID.ordinal(), accountId);
 		                        insertBalanceHistory.setLong(BalanceHistoryInsert.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
 

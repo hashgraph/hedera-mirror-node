@@ -123,6 +123,8 @@ public class ConfigLoader {
 	private static boolean bRecordsFileExists = true;
 	private static boolean bEventsFileExists = true;
 	
+	private static boolean bBalanceVerifySigs = false;
+	
 	public enum OPERATION_TYPE {
 		BALANCE
 		,RECORDS
@@ -288,6 +290,10 @@ public class ConfigLoader {
 				}
 			} else {
 				eventsJsonObject = new JsonObject();
+			}
+			
+			if (configJsonObject.has("balanceVerifySigs")) {
+				bBalanceVerifySigs = configJsonObject.get("balanceVerifySigs").getAsBoolean();
 			}
 
 		} catch (FileNotFoundException ex) {
@@ -461,6 +467,9 @@ public class ConfigLoader {
 	}
 	public boolean getPersistCryptoTransferAmounts() {
 		return persistCryptoTransferAmounts;
+	}
+	public boolean getBalanceVerifySigs() {
+		return bBalanceVerifySigs;
 	}
 
 	public void setLastValidBalanceFileName(String name) {
