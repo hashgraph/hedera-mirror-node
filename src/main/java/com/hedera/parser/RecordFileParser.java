@@ -251,14 +251,16 @@ public class RecordFileParser {
 
 				log.info(MARKER, "Loading record files from directory {} ", pathName);
 
-				if (fullPaths != null) {
+				if (fullPaths != null && fullPaths.size()!= 0) {
 					log.info(MARKER, "Files are " + fullPaths);
 					loadRecordFiles(fullPaths);
 				} else {
 					log.info(MARKER, "No files to parse");
+					return;
 				}
 			} else {
 				log.error(LOGM_EXCEPTION, "Input parameter {} is not a folder", pathName);
+				return;
 
 			}
 			RecordFileLogger.finish();
