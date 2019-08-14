@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,9 +41,15 @@ public class RecordFileParser {
 	static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
 	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 
-	private static ConfigLoader configLoader = new ConfigLoader();
+//	private static ConfigLoader configLoader = new ConfigLoader();
 	private static LoggerStatus loggerStatus = new LoggerStatus();
 
+	private static Instant timeStart;
+	private static String nowTime() {
+		System.out.println(Instant.now().minusSeconds(timeStart.getEpochSecond()).minusNanos(timeStart.getNano()));
+		return Instant.now().getEpochSecond() * 1000000000 + Instant.now().getNano() - timeStart.getEpochSecond() * 1000000000 + timeStart.getNano() + "-";
+				
+	}
 	/**
 	 * Given a service record name, read and parse and return as a list of service record pair
 	 *
@@ -51,20 +59,28 @@ public class RecordFileParser {
 	 */
 	static public boolean loadRecordFile(String fileName, String previousFileHash, String thisFileHash) {
 
+		timeStart = Instant.now();
+		
+		List<byte[]> records = new ArrayList<byte[]>();
+		List<byte[]> transactions = new ArrayList<byte[]>();
+		byte[] signature = new byte[0];
+		
+		System.out.println(nowTime() + "-LoadRecordFile start ");
 		File file = new File(fileName);
 		FileInputStream stream = null;
 		String newFileHash = "";
 
 		if (file.exists() == false) {
 			log.info(MARKER, "File does not exist " + fileName);
+			System.exit(0);
 			return false;
 		}
+		long counter = 0;
 
 		byte[] readFileHash = new byte[48];
 		INIT_RESULT initFileResult = RecordFileLogger.initFile(fileName);
 		if (initFileResult == INIT_RESULT.OK) {
 			try {
-				long counter = 0;
 				stream = new FileInputStream(file);
 				DataInputStream dis = new DataInputStream(stream);
 
@@ -74,6 +90,7 @@ public class RecordFileParser {
 				log.info(MARKER, "Record file format version " + record_format_version);
 				log.info(MARKER, "HAPI protocol version " + version);
 
+//				System.out.println(nowTime() + "--Loop start ");
 				while (dis.available() != 0) {
 
 					try {
@@ -81,6 +98,7 @@ public class RecordFileParser {
 
 						switch (typeDelimiter) {
 							case TYPE_PREV_HASH:
+//								System.out.println(nowTime() + "---Prev Hash start ");
 								dis.read(readFileHash);
 								if (Utility.hashIsEmpty(previousFileHash)) {
 									log.error(MARKER, "Previous file Hash not available");
@@ -91,52 +109,81 @@ public class RecordFileParser {
 								newFileHash = Hex.encodeHexString(readFileHash);
 								log.info(MARKER, "New file Hash = " + newFileHash);
 
-								if (!newFileHash.contentEquals(previousFileHash)) {
-									
-									if (configLoader.getStopLoggingIfRecordHashMismatchAfter().compareTo(Utility.getFileName(fileName)) < 0) {
-										// last file for which mismatch is allowed is in the past
-										log.error(MARKER, "Previous file Hash Mismatch - stopping loading. Previous = {}, Current = {}", previousFileHash, newFileHash);
-										log.error(MARKER, "Mismatching file {}", fileName);
-										return false;
-									}
-								}
-
+//								if (!newFileHash.contentEquals(previousFileHash)) {
+//									
+//									if (configLoader.getStopLoggingIfRecordHashMismatchAfter().compareTo(Utility.getFileName(fileName)) < 0) {
+//										// last file for which mismatch is allowed is in the past
+//										log.error(MARKER, "Previous file Hash Mismatch - stopping loading. Previous = {}, Current = {}", previousFileHash, newFileHash);
+//										log.error(MARKER, "Mismatching file {}", fileName);
+//										System.out.println("LoadRecordFile end ");
+//										return false;
+//									}
+//								}
+//								System.out.println(nowTime() + "---Prev Hash end ");
 								break;
 							case TYPE_RECORD:
+								counter++;
+
+//								System.out.println(nowTime() + "---Record start ");
+//								System.out.println(nowTime() + "----Read TX bytes start ");
 								int byteLength = dis.readInt();
 								byte[] rawBytes = new byte[byteLength];
-
 								dis.readFully(rawBytes);
+//								transactions.add(rawBytes);
+//								System.out.println(nowTime() + "----Proto TX bytes ");
 								Transaction transaction = Transaction.parseFrom(rawBytes);
+//								System.out.println(nowTime() + "----Proto TX done ");
 
+
+//								System.out.println(nowTime() + "----Read RX bytes start ");
 								byteLength = dis.readInt();
 								rawBytes = new byte[byteLength];
 								dis.readFully(rawBytes);
+//								records.add(rawBytes);
+//								System.out.println(nowTime() + "----Proto RX bytes ");
 								TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
-
-								counter++;
-
-								if (RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord, configLoader)) {
-									log.info(MARKER, "record counter = {}\n=============================", counter);
-									log.info(MARKER, "Transaction Consensus Timestamp = {}\n", Utility.convertToInstant(txRecord.getConsensusTimestamp()));
-									log.info(MARKER, "Transaction = {}", Utility.printTransaction(transaction));
-									log.info(MARKER, "Record = {}\n=============================\n",  TextFormat.shortDebugString(txRecord));
-									break;
-								} else {
-									RecordFileLogger.rollback();
-									return false;
-								}
+//								System.out.println(nowTime() + "----Proto RX bytes done ");
+								
+//
+//
+//
+//								System.out.println(nowTime() + "----Storing start ");
+								boolean bStored = RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord);
+								System.out.println(nowTime() + "-LoadRecordFile end ");
+								System.out.println(Instant.now().minusSeconds(timeStart.getEpochSecond()).minusNanos(timeStart.getNano()));
+//								System.exit(0);
+//								System.out.println(nowTime() + "----Storing end ");
+//								if (bStored) {
+//									log.info(MARKER, "record counter = {}\n=============================", counter);
+//									log.info(MARKER, "Transaction Consensus Timestamp = {}\n", Utility.convertToInstant(txRecord.getConsensusTimestamp()));
+//									log.info(MARKER, "Transaction = {}", Utility.printTransaction(transaction));
+//									log.info(MARKER, "Record = {}\n=============================\n",  TextFormat.shortDebugString(txRecord));
+//									System.out.println(nowTime() + "---Record end ");
+//									break;
+//								} else {
+//									RecordFileLogger.rollback();
+//									System.out.println(nowTime() + "---Record end ");
+//									System.out.println(nowTime() + "-LoadRecordFile end ");
+//									System.exit(0);
+//									return false;
+//								}
+								break;
 							case TYPE_SIGNATURE:
+//								System.out.println(nowTime() + "---Signature Start ");
 								int sigLength = dis.readInt();
 								log.info(MARKER, "sigLength = " + sigLength);
 								byte[] sigBytes = new byte[sigLength];
 								dis.readFully(sigBytes);
-								log.info(MARKER, "File {} Signature = {} ", fileName, Hex.encodeHexString(sigBytes));
-								if (RecordFileLogger.storeSignature(Hex.encodeHexString(sigBytes))) {
+//								log.info(MARKER, "File {} Signature = {} ", fileName, Hex.encodeHexString(sigBytes));
+//								if (RecordFileLogger.storeSignature(Hex.encodeHexString(sigBytes))) {
+//									System.out.println(nowTime() + "---Signature End ");
 									break;
-								} else {
-									return false;
-								}
+//								} else {
+//									System.out.println(nowTime() + "---Signature End ");
+//									System.out.println(nowTime() + "-LoadRecordFile end ");
+//									System.exit(0);
+//									return false;
+//								}
 
 							default:
 								log.error(LOGM_EXCEPTION, "Exception Unknown record file delimiter {}", typeDelimiter);
@@ -147,19 +194,31 @@ public class RecordFileParser {
 						log.error(LOGM_EXCEPTION, "Exception {}", e);
 						RecordFileLogger.rollback();
 						dis.close();
+//						System.out.println(nowTime() + "-LoadRecordFile end ");
+						System.exit(0);
 						return false;
 					}
 				}
+//				System.out.println(nowTime() + "--Loop end ");
+				
+//				System.out.println(nowTime() + "--Closing file start ");
 				dis.close();
 				RecordFileLogger.completeFile(thisFileHash, previousFileHash);
+				System.out.println(nowTime() + "--Closing file end ");
 			} catch (FileNotFoundException e) {
 				log.error(MARKER, "File Not Found Error {}", e);
+				System.out.println(nowTime() + "-LoadRecordFile end ");
+				System.exit(0);
 				return false;
 			} catch (IOException e) {
 				log.error(MARKER, "IOException Error {}", e);
+				System.out.println(nowTime() + "-LoadRecordFile end ");
+				System.exit(0);
 				return false;
 			} catch (Exception e) {
 				log.error(MARKER, "Parsing Error {}", e);
+				System.out.println(nowTime() + "-LoadRecordFile end ");
+				System.exit(0);
 				return false;
 			} finally {
 				try {
@@ -171,10 +230,18 @@ public class RecordFileParser {
 			}
 			loggerStatus.setLastProcessedRcdHash(newFileHash);
 			loggerStatus.saveToFile();
+			System.out.println(nowTime() + "-LoadRecordFile end ");
+			System.out.println(counter);
+			System.exit(0);
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
+			System.out.println(nowTime() + "-LoadRecordFile end ");
+			System.exit(0);
 			return true;
 		} else {
+			System.out.println(nowTime() + "-LoadRecordFile end ");
+			System.out.println(counter);
+			System.exit(0);
 			return false;
 		}
 	}
@@ -245,9 +312,9 @@ public class RecordFileParser {
 				System.exit(0);
 			}
 
-			configLoader = new ConfigLoader();
+//			configLoader = new ConfigLoader();
 
-			pathName = configLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
+			pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
 			log.info(MARKER, "Record files folder got from configuration file: {}", pathName);
 
 			if (pathName != null) {
