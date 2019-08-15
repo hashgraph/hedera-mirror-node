@@ -74,11 +74,10 @@ public class BalanceFileLogger extends FileWatcher {
 
     private static Connection connect = null;
 
-    private static ConfigLoader configLoader = new ConfigLoader();
 	private static Instant fileTimestamp;
 	private static long fileSeconds = 0;
 	private static long fileNanos = 0;
-	private static File balanceFilePath = new File(configLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE));
+	private static File balanceFilePath = new File(ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE));
 	
 	public BalanceFileLogger(File pathToWatch) {
 		super(pathToWatch);

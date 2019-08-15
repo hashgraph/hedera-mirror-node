@@ -18,11 +18,10 @@ public class DatabaseUtilities {
     public static Connection openDatabase(Connection connect) {
         if (connect == null) {
             try {
-            	ConfigLoader configLoader = new ConfigLoader();
                 // Setup the connection with the DB
-                String url = configLoader.getDBUrl();
-                String userName = configLoader.getDBUserName();
-                String password = configLoader.getDBPassword();
+                String url = ConfigLoader.getDBUrl();
+                String userName = ConfigLoader.getDBUserName();
+                String password = ConfigLoader.getDBPassword();
                 
                 connect = DriverManager.getConnection(url, userName, password);
             } catch (SQLException e) {

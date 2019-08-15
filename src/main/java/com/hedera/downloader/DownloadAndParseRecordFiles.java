@@ -14,16 +14,12 @@ public class DownloadAndParseRecordFiles {
 	protected static final Logger log = LogManager.getLogger("downloadandparserecordfiles");
 	protected static final Marker MARKER = MarkerManager.getMarker("DOWNLOADER");
 
-	protected static ConfigLoader configLoader;
-	
 	public static void main(String[] args) {
 		if (Utility.checkStopFile()) {
 			log.info(MARKER, "Stop file found, exiting.");
 			System.exit(0);
 		}
-		configLoader = new ConfigLoader();
-
-		RecordFileDownloader downloader = new RecordFileDownloader(configLoader);
+		RecordFileDownloader downloader = new RecordFileDownloader();
 
 		while (true) {
 			if (Utility.checkStopFile()) {
@@ -31,9 +27,7 @@ public class DownloadAndParseRecordFiles {
 				break;
 			}
 			// download files
-			System.out.println("Downloading");
 			RecordFileDownloader.downloadNewRecordfiles(downloader);
-			System.out.println("Downloading Done");
 
 			// process files
 			if (Utility.checkStopFile()) {
@@ -41,12 +35,11 @@ public class DownloadAndParseRecordFiles {
 				break;
 			}
 			
-			String pathName = configLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
+			String pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
 			log.info(MARKER, "Record files folder got from configuration file: {}", pathName);
 	
 			if (pathName != null) {
 				RecordFileParser.parseNewFiles(pathName);
-				System.out.println("Parsing Done");
 			}
 		}
 	}

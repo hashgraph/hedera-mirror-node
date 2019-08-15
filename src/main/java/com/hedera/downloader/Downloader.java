@@ -46,8 +46,6 @@ public abstract class Downloader {
 
 	protected static final Marker MARKER = MarkerManager.getMarker("DOWNLOADER");
 
-	protected static ConfigLoader configLoader;
-
 	protected static String bucketName;
 
 	protected static TransferManager xfer_mgr;
@@ -68,16 +66,15 @@ public abstract class Downloader {
 
 	public enum DownloadType {RCD, BALANCE, EVENT};
 
-	public Downloader(ConfigLoader myConfigLoader) {
-		configLoader = myConfigLoader;
-		bucketName = configLoader.getBucketName();
+	public Downloader() {
+		bucketName = ConfigLoader.getBucketName();
 
 		// Define retryPolicy
 		clientConfiguration = new ClientConfiguration();
 		clientConfiguration.setRetryPolicy(
 				PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(5));
 
-		nodeAccountIds = loadNodeAccountIDs(configLoader.getNodeInfoFile());
+		nodeAccountIds = loadNodeAccountIDs(ConfigLoader.getNodeInfoFile());
 
 		s3KeyComparator = new Comparator<String>() {
 			@Override
@@ -149,14 +146,14 @@ public abstract class Downloader {
 		String fileType = null;
 		String lastValidFileName = null;
 		
-		s3Prefix = configLoader.getAccountBalanceS3Location();
+		s3Prefix = ConfigLoader.getAccountBalanceS3Location();
 		fileType = ".csv";
-		lastValidFileName = configLoader.getLastValidBalanceFileName();
-		saveFilePath = configLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
+		lastValidFileName = ConfigLoader.getLastValidBalanceFileName();
+		saveFilePath = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
 
 		
 		// refresh node account ids
-		nodeAccountIds = loadNodeAccountIDs(configLoader.getNodeInfoFile());
+		nodeAccountIds = loadNodeAccountIDs(ConfigLoader.getNodeInfoFile());
 
 		for (String nodeAccountId : nodeAccountIds) {
 			if (Utility.checkStopFile()) {
@@ -172,7 +169,7 @@ public abstract class Downloader {
 			String prefix = s3Prefix + nodeAccountId + "/";
 			int count = 0;
 			int downloadCount = 0;
-			int maxDownloadCount = configLoader.getMaxDownloadItems();
+			int maxDownloadCount = ConfigLoader.getMaxDownloadItems();
 
 			ListObjectsRequest listRequest = new ListObjectsRequest()
 					.withBucketName(bucketName)
@@ -242,8 +239,8 @@ public abstract class Downloader {
 					}
 
 					if (!newLastValidBalanceFileName.equals(lastValidFileName)) {
-						configLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
-						configLoader.saveToFile();
+						ConfigLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
+						ConfigLoader.saveToFile();
 					}
 				}
 
@@ -285,24 +282,25 @@ public abstract class Downloader {
 		String lastValidFileName = null;
 		switch (type) {
 			case RCD:
-				s3Prefix = configLoader.getRecordFilesS3Location();
+				s3Prefix = ConfigLoader.getRecordFilesS3Location();
 				fileType = ".rcd_sig";
-				lastValidFileName = configLoader.getLastValidRcdFileName();
-				saveFilePath = configLoader.getDownloadToDir(OPERATION_TYPE.RECORDS);
+				lastValidFileName = ConfigLoader.getLastValidRcdFileName();
+				
+				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.RECORDS);
 				break;
 
 			case BALANCE:
 				s3Prefix = "accountBalances/balance";
 				fileType = "_Balances.csv_sig";
-				lastValidFileName = configLoader.getLastValidBalanceFileName();
-				saveFilePath = configLoader.getDownloadToDir(OPERATION_TYPE.BALANCE);
+				lastValidFileName = ConfigLoader.getLastValidBalanceFileName();
+				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.BALANCE);
 				break;
 
 			case EVENT:
-				s3Prefix = configLoader.getEventFilesS3Location();
+				s3Prefix = ConfigLoader.getEventFilesS3Location();
 				fileType = ".evts_sig";
-				lastValidFileName = configLoader.getLastValidEventFileName();
-				saveFilePath = configLoader.getDownloadToDir(OPERATION_TYPE.EVENTS);
+				lastValidFileName = ConfigLoader.getLastValidEventFileName();
+				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.EVENTS);
 				break;
 
 			default:
@@ -312,7 +310,7 @@ public abstract class Downloader {
 		HashMap<String, List<File>> sigFilesMap = new HashMap<>();
 
 		// refresh node account ids
-		nodeAccountIds = loadNodeAccountIDs(configLoader.getNodeInfoFile());
+		nodeAccountIds = loadNodeAccountIDs(ConfigLoader.getNodeInfoFile());
 		for (String nodeAccountId : nodeAccountIds) {
 			if (Utility.checkStopFile()) {
 				log.info(MARKER, "Stop file found, stopping.");
@@ -323,8 +321,8 @@ public abstract class Downloader {
 			String prefix = s3Prefix + nodeAccountId + "/";
 			int count = 0;
 			int downloadCount = 0;
-			int downloadMax = configLoader.getMaxDownloadItems();
-
+			int downloadMax = ConfigLoader.getMaxDownloadItems();
+			
 			ListObjectsRequest listRequest = new ListObjectsRequest()
 					.withBucketName(bucketName)
 					.withPrefix(prefix)
@@ -333,7 +331,7 @@ public abstract class Downloader {
 					.withMaxKeys(100);
 			ObjectListing objects = s3Client.listObjects(listRequest);
 			try {
-				while(downloadCount <= downloadMax - 1) {
+				while(downloadCount <= downloadMax) {
 					if (Utility.checkStopFile()) {
 						log.info(MARKER, "Stop file found, stopping.");
 						break;
@@ -472,37 +470,37 @@ public abstract class Downloader {
 	}
 
 	protected static void setupCloudConnection() {
-		if (configLoader.getCloudProvider() == CLOUD_PROVIDER.S3) {
-			if (configLoader.getAccessKey().contentEquals("")) {
+		if (ConfigLoader.getCloudProvider() == CLOUD_PROVIDER.S3) {
+			if (ConfigLoader.getAccessKey().contentEquals("")) {
 				s3Client = AmazonS3ClientBuilder.standard()
-						.withRegion(configLoader.getClientRegion())
+						.withRegion(ConfigLoader.getClientRegion())
 						.withClientConfiguration(clientConfiguration)
 						.build();
 			} else {
 				s3Client = AmazonS3ClientBuilder.standard()
 						.withCredentials(new AWSStaticCredentialsProvider(
-								new BasicAWSCredentials(configLoader.getAccessKey(),
-										configLoader.getSecretKey())))
-						.withRegion(configLoader.getClientRegion())
+								new BasicAWSCredentials(ConfigLoader.getAccessKey(),
+										ConfigLoader.getSecretKey())))
+						.withRegion(ConfigLoader.getClientRegion())
 						.withClientConfiguration(clientConfiguration)
 						.build();
 			}
 		} else {
-			if (configLoader.getAccessKey().contentEquals("")) {
+			if (ConfigLoader.getAccessKey().contentEquals("")) {
 				s3Client = AmazonS3ClientBuilder.standard()
 						.withEndpointConfiguration(
 				                new AwsClientBuilder.EndpointConfiguration(
-				                    "https://storage.googleapis.com", configLoader.getClientRegion()))
+				                    "https://storage.googleapis.com", ConfigLoader.getClientRegion()))
 						.withClientConfiguration(clientConfiguration)
 						.build();
 			} else {
 				s3Client = AmazonS3ClientBuilder.standard()
 						.withEndpointConfiguration(
 				                new AwsClientBuilder.EndpointConfiguration(
-				                    "https://storage.googleapis.com", configLoader.getClientRegion()))
+				                    "https://storage.googleapis.com", ConfigLoader.getClientRegion()))
 						.withCredentials(new AWSStaticCredentialsProvider(
-								new BasicAWSCredentials(configLoader.getAccessKey(),
-										configLoader.getSecretKey())))
+								new BasicAWSCredentials(ConfigLoader.getAccessKey(),
+										ConfigLoader.getSecretKey())))
 						.withClientConfiguration(clientConfiguration)
 						.build();
 			}
