@@ -3,7 +3,9 @@ package com.hedera.databaseUtilities;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -17,17 +19,18 @@ public class DatabaseUtilities {
 
     public static Connection openDatabase(Connection connect) {
         if (connect == null) {
-            try {
-                // Setup the connection with the DB
-                String url = ConfigLoader.getDBUrl();
-                String userName = ConfigLoader.getDBUserName();
-                String password = ConfigLoader.getDBPassword();
-                
-                connect = DriverManager.getConnection(url, userName, password);
-            } catch (SQLException e) {
-                e.printStackTrace();
-                log.error(LOGM_EXCEPTION, "Exception {}", e);
-                return null;
+            while (true) {
+                try {
+                    // Setup the connection with the DB
+                    String url = ConfigLoader.getDBUrl();
+                    String userName = ConfigLoader.getDBUserName();
+                    String password = ConfigLoader.getDBPassword();
+
+                    return DriverManager.getConnection(url, userName, password);
+                } catch (SQLException e) {
+                    log.warn("Unable to connect to database. Will retry in 3s: {}", e.getMessage());
+                }
+                Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
             }
         }
         return connect;
