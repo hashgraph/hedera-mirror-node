@@ -139,26 +139,8 @@ public class BalanceFileLogger extends FileWatcher {
 	}
 
 	public static void main(String[] args) {
-		// fileWatcher doesn't work on mac ?
-		String OS = System.getProperty("os.name").toLowerCase();
-		if (OS.indexOf("mac") >= 0) {
-		    while (true) {
-				if (Utility.checkStopFile()) {
-					log.info(MARKER, "Stop file found, exiting.");
-					System.exit(0);
-				}
-		        if (!balanceFilePath.exists()) {
-		        	balanceFilePath.mkdirs();
-		        }
-
-			    processLastBalanceFile();
-			    processAllFilesForHistory();
-		    }
-			
-		} else {
-			FileWatcher fileWatcher = new BalanceFileLogger(balanceFilePath);
-			fileWatcher.watch();
-		}
+		FileWatcher fileWatcher = new BalanceFileLogger(balanceFilePath);
+		fileWatcher.watch();
 	}
 	
 	@Override

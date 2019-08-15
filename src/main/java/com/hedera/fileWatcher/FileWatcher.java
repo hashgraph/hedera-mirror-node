@@ -1,70 +1,64 @@
 package com.hedera.fileWatcher;
 
+import com.hedera.utilities.Utility;
+import org.apache.logging.log4j.*;
+
+import java.io.File;
 import java.nio.file.*;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
+public abstract class FileWatcher {
+    private static final Logger log = LogManager.getLogger("filewatcher");
+    private static final Marker MARKER = MarkerManager.getMarker("WATCH");
 
-import com.hedera.utilities.Utility;
-
-import java.io.File;
-import java.io.IOException;
-
-public abstract class FileWatcher
-{
-	private static final Logger log = LogManager.getLogger("filewatcher");
-	private static final Marker MARKER = MarkerManager.getMarker("WATCH");
-	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
-
-	private final File pathToWatch;
+    private final File pathToWatch;
 
     public FileWatcher(File pathToWatch) {
-    	
         this.pathToWatch = pathToWatch;
-    	if (! this.pathToWatch.exists()) {
-    		this.pathToWatch.mkdirs();
-    	}
+        if (!this.pathToWatch.exists()) {
+            this.pathToWatch.mkdirs();
+        }
     }
 
     public void watch() {
-    	while (true) {
-	        try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
-	            Path path = pathToWatch.toPath();
-	            path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.OVERFLOW);
-	
-	            WatchKey key;
-	            try { 
-	        		key = watcher.poll(100, TimeUnit.MILLISECONDS); 
-	            } catch (InterruptedException e) { 
-	            	return; 
-	            }
+        try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
+            Path path = pathToWatch.toPath();
+            WatchKey rootKey = path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
+            boolean valid = rootKey.isValid();
 
-				if (Utility.checkStopFile()) {
-					log.info(MARKER, "Stop file found, stopping.");
-					return;
-				}
-	            
-	            if (key == null) { 
-	            	continue; 
-	            }
-	            
-	            for (WatchEvent<?> event : key.pollEvents()) {
-	                WatchEvent.Kind<?> kind = event.kind();
-	
-                	onCreate();
+            while (valid) {
+                WatchKey key;
+                try {
+                    key = watcher.poll(100, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    continue;
+                }
 
-	                boolean valid = key.reset();
-	                if (!valid) { 
-	                	break; 
-	                }
-	            }
-	        } catch (IOException e1) {
-	            log.error(MARKER, "Exception : {}", e1);
-			}
-	    }
+                if (Utility.checkStopFile()) {
+                    log.info(MARKER, "Stop file found, stopping.");
+                    return;
+                }
+
+                if (key == null) {
+                    continue;
+                }
+
+                for (WatchEvent<?> event : key.pollEvents()) {
+                    WatchEvent.Kind<?> kind = event.kind();
+
+                    if (kind == StandardWatchEventKinds.OVERFLOW) {
+                        log.error("File watching events may have been lost or discarded");
+                        continue;
+                    }
+
+                    onCreate();
+                }
+
+                valid = key.reset();
+            }
+        } catch (Exception e) {
+            log.error(MARKER, "Exception : {}", e);
+        }
     }
 
     public abstract void onCreate();
