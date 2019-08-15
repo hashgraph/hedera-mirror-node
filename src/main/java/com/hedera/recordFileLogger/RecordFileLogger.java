@@ -1,9 +1,11 @@
 package com.hedera.recordFileLogger;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.Instant;
 import java.util.HashMap;
 import org.apache.logging.log4j.LogManager;
@@ -41,13 +43,14 @@ public class RecordFileLogger {
 	private static HashMap<String, Integer> transactionTypes = null;
 
 	private static long fileId = 0;
+	private static long BATCH_SIZE = 100;
+	private static long batch_count = 0;
 
-	private static Instant timeStart;
-	private static String nowTime() {
-		System.out.println(Instant.now().minusSeconds(timeStart.getEpochSecond()).minusNanos(timeStart.getNano()));
-		return Instant.now().getEpochSecond() * 1000000000 + Instant.now().getNano() - timeStart.getEpochSecond() * 1000000000 + timeStart.getNano() + "-";
-				
-	}
+	private static PreparedStatement sqlInsertTransaction;
+	private static PreparedStatement sqlInsertTransferList;
+	private static PreparedStatement sqlInsertFileData;
+	private static PreparedStatement sqlInsertContractCall;
+	private static PreparedStatement sqlInsertClaimData;
 	
 	public enum INIT_RESULT {
 		OK
@@ -56,6 +59,7 @@ public class RecordFileLogger {
 	}
     enum F_TRANSACTION {
         ZERO // column indices start at 1, this creates the necessary offset
+        ,ID
         ,FK_NODE_ACCOUNT_ID
         ,MEMO
         ,VS_SECONDS
@@ -102,10 +106,13 @@ public class RecordFileLogger {
     	,LIVEHASH
     }
     
-    private static boolean bSkip = true;
+    private static boolean bSkip = false;
 
 	public static boolean start() {
+		batch_count = 0;
+		
         connect = DatabaseUtilities.openDatabase(connect);
+
         if (connect == null) {
             log.error(LOGM_EXCEPTION, "Unable to connect to database");
         	return false;
@@ -153,10 +160,47 @@ public class RecordFileLogger {
 				return false;
 			}
         }
+		try {
+			sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
+					+ " (id, fk_node_acc_id, memo, vs_seconds, vs_nanos, valid_start_ns, fk_trans_type_id, fk_payer_acc_id"
+					+ ", fk_result_id, consensus_seconds, consensus_nanos, consensus_ns, fk_cud_entity_id, charged_tx_fee"
+					+ ", initial_balance, fk_rec_file_id)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+					+ " RETURNING id");
+			sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
+					+ " (fk_trans_id, account_id, amount)"
+					+ " VALUES (?, ?, ?)");
+		
+			sqlInsertFileData = connect.prepareStatement("INSERT INTO t_file_data"
+					+ " (fk_trans_id, file_data)"
+					+ " VALUES (?, ?)");
+		
+			sqlInsertContractCall = connect.prepareStatement("INSERT INTO t_contract_result"
+					+ " (fk_trans_id, function_params, gas_supplied, call_result, gas_used)"
+					+ " VALUES (?, ?, ?, ?, ?)");
+
+			sqlInsertClaimData = connect.prepareStatement("INSERT INTO t_livehash_data"
+					+ " (fk_trans_id, livehash)"
+					+ " VALUES (?, ?)");
+			
+		} catch (SQLException e) {
+            log.error(LOGM_EXCEPTION, "Unable to prepare SQL statements - Exception {}", e.getMessage());
+			return false;
+		}
+
         return true;
 	}
 	public static boolean finish() {
         try {
+        	// execute any remaining batches
+        	executeBatches();
+
+            sqlInsertFileData.close();
+            sqlInsertTransferList.close();
+            sqlInsertTransaction.close();
+            sqlInsertContractCall.close();
+            sqlInsertClaimData.close();
+        	
             connect = DatabaseUtilities.closeDatabase(connect);
         	return false;
         } catch (SQLException e) {
@@ -171,60 +215,46 @@ public class RecordFileLogger {
 		try {
 			fileId = 0;
 
-			// Has the file been processed already ?
-            PreparedStatement selectFile = connect.prepareStatement("SELECT id FROM t_record_files WHERE name = ?");
-			selectFile.setString(1,  fileName);
-			ResultSet resultSet = selectFile.executeQuery();
-
-            while (resultSet.next()) {
-            	fileId = resultSet.getLong(1);
-        		log.info("File {} already processed successfully", fileName);
-        		return INIT_RESULT.SKIP;
-            }
-            resultSet.close();
-
-            if (fileId == 0) {
-			    PreparedStatement insertFile = connect.prepareStatement(
-						"INSERT INTO t_record_files (name, load_start) VALUES (?, ?)"
-						+ " RETURNING id");
-				insertFile.setString(1, fileName);
-				insertFile.setLong(2, Instant.now().getEpochSecond());
-				insertFile.execute();
-	            ResultSet newId = insertFile.getResultSet();
-	            newId.next();
-	            fileId = newId.getLong(1);
-	            newId.close();
-				insertFile.close();
-
+			CallableStatement fileCreate = connect.prepareCall("{? = call f_file_create( ? ) }");
+			fileCreate.registerOutParameter(1, Types.BIGINT);
+			fileCreate.setString(2, fileName);
+			fileCreate.execute();
+			fileId = fileCreate.getLong(1);
+			fileCreate.close();
+			
+			if (fileId == 0) {
+				return INIT_RESULT.SKIP;
+			} else {
 				return INIT_RESULT.OK;
-            }
+			}
 
 		} catch (SQLException e) {
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
 		}
 		return INIT_RESULT.FAIL;
 	}
+		
 	public static boolean completeFile(String fileHash, String previousHash) {
 		if (bSkip) { return true;}
 		// update the file to processed
 		try {
-			PreparedStatement updateFile = connect.prepareStatement("UPDATE t_record_files SET load_end = ?, file_hash = ?, prev_hash = ? WHERE id = ?");
+			CallableStatement fileClose = connect.prepareCall("{call f_file_complete( ?, ?, ? ) }");
+			fileClose.setLong(1, fileId);
 
-			updateFile.setLong(1, Instant.now().getEpochSecond());
 			if (Utility.hashIsEmpty(fileHash)) {
-				updateFile.setObject(2, null);
+				fileClose.setObject(2, null);
 			} else {
-				updateFile.setString(2, fileHash);
+				fileClose.setString(2, fileHash);
 			}
 
 			if (Utility.hashIsEmpty(previousHash)) {
-				updateFile.setObject(3, null);
+				fileClose.setObject(3, null);
 			} else {
-				updateFile.setString(3, previousHash);
+				fileClose.setString(3, previousHash);
 			}
-			updateFile.setLong(4, fileId);
-			updateFile.execute();
-			updateFile.close();
+			
+			fileClose.execute();
+			fileClose.close();
 			// commit the changes to the database
 			connect.commit();
 		} catch (SQLException e) {
@@ -243,45 +273,35 @@ public class RecordFileLogger {
 		}
 	}
 	public static boolean storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord) throws Exception {
-		timeStart = Instant.now();
+
 		try {
-			PreparedStatement sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
-						+ " (fk_node_acc_id, memo, vs_seconds, vs_nanos, valid_start_ns, fk_trans_type_id, fk_payer_acc_id"
-						+ ", fk_result_id, consensus_seconds, consensus_nanos, consensus_ns, fk_cud_entity_id, charged_tx_fee"
-						+ ", initial_balance, fk_rec_file_id)"
-						+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-						+ " RETURNING id");
-
-			PreparedStatement sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
-					+ " (fk_trans_id, account_id, amount)"
-					+ " VALUES (?, ?, ?)");
-
-			PreparedStatement sqlInsertFileData = connect.prepareStatement("INSERT INTO t_file_data"
-					+ " (fk_trans_id, file_data)"
-					+ " VALUES (?, ?)");
-
-			PreparedStatement sqlInsertContractCall = connect.prepareStatement("INSERT INTO t_contract_result"
-					+ " (fk_trans_id, function_params, gas_supplied, call_result, gas_used)"
-					+ " VALUES (?, ?, ?, ?, ?)");
 
 			long fkTransactionId = 0;
 			
-			System.out.println(nowTime() + "-Prep statements");
-
+            ResultSet resultSet;
+			try {
+				resultSet = connect.createStatement().executeQuery("SELECT nextval('s_transactions_seq')");
+				resultSet.next();
+            	fkTransactionId = resultSet.getLong(1);
+	            resultSet.close();
+			} catch (SQLException e) {
+	            log.error(LOGM_EXCEPTION, "Unable to fetch new transaction id - Exception {}", e.getMessage());
+				return false;
+			}
+			
 			TransactionBody body = null;
 			if (transaction.hasBody()) {
 				body = transaction.getBody();
 			} else {
 				body = TransactionBody.parseFrom(transaction.getBodyBytes());
 			}
-			System.out.println(nowTime() + "-Body parsed");
-
 			long fkNodeAccountId = entities.createOrGetEntity(body.getNodeAccountID());
 			TransactionID transactionID = body.getTransactionID();
 			long seconds = transactionID.getTransactionValidStart().getSeconds();
 			long nanos = transactionID.getTransactionValidStart().getNanos();
 			long validStartNs = Utility.convertInstantToNanos(Instant.ofEpochSecond(seconds, nanos));
 
+			sqlInsertTransaction.setLong(F_TRANSACTION.ID.ordinal(), fkTransactionId);
 			sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), fkNodeAccountId);
 			sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), body.getMemo().getBytes());
 			sqlInsertTransaction.setLong(F_TRANSACTION.VS_SECONDS.ordinal(), seconds);
@@ -294,14 +314,10 @@ public class RecordFileLogger {
 
 			sqlInsertTransaction.setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), fkPayerAccountId);
 
-			System.out.println(nowTime() + "-SQLInsert 1");
-			
 			long fk_result_id = -1;
 			String responseCode = ResponseCodeEnum.forNumber(txRecord.getReceipt().getStatus().getNumber()).getValueDescriptor().getName();
 
 			fk_result_id = transactionResults.get(responseCode);
-
-			System.out.println(nowTime() + "-Response code");
 
 			seconds = txRecord.getConsensusTimestamp().getSeconds();
 			nanos = txRecord.getConsensusTimestamp().getNanos();
@@ -312,9 +328,6 @@ public class RecordFileLogger {
 			sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NANOS.ordinal(), nanos);
 			sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), consensusNs);
 			sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), txRecord.getTransactionFee());
-
-			System.out.println(nowTime() + "-SQLInsert 2");
-			System.out.println(body.getDataCase().toString());
 			
             long entityId = 0;
             long initialBalance = 0;
@@ -323,7 +336,6 @@ public class RecordFileLogger {
                 if (body.getContractCall().hasContractID()) {
                     entityId = entities.createOrGetEntity(body.getContractCall().getContractID());
                 }
-    			System.out.println(nowTime() + "-hasContractCall");
             } else if (body.hasContractCreateInstance()) {
             	if (txRecord.getReceipt().hasContractID()) {
             		ContractCreateTransactionBody txMessage = body.getContractCreateInstance();
@@ -343,13 +355,11 @@ public class RecordFileLogger {
             	}
 
                 initialBalance = body.getContractCreateInstance().getInitialBalance();
-    			System.out.println(nowTime() + "-hasContractCreateInstance");
             } else if (body.hasContractDeleteInstance()) {
                 if (body.getContractDeleteInstance().hasContractID()) {
                     entityId = entities.createOrGetEntity(body.getContractDeleteInstance().getContractID());
                     entityId = entities.deleteEntity(body.getContractDeleteInstance().getContractID());
                 }
-    			System.out.println(nowTime() + "-hasContractDeleteInstance");
             } else if (body.hasContractUpdateInstance()) {
         		ContractUpdateTransactionBody txMessage = body.getContractUpdateInstance();
             	long expiration_time_sec = 0;
@@ -372,14 +382,12 @@ public class RecordFileLogger {
             	long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
 
             	entityId = entities.updateEntity(txMessage.getContractID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
-    			System.out.println(nowTime() + "-hasContractUpdateInstance");
             } else if (body.hasCryptoAddClaim()) {
                 if (body.getCryptoAddClaim().hasClaim()) {
                     if (body.getCryptoAddClaim().getClaim().hasAccountID()) {
                         entityId = entities.createOrGetEntity(body.getCryptoAddClaim().getClaim().getAccountID());
                     }
                 }
-    			System.out.println(nowTime() + "-hasCryptoAddClaim");
             } else if (body.hasCryptoCreateAccount()) {
             	if (txRecord.getReceipt().hasAccountID()) {
             		CryptoCreateTransactionBody txMessage = body.getCryptoCreateAccount();
@@ -399,18 +407,15 @@ public class RecordFileLogger {
             	}
 
             	initialBalance = body.getCryptoCreateAccount().getInitialBalance();
-    			System.out.println(nowTime() + "-hasCryptoCreateAccount");
             } else if (body.hasCryptoDelete()) {
                 if (body.getCryptoDelete().hasDeleteAccountID()) {
                     entityId = entities.createOrGetEntity(body.getCryptoDelete().getDeleteAccountID());
                     entityId = entities.deleteEntity(body.getCryptoDelete().getDeleteAccountID());
                 }
-    			System.out.println(nowTime() + "-hasCryptoDelete");
             } else if (body.hasCryptoDeleteClaim()) {
                 if (body.getCryptoDeleteClaim().hasAccountIDToDeleteFrom()) {
                     entityId = entities.createOrGetEntity(body.getCryptoDeleteClaim().getAccountIDToDeleteFrom());
                 }
-    			System.out.println(nowTime() + "-hasCryptoDeleteClaim");
             } else if (body.hasCryptoTransfer()) {
             	// do nothing
             } else if (body.hasCryptoUpdateAccount()) {
@@ -436,7 +441,6 @@ public class RecordFileLogger {
             	long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
 
             	entityId = entities.updateEntity(body.getCryptoUpdateAccount().getAccountIDToUpdate(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
-    			System.out.println(nowTime() + "-hasCryptoUpdateAccount");
             } else if (body.hasFileCreate()) {
             	if (txRecord.getReceipt().hasFileID()) {
             		FileCreateTransactionBody txMessage = body.getFileCreate();
@@ -455,18 +459,15 @@ public class RecordFileLogger {
 	            	long proxy_account_id = 0;
 	            	entityId = entities.createEntity(txRecord.getReceipt().getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
             	}
-    			System.out.println(nowTime() + "-hasFileCreate");
             } else if (body.hasFileAppend()) {
                 if (body.getFileAppend().hasFileID()) {
                     entityId = entities.createOrGetEntity(body.getFileAppend().getFileID());
                 }
-    			System.out.println(nowTime() + "-hasFileAppend");
             } else if (body.hasFileDelete()) {
                 if (body.getFileDelete().hasFileID()) {
                     entityId = entities.createOrGetEntity(body.getFileDelete().getFileID());
                     entityId = entities.deleteEntity(body.getFileDelete().getFileID());
                 }
-    			System.out.println(nowTime() + "-hasFileDelete");
             } else if (body.hasFileUpdate()) {
         		FileUpdateTransactionBody txMessage = body.getFileUpdate();
             	long expiration_time_sec = 0;
@@ -488,7 +489,6 @@ public class RecordFileLogger {
 
             	entityId = entities.updateEntity(txMessage.getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
 
-    			System.out.println(nowTime() + "-hasFileUpdate");
 			} else if (body.hasFreeze()) {
 				//TODO:
 			} else if (body.hasSystemDelete()) {
@@ -519,7 +519,8 @@ public class RecordFileLogger {
             sqlInsertTransaction.setLong(F_TRANSACTION.INITIAL_BALANCE.ordinal(), initialBalance);
 
 			try {
-                fkTransactionId = insertTransaction(sqlInsertTransaction);
+//                fkTransactionId = insertTransaction(sqlInsertTransaction);
+				sqlInsertTransaction.addBatch();
 			} catch (SQLException e) {
 			    if (e.getSQLState().contentEquals("23505")) {
                     // duplicate transaction id, rollback and exit
@@ -532,12 +533,9 @@ public class RecordFileLogger {
 			}
 
 			if (txRecord.hasTransferList()) {
-				System.out.println(nowTime() + "-hasTransferList");
-
 	            TransferList pTransfer = txRecord.getTransferList();
 
                 try {
-        			System.out.println(nowTime() + "-getPersistCryptoTransferAmounts");
                     if (ConfigLoader.getPersistCryptoTransferAmounts()) {
 	                    for (int i = 0; i < pTransfer.getAccountAmountsCount(); i++) {
 	                        // insert
@@ -548,11 +546,10 @@ public class RecordFileLogger {
 
 	                        sqlInsertTransferList.addBatch();
 	                    }
-	                    if ( ! bSkip) {
-	                    	sqlInsertTransferList.executeBatch();
-	                    }
+//	                    if ( ! bSkip) {
+//	                    	sqlInsertTransferList.executeBatch();
+//	                    }
                     }
-        			System.out.println(nowTime() + "-getPersistCryptoTransferAmounts done");
                 } catch (SQLException e) {
                     if (e.getSQLState().contentEquals("23505")) {
                         // duplicate transaction id, rollback and exit
@@ -602,17 +599,12 @@ public class RecordFileLogger {
             } else if (body.hasCryptoAddClaim()) {
             	if (ConfigLoader.getPersistClaims()) {
 	            	byte[] claim = body.getCryptoAddClaim().getClaim().getHash().toByteArray();
-	    			PreparedStatement sqlInsertClaimData = connect.prepareStatement("INSERT INTO t_livehash_data"
-	    					+ " (fk_trans_id, livehash)"
-	    					+ " VALUES (?, ?)");
 
 	    			sqlInsertClaimData.setLong(F_LIVEHASH_DATA.FK_TRANS_ID.ordinal(), fkTransactionId);
 	            	sqlInsertClaimData.setBytes(F_LIVEHASH_DATA.LIVEHASH.ordinal(), claim);
                     if ( ! bSkip) {
-                    	sqlInsertClaimData.execute();
+                    	sqlInsertClaimData.addBatch();
                     }
-
-	            	sqlInsertClaimData.close();
             	}
             } else if (body.hasCryptoDeleteClaim()) {
             	// Do nothing
@@ -630,7 +622,7 @@ public class RecordFileLogger {
 	            	sqlInsertFileData.setLong(F_FILE_DATA.FK_TRANS_ID.ordinal(), fkTransactionId);
 	            	sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
                     if ( ! bSkip) {
-                    	sqlInsertFileData.execute();
+                    	sqlInsertFileData.addBatch();
                     }
             	}
             } else if (body.hasFileCreate()) {
@@ -639,7 +631,7 @@ public class RecordFileLogger {
 	            	sqlInsertFileData.setLong(F_FILE_DATA.FK_TRANS_ID.ordinal(), fkTransactionId);
 	            	sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
                     if ( ! bSkip) {
-                    	sqlInsertFileData.execute();
+                    	sqlInsertFileData.addBatch();
                     }
             	}
             	//TODO:Address book + proxy amounts for nodes
@@ -651,7 +643,7 @@ public class RecordFileLogger {
 	            	sqlInsertFileData.setLong(F_FILE_DATA.FK_TRANS_ID.ordinal(), fkTransactionId);
 	            	sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
                     if ( ! bSkip) {
-                    	sqlInsertFileData.execute();
+                    	sqlInsertFileData.addBatch();
                     }
             	}
 
@@ -671,11 +663,6 @@ public class RecordFileLogger {
             	// Do nothing
             }
 
-            sqlInsertFileData.close();
-            sqlInsertTransferList.close();
-            sqlInsertTransaction.close();
-            sqlInsertContractCall.close();
-
 		} catch (SQLException e) {
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
 			rollback();
@@ -684,6 +671,14 @@ public class RecordFileLogger {
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
 			rollback();
 			return false;
+		}
+		
+		if (batch_count == BATCH_SIZE - 1) {
+        	// execute any remaining batches
+        	executeBatches();
+			batch_count = 0;
+		} else {
+			batch_count += 1 ;
 		}
 
 		return true;
@@ -712,18 +707,18 @@ public class RecordFileLogger {
 		}
 	}
 
-	private static long insertTransaction(PreparedStatement insertTransaction) throws SQLException {
-        if ( bSkip) { return 0;}
-        
-		insertTransaction.execute();
-
-        ResultSet newId = insertTransaction.getResultSet();
-        newId.next();
-        Long txId = newId.getLong(1);
-        newId.close();
-
-        return txId;
-	}
+//	private static long insertTransaction(PreparedStatement insertTransaction) throws SQLException {
+//        if ( bSkip) { return 0;}
+//        
+//		insertTransaction.execute();
+//
+//        ResultSet newId = insertTransaction.getResultSet();
+//        newId.next();
+//        Long txId = newId.getLong(1);
+//        newId.close();
+//
+//        return txId;
+//	}
 
 	public static void insertContractResults(PreparedStatement insert, long fkTxId, byte[] functionParams, long gasSupplied, byte[] callResult, long gasUsed) throws SQLException {
         if ( bSkip) { return;}
@@ -734,7 +729,15 @@ public class RecordFileLogger {
 		insert.setBytes(F_CONTRACT_CALL.CALL_RESULT.ordinal(), callResult);
 		insert.setLong(F_CONTRACT_CALL.GAS_USED.ordinal(), gasUsed);
 
-		insert.execute();
+		insert.addBatch();
 
+	}
+	
+	private static void executeBatches() throws SQLException {
+		sqlInsertTransaction.executeBatch();
+		sqlInsertTransferList.executeBatch();
+		sqlInsertFileData.executeBatch();
+		sqlInsertContractCall.executeBatch();
+		sqlInsertClaimData.executeBatch();
 	}
 }

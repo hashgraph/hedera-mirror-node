@@ -1,41 +1,26 @@
 package com.hedera.utilities;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.downloader.Downloader;
-import com.hedera.signatureVerifier.NodeSignatureVerifier;
-import com.hedera.utilities.Utility;
 
 public class BucketList extends Downloader {
 
 
-	public BucketList(ConfigLoader configLoader) {
-		super(configLoader);
+	public BucketList() {
 	}
 
 	public static void main(String[] args) {
 
-		configLoader = new ConfigLoader();
-
 		setupCloudConnection();
 
 		String s3Prefix = ""; //configLoader.getAccountBalanceS3Location();
-		bucketName = configLoader.getBucketName();
+		bucketName = ConfigLoader.getBucketName();
 		
 		ListObjectsRequest listRequest = new ListObjectsRequest()
 				.withBucketName(bucketName)

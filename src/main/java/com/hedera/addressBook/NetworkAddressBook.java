@@ -31,8 +31,7 @@ public class NetworkAddressBook {
 	private static final Logger log = LogManager.getLogger("networkaddressbook");
 	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
-    private static ConfigLoader configLoader = new ConfigLoader();
-	private static String addressBookFile = configLoader.getAddressBookFile();
+	private static String addressBookFile = ConfigLoader.getAddressBookFile();
 
 	static Client client;
 	static Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();

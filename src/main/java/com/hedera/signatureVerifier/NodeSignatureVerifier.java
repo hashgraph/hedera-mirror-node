@@ -40,8 +40,8 @@ public class NodeSignatureVerifier {
 
 	Map<String, PublicKey> nodeIDPubKeyMap;
 
-	public NodeSignatureVerifier(ConfigLoader configLoader) {
-		nodeAddressBookLocation = configLoader.getAddressBookFile();
+	public NodeSignatureVerifier() {
+		nodeAddressBookLocation = ConfigLoader.getAddressBookFile();
 
 		nodeIDPubKeyMap = new HashMap<>();
 		//load Node Details
