@@ -192,9 +192,6 @@ public class RecordFileLogger {
 	}
 	public static boolean finish() {
         try {
-        	// execute any remaining batches
-        	executeBatches();
-
             sqlInsertFileData.close();
             sqlInsertTransferList.close();
             sqlInsertTransaction.close();
@@ -236,9 +233,14 @@ public class RecordFileLogger {
 		
 	public static boolean completeFile(String fileHash, String previousHash) {
 		if (bSkip) { return true;}
-		// update the file to processed
+
 		try {
-			CallableStatement fileClose = connect.prepareCall("{call f_file_complete( ?, ?, ? ) }");
+			// execute any remaining batches
+	    	executeBatches();
+
+			// update the file to processed
+	    	CallableStatement fileClose = connect.prepareCall("{call f_file_complete( ?, ?, ? ) }");
+	    	
 			fileClose.setLong(1, fileId);
 
 			if (Utility.hashIsEmpty(fileHash)) {

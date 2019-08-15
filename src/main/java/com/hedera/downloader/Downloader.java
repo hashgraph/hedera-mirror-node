@@ -365,10 +365,11 @@ public abstract class Downloader {
 					if (Utility.checkStopFile()) {
 						log.info(MARKER, "Stop file found, stopping.");
 						break;
+					} else if (downloadCount >= downloadMax) {
+						break;
 					} else if (objects.isTruncated()) {
 						objects = s3Client.listNextBatchOfObjects(objects);
-					}
-					else {
+					} else {
 						break;
 					}
 				}

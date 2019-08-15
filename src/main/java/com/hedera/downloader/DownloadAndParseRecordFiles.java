@@ -27,7 +27,7 @@ public class DownloadAndParseRecordFiles {
 				break;
 			}
 			// download files
-			RecordFileDownloader.downloadNewRecordfiles(downloader);
+ 			RecordFileDownloader.downloadNewRecordfiles(downloader);
 
 			// process files
 			if (Utility.checkStopFile()) {
