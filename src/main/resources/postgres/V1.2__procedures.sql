@@ -1,6 +1,6 @@
 DROP FUNCTION f_file_create;
 
-CREATE OR REPLACE FUNCTION f_file_create()
+CREATE OR REPLACE FUNCTION f_file_create(varchar(250))
   RETURNS BIGINT AS 
 $$
 DECLARE _file_name t_record_files.name%TYPE;
