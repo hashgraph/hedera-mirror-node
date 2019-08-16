@@ -1,0 +1,26 @@
+version: 2
+
+workflows:
+  version: 2
+  main:
+    jobs:
+    - build
+
+defaults: &defaults
+  docker:
+  - image: adoptopenjdk:11-jdk-hotspot
+
+jobs:
+  build:
+    <<: *defaults
+    steps:
+    - checkout
+    - restore_cache:
+        key: maven
+    - run: ./mvnw install
+    - store_test_results:
+        path: target/surefire-reports
+    - save_cache:
+        key: maven
+        paths:
+        - ~/.m2
