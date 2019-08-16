@@ -1,14 +1,11 @@
-DROP FUNCTION f_file_create (
-  _file_name t_record_files.name%TYPE
-);
+DROP FUNCTION f_file_create;
 
-CREATE FUNCTION f_file_create (
-  _file_name t_record_files.name%TYPE
-) RETURNS BIGINT AS $$
-DECLARE
-  file_id BIGINT;
+CREATE OR REPLACE FUNCTION f_file_create()
+  RETURNS BIGINT AS 
+$$
+DECLARE _file_name t_record_files.name%TYPE;
+DECLARE file_id BIGINT;
 BEGIN
-
   SELECT id
   INTO file_id
   FROM t_record_files
@@ -27,7 +24,7 @@ END;
 $$ LANGUAGE plpgsql
 ;
 
-GRANT ALL ON f_file_create TO :db_user;
+GRANT ALL ON FUNCTION f_file_create TO :db_user;
 
 DROP FUNCTION f_file_complete (
   _file_id t_record_files.id%TYPE
@@ -50,7 +47,7 @@ END
 $$ LANGUAGE plpgsql
 ;
 
-GRANT ALL ON f_file_complete TO :db_user;
+GRANT ALL ON FUNCTION f_file_complete TO :db_user;
 
 DROP FUNCTION IF EXISTS f_entity_create (
   _shard t_entities.entity_shard%TYPE
@@ -126,7 +123,7 @@ END
 $$ LANGUAGE plpgsql
 ;
 
-GRANT ALL ON f_entity_create TO :db_user;
+GRANT ALL ON FUNCTION f_entity_create TO :db_user;
 
 -- ALTER TABLE t_transactions ALTER COLUMN id DROP DEFAULT;
 -- ALTER TABLE t_entities DROP CONSTRAINT fk_ent_type_id;
