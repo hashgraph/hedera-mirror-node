@@ -134,7 +134,7 @@ Without `Docker`, you will need to install `PostgreSQL` versions 10 or 11.
 
 ## Compile from source code
 
-Run `mvn install -DskipTests` from the `MirrorNode` directory.
+Run `./mvnw install -DskipTests` from the `MirrorNode` directory.
 
 This will compile a runnable mirror node jar file in the `target` directory and copy sample `nodesInfo.json.sample`, `config.json.sample` and `log4j2.xml` files into the same directory.
 

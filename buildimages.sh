@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 mkdir docker/runtime
 mkdir docker/runtime/config
