@@ -153,7 +153,7 @@ public class NodeSignatureVerifier {
 				return new ArrayList<>(hashToSigFiles.get(key));
 			}
 		}
-		return null;
+		return new ArrayList<>();
 	}
 
 	/**
