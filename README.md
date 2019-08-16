@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master.svg?style=svg)](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master)
+
 # Beta Mirror Node
 
 This BetaMirrorNode implementation supports CryptoService, FileService and SmartContractService through a proxy.
