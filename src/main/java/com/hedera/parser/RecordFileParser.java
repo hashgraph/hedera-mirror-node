@@ -40,11 +40,15 @@ public class RecordFileParser {
 	static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
 	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 
-
-	private static ConfigLoader configLoader = new ConfigLoader();
 	private static LoggerStatus loggerStatus = new LoggerStatus();
 	private static String thisFileHash = "";
 
+	private static Instant timeStart;
+	private static String nowTime() {
+		System.out.println(Instant.now().minusSeconds(timeStart.getEpochSecond()).minusNanos(timeStart.getNano()));
+		return Instant.now().getEpochSecond() * 1000000000 + Instant.now().getNano() - timeStart.getEpochSecond() * 1000000000 + timeStart.getNano() + "-";
+
+	}
 	/**
 	 * Given a service record name, read and parse and return as a list of service record pair
 	 *
@@ -54,6 +58,9 @@ public class RecordFileParser {
 	 */
 	static public boolean loadRecordFile(String fileName, String previousFileHash) {
 
+		timeStart = Instant.now();
+
+		System.out.println(nowTime() + "-LoadRecordFile start ");
 		File file = new File(fileName);
 		FileInputStream stream = null;
 		String newFileHash = "";
@@ -62,10 +69,10 @@ public class RecordFileParser {
 			log.info(MARKER, "File does not exist " + fileName);
 			return false;
 		}
-
+		long counter = 0;
 		byte[] readFileHash = new byte[48];
 		INIT_RESULT initFileResult = RecordFileLogger.initFile(fileName);
-		if (initFileResult == INIT_RESULT.OK) {
+		if ((initFileResult == INIT_RESULT.OK) || (initFileResult == INIT_RESULT.SKIP)) {
 			try {
 				long counter = 0;
 				MessageDigest md = MessageDigest.getInstance("SHA-384");
@@ -104,19 +111,19 @@ public class RecordFileParser {
 
 								if (!newFileHash.contentEquals(previousFileHash)) {
 
-									if (configLoader.getStopLoggingIfRecordHashMismatchAfter().compareTo(Utility.getFileName(fileName)) < 0) {
+									if (ConfigLoader.getStopLoggingIfRecordHashMismatchAfter().compareTo(Utility.getFileName(fileName)) < 0) {
 										// last file for which mismatch is allowed is in the past
 										log.error(MARKER, "Previous file Hash Mismatch - stopping loading. Previous = {}, Current = {}", previousFileHash, newFileHash);
 										log.error(MARKER, "Mismatching file {}", fileName);
 										return false;
 									}
 								}
-
 								break;
 							case TYPE_RECORD:
+								counter++;
+
 								int byteLength = dis.readInt();
 								byte[] rawBytes = new byte[byteLength];
-
 								dis.readFully(rawBytes);
 								if (record_format_version >= RECORD_FORMAT_VERSION) {
 									mdForContent.update(typeDelimiter);
@@ -145,16 +152,26 @@ public class RecordFileParser {
 
 								TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
 
-								counter++;
-
-								if (RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord, configLoader)) {
-									log.info(MARKER, "record counter = {}\n=============================", counter);
-									log.info(MARKER, "Transaction Consensus Timestamp = {}\n", Utility.convertToInstant(txRecord.getConsensusTimestamp()));
-									log.info(MARKER, "Transaction = {}", Utility.printTransaction(transaction));
-									log.info(MARKER, "Record = {}\n=============================\n",  TextFormat.shortDebugString(txRecord));
-									break;
-								} else {
-									RecordFileLogger.rollback();
+								if (initFileResult != INIT_RESULT.SKIP) {
+									boolean bStored = RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord);
+									if (bStored) {
+										log.info(MARKER, "record counter = {}\n=============================", counter);
+										log.info(MARKER, "Transaction Consensus Timestamp = {}\n", Utility.convertToInstant(txRecord.getConsensusTimestamp()));
+										log.info(MARKER, "Transaction = {}", Utility.printTransaction(transaction));
+										log.info(MARKER, "Record = {}\n=============================\n",  TextFormat.shortDebugString(txRecord));
+									} else {
+										RecordFileLogger.rollback();
+										return false;
+									}
+								}
+								break;
+							case TYPE_SIGNATURE:
+								int sigLength = dis.readInt();
+								log.info(MARKER, "sigLength = " + sigLength);
+								byte[] sigBytes = new byte[sigLength];
+								dis.readFully(sigBytes);
+								log.info(MARKER, "File {} Signature = {} ", fileName, Hex.encodeHexString(sigBytes));
+								if (RecordFileLogger.storeSignature(Hex.encodeHexString(sigBytes))) {
 									break;
 								}
 
@@ -200,6 +217,8 @@ public class RecordFileParser {
 			}
 			loggerStatus.setLastProcessedRcdHash(thisFileHash);
 			loggerStatus.saveToFile();
+			System.out.println(counter);
+			System.out.println(nowTime() + "-LoadRecordFile end ");
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
 			return true;
@@ -276,9 +295,7 @@ public class RecordFileParser {
 				System.exit(0);
 			}
 
-			configLoader = new ConfigLoader();
-
-			pathName = configLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
+			pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
 			log.info(MARKER, "Record files folder got from configuration file: {}", pathName);
 
 			if (pathName != null) {

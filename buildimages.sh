@@ -1,12 +1,8 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 
-mkdir docker/runtime
-mkdir docker/runtime/config
-mkdir docker/runtime/lib
-rm -rf docker/runtime/sql
-mkdir docker/runtime/sql
-rm -rf docker/runtime/rest-api
-mkdir docker/runtime/rest-api
+rm -rf docker/runtime/{sql,rest-api}
+mkdir -p docker/runtime/{config,lib,rest-api,sql}
 
 DOCOMPILE=3
 echo "Compile source via 1-docker-compose, 2-local maven, 3-skip?"
@@ -39,27 +35,11 @@ fi
 
 cd docker
 
-cp ../src/main/resources/postgres/postgresInit.sql .
 cp ../src/main/resources/postgres/V*.sql runtime/sql
 cp -r ../config/* runtime/config/
 cp -r ../target/lib/* runtime/lib
 cp ../target/mirrorNode.jar runtime/mirrorNode.jar
 cp -r ../rest-api/* runtime/rest-api
-
-cp ./wait-for-postgres.sh runtime/
-chmod +x runtime/wait-for-postgres.sh
-
-cp ./balanceParse.sh runtime/
-chmod +x runtime/balanceParse.sh
-
-cp ./recordDownloadParse.sh runtime/
-chmod +x runtime/recordDownloadParse.sh
-
-cp ./eventDownloadParse.sh runtime/
-chmod +x runtime/eventDownloadParse.sh
-
-cp ./update102.sh runtime/
-chmod +x runtime/update102.sh
 
 cp ./restapi.sh runtime/
 chmod +x runtime/restapi.sh

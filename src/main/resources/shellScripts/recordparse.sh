@@ -30,7 +30,7 @@ fi
 
 echo "started record parsing"
 cd $HOME
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.recordFileParser.RecordFileParser
+java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.parser.RecordFileParser
 echo "ended record parsing"
 
 rm $PIDFILE

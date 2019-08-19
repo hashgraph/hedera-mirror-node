@@ -1,7 +1,8 @@
 package com.hedera.downloader;
 
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.downloader.Downloader.DownloadType;
 import com.hedera.parser.EventStreamFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
@@ -10,6 +11,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,8 +25,7 @@ public class EventStreamFileDownloader extends Downloader {
 
 	private static String validDir = null;
 
-	public EventStreamFileDownloader(ConfigLoader configLoader) {
-		super(configLoader);
+	public EventStreamFileDownloader() {
 	}
 	
 	public static void downloadNewEventfiles(EventStreamFileDownloader downloader) {
@@ -65,9 +66,8 @@ public class EventStreamFileDownloader extends Downloader {
 			log.info(MARKER, "Stop file found, exiting.");
 			System.exit(0);
 		}
-		configLoader = new ConfigLoader();
 
-		EventStreamFileDownloader downloader = new EventStreamFileDownloader(configLoader);
+		EventStreamFileDownloader downloader = new EventStreamFileDownloader();
 
 		while (true) {
 			if (Utility.checkStopFile()) {
@@ -87,21 +87,35 @@ public class EventStreamFileDownloader extends Downloader {
 	 * @param validDir
 	 */
 	public static void verifyValidFiles(String validDir) {
-		String lastValidEventFileName = configLoader.getLastValidEventFileName();
-		String lastValidEventFileHash = configLoader.getLastValidEventFileHash();
+		String lastValidEventFileName = "";
+		try {
+			lastValidEventFileName = ConfigLoader.getLastValidEventFileName();
+		} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 
+		String lastValidEventFileHash = "";
+		try {
+			lastValidEventFileHash = ConfigLoader.getLastValidEventFileHash();
+		} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+		String lastValidEventFileName2 = lastValidEventFileName;
 		File validDirFile = new File(validDir);
 		if (!validDirFile.exists()) {
 			return;
 		}
 		try (Stream<Path> pathStream = Files.walk(validDirFile.toPath())) {
 			List<String> fileNames = pathStream.filter(p -> Utility.isEventStreamFile(p.toString()))
-					.filter(p -> lastValidEventFileName.isEmpty() ||
-							fileNameComparator.compare(p.toFile().getName(), lastValidEventFileName) > 0)
+					.filter(p -> lastValidEventFileName2.isEmpty() ||
+							fileNameComparator.compare(p.toFile().getName(), lastValidEventFileName2) > 0)
 					.sorted(pathComparator)
 					.map(p -> p.toString()).collect(Collectors.toList());
 
-			String newLastValidEventFileName = lastValidEventFileName;
+			String newLastValidEventFileName = lastValidEventFileName2;
 			String newLastValidEventFileHash = lastValidEventFileHash;
 
 			for (String fileName : fileNames) {
@@ -121,9 +135,9 @@ public class EventStreamFileDownloader extends Downloader {
 			}
 
 			if (!newLastValidEventFileName.equals(lastValidEventFileName)) {
-				configLoader.setLastValidEventFileHash(newLastValidEventFileHash);
-				configLoader.setLastValidEventFileName(newLastValidEventFileName);
-				configLoader.saveEventsDataToFile();
+				ConfigLoader.setLastValidEventFileHash(newLastValidEventFileHash);
+				ConfigLoader.setLastValidEventFileName(newLastValidEventFileName);
+				ConfigLoader.saveEventsDataToFile();
 			}
 
 		} catch (IOException ex) {
@@ -147,7 +161,7 @@ public class EventStreamFileDownloader extends Downloader {
 	 */
 	String verifySigsAndDownloadEventStreamFiles(Map<String, List<File>> sigFilesMap) {
 
-		NodeSignatureVerifier verifier = new NodeSignatureVerifier(configLoader);
+		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 		for (String fileName : sigFilesMap.keySet()) {
 			List<File> sigFiles = sigFilesMap.get(fileName);
 			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
@@ -195,7 +209,7 @@ public class EventStreamFileDownloader extends Downloader {
 		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
 		String sigFileName = sigFile.getName();
 		String fileName = sigFileName.replace(".evts_sig", ".evts");
-		String s3ObjectKey = configLoader.getEventFilesS3Location() + nodeAccountId + "/" + fileName;
+		String s3ObjectKey = ConfigLoader.getEventFilesS3Location() + nodeAccountId + "/" + fileName;
 		String localFileName = validDir + fileName;
 		return saveToLocal(bucketName, s3ObjectKey, localFileName);
 	}

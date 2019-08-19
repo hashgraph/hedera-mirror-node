@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master.svg?style=shield&circle-token=710f183adf8aa2890272404e0c53e10898b94882)](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master)
+
 # Beta Mirror Node
 
 This BetaMirrorNode implementation supports CryptoService, FileService and SmartContractService through a proxy.
@@ -43,10 +45,8 @@ The Beta mirror node works as follows:
 git clone git@github.com:hashgraph/hedera-mirror-node.git
 cd hedera-mirror-node
 cp config/config.json.sample config/config.json
-nano config/config.json// Insert AWS S3 credentials. Update any other settings as needed.
+nano config/config.json // Insert AWS S3 credentials. 
 cp docker/dotenv.sample docker/.env
-nano docker/.env
-Update database and API settings as needed
 ./buildimages.sh
 
   // You'll now be asked a few questions to finalize automated mirror node configuration.
@@ -134,7 +134,7 @@ Without `Docker`, you will need to install `PostgreSQL` versions 10 or 11.
 
 ## Compile from source code
 
-Run `mvn install -DskipTests` from the `MirrorNode` directory.
+Run `./mvnw install -DskipTests` from the `MirrorNode` directory.
 
 This will compile a runnable mirror node jar file in the `target` directory and copy sample `nodesInfo.json.sample`, `config.json.sample` and `log4j2.xml` files into the same directory.
 
@@ -143,6 +143,10 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 ## Change history
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
+
+### Set "stopLoggingIfRecordHashMismatch" to "X" 
+
+This is to ease onboarding on the integration test network, there are a few gaps in the file hash history as a result of testing which result in the parser stopping, setting this value to "X" in the `config.json` file will ensure parsing continues regardless of the hash history. This should not be set to "X" in production of course.
 
 ### Addition of event parsing
 
