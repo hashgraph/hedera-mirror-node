@@ -89,7 +89,7 @@ public class ConfigLoader {
 
 	private static String stopLoggingIfRecordHashMismatchAfter = "";
 	private static String stopLoggingIfEventHashMismatchAfter = "";
-	
+
 	private static boolean persistClaims = false;
 
 	private static String persistFiles = "NONE";
@@ -122,9 +122,9 @@ public class ConfigLoader {
 	private static boolean bBalanceFileExists = true;
 	private static boolean bRecordsFileExists = true;
 	private static boolean bEventsFileExists = true;
-	
+
 	private static boolean bBalanceVerifySigs = false;
-	
+
 	public static enum OPERATION_TYPE {
 		BALANCE
 		,RECORDS
@@ -267,13 +267,13 @@ public class ConfigLoader {
 				recordsJsonObject.addProperty("lastValidRcdFileHash", lastValidRcdFileHash);
 				saveRecordsDataToFile();
 			}
-			
+
 			if (bEventsFileExists) {
 				loadEventsFile();
 			} else {
 				eventsJsonObject = new JsonObject();
 			}
-			
+
 			if (configJsonObject.has("balanceVerifySigs")) {
 				bBalanceVerifySigs = configJsonObject.get("balanceVerifySigs").getAsBoolean();
 			}
@@ -323,7 +323,7 @@ public class ConfigLoader {
 		if (!downloadToDir.endsWith("/")) {
 			downloadToDir += "/";
 		}
-		
+
 		// always return trailing "/"
 		switch (operation) {
 		case BALANCE:
@@ -337,7 +337,7 @@ public class ConfigLoader {
 		}
 		return "";
 	}
-	
+
 	public static int getProxyPort() {
 		return proxyPort;
 	}
@@ -551,7 +551,7 @@ public class ConfigLoader {
 		final FileReader file = new FileReader(location);
 		return (JsonObject) parser.parse(file);
 	}
-	
+
 	private static void loadEventsFile() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
 		eventsJsonObject = getJsonObject(recordsSavePath);
 		if (recordsJsonObject.has("lastDownloadedEventSigName")) {
@@ -559,7 +559,7 @@ public class ConfigLoader {
 		}
 		if (recordsJsonObject.has("lastValidEventFileName")) {
 			lastValidEventFileName = eventsJsonObject.get("lastValidEventFileName").getAsString();
-		}				
+		}
 		if (recordsJsonObject.has("lastValidEventFileHash")) {
 		    lastValidEventFileHash = recordsJsonObject.get("lastValidEventFileHash").getAsString();
 		}

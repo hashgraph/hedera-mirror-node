@@ -8,7 +8,6 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.downloader.Downloader;
-import com.hedera.parser.RecordFileParser;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -183,6 +182,22 @@ public class Utility {
 	public static byte[] integerToBytes(int number) {
 		ByteBuffer b = ByteBuffer.allocate(4);
 		b.putInt(number);
+		return b.array();
+	}
+
+	public static byte[] longToBytes(long number) {
+		ByteBuffer b = ByteBuffer.allocate(8);
+		b.putLong(number);
+		return b.array();
+	}
+
+	public static byte booleanToByte(boolean value) {
+		return value ? (byte)1 : (byte)0;
+	}
+
+	public static byte[] instantToBytes(Instant instant) {
+		ByteBuffer b = ByteBuffer.allocate(16);
+		b.putLong(instant.getEpochSecond()).putLong(instant.getNano());
 		return b.array();
 	}
 

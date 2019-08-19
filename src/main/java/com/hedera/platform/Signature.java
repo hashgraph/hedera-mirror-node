@@ -23,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
 import java.util.Arrays;
 
 /**
@@ -341,7 +342,7 @@ public class Signature {
 	 * 		if the internal checksum cannot be
 	 * 		validated
 	 */
-	static Signature deserialize(final DataInputStream dis, final int[] byteCount) throws IOException {
+	static Signature deserialize(final DataInputStream dis, final int[] byteCount, MessageDigest md) throws IOException {
 		if (dis == null) {
 			throw new NullPointerException("dis");
 		}
