@@ -1,3 +1,0 @@
-FROM postgres:11.4-alpine
-
-COPY ./postgresInit.sql /docker-entrypoint-initdb.d/

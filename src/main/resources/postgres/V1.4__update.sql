@@ -1,8 +1,3 @@
-ALTER TABLE t_entities ADD COLUMN exp_time_ns BIGINT;
-ALTER TABLE t_account_balance_history ADD COLUMN snapshot_time_ns BIGINT;
-ALTER TABLE t_transactions ADD COLUMN valid_start_ns BIGINT;
-ALTER TABLE t_transactions ADD COLUMN consensus_ns BIGINT;
-
 CREATE INDEX idx_t_entities_exp_t_ns ON t_entities (exp_time_ns);
 CREATE INDEX idx_t_account_balance_hist_snap_ns_acc ON t_account_balance_history (snapshot_time_ns, fk_balance_id);
 CREATE INDEX idx_t_account_balance_hist_snap_ns ON t_account_balance_history (snapshot_time_ns);
