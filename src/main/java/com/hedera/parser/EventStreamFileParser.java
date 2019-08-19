@@ -513,9 +513,16 @@ public class EventStreamFileParser {
 		log.info(MARKER, "EventStream files folder got from configuration file: {}", pathName);
 
 		File file = new File(pathName);
+		// if the path doesn't exist, and it denotes a file, return false to stop processing;
+		// if the path doesn't exist, and it denotes a path, we try to create the directories, and return false when creation fails
 		if (!file.exists()) {
-			log.info(MARKER, "{} does not exist", pathName);
-			return false;
+			if (file.isFile()) {
+				log.info(MARKER, "File {} does not exist", pathName);
+				return false;
+			} else if (!file.mkdirs()) {
+				log.info(MARKER, "Directory {} does not exist and cannot be created", pathName);
+				return false;
+			}
 		}
 		configLoader = new ConfigLoader();
 
