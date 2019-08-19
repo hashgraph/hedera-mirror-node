@@ -44,7 +44,7 @@ public class RecordFileParser {
 
 	private static Instant timeStart;
 	private static String nowTime() {
-		System.out.println(Instant.now().minusSeconds(timeStart.getEpochSecond()).minusNanos(timeStart.getNano()));
+//		System.out.println(Instant.now().minusSeconds(timeStart.getEpochSecond()).minusNanos(timeStart.getNano()));
 		return Instant.now().getEpochSecond() * 1000000000 + Instant.now().getNano() - timeStart.getEpochSecond() * 1000000000 + timeStart.getNano() + "-";
 				
 	}
@@ -59,7 +59,7 @@ public class RecordFileParser {
 
 		timeStart = Instant.now();
 		
-		System.out.println(nowTime() + "-LoadRecordFile start ");
+//		System.out.println(nowTime() + "-LoadRecordFile start ");
 		File file = new File(fileName);
 		FileInputStream stream = null;
 		String newFileHash = "";
@@ -180,8 +180,8 @@ public class RecordFileParser {
 			}
 			loggerStatus.setLastProcessedRcdHash(newFileHash);
 			loggerStatus.saveToFile();
-			System.out.println(counter);
-			System.out.println(nowTime() + "-LoadRecordFile end ");
+//			System.out.println(counter);
+//			System.out.println(nowTime() + "-LoadRecordFile end ");
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
 			return true;

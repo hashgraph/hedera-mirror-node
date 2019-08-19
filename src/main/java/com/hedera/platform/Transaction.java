@@ -20,19 +20,12 @@ package com.hedera.platform;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.utilities.Utility;
 
-import javax.swing.text.Utilities;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * A hashgraph transaction that consists of an array of bytes and a list of immutable {@link Signature} objects.

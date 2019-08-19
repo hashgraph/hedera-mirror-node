@@ -35,7 +35,7 @@ public class DownloadAndParseEventFiles {
 				break;
 			}
 
-			String pathName = configLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
+			String pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
 			log.info(MARKER, "Event files folder got from configuration file: {}", pathName);
 
 			if (pathName != null) {
