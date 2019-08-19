@@ -83,7 +83,7 @@ public class BalanceFileLogger extends FileWatcher {
 		super(pathToWatch);
 	}
 	
-	static void parseFileName(File fileName) {
+	static boolean parseFileName(File fileName) {
 
 		String shortFileName = fileName.getName().replace(".csv", "");
 		if (shortFileName.contains("_Balances")) {
@@ -98,6 +98,7 @@ public class BalanceFileLogger extends FileWatcher {
 			String[] fileParts = shortFileName.split("-");
 			if (fileParts.length != 5) {
 				log.error(MARKER, "File {} is not named as expected, should be like 2019-06-28-22-05.csv", fileName);
+				return false;
 			} else {
 				Calendar c = Calendar.getInstance();
 				c.clear();
@@ -114,6 +115,7 @@ public class BalanceFileLogger extends FileWatcher {
 				fileNanos = fileTimestamp.getNano();
 			}
 		}
+		return true;
 	}
 
 	private static File getLatestBalancefile() throws IOException {
@@ -187,7 +189,9 @@ public class BalanceFileLogger extends FileWatcher {
                 	return false;
         		}
 
-                parseFileName(balanceFile);
+                if ( ! parseFileName(balanceFile)) {
+                	return false;
+                }
 
                 PreparedStatement selectBalance = connect.prepareStatement(
                 		"SELECT id"
@@ -314,7 +318,9 @@ public class BalanceFileLogger extends FileWatcher {
                 // process the file
                 connect = DatabaseUtilities.openDatabase(connect);
 
-                parseFileName(balanceFile);
+                if ( ! parseFileName(balanceFile)) {
+                	return;
+                }
 
                 if (connect != null) {
                     connect.setAutoCommit(false);
