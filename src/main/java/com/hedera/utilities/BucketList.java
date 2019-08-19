@@ -23,8 +23,8 @@ public class BucketList extends Downloader {
 		bucketName = ConfigLoader.getBucketName();
 		
 		ListObjectsRequest listRequest = new ListObjectsRequest()
-				.withBucketName(bucketName)
-				.withMaxKeys(100);
+				.withBucketName(bucketName);
+//				.withMaxKeys(100);
 			
 		ObjectListing objects = s3Client.listObjects(listRequest);
 		try {
