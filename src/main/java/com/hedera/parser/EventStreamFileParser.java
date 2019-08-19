@@ -421,6 +421,7 @@ public class EventStreamFileParser {
 			insertEvent.setBytes(18, hash);
 			insertEvent.setBytes(19, selfParentHash);
 			insertEvent.setBytes(20, otherParentHash);
+			insertEvent.setLong(21, fileId);
 			insertEvent.addBatch();
 			batch_count += 1;
 			
@@ -608,8 +609,8 @@ public class EventStreamFileParser {
 							"self_parent_generation, other_parent_generation, generation, self_parent_id, " +
 							"other_parent_id, created_timestamp_ns, signature, consensus_timestamp_ns, " +
 							"txs_bytes_count, platform_tx_count, app_tx_count, latency_ns, hash, self_parent_hash, " +
-							"other_parent_hash) "
-							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
+							"other_parent_hash, fk_event_file_id) "
+							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
 			
 		} catch (SQLException e) {
 			log.error(LOGM_EXCEPTION, "Unable to set autocommit false, exception {} ", e);
