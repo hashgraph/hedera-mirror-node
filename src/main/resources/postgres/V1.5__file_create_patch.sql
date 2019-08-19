@@ -1,4 +1,4 @@
-DROP FUNCTION f_file_create(varchar(250));
+DROP FUNCTION IF EXISTS f_file_create(varchar(250));
 
 CREATE FUNCTION f_file_create(_file_name t_record_files.name%TYPE)
   RETURNS BIGINT AS
