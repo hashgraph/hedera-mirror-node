@@ -34,10 +34,10 @@ public class DownloadAndParseEventFiles {
 				log.info(MARKER, "Stop file found, stopping.");
 				break;
 			}
-			
-			String pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
+
+			String pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
 			log.info(MARKER, "Event files folder got from configuration file: {}", pathName);
-	
+
 			if (pathName != null) {
 				EventStreamFileParser.parseNewFiles(pathName);
 			}
