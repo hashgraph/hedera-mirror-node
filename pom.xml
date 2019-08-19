@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xmlns="http://maven.apache.org/POM/4.0.0"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
@@ -36,17 +36,33 @@
 	</repositories>
 
 	<dependencies>
-        <dependency>
-            <groupId>io.github.cdimascio</groupId>
-            <artifactId>java-dotenv</artifactId>
-            <version>5.0.1</version>
-        </dependency>
+		<dependency>
+			<groupId>io.github.cdimascio</groupId>
+			<artifactId>java-dotenv</artifactId>
+			<version>5.0.1</version>
+		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>42.2.6</version>
 		</dependency>
- 		<dependency>
+		<dependency>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+			<version>3.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+			<version>5.2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.8</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j</artifactId>
 			<version>${log4j-version}</version>
@@ -54,11 +70,11 @@
 		</dependency>
 
 		<dependency>
-		  <groupId>com.hedera.hashgraph</groupId>
-		  <artifactId>hedera-protobuf-java-api</artifactId>
-		  <version>0.3.3</version>
+			<groupId>com.hedera.hashgraph</groupId>
+			<artifactId>hedera-protobuf-java-api</artifactId>
+			<version>0.3.3</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-slf4j-impl</artifactId>
@@ -115,10 +131,10 @@
 			<artifactId>sdk</artifactId>
 			<version>0.5.0</version>
 			<exclusions>
-        		<exclusion>  
-          			<groupId>io.grpc</groupId>
-          			<artifactId>grpc-netty-shaded</artifactId>
-        		</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-netty-shaded</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 	</dependencies>
@@ -130,12 +146,12 @@
 				<artifactId>guava</artifactId>
 				<version>20.0</version>
 			</dependency>
- 			<dependency>
+			<dependency>
 				<groupId>io.netty</groupId>
 				<artifactId>netty-all</artifactId>
 				<version>4.1.25.Final</version>
 			</dependency>
- 			<dependency>
+			<dependency>
 				<groupId>com.amazonaws</groupId>
 				<artifactId>aws-java-sdk-bom</artifactId>
 				<version>1.11.327</version>

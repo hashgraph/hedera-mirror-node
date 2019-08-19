@@ -72,4 +72,4 @@ END
 $$ LANGUAGE plpgsql
 ;
 
-GRANT ALL ON FUNCTION f_entity_create TO :db_user;
+GRANT ALL ON FUNCTION f_entity_create TO ${db-user};

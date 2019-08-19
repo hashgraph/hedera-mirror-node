@@ -98,8 +98,13 @@ public class ConfigLoader {
 
 	private static boolean persistCryptoTransferAmounts = false;
 
+	private static String apiUsername = "";
+	private static String apiPassword = "";
+
 	//database url
     private static String dbUrl = "";
+    // database name
+    private static String dbName = "";
     // database user
     private static String dbUserName = "";
     // database password
@@ -198,10 +203,28 @@ public class ConfigLoader {
 			if (configJsonObject.has("eventFilesS3Location")) {
 				eventFilesS3Location = configJsonObject.get("eventFilesS3Location").getAsString();
 			}
+			apiUsername = dotEnv.get("DB_USER");
+			if (apiUsername == null) {
+				if (configJsonObject.has("apiUsername")) {
+					apiUsername = configJsonObject.get("apiUsername").getAsString();
+				}
+			}
+			apiPassword = dotEnv.get("DB_PASS");
+			if (apiPassword == null) {
+				if (configJsonObject.has("apiPassword")) {
+					apiPassword = configJsonObject.get("apiPassword").getAsString();
+				}
+			}
 			dbUrl = dotEnv.get("HEDERA_MIRROR_DB_URL");
 			if (dbUrl == null) {
 				if (configJsonObject.has("dbUrl")) {
 					dbUrl = configJsonObject.get("dbUrl").getAsString();
+				}
+			}
+			dbName = dotEnv.get("HEDERA_MIRROR_DB_NAME");
+			if (dbName == null) {
+				if (configJsonObject.has("dbName")) {
+					dbName = configJsonObject.get("dbName").getAsString();
 				}
 			}
 			dbUserName = dotEnv.get("HEDERA_MIRROR_DB_USER");
@@ -431,9 +454,18 @@ public class ConfigLoader {
 		return eventFilesS3Location;
 	}
 
+    public static String getApiUsername() {
+        return apiUsername;
+    }
+    public static String getApiPassword() {
+        return apiPassword;
+    }
 	public static String getDBUrl() {
 		return dbUrl;
 	}
+    public static String getDBName() {
+        return dbName;
+    }
 	public static String getDBUserName() {
 		return dbUserName;
 	}
