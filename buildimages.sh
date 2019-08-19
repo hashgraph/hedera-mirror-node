@@ -36,7 +36,10 @@ fi
 cd docker
 
 cp ../src/main/resources/postgres/V*.sql runtime/sql
-cp -r ../config/* runtime/config/
+cp -n ../config/log4j2.xml runtime/config/log4j2.xml
+cp -n ../config/nodesInfo.json.sample runtime/config/nodesInfo.json
+cp -n ../config/config.json runtime/config/config.json
+
 cp -r ../target/lib/* runtime/lib
 cp ../target/mirrorNode.jar runtime/mirrorNode.jar
 cp -r ../rest-api/* runtime/rest-api
@@ -51,14 +54,22 @@ DOUPDATE=1
 touch runtime/.102env
 cat /dev/null > runtime/.102env
 
-echo "Would you like to update the address book file (0.0.102) from the network (enter 1 or 2)?"
-select yn in "Yes" "No"; do
+echo "Would you like to fetch or use an existing address book file (0.0.102) (enter 1, 2, 3 or 4)?"
+select yn in "Yes" "Skip" "Integration-Testnet" "Public-Testnet"; do
     case $yn in
         Yes )
           break
           ;;
-        No )
+        Skip )
           DOUPDATE=0
+          break
+          ;;
+        Integration-Testnet )
+          DOUPDATE=2
+          break
+          ;;
+        Public-Testnet )
+          DOUPDATE=3
           break
           ;;
     esac
@@ -81,6 +92,14 @@ then
   echo "Input operator key (302....)"
   read OPERATOR_KEY
   echo "OPERATOR_KEY=${OPERATOR_KEY}" >> runtime/.102env
+elif [ $DOUPDATE -eq 2 ]
+then
+  echo "Copying integration testnet address book to runtime/config/0.0.102"
+  cp ../config/0.0.102-35.232.131.251-integration.net runtime/config/0.0.102
+elif [ $DOUPDATE -eq 3 ]
+then
+  echo "Copying public testnet address book to runtime/config/0.0.102"
+  cp ../config/0.1.102.0.testnet.hedera.com-public.testnet runtime/config/0.0.102
 fi
 
 docker-compose build

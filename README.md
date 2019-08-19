@@ -57,22 +57,29 @@ cp docker/dotenv.sample docker/.env
   3) Skip
   #? 1
 
-  Would you like to update the address book file (0.0.102) from the network (enter 1 or 2)?
-  1) Yes
-  2) No
-  #? 1
+  Would you like to fetch or use an existing address book file (0.0.102) (enter 1, 2, 3 or 4)?
+  1) Yes			3) Integration-Testnet
+  2) Skip			4) Public-Testnet
 
-  Input node address (x.x.x.x:port)
-  {{Node Address}}
-  Input node ID (0.0.x)
-  {{Node ID}}
-  Input operator ID (0.0.x)
-  {{Operator ID}}
-  Input operator key (302...)
-  {{Operator Secret Key}}
+  Choose 
+  (3) to copy the address book file we provide or 
+  (1) to generate it from the network itself
+    
+    #? 1
+
+    Input node address (x.x.x.x:port)
+    {{Node Address}}
+    Input node ID (0.0.x)
+    {{Node ID}}
+    Input operator ID (0.0.x)
+    {{Operator ID}}
+    Input operator key (302...)
+    {{Operator Secret Key}}
 ```
 
 Follow instructions above for setting up the `config.json` file and the `.env` file in the `docker` folder to ensure environment variables are set correctly.
+
+Note: It is recommended that for a quickstart, only the AWS keys are input into the `config.json` file and all settings are left as they are.
 
 example `.env` file.
 
