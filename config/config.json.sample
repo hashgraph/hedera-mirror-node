@@ -15,7 +15,7 @@
   "dbUsername": "hederamirror",
   "dbPassword": "mysecretpassword",
   "maxDownloadItems": 10,
-  "stopLoggingIfRecordHashMismatch": "",
+  "stopLoggingIfRecordHashMismatch": "X",
   "persistClaims": false,
   "persistFiles": "ALL",
   "persistContracts": true,

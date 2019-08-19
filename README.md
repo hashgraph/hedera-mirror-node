@@ -146,6 +146,10 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Set "stopLoggingIfRecordHashMismatch" to "X" 
+
+This is to ease onboarding on the integration test network, there are a few gaps in the file hash history as a result of testing which result in the parser stopping, setting this value to "X" in the `config.json` file will ensure parsing continues regardless of the hash history. This should not be set to "X" in production of course.
+
 ### Addition of event parsing
 
 Event files from the network may now be parsed with the mirror node.
