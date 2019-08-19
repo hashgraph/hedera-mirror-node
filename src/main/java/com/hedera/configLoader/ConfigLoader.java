@@ -295,11 +295,19 @@ public class ConfigLoader {
 	}
 
 	public static String getAccessKey() {
-		return accessKey;
+		if (accessKey == null) {
+			return "";
+		} else {
+			return accessKey;
+		}
 	}
 
 	public static String getSecretKey() {
-		return secretKey;
+		if (secretKey == null) {
+			return "";
+		} else {
+			return secretKey;
+		}
 	}
 
 	public static String getDownloadToDir(OPERATION_TYPE operation) {
@@ -329,7 +337,9 @@ public class ConfigLoader {
 		case BALANCE:
 			return downloadToDir + "accountBalances/valid/";
 		case EVENTS:
-			return downloadToDir + "eventStreams/valid/";
+			String eventFileLoc = eventFilesS3Location.replace("/events_", "");
+			eventFileLoc = eventFileLoc.replace("/", "");
+			return downloadToDir + eventFileLoc + "/valid";
 		case RECORDS:
 			String recordFileLoc = recordFilesS3Location.replace("/record", "");
 			recordFileLoc = recordFileLoc.replace("/", "");
