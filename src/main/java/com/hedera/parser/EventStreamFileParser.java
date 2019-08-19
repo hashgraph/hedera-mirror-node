@@ -574,9 +574,7 @@ public class EventStreamFileParser {
 				System.exit(0);
 			}
 
-			configLoader = new ConfigLoader();
-
-			pathName = configLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
+			pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
 			log.info(MARKER, "Event files folder got from configuration file: {}", pathName);
 
 			if (pathName != null && !parseNewFiles(pathName)) {
@@ -585,4 +583,3 @@ public class EventStreamFileParser {
 		}
 	}
 }
-

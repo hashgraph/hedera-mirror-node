@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master.svg?style=shield&circle-token=710f183adf8aa2890272404e0c53e10898b94882)](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master)
+
 # Beta Mirror Node
 
 This BetaMirrorNode implementation supports CryptoService, FileService and SmartContractService through a proxy.
@@ -43,10 +45,8 @@ The Beta mirror node works as follows:
 git clone git@github.com:hashgraph/hedera-mirror-node.git
 cd hedera-mirror-node
 cp config/config.json.sample config/config.json
-nano config/config.json// Insert AWS S3 credentials. Update any other settings as needed.
+nano config/config.json // Insert AWS S3 credentials. 
 cp docker/dotenv.sample docker/.env
-nano docker/.env
-Update database and API settings as needed
 ./buildimages.sh
 
   // You'll now be asked a few questions to finalize automated mirror node configuration.
@@ -134,7 +134,7 @@ Without `Docker`, you will need to install `PostgreSQL` versions 10 or 11.
 
 ## Compile from source code
 
-Run `mvn install -DskipTests` from the `MirrorNode` directory.
+Run `./mvnw install -DskipTests` from the `MirrorNode` directory.
 
 This will compile a runnable mirror node jar file in the `target` directory and copy sample `nodesInfo.json.sample`, `config.json.sample` and `log4j2.xml` files into the same directory.
 
@@ -143,6 +143,29 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 ## Change history
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
+
+### Set "stopLoggingIfRecordHashMismatch" to "X" 
+
+This is to ease onboarding on the integration test network, there are a few gaps in the file hash history as a result of testing which result in the parser stopping, setting this value to "X" in the `config.json` file will ensure parsing continues regardless of the hash history. This should not be set to "X" in production of course.
+
+### Addition of event parsing
+
+Event files from the network may now be parsed with the mirror node.
+
+### Updates to config.json
+
+  Renamed `stopLoggingIfHashMismatch` to `stopLoggingIfRecordHashMismatch`.
+  Added `stopLoggingIfRecordHashMismatch`. Behaves in the same manner as `stopLoggingIfRecordHashMismatch` for events.
+  Added `balanceVerifySigs=false`. This is temporary while we have networks which don't generate signatures for balance files. If the network you are using does generate signatures for balance files, you should change this to `true`.
+
+### Deletion of the database version table
+
+This table is no longer necessary due to the change to flyway for database schema management.
+
+### Switched to Flyway for database schema management
+
+Now using https://flywaydb.org/getstarted/ for schema management. This is fully integrated in docker images. 
+Starting the `mirror-node-flyway` container will automatically patch the database
 
 ### t_transactions relation to t_record_files
 
@@ -458,16 +481,15 @@ You can skip this step if you're using Docker containers.
 
 Ensure you have a postgreSQL server running (versions 10 and 11 have been tested) with the mirror node software.
 
-Setup the following environment variables:
+Flyway (https://flywaydb.org/getstarted/) is used to manage the database schema.
 
-```text
-POSTGRES_DB = the name of the database you wish to create
-POSTGRES_USER = the name of the user you wish to create
-POSTGRES_PASSWORD = the password for the user above
-```
+All database scripts reside in `src/main/resources/postgres`.
 
-You will also need to uncomment a few lines to enable the creation of the database and user as described in the `src/main/resources/postgres/postgresInit.sql` script.
-Log into the database as an administrator and run the `src/main/resources/postgres/postgresInit.sql` script to create the database and necessary entities.
+`postgresInit.sql` should be used to initialise the database and owner. Please edit the file with usernames, passwords, etc... you wish to use.
+
+Then flyway should be used to biuld the initial set of tables, and apply any changes. Those are determined by files names `Vx.x__`.
+Note: The `Vx.x` scripts use variables which you should set prior to running the scripts.
+Example: `\set db_name='mydatabasename'`
 
 Make sure the `config/config.json` or `.env` file have values that match the above.
 
@@ -475,11 +497,7 @@ Check the output of the script carefully to ensure no errors occurred.
 
 ## Upgrading the database
 
-If you have already installed the database and wish to upgrade it, you may run the `src/main/resources/postgres/postgresUpdate.sql` script against your database.
-
-Ensure you change the default values in the first few lines of this script to match your environment.
-
-Check the output of the script carefully to ensure no errors occurred.
+Upgrades are performed by running the `migrate` command of the Flyway utility.
 
 ## Running the various mirror node components
 

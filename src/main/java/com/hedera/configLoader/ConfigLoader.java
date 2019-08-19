@@ -25,7 +25,7 @@ public class ConfigLoader {
 	private static final Logger log = LogManager.getLogger("configloader");
 	private static final Marker MARKER = MarkerManager.getMarker("ConfigLoader");
 
-	public enum CLOUD_PROVIDER {
+	public static enum CLOUD_PROVIDER {
 		S3
 		,GCP
 	}
@@ -89,7 +89,7 @@ public class ConfigLoader {
 
 	private static String stopLoggingIfRecordHashMismatchAfter = "";
 	private static String stopLoggingIfEventHashMismatchAfter = "";
-	
+
 	private static boolean persistClaims = false;
 
 	private static String persistFiles = "NONE";
@@ -122,14 +122,16 @@ public class ConfigLoader {
 	private static boolean bBalanceFileExists = true;
 	private static boolean bRecordsFileExists = true;
 	private static boolean bEventsFileExists = true;
-	
-	public enum OPERATION_TYPE {
+
+	private static boolean bBalanceVerifySigs = false;
+
+	public static enum OPERATION_TYPE {
 		BALANCE
 		,RECORDS
 		,EVENTS
 	}
 
-	public ConfigLoader() {
+	static {
 		log.info(MARKER, "Loading configuration from {}", configSavePath);
 		try {
 			// migration from config.json to balance.json for some properties related to balances only
@@ -237,10 +239,7 @@ public class ConfigLoader {
 			}
 
 			if (bBalanceFileExists) {
-				balanceJsonObject = getJsonObject(balanceSavePath);
-				if (balanceJsonObject.has("lastValidBalanceFileName")) {
-					lastValidBalanceFileName = balanceJsonObject.get("lastValidBalanceFileName").getAsString();
-				}
+				loadBalanceFile();
 			} else {
 				if (configJsonObject.has("lastValidBalanceFileName")) {
 					lastValidBalanceFileName = configJsonObject.get("lastValidBalanceFileName").getAsString();
@@ -252,13 +251,7 @@ public class ConfigLoader {
 				saveBalanceDataToFile();
 			}
 			if (bRecordsFileExists) {
-				recordsJsonObject = getJsonObject(recordsSavePath);
-				if (recordsJsonObject.has("lastValidRcdFileName")) {
-					lastValidRcdFileName = recordsJsonObject.get("lastValidRcdFileName").getAsString();
-				}
-				if (recordsJsonObject.has("lastValidRcdFileHash")) {
-					lastValidRcdFileHash = recordsJsonObject.get("lastValidRcdFileHash").getAsString();
-				}
+				loadRecordsFile();
 			} else {
 				if (configJsonObject.has("lastValidRcdFileName")) {
 					lastValidRcdFileName = configJsonObject.get("lastValidRcdFileName").getAsString();
@@ -274,20 +267,15 @@ public class ConfigLoader {
 				recordsJsonObject.addProperty("lastValidRcdFileHash", lastValidRcdFileHash);
 				saveRecordsDataToFile();
 			}
-			
+
 			if (bEventsFileExists) {
-				eventsJsonObject = getJsonObject(recordsSavePath);
-				if (recordsJsonObject.has("lastDownloadedEventSigName")) {
-					lastDownloadedEventSigName = eventsJsonObject.get("lastDownloadedEventSigName").getAsString();
-				}
-				if (recordsJsonObject.has("lastValidEventFileName")) {
-					lastValidEventFileName = eventsJsonObject.get("lastValidEventFileName").getAsString();
-				}				
-				if (recordsJsonObject.has("lastValidEventFileHash")) {
-				    lastValidEventFileHash = recordsJsonObject.get("lastValidEventFileHash").getAsString();
-				}
+				loadEventsFile();
 			} else {
 				eventsJsonObject = new JsonObject();
+			}
+
+			if (configJsonObject.has("balanceVerifySigs")) {
+				bBalanceVerifySigs = configJsonObject.get("balanceVerifySigs").getAsBoolean();
 			}
 
 		} catch (FileNotFoundException ex) {
@@ -295,26 +283,26 @@ public class ConfigLoader {
 		}
 	}
 
-	public CLOUD_PROVIDER getCloudProvider() {
+	public static CLOUD_PROVIDER getCloudProvider() {
 		return cloudProvider;
 	}
-	public String getClientRegion() {
+	public static String getClientRegion() {
 		return clientRegion;
 	}
 
-	public String getBucketName() {
+	public static String getBucketName() {
 		return bucketName;
 	}
 
-	public String getAccessKey() {
+	public static String getAccessKey() {
 		return accessKey;
 	}
 
-	public String getSecretKey() {
+	public static String getSecretKey() {
 		return secretKey;
 	}
 
-	public String getDownloadToDir(OPERATION_TYPE operation) {
+	public static String getDownloadToDir(OPERATION_TYPE operation) {
 		if (!downloadToDir.endsWith("/")) {
 			downloadToDir += "/";
 		}
@@ -331,10 +319,11 @@ public class ConfigLoader {
 //		return "";
 	}
 
-	public String getDefaultParseDir(OPERATION_TYPE operation) {
+	public static String getDefaultParseDir(OPERATION_TYPE operation) {
 		if (!downloadToDir.endsWith("/")) {
 			downloadToDir += "/";
 		}
+
 		// always return trailing "/"
 		switch (operation) {
 		case BALANCE:
@@ -342,135 +331,140 @@ public class ConfigLoader {
 		case EVENTS:
 			return downloadToDir + "eventStreams/valid/";
 		case RECORDS:
-			return downloadToDir + "recordstreams/valid/";
+			String recordFileLoc = recordFilesS3Location.replace("/record", "");
+			recordFileLoc = recordFileLoc.replace("/", "");
+			return downloadToDir + recordFileLoc + "/valid";
 		}
 		return "";
 	}
-	
-	public int getProxyPort() {
+
+	public static int getProxyPort() {
 		return proxyPort;
 	}
 
-	public String getNodeInfoFile() {
+	public static String getNodeInfoFile() {
 		return nodeInfoFile;
 	}
 
-	public String getAddressBookFile() {
+	public static String getAddressBookFile() {
 		return addressBookFile;
 	}
 
-	public void setAddressBookFile(String newAddressBookFile) {
+	public static void setAddressBookFile(String newAddressBookFile) {
 		addressBookFile = newAddressBookFile;
 	}
 
-	public String getLastValidRcdFileName() {
+	public static String getLastValidRcdFileName() {
 		return lastValidRcdFileName;
 	}
 
-	public void setLastValidRcdFileName(String name) {
+	public static void setLastValidRcdFileName(String name) {
 		lastValidRcdFileName = name;
 		recordsJsonObject.addProperty("lastValidRcdFileName", name);
 		log.info(MARKER, "Update lastValidRcdFileName to be {}", name);
 	}
 
-	public String getLastValidRcdFileHash() {
+	public static String getLastValidRcdFileHash() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
 		return lastValidRcdFileHash;
 	}
 
-	public void setLastValidRcdFileHash(String name) {
+	public static void setLastValidRcdFileHash(String name) {
 		lastValidRcdFileHash = name;
 		recordsJsonObject.addProperty("lastValidRcdFileHash", name);
 		log.info(MARKER, "Update lastValidRcdFileHash to be {}", name);
 	}
 
-	public String getLastDownloadedEventSigName() {
+	public static String getLastDownloadedEventSigName() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
 		return lastDownloadedEventSigName;
 	}
 
-	public void setLastDownloadedEventSigName(String name) {
+	public static void setLastDownloadedEventSigName(String name) {
 		lastDownloadedEventSigName = name;
 		eventsJsonObject.addProperty("lastDownloadedEventSigName", name);
 		log.info(MARKER, "Update lastDownloadedEventSigName to be {}", name);
 	}
 
-	public String getLastValidEventFileName() {
+	public static String getLastValidEventFileName() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
 		return lastValidEventFileName;
 	}
 
-	public void setLastValidEventFileName(String name) {
+	public static void setLastValidEventFileName(String name) {
 		lastValidEventFileName = name;
 		eventsJsonObject.addProperty("lastValidEventFileName", name);
 		log.info(MARKER, "Update lastValidEventFileName to be {}", name);
 	}
 
-	public String getLastValidEventFileHash() {
+	public static String getLastValidEventFileHash() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
 		return lastValidEventFileHash;
 	}
 
-	public void setLastValidEventFileHash(String name) {
+	public static void setLastValidEventFileHash(String name) {
 		lastValidEventFileHash = name;
 		eventsJsonObject.addProperty("lastValidEventFileHash", name);
 		log.info(MARKER, "Update lastValidEventFileHash to be {}", name);
 	}
 
 
-	public String getLastValidBalanceFileName() {
+	public static String getLastValidBalanceFileName() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
 		return lastValidBalanceFileName;
 	}
 
-	public String getAccountBalanceS3Location() {
+	public static String getAccountBalanceS3Location() {
 		return accountBalanceS3Location;
 	}
 
-	public String getRecordFilesS3Location() {
+	public static String getRecordFilesS3Location() {
 		return recordFilesS3Location;
 	}
 
-	public String getEventFilesS3Location() {
+	public static String getEventFilesS3Location() {
 		return eventFilesS3Location;
 	}
 
-	public String getDBUrl() {
+	public static String getDBUrl() {
 		return dbUrl;
 	}
-	public String getDBUserName() {
+	public static String getDBUserName() {
 		return dbUserName;
 	}
-	public String getDBPassword() {
+	public static String getDBPassword() {
 		return dbPassword;
 	}
 
-	public int getMaxDownloadItems() {
+	public static int getMaxDownloadItems() {
 		return maxDownloadItems;
 	}
 
-	public boolean getPersistClaims() {
+	public static boolean getPersistClaims() {
 		return persistClaims;
 	}
-	public String getStopLoggingIfRecordHashMismatchAfter() {
+	public static String getStopLoggingIfRecordHashMismatchAfter() {
 		return stopLoggingIfRecordHashMismatchAfter;
 	}
-	public String getStopLoggingIfEventHashMismatchAfter() {
+	public static String getStopLoggingIfEventHashMismatchAfter() {
 		return stopLoggingIfEventHashMismatchAfter;
 	}
-	public String getPersistFiles() {
+	public static String getPersistFiles() {
 		return persistFiles;
 	}
-	public boolean getPersistContracts() {
+	public static boolean getPersistContracts() {
 		return persistContracts;
 	}
-	public boolean getPersistCryptoTransferAmounts() {
+	public static boolean getPersistCryptoTransferAmounts() {
 		return persistCryptoTransferAmounts;
 	}
+	public static boolean getBalanceVerifySigs() {
+		return bBalanceVerifySigs;
+	}
 
-	public void setLastValidBalanceFileName(String name) {
+	public static void setLastValidBalanceFileName(String name) {
 		lastValidBalanceFileName = name;
 		balanceJsonObject.addProperty("lastValidBalanceFileName", name);
 		log.info(MARKER, "Update lastValidBalanceFileName to be {}", name);
 		saveBalanceDataToFile();
 	}
 
-	public void saveToFile() {
+	public static void saveToFile() {
 		try (FileWriter file = new FileWriter(configSavePath)) {
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 			gson.toJson(configJsonObject, file);
@@ -480,7 +474,7 @@ public class ConfigLoader {
 		}
 	}
 
-	public void saveBalanceDataToFile() {
+	public static void saveBalanceDataToFile() {
 		if (!bBalanceFileExists) {
 			File balanceFile = new File(balanceSavePath);
 			try {
@@ -499,7 +493,7 @@ public class ConfigLoader {
 			log.warn(MARKER, "Fail to write update to {}, Exception: {}", balanceSavePath, ex);
 		}
 	}
-	public void saveRecordsDataToFile() {
+	public static void saveRecordsDataToFile() {
 		if (!bRecordsFileExists) {
 			File recordsFile = new File(recordsSavePath);
 			try {
@@ -519,7 +513,7 @@ public class ConfigLoader {
 		}
 	}
 
-	public void saveEventsDataToFile() {
+	public static void saveEventsDataToFile() {
 		if (!bEventsFileExists) {
 			File eventsFile = new File(eventsSavePath);
 			try {
@@ -556,5 +550,33 @@ public class ConfigLoader {
 		// Read file into object
 		final FileReader file = new FileReader(location);
 		return (JsonObject) parser.parse(file);
+	}
+
+	private static void loadEventsFile() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
+		eventsJsonObject = getJsonObject(recordsSavePath);
+		if (recordsJsonObject.has("lastDownloadedEventSigName")) {
+			lastDownloadedEventSigName = eventsJsonObject.get("lastDownloadedEventSigName").getAsString();
+		}
+		if (recordsJsonObject.has("lastValidEventFileName")) {
+			lastValidEventFileName = eventsJsonObject.get("lastValidEventFileName").getAsString();
+		}
+		if (recordsJsonObject.has("lastValidEventFileHash")) {
+		    lastValidEventFileHash = recordsJsonObject.get("lastValidEventFileHash").getAsString();
+		}
+	}
+	private static void loadRecordsFile() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
+		recordsJsonObject = getJsonObject(recordsSavePath);
+		if (recordsJsonObject.has("lastValidRcdFileName")) {
+			lastValidRcdFileName = recordsJsonObject.get("lastValidRcdFileName").getAsString();
+		}
+		if (recordsJsonObject.has("lastValidRcdFileHash")) {
+			lastValidRcdFileHash = recordsJsonObject.get("lastValidRcdFileHash").getAsString();
+		}
+	}
+	private static void loadBalanceFile() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
+		balanceJsonObject = getJsonObject(balanceSavePath);
+		if (balanceJsonObject.has("lastValidBalanceFileName")) {
+			lastValidBalanceFileName = balanceJsonObject.get("lastValidBalanceFileName").getAsString();
+		}
 	}
 }

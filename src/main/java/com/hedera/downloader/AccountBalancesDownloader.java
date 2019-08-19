@@ -1,6 +1,7 @@
 package com.hedera.downloader;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +9,8 @@ import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
@@ -15,8 +18,7 @@ import com.hedera.utilities.Utility;
 public class AccountBalancesDownloader extends Downloader {
 
 
-	public AccountBalancesDownloader(ConfigLoader configLoader) {
-		super(configLoader);
+	public AccountBalancesDownloader() {
 	}
 
 	public static void main(String[] args) {
@@ -26,9 +28,7 @@ public class AccountBalancesDownloader extends Downloader {
 			System.exit(0);
 		}
 
-		configLoader = new ConfigLoader();
-
-		AccountBalancesDownloader downloader = new AccountBalancesDownloader(configLoader);
+		AccountBalancesDownloader downloader = new AccountBalancesDownloader();
 		
 		while (true) {
 			
@@ -41,12 +41,14 @@ public class AccountBalancesDownloader extends Downloader {
 
 
 			try {
-				// balance files with sig verification 
-				HashMap<String, List<File>> sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
-				//Verify signature files and download corresponding files of valid signature files
-				downloader.verifySigsAndDownloadBalanceFiles(sigFilesMap);
-
-//				downloader.downloadBalanceFiles();
+				if (ConfigLoader.getBalanceVerifySigs()) {
+					// balance files with sig verification 
+					HashMap<String, List<File>> sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
+					//Verify signature files and download corresponding files of valid signature files
+					downloader.verifySigsAndDownloadBalanceFiles(sigFilesMap);
+				} else { 
+					downloader.downloadBalanceFiles();
+				}
 				
 				xfer_mgr.shutdownNow();
 
@@ -67,11 +69,17 @@ public class AccountBalancesDownloader extends Downloader {
 	 */
 	String verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) {
 		String validDir = null;
-		String lastValidBalanceFileName = configLoader.getLastValidBalanceFileName();
+		String lastValidBalanceFileName = "";
+		try {
+			lastValidBalanceFileName = ConfigLoader.getLastValidBalanceFileName();
+		} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		String newLastValidBalanceFileName = lastValidBalanceFileName;
 
 		// reload address book and keys
-		NodeSignatureVerifier verifier = new NodeSignatureVerifier(configLoader);
+		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 		
 		for (String fileName : sigFilesMap.keySet()) {
 			if (Utility.checkStopFile()) {
@@ -84,33 +92,35 @@ public class AccountBalancesDownloader extends Downloader {
 				continue;
 			} else {
 				// validSigFiles are signed by node'key and contains the same Hash which has been agreed by more than 2/3 nodes
-				List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
-				for (File validSigFile : validSigFiles) {
-					if (Utility.checkStopFile()) {
-						log.info(MARKER, "Stop file found, stopping.");
-						break;
-					}
-					if (validDir == null) {
-						validDir = validSigFile.getParentFile().getParent() + "/valid/";
-					}
-					Pair<Boolean, File> fileResult = downloadBalanceFile(validSigFile, validDir);
-					File file = fileResult.getRight();
-					if (file != null &&
-							Utility.hashMatch(validSigFile, file)) {
-						if (newLastValidBalanceFileName.isEmpty() ||
-								fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
-							newLastValidBalanceFileName = file.getName();
+				if (sigFiles != null) {
+					List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
+					for (File validSigFile : validSigFiles) {
+						if (Utility.checkStopFile()) {
+							log.info(MARKER, "Stop file found, stopping.");
+							break;
 						}
-						break;
-					} else if (file != null) {
-						log.warn(MARKER, "{}'s Hash doesn't match the Hash contained in valid signature file. Will try to download a balance file with same timestamp from other nodes and check the Hash.", file.getPath());
+						if (validDir == null) {
+							validDir = validSigFile.getParentFile().getParent() + "/valid/";
+						}
+						Pair<Boolean, File> fileResult = downloadBalanceFile(validSigFile, validDir);
+						File file = fileResult.getRight();
+						if (file != null &&
+								Utility.hashMatch(validSigFile, file)) {
+							if (newLastValidBalanceFileName.isEmpty() ||
+									fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
+								newLastValidBalanceFileName = file.getName();
+							}
+							break;
+						} else if (file != null) {
+							log.warn(MARKER, "{}'s Hash doesn't match the Hash contained in valid signature file. Will try to download a balance file with same timestamp from other nodes and check the Hash.", file.getPath());
+						}
 					}
 				}
 			}
 		}
 		if (!newLastValidBalanceFileName.equals(lastValidBalanceFileName)) {
-			configLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
-			configLoader.saveToFile();
+			ConfigLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
+			ConfigLoader.saveToFile();
 		}
 		return validDir;
 	}

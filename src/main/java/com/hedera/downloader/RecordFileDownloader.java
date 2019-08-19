@@ -1,5 +1,7 @@
 package com.hedera.downloader;
 
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
@@ -9,6 +11,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,9 +24,9 @@ import java.util.stream.Stream;
 public class RecordFileDownloader extends Downloader {
 
 	private static String validRcdDir = null;
+	private static String s3prefix = "";
 
-	public RecordFileDownloader(ConfigLoader configLoader) {
-		super(configLoader);
+	public RecordFileDownloader() {
 	}
 
 	public static void downloadNewRecordfiles(RecordFileDownloader downloader) {
@@ -40,6 +43,7 @@ public class RecordFileDownloader extends Downloader {
 //				new Thread(() -> {
 					verifyValidRecordFiles(validRcdDir);
 //				}).start();
+			} else {
 			}
 
 			xfer_mgr.shutdownNow();
@@ -54,9 +58,8 @@ public class RecordFileDownloader extends Downloader {
 			log.info(MARKER, "Stop file found, exiting.");
 			System.exit(0);
 		}
-		configLoader = new ConfigLoader();
 
-		RecordFileDownloader downloader = new RecordFileDownloader(configLoader);
+		RecordFileDownloader downloader = new RecordFileDownloader();
 
 		while (true) {
 			if (Utility.checkStopFile()) {
@@ -74,8 +77,14 @@ public class RecordFileDownloader extends Downloader {
 	 * @param validDir
 	 */
 	public static void verifyValidRecordFiles(String validDir) {
-		String lastValidRcdFileName = configLoader.getLastValidRcdFileName();
-		String lastValidRcdFileHash = configLoader.getLastValidRcdFileHash();
+		String lastValidRcdFileName =  ConfigLoader.getLastValidRcdFileName();
+		String lastValidRcdFileHash = "";
+		try {
+			lastValidRcdFileHash = ConfigLoader.getLastValidRcdFileHash();
+		} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		File validDirFile = new File(validDir);
 		if (!validDirFile.exists()) {
@@ -112,9 +121,9 @@ public class RecordFileDownloader extends Downloader {
 			}
 
 			if (!newLastValidRcdFileName.equals(lastValidRcdFileName)) {
-				configLoader.setLastValidRcdFileHash(newLastValidRcdFileHash);
-				configLoader.setLastValidRcdFileName(newLastValidRcdFileName);
-				configLoader.saveRecordsDataToFile();
+				ConfigLoader.setLastValidRcdFileHash(newLastValidRcdFileHash);
+				ConfigLoader.setLastValidRcdFileName(newLastValidRcdFileName);
+				ConfigLoader.saveRecordsDataToFile();
 			}
 
 		} catch (IOException ex) {
@@ -134,9 +143,13 @@ public class RecordFileDownloader extends Downloader {
 	String verifySigsAndDownloadRecordFiles(Map<String, List<File>> sigFilesMap) {
 
 		// reload address book and keys
-		NodeSignatureVerifier verifier = new NodeSignatureVerifier(configLoader);
+		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 
 		validRcdDir = null;
+		s3prefix = ConfigLoader.getRecordFilesS3Location();
+		if (s3prefix.endsWith("/")) {
+			s3prefix = s3prefix.substring(0, s3prefix.length()-2);
+		}
 
 		for (String fileName : sigFilesMap.keySet()) {
 			if (Utility.checkStopFile()) {
@@ -180,7 +193,8 @@ public class RecordFileDownloader extends Downloader {
 		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
 		String sigFileName = sigFile.getName();
 		String rcdFileName = sigFileName.replace(".rcd_sig", ".rcd");
-		String s3ObjectKey = "recordstreams/record" + nodeAccountId + "/" + rcdFileName;
+//		String s3ObjectKey = "recordstreams/record" + nodeAccountId + "/" + rcdFileName;
+		String s3ObjectKey =  s3prefix + nodeAccountId + "/" + rcdFileName;
 //		String localFileName = validRcdDir + rcdFileName;
 		return saveToLocal(bucketName, s3ObjectKey, validRcdDir + rcdFileName);
 	}

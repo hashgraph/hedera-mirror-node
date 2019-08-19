@@ -2,9 +2,7 @@ version: '3.3'
 services:
   # this is the database container
   mirror-node-postgres:
-    build:
-      context: ./
-      dockerfile: Postgres
+    image: postgres:11.4-alpine
     stop_signal: SIGTERM
     tty: true
     env_file:
@@ -15,24 +13,34 @@ services:
     ports:
       - 5433:5432
 
-  # this downloads balance files, its behaviour is controlled by ./config/config.json
-  mirror-node-balance-downloader:
+  # manages the database schema
+  mirror-node-flyway:
     build:
       context: ./
-      dockerfile: MirrorNodeClientImage
+      dockerfile: Flyway
+    tty: true
+    env_file:
+      - .env
+    volumes:
+      - ./runtime:/MirrorNodeCode
+    entrypoint: ["bash", "/flyway/bin/flyway-wait-for-postgres.sh"]
+    depends_on:
+      - mirror-node-postgres
+
+  # this downloads balance files, its behaviour is controlled by ./config/config.json
+  mirror-node-balance-downloader:
+    image: adoptopenjdk:11-jre-hotspot
     working_dir: /MirrorNodeCode
     env_file:
       - .env
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: /usr/bin/java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
+    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
 
   # this processes balance files and puts the result in the database, its behaviour is controlled by ./config/config.json
   mirror-node-balance-parser:
-    build:
-      context: ./
-      dockerfile: MirrorNodeClientImage
+    image: adoptopenjdk:11-jre-hotspot
     depends_on:
       - mirror-node-postgres
     environment:
@@ -46,13 +54,11 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: ./balanceParse.sh
+    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
 
   # this downloads and processes record files and puts the result in the database, its behaviour is controlled by ./config/config.json
   mirror-node-record-download-parse:
-    build:
-      context: ./
-      dockerfile: MirrorNodeClientImage
+    image: adoptopenjdk:11-jre-hotspot
     depends_on:
       - mirror-node-postgres
     environment:
@@ -66,26 +72,40 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: ./recordDownloadParse.sh
+    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseRecordFiles
+
+  # this downloads and processes event files and puts the result in the database, its behaviour is controlled by ./config/config.json
+  # mirror-node-event-download-parse:
+  #   image: adoptopenjdk:11-jre-hotspot
+  #   depends_on:
+  #     - mirror-node-postgres
+  #   environment:
+  #     - HEDERA_MIRROR_DB_URL=jdbc:postgresql://mirror-node-postgres:5432/${POSTGRES_DB}
+  #     - HEDERA_MIRROR_DB_USER=${POSTGRES_USER}
+  #     - HEDERA_MIRROR_DB_PASS=${POSTGRES_PASSWORD}
+  #     - DB_HOST=mirror-node-postgres
+  #   working_dir: /MirrorNodeCode
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - ./MirrorNodeData:/MirrorNodeData
+  #     - ./runtime:/MirrorNodeCode
+  #   command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseEventFiles
 
   # this downloads the latest 0.0.102 file from the network if the .env file contains the necessary information
   mirror-node-102-file-update:
-    build:
-      context: ./
-      dockerfile: MirrorNodeClientImage
+    image: adoptopenjdk:11-jre-hotspot
     working_dir: /MirrorNodeCode
     env_file:
       - runtime/.102env
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: ./update102.sh
+    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
 
   # this runs the REST API for mirror node
   mirror-node-rest-api:
-    build:
-      context: ./
-      dockerfile: RestClientImage
+    image: node:11
     working_dir: /MirrorNodeCode
     environment:
       - DB_HOST=mirror-node-postgres

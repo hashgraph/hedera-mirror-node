@@ -434,6 +434,14 @@ public class Utility {
 		return path.substring(lastIndexOf + 1);
 	}
 
+	public static String getFileName(String path) {
+		int lastIndexOf = path.lastIndexOf("/");
+		if (lastIndexOf == -1) {
+			return ""; // empty extension
+		}
+		return path.substring(lastIndexOf + 1);
+	}
+	
 	public static boolean isBalanceFile(String filename) {
 		return filename.endsWith("Balances.csv");
 	}

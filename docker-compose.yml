@@ -1,11 +1,9 @@
 version: '3.3'
 services:
   compiler:
-    build:
-      context: ./
-      dockerfile: DockerSourceCompile
+    command: mvn install
+    image: maven:3.6.1-jdk-11-slim
     tty: true
     volumes:
       - .:/mirrornode
-
-    command: /mirrornode/docker/build.sh
+    working_dir: /mirrornode
