@@ -21,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -46,13 +47,18 @@ public class EventStreamFileParser {
 
 	private static Connection connect = null;
 
-	private static ConfigLoader configLoader;
 	private static LoggerStatus loggerStatus = new LoggerStatus();
 
 	private static final Long PARENT_HASH_NULL = null;
 	private static final long PARENT_HASH_NOT_FOUND_MATCH = -2;
 
 	private static final String HASH_ALGORITHM = "SHA-384";
+	
+	private static long fileId = 0;
+	private static long BATCH_SIZE = 1000;
+	private static long batch_count = 0;
+	
+	private static PreparedStatement insertEvent;
 
 	private enum LoadResult {
 		OK, STOP, ERROR
@@ -71,7 +77,7 @@ public class EventStreamFileParser {
 	static public LoadResult loadEventStreamFile(String fileName, String previousFileHash) {
 
 		File file = new File(fileName);
-		String readPrevFileHash;
+		String readPrevFileHash = "";
 
 		// for >= version3, we need to calculate hash for content;
 		boolean calculateContentHash = false;
@@ -95,6 +101,30 @@ public class EventStreamFileParser {
 			return LoadResult.ERROR;
 		}
 
+		// log file name
+		try {
+
+			CallableStatement fileCreate = connect.prepareCall("{? = call f_file_create( ? ) }");
+			fileCreate.registerOutParameter(1, Types.BIGINT);
+			fileCreate.setString(2, fileName);
+			fileCreate.execute();
+			fileId = fileCreate.getLong(1);
+			fileCreate.close();
+			
+			batch_count = 0;
+			
+			if (fileId == 0) {
+				log.error(MARKER, "Unable to add event file to database");
+				rollback();
+				return LoadResult.ERROR;
+			}
+
+		} catch (SQLException e) {
+			log.error(LOGM_EXCEPTION, "Exception {}", e);
+			rollback();
+			return LoadResult.ERROR;
+		}
+		
 		try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
 			md = MessageDigest.getInstance(HASH_ALGORITHM);
 
@@ -105,6 +135,7 @@ public class EventStreamFileParser {
 			log.info(MARKER, "EventStream file format version " + eventStreamFileVersion);
 			if (eventStreamFileVersion < EVENT_STREAM_FILE_VERSION_LEGACY) {
 				log.error(MARKER, "EventStream file format version doesn't match.");
+				rollback();
 				return LoadResult.ERROR;
 			} else if (eventStreamFileVersion >= EVENT_STREAM_FILE_VERSION_CURRENT) {
 				mdForContent = MessageDigest.getInstance(HASH_ALGORITHM);
@@ -131,7 +162,7 @@ public class EventStreamFileParser {
 
 							if (!Arrays.equals(new byte[48], readPrevFileHashBytes) && !readPrevFileHash.contentEquals(
 									previousFileHash)) {
-								if (configLoader.getStopLoggingIfEventHashMismatchAfter().compareTo(fileName) < 0) {
+								if (ConfigLoader.getStopLoggingIfEventHashMismatchAfter().compareTo(fileName) < 0) {
 									// last file for which mismatch is allowed is in the past
 									log.error(MARKER,
 											"Previous file Hash Mismatch - stopping loading. fileName = {}, Previous " +
@@ -139,6 +170,7 @@ public class EventStreamFileParser {
 													" " +
 													"{}, Current = {}",
 											fileName, previousFileHash, readPrevFileHash);
+									rollback();
 									return LoadResult.STOP;
 								}
 							}
@@ -148,11 +180,13 @@ public class EventStreamFileParser {
 							if (calculateContentHash) {
 								mdForContent.update(typeDelimiter);
 								if (!loadEvent(dis, mdForContent, true)) {
+									rollback();
 									return LoadResult.STOP;
 								}
 							} else {
 								md.update(typeDelimiter);
 								if (!loadEvent(dis, md, true)) {
+									rollback();
 									return LoadResult.STOP;
 								}
 							}
@@ -162,11 +196,13 @@ public class EventStreamFileParser {
 							if (calculateContentHash) {
 								mdForContent.update(typeDelimiter);
 								if (!loadEvent(dis, mdForContent, false)) {
+									rollback();
 									return LoadResult.STOP;
 								}
 							} else {
 								md.update(typeDelimiter);
 								if (!loadEvent(dis, md, false)) {
+									rollback();
 									return LoadResult.STOP;
 								}
 							}
@@ -178,18 +214,22 @@ public class EventStreamFileParser {
 
 				} catch (Exception e) {
 					log.error(LOGM_EXCEPTION, "Exception ", e);
+					rollback();
 					return LoadResult.ERROR;
 				}
 			}
 			log.info(MARKER, "Loaded {} events successfully from {}", counter, fileName);
 		} catch (FileNotFoundException e) {
 			log.error(MARKER, "File Not Found Error");
+			rollback();
 			return LoadResult.ERROR;
 		} catch (IOException e) {
 			log.error(MARKER, "IOException Error");
+			rollback();
 			return LoadResult.ERROR;
 		} catch (NoSuchAlgorithmException e) {
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
+			rollback();
 			return LoadResult.ERROR;
 		}
 
@@ -199,6 +239,39 @@ public class EventStreamFileParser {
 		}
 		String thisFileHash = Utility.bytesToHex(md.digest());
 
+		//TODO: Complete file in database
+    	CallableStatement fileClose;
+		try {
+			fileClose = connect.prepareCall("{call f_event_file_complete( ?, ?, ? ) }");
+			fileClose.setLong(1, fileId);
+
+			if (Utility.hashIsEmpty(thisFileHash)) {
+				fileClose.setObject(2, null);
+			} else {
+				fileClose.setString(2, thisFileHash);
+			}
+
+			if (Utility.hashIsEmpty(readPrevFileHash)) {
+				fileClose.setObject(3, null);
+			} else {
+				fileClose.setString(3, readPrevFileHash);
+			}
+			
+			fileClose.execute();
+			fileClose.close();
+		} catch (SQLException e) {
+			log.error(LOGM_EXCEPTION, "Unable to complete event file in database, Exception {}", e);			
+		}
+    	
+		
+		if (batch_count != 0) {
+			try {
+				insertEvent.executeBatch();
+			} catch (SQLException e) {
+				log.error(LOGM_EXCEPTION, "Unable to save batch to database, Exception {}", e);			
+			}
+			commit();
+		}
 		loggerStatus.setLastProcessedEventHash(thisFileHash);
 		loggerStatus.saveToFile();
 		return LoadResult.OK;
@@ -207,6 +280,7 @@ public class EventStreamFileParser {
 	static boolean loadEvent(DataInputStream dis, MessageDigest md, boolean noTxs) throws IOException {
 		if (dis.readInt() != STREAM_EVENT_VERSION) {
 			log.error(MARKER, "EventStream format version doesn't match.");
+			rollback();
 			return false;
 		}
 		md.update(Utility.integerToBytes(STREAM_EVENT_VERSION));
@@ -248,6 +322,7 @@ public class EventStreamFileParser {
 		byte[] signature = readByteArray(dis, md);
 		if (dis.readByte() != commEventLast) {
 			log.warn(MARKER, "event end marker incorrect");
+			rollback();
 			return false;
 		}
 		md.update(commEventLast);
@@ -273,6 +348,7 @@ public class EventStreamFileParser {
 				otherParentHash, counts, timeCreated, signature, hash, consensusTimeStamp, consensusOrder)) {
 			return true;
 		} else {
+			rollback();
 			return false;
 		}
 	}
@@ -316,13 +392,6 @@ public class EventStreamFileParser {
 
 			long timeCreatedInNanos = Utility.convertInstantToNanos(timeCreated);
 			long consensusTimestampInNanos = Utility.convertInstantToNanos(consensusTimeStamp);
-			PreparedStatement insertEvent = connect.prepareStatement(
-					"insert into t_events (consensus_order, creator_node_id, creator_seq, other_node_id, other_seq, " +
-							"self_parent_generation, other_parent_generation, generation, self_parent_id, " +
-							"other_parent_id, created_timestamp_ns, signature, consensus_timestamp_ns, " +
-							"txs_bytes_count, platform_tx_count, app_tx_count, latency_ns, hash, self_parent_hash, " +
-							"other_parent_hash) "
-							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
 
 			insertEvent.setLong(1, consensusOrder);
 			insertEvent.setLong(2, creatorId);
@@ -352,11 +421,17 @@ public class EventStreamFileParser {
 			insertEvent.setBytes(18, hash);
 			insertEvent.setBytes(19, selfParentHash);
 			insertEvent.setBytes(20, otherParentHash);
-			insertEvent.execute();
+			insertEvent.addBatch();
+			batch_count += 1;
+			
+			if (batch_count >= BATCH_SIZE) {
+				insertEvent.executeBatch();
+				batch_count = 0;
+			}
 			log.info(MARKER, "Finished insert to Event, consensusOrder: {}", consensusOrder);
-			insertEvent.close();
 		} catch (SQLException ex) {
 			log.error(LOGM_EXCEPTION, "Exception {}", ex);
+			rollback();
 			return false;
 		}
 		return true;
@@ -430,6 +505,7 @@ public class EventStreamFileParser {
 							+ len);
 		}
 		if (checksum != (101 - len)) { // must be at wrong place in the stream
+			rollback();
 			throw new IOException(
 					"readByteArray tried to create array of length "
 							+ len + " with wrong checksum.");
@@ -517,7 +593,6 @@ public class EventStreamFileParser {
 			log.info(MARKER, "{} does not exist", pathName);
 			return false;
 		}
-		configLoader = new ConfigLoader();
 
 		if (Utility.checkStopFile()) {
 			log.info(MARKER, "Stop file found, stopping.");
@@ -525,7 +600,21 @@ public class EventStreamFileParser {
 		}
 
 		connect = DatabaseUtilities.openDatabase(connect);
-
+		try {
+			connect.setAutoCommit(false);
+			
+			insertEvent = connect.prepareStatement(
+					"insert into t_events (consensus_order, creator_node_id, creator_seq, other_node_id, other_seq, " +
+							"self_parent_generation, other_parent_generation, generation, self_parent_id, " +
+							"other_parent_id, created_timestamp_ns, signature, consensus_timestamp_ns, " +
+							"txs_bytes_count, platform_tx_count, app_tx_count, latency_ns, hash, self_parent_hash, " +
+							"other_parent_hash) "
+							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
+			
+		} catch (SQLException e) {
+			log.error(LOGM_EXCEPTION, "Unable to set autocommit false, exception {} ", e);
+		}
+		
 		boolean result = true;
 		if (file.isFile()) {
 			log.info(MARKER, "Loading eventStream file {} ", pathName);
@@ -557,6 +646,7 @@ public class EventStreamFileParser {
 		}
 
 		try {
+			insertEvent.close();
 			connect = DatabaseUtilities.closeDatabase(connect);
 		} catch (SQLException e) {
 			log.error(LOGM_EXCEPTION, "Exception {}", e);
@@ -581,5 +671,21 @@ public class EventStreamFileParser {
 				break;
 			}
 		}
+	}
+	private static void rollback() {
+		try {
+			connect.rollback();
+		} catch (SQLException e) {
+			log.error(LOGM_EXCEPTION, "Exception while rolling database transaction back, {}", e);
+		}
+		
+	}
+	private static void commit() {
+		try {
+			connect.commit();
+		} catch (SQLException e) {
+			log.error(LOGM_EXCEPTION, "Exception while committing transaction to database, {}", e);
+		}
+		
 	}
 }
