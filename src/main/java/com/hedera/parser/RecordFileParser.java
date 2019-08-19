@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -74,7 +75,6 @@ public class RecordFileParser {
 		INIT_RESULT initFileResult = RecordFileLogger.initFile(fileName);
 		if ((initFileResult == INIT_RESULT.OK) || (initFileResult == INIT_RESULT.SKIP)) {
 			try {
-				long counter = 0;
 				MessageDigest md = MessageDigest.getInstance("SHA-384");
 				MessageDigest mdForContent = MessageDigest.getInstance("SHA-384");
 				stream = new FileInputStream(file);
