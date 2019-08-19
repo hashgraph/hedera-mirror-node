@@ -45,10 +45,8 @@ The Beta mirror node works as follows:
 git clone git@github.com:hashgraph/hedera-mirror-node.git
 cd hedera-mirror-node
 cp config/config.json.sample config/config.json
-nano config/config.json// Insert AWS S3 credentials. Update any other settings as needed.
+nano config/config.json // Insert AWS S3 credentials. 
 cp docker/dotenv.sample docker/.env
-nano docker/.env
-Update database and API settings as needed
 ./buildimages.sh
 
   // You'll now be asked a few questions to finalize automated mirror node configuration.
