@@ -21,6 +21,9 @@ public abstract class FileWatcher {
     }
 
     public void watch() {
+        // Invoke on startup to check for any changed files while this process was down.
+        onCreate();
+
         try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
             Path path = pathToWatch.toPath();
             WatchKey rootKey = path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
