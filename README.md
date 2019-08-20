@@ -151,6 +151,16 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Flyway database management in java code
+
+Database upgrades are now performed automatically when the mirror node components start. Note the following additions to `config.json` to support this process.
+
+```
+  "dbName":"postgres" // if environment variable HEDERA_MIRROR_DB_NAME is set, it will take precedence
+  "apiUsername":"api" // if environment variable DB_USER is set, it will take precedence
+  "apiPassword":"mysecretpassword" // if environment variable DB_PASS is set, it will take precedence
+```
+
 ### Set "stopLoggingIfRecordHashMismatch" to "X" 
 
 This is to ease onboarding on the integration test network, there are a few gaps in the file hash history as a result of testing which result in the parser stopping, setting this value to "X" in the `config.json` file will ensure parsing continues regardless of the hash history. This should not be set to "X" in production of course.
@@ -447,9 +457,12 @@ Note: Changes to this file while downloading or processing is taking place may b
 | addressBookFile | `"./config/0.0.102"` | The location of the address book file file |
 | accountBalancesS3Location | `"accountBalances/balance"` | The location of the account balances files in the cloud bucket |
 | recordFilesS3Location | `"recordstreams/record"` | The location of the record files in the cloud bucket |
+| dbName | `"postgres"` | The name of the database |
 | dbUrl | `"jdbc:postgresql://localhost:5433/postgres"` | The connection string to access the database |
 | dbUsername | `"postgres"` | The username to access the database |
 | dbPassword | `"mysecretpassword"` | The password to access the database |
+| apiUsername | `"api"` | The database user for the REST API |
+| apiPassword | `"mysecretpassword"` | The password for the REST API user |
 | maxDownloadItems | `0` | The maximum number of new files to download at a time, set to `0` in production, change to `10` or other low number for testing or catching up with a large number of files. Note, you may also reduce the number of nodes in `nodesInfo.json` so that only files from the nodes listed will be downloaded, although this reduces the number of signature validations too |
 | stopLoggingIfHashMismatch | "" | If you wish to skip past a file as a result of a hash mismatch, you can input the name of the record file before which hash mismatches will be ignored. e.g. `2019-06-12T18/05/22.198241001Z.rcd` will allow hash mismatches on any files prior to that file name, after this file, a hash mismatch will result in an error being logged and processing to stop.
 | persistClaims | `false` | Determines whether claim data is persisted to the database or not |
@@ -469,7 +482,9 @@ Note: this requires additional information to be stored in the `config.json`, `.
 | dbPassword | HEDERA_MIRROR_DB_PASS |
 | accessKey | HEDERA_S3_ACCESS_KEY |
 | secretKey | HEDERA_S3_SECRET_KEY |
-
+| dbName | HEDERA_MIRROR_DB_NAME |
+| apiUsername | DB_USER |
+| apiPassword | DB_PASS |
 
 Sample `./.env` file.
 
