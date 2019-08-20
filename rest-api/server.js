@@ -13,6 +13,9 @@ const logger = log4js.getLogger();
 
 const transactions = require('./transactions.js');
 const balances = require('./balances.js');
+const events = require('./events.js');
+const accounts = require('./accounts.js');
+const eventAnalytics = require('./eventAnalytics.js');
 
 
 // Logger
@@ -20,7 +23,7 @@ log4js.configure({
     appenders: {
         everything: {
             type: 'file',
-            filename: '../logs/hedera_mirrornode_api.log'
+            filename: '../logs/hedera_mirrornode_api_temp.log'
         }
     },
     categories: {
@@ -48,7 +51,6 @@ const pool = new Pool({
     password: process.env.DB_PASS,
     port: 5432
 })
-
 global.pool = pool;
 
 
@@ -67,6 +69,11 @@ app.get(apiPrefix + '/transactions', transactions.getTransactions);
 app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
 app.get(apiPrefix + '/balances/history', balances.getBalancesHistory);
 app.get(apiPrefix + '/balances', balances.getBalances);
+app.get(apiPrefix + '/events/', events.getEvents);
+app.get(apiPrefix + '/events/:id', events.getOneEvent);
+app.get(apiPrefix + '/events/analytics', eventAnalytics.getEventAnalytics);
+app.get(apiPrefix + '/accounts', accounts.getAccounts);
+app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
 
 if (process.env.NODE_ENV !== 'test') {
     app.listen(port, () => {
