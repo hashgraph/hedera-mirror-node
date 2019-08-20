@@ -1,5 +1,6 @@
 package com.hedera.downloader;
 
+
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.SdkClientException;
@@ -20,6 +21,8 @@ import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.utilities.Utility;
+import com.hederahashgraph.api.proto.java.NodeAddress;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -74,7 +77,7 @@ public abstract class Downloader {
 		clientConfiguration.setRetryPolicy(
 				PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(5));
 
-		nodeAccountIds = loadNodeAccountIDs(ConfigLoader.getNodeInfoFile());
+		nodeAccountIds = loadNodeAccountIDs();
 
 		s3KeyComparator = new Comparator<String>() {
 			@Override
@@ -106,17 +109,29 @@ public abstract class Downloader {
 		Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownTransferManager));
 	}
 
-	List<String> loadNodeAccountIDs(String fileName) {
+	List<String> loadNodeAccountIDs() {
+		List<String> nodes = new ArrayList<String>();
 		try {
-			JsonObject jsonObject = ConfigLoader.getJsonObject(fileName);
-			return jsonObject.entrySet()
-					.stream()
-					.map(i -> i.getKey())
-					.collect(Collectors.toCollection(ArrayList::new));
+			byte[] addressBookBytes = Utility.getBytes(ConfigLoader.getAddressBookFile());
+			if (addressBookBytes != null) {
+				NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
+				for (NodeAddress address : nodeAddressBook.getNodeAddressList()) {
+					nodes.add(address.getMemo().toStringUtf8());
+				}
+			} else {
+				log.error(MARKER, "Address book file {}, empty or unavailable", ConfigLoader.getAddressBookFile());
+			}
+			
+
+			//			JsonObject jsonObject = ConfigLoader.getJsonObject(fileName);
+//			return jsonObject.entrySet()
+//					.stream()
+//					.map(i -> i.getKey())
+//					.collect(Collectors.toCollection(ArrayList::new));
 		} catch (IOException ex) {
-			log.warn(MARKER, "loadNodeAccountIDs - Fail to load from {}. Exception: {}", fileName, ex);
+			log.warn(MARKER, "loadNodeAccountIDs - Fail to load from {}. Exception: {}", ConfigLoader.getAddressBookFile(), ex);
 		}
-		return new ArrayList<>();
+		return nodes;
 	}
 
 	protected boolean isNeededSigFile(String s3ObjectKey, DownloadType type) {
@@ -153,7 +168,7 @@ public abstract class Downloader {
 
 		
 		// refresh node account ids
-		nodeAccountIds = loadNodeAccountIDs(ConfigLoader.getNodeInfoFile());
+		nodeAccountIds = loadNodeAccountIDs();
 
 		for (String nodeAccountId : nodeAccountIds) {
 			if (Utility.checkStopFile()) {
@@ -310,7 +325,7 @@ public abstract class Downloader {
 		HashMap<String, List<File>> sigFilesMap = new HashMap<>();
 
 		// refresh node account ids
-		nodeAccountIds = loadNodeAccountIDs(ConfigLoader.getNodeInfoFile());
+		nodeAccountIds = loadNodeAccountIDs();
 		for (String nodeAccountId : nodeAccountIds) {
 			if (Utility.checkStopFile()) {
 				log.info(MARKER, "Stop file found, stopping.");

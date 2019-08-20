@@ -375,9 +375,9 @@ public class ConfigLoader {
 		return proxyPort;
 	}
 
-	public static String getNodeInfoFile() {
-		return nodeInfoFile;
-	}
+//	public static String getNodeInfoFile() {
+//		return nodeInfoFile;
+//	}
 
 	public static String getAddressBookFile() {
 		return addressBookFile;

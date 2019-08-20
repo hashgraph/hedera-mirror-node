@@ -8,6 +8,9 @@ import com.hedera.mirrorservice.FileServiceMirror;
 import com.hedera.mirrorservice.SmartContractServiceMirror;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NodeAddress;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
+
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,6 +19,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -40,11 +44,10 @@ public class MirrorNodeProxy {
 	 * This accepts one parameter to start the proxy, a configuration file which specifies a port number to listen to as well as the json file name which contains a list of nodes's host and port.
 	 */
 	public static void main(String[] args) {
-		new MirrorNodeProxy(ConfigLoader.getProxyPort(), ConfigLoader.getNodeInfoFile());
+		new MirrorNodeProxy(ConfigLoader.getProxyPort());
 	}
 
-	public MirrorNodeProxy(int port, String nodeInfoFileName) {
-		nodeInfoFile = nodeInfoFileName;
+	public MirrorNodeProxy(int port) {
 		server = NettyServerBuilder.forPort(port)
 				.addService(new CryptoServiceMirror())
 				.addService(new FileServiceMirror())
@@ -72,19 +75,36 @@ public class MirrorNodeProxy {
 	public static void loadAccountIDHostPort() {
 		accountIDHostPort = new HashMap<>();
 		log.info(MARKER, "Loading nodes info from " + nodeInfoFile);
+
 		try {
-			JsonObject nodesInfo = Utility.getJsonInput(nodeInfoFile);
-			Set<Map.Entry<String, JsonElement>> entrySet = nodesInfo.entrySet();
-			for (Map.Entry<String, JsonElement> entry : entrySet) {
-				JsonObject jsonObject = entry.getValue().getAsJsonObject();
-				String host = jsonObject.get("host").getAsString();
-				int port = jsonObject.get("port").getAsInt();
-				accountIDHostPort.put(entry.getKey(), Pair.of(host, port));
+			byte[] addressBookBytes = Utility.getBytes(ConfigLoader.getAddressBookFile());
+			if (addressBookBytes != null) {
+				NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
+				for (NodeAddress address : nodeAddressBook.getNodeAddressList()) {
+					String host = address.getIpAddress().toStringUtf8();
+					int port = address.getPortno();
+					String node = address.getMemo().toStringUtf8();
+					accountIDHostPort.put(node, Pair.of(host, port));				}
+			} else {
+				log.error(MARKER, "Address book file {}, empty or unavailable", ConfigLoader.getAddressBookFile());
 			}
-			log.info(MARKER, "Loaded nodes info successfully");
-		} catch (Exception ex) {
-			log.error(MARKER, "Get an exception while loading NodesInfo {}", ex);
+		} catch (IOException ex) {
+			log.warn(MARKER, "loadNodeAccountIDs - Fail to load from {}. Exception: {}", ConfigLoader.getAddressBookFile(), ex);
 		}
+		
+//		try {
+//			JsonObject nodesInfo = Utility.getJsonInput(nodeInfoFile);
+//			Set<Map.Entry<String, JsonElement>> entrySet = nodesInfo.entrySet();
+//			for (Map.Entry<String, JsonElement> entry : entrySet) {
+//				JsonObject jsonObject = entry.getValue().getAsJsonObject();
+//				String host = jsonObject.get("host").getAsString();
+//				int port = jsonObject.get("port").getAsInt();
+//				accountIDHostPort.put(entry.getKey(), Pair.of(host, port));
+//			}
+//			log.info(MARKER, "Loaded nodes info successfully");
+//		} catch (Exception ex) {
+//			log.error(MARKER, "Get an exception while loading NodesInfo {}", ex);
+//		}
 	}
 
 	public static Pair<String, Integer> getHostPort(AccountID accountID) {
