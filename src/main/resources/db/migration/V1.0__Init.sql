@@ -1,12 +1,12 @@
 
-CREATE USER :api_user WITH
+CREATE USER ${api-user} WITH
 	LOGIN
 	NOCREATEDB
 	NOCREATEROLE
 	NOINHERIT
 	NOREPLICATION
 	CONNECTION LIMIT -1
-	PASSWORD ':api_password';
+	PASSWORD '${api-password}';
 
 CREATE SEQUENCE s_transaction_types_seq;
 CREATE SEQUENCE s_record_files_seq;
@@ -352,48 +352,48 @@ FROM t_entities e
 , t_entity_types et
 WHERE e.fk_entity_type_id = et.id;
 
-GRANT USAGE ON SCHEMA public TO :db_user;
-GRANT CONNECT ON DATABASE :db_name TO :db_user;
-GRANT ALL PRIVILEGES ON DATABASE :db_name TO :db_user;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO :db_user;
-GRANT ALL ON t_record_files TO :db_user;
-GRANT ALL ON t_transactions TO :db_user;
-GRANT ALL ON t_cryptotransferlists TO :db_user;
-GRANT ALL ON t_transaction_types TO :db_user;
-GRANT ALL ON t_entities TO :db_user;
-GRANT ALL ON t_account_balance_history TO :db_user;
-GRANT ALL ON t_account_balances TO :db_user;
-GRANT ALL ON t_account_balance_refresh_time to :db_user;
-GRANT ALL ON t_file_data TO :db_user;
-GRANT ALL ON t_contract_result TO :db_user;
-GRANT ALL ON t_livehashes TO :db_user;
-GRANT ALL ON t_transaction_results TO :db_user;
-GRANT ALL ON t_entity_types TO :db_user;
-GRANT ALL ON t_events TO :db_user;
+GRANT USAGE ON SCHEMA public TO ${db-user};
+GRANT CONNECT ON DATABASE ${db-name} TO ${db-user};
+GRANT ALL PRIVILEGES ON DATABASE ${db-name} TO ${db-user};
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${db-user};
+GRANT ALL ON t_record_files TO ${db-user};
+GRANT ALL ON t_transactions TO ${db-user};
+GRANT ALL ON t_cryptotransferlists TO ${db-user};
+GRANT ALL ON t_transaction_types TO ${db-user};
+GRANT ALL ON t_entities TO ${db-user};
+GRANT ALL ON t_account_balance_history TO ${db-user};
+GRANT ALL ON t_account_balances TO ${db-user};
+GRANT ALL ON t_account_balance_refresh_time to ${db-user};
+GRANT ALL ON t_file_data TO ${db-user};
+GRANT ALL ON t_contract_result TO ${db-user};
+GRANT ALL ON t_livehashes TO ${db-user};
+GRANT ALL ON t_transaction_results TO ${db-user};
+GRANT ALL ON t_entity_types TO ${db-user};
+GRANT ALL ON t_events TO ${db-user};
 
-GRANT ALL ON s_transaction_types_seq TO :db_user;
-GRANT ALL ON s_record_files_seq TO :db_user;
-GRANT ALL ON s_transactions_seq TO :db_user;
-GRANT ALL ON s_entities_seq TO :db_user;
-GRANT ALL ON s_transaction_results_seq TO :db_user;
-GRANT ALL ON s_account_balances_seq TO :db_user;
-GRANT ALL ON s_events_id_seq TO :db_user;
+GRANT ALL ON s_transaction_types_seq TO ${db-user};
+GRANT ALL ON s_record_files_seq TO ${db-user};
+GRANT ALL ON s_transactions_seq TO ${db-user};
+GRANT ALL ON s_entities_seq TO ${db-user};
+GRANT ALL ON s_transaction_results_seq TO ${db-user};
+GRANT ALL ON s_account_balances_seq TO ${db-user};
+GRANT ALL ON s_events_id_seq TO ${db-user};
 
-GRANT ALL ON v_entities to :db_user;
+GRANT ALL ON v_entities to ${db-user};
 
-GRANT SELECT ON t_record_files TO :api_user;
-GRANT SELECT ON t_transactions TO :api_user;
-GRANT SELECT ON t_cryptotransferlists TO :api_user;
-GRANT SELECT ON t_transaction_types TO :api_user;
-GRANT SELECT ON t_entities TO :api_user;
-GRANT SELECT ON t_account_balance_refresh_time to :api_user;
-GRANT SELECT ON t_account_balance_history TO :api_user;
-GRANT SELECT ON t_account_balances TO :api_user;
-GRANT SELECT ON t_file_data TO :api_user;
-GRANT SELECT ON t_contract_result TO :api_user;
-GRANT SELECT ON t_livehashes TO :api_user;
-GRANT SELECT ON t_transaction_results TO :api_user;
-GRANT SELECT ON t_entity_types TO :api_user;
-GRANT SELECT ON t_events TO :api_user;
+GRANT SELECT ON t_record_files TO ${api-user};
+GRANT SELECT ON t_transactions TO ${api-user};
+GRANT SELECT ON t_cryptotransferlists TO ${api-user};
+GRANT SELECT ON t_transaction_types TO ${api-user};
+GRANT SELECT ON t_entities TO ${api-user};
+GRANT SELECT ON t_account_balance_refresh_time to ${api-user};
+GRANT SELECT ON t_account_balance_history TO ${api-user};
+GRANT SELECT ON t_account_balances TO ${api-user};
+GRANT SELECT ON t_file_data TO ${api-user};
+GRANT SELECT ON t_contract_result TO ${api-user};
+GRANT SELECT ON t_livehashes TO ${api-user};
+GRANT SELECT ON t_transaction_results TO ${api-user};
+GRANT SELECT ON t_entity_types TO ${api-user};
+GRANT SELECT ON t_events TO ${api-user};
 
-GRANT SELECT ON v_entities TO :api_user;
+GRANT SELECT ON v_entities TO ${api-user};

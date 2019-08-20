@@ -22,7 +22,7 @@ END;
 $$ LANGUAGE plpgsql
 ;
 
-GRANT ALL ON FUNCTION f_file_create TO :db_user;
+GRANT ALL ON FUNCTION f_file_create TO ${db-user};
 
 CREATE FUNCTION f_file_complete (
   _file_id t_record_files.id%TYPE
@@ -39,7 +39,7 @@ END
 $$ LANGUAGE plpgsql
 ;
 
-GRANT ALL ON FUNCTION f_file_complete TO :db_user;
+GRANT ALL ON FUNCTION f_file_complete TO ${db-user};
 
 CREATE FUNCTION f_entity_create (
   _shard t_entities.entity_shard%TYPE
@@ -101,4 +101,4 @@ END
 $$ LANGUAGE plpgsql
 ;
 
-GRANT ALL ON FUNCTION f_entity_create TO :db_user;
+GRANT ALL ON FUNCTION f_entity_create TO ${db-user};
