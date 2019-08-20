@@ -30,9 +30,6 @@
 			<AppenderRef ref="Console"/>
 		</Root>
 		
-		<Logger name="databaseUtilities" level="WARN">
-			<AppenderRef ref="recordStream-log" level="WARN"/>
-		</Logger>
 		<Logger name="filewatcher" level="WARN">
 			<AppenderRef ref="recordStream-log" level="WARN"/>
 		</Logger>

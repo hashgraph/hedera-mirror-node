@@ -7,8 +7,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 import org.flywaydb.core.Flyway;
 
 import java.sql.Connection;
@@ -19,8 +17,6 @@ public class DatabaseUtilities {
 
     private static final HikariDataSource dataSource;
     private static volatile boolean migrated = false;
-	private static final Logger log = LogManager.getLogger("databaseUtilities");
-	private static final Marker MARKER = MarkerManager.getMarker("databaseUtilities");
 
     static {
         dataSource = new HikariDataSource();
