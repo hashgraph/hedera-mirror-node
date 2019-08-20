@@ -37,7 +37,6 @@ cd docker
 
 set +e
 cp -n ../config/log4j2.xml runtime/config/log4j2.xml
-cp -n ../config/nodesInfo.json.sample runtime/config/nodesInfo.json
 cp -n ../config/config.json runtime/config/config.json
 
 set -e

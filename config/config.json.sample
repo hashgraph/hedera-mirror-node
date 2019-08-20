@@ -6,7 +6,6 @@
   "secretKey": "",
   "downloadToDir": "/MirrorNodeData",
   "proxyPort": 50777,
-  "nodeInfoFile": "./config/nodesInfo.json",
   "addressBookFile": "./config/0.0.102",
   "accountBalancesS3Location": "accountBalances/balance",
   "eventFilesS3Location": "eventstreams/events_",

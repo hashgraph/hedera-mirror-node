@@ -143,7 +143,7 @@ Without `Docker`, you will need to install `PostgreSQL` versions 10 or 11.
 
 Run `./mvnw install -DskipTests` from the `MirrorNode` directory.
 
-This will compile a runnable mirror node jar file in the `target` directory and copy sample `nodesInfo.json.sample`, `config.json.sample` and `log4j2.xml` files into the same directory.
+This will compile a runnable mirror node jar file in the `target` directory and copy sample `config.json.sample` and `log4j2.xml` files into the same directory.
 
 `cd target`
 
@@ -151,41 +151,11 @@ This will compile a runnable mirror node jar file in the `target` directory and 
 
 The build process has copied sample files to the `target/config` or the `/runtime/config` folder depending on whether you are running locally or via `docker-compose`.
 
-- `nodesInfo.json.sample` - rename this file to `nodesInfo.json` and edit so that the appropriate nodes are listed.
 - `config.json.sample` - rename this file to `config.json` and edit so that the configuration parameters that are appropriate to your environment are setup. See section below on configuration file specifics.
 
 - the file prefixed with '0.0.102' is the contents of a file hosted on Hedera with file ID `0.0.102`. This file contains the address book from the Hedera network which lists nodes and their public keys for signature verification purposes. Ensure the appropriate one for your network is identified in the `config.json` file (addressBookFile entry) otherwise signature verification will fail.
 
 Pay close attention to the contents of these configuration files, they directly affect how the mirror node operates.
-
-### nodesInfo.json
-
-This file contains the list of nodes for which you want to download files from and the list of nodes which the proxy can send transactions to.
-
-For example:
-
-```json
-{
-  "0.0.3": {
-    "host": "127.0.0.1",
-    "port": 50211
-  },
-  "0.0.4": {
-    "host": "127.0.0.2",
-    "port": 50211
-  },
-  "0.0.5": {
-    "host": "127.0.0.3",
-    "port": 50211
-  },
-  "0.0.6": {
-    "host": "127.0.0.4",
-    "port": 50211
-  }
-}
-```
-
-Edit the `./config/nodesInfo.json` file to match the nodes on the network you are running mirror node against.
 
 ### 0.0.102 file
 
@@ -230,7 +200,6 @@ Note: Changes to this file while downloading or processing is taking place may b
 | secretKey | `""` | Your S3 or GCP secret key |
 | downloadToDir | `"/MirrorNodeData"` | The location where downloaded files will reside |
 | proxyPort | `50777` | The port the mirror node proxy will listen onto |
-| nodeInfoFile | `"./config/nodesInfo.json"` | The location of the `nodesInfo.json` file |
 | addressBookFile | `"./config/0.0.102"` | The location of the address book file file |
 | accountBalancesS3Location | `"accountBalances/balance"` | The location of the account balances files in the cloud bucket |
 | recordFilesS3Location | `"recordstreams/record"` | The location of the record files in the cloud bucket |
@@ -240,7 +209,7 @@ Note: Changes to this file while downloading or processing is taking place may b
 | dbPassword | `"mysecretpassword"` | The password to access the database |
 | apiUsername | `"api"` | The database user for the REST API |
 | apiPassword | `"mysecretpassword"` | The password for the REST API user |
-| maxDownloadItems | `0` | The maximum number of new files to download at a time, set to `0` in production, change to `10` or other low number for testing or catching up with a large number of files. Note, you may also reduce the number of nodes in `nodesInfo.json` so that only files from the nodes listed will be downloaded, although this reduces the number of signature validations too |
+| maxDownloadItems | `0` | The maximum number of new files to download at a time, set to `0` in production, change to `10` or other low number for testing or catching up with a large number of files. |
 | stopLoggingIfHashMismatch | "" | If you wish to skip past a file as a result of a hash mismatch, you can input the name of the record file before which hash mismatches will be ignored. e.g. `2019-06-12T18/05/22.198241001Z.rcd` will allow hash mismatches on any files prior to that file name, after this file, a hash mismatch will result in an error being logged and processing to stop.
 | persistClaims | `false` | Determines whether claim data is persisted to the database or not |
 | persistFiles | `"ALL"` | Determines whether file data is persisted to the database or not, can be set to `ALL`, `NONE` or `SYSTEM`. `SYSTEM` means only files with a file number lower than `1000` will be persisted |

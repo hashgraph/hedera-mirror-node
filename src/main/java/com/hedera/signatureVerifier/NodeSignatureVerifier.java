@@ -53,7 +53,6 @@ public class NodeSignatureVerifier {
 			} else {
 				log.error(MARKER, "Address book file {}, empty or unavailable", nodeAddressBookLocation);
 			}
-			//System.out.println(nodeAddressBook);
 		} catch (InvalidProtocolBufferException ex) {
 			log.error(MARKER, "Fail to parse NodeAddressBook from {}, error {}", nodeAddressBookLocation, ex.getMessage());
 		}
