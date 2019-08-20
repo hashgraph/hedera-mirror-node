@@ -52,7 +52,7 @@ public class ConfigLoader {
 	private static int proxyPort = 50777;
 
 	// path of the file which contains nodeInfo
-	private static String nodeInfoFile = "./config/nodesInfo.json";
+//	private static String nodeInfoFile = "./config/nodesInfo.json";
 
 	// path of addressBook file
 	private static String addressBookFile = "./config/0.0.102";
@@ -188,9 +188,9 @@ public class ConfigLoader {
 			if (configJsonObject.has("proxyPort")) {
 				proxyPort = configJsonObject.get("proxyPort").getAsInt();
 			}
-			if (configJsonObject.has("nodeInfoFile")) {
-				nodeInfoFile = configJsonObject.get("nodeInfoFile").getAsString();
-			}
+//			if (configJsonObject.has("nodeInfoFile")) {
+//				nodeInfoFile = configJsonObject.get("nodeInfoFile").getAsString();
+//			}
 			if (configJsonObject.has("addressBookFile")) {
 				addressBookFile = configJsonObject.get("addressBookFile").getAsString();
 			}
