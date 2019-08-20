@@ -72,8 +72,6 @@ public class BalanceFileLogger extends FileWatcher {
         ,NUM
     }
 
-    private static Connection connect = null;
-
 	private static Instant fileTimestamp;
 	private static long fileSeconds = 0;
 	private static long fileNanos = 0;
@@ -144,7 +142,7 @@ public class BalanceFileLogger extends FileWatcher {
 		FileWatcher fileWatcher = new BalanceFileLogger(balanceFilePath);
 		fileWatcher.watch();
 	}
-	
+
 	@Override
 	public void onCreate() {
 	    processLastBalanceFile();
@@ -176,249 +174,236 @@ public class BalanceFileLogger extends FileWatcher {
         if ( ! balanceFile.toString().endsWith(".csv") ) {
         	return false;
         }
-        try {
-            // process the file
-            connect = DatabaseUtilities.openDatabase(connect);
+        try (Connection connect = DatabaseUtilities.getConnection()) {
+			try {
+				connect.setAutoCommit(false);
+			} catch (SQLException e) {
+				log.error(LOGM_EXCEPTION, "Unable to unset database auto commit, Exception: {}", e.getMessage());
+				return false;
+			}
 
-            if (connect != null) {
+			if ( ! parseFileName(balanceFile)) {
+				return false;
+			}
 
-                try {
-        			connect.setAutoCommit(false);
-        		} catch (SQLException e) {
-                    log.error(LOGM_EXCEPTION, "Unable to unset database auto commit, Exception: {}", e.getMessage());
-                	return false;
-        		}
+			PreparedStatement selectBalance = connect.prepareStatement(
+					"SELECT id"
+					+ " FROM t_account_balances"
+					+ " WHERE shard = ?"
+					+ " AND realm = ?"
+					+ " AND num = ?");
 
-                if ( ! parseFileName(balanceFile)) {
-                	return false;
-                }
+			PreparedStatement insertBalance = connect.prepareStatement(
+					"INSERT INTO t_account_balances (shard, realm, num, balance) "
+					+ " VALUES (?, ?, ?, 0) "
+					+ " RETURNING id");
 
-                PreparedStatement selectBalance = connect.prepareStatement(
-                		"SELECT id"
-                		+ " FROM t_account_balances"
-                		+ " WHERE shard = ?"
-                		+ " AND realm = ?"
-                		+ " AND num = ?");
+			PreparedStatement insertBalanceHistory;
+			insertBalanceHistory = connect.prepareStatement(
+					"insert into t_account_balance_history (snapshot_time, seconds, nanos, snapshot_time_ns, fk_balance_id, balance) "
+					+ " values ("
+					+ " ?" // snapshot
+					+ ", ?" // seconds
+					+ ", ?" // nanos
+					+ ", ?" // snapshot_time_ns
+					+ ", ?" // balance_id
+					+ ", ?" // balance
+					+ ")"
+					+ " ON CONFLICT (snapshot_time, seconds, fk_balance_id)"
+					+ " DO UPDATE set balance = EXCLUDED.balance");
 
-                PreparedStatement insertBalance = connect.prepareStatement(
-                        "INSERT INTO t_account_balances (shard, realm, num, balance) "
-                        + " VALUES (?, ?, ?, 0) "
-                        + " RETURNING id");
+			BufferedReader br = new BufferedReader(new FileReader(balanceFile));
 
-            	PreparedStatement insertBalanceHistory;
-	            insertBalanceHistory = connect.prepareStatement(
-	                    "insert into t_account_balance_history (snapshot_time, seconds, nanos, snapshot_time_ns, fk_balance_id, balance) "
-	                    + " values ("
-	                    + " ?" // snapshot
-	                    + ", ?" // seconds
-	                    + ", ?" // nanos
-	                    + ", ?" // snapshot_time_ns
-	                    + ", ?" // balance_id
-	                    + ", ?" // balance
-	                    + ")"
-	                    + " ON CONFLICT (snapshot_time, seconds, fk_balance_id)"
-	                    + " DO UPDATE set balance = EXCLUDED.balance");
+			String line;
+			while ((line = br.readLine()) != null) {
+				if (processLine) {
+					try {
+						String[] balanceLine = line.split(",");
+						if (balanceLine.length != 4) {
+							log.error(LOGM_EXCEPTION, "Balance file {} appears truncated", balanceFile);
+							connect.rollback();
+							insertBalanceHistory.close();
+							selectBalance.close();
+							insertBalance.close();
+							br.close();
+							return false;
+						} else {
 
-	            BufferedReader br = new BufferedReader(new FileReader(balanceFile));
+							// get the account id from t_Account_balances
+							long accountId = 0;
 
-	            String line;
-	            while ((line = br.readLine()) != null) {
-	                if (processLine) {
-	                    try {
-	                        String[] balanceLine = line.split(",");
-	                        if (balanceLine.length != 4) {
-		                        log.error(LOGM_EXCEPTION, "Balance file {} appears truncated", balanceFile);
-		                        connect.rollback();
-		                        insertBalanceHistory.close();
-		                        selectBalance.close();
-		                        insertBalance.close();
-		                        br.close();
-		                        return false;
-	                        } else {
+							selectBalance.setLong(BalanceSelect.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+							selectBalance.setLong(BalanceSelect.REALM.ordinal(), Long.valueOf(balanceLine[1]));
+							selectBalance.setLong(BalanceSelect.NUM.ordinal(), Long.valueOf(balanceLine[2]));
 
-	                        	// get the account id from t_Account_balances
-	                        	long accountId = 0;
+							selectBalance.execute();
+							ResultSet balanceRow = selectBalance.getResultSet();
 
-	                        	selectBalance.setLong(BalanceSelect.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
-	                        	selectBalance.setLong(BalanceSelect.REALM.ordinal(), Long.valueOf(balanceLine[1]));
-	                        	selectBalance.setLong(BalanceSelect.NUM.ordinal(), Long.valueOf(balanceLine[2]));
+							if (balanceRow.next()) {
+								accountId = balanceRow.getLong(1);
+							} else {
+								insertBalance.setLong(BalanceHistoryInsertBalance.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+								insertBalance.setLong(BalanceHistoryInsertBalance.REALM.ordinal(), Long.valueOf(balanceLine[1]));
+								insertBalance.setLong(BalanceHistoryInsertBalance.NUM.ordinal(), Long.valueOf(balanceLine[2]));
 
-	                        	selectBalance.execute();
-	                        	ResultSet balanceRow = selectBalance.getResultSet();
+								insertBalance.execute();
 
-	                        	if (balanceRow.next()) {
-	                        		accountId = balanceRow.getLong(1);
-	                        	} else {
-	                        		insertBalance.setLong(BalanceHistoryInsertBalance.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
-	                        		insertBalance.setLong(BalanceHistoryInsertBalance.REALM.ordinal(), Long.valueOf(balanceLine[1]));
-	                        		insertBalance.setLong(BalanceHistoryInsertBalance.NUM.ordinal(), Long.valueOf(balanceLine[2]));
+								ResultSet newId = insertBalance.getResultSet();
+								if (newId.next()) {
+									accountId = newId.getLong(1);
+									newId.close();
+								} else {
+									// failed to create or fetch the account from t_account_balances
+									newId.close();
+									balanceRow.close();
+									throw new IllegalStateException("Unable to create or find, shard " + balanceLine[0] + ", realm " + balanceLine[1] + ", num " + balanceLine[2]);
+								}
+							}
+							balanceRow.close();
+							Timestamp timestamp = Timestamp.from(fileTimestamp);
+							insertBalanceHistory.setTimestamp(BalanceHistoryInsert.SNAPSHOT_TIME.ordinal(), timestamp);
+							insertBalanceHistory.setLong(BalanceHistoryInsert.SECONDS.ordinal(), fileSeconds);
+							insertBalanceHistory.setLong(BalanceHistoryInsert.NANOS.ordinal(), fileNanos);
+							insertBalanceHistory.setLong(BalanceHistoryInsert.SNAPSHOT_TIME_NS.ordinal(), Utility.convertInstantToNanos(fileTimestamp));
+							insertBalanceHistory.setLong(BalanceHistoryInsert.FK_BAL_ID.ordinal(), accountId);
+							insertBalanceHistory.setLong(BalanceHistoryInsert.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
 
-		                        	insertBalance.execute();
-
-		                        	ResultSet newId = insertBalance.getResultSet();
-		                            if (newId.next()) {
-		                            	accountId = newId.getLong(1);
-		                                newId.close();
-		                            } else {
-		                            	// failed to create or fetch the account from t_account_balances
-		                                newId.close();
-			                        	balanceRow.close();
-		                            	throw new IllegalStateException("Unable to create or find, shard " + balanceLine[0] + ", realm " + balanceLine[1] + ", num " + balanceLine[2]);
-		                            }
-	                        	}
-	                        	balanceRow.close();
-	                        	Timestamp timestamp = Timestamp.from(fileTimestamp);
-		                        insertBalanceHistory.setTimestamp(BalanceHistoryInsert.SNAPSHOT_TIME.ordinal(), timestamp);
-		                        insertBalanceHistory.setLong(BalanceHistoryInsert.SECONDS.ordinal(), fileSeconds);
-		                        insertBalanceHistory.setLong(BalanceHistoryInsert.NANOS.ordinal(), fileNanos);
-		                        insertBalanceHistory.setLong(BalanceHistoryInsert.SNAPSHOT_TIME_NS.ordinal(), Utility.convertInstantToNanos(fileTimestamp));
-	                        	insertBalanceHistory.setLong(BalanceHistoryInsert.FK_BAL_ID.ordinal(), accountId);
-		                        insertBalanceHistory.setLong(BalanceHistoryInsert.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
-
-		                        insertBalanceHistory.execute();
-	                        }
-	                    } catch (SQLException e) {
-	                        log.error(LOGM_EXCEPTION, "Exception {}", e);
-	                        connect.rollback();
-	                        insertBalanceHistory.close();
-	                        selectBalance.close();
-	                        insertBalance.close();
-	                        br.close();
-	                        return false;
-	                    }
-	                } else if (line.contains("shard")) {
-	                    processLine = true;
-	                }
-	            }
-	            connect.commit();
-	            insertBalanceHistory.close();
-                selectBalance.close();
-            	insertBalance.close();
-	            br.close();
-	            return true;
-            }
-        } catch (FileNotFoundException e) {
-            log.error(LOGM_EXCEPTION, "Exception {}", e);
-        } catch (IOException e) {
-            log.error(LOGM_EXCEPTION, "Exception {}", e);
-        } catch (SQLException e) {
+							insertBalanceHistory.execute();
+						}
+					} catch (SQLException e) {
+						log.error(LOGM_EXCEPTION, "Exception {}", e);
+						connect.rollback();
+						insertBalanceHistory.close();
+						selectBalance.close();
+						insertBalance.close();
+						br.close();
+						return false;
+					}
+				} else if (line.contains("shard")) {
+					processLine = true;
+				}
+			}
+			connect.commit();
+			insertBalanceHistory.close();
+			selectBalance.close();
+			insertBalance.close();
+			br.close();
+			return true;
+        } catch (Exception e) {
             log.error(LOGM_EXCEPTION, "Exception {}", e);
         }
         return false;
 	}
 
 	private static void processLastBalanceFile() {
-
         boolean processLine = false;
 
-        try {
-            File balanceFile = getLatestBalancefile();
+        try (Connection connect = DatabaseUtilities.getConnection()) {
+			File balanceFile = getLatestBalancefile();
 
-            if (balanceFile != null) {
-                // process the file
-                connect = DatabaseUtilities.openDatabase(connect);
-
-                if ( ! parseFileName(balanceFile)) {
-                	return;
-                }
-
-                if (connect != null) {
-                    connect.setAutoCommit(false);
-
-            		PreparedStatement updateLastBalanceTime = connect.prepareStatement(
-                    		"UPDATE t_account_balance_refresh_time"
-                    		+ " SET seconds = ?"
-            				+ ",nanos = ?");
-
-                    PreparedStatement selectBalance = connect.prepareStatement(
-                    		"SELECT id"
-                    		+ " FROM t_account_balances"
-                    		+ " WHERE shard = ?"
-                    		+ " AND realm = ?"
-                    		+ " AND num = ?");
-
-	                PreparedStatement updateBalance =  connect.prepareStatement(
-	                        "UPDATE t_account_balances"
-	                        + " SET balance = ?"
-	                        + " WHERE id = ?");
-
-
-                    PreparedStatement insertBalance =  connect.prepareStatement(
-	                        "INSERT INTO t_account_balances (shard, realm, num, balance) "
-	                        + " VALUES (?, ?, ?, ?)");
-
-                    // update last file update time
-    				updateLastBalanceTime.setLong(1, fileSeconds);
-    				updateLastBalanceTime.setLong(2, fileNanos);
-    				updateLastBalanceTime.execute();
-
-	                BufferedReader br = new BufferedReader(new FileReader(balanceFile));
-
-	                String line;
-		            while ((line = br.readLine()) != null) {
-		                if (processLine) {
-		                    try {
-		                        String[] balanceLine = line.split(",");
-		                        if (balanceLine.length != 4) {
-			                        log.error(LOGM_EXCEPTION, "Balance file {} appears truncated", balanceFile);
-			                        connect.rollback();
-			                        break;
-		                        } else {
-		                        	selectBalance.setLong(BalanceSelect.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
-		                        	selectBalance.setLong(BalanceSelect.REALM.ordinal(), Long.valueOf(balanceLine[1]));
-		                        	selectBalance.setLong(BalanceSelect.NUM.ordinal(), Long.valueOf(balanceLine[2]));
-
-		                        	selectBalance.execute();
-		                            ResultSet balanceRow = selectBalance.getResultSet();
-		                            if (balanceRow.next()) {
-		                            	// update the balance
-		                            	updateBalance.setLong(BalanceUpdate.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
-		                            	updateBalance.setLong(BalanceUpdate.ID.ordinal(), balanceRow.getLong(1));
-		                            	updateBalance.execute();
-		                            } else {
-		                            	// insert new row
-		                            	insertBalance.setLong(BalanceInsert.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
-			                            insertBalance.setLong(BalanceInsert.REALM.ordinal(), Long.valueOf(balanceLine[1]));
-			                            insertBalance.setLong(BalanceInsert.NUM.ordinal(), Long.valueOf(balanceLine[2]));
-			                            insertBalance.setLong(BalanceInsert.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
-			                            insertBalance.execute();
-		                            }
-		                            balanceRow.close();
-		                        }
-
-		                    } catch (SQLException e) {
-		                        connect.rollback();
-		                        log.error(LOGM_EXCEPTION, "Exception {}", e);
-		                        break;
-		                    }
-		                } else if (line.contentEquals("shard,realm,number,balance")) {
-		                    // skip all lines until shard,realm,number,balance
-		                    processLine = true;
-		                } else if (line.contentEquals("shardNum,realmNum,accountNum,balance")) {
-		                    // skip all lines until shard,realm,number,balance
-		                    processLine = true;
-		                }
-		            }
-	                connect.commit();
-	                insertBalance.close();
-	                updateBalance.close();
-	                selectBalance.close();
-	                updateLastBalanceTime.close();
-	                br.close();
-	            }
-	        } else {
-	            log.info("No balance file to parse found");
-	        }
-	    } catch (IOException e) {
-            log.error(LOGM_EXCEPTION, "Exception {}", e);
-        } catch (SQLException e) {
-            log.error(LOGM_EXCEPTION, "Exception {}", e);
-            try {
-            	connect.rollback();
-			} catch (SQLException e1) {
-	            log.error(LOGM_EXCEPTION, "Exception {}", e1);
+			if (balanceFile == null) {
+				return;
+			} else if (!parseFileName(balanceFile)) {
+				log.info("Invalid balance file");
+				return;
 			}
-        }
+
+			try {
+				connect.setAutoCommit(false);
+
+				PreparedStatement updateLastBalanceTime = connect.prepareStatement(
+						"UPDATE t_account_balance_refresh_time"
+								+ " SET seconds = ?"
+								+ ",nanos = ?");
+
+				PreparedStatement selectBalance = connect.prepareStatement(
+						"SELECT id"
+								+ " FROM t_account_balances"
+								+ " WHERE shard = ?"
+								+ " AND realm = ?"
+								+ " AND num = ?");
+
+				PreparedStatement updateBalance = connect.prepareStatement(
+						"UPDATE t_account_balances"
+								+ " SET balance = ?"
+								+ " WHERE id = ?");
+
+
+				PreparedStatement insertBalance = connect.prepareStatement(
+						"INSERT INTO t_account_balances (shard, realm, num, balance) "
+								+ " VALUES (?, ?, ?, ?)");
+
+				// update last file update time
+				updateLastBalanceTime.setLong(1, fileSeconds);
+				updateLastBalanceTime.setLong(2, fileNanos);
+				updateLastBalanceTime.execute();
+
+				BufferedReader br = new BufferedReader(new FileReader(balanceFile));
+
+				String line;
+				while ((line = br.readLine()) != null) {
+					if (processLine) {
+						try {
+							String[] balanceLine = line.split(",");
+							if (balanceLine.length != 4) {
+								log.error(LOGM_EXCEPTION, "Balance file {} appears truncated", balanceFile);
+								connect.rollback();
+								break;
+							} else {
+								selectBalance.setLong(BalanceSelect.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+								selectBalance.setLong(BalanceSelect.REALM.ordinal(), Long.valueOf(balanceLine[1]));
+								selectBalance.setLong(BalanceSelect.NUM.ordinal(), Long.valueOf(balanceLine[2]));
+
+								selectBalance.execute();
+								ResultSet balanceRow = selectBalance.getResultSet();
+								if (balanceRow.next()) {
+									// update the balance
+									updateBalance.setLong(BalanceUpdate.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
+									updateBalance.setLong(BalanceUpdate.ID.ordinal(), balanceRow.getLong(1));
+									updateBalance.execute();
+								} else {
+									// insert new row
+									insertBalance.setLong(BalanceInsert.SHARD.ordinal(), Long.valueOf(balanceLine[0]));
+									insertBalance.setLong(BalanceInsert.REALM.ordinal(), Long.valueOf(balanceLine[1]));
+									insertBalance.setLong(BalanceInsert.NUM.ordinal(), Long.valueOf(balanceLine[2]));
+									insertBalance.setLong(BalanceInsert.BALANCE.ordinal(), Long.valueOf(balanceLine[3]));
+									insertBalance.execute();
+								}
+								balanceRow.close();
+							}
+
+						} catch (SQLException e) {
+							connect.rollback();
+							log.error(LOGM_EXCEPTION, "Exception {}", e);
+							break;
+						}
+					} else if (line.contentEquals("shard,realm,number,balance")) {
+						// skip all lines until shard,realm,number,balance
+						processLine = true;
+					} else if (line.contentEquals("shardNum,realmNum,accountNum,balance")) {
+						// skip all lines until shard,realm,number,balance
+						processLine = true;
+					}
+				}
+				connect.commit();
+				insertBalance.close();
+				updateBalance.close();
+				selectBalance.close();
+				updateLastBalanceTime.close();
+				br.close();
+			} catch (IOException e) {
+				log.error(LOGM_EXCEPTION, "Exception {}", e);
+			} catch (SQLException e) {
+				log.error(LOGM_EXCEPTION, "Exception {}", e);
+				try {
+					connect.rollback();
+				} catch (SQLException e1) {
+					log.error(LOGM_EXCEPTION, "Exception {}", e1);
+				}
+			}
+		} catch (Exception e) {
+			log.error(LOGM_EXCEPTION, "Error closing connection {}", e);
+		}
         log.info(MARKER, "Last Balance processing done");
     }
 }
