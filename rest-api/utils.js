@@ -1,4 +1,5 @@
 'use strict';
+const math = require('mathjs');
 
 // Global constants
 const globals = {
@@ -6,13 +7,40 @@ const globals = {
 }
 
 
+
+/**
+ * Split the account number into shard, realm and num fields. 
+ * @param {String} acc Either 0.0.1234 or just 1234
+ * @return {Object} {accShard, accRealm, accNum} Parsed account number
+ */
+const parseEntityId = function (acc) {
+    let ret = {
+        shard: 0,
+        realm: 0,
+        num: 0
+    }
+
+    const aSplit = acc.split(".");
+    if (aSplit.length == 3) {
+        ret.shard = aSplit[0];
+        ret.realm = aSplit[1];
+        ret.num = aSplit[2]
+    } else if (aSplit.length == 1) {
+        ret.num = acc;
+    }
+    return (ret);
+}
+
+
 /**
  * Parse the comparator symbols (i.e. gt, lt, etc.) and convert to SQL style query
  * @param {Array} fields Array of fields in the query (e.g. 'account.id' or 'timestamp')
  * @param {Array} req Array of values (e.g. 20 or gt:10)
+ * @param {String} type One of 'entityId' or 'timestamp' for special interpretation as 
+ *          an entity (shard.realm.entity format), or timestamp_ns (ssssssssss.nnnnnnnnn)
  * @return {Object} {queryString, queryVals} Constructed SQL query string and values.
  */
-const parseComparatorSymbol = function (fields, req) {
+const parseComparatorSymbol = function (fields, req, type = null) {
     let queryStr = '';
     let vals = [];
 
@@ -26,22 +54,60 @@ const parseComparatorSymbol = function (fields, req) {
     };
 
     for (let item of req) {
-        //Force a simple number to 'eq:number' form to have a consistent processing 
-        if (!isNaN(Number(item))) {
+        //Force a simple account number (e.g. 1234 or 0.0.1234) to 'eq:0.0.1234' form to allow for consistent processing 
+        if ((/^(\d)+$/.test(item)) ||
+            (/^(\d)+\.(\d)+\.(\d)+$/.test(item))) {
             item = "eq:" + item;
         }
+
         // Split the gt:number into operation and value and create a SQL query string
         let splitItem = item.split(":");
         if (splitItem.length == 2) {
             let op = splitItem[0]
-            let accountId = splitItem[1];
-            if (!isNaN(accountId) && (op in opsMap)) {
+            let entityId = splitItem[1];
+
+            let entity = null;
+
+            if (type === 'entityId') {
+                entity = parseEntityId(entityId);
+            }
+
+            if (((type === 'entityId' && entity.num !== 0) ||
+                (type !== 'entityId' && !isNaN(entityId))) &&
+                (op in opsMap)) {
+
                 let fieldQueryStr = '';
                 for (let f of fields) {
+                    let fquery = '';
+                    if (type === 'entityId') {
+                        const shardRealmOp =
+                            ['gt', 'lt'].includes(op) ? (op + 'e') : op;
+
+                        fquery = '(' +
+                            f.shard + ' ' + opsMap[shardRealmOp] + ' ? and ' +
+                            f.realm + ' ' + opsMap[shardRealmOp] + ' ? and ' +
+                            f.num + ' ' + opsMap[op] + ' ? ' +
+                            ')';
+                        vals = vals.concat([entity.shard, entity.realm, entity.num]);
+                    } else if (type === 'timestamp_ns') {
+                        // Expect timestamp input as (a) just seconds, (b) seconds.mmm (3-digit milliseconds), 
+                        // or (c) seconds.nnnnnnnnn (9-digit nanoseconds)
+                        // Convert all of these formats to (seconds * 10^9 + nanoseconds) format, after 
+                        // validating that all characters are digits
+                        let tsSplit = entityId.split('.');
+                        let seconds = /^(\d)+$/.test(tsSplit[0]) ? tsSplit[0] : 0;
+                        let nanos = (tsSplit.length == 2 && /^(\d)+$/.test(tsSplit[1])) ? tsSplit[1] : 0;
+                        let ts = '' + seconds + (nanos + '000000000').substring(0, 9);
+                        fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
+                        vals.push(ts);
+                    } else {
+                        fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
+                        vals.push(entityId);
+                    }
                     fieldQueryStr += (fieldQueryStr === '' ? '' : ' or ') +
-                        f + ' ' + opsMap[op] + ' ?';
-                    vals.push(accountId);
+                        fquery;
                 }
+
                 fieldQueryStr = '(' + fieldQueryStr + ')';
 
                 queryStr += (queryStr === '' ? '' : ' and ') + fieldQueryStr;
@@ -74,12 +140,14 @@ const getIntegerParam = function (param, limit = undefined) {
 
 /**
  * Parse the query filer parameter
- * @param {HTTPRequest} req HTTP Query request object
+ * @param {Request} req HTTP Query request object
  * @param {String} queryField Query filter parameter name (e.g. account.id or timestamp) 
  * @param {Array of Strings} SQL table field names to construct the query
+ * @param {String} type One of 'entityId' or 'timestamp' for special interpretation as 
+ *          an entity (shard.realm.entity format), or timestamp (ssssssssss.nnnnnnnnn)
  * @return {Array} [query, params] Constructed SQL query fragment and corresponding values
  */
-const parseParams = function (req, queryField, fields) {
+const parseParams = function (req, queryField, fields, type = null) {
     // Parse the timestamp filter parameters
     let query = '';
     let params = [];
@@ -92,7 +160,7 @@ const parseParams = function (req, queryField, fields) {
             reqQuery = [reqQuery];
         }
         // Construct the SQL query fragment
-        let qp = parseComparatorSymbol(fields, reqQuery)
+        let qp = parseComparatorSymbol(fields, reqQuery, type)
         query = qp.queryStr;
         params = qp.queryVals;
     }
@@ -101,7 +169,7 @@ const parseParams = function (req, queryField, fields) {
 
 /**
  * Parse the type=[credit | debit | creditDebit] parameter
- * @param {HTTPRequest} req HTTP query request object
+ * @param {Request} req HTTP query request object
  * @return {String} Value of the credit/debit parameter
  */
 const parseCreditDebitParams = function (req) {
@@ -135,6 +203,7 @@ const parseResultParams = function (req) {
 /**
  * Parse the pagination (limit/offset) and order parameters
  * @param {HTTPRequest} req HTTP query request object
+ * @param {String} defaultOrder Order of sorting (defaults to descending)
  * @return {Object} {query, params, order} SQL query, values and order
  */
 const parsePaginationAndOrderParams = function (req, defaultOrder = 'desc') {
@@ -191,14 +260,17 @@ const convertMySqlStyleQueryToPostgress = function (sqlQuery, sqlParams) {
  * Create pagination (next) link
  * @param {HTTPRequest} req HTTP query request object
  * @param {Boolean} isEnd Is the next link valid or not
- * @return {Integer} limit Limit value
- * @return {Integer} offset Offset value
+ * @param {Integer} limit Limit value
+ * @param {Integer} offset Offset value
+ * @param {String} order Order of sorting the results
+ * @param {Integer} anchorSecNs The time (seconds.nanos) limit for the 'next' queries in the pagination. 
  * @return {String} next Fully formed link to the next page
  */
-const getPaginationLink = function (req, isEnd, limit, offset, order, anchorSeconds) {
+const getPaginationLink = function (req, isEnd, limit, offset, order, anchorSecNs = undefined) {
     const port = process.env.PORT;
     const portquery = (Number(port) === 80) ? '' : (':' + port);
-    req = getTimeQueryForPagination(req, order, anchorSeconds);
+    let anchorNs = anchorSecNs === undefined ? undefined : secNsToNs(anchorSecNs);
+    req = getTimeQueryForPagination(req, order, anchorNs);
     var next = '';
     if (!isEnd) {
         // Remove the limit and offset parameters from the current query
@@ -234,23 +306,45 @@ const getPaginationLink = function (req, isEnd, limit, offset, order, anchorSeco
  * parameter.
  * @param {Request} req HTTP query request object
  * @param {String} order Order ('asc' or 'desc')
- * @return {Integer} anchorSeconds consensus seconds of the query result of 
+ * @return {Integer} anchorSecNs consensus seconds of the query result of 
  *          the call that started pagination
  * @return {Request} req Updated HTTP request object with inserted pageanchor parameter
  */
-const getTimeQueryForPagination = function (req, order, anchorSeconds) {
+const getTimeQueryForPagination = function (req, order, anchorSecNs) {
     //  if descending
-    //      if query has anchorSeconds:
+    //      if query has anchorSecNs:
     //          then just use that
     //      else:
-    //          add anchorSeconds = anchorSeconds
+    //          add anchorSecNs = anchorSecNs
     //
     if (order === 'desc') {
-        if (anchorSeconds !== undefined && !req.query.pageanchor) {
-            req.query.pageanchor = anchorSeconds;
+        if (anchorSecNs !== undefined && !req.query.pageanchor) {
+            req.query.pageanchor = anchorSecNs;
         }
     }
     return (req);
+}
+
+/**
+* Converts nanoseconds since epoch to seconds.nnnnnnnnn format
+* @param {String} ns Nanoseconds since epoch
+* @return {String} Seconds since epoch (seconds.nnnnnnnnn format) 
+*/
+const nsToSecNs = function (ns) {
+    return (math.divide(math.bignumber(ns), math.bignumber(1e9)).toFixed(9).toString());
+}
+
+/**
+* Converts seconds since epoch (seconds.nnnnnnnnn format) to  nanoseconds
+* @param {String} Seconds since epoch (seconds.nnnnnnnnn format) 
+* @return {String} ns Nanoseconds since epoch
+*/
+const secNsToNs = function (secNs) {
+    return (math.multiply(math.bignumber(secNs), math.bignumber(1e9)).toString());
+}
+
+const secNsToSeconds = function (secNs) {
+    return (math.floor(Number(secNs)));
 }
 
 module.exports = {
@@ -259,7 +353,9 @@ module.exports = {
     parsePaginationAndOrderParams: parsePaginationAndOrderParams,
     parseResultParams: parseResultParams,
     convertMySqlStyleQueryToPostgress: convertMySqlStyleQueryToPostgress,
-    getPaginationLink: getPaginationLink
+    getPaginationLink: getPaginationLink,
+    parseEntityId: parseEntityId,
+    nsToSecNs: nsToSecNs,
+    secNsToNs: secNsToNs,
+    secNsToSeconds: secNsToSeconds
 }
-
-
