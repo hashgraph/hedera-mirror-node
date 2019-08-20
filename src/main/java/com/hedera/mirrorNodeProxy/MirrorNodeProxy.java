@@ -1,7 +1,5 @@
 package com.hedera.mirrorNodeProxy;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirrorservice.CryptoServiceMirror;
 import com.hedera.mirrorservice.FileServiceMirror;
@@ -21,8 +19,6 @@ import org.apache.logging.log4j.MarkerManager;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -91,20 +87,6 @@ public class MirrorNodeProxy {
 		} catch (IOException ex) {
 			log.warn(MARKER, "loadNodeAccountIDs - Fail to load from {}. Exception: {}", ConfigLoader.getAddressBookFile(), ex);
 		}
-		
-//		try {
-//			JsonObject nodesInfo = Utility.getJsonInput(nodeInfoFile);
-//			Set<Map.Entry<String, JsonElement>> entrySet = nodesInfo.entrySet();
-//			for (Map.Entry<String, JsonElement> entry : entrySet) {
-//				JsonObject jsonObject = entry.getValue().getAsJsonObject();
-//				String host = jsonObject.get("host").getAsString();
-//				int port = jsonObject.get("port").getAsInt();
-//				accountIDHostPort.put(entry.getKey(), Pair.of(host, port));
-//			}
-//			log.info(MARKER, "Loaded nodes info successfully");
-//		} catch (Exception ex) {
-//			log.error(MARKER, "Get an exception while loading NodesInfo {}", ex);
-//		}
 	}
 
 	public static Pair<String, Integer> getHostPort(AccountID accountID) {

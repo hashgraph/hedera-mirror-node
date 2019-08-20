@@ -51,14 +51,8 @@ public class ConfigLoader {
 	// the port of mirrorNodeProxy;
 	private static int proxyPort = 50777;
 
-	// path of the file which contains nodeInfo
-//	private static String nodeInfoFile = "./config/nodesInfo.json";
-
 	// path of addressBook file
 	private static String addressBookFile = "./config/0.0.102";
-
-	// file name of last downloaded rcd_sig file
-//	private static String lastDownloadedRcdSigName = "";
 
 	// file name of last valid rcd file
 	private static String lastValidRcdFileName = "";
@@ -338,16 +332,6 @@ public class ConfigLoader {
 			downloadToDir += "/";
 		}
 		return downloadToDir;
-		// always return trailing "/"
-//		switch (operation) {
-//		case BALANCE:
-//			return downloadToDir + "accountBalances/";
-//		case EVENTS:
-//			return downloadToDir + "eventStreams/";
-//		case RECORDS:
-//			return downloadToDir + "recordStreams/";
-//		}
-//		return "";
 	}
 
 	public static String getDefaultParseDir(OPERATION_TYPE operation) {
@@ -374,10 +358,6 @@ public class ConfigLoader {
 	public static int getProxyPort() {
 		return proxyPort;
 	}
-
-//	public static String getNodeInfoFile() {
-//		return nodeInfoFile;
-//	}
 
 	public static String getAddressBookFile() {
 		return addressBookFile;

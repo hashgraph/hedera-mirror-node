@@ -121,13 +121,6 @@ public abstract class Downloader {
 			} else {
 				log.error(MARKER, "Address book file {}, empty or unavailable", ConfigLoader.getAddressBookFile());
 			}
-			
-
-			//			JsonObject jsonObject = ConfigLoader.getJsonObject(fileName);
-//			return jsonObject.entrySet()
-//					.stream()
-//					.map(i -> i.getKey())
-//					.collect(Collectors.toCollection(ArrayList::new));
 		} catch (IOException ex) {
 			log.warn(MARKER, "loadNodeAccountIDs - Fail to load from {}. Exception: {}", ConfigLoader.getAddressBookFile(), ex);
 		}
