@@ -58,7 +58,7 @@ const getBalances = function (req) {
         ['ab.balance']);
 
     let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'account.publickey',
-        ['e.key'], 'hexstring');
+        ['e.ed25519_public_key_hex'], null, (s) => {return s.toLowerCase();});
     let joinEntities = ('' !== pubKeyQuery); // Only need to join t_entites if we're selecting on publickey.
 
     const { limitQuery, limitParams, order, limit } =

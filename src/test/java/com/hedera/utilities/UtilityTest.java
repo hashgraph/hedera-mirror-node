@@ -20,17 +20,24 @@ package com.hedera.utilities;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
 
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ThresholdKey;
 import org.apache.commons.lang3.tuple.Triple;
 import static org.assertj.core.api.Assertions.*;
 
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.nio.file.*;
+import java.sql.SQLException;
 import java.time.Instant;
 
 public class UtilityTest {
@@ -122,5 +129,40 @@ public class UtilityTest {
 	void getResource() {
 		assertThat(Utility.getResource("log4j2.xml")).exists().canRead();
 		assertThat(Utility.getResource("log4j2-test.xml")).exists().canRead();
+	}
+
+	private Utility getCut() throws SQLException { return new Utility(); }
+
+	@Test
+	@DisplayName("null")
+	public void protobufKeyToHexIfEd25519OrNull_Null() throws InvalidProtocolBufferException, SQLException {
+		final var result = getCut().protobufKeyToHexIfEd25519OrNull(null);
+
+		assertThat(result).isNull();
+	}
+
+	@Test
+	@DisplayName("valid")
+	public void protobufKeyToHexIfEd25519OrNull_Valid() throws InvalidProtocolBufferException, SQLException {
+		final var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
+		final var input = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decode(instr))).build();
+
+		final var result = getCut().protobufKeyToHexIfEd25519OrNull(input.toByteArray());
+
+		assertThat(result).isEqualTo(instr);
+	}
+
+	@Test
+	@DisplayName("threshold key (null)")
+	public void protobufKeyToHexIfEd25519OrNull_ThresholdKey() throws InvalidProtocolBufferException, SQLException {
+		final var ks = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
+		final var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decode(ks))).build();
+		final var keyList = KeyList.newBuilder().addKeys(key).build();
+		final var tk = ThresholdKey.newBuilder().setThreshold(1).setKeys(keyList).build();
+		final var input = Key.newBuilder().setThresholdKey(tk).build();
+
+		final var result = getCut().protobufKeyToHexIfEd25519OrNull(input.toByteArray());
+
+		assertThat(result).isNull();
 	}
 }

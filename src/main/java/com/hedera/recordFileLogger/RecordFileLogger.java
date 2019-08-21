@@ -366,13 +366,12 @@ public class RecordFileLogger {
 	            	if (txMessage.hasAutoRenewPeriod()) {
 	            		auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
 	            	}
-	            	byte[] admin_key = null;
-	            	if (txMessage.hasAdminKey()) {
-	            		admin_key = txMessage.getAdminKey().toByteArray();
-	            	}
 	            	byte[] key = null;
+	            	if (txMessage.hasAdminKey()) {
+	            		key = txMessage.getAdminKey().toByteArray();
+	            	}
 	            	long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
-	            	entityId = entities.createEntity(txRecord.getReceipt().getContractID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+	            	entityId = entities.createEntity(txRecord.getReceipt().getContractID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key, proxy_account_id);
             	}
 
                 initialBalance = body.getContractCreateInstance().getInitialBalance();
@@ -394,15 +393,14 @@ public class RecordFileLogger {
             		auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
             	}
 
-            	byte[] admin_key = null;
+            	byte[] key = null;
             	if (txMessage.hasAdminKey()) {
-            		admin_key = txMessage.getAdminKey().toByteArray();
+            		key = txMessage.getAdminKey().toByteArray();
             	}
 
-            	byte[] key = null;
             	long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
 
-            	entityId = entities.updateEntity(txMessage.getContractID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+            	entityId = entities.updateEntity(txMessage.getContractID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key, proxy_account_id);
             } else if (body.hasCryptoAddClaim()) {
                 if (body.getCryptoAddClaim().hasClaim()) {
                     if (body.getCryptoAddClaim().getClaim().hasAccountID()) {
@@ -418,13 +416,12 @@ public class RecordFileLogger {
 	            	if (txMessage.hasAutoRenewPeriod()) {
 	            		auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
 	            	}
-	            	byte[] admin_key = null;
 	            	byte[] key = null;
 	            	if (txMessage.hasKey()) {
 	            		key = txMessage.getKey().toByteArray();
 	            	}
 	            	long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
-	            	entityId = entities.createEntity(txRecord.getReceipt().getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+	            	entityId = entities.createEntity(txRecord.getReceipt().getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key, proxy_account_id);
             	}
 
             	initialBalance = body.getCryptoCreateAccount().getInitialBalance();
@@ -452,8 +449,6 @@ public class RecordFileLogger {
             		auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
             	}
 
-            	byte[] admin_key = null;
-
             	byte[] key = null;
             	if (txMessage.hasKey()) {
             		key = txMessage.getKey().toByteArray();
@@ -461,7 +456,7 @@ public class RecordFileLogger {
 
             	long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
 
-            	entityId = entities.updateEntity(body.getCryptoUpdateAccount().getAccountIDToUpdate(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+            	entityId = entities.updateEntity(body.getCryptoUpdateAccount().getAccountIDToUpdate(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key, proxy_account_id);
             } else if (body.hasFileCreate()) {
             	if (txRecord.getReceipt().hasFileID()) {
             		FileCreateTransactionBody txMessage = body.getFileCreate();
@@ -472,13 +467,12 @@ public class RecordFileLogger {
 	            		expiration_time_nanos = txMessage.getExpirationTime().getNanos();
 	            	}
 	            	long auto_renew_period = 0;
-	            	byte[] admin_key = null;
 	            	byte[] key = null;
 	            	if (txMessage.hasKeys()) {
 	            		key = txMessage.getKeys().toByteArray();
 	            	}
 	            	long proxy_account_id = 0;
-	            	entityId = entities.createEntity(txRecord.getReceipt().getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+	            	entityId = entities.createEntity(txRecord.getReceipt().getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key, proxy_account_id);
             	}
             } else if (body.hasFileAppend()) {
                 if (body.getFileAppend().hasFileID()) {
@@ -499,8 +493,6 @@ public class RecordFileLogger {
             	}
             	long auto_renew_period = 0;
 
-            	byte[] admin_key = null;
-
             	byte[] key = null;
             	if (txMessage.hasKeys()) {
             		key = txMessage.getKeys().toByteArray();
@@ -508,7 +500,7 @@ public class RecordFileLogger {
 
             	long proxy_account_id = 0;
 
-            	entityId = entities.updateEntity(txMessage.getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, admin_key, key, proxy_account_id);
+            	entityId = entities.updateEntity(txMessage.getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key, proxy_account_id);
 
 			} else if (body.hasFreeze()) {
 				//TODO:

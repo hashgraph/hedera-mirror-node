@@ -32,6 +32,7 @@ import com.google.protobuf.TextFormat;
 import com.hedera.downloader.Downloader;
 import com.hedera.filedelimiters.FileDelimiter;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -42,6 +43,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
+import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -58,6 +60,8 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 
 @Log4j2
 public class Utility {
@@ -744,5 +748,21 @@ public class Utility {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * If the protobuf encoding of a Key is a single ED25519 key, return the key as a String with lowercase hex encoding.
+	 * @param protobufKey
+	 * @return ED25519 public key as a String in hex encoding, or null
+	 * @throws InvalidProtocolBufferException if the protobufKey is not a valid protobuf encoding of a Key (BasicTypes.proto)
+	 */
+	public @Nullable String protobufKeyToHexIfEd25519OrNull(@Nullable final byte[] protobufKey)
+			throws InvalidProtocolBufferException {
+		if ((null == protobufKey) || (0 == protobufKey.length)) return null;
+
+		final var parsedKey = Key.parseFrom(protobufKey);
+		if (ED25519 != parsedKey.getKeyCase()) return null;
+
+		return Hex.encodeHexString(parsedKey.getEd25519().toByteArray(), true);
 	}
 }
