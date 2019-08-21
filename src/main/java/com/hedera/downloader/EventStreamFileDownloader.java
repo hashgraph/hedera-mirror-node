@@ -10,6 +10,8 @@ import com.hedera.utilities.Utility;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,6 +26,7 @@ import java.util.stream.Stream;
 public class EventStreamFileDownloader extends Downloader {
 
 	private static String validDir = null;
+	private static String tmpDir = null;
 
 	public EventStreamFileDownloader() {
 	}
@@ -175,12 +178,24 @@ public class EventStreamFileDownloader extends Downloader {
 					for (File validSigFile : validSigFiles) {
 						if (validDir == null) {
 							validDir = validSigFile.getParentFile().getParent() + "/valid/";
+							tmpDir = validSigFile.getParentFile().getParent() + "/tmp/";
 						}
-						Pair<Boolean, File> fileResult = downloadFile(validSigFile, validDir);
+						Pair<Boolean, File> fileResult = downloadFile(validSigFile, tmpDir);
 						File file = fileResult.getRight();
-						if (file != null &&
-								Utility.hashMatch(validSigFile, file)) {
-							break;
+						if (file != null &&	Utility.hashMatch(validSigFile, file)) {
+							// move the file to the valid directory
+					        File fTo = new File(validDir + file.getName());
+
+					        if( ! fTo.getParentFile().exists() ) {
+				                fTo.getParentFile().mkdirs();
+				            }
+							
+							try {
+								Files.move(file.toPath(), fTo.toPath(), REPLACE_EXISTING);
+								break;
+							} catch (IOException e) {
+								log.error(MARKER, "File Move from /tmp/ to /valid/ Failed: {}, Exception: {}", file.getAbsolutePath(), e);
+							}
 						} else if (file != null) {
 							log.warn(MARKER,
 									"{}'s Hash doesn't match the Hash contained in valid signature file. Will try to " +
@@ -202,15 +217,15 @@ public class EventStreamFileDownloader extends Downloader {
 	 * Download .evts file
 	 *
 	 * @param sigFile
-	 * @param validDir
+	 * @param targetDir
 	 * @return
 	 */
-	Pair<Boolean, File> downloadFile(File sigFile, String validDir) {
+	Pair<Boolean, File> downloadFile(File sigFile, String targetDir) {
 		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
 		String sigFileName = sigFile.getName();
 		String fileName = sigFileName.replace(".evts_sig", ".evts");
 		String s3ObjectKey = ConfigLoader.getEventFilesS3Location() + nodeAccountId + "/" + fileName;
-		String localFileName = validDir + fileName;
+		String localFileName = targetDir + fileName;
 		return saveToLocal(bucketName, s3ObjectKey, localFileName);
 	}
 }
