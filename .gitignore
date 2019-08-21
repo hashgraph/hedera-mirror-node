@@ -138,6 +138,8 @@ local.properties
 .sts4-cache/
 
 # End of https://www.gitignore.io/api/eclipse
+/.idea
+/*.iml
 config/records.json
 config/loggerStatus.json
 config/balance.json

@@ -47,7 +47,7 @@ const getAccounts = function (req, res) {
 
     const entitySql =
         "select concat(e.entity_shard, '.', e.entity_realm, '.', e.entity_num) as account\n" +
-        ", et.name as entity_type, exp_time_ns, auto_renew_period, admin_key, key, deleted\n" +
+        ", et.name as entity_type, exp_time_ns, auto_renew_period, ed25519_public_key_hex, key, deleted\n" +
         ", ab.balance as account_balance\n" +
         ", abrt.seconds as balance_asof_seconds, abrt.nanos as balance_asof_nanos\n" +
         "from t_entities e\n" +
@@ -172,7 +172,7 @@ const getOneAccount = function (req, res) {
     const balancePromise = pool.query(balanceSql, balanceParams);
 
     const entitySql =
-        "select tet.name as entity_type, exp_time_ns, auto_renew_period, admin_key, key, deleted\n" +
+        "select tet.name as entity_type, exp_time_ns, auto_renew_period, ed25519_public_key_hex, key, deleted\n" +
         "from t_entities te\n" +
         ", t_entity_types tet\n" +
         " where tet.id = te.fk_entity_type_id\n" +
