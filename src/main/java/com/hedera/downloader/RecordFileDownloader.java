@@ -13,6 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import static java.nio.file.StandardCopyOption.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ import java.util.stream.Stream;
 public class RecordFileDownloader extends Downloader {
 
 	private static String validRcdDir = null;
+	private static String tmpRcdDir = null;
 	private static String s3prefix = "";
 
 	public RecordFileDownloader() {
@@ -146,6 +148,7 @@ public class RecordFileDownloader extends Downloader {
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 
 		validRcdDir = null;
+		tmpRcdDir = null;
 		s3prefix = ConfigLoader.getRecordFilesS3Location();
 		if (s3prefix.endsWith("/")) {
 			s3prefix = s3prefix.substring(0, s3prefix.length()-2);
@@ -172,11 +175,25 @@ public class RecordFileDownloader extends Downloader {
 						if (validRcdDir == null) {
 							validRcdDir = validSigFile.getParentFile().getParent() + "/valid/";
 						}
-						Pair<Boolean, File> rcdFileResult = downloadRcdFile(validSigFile, validRcdDir);
+						if (tmpRcdDir == null) {
+							tmpRcdDir = validSigFile.getParentFile().getParent() + "/tmp/";
+						}
+						Pair<Boolean, File> rcdFileResult = downloadRcdFile(validSigFile, tmpRcdDir);
 						File rcdFile = rcdFileResult.getRight();
-						if (rcdFile != null &&
-								Utility.hashMatch(validSigFile, rcdFile)) {
-							break;
+						if (rcdFile != null && Utility.hashMatch(validSigFile, rcdFile)) {
+							// move the file to the valid directory
+					        File fTo = new File(validRcdDir + rcdFile.getName());
+
+					        if( ! fTo.getParentFile().exists() ) {
+				                fTo.getParentFile().mkdirs();
+				            }
+							
+							try {
+								Files.move(rcdFile.toPath(), fTo.toPath(), REPLACE_EXISTING);
+								break;
+							} catch (IOException e) {
+								log.error(MARKER, "File Move from /tmp/ to /valid/ Failed: {}, Exception: {}", rcdFile.getAbsolutePath(), e);
+							}
 						} else if (rcdFile != null) {
 							log.warn(MARKER, "{}'s Hash doesn't match the Hash contained in valid signature file. Will try to download a rcd file with same timestamp from other nodes and check the Hash.", rcdFile.getPath());
 						}
@@ -189,14 +206,12 @@ public class RecordFileDownloader extends Downloader {
 		return validRcdDir;
 	}
 
-	Pair<Boolean, File> downloadRcdFile(File sigFile, String validRcdDir) {
+	Pair<Boolean, File> downloadRcdFile(File sigFile, String targetDir) {
 		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
 		String sigFileName = sigFile.getName();
 		String rcdFileName = sigFileName.replace(".rcd_sig", ".rcd");
-//		String s3ObjectKey = "recordstreams/record" + nodeAccountId + "/" + rcdFileName;
 		String s3ObjectKey =  s3prefix + nodeAccountId + "/" + rcdFileName;
-//		String localFileName = validRcdDir + rcdFileName;
-		return saveToLocal(bucketName, s3ObjectKey, validRcdDir + rcdFileName);
+		return saveToLocal(bucketName, s3ObjectKey, targetDir + rcdFileName);
 	}
 
 }

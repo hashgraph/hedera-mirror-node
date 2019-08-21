@@ -1,6 +1,7 @@
 package com.hedera.downloader;
 
 
+
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.SdkClientException;
@@ -16,7 +17,6 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.Download;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
-import com.google.gson.JsonObject;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
@@ -42,7 +42,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public abstract class Downloader {
 	protected static final Logger log = LogManager.getLogger("downloader");
@@ -429,22 +428,21 @@ public abstract class Downloader {
 	 */
 	protected static Pair<Boolean, File> saveToLocal(String bucket_name,
 		String s3ObjectKey, String localFilepath)  {
+		
 		// ensure filePaths have OS specific separator
 		localFilepath = localFilepath.replace("/", "~");
 		localFilepath = localFilepath.replace("\\", "~");
 		localFilepath = localFilepath.replace("~", File.separator);
 
+		if (localFilepath.contains("valid")) {
+			localFilepath = localFilepath.replace("/valid/", "/tmp/");
+		}
         File f = new File(localFilepath).getAbsoluteFile();
 
-		if (f.exists()) {
-			log.info(MARKER, "File exists: " + localFilepath);
-			return Pair.of(false, f);
-		}
 		try {
             if( ! f.getParentFile().exists() ) {
                 f.getParentFile().mkdirs();
             }
-			//f.createNewFile();
 			Download download = xfer_mgr.download(bucket_name, s3ObjectKey, f);
 			download.waitForCompletion();
 			if (download.isDone()) {
@@ -455,10 +453,10 @@ public abstract class Downloader {
 				return Pair.of(false, null);
 			}
 		} catch (AmazonServiceException ex) {
-			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex);
+			log.error(MARKER, "Download Failed: {}, Exception: {}", s3ObjectKey, ex);
 		} catch (InterruptedException ex) {
-			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex);
-        }
+			log.error(MARKER, "Download Failed: {}, Exception: {}", s3ObjectKey, ex);
+		}
 		return Pair.of(false, null);
 	}
 
