@@ -99,7 +99,7 @@ then
 elif [ $DOUPDATE -eq 3 ]
 then
   echo "Copying public testnet address book to runtime/config/0.0.102"
-  cp ../config/0.1.102.0.testnet.hedera.com-public.testnet runtime/config/0.0.102
+  cp ../config/0.0.102.0.testnet.hedera.com-public.testnet runtime/config/0.0.102
 fi
 
 docker-compose build
