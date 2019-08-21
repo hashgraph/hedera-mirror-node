@@ -36,7 +36,6 @@ const processRow = function (row) {
     accRecord.balance.balance = (row.account_balance === null) ? null : Number(row.account_balance);
     accRecord.expiry_timestamp = (row.exp_time_ns === null) ? null : utils.nsToSecNs(row.exp_time_ns);
     accRecord.auto_renew_period = (row.auto_renew_period=== null) ? null : Number(row.auto_renew_period);
-    accRecord.admin_key = (row.admin_key === null) ? null : utils.encodeKey(row.admin_key);
     accRecord.key = (row.key === null) ? null : utils.encodeKey(row.key);
     accRecord.deleted = row.deleted;
     accRecord.entity_type = row.entity_type;
@@ -53,7 +52,6 @@ const getAccountQueryPrefix = function() {
         "    , coalesce(ab.account_num, e.entity_num) as entity_num\n" +
         "    , e.exp_time_ns\n" +
         "    , e.auto_renew_period\n" +
-        "    , e.admin_key\n" +
         "    , e.key\n" +
         "    , e.deleted\n" +
         "    , et.name as entity_type\n" +
@@ -100,7 +98,7 @@ const getAccounts = function (req) {
         ['ab.balance']);
 
     let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'account.publickey',
-        ['e.key'], 'hexstring');
+        ['e.ed25519_public_key_hex'], null, (s) => {return s.toLowerCase();});
 
     const { limitQuery, limitParams, order, limit } =
         utils.parseLimitAndOrderParams(req, 'asc');

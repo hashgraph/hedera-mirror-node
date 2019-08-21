@@ -53,11 +53,12 @@ const parseEntityId = function (acc) {
  * @param {String} type Type of the field such as:
  *      'entityId': Could be just a number like 1234 that gets converted to 0.0.1234, or a full 
  *          entity id in shard.realm.entityId form; or
- *      'timestamp': Could be just in seconds followed by optional decimal point and millis or nanos; or
- *      'hexstring': a hexstring
+ *      'timestamp': Could be just in seconds followed by optional decimal point and millis or nanos
+ * @param {Function} valueTranslate Function(str)->str to apply to the query parameter's value (ie toLowerCase)
+ *          this happens to the value _after_ operators removed and doesn't affect the operator
  * @return {Object} {queryString, queryVals} Constructed SQL query string and values.
  */
-const parseComparatorSymbol = function (fields, valArr, type = null) {
+const parseComparatorSymbol = function (fields, valArr, type = null, valueTranslate = null) {
     let queryStr = '';
     let vals = [];
 
@@ -83,6 +84,9 @@ const parseComparatorSymbol = function (fields, valArr, type = null) {
             } else {
                 op = splitItem[0]
                 val = splitItem[1];
+            }
+            if (null !== valueTranslate) {
+                val = valueTranslate(val);
             }
 
             let entity = null;
@@ -118,9 +122,8 @@ const parseComparatorSymbol = function (fields, valArr, type = null) {
                         fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
                         vals.push(ts);
                     } else {
-                        // All other types (including hexstring) are handled here
                         fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
-                        vals.push((type === 'hexstring' ? '\\x' : '') + val);
+                        vals.push(val);
                     }
                     fieldQueryStr += (fieldQueryStr === '' ? '' : ' or ') +
                         fquery;
@@ -161,9 +164,11 @@ const getIntegerParam = function (param, limit = undefined) {
  * @param {Array of Strings} SQL table field names to construct the query
  * @param {String} type One of 'entityId' or 'timestamp' for special interpretation as 
  *          an entity (shard.realm.entity format), or timestamp (ssssssssss.nnnnnnnnn)
+ * @param {Function} valueTranslate Function(str)->str to apply to the query parameter's value (ie toLowerCase)
+ *          this happens to the value _after_ operators removed and doesn't affect the operator
  * @return {Array} [query, params] Constructed SQL query fragment and corresponding values
  */
-const parseParams = function (req, queryField, fields, type = null) {
+const parseParams = function (req, queryField, fields, type = null, valueTranslate = null) {
     // Parse the timestamp filter parameters
     let query = '';
     let params = [];
@@ -176,7 +181,7 @@ const parseParams = function (req, queryField, fields, type = null) {
             reqQuery = [reqQuery];
         }
         // Construct the SQL query fragment
-        let qp = parseComparatorSymbol(fields, reqQuery, type)
+        let qp = parseComparatorSymbol(fields, reqQuery, type, valueTranslate)
         query = qp.queryStr;
         params = qp.queryVals;
     }
