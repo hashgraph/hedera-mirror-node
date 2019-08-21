@@ -30,11 +30,14 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -214,8 +217,19 @@ public abstract class Downloader {
 									count++;
 									File file = result.getRight();
 									if (file != null) {
-										String fileName = file.getName();
-										files.add(fileName);
+										// move the file to the valid directory
+								        File fTo = new File(file.getAbsolutePath().replace("/tmp/", "/valid/") + file.getName());
+
+								        if( ! fTo.getParentFile().exists() ) {
+							                fTo.getParentFile().mkdirs();
+							            }
+										
+										try {
+											Files.move(file.toPath(), fTo.toPath(), REPLACE_EXISTING);
+											files.add(file.getName());
+										} catch (IOException e) {
+											log.error(MARKER, "File Move from /tmp/ to /valid/ Failed: {}, Exception: {}", file.getAbsolutePath(), e);
+										}
 									}
 								} else if (result.getRight() == null) {
 									log.error(MARKER, "File {} failed to download from cloud", s3ObjectKey);
@@ -434,7 +448,7 @@ public abstract class Downloader {
 		localFilepath = localFilepath.replace("\\", "~");
 		localFilepath = localFilepath.replace("~", File.separator);
 
-		if (localFilepath.contains("valid")) {
+		if (localFilepath.contains("/valid/")) {
 			localFilepath = localFilepath.replace("/valid/", "/tmp/");
 		}
         File f = new File(localFilepath).getAbsoluteFile();

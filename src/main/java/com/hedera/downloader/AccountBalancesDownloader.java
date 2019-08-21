@@ -1,8 +1,11 @@
 package com.hedera.downloader;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +72,7 @@ public class AccountBalancesDownloader extends Downloader {
 	 */
 	String verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) {
 		String validDir = null;
+		String tmpDir = null;
 		String lastValidBalanceFileName = "";
 		try {
 			lastValidBalanceFileName = ConfigLoader.getLastValidBalanceFileName();
@@ -101,16 +105,29 @@ public class AccountBalancesDownloader extends Downloader {
 						}
 						if (validDir == null) {
 							validDir = validSigFile.getParentFile().getParent() + "/valid/";
+							tmpDir = validSigFile.getParentFile().getParent() + "/tmp/";
 						}
-						Pair<Boolean, File> fileResult = downloadBalanceFile(validSigFile, validDir);
+						Pair<Boolean, File> fileResult = downloadBalanceFile(validSigFile, tmpDir);
 						File file = fileResult.getRight();
-						if (file != null &&
-								Utility.hashMatch(validSigFile, file)) {
-							if (newLastValidBalanceFileName.isEmpty() ||
-									fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
-								newLastValidBalanceFileName = file.getName();
+						if (file != null && Utility.hashMatch(validSigFile, file)) {
+
+							// move the file to the valid directory
+					        File fTo = new File(validDir + file.getName());
+
+					        if( ! fTo.getParentFile().exists() ) {
+				                fTo.getParentFile().mkdirs();
+				            }
+							
+							try {
+								Files.move(file.toPath(), fTo.toPath(), REPLACE_EXISTING);
+								if (newLastValidBalanceFileName.isEmpty() ||
+										fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
+									newLastValidBalanceFileName = file.getName();
+								}
+								break;
+							} catch (IOException e) {
+								log.error(MARKER, "File Move from /tmp/ to /valid/ Failed: {}, Exception: {}", file.getAbsolutePath(), e);
 							}
-							break;
 						} else if (file != null) {
 							log.warn(MARKER, "{}'s Hash doesn't match the Hash contained in valid signature file. Will try to download a balance file with same timestamp from other nodes and check the Hash.", file.getPath());
 						}
@@ -125,12 +142,12 @@ public class AccountBalancesDownloader extends Downloader {
 		return validDir;
 	}
 
-	Pair<Boolean, File> downloadBalanceFile(File sigFile, String validDir) {
+	Pair<Boolean, File> downloadBalanceFile(File sigFile, String targetDir) {
 		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
 		String sigFileName = sigFile.getName();
 		String balanceFileName = sigFileName.replace("_Balances.csv_sig", "_Balances.csv");
 		String s3ObjectKey = "accountBalances/balance" + nodeAccountId + "/" + balanceFileName;
-		String localFileName = validDir + balanceFileName;
+		String localFileName = targetDir + balanceFileName;
 		return saveToLocal(bucketName, s3ObjectKey, localFileName);
 	}
 
