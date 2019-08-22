@@ -3,6 +3,7 @@ package com.hedera.downloader;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.hedera.configLoader.ConfigLoader;
+import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.parser.EventStreamFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
@@ -23,9 +24,13 @@ import java.util.stream.Stream;
 
 public class EventStreamFileDownloader extends Downloader {
 
-	private static String validDir = null;
+	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
+	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.EVENTS);
+	private static File fileValidDir = new File(validDir);
 
 	public EventStreamFileDownloader() {
+		Utility.createDirIfNotExists(validDir);
+		Utility.createDirIfNotExists(tmpDir);
 	}
 	
 	public static void downloadNewEventfiles(EventStreamFileDownloader downloader) {
@@ -50,7 +55,7 @@ public class EventStreamFileDownloader extends Downloader {
 
 			if (validDir != null) {
 //				new Thread(() -> {
-					verifyValidFiles(validDir);
+					verifyValidFiles();
 //				}).start();
 			}
 
@@ -86,7 +91,7 @@ public class EventStreamFileDownloader extends Downloader {
 	 *
 	 * @param validDir
 	 */
-	public static void verifyValidFiles(String validDir) {
+	public static void verifyValidFiles() {
 		String lastValidEventFileName = "";
 		try {
 			lastValidEventFileName = ConfigLoader.getLastValidEventFileName();
@@ -104,11 +109,7 @@ public class EventStreamFileDownloader extends Downloader {
 		}
 
 		String lastValidEventFileName2 = lastValidEventFileName;
-		File validDirFile = new File(validDir);
-		if (!validDirFile.exists()) {
-			return;
-		}
-		try (Stream<Path> pathStream = Files.walk(validDirFile.toPath())) {
+		try (Stream<Path> pathStream = Files.walk(fileValidDir.toPath())) {
 			List<String> fileNames = pathStream.filter(p -> Utility.isEventStreamFile(p.toString()))
 					.filter(p -> lastValidEventFileName2.isEmpty() ||
 							fileNameComparator.compare(p.toFile().getName(), lastValidEventFileName2) > 0)
@@ -159,7 +160,7 @@ public class EventStreamFileDownloader extends Downloader {
 	 *
 	 * @param sigFilesMap
 	 */
-	String verifySigsAndDownloadEventStreamFiles(Map<String, List<File>> sigFilesMap) {
+	private void verifySigsAndDownloadEventStreamFiles(Map<String, List<File>> sigFilesMap) {
 
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 		for (String fileName : sigFilesMap.keySet()) {
@@ -173,14 +174,16 @@ public class EventStreamFileDownloader extends Downloader {
 				List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
 				if (validSigFiles != null) {
 					for (File validSigFile : validSigFiles) {
-						if (validDir == null) {
-							validDir = validSigFile.getParentFile().getParent() + "/valid/";
-						}
-						Pair<Boolean, File> fileResult = downloadFile(validSigFile, validDir);
+						Pair<Boolean, File> fileResult = downloadFile(DownloadType.EVENT, validSigFile, tmpDir);
 						File file = fileResult.getRight();
-						if (file != null &&
-								Utility.hashMatch(validSigFile, file)) {
-							break;
+						if (file != null &&	Utility.hashMatch(validSigFile, file)) {
+							// move the file to the valid directory
+					        File fTo = new File(validDir + file.getName());
+
+							if (moveFile(file, fTo)) {
+								break;
+							}
+					        
 						} else if (file != null) {
 							log.warn(MARKER,
 									"{}'s Hash doesn't match the Hash contained in valid signature file. Will try to " +
@@ -195,22 +198,6 @@ public class EventStreamFileDownloader extends Downloader {
 				}
 			}
 		}
-		return validDir;
 	}
 
-	/**
-	 * Download .evts file
-	 *
-	 * @param sigFile
-	 * @param validDir
-	 * @return
-	 */
-	Pair<Boolean, File> downloadFile(File sigFile, String validDir) {
-		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
-		String sigFileName = sigFile.getName();
-		String fileName = sigFileName.replace(".evts_sig", ".evts");
-		String s3ObjectKey = ConfigLoader.getEventFilesS3Location() + nodeAccountId + "/" + fileName;
-		String localFileName = validDir + fileName;
-		return saveToLocal(bucketName, s3ObjectKey, localFileName);
-	}
 }

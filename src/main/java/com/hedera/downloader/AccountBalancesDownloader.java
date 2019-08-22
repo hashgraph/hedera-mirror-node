@@ -12,13 +12,18 @@ import org.apache.commons.lang3.tuple.Pair;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.hedera.configLoader.ConfigLoader;
+import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
 
 public class AccountBalancesDownloader extends Downloader {
 
+	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
+	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.BALANCE);
 
 	public AccountBalancesDownloader() {
+		Utility.createDirIfNotExists(validDir);
+		Utility.createDirIfNotExists(tmpDir);
 	}
 
 	public static void main(String[] args) {
@@ -67,8 +72,7 @@ public class AccountBalancesDownloader extends Downloader {
 	 *  return the name of directory which contains valid _Balances.csv files
 	 * @param sigFilesMap
 	 */
-	String verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) {
-		String validDir = null;
+	private void verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) {
 		String lastValidBalanceFileName = "";
 		try {
 			lastValidBalanceFileName = ConfigLoader.getLastValidBalanceFileName();
@@ -99,18 +103,21 @@ public class AccountBalancesDownloader extends Downloader {
 							log.info(MARKER, "Stop file found, stopping.");
 							break;
 						}
-						if (validDir == null) {
-							validDir = validSigFile.getParentFile().getParent() + "/valid/";
-						}
-						Pair<Boolean, File> fileResult = downloadBalanceFile(validSigFile, validDir);
+
+						Pair<Boolean, File> fileResult = downloadFile(DownloadType.BALANCE, validSigFile, tmpDir);
 						File file = fileResult.getRight();
-						if (file != null &&
-								Utility.hashMatch(validSigFile, file)) {
-							if (newLastValidBalanceFileName.isEmpty() ||
-									fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
-								newLastValidBalanceFileName = file.getName();
-							}
-							break;
+						if (file != null && Utility.hashMatch(validSigFile, file)) {
+
+							// move the file to the valid directory
+					        File fTo = new File(validDir + file.getName());
+
+					        if (moveFile(file, fTo)) {
+								if (newLastValidBalanceFileName.isEmpty() ||
+										fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
+									newLastValidBalanceFileName = file.getName();
+								}
+								break;
+					        } 
 						} else if (file != null) {
 							log.warn(MARKER, "{}'s Hash doesn't match the Hash contained in valid signature file. Will try to download a balance file with same timestamp from other nodes and check the Hash.", file.getPath());
 						}
@@ -122,17 +129,5 @@ public class AccountBalancesDownloader extends Downloader {
 			ConfigLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
 			ConfigLoader.saveToFile();
 		}
-		return validDir;
 	}
-
-	Pair<Boolean, File> downloadBalanceFile(File sigFile, String validDir) {
-		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
-		String sigFileName = sigFile.getName();
-		String balanceFileName = sigFileName.replace("_Balances.csv_sig", "_Balances.csv");
-		String s3ObjectKey = "accountBalances/balance" + nodeAccountId + "/" + balanceFileName;
-		String localFileName = validDir + balanceFileName;
-		return saveToLocal(bucketName, s3ObjectKey, localFileName);
-	}
-
-
 }
