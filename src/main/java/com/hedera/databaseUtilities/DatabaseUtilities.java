@@ -11,6 +11,7 @@ import org.flywaydb.core.Flyway;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Map;
 
 @Log4j2
 public class DatabaseUtilities {
@@ -29,14 +30,17 @@ public class DatabaseUtilities {
 
     // No synchronization since it's okay to run concurrently as flyway will lock tables anyway
     public static final void migrate() {
-        if (!migrated) {
+        if (!migrated && false) {
             Flyway.configure()
                     .dataSource(dataSource)
-                    .placeholders(ImmutableMap.of(
+                    .placeholders(Map.of(
+                            "api_user", ConfigLoader.getApiUsername(),
+                            "api_password", ConfigLoader.getApiPassword(),
                             "api-user", ConfigLoader.getApiUsername(),
                             "api-password", ConfigLoader.getApiPassword(),
                             "db-name", ConfigLoader.getDBName(),
-                            "db-user", ConfigLoader.getDBUserName()))
+                            "db-user", ConfigLoader.getDBUserName()
+                            ))
                     .load()
                     .migrate();
             migrated = true;

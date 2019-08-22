@@ -57,6 +57,12 @@
 			<version>5.2.4</version>
 		</dependency>
 		<dependency>
+			<groupId>org.flywaydb.flyway-test-extensions</groupId>
+			<artifactId>flyway-spring-test</artifactId>
+			<version>5.2.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<version>1.18.8</version>
@@ -136,6 +142,18 @@
 					<artifactId>grpc-netty-shaded</artifactId>
 				</exclusion>
 			</exclusions>
+		</dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>RELEASE</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
@@ -249,6 +267,45 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<version>5.2.4</version>
+				<executions>
+					<execution>
+						<id>flyway-clean</id>
+						<phase>pre-clean</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>flyway-migrate</id>
+						<phase>deploy</phase>
+						<goals>
+							<goal>migrate</goal>
+						</goals>
+					</execution>
+				</executions>
+
+				<configuration>
+					<url>jdbc:postgresql://localhost:5432/hedera_mirror_node__performance_test</url>
+					<user>hedera_mirror_node__performance_test</user>
+					<password>hedera_mirror_node__performance_test</password>
+					<placeholders>
+						<db-name>hedera_mirror_node__performance_test</db-name>
+						<db-user>hedera_mirror_node__performance_test</db-user>
+						<db-password>hedera_mirror_node__performance_test</db-password>
+						<api-user>hedera_mirror_node_api__performance_test</api-user>
+						<api-password>hedera_mirror_node_api__performance_test</api-password>
+					</placeholders>
+					<schemas>
+						<schema>public</schema>
+					</schemas>
+
+				</configuration>
 			</plugin>
 
 		</plugins>
