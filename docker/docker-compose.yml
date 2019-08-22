@@ -25,7 +25,7 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
+    command: java -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
 
   # this processes balance files and puts the result in the database, its behaviour is controlled by ./config/config.json
   mirror-node-balance-parser:
@@ -44,7 +44,7 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
+    command: java -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
 
   # this downloads and processes record files and puts the result in the database, its behaviour is controlled by ./config/config.json
   mirror-node-record-download-parse:
@@ -63,7 +63,7 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseRecordFiles
+    command: java -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseRecordFiles
 
   # this downloads and processes event files and puts the result in the database, its behaviour is controlled by ./config/config.json
   # mirror-node-event-download-parse:
@@ -82,7 +82,7 @@ services:
   #   volumes:
   #     - ./MirrorNodeData:/MirrorNodeData
   #     - ./runtime:/MirrorNodeCode
-  #   command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseEventFiles
+  #   command: java -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseEventFiles
 
   # this downloads the latest 0.0.102 file from the network if the .env file contains the necessary information
   mirror-node-102-file-update:
@@ -93,7 +93,7 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
+    command: java -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
 
   # this runs the REST API for mirror node
   mirror-node-rest-api:

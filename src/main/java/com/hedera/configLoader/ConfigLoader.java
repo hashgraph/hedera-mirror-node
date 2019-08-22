@@ -9,10 +9,7 @@ import com.google.gson.JsonSyntaxException;
 
 import io.github.cdimascio.dotenv.Dotenv;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
+import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,10 +17,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
+@Log4j2
 public class ConfigLoader {
-
-	private static final Logger log = LogManager.getLogger("configloader");
-	private static final Marker MARKER = MarkerManager.getMarker("ConfigLoader");
 
 	public static enum CLOUD_PROVIDER {
 		S3
@@ -131,7 +126,7 @@ public class ConfigLoader {
 	}
 
 	static {
-		log.info(MARKER, "Loading configuration from {}", configSavePath);
+		log.info("Loading configuration from {}", configSavePath);
 		try {
 			// migration from config.json to balance.json for some properties related to balances only
 			if (!new File(balanceSavePath).exists()) {
@@ -154,7 +149,7 @@ public class ConfigLoader {
 				} else if (provider.contentEquals("S3")) {
 					cloudProvider = CLOUD_PROVIDER.S3;
 				} else {
-					log.error(MARKER, "Cloud provider {} not recognized, must be one of S3 or GCP", provider);
+					log.error("Cloud provider {} not recognized, must be one of S3 or GCP", provider);
 				}
 			}
 			if (configJsonObject.has("clientRegion")) {
@@ -296,7 +291,7 @@ public class ConfigLoader {
 			}
 
 		} catch (FileNotFoundException ex) {
-			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configSavePath, ex.getStackTrace());
+			log.error("Cannot load configuration from {}", configSavePath, ex);
 		}
 	}
 
@@ -378,51 +373,51 @@ public class ConfigLoader {
 	public static void setLastValidRcdFileName(String name) {
 		lastValidRcdFileName = name;
 		recordsJsonObject.addProperty("lastValidRcdFileName", name);
-		log.info(MARKER, "Update lastValidRcdFileName to be {}", name);
+		log.trace("Update lastValidRcdFileName to be {}", name);
 	}
 
-	public static String getLastValidRcdFileHash() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
+	public static String getLastValidRcdFileHash() {
 		return lastValidRcdFileHash;
 	}
 
 	public static void setLastValidRcdFileHash(String name) {
 		lastValidRcdFileHash = name;
 		recordsJsonObject.addProperty("lastValidRcdFileHash", name);
-		log.info(MARKER, "Update lastValidRcdFileHash to be {}", name);
+		log.trace("Update lastValidRcdFileHash to be {}", name);
 	}
 
-	public static String getLastDownloadedEventSigName() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
+	public static String getLastDownloadedEventSigName() {
 		return lastDownloadedEventSigName;
 	}
 
 	public static void setLastDownloadedEventSigName(String name) {
 		lastDownloadedEventSigName = name;
 		eventsJsonObject.addProperty("lastDownloadedEventSigName", name);
-		log.info(MARKER, "Update lastDownloadedEventSigName to be {}", name);
+		log.trace("Update lastDownloadedEventSigName to be {}", name);
 	}
 
-	public static String getLastValidEventFileName() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
+	public static String getLastValidEventFileName() {
 		return lastValidEventFileName;
 	}
 
 	public static void setLastValidEventFileName(String name) {
 		lastValidEventFileName = name;
 		eventsJsonObject.addProperty("lastValidEventFileName", name);
-		log.info(MARKER, "Update lastValidEventFileName to be {}", name);
+		log.trace("Update lastValidEventFileName to be {}", name);
 	}
 
-	public static String getLastValidEventFileHash() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
+	public static String getLastValidEventFileHash() {
 		return lastValidEventFileHash;
 	}
 
 	public static void setLastValidEventFileHash(String name) {
 		lastValidEventFileHash = name;
 		eventsJsonObject.addProperty("lastValidEventFileHash", name);
-		log.info(MARKER, "Update lastValidEventFileHash to be {}", name);
+		log.trace("Update lastValidEventFileHash to be {}", name);
 	}
 
 
-	public static String getLastValidBalanceFileName() throws JsonIOException, JsonSyntaxException, FileNotFoundException {
+	public static String getLastValidBalanceFileName() {
 		return lastValidBalanceFileName;
 	}
 
@@ -486,7 +481,7 @@ public class ConfigLoader {
 	public static void setLastValidBalanceFileName(String name) {
 		lastValidBalanceFileName = name;
 		balanceJsonObject.addProperty("lastValidBalanceFileName", name);
-		log.info(MARKER, "Update lastValidBalanceFileName to be {}", name);
+		log.trace("Update lastValidBalanceFileName to be {}", name);
 		saveBalanceDataToFile();
 	}
 
@@ -494,9 +489,9 @@ public class ConfigLoader {
 		try (FileWriter file = new FileWriter(configSavePath)) {
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 			gson.toJson(configJsonObject, file);
-			log.info(MARKER, "Successfully wrote configuration to {}", configSavePath);
+			log.debug("Successfully wrote configuration to {}", configSavePath);
 		} catch (IOException ex) {
-			log.warn(MARKER, "Fail to write configuration to {}, Exception: {}", configSavePath, ex);
+			log.error("Fail to write configuration to {}", configSavePath, ex);
 		}
 	}
 
@@ -507,18 +502,19 @@ public class ConfigLoader {
 				balanceFile.createNewFile();
 				bBalanceFileExists = true;
 			} catch (IOException e) {
-				log.error(MARKER, "Unable to create balance data file {}, Exception: {}", balanceSavePath, e);
+				log.error("Unable to create balance data file {}", balanceSavePath, e);
 				return;
 			}
 		}
 		try (FileWriter file = new FileWriter(balanceSavePath)) {
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 			gson.toJson(balanceJsonObject, file);
-			log.info(MARKER, "Successfully wrote update to {}", balanceSavePath);
+			log.debug("Successfully wrote update to {}", balanceSavePath);
 		} catch (IOException ex) {
-			log.warn(MARKER, "Fail to write update to {}, Exception: {}", balanceSavePath, ex);
+			log.error("Fail to write update to {}", balanceSavePath, ex);
 		}
 	}
+
 	public static void saveRecordsDataToFile() {
 		if (!bRecordsFileExists) {
 			File recordsFile = new File(recordsSavePath);
@@ -526,16 +522,16 @@ public class ConfigLoader {
 				recordsFile.createNewFile();
 				bRecordsFileExists = true;
 			} catch (IOException e) {
-				log.error(MARKER, "Unable to create records data file {}, Exception: {}", recordsSavePath, e);
+				log.error("Unable to create records data file {}", recordsSavePath, e);
 				return;
 			}
 		}
 		try (FileWriter file = new FileWriter(recordsSavePath)) {
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 			gson.toJson(recordsJsonObject, file);
-			log.info(MARKER, "Successfully wrote update to {}", recordsSavePath);
+			log.debug("Successfully wrote update to {}", recordsSavePath);
 		} catch (IOException ex) {
-			log.warn(MARKER, "Fail to write update to {}, Exception: {}", recordsSavePath, ex);
+			log.error("Fail to write update to {}", recordsSavePath, ex);
 		}
 	}
 
@@ -546,16 +542,16 @@ public class ConfigLoader {
 				eventsFile.createNewFile();
 				bEventsFileExists = true;
 			} catch (IOException e) {
-				log.error(MARKER, "Unable to create events data file {}, Exception: {}", eventsSavePath, e);
+				log.error("Unable to create events data file {}", eventsSavePath, e);
 				return;
 			}
 		}
 		try (FileWriter file = new FileWriter(eventsSavePath)) {
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 			gson.toJson(eventsJsonObject, file);
-			log.info(MARKER, "Successfully wrote update to {}", eventsSavePath);
+			log.debug("Successfully wrote update to {}", eventsSavePath);
 		} catch (IOException ex) {
-			log.warn(MARKER, "Fail to write update to {}, Exception: {}", eventsSavePath, ex);
+			log.error("Fail to write update to {}", eventsSavePath, ex);
 		}
 	}
 	/***
