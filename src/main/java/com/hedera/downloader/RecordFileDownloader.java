@@ -3,6 +3,7 @@ package com.hedera.downloader;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.hedera.configLoader.ConfigLoader;
+import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
@@ -13,7 +14,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import static java.nio.file.StandardCopyOption.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -24,11 +24,12 @@ import java.util.stream.Stream;
 
 public class RecordFileDownloader extends Downloader {
 
-	private static String validRcdDir = null;
-	private static String tmpRcdDir = null;
-	private static String s3prefix = "";
+	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
+	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.RECORDS);
 
 	public RecordFileDownloader() {
+		Utility.createDirIfNotExists(validDir);
+		Utility.createDirIfNotExists(tmpDir);
 	}
 
 	public static void downloadNewRecordfiles(RecordFileDownloader downloader) {
@@ -41,9 +42,9 @@ public class RecordFileDownloader extends Downloader {
 			// Verify signature files and download .rcd files of valid signature files
 			downloader.verifySigsAndDownloadRecordFiles(sigFilesMap);
 
-			if (validRcdDir != null) {
+			if (validDir != null) {
 //				new Thread(() -> {
-					verifyValidRecordFiles(validRcdDir);
+					verifyValidRecordFiles(validDir);
 //				}).start();
 			} else {
 			}
@@ -147,13 +148,6 @@ public class RecordFileDownloader extends Downloader {
 		// reload address book and keys
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 
-		validRcdDir = null;
-		tmpRcdDir = null;
-		s3prefix = ConfigLoader.getRecordFilesS3Location();
-		if (s3prefix.endsWith("/")) {
-			s3prefix = s3prefix.substring(0, s3prefix.length()-2);
-		}
-
 		for (String fileName : sigFilesMap.keySet()) {
 			if (Utility.checkStopFile()) {
 				log.info(MARKER, "Stop file found, stopping");
@@ -172,28 +166,16 @@ public class RecordFileDownloader extends Downloader {
 							log.info(MARKER, "Stop file found, stopping");
 							break;
 						}
-						if (validRcdDir == null) {
-							validRcdDir = validSigFile.getParentFile().getParent() + "/valid/";
-						}
-						if (tmpRcdDir == null) {
-							tmpRcdDir = validSigFile.getParentFile().getParent() + "/tmp/";
-						}
-						Pair<Boolean, File> rcdFileResult = downloadRcdFile(validSigFile, tmpRcdDir);
+						
+						Pair<Boolean, File> rcdFileResult = downloadFile(DownloadType.RCD, validSigFile, tmpDir);
 						File rcdFile = rcdFileResult.getRight();
 						if (rcdFile != null && Utility.hashMatch(validSigFile, rcdFile)) {
 							// move the file to the valid directory
-					        File fTo = new File(validRcdDir + rcdFile.getName());
+					        File fTo = new File(validDir + "/" + rcdFile.getName());
 
-					        if( ! fTo.getParentFile().exists() ) {
-				                fTo.getParentFile().mkdirs();
-				            }
-							
-							try {
-								Files.move(rcdFile.toPath(), fTo.toPath(), REPLACE_EXISTING);
-								break;
-							} catch (IOException e) {
-								log.error(MARKER, "File Move from /tmp/ to /valid/ Failed: {}, Exception: {}", rcdFile.getAbsolutePath(), e);
-							}
+					        if (moveFile(rcdFile, fTo)) {
+					        	break;
+					        }
 						} else if (rcdFile != null) {
 							log.warn(MARKER, "{}'s Hash doesn't match the Hash contained in valid signature file. Will try to download a rcd file with same timestamp from other nodes and check the Hash.", rcdFile.getPath());
 						}
@@ -203,15 +185,7 @@ public class RecordFileDownloader extends Downloader {
 				}
 			}
 		}
-		return validRcdDir;
-	}
-
-	Pair<Boolean, File> downloadRcdFile(File sigFile, String targetDir) {
-		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
-		String sigFileName = sigFile.getName();
-		String rcdFileName = sigFileName.replace(".rcd_sig", ".rcd");
-		String s3ObjectKey =  s3prefix + nodeAccountId + "/" + rcdFileName;
-		return saveToLocal(bucketName, s3ObjectKey, targetDir + rcdFileName);
+		return validDir;
 	}
 
 }

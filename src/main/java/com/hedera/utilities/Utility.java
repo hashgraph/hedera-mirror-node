@@ -45,8 +45,8 @@ public class Utility {
 	private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
   private static final Long SCALAR = 1_000_000_000L;
 
-	private static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 of previous files
-	private static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
+//	private static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 of previous files
+//	private static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
 	private static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 	private static final byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of corresponding RecordFile
 

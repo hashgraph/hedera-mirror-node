@@ -355,6 +355,10 @@ public class ConfigLoader {
 		return "";
 	}
 
+	public static String getDefaultTmpDir(OPERATION_TYPE operation) {
+		return getDefaultParseDir(operation).replace("/valid", "/tmp");
+	}
+
 	public static int getProxyPort() {
 		return proxyPort;
 	}

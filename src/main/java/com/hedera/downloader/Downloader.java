@@ -1,7 +1,5 @@
 package com.hedera.downloader;
 
-
-
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.SdkClientException;
@@ -151,6 +149,7 @@ public abstract class Downloader {
 	 *  Download all balance .csv files with timestamp later than lastValidBalanceFileName
 	 */
 
+	@Deprecated
 	protected void downloadBalanceFiles() throws IOException {
 		String s3Prefix = null;
 		String fileType = null;
@@ -159,8 +158,7 @@ public abstract class Downloader {
 		s3Prefix = ConfigLoader.getAccountBalanceS3Location();
 		fileType = ".csv";
 		lastValidFileName = ConfigLoader.getLastValidBalanceFileName();
-		saveFilePath = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
-
+		saveFilePath = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.BALANCE);
 		
 		// refresh node account ids
 		nodeAccountIds = loadNodeAccountIDs();
@@ -219,16 +217,8 @@ public abstract class Downloader {
 									if (file != null) {
 										// move the file to the valid directory
 								        File fTo = new File(file.getAbsolutePath().replace("/tmp/", "/valid/") + file.getName());
-
-								        if( ! fTo.getParentFile().exists() ) {
-							                fTo.getParentFile().mkdirs();
-							            }
-										
-										try {
-											Files.move(file.toPath(), fTo.toPath(), REPLACE_EXISTING);
+								        if (moveFile(file, fTo)) {
 											files.add(file.getName());
-										} catch (IOException e) {
-											log.error(MARKER, "File Move from /tmp/ to /valid/ Failed: {}, Exception: {}", file.getAbsolutePath(), e);
 										}
 									}
 								} else if (result.getRight() == null) {
@@ -409,27 +399,6 @@ public abstract class Downloader {
 		return sigFilesMap;
 	}
 
-//	/**
-//	 * return a pair of download result:
-//	 * boolean: download it or not.
-//	 * True means we download it successfully; False means it already exists or we fail to download it;
-//	 * File is the local file
-//	 * @param bucket_name
-//	 * @param s3ObjectKey
-//	 * @return
-//	 */
-//	protected static Pair<Boolean, File> saveToLocal(String bucket_name,
-//			String s3ObjectKey, String filePath) throws IOException {
-//
-//		if (!Utility.createDirIfNotExists(filePath)) {
-//			log.error(MARKER, "{} doesn't exist and we fail to create this directory", filePath);
-//			return null;
-//		}
-//
-//		filePath += s3ObjectKey;
-//		return saveToLocal(bucket_name, s3ObjectKey, filePath);
-//	}
-
 	/**
 	 * return a pair of download result:
 	 * boolean: download it or not.
@@ -448,15 +417,9 @@ public abstract class Downloader {
 		localFilepath = localFilepath.replace("\\", "~");
 		localFilepath = localFilepath.replace("~", File.separator);
 
-		if (localFilepath.contains("/valid/")) {
-			localFilepath = localFilepath.replace("/valid/", "/tmp/");
-		}
         File f = new File(localFilepath).getAbsoluteFile();
 
 		try {
-            if( ! f.getParentFile().exists() ) {
-                f.getParentFile().mkdirs();
-            }
 			Download download = xfer_mgr.download(bucket_name, s3ObjectKey, f);
 			download.waitForCompletion();
 			if (download.isDone()) {
@@ -528,5 +491,53 @@ public abstract class Downloader {
 		}
 		xfer_mgr = TransferManagerBuilder.standard()
 				.withS3Client(s3Client).build();
+	}
+
+	/**
+	 * Moves a file from one location to another
+	 * boolean: true if file moved successfully
+	 * Note: The method doesn't check if source file or destination directory exist to avoid 
+	 * repeated checks that could hurt performance 
+	 * @param sourceFile
+	 * @param destinationFile
+	 * @return boolean
+	 */
+	protected boolean moveFile(File sourceFile, File destinationFile) {
+        try {
+        	// not checking if file exists to help with performance
+        	// assumption is caller has created the destination file folder
+        	Files.move(sourceFile.toPath(), destinationFile.toPath(), REPLACE_EXISTING);
+        	return true;
+        } catch (IOException e) {
+			log.error(MARKER, "File Move from {} to {} Failed: {}, Exception: {}", sourceFile.getAbsolutePath(), destinationFile.getAbsolutePath(), e);
+			return false;
+       }
+    }
+
+	protected Pair<Boolean, File> downloadFile(DownloadType downloadType, File sigFile, String targetDir) {
+		String fileName = "";
+		String s3Prefix = "";
+		
+		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
+		String sigFileName = sigFile.getName();
+		
+		switch (downloadType) {
+			case BALANCE:
+				fileName = sigFileName.replace("_Balances.csv_sig", "_Balances.csv");
+				s3Prefix = ConfigLoader.getAccountBalanceS3Location();
+				break;
+			case EVENT:
+				fileName = sigFileName.replace(".evts_sig", ".evts");
+				s3Prefix = ConfigLoader.getEventFilesS3Location();
+				break;
+			case RCD:
+				fileName = sigFileName.replace(".rcd_sig", ".rcd");
+				s3Prefix =  ConfigLoader.getRecordFilesS3Location();
+				break;
+		}
+		String s3ObjectKey = s3Prefix + nodeAccountId + "/" + fileName;
+		
+		String localFileName = targetDir + "/" + fileName;
+		return saveToLocal(bucketName, s3ObjectKey, localFileName);
 	}
 }
