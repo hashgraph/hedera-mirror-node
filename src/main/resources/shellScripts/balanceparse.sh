@@ -30,7 +30,7 @@ fi
 
 echo "starting balance parsing without history"
 cd $HOME
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
+java -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
 echo "ended balance parsing without history"
 
 rm $PIDFILE

@@ -8,12 +8,9 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.time.Instant;
 import java.util.HashMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import lombok.extern.log4j.Log4j2;
+
 import com.hedera.addressBook.NetworkAddressBook;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
@@ -32,9 +29,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 
+@Log4j2
 public class RecordFileLogger {
-	private static final Logger log = LogManager.getLogger("recordfilelogger");
-	static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
 
 	public static Connection connect = null;
 	private static Entities entities = null;
@@ -114,20 +110,20 @@ public class RecordFileLogger {
         connect = DatabaseUtilities.openDatabase(connect);
 
         if (connect == null) {
-            log.error(LOGM_EXCEPTION, "Unable to connect to database");
+            log.error("Unable to connect to database");
         	return false;
         }
         // do not auto-commit
         try {
 			connect.setAutoCommit(false);
 		} catch (SQLException e) {
-            log.error(LOGM_EXCEPTION, "Unable to connect to set connection to not auto commit, Exception: {}", e.getMessage());
+            log.error("Unable to set connection to not auto commit", e);
         	return false;
 		}
         try {
 			entities = new Entities(connect);
 		} catch (SQLException e) {
-            log.error(LOGM_EXCEPTION, "Unable to fetch entity types, Exception: {}", e.getMessage());
+            log.error("Unable to fetch entity types", e);
         	return false;
 		}
 
@@ -141,8 +137,7 @@ public class RecordFileLogger {
 	            }
 	            resultSet.close();
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-	            log.error(LOGM_EXCEPTION, "Unable to fetch transaction types - Exception {}", e.getMessage());
+	            log.error("Unable to fetch transaction types", e);
 				return false;
 			}
         }
@@ -156,7 +151,7 @@ public class RecordFileLogger {
 	            }
 	            resultSet.close();
 			} catch (SQLException e) {
-	            log.error(LOGM_EXCEPTION, "Unable to fetch entity types - Exception {}", e.getMessage());
+	            log.error("Unable to fetch entity types", e);
 				return false;
 			}
         }
@@ -184,7 +179,7 @@ public class RecordFileLogger {
 					+ " VALUES (?, ?)");
 			
 		} catch (SQLException e) {
-            log.error(LOGM_EXCEPTION, "Unable to prepare SQL statements - Exception {}", e.getMessage());
+            log.error("Unable to prepare SQL statements", e);
 			return false;
 		}
 
@@ -201,7 +196,7 @@ public class RecordFileLogger {
             connect = DatabaseUtilities.closeDatabase(connect);
         	return false;
         } catch (SQLException e) {
-            log.error(LOGM_EXCEPTION, "Exception {}", e.getMessage());
+            log.error("Error closing connection", e);
         }
     	return true;
 	}
@@ -226,7 +221,7 @@ public class RecordFileLogger {
 			}
 
 		} catch (SQLException e) {
-			log.error(LOGM_EXCEPTION, "Exception {}", e);
+			log.error("Error saving file {} in database", fileName, e);
 		}
 		return INIT_RESULT.FAIL;
 	}
@@ -260,7 +255,7 @@ public class RecordFileLogger {
 			// commit the changes to the database
 			connect.commit();
 		} catch (SQLException e) {
-			log.error(LOGM_EXCEPTION, "Exception {}", e);
+			log.error("Error completing file in database", e);
 			rollback();
 			return false;
 		}
@@ -271,7 +266,7 @@ public class RecordFileLogger {
 		try {
 			connect.rollback();
 		} catch (SQLException e) {
-			log.error(LOGM_EXCEPTION, "Exception while rolling transaction back. Exception {}", e);
+			log.error("Exception while rolling transaction back", e);
 		}
 	}
 	public static boolean storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord) throws Exception {
@@ -287,7 +282,7 @@ public class RecordFileLogger {
             	fkTransactionId = resultSet.getLong(1);
 	            resultSet.close();
 			} catch (SQLException e) {
-	            log.error(LOGM_EXCEPTION, "Unable to fetch new transaction id - Exception {}", e.getMessage());
+	            log.error("Unable to fetch new transaction id", e);
 				return false;
 			}
 			
@@ -560,7 +555,7 @@ public class RecordFileLogger {
                     } else {
                         // Other SQL Exception
                     	rollback();
-                        log.error(LOGM_EXCEPTION, "Exception {}", e);
+                        log.error("Exception {}", e);
                         Exception e2 = e.getNextException();
                         throw e2;
                     }
@@ -665,12 +660,8 @@ public class RecordFileLogger {
             	// Do nothing
             }
 
-		} catch (SQLException e) {
-			log.error(LOGM_EXCEPTION, "Exception {}", e);
-			rollback();
-			return false;
-		} catch (InvalidProtocolBufferException e) {
-			log.error(LOGM_EXCEPTION, "Exception {}", e);
+		} catch (Exception e) {
+			log.error("Error storing record", e);
 			rollback();
 			return false;
 		}

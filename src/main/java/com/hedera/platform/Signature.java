@@ -34,9 +34,6 @@ import java.util.Arrays;
  */
 public class Signature {
 
-	/** use this for all logging, as controlled by the optional data/log4j2.xml file */
-	private static final Logger log = LogManager.getLogger();
-
 	/** Pointer to the transaction contents */
 	private byte[] contents;
 

@@ -143,7 +143,7 @@ Without `Docker`, you will need to install `PostgreSQL` versions 10 or 11.
 
 Run `./mvnw install -DskipTests` from the `MirrorNode` directory.
 
-This will compile a runnable mirror node jar file in the `target` directory and copy sample `config.json.sample` and `log4j2.xml` files into the same directory.
+This will compile a runnable mirror node jar file in the `target` directory and copy `config.json.sample` into the same directory.
 
 `cd target`
 
@@ -180,7 +180,7 @@ OPERATOR_KEY=your account's private key
 Run the following command to update the address book at the location specified in `config.json`.
 
 ```shell
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
+java -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
 ```
 
 If no errors are output, the file specified by the `addressBookFile` parameter of the `config.json` file will now contain the network's address book.
@@ -339,13 +339,13 @@ This project provides the ability to log balances for all accounts, including hi
 Run the following command:
 
 ```shell
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
+java -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
 ```
 
 ### To download and parse record files in one command
 
 ```shell
-java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseRecordFiles
+java -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseRecordFiles
 ```
 
 ### To Send Transactions or Queries to the BetaMirrorNode Proxy

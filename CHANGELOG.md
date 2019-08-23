@@ -200,8 +200,8 @@ If set to another value, the downloader will download available files, wait `dow
 
 ### Logging
 
-Previous versions of the mirror node software embedded a `log4j2.xml` file in the jar, this is no longer the case, so by default, no logging will take place.
-Should you wish to enable logging, copy the `log4j2.xml` file from `src/main/resources` or `target` to the same location as the `mirrorNode.jar` file, edit accordingly and include the following in your `java` command:
+By default, logging will output to the console and to `logs/hedera-mirror-node.log`.
+Should you wish to change the logging, copy the `log4j2.xml` file from `src/main/resources` or `target` to the same location as the `mirrorNode.jar` file, edit accordingly and include the following in your `java` command:
 
 ```shell
     -Dlog4j.configurationFile=./log4j2.xml
@@ -214,9 +214,3 @@ for example
 ```
 
 This will ensure that the `log4j2.xml` file is used to direct logging accordingly.
-
-If you do not specify a `log4j2.xml`, the following error will be output but will not prevent the software from operating.
-
-```code
-ERROR StatusLogger No Log4j 2 configuration file found. Using default configuration (logging only errors to the console), or user programmatically provided configurations. Set system property 'log4j2.debug' to show Log4j 2 internal initialization logging. See https://logging.apache.org/log4j/2.x/manual/configuration.html for instructions on how to configure Log4j 2
-```

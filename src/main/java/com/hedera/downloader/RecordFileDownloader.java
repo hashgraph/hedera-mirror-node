@@ -1,18 +1,16 @@
 package com.hedera.downloader;
 
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +20,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Log4j2
 public class RecordFileDownloader extends Downloader {
 
 	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
@@ -52,21 +51,16 @@ public class RecordFileDownloader extends Downloader {
 			xfer_mgr.shutdownNow();
 
 		} catch (IOException e) {
-			log.error(MARKER, "IOException: {}", e);
+			log.error("Error downloading and verifying new record files", e);
 		}
 	}
 
 	public static void main(String[] args) {
-		if (Utility.checkStopFile()) {
-			log.info(MARKER, "Stop file found, exiting.");
-			System.exit(0);
-		}
-
 		RecordFileDownloader downloader = new RecordFileDownloader();
 
 		while (true) {
 			if (Utility.checkStopFile()) {
-				log.info(MARKER, "Stop file found, stopping.");
+				log.info("Stop file found, stopping");
 				break;
 			}
 			downloadNewRecordfiles(downloader);
@@ -81,14 +75,7 @@ public class RecordFileDownloader extends Downloader {
 	 */
 	public static void verifyValidRecordFiles(String validDir) {
 		String lastValidRcdFileName =  ConfigLoader.getLastValidRcdFileName();
-		String lastValidRcdFileHash = "";
-		try {
-			lastValidRcdFileHash = ConfigLoader.getLastValidRcdFileHash();
-		} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
+		String lastValidRcdFileHash = ConfigLoader.getLastValidRcdFileHash();
 		File validDirFile = new File(validDir);
 		if (!validDirFile.exists()) {
 			return;
@@ -105,12 +92,12 @@ public class RecordFileDownloader extends Downloader {
 
 			for (String rcdName : fileNames) {
 				if (Utility.checkStopFile()) {
-					log.info(MARKER, "Stop file found, stopping");
+					log.info("Stop file found, stopping");
 					break;
 				}
 				String prevFileHash = RecordFileParser.readPrevFileHash(rcdName);
 				if (prevFileHash == null) {
-					log.info(MARKER, "{} doesn't contain valid prevFileHash", rcdName);
+					log.warn("Doesn't contain valid prevFileHash: {}", rcdName);
 					break;
 				}
 				if (newLastValidRcdFileHash.isEmpty() ||
@@ -129,8 +116,8 @@ public class RecordFileDownloader extends Downloader {
 				ConfigLoader.saveRecordsDataToFile();
 			}
 
-		} catch (IOException ex) {
-			log.error(MARKER, "verifyValidRcdFiles :: An Exception occurs while traversing {} : {}", validDir, ex);
+		} catch (Exception ex) {
+			log.error("Failed to verify record files in {}", validDir, ex);
 		}
 	}
 
@@ -143,49 +130,52 @@ public class RecordFileDownloader extends Downloader {
 	 *  return the name of directory which contains valid .rcd files
 	 * @param sigFilesMap
 	 */
-	String verifySigsAndDownloadRecordFiles(Map<String, List<File>> sigFilesMap) {
-
+	private void verifySigsAndDownloadRecordFiles(Map<String, List<File>> sigFilesMap) {
 		// reload address book and keys
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 
 		for (String fileName : sigFilesMap.keySet()) {
 			if (Utility.checkStopFile()) {
-				log.info(MARKER, "Stop file found, stopping");
+				log.info("Stop file found, stopping");
 				break;
 			}
+			boolean valid = false;
 			List<File> sigFiles = sigFilesMap.get(fileName);
 			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
-			if (!Utility.greaterThanSuperMajorityNum(sigFiles.size(), nodeAccountIds.size())) {
+			if (sigFiles == null || !Utility.greaterThanSuperMajorityNum(sigFiles.size(), nodeAccountIds.size())) {
+				log.warn("Signature file count does not exceed 2/3 of nodes");
 				continue;
-			} else {
-				// validSigFiles are signed by node'key and contains the same Hash which has been agreed by more than 2/3 nodes
-				List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
-				if (validSigFiles != null) {
-					for (File validSigFile : validSigFiles) {
-						if (Utility.checkStopFile()) {
-							log.info(MARKER, "Stop file found, stopping");
-							break;
-						}
-						
-						Pair<Boolean, File> rcdFileResult = downloadFile(DownloadType.RCD, validSigFile, tmpDir);
-						File rcdFile = rcdFileResult.getRight();
-						if (rcdFile != null && Utility.hashMatch(validSigFile, rcdFile)) {
-							// move the file to the valid directory
-					        File fTo = new File(validDir + "/" + rcdFile.getName());
+			}
 
-					        if (moveFile(rcdFile, fTo)) {
-					        	break;
-					        }
-						} else if (rcdFile != null) {
-							log.warn(MARKER, "{}'s Hash doesn't match the Hash contained in valid signature file. Will try to download a rcd file with same timestamp from other nodes and check the Hash.", rcdFile.getPath());
-						}
+			// validSigFiles are signed by node key and contains the same hash which has been agreed by more than 2/3 nodes
+			List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
+
+			for (File validSigFile : validSigFiles) {
+				if (Utility.checkStopFile()) {
+					log.info("Stop file found, stopping");
+					break;
+				}
+
+				Pair<Boolean, File> rcdFileResult = downloadFile(DownloadType.RCD, validSigFile, tmpDir);
+				File rcdFile = rcdFileResult.getRight();
+				if (rcdFile != null && Utility.hashMatch(validSigFile, rcdFile)) {
+					// move the file to the valid directory
+					File fTo = new File(validDir + "/" + rcdFile.getName());
+
+					if (moveFile(rcdFile, fTo)) {
+						log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
+						valid = true;
+						break;
 					}
-				} else {
-					log.info(MARKER, "No valid signature files");
+				} else if (rcdFile != null) {
+					log.warn("Hash of {} doesn't match the hash contained in the signature file. Will try to download a record file with same timestamp from other nodes", rcdFile);
 				}
 			}
+
+			if (!valid) {
+				log.error("File could not be verified by at least 2/3 of nodes: {}", fileName);
+			}
 		}
-		return validDir;
 	}
 
 }

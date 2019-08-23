@@ -1,20 +1,16 @@
 package com.hedera.parser;
 
 import com.hedera.databaseUtilities.DatabaseUtilities;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
+import lombok.extern.log4j.Log4j2;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+@Log4j2
 public class EventStreamAnalytics {
-	private static final Logger log = LogManager.getLogger("eventStream-log");
-	private static final Marker MARKER = MarkerManager.getMarker("EVENT_STREAM");
-	private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
+
 	private static Connection connect = null;
 
 	public EventStreamAnalytics() {
@@ -195,30 +191,29 @@ public class EventStreamAnalytics {
 		EventStreamAnalytics analytics = new EventStreamAnalytics();
 		long periodStartInNanos = 1564084641196388000l;
 		long periodEndInNanos = 1564084701826156000l;
-		log.info(MARKER, "Created events count between {} and {}: {}", periodStartInNanos, periodEndInNanos,
+		log.info("Created events count between {} and {}: {}", periodStartInNanos, periodEndInNanos,
 				analytics.getCreatedEventsCount(periodStartInNanos, periodEndInNanos));
 		long nodeId = 0;
-		log.info(MARKER, "Created events count of node{} between {} and {}: {}", nodeId, periodStartInNanos,
+		log.info("Created events count of node{} between {} and {}: {}", nodeId, periodStartInNanos,
 				periodEndInNanos, analytics.getCreatedEventsCountForNode(periodStartInNanos, periodEndInNanos, nodeId));
 
 		periodStartInNanos = 1564084641217420000l;
 		periodEndInNanos = 1564084701892894000l;
-		System.out.println(analytics.getConsensusEventsCount(periodStartInNanos, periodEndInNanos));
-		log.info(MARKER, "Consensus events count of node{} between {} and {}: {}", nodeId, periodStartInNanos,
+		log.info("Consensus events count of node{} between {} and {}: {}", nodeId, periodStartInNanos,
 				periodEndInNanos, analytics.getConsensusEventsCountForNode(periodStartInNanos, periodEndInNanos, nodeId));
 
 		periodStartInNanos = 1564084641217420000l;
 		periodEndInNanos = 1564084701916832000l;
 		long[] counts = analytics.getSysAppTxsCountInConsensusEventsForNode(periodStartInNanos, periodEndInNanos,
 				nodeId);
-		log.info(MARKER, "System Txs count: {}, Application Txs count: {}", counts[0], counts[1]);
+		log.info("System Txs count: {}, Application Txs count: {}", counts[0], counts[1]);
 
 		long[] latencies = analytics.getLatencyStatsForNode(periodStartInNanos, periodEndInNanos, nodeId);
-		log.info(MARKER, "Node{} From {} to {} Min latency: {}ns, Max latency: {}ns, Median latency: {}ns", nodeId,
+		log.info("Node{} From {} to {} Min latency: {}ns, Max latency: {}ns, Median latency: {}ns", nodeId,
 				periodStartInNanos, periodEndInNanos, latencies[0], latencies[1], latencies[2]);
 
 		latencies = analytics.getLatencyStats(periodStartInNanos, periodEndInNanos);
-		log.info(MARKER, "From {} to {} Min latency: {}ns, Max latency: {}ns, Median latency: {}ns", periodStartInNanos,
+		log.info("From {} to {} Min latency: {}ns, Max latency: {}ns, Median latency: {}ns", periodStartInNanos,
 				periodEndInNanos, latencies[0], latencies[1], latencies[2]);
 	}
 }

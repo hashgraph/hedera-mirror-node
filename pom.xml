@@ -208,9 +208,6 @@
 				<version>3.1.0</version>
 				<configuration>
 					<finalName>mirrorNode</finalName>
-					<excludes>
-						<exclude>**/log4j2.xml</exclude>
-					</excludes>
 					<archive>
 						<manifest>
 							<mainClass>com.hedera.mirrorNodeProxy.MirrorNodeProxy</mainClass>
