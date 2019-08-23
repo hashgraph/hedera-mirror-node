@@ -2,8 +2,9 @@
 const utils = require('./utils.js');
 
 /**
- * Create transferlists from the output of SQL queries. 
- * 
+ * Create transferlists from the output of SQL queries. The SQL table has different 
+ * rows for each of the transfers in a single transaction. This function collates all
+ * transfers into a single list. 
  * @param {Array of objects} rows Array of rows returned as a result of an SQL query
  * @param {Array} arr REST API return array  
  * @return {Array} arr Updated REST API return array
@@ -14,31 +15,32 @@ const createTransferLists = function (rows, arr) {
     // a given transaction_id
     let transactions = {};
     let anchorSecNs = null;  // Used for pagination to anchor the subsequent 
-                             // paginated queries based on 'seconds'
+    // paginated queries based on 'seconds'
 
     for (let row of rows) {
         if (!(row.transaction_id in transactions)) {
             transactions[row.transaction_id] = {};
-            for (let key of ["transaction_id", "id", "memo",
-                "consensus_ns", "valid_start_ns", "result", "name",
-                "node", "charged_tx_fee"]) {
-                if (key === 'consensus_ns') {
-                    transactions[row.transaction_id]['consensus_timestamp'] = utils.nsToSecNs(row[key]);
-                } else if (key === 'valid_start_ns') {
-                    transactions[row.transaction_id]['valid_start_timestamp'] = utils.nsToSecNs(row[key]);
-                } else {
-                    transactions[row.transaction_id][key] = row[key];
-                }
-                if (anchorSecNs === null) {
-                    anchorSecNs = utils.nsToSecNs(row.consensus_ns);
-                }
-            }
+            transactions[row.transaction_id]['consensus_timestamp'] = utils.nsToSecNs(row['consensus_ns']);
+            transactions[row.transaction_id]['valid_start_timestamp'] = utils.nsToSecNs(row['valid_start_ns']);
+            transactions[row.transaction_id]['charged_tx_fee'] = Number(row['charged_tx_fee']);
+            transactions[row.transaction_id]['transaction_id'] = row['transaction_id'];
+            transactions[row.transaction_id]['id'] = row['id'];
+            transactions[row.transaction_id]['memo'] = row['memo'];
+            transactions[row.transaction_id]['result'] = row['result'];
+            transactions[row.transaction_id]['name'] = row['name'];
+            transactions[row.transaction_id]['node'] = row['node'];
+
             transactions[row.transaction_id].transfers = []
         }
+
         transactions[row.transaction_id].transfers.push({
             account: row.account,
-            amount: row.amount
+            amount: Number(row.amount)
         });
+    }
+
+    if (rows.length > 0) {
+        anchorSecNs = utils.nsToSecNs(rows[rows.length - 1].consensus_ns);
     }
 
     // Push all transactions in a return array
@@ -65,7 +67,7 @@ const getTransactions = function (req, res) {
     logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
 
     // Parse the filter parameters for credit/debit, account-numbers, 
-    // timestamp, and pagination (anchor and limit/offset)
+    // timestamp, and pagination (limit)
     const creditDebit = utils.parseCreditDebitParams(req);
 
     let [accountQuery, accountParams] =
@@ -84,13 +86,10 @@ const getTransactions = function (req, res) {
     const [tsQuery, tsParams] =
         utils.parseParams(req, 'timestamp', ['t.consensus_ns'], 'timestamp_ns');
 
-    let [anchorQuery, anchorParams] =
-        utils.parseParams(req, 'pageanchor', ['t.consensus_ns']);
-    anchorQuery = anchorQuery.replace('=', '<=');
-
     const resultTypeQuery = utils.parseResultParams(req);
-    const { limitOffsetQuery, limitOffsetParams, order, limit, offset } =
-        utils.parsePaginationAndOrderParams(req);
+
+    const { limitQuery, limitParams, order, limit } =
+        utils.parseLimitAndOrderParams(req);
 
     // Create an inner query that returns the ids of transactions that 
     // match the filter criteria based on the filter criteria in the REST query
@@ -110,13 +109,11 @@ const getTransactions = function (req, res) {
         '   and t.fk_result_id = tr.id\n' +
         (accountQuery === '' ? '' : '     and ') + accountQuery + '\n' +
         (tsQuery === '' ? '' : '     and ') + tsQuery + '\n' +
-        (anchorQuery === '' ? '' : '     and ') + anchorQuery + '\n' +
         resultTypeQuery + '\n' +
         '     order by t.consensus_ns ' + order + '\n' +
-        '     ' + limitOffsetQuery;
+        '     ' + limitQuery;
     let sqlParams = accountParams.concat(tsParams)
-        .concat(anchorParams)
-        .concat(limitOffsetParams);
+        .concat(limitParams);
 
     let sqlQuery =
         "select  concat(etrans.entity_shard, '.', etrans.entity_realm, '.'," +
@@ -173,13 +170,10 @@ const getTransactions = function (req, res) {
         ret = tl.ret;
         let anchorSecNs = tl.anchorSecNs;
 
-        logger.debug("ret.transactions.length: " +
-            ret.transactions.length + ' === limit: ' + limit);
-
-
         ret.links = {
-            next: utils.getPaginationLink(req, (ret.transactions.length !== limit),
-                limit, offset, order, anchorSecNs)
+            next: utils.getPaginationLink(req,
+                (ret.transactions.length !== limit),
+                'timestamp', anchorSecNs, order)
         }
 
         logger.debug("getTransactions returning " +
@@ -257,7 +251,6 @@ const getOneTransaction = function (req, res) {
 
         const tl = createTransferLists(results.rows, ret);
         ret = tl.ret;
-        let anchorSeconds = tl.anchorSeconds;
 
         if (ret.transactions.length === 0) {
             res.status(404)

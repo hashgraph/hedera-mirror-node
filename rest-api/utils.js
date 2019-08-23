@@ -6,8 +6,6 @@ const globals = {
     MAX_LIMIT: 1000
 }
 
-
-
 /**
  * Split the account number into shard, realm and num fields. 
  * @param {String} acc Either 0.0.1234 or just 1234
@@ -200,43 +198,36 @@ const parseResultParams = function (req) {
     //    return ((req.query.result === 'successful') ? 'successful' : 'all');
 }
 
+
 /**
  * Parse the pagination (limit/offset) and order parameters
  * @param {HTTPRequest} req HTTP query request object
  * @param {String} defaultOrder Order of sorting (defaults to descending)
  * @return {Object} {query, params, order} SQL query, values and order
  */
-const parsePaginationAndOrderParams = function (req, defaultOrder = 'desc') {
-    // Parse the pagination parameters (i.e. limit/offset)
-    let limitOffsetQuery = '';
-    let limitOffsetParams = [];
+const parseLimitAndOrderParams = function (req, defaultOrder = 'desc') {
+    // Parse the limit parameter
+    let limitQuery = '';
+    let limitParams = [];
     let lVal = getIntegerParam(req.query['limit'], globals.MAX_LIMIT);
     let limitValue = lVal === '' ? globals.MAX_LIMIT : lVal;
-    limitOffsetQuery = 'limit ? ';
-    limitOffsetParams.push(limitValue);
+    limitQuery = 'limit ? ';
+    limitParams.push(limitValue);
 
-    let oVal = getIntegerParam(req.query['offset']);
-    let offsetValue = 0;
-    if (oVal != '') {
-        limitOffsetQuery += 'offset ? ';
-        limitOffsetParams.push(oVal);
-        offsetValue = oVal;
-    }
-
-    // Parse the order parameters (default; descending)
+    // Parse the order parameters (default: descending)
     let order = defaultOrder;
     if (['asc', 'desc'].includes(req.query['order'])) {
         order = req.query['order'];
     }
 
     return ({
-        limitOffsetQuery: limitOffsetQuery,
-        limitOffsetParams: limitOffsetParams,
+        limitQuery: limitQuery,
+        limitParams: limitParams,
         order: order,
-        limit: Number(limitValue),
-        offset: Number(offsetValue)
+        limit: Number(limitValue)
     });
 }
+
 
 
 /**
@@ -266,21 +257,45 @@ const convertMySqlStyleQueryToPostgress = function (sqlQuery, sqlParams) {
  * @param {Integer} anchorSecNs The time (seconds.nanos) limit for the 'next' queries in the pagination. 
  * @return {String} next Fully formed link to the next page
  */
-const getPaginationLink = function (req, isEnd, limit, offset, order, anchorSecNs = undefined) {
+const getPaginationLink = function (req, isEnd, field, lastValue, order) {
     const port = process.env.PORT;
     const portquery = (Number(port) === 80) ? '' : (':' + port);
-    let anchorNs = anchorSecNs === undefined ? undefined : secNsToNs(anchorSecNs);
-    req = getTimeQueryForPagination(req, order, anchorNs);
+    //let anchorNs = anchorSecNs === undefined ? undefined : secNsToNs(anchorSecNs);
+    //req = getTimeQueryForPagination(req, order, anchorNs);
     var next = '';
+
     if (!isEnd) {
-        // Remove the limit and offset parameters from the current query
+        const pattern = (order === 'asc') ? /gt[e]?:/ : /lt[e]?:/;
+        const insertedPattern = (order === 'asc') ? 'gt' : 'lt';
+
+        // Go through the query parameters, and if there is a 'field=gt:xxxx' (asc order)
+        // or 'field=lt:xxxx' (desc order) fields, then remove that, to be replaced by the
+        // new continuation value
         for (const [q, v] of Object.entries(req.query)) {
-            if (q === 'limit' || q === 'offset') {
-                delete req.query[q];
+            if (Array.isArray(v)) {
+                for (let vv of v) {
+                    if (q === field && pattern.test(vv)) {
+                        req.query[q] = req.query[q].filter(function (value, index, arr) {
+                            return value != vv;
+                        });
+                    }
+                }
+            } else {
+                if (q === field && pattern.test(v)) {
+                    delete req.query[q];
+                }
             }
         }
 
-        // Reconstruct the query string without the limit and offset parameters
+        // And add back the continuation value as 'field=gt:x' (asc order) or 
+        // 'field=lt:x' (desc order)
+        if (field in req.query) {
+            req.query[field] = [].concat(req.query[field]).concat(insertedPattern + ':' + lastValue);
+        } else {
+            req.query[field] = insertedPattern + ':' + lastValue;
+        }
+
+        // Reconstruct the query string
         for (const [q, v] of Object.entries(req.query)) {
             if (Array.isArray(v)) {
                 v.map(vv => (next += (next === '' ? '?' : '&') + q + '=' + vv));
@@ -288,14 +303,11 @@ const getPaginationLink = function (req, isEnd, limit, offset, order, anchorSecN
                 next += (next === '' ? '?' : '&') + q + '=' + v;
             }
         }
-
-        // And add back the new limit and offset values
-        next = req.protocol + '://' + req.hostname + portquery + req.path + next +
-            (next === '' ? '?' : '&') +
-            'limit=' + limit + '&offset=' + (offset + limit);
+        next = req.protocol + '://' + req.hostname + portquery + req.path + next;
     }
     return (next === '' ? null : next);
 }
+
 
 /**
  * Create an additional timestamp based query to ensure the integrity of 
@@ -347,15 +359,26 @@ const secNsToSeconds = function (secNs) {
     return (math.floor(Number(secNs)));
 }
 
+/**
+* Returns the limit on how many result entries should be in the API
+* @param {String} type of API (e.g. transactions, balances, etc.). Currently unused.
+* @return {Number} limit Max # entries to be returned.
+*/
+const returnEntriesLimit = function (type) {
+    return (globals.MAX_LIMIT);
+}
+
 module.exports = {
+    globals: globals,
     parseParams: parseParams,
     parseCreditDebitParams: parseCreditDebitParams,
-    parsePaginationAndOrderParams: parsePaginationAndOrderParams,
+    parseLimitAndOrderParams: parseLimitAndOrderParams,
     parseResultParams: parseResultParams,
     convertMySqlStyleQueryToPostgress: convertMySqlStyleQueryToPostgress,
     getPaginationLink: getPaginationLink,
     parseEntityId: parseEntityId,
     nsToSecNs: nsToSecNs,
     secNsToNs: secNsToNs,
-    secNsToSeconds: secNsToSeconds
+    secNsToSeconds: secNsToSeconds,
+    returnEntriesLimit: returnEntriesLimit
 }
