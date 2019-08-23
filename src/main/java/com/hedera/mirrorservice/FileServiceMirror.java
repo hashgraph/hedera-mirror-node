@@ -9,19 +9,11 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 
+@Log4j2
 public class FileServiceMirror extends FileServiceGrpc.FileServiceImplBase {
-	private static final Logger log = LogManager.getLogger("fileservicemirror");
-	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
-
-	public FileServiceMirror() {
-
-	}
 
 	/**
 	 * The mirror node provides the same service interface as Hedera node to clients;
@@ -41,8 +33,7 @@ public class FileServiceMirror extends FileServiceGrpc.FileServiceImplBase {
 					request, responseObserver, methodName);
 
 		} catch (InvalidProtocolBufferException ex) {
-			log.error(MARKER, "FileServiceMirror :: rpc_FileService : Transaction body parsing exception: {}. Transaction = {}",
-					ex.getMessage(), request);
+			log.error("Error parsing transaction body", ex);
 		}
 	}
 
@@ -60,10 +51,9 @@ public class FileServiceMirror extends FileServiceGrpc.FileServiceImplBase {
 			String methodName) {
 		AccountID accountID = ServiceAgent.extractNodeAccountID(request);
 		if (accountID == null) {
-			log.error(MARKER, "FileServiceMirror :: rpc_FileService : Missing nodeAccountID, Query = {}", request);
+			log.error("Missing nodeAccountID, Query = {}", request);
 			return;
 		}
-		System.out.println("NodeAccountID:" + accountID);
 		Pair<FileServiceGrpc.FileServiceBlockingStub, ManagedChannel> pair = ServiceAgent.getFileServiceStub(accountID);
 		ServiceAgent.rpcHelper_Query(pair.getLeft(), pair.getRight(),
 				request, responseObserver, methodName);

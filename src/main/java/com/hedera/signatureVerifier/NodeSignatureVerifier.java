@@ -5,24 +5,16 @@ import com.hedera.configLoader.ConfigLoader;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 
 import java.io.File;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PublicKey;
 import java.security.Signature;
-import java.security.SignatureException;
 import java.security.spec.EncodedKeySpec;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,9 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Log4j2
 public class NodeSignatureVerifier {
-	private static final Logger log = LogManager.getLogger("nodesignatureverifier");
-	private static final Marker MARKER = MarkerManager.getMarker("NodeSignatureVerifier");
 
 	private static String nodeAddressBookLocation;
 
@@ -51,11 +42,10 @@ public class NodeSignatureVerifier {
 				NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
 				loadNodePubKey(nodeAddressBook);
 			} else {
-				log.error(MARKER, "Address book file {}, empty or unavailable", nodeAddressBookLocation);
+				log.error("Address book file {} is empty or unavailable", nodeAddressBookLocation);
 			}
-			//System.out.println(nodeAddressBook);
 		} catch (InvalidProtocolBufferException ex) {
-			log.error(MARKER, "Fail to parse NodeAddressBook from {}, error {}", nodeAddressBookLocation, ex.getMessage());
+			log.error("Failed to parse NodeAddressBook from {}", nodeAddressBookLocation, ex);
 		}
 	}
 
@@ -68,7 +58,7 @@ public class NodeSignatureVerifier {
 				PublicKey publicKey = loadPublicKey(nodeAddress.getRSAPubKey());
 				nodeIDPubKeyMap.put(accountID, publicKey);
 			} catch(DecoderException ex) {
-				log.error(MARKER, "Failed to load PublicKey from: {} for {}", nodeAddress.getRSAPubKey(), accountID);
+				log.error("Failed to load PublicKey from {} for account {}", nodeAddress.getRSAPubKey(), accountID, ex);
 			}
 		}
 	}
@@ -97,8 +87,8 @@ public class NodeSignatureVerifier {
 			EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(bytes);
 			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 			publicKey = keyFactory.generatePublic(publicKeySpec);
-		} catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-			log.error(MARKER, " Fail to convert to PublicKey - {}", e);
+		} catch (Exception e) {
+			log.error("Failed to convert to PublicKey", e);
 		}
 		return publicKey;
 	}
@@ -118,7 +108,7 @@ public class NodeSignatureVerifier {
 
 		boolean isValid = verifySignature(signedData, signature, nodeAccountID, sigFile.getPath());
 		if (!isValid) {
-			log.info(MARKER, "{} contains invalid signature", sigFile.getPath());
+			log.error("Invalid signature in file {}", sigFile.getPath());
 		}
 		return isValid;
 	}
@@ -142,8 +132,6 @@ public class NodeSignatureVerifier {
 				Set<File> files = hashToSigFiles.getOrDefault(hashString, new HashSet<>());
 				files.add(sigFile);
 				hashToSigFiles.put(hashString, files);
-			} else {
-				log.info(MARKER, "{} has invalid signature", sigFile.getName());
 			}
 		}
 
@@ -171,24 +159,23 @@ public class NodeSignatureVerifier {
 			String nodeAccountID, String filePath) {
 		PublicKey publicKey = nodeIDPubKeyMap.get(nodeAccountID);
 		if (publicKey == null) {
-			log.debug(MARKER, "verifySignature :: missing PublicKey of node{}", nodeAccountID);
+			log.warn("Missing PublicKey for node {}", nodeAccountID);
+			return false;
+		}
+
+		if (signature == null) {
+			log.error("Missing signature for file {}", filePath);
 			return false;
 		}
 
 		try {
+			log.trace("Verifying signature of file {} with public key of node {}", filePath, nodeAccountID);
 			Signature sig = Signature.getInstance("SHA384withRSA", "SunRsaSign");
-			log.debug(MARKER,
-					"verifySignature :: signature is being verified, publicKey={}", publicKey);
 			sig.initVerify(publicKey);
 			sig.update(data);
-			if (signature == null) {
-				log.error(MARKER, " verifySignature :: signature is null for file {}", filePath);
-				return false;
-			}
 			return sig.verify(signature);
-		} catch (NoSuchAlgorithmException | NoSuchProviderException
-				| InvalidKeyException | SignatureException e) {
-			log.error(MARKER, " verifySignature :: Fail to verify Signature: {}, PublicKey: {}, NodeID: {}, File: {}, Exception: {}", signature, publicKey, nodeAccountID, e.getStackTrace());
+		} catch (Exception e) {
+			log.error("Failed to verify Signature: {}, PublicKey: {}, NodeID: {}, File: {}", signature, publicKey, nodeAccountID, filePath, e);
 		}
 		return false;
 	}
@@ -197,8 +184,5 @@ public class NodeSignatureVerifier {
 		List<String> list = new ArrayList<>(nodeIDPubKeyMap.keySet());
 		Collections.sort(list);
 		return list;
-	}
-
-	public static void main(String[] args) {
 	}
 }

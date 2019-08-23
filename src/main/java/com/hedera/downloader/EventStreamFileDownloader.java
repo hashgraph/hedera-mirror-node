@@ -1,18 +1,16 @@
 package com.hedera.downloader;
 
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
 import com.hedera.configLoader.ConfigLoader;
+import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.parser.EventStreamFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -21,17 +19,22 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Log4j2
 public class EventStreamFileDownloader extends Downloader {
 
-	private static String validDir = null;
+	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
+	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.EVENTS);
+	private static File fileValidDir = new File(validDir);
 
 	public EventStreamFileDownloader() {
+		Utility.createDirIfNotExists(validDir);
+		Utility.createDirIfNotExists(tmpDir);
 	}
-	
+
 	public static void downloadNewEventfiles(EventStreamFileDownloader downloader) {
 		setupCloudConnection();
 		if (Utility.checkStopFile()) {
-			log.info(MARKER, "Stop file found, exiting.");
+			log.info("Stop file found, exiting");
 			System.exit(0);
 		}
 
@@ -41,7 +44,7 @@ public class EventStreamFileDownloader extends Downloader {
 
 			if (Utility.checkStopFile()) {
 				xfer_mgr.shutdownNow();
-				log.info(MARKER, "Stop file found, exiting.");
+				log.info("Stop file found, exiting");
 				System.exit(0);
 			}
 			
@@ -50,20 +53,20 @@ public class EventStreamFileDownloader extends Downloader {
 
 			if (validDir != null) {
 //				new Thread(() -> {
-					verifyValidFiles(validDir);
+					verifyValidFiles();
 //				}).start();
 			}
 
 			xfer_mgr.shutdownNow();
 
-		} catch (IOException e) {
-			log.error(MARKER, "IOException: {}", e);
+		} catch (Exception e) {
+			log.error("Error downloading and verifying new event files", e);
 		}
 	}
 
 	public static void main(String[] args) {
 		if (Utility.checkStopFile()) {
-			log.info(MARKER, "Stop file found, exiting.");
+			log.info("Stop file found, exiting");
 			System.exit(0);
 		}
 
@@ -71,7 +74,7 @@ public class EventStreamFileDownloader extends Downloader {
 
 		while (true) {
 			if (Utility.checkStopFile()) {
-				log.info(MARKER, "Stop file found, stopping.");
+				log.info("Stop file found, stopping");
 				break;
 			}
 			downloadNewEventfiles(downloader);
@@ -86,29 +89,11 @@ public class EventStreamFileDownloader extends Downloader {
 	 *
 	 * @param validDir
 	 */
-	public static void verifyValidFiles(String validDir) {
-		String lastValidEventFileName = "";
-		try {
-			lastValidEventFileName = ConfigLoader.getLastValidEventFileName();
-		} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-
-		String lastValidEventFileHash = "";
-		try {
-			lastValidEventFileHash = ConfigLoader.getLastValidEventFileHash();
-		} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-
+	public static void verifyValidFiles() {
+		String lastValidEventFileName = ConfigLoader.getLastValidEventFileName();
+		String lastValidEventFileHash = ConfigLoader.getLastValidEventFileHash();
 		String lastValidEventFileName2 = lastValidEventFileName;
-		File validDirFile = new File(validDir);
-		if (!validDirFile.exists()) {
-			return;
-		}
-		try (Stream<Path> pathStream = Files.walk(validDirFile.toPath())) {
+		try (Stream<Path> pathStream = Files.walk(fileValidDir.toPath())) {
 			List<String> fileNames = pathStream.filter(p -> Utility.isEventStreamFile(p.toString()))
 					.filter(p -> lastValidEventFileName2.isEmpty() ||
 							fileNameComparator.compare(p.toFile().getName(), lastValidEventFileName2) > 0)
@@ -121,7 +106,7 @@ public class EventStreamFileDownloader extends Downloader {
 			for (String fileName : fileNames) {
 				String prevFileHash = EventStreamFileParser.readPrevFileHash(fileName);
 				if (prevFileHash == null) {
-					log.info(MARKER, "{} doesn't contain valid prevFileHash", fileName);
+					log.info("{} doesn't contain valid prevFileHash", fileName);
 					break;
 				}
 				if (newLastValidEventFileHash.isEmpty() ||
@@ -140,9 +125,8 @@ public class EventStreamFileDownloader extends Downloader {
 				ConfigLoader.saveEventsDataToFile();
 			}
 
-		} catch (IOException ex) {
-			log.error(MARKER, "verifyValidFiles :: An Exception occurs while traverse {} : {}", validDir,
-					ex.getStackTrace());
+		} catch (Exception ex) {
+			log.error("Failed to verify event files in {}", validDir, ex);
 		}
 	}
 
@@ -159,58 +143,43 @@ public class EventStreamFileDownloader extends Downloader {
 	 *
 	 * @param sigFilesMap
 	 */
-	String verifySigsAndDownloadEventStreamFiles(Map<String, List<File>> sigFilesMap) {
+	private void verifySigsAndDownloadEventStreamFiles(Map<String, List<File>> sigFilesMap) {
 
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 		for (String fileName : sigFilesMap.keySet()) {
+			boolean valid = false;
 			List<File> sigFiles = sigFilesMap.get(fileName);
+
 			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
-			if (!Utility.greaterThanSuperMajorityNum(sigFiles.size(), nodeAccountIds.size())) {
+			if (sigFiles == null || !Utility.greaterThanSuperMajorityNum(sigFiles.size(), nodeAccountIds.size())) {
+				log.warn("Signature file count does not exceed 2/3 of nodes");
 				continue;
-			} else {
-				// validSigFiles are signed by node'key and contains the same Hash which has been agreed by more than
-				// 2/3 nodes
-				List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
-				if (validSigFiles != null) {
-					for (File validSigFile : validSigFiles) {
-						if (validDir == null) {
-							validDir = validSigFile.getParentFile().getParent() + "/valid/";
-						}
-						Pair<Boolean, File> fileResult = downloadFile(validSigFile, validDir);
-						File file = fileResult.getRight();
-						if (file != null &&
-								Utility.hashMatch(validSigFile, file)) {
-							break;
-						} else if (file != null) {
-							log.warn(MARKER,
-									"{}'s Hash doesn't match the Hash contained in valid signature file. Will try to " +
-											"download a .evts file with same timestamp from other nodes and check the" +
-											" " +
-											"Hash.",
-									file.getPath());
-						}
+			}
+
+			// validSigFiles are signed by node key and contains the same hash which has been agreed by more than 2/3
+			List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
+
+			for (File validSigFile : validSigFiles) {
+				Pair<Boolean, File> fileResult = downloadFile(DownloadType.EVENT, validSigFile, tmpDir);
+				File file = fileResult.getRight();
+				if (file != null &&	Utility.hashMatch(validSigFile, file)) {
+					log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
+					// move the file to the valid directory
+					File fTo = new File(validDir + file.getName());
+
+					if (moveFile(file, fTo)) {
+						log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
+						valid = true;
+						break;
 					}
-				} else {
-					log.info(MARKER, "No valid signature files");
+				} else if (file != null) {
+					log.warn("Hash of {} doesn't match the hash contained in the signature file. Will try to download a event file with same timestamp from other nodes", file);
 				}
 			}
-		}
-		return validDir;
-	}
 
-	/**
-	 * Download .evts file
-	 *
-	 * @param sigFile
-	 * @param validDir
-	 * @return
-	 */
-	Pair<Boolean, File> downloadFile(File sigFile, String validDir) {
-		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
-		String sigFileName = sigFile.getName();
-		String fileName = sigFileName.replace(".evts_sig", ".evts");
-		String s3ObjectKey = ConfigLoader.getEventFilesS3Location() + nodeAccountId + "/" + fileName;
-		String localFileName = validDir + fileName;
-		return saveToLocal(bucketName, s3ObjectKey, localFileName);
+			if (!valid) {
+				log.error("File could not be verified by at least 2/3 of nodes: {}", fileName);
+			}
+		}
 	}
 }

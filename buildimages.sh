@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-rm -rf docker/runtime/{sql,rest-api}
-mkdir -p docker/runtime/{config,lib,rest-api,sql}
+rm -rf docker/runtime/{rest-api}
+mkdir -p docker/runtime/{config,lib,rest-api}
 
 DOCOMPILE=3
 echo "Compile source via 1-docker-compose, 2-local maven, 3-skip?"
@@ -35,11 +35,10 @@ fi
 
 cd docker
 
-cp ../src/main/resources/postgres/V*.sql runtime/sql
-cp -n ../config/log4j2.xml runtime/config/log4j2.xml
-cp -n ../config/nodesInfo.json.sample runtime/config/nodesInfo.json
+set +e
 cp -n ../config/config.json runtime/config/config.json
 
+set -e
 cp -r ../target/lib/* runtime/lib
 cp ../target/mirrorNode.jar runtime/mirrorNode.jar
 cp -r ../rest-api/* runtime/rest-api
@@ -99,7 +98,7 @@ then
 elif [ $DOUPDATE -eq 3 ]
 then
   echo "Copying public testnet address book to runtime/config/0.0.102"
-  cp ../config/0.1.102.0.testnet.hedera.com-public.testnet runtime/config/0.0.102
+  cp ../config/0.0.102.0.testnet.hedera.com-public.testnet runtime/config/0.0.102
 fi
 
 docker-compose build

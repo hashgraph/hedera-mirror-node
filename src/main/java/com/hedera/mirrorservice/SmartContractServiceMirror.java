@@ -9,16 +9,11 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 
+@Log4j2
 public class SmartContractServiceMirror extends SmartContractServiceGrpc.SmartContractServiceImplBase {
-
-	private static final Logger log = LogManager.getLogger("smartcontractservicemirror");
-	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
 
 	/**
 	 * The mirror node provides the same service interface as Hedera node to clients;
@@ -37,8 +32,7 @@ public class SmartContractServiceMirror extends SmartContractServiceGrpc.SmartCo
 			ServiceAgent.rpcHelper_Tx(pair.getLeft(), pair.getRight(),
 					request, responseObserver, methodName);
 		} catch (InvalidProtocolBufferException ex) {
-			log.error(MARKER, "SmartContractServiceMirror :: rpc_ContractService : Transaction body parsing exception: {}. Transaction = {}",
-					ex.getMessage(), request);
+			log.error("Error parsing transaction body", ex);
 		}
 	}
 
@@ -56,7 +50,7 @@ public class SmartContractServiceMirror extends SmartContractServiceGrpc.SmartCo
 			String methodName) {
 		AccountID accountID = ServiceAgent.extractNodeAccountID(request);
 		if (accountID == null) {
-			log.error(MARKER, "SmartContractServiceMirror :: rpc_ContractService : Missing nodeAccountID, Query = {}", request);
+			log.error("Missing nodeAccountID, Query = {}", request);
 			return;
 		}
 		Pair<SmartContractServiceGrpc.SmartContractServiceBlockingStub, ManagedChannel> pair = ServiceAgent.getContractServiceStub(accountID);

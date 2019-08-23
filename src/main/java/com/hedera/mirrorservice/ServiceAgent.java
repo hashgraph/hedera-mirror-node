@@ -19,23 +19,14 @@ import io.grpc.ManagedChannel;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.StreamObserver;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+@Log4j2
 public class ServiceAgent {
-
-	private static final Logger log = LogManager.getLogger("serviceagent");
-	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
-
-	public ServiceAgent() {
-
-	}
 
 	public static AccountID getDefaultNodeAccountID() {
 		return AccountID.newBuilder().setAccountNum(3).build();
@@ -43,21 +34,24 @@ public class ServiceAgent {
 
 	static void logInfo(final Transaction request, final AccountID nodeAccountID,
 			final TransactionResponse response, final String methodName) throws InvalidProtocolBufferException {
-		log.info(MARKER,
-				"{} \n Transaction = {} Sending transaction to: {}\n Precheck Result: {}\n",
-				methodName,
-				Utility.printTransaction(request),
-				Utility.printProtoMessage(nodeAccountID),
-				response.getNodeTransactionPrecheckCode());
+		if (log.isDebugEnabled()) {
+			log.debug("{} Transaction = {} Sending transaction to: {}\n Precheck Result: {}\n",
+					methodName,
+					Utility.printTransaction(request),
+					Utility.printProtoMessage(nodeAccountID),
+					response.getNodeTransactionPrecheckCode());
+		}
 	}
 
 	static void logInfo(final Query request, AccountID nodeAccountID,
 			Response response, final String methodName) {
-		log.info(MARKER, "{} \n Query = {} \n Sending Query to: {}\n Response: {}\n",
-				methodName,
-				Utility.printProtoMessage(request),
-				Utility.printProtoMessage(nodeAccountID),
-				Utility.printProtoMessage(response));
+		if (log.isDebugEnabled()) {
+			log.debug("{} Query = {} \n Sending Query to: {}\n Response: {}\n",
+					methodName,
+					Utility.printProtoMessage(request),
+					Utility.printProtoMessage(nodeAccountID),
+					Utility.printProtoMessage(response));
+		}
 	}
 
 	static AccountID extractNodeAccountID(final Transaction transaction) throws InvalidProtocolBufferException {
@@ -107,7 +101,7 @@ public class ServiceAgent {
 			return getDefaultNodeAccountID();
 
 		} catch (Exception ex) {
-			log.error(MARKER, "ServiceAgent :: extractNodeAccountID: {}", ex);
+			log.error("Error extracting node account ID", ex);
 		}
 
 		return null;
@@ -133,7 +127,6 @@ public class ServiceAgent {
 
 	static ManagedChannel buildManagedChannel(final AccountID nodeAccountID) {
 		Pair<String, Integer> hostPort = getHostPortForNode(nodeAccountID);
-		System.out.println(nodeAccountID);
 		return NettyChannelBuilder
 				.forAddress(hostPort.getKey(), hostPort.getValue())
 				.usePlaintext()
@@ -169,13 +162,13 @@ public class ServiceAgent {
 			responseObserver.onNext(response);
 			responseObserver.onCompleted();
 		} catch (InvalidProtocolBufferException ex) {
-			log.error(MARKER, "ServerAgent :: rpcHelper_Tx : Transaction body parsing exception: " + ex.getMessage());
+			log.error("rpcHelper_Tx : Transaction body parsing exception", ex);
 		} catch (NoSuchMethodException ex) {
-			log.error(MARKER, "ServerAgent :: rpcHelper_Tx : NoSuchMethodException: " + ex.getMessage());
+			log.error("rpcHelper_Tx : NoSuchMethodException", ex);
 		} catch (IllegalAccessException ex) {
-			log.error(MARKER, "ServerAgent :: rpcHelper_Tx : IllegalAccessException: " + ex.getMessage());
+			log.error("rpcHelper_Tx : IllegalAccessException", ex);
 		} catch (InvocationTargetException ex) {
-			log.error(MARKER, "ServerAgent :: rpcHelper_Tx : InvocationTargetException: " + ex.getCause());
+			log.error("rpcHelper_Tx : InvocationTargetException", ex.getCause());
 		}
 	}
 
@@ -209,11 +202,11 @@ public class ServiceAgent {
 			responseObserver.onNext(response);
 			responseObserver.onCompleted();
 		} catch (NoSuchMethodException ex) {
-			log.error(MARKER, "ServerAgent :: rpcHelper_Query : NoSuchMethodException: " + ex.getMessage());
+			log.error("rpcHelper_Query : NoSuchMethodException", ex);
 		} catch (IllegalAccessException ex) {
-			log.error(MARKER, "ServerAgent :: rpcHelper_Query : IllegalAccessException: " + ex.getMessage());
+			log.error("rpcHelper_Query : IllegalAccessException", ex);
 		} catch (InvocationTargetException ex) {
-			log.error(MARKER, "ServerAgent :: rpcHelper_Query : InvocationTargetException: " + ex.getMessage());
+			log.error("rpcHelper_Query : InvocationTargetException", ex);
 		}
 	}
 

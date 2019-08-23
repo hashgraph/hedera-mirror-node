@@ -3,6 +3,8 @@ services:
   # this is the database container
   mirror-node-postgres:
     image: postgres:11.4-alpine
+    restart: unless-stopped
+    stop_grace_period: 2m
     stop_signal: SIGTERM
     tty: true
     env_file:
@@ -13,34 +15,22 @@ services:
     ports:
       - 5433:5432
 
-  # manages the database schema
-  mirror-node-flyway:
-    build:
-      context: ./
-      dockerfile: Flyway
-    tty: true
-    env_file:
-      - .env
-    volumes:
-      - ./runtime:/MirrorNodeCode
-    entrypoint: ["bash", "/flyway/bin/flyway-wait-for-postgres.sh"]
-    depends_on:
-      - mirror-node-postgres
-
   # this downloads balance files, its behaviour is controlled by ./config/config.json
   mirror-node-balance-downloader:
     image: adoptopenjdk:11-jre-hotspot
+    restart: unless-stopped
     working_dir: /MirrorNodeCode
     env_file:
       - .env
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
+    command: java -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
 
   # this processes balance files and puts the result in the database, its behaviour is controlled by ./config/config.json
   mirror-node-balance-parser:
     image: adoptopenjdk:11-jre-hotspot
+    restart: unless-stopped
     depends_on:
       - mirror-node-postgres
     environment:
@@ -54,11 +44,12 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
+    command: java -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
 
   # this downloads and processes record files and puts the result in the database, its behaviour is controlled by ./config/config.json
   mirror-node-record-download-parse:
     image: adoptopenjdk:11-jre-hotspot
+    restart: unless-stopped
     depends_on:
       - mirror-node-postgres
     environment:
@@ -72,11 +63,12 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseRecordFiles
+    command: java -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseRecordFiles
 
   # this downloads and processes event files and puts the result in the database, its behaviour is controlled by ./config/config.json
   # mirror-node-event-download-parse:
   #   image: adoptopenjdk:11-jre-hotspot
+  #   restart: unless-stopped
   #   depends_on:
   #     - mirror-node-postgres
   #   environment:
@@ -90,7 +82,7 @@ services:
   #   volumes:
   #     - ./MirrorNodeData:/MirrorNodeData
   #     - ./runtime:/MirrorNodeCode
-  #   command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseEventFiles
+  #   command: java -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseEventFiles
 
   # this downloads the latest 0.0.102 file from the network if the .env file contains the necessary information
   mirror-node-102-file-update:
@@ -101,11 +93,12 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -Dlog4j.configurationFile=./config/log4j2.xml -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
+    command: java -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
 
   # this runs the REST API for mirror node
   mirror-node-rest-api:
     image: node:11
+    restart: unless-stopped
     working_dir: /MirrorNodeCode
     environment:
       - DB_HOST=mirror-node-postgres

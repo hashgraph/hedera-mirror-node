@@ -1,8 +1,6 @@
 package com.hedera.downloader;
 
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
@@ -15,23 +13,24 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.Download;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
-import com.google.gson.JsonObject;
+
+import com.google.common.base.Stopwatch;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.utilities.Utility;
+import com.hederahashgraph.api.proto.java.NodeAddress;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 
-import java.io.BufferedReader;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -39,12 +38,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public abstract class Downloader {
-	protected static final Logger log = LogManager.getLogger("downloader");
-
-	protected static final Marker MARKER = MarkerManager.getMarker("DOWNLOADER");
+	protected final Logger log = LogManager.getLogger(getClass());
 
 	protected static String bucketName;
 
@@ -74,7 +70,7 @@ public abstract class Downloader {
 		clientConfiguration.setRetryPolicy(
 				PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(5));
 
-		nodeAccountIds = loadNodeAccountIDs(ConfigLoader.getNodeInfoFile());
+		nodeAccountIds = loadNodeAccountIDs();
 
 		s3KeyComparator = new Comparator<String>() {
 			@Override
@@ -106,17 +102,22 @@ public abstract class Downloader {
 		Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownTransferManager));
 	}
 
-	List<String> loadNodeAccountIDs(String fileName) {
+	List<String> loadNodeAccountIDs() {
+		List<String> nodes = new ArrayList<String>();
 		try {
-			JsonObject jsonObject = ConfigLoader.getJsonObject(fileName);
-			return jsonObject.entrySet()
-					.stream()
-					.map(i -> i.getKey())
-					.collect(Collectors.toCollection(ArrayList::new));
+			byte[] addressBookBytes = Utility.getBytes(ConfigLoader.getAddressBookFile());
+			if (addressBookBytes != null) {
+				NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
+				for (NodeAddress address : nodeAddressBook.getNodeAddressList()) {
+					nodes.add(address.getMemo().toStringUtf8());
+				}
+			} else {
+				log.error("Address book file {} empty or unavailable", ConfigLoader.getAddressBookFile());
+			}
 		} catch (IOException ex) {
-			log.warn(MARKER, "loadNodeAccountIDs - Fail to load from {}. Exception: {}", fileName, ex);
+			log.error("Failed to load node account IDs from {}", ConfigLoader.getAddressBookFile(), ex);
 		}
-		return new ArrayList<>();
+		return nodes;
 	}
 
 	protected boolean isNeededSigFile(String s3ObjectKey, DownloadType type) {
@@ -141,33 +142,29 @@ public abstract class Downloader {
 	 *  Download all balance .csv files with timestamp later than lastValidBalanceFileName
 	 */
 
+	@Deprecated
 	protected void downloadBalanceFiles() throws IOException {
-		String s3Prefix = null;
-		String fileType = null;
-		String lastValidFileName = null;
-		
-		s3Prefix = ConfigLoader.getAccountBalanceS3Location();
-		fileType = ".csv";
-		lastValidFileName = ConfigLoader.getLastValidBalanceFileName();
+		String s3Prefix = ConfigLoader.getAccountBalanceS3Location();
+		String fileType = ".csv";
+		String lastValidFileName = ConfigLoader.getLastValidBalanceFileName();
 		saveFilePath = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
 
-		
 		// refresh node account ids
-		nodeAccountIds = loadNodeAccountIDs(ConfigLoader.getNodeInfoFile());
+		nodeAccountIds = loadNodeAccountIDs();
 
 		for (String nodeAccountId : nodeAccountIds) {
+			Stopwatch stopwatch = Stopwatch.createStarted();
 			if (Utility.checkStopFile()) {
-				log.info(MARKER, "Stop file found, stopping.");
+				log.warn("Stop file found, stopping");
 				break;
 			}
 			ArrayList<String> files = new ArrayList<String>();
-			log.info(MARKER, "Start downloading {} files of node {}", fileType, nodeAccountId);
+			log.debug("Downloading balance files for node {} created after file {}", nodeAccountId, lastValidFileName);
 			// Get a list of objects in the bucket, 100 at a time
 			if (!s3Prefix.endsWith("/")) {
 				s3Prefix += "/";
 			}
 			String prefix = s3Prefix + nodeAccountId + "/";
-			int count = 0;
 			int downloadCount = 0;
 			int maxDownloadCount = ConfigLoader.getMaxDownloadItems();
 
@@ -182,13 +179,13 @@ public abstract class Downloader {
 			try {
 				while(downloadCount <= maxDownloadCount) {
 					if (Utility.checkStopFile()) {
-						log.info(MARKER, "Stop file found, stopping.");
+						log.warn("Stop file found, stopping");
 						break;
 					}
 					List<S3ObjectSummary> summaries = objects.getObjectSummaries();
 					for(S3ObjectSummary summary : summaries) {
 						if (Utility.checkStopFile()) {
-							log.info(MARKER, "Stop file found, stopping.");
+							log.warn("Stop file found, stopping");
 							break;
 						}
 						if (downloadCount > maxDownloadCount) {
@@ -204,20 +201,22 @@ public abstract class Downloader {
 								if (maxDownloadCount != 0) downloadCount++;
 
 								if (result.getLeft()) {
-									count++;
 									File file = result.getRight();
 									if (file != null) {
-										String fileName = file.getName();
-										files.add(fileName);
+										// move the file to the valid directory
+								    File fTo = new File(file.getAbsolutePath().replace("/tmp/", "/valid/"));
+								    if (moveFile(file, fTo)) {
+											files.add(file.getName());
+										}
 									}
 								} else if (result.getRight() == null) {
-									log.error(MARKER, "File {} failed to download from cloud", s3ObjectKey);
+									log.error("Failed to download key {} from cloud", s3ObjectKey);
 								}
 							}
 						}
 					}
 					if (Utility.checkStopFile()) {
-						log.info(MARKER, "Stop file found, stopping.");
+						log.warn("Stop file found, stopping");
 						break;
 					} else if (objects.isTruncated()) {
 						objects = s3Client.listNextBatchOfObjects(objects);
@@ -226,7 +225,6 @@ public abstract class Downloader {
 						break;
 					}
 				}
-				log.info(MARKER, "Downloaded {} {} files of node {}", count, fileType, nodeAccountId);
 
 				if (files.size() != 0) {
 					String newLastValidBalanceFileName = lastValidFileName;
@@ -240,18 +238,12 @@ public abstract class Downloader {
 
 					if (!newLastValidBalanceFileName.equals(lastValidFileName)) {
 						ConfigLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
-						ConfigLoader.saveToFile();
 					}
 				}
 
-			} catch(AmazonServiceException e) {
-				// The call was transmitted successfully, but Amazon S3 couldn't process
-				// it, so it returned an error response.
-	            log.error(MARKER, "Balance download failed, Exception: {}", e);
-			} catch(SdkClientException e) {
-				// Amazon S3 couldn't be contacted for a response, or the client
-				// couldn't parse the response from Amazon S3.
-	            log.error(MARKER, "Balance download failed, Exception: {}", e);
+				log.info("Downloaded {} balance files for node {} in {}", files.size(), nodeAccountId, stopwatch);
+			} catch(Exception e) {
+				log.error("Error downloading balance files for node {} after {}", nodeAccountId, stopwatch, e);
 			}
 		}
 	}
@@ -285,7 +277,7 @@ public abstract class Downloader {
 				s3Prefix = ConfigLoader.getRecordFilesS3Location();
 				fileType = ".rcd_sig";
 				lastValidFileName = ConfigLoader.getLastValidRcdFileName();
-				
+
 				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.RECORDS);
 				break;
 
@@ -304,25 +296,26 @@ public abstract class Downloader {
 				break;
 
 			default:
-				log.error(MARKER, "Invalid DownloadType {}", type);
+				throw new UnsupportedOperationException("Invalid DownloadType " + type);
 		}
 
 		HashMap<String, List<File>> sigFilesMap = new HashMap<>();
 
 		// refresh node account ids
-		nodeAccountIds = loadNodeAccountIDs(ConfigLoader.getNodeInfoFile());
+		nodeAccountIds = loadNodeAccountIDs();
 		for (String nodeAccountId : nodeAccountIds) {
 			if (Utility.checkStopFile()) {
-				log.info(MARKER, "Stop file found, stopping.");
+				log.info("Stop file found, stopping");
 				break;
 			}
-			log.info(MARKER, "Start downloading {} files of node {}", fileType, nodeAccountId);
+			log.debug("Downloading {} signature files for node {} created after file {}", type, nodeAccountId, lastValidFileName);
 			// Get a list of objects in the bucket, 100 at a time
 			String prefix = s3Prefix + nodeAccountId + "/";
 			int count = 0;
 			int downloadCount = 0;
 			int downloadMax = ConfigLoader.getMaxDownloadItems();
-			
+			Stopwatch stopwatch = Stopwatch.createStarted();
+
 			ListObjectsRequest listRequest = new ListObjectsRequest()
 					.withBucketName(bucketName)
 					.withPrefix(prefix)
@@ -333,13 +326,13 @@ public abstract class Downloader {
 			try {
 				while(downloadCount <= downloadMax) {
 					if (Utility.checkStopFile()) {
-						log.info(MARKER, "Stop file found, stopping.");
+						log.info("Stop file found, stopping");
 						break;
 					}
 					List<S3ObjectSummary> summaries = objects.getObjectSummaries();
 					for(S3ObjectSummary summary : summaries) {
 						if (Utility.checkStopFile()) {
-							log.info(MARKER, "Stop file found, stopping.");
+							log.info("Stop file found, stopping");
 							break;
 						} else if (downloadCount >= downloadMax) {
 							break;
@@ -347,7 +340,7 @@ public abstract class Downloader {
 
 						String s3ObjectKey = summary.getKey();
 						if (isNeededSigFile(s3ObjectKey, type) &&
-						s3KeyComparator.compare(s3ObjectKey, prefix + lastValidFileName) > 0) {
+								s3KeyComparator.compare(s3ObjectKey, prefix + lastValidFileName) > 0) {
 							String saveTarget = saveFilePath + s3ObjectKey;
 							Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey, saveTarget);
 							if (result.getLeft()) count++;
@@ -363,7 +356,7 @@ public abstract class Downloader {
 						}
 					}
 					if (Utility.checkStopFile()) {
-						log.info(MARKER, "Stop file found, stopping.");
+						log.info("Stop file found, stopping");
 						break;
 					} else if (downloadCount >= downloadMax) {
 						break;
@@ -373,41 +366,14 @@ public abstract class Downloader {
 						break;
 					}
 				}
-				log.info(MARKER, "Downloaded {} {} files of node {}", count, fileType, nodeAccountId);
-			} catch(AmazonServiceException e) {
-				// The call was transmitted successfully, but Amazon S3 couldn't process
-				// it, so it returned an error response.
-	            log.error(MARKER, "Signatures download failed, Exception: {}", e);
-			} catch(SdkClientException e) {
-				// Amazon S3 couldn't be contacted for a response, or the client
-				// couldn't parse the response from Amazon S3.
-	            log.error(MARKER, "Signatures download failed, Exception: {}", e);
+				log.info("Downloaded {} {} signatures for node {} in {}", count, type, nodeAccountId, stopwatch);
+			} catch (Exception e) {
+				log.error("Error downloading {} signature files for node {} after {}", type, nodeAccountId, stopwatch, e);
 			}
 		}
 
 		return sigFilesMap;
 	}
-
-//	/**
-//	 * return a pair of download result:
-//	 * boolean: download it or not.
-//	 * True means we download it successfully; False means it already exists or we fail to download it;
-//	 * File is the local file
-//	 * @param bucket_name
-//	 * @param s3ObjectKey
-//	 * @return
-//	 */
-//	protected static Pair<Boolean, File> saveToLocal(String bucket_name,
-//			String s3ObjectKey, String filePath) throws IOException {
-//
-//		if (!Utility.createDirIfNotExists(filePath)) {
-//			log.error(MARKER, "{} doesn't exist and we fail to create this directory", filePath);
-//			return null;
-//		}
-//
-//		filePath += s3ObjectKey;
-//		return saveToLocal(bucket_name, s3ObjectKey, filePath);
-//	}
 
 	/**
 	 * return a pair of download result:
@@ -419,55 +385,34 @@ public abstract class Downloader {
 	 * @param localFilepath
 	 * @return
 	 */
-	protected static Pair<Boolean, File> saveToLocal(String bucket_name,
-		String s3ObjectKey, String localFilepath)  {
+	protected Pair<Boolean, File> saveToLocal(String bucket_name, String s3ObjectKey, String localFilepath)  {
 		// ensure filePaths have OS specific separator
 		localFilepath = localFilepath.replace("/", "~");
 		localFilepath = localFilepath.replace("\\", "~");
 		localFilepath = localFilepath.replace("~", File.separator);
 
-        File f = new File(localFilepath).getAbsoluteFile();
+		File f = new File(localFilepath).getAbsoluteFile();
+		Stopwatch stopwatch = Stopwatch.createStarted();
 
-		if (f.exists()) {
-			log.info(MARKER, "File exists: " + localFilepath);
-			return Pair.of(false, f);
-		}
 		try {
-            if( ! f.getParentFile().exists() ) {
-                f.getParentFile().mkdirs();
-            }
-			//f.createNewFile();
 			Download download = xfer_mgr.download(bucket_name, s3ObjectKey, f);
 			download.waitForCompletion();
 			if (download.isDone()) {
-				log.info(MARKER, "Finished downloading " + s3ObjectKey);
+				log.debug("Finished downloading {} in {}", s3ObjectKey, stopwatch);
 				return Pair.of(true, f);
 			} else {
-				log.error(MARKER, "Download Fails: " + s3ObjectKey);
+				log.error("Failed downloading {} after {}", s3ObjectKey, stopwatch);
 				return Pair.of(false, null);
 			}
-		} catch (AmazonServiceException ex) {
-			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex);
-		} catch (InterruptedException ex) {
-			log.error(MARKER, "Download Fails: {}, Exception: {}", s3ObjectKey, ex);
-        }
+		} catch (Exception ex) {
+			log.error("Failed downloading {} after {}", s3ObjectKey, stopwatch, ex);
+		}
 		return Pair.of(false, null);
 	}
 
 	void shutdownTransferManager() {
-		log.info(MARKER, "RecordFileDownloader SHUTTING DOWN .");
+		log.info("Shutting down");
 		xfer_mgr.shutdownNow();
-	}
-
-	protected static void printContent(InputStream input) throws IOException {
-		// Read the text input stream one line at a time and display each line.
-		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-		String line;
-		while ((line = reader.readLine()) != null) {
-			System.out.println(line);
-		}
-		System.out.println();
-		input.close();
 	}
 
 	protected static void setupCloudConnection() {
@@ -490,15 +435,15 @@ public abstract class Downloader {
 			if (ConfigLoader.getAccessKey().contentEquals("")) {
 				s3Client = AmazonS3ClientBuilder.standard()
 						.withEndpointConfiguration(
-				                new AwsClientBuilder.EndpointConfiguration(
-				                    "https://storage.googleapis.com", ConfigLoader.getClientRegion()))
+								new AwsClientBuilder.EndpointConfiguration(
+										"https://storage.googleapis.com", ConfigLoader.getClientRegion()))
 						.withClientConfiguration(clientConfiguration)
 						.build();
 			} else {
 				s3Client = AmazonS3ClientBuilder.standard()
 						.withEndpointConfiguration(
-				                new AwsClientBuilder.EndpointConfiguration(
-				                    "https://storage.googleapis.com", ConfigLoader.getClientRegion()))
+								new AwsClientBuilder.EndpointConfiguration(
+										"https://storage.googleapis.com", ConfigLoader.getClientRegion()))
 						.withCredentials(new AWSStaticCredentialsProvider(
 								new BasicAWSCredentials(ConfigLoader.getAccessKey(),
 										ConfigLoader.getSecretKey())))
@@ -508,5 +453,53 @@ public abstract class Downloader {
 		}
 		xfer_mgr = TransferManagerBuilder.standard()
 				.withS3Client(s3Client).build();
+	}
+
+	/**
+	 * Moves a file from one location to another
+	 * boolean: true if file moved successfully
+	 * Note: The method doesn't check if source file or destination directory exist to avoid
+	 * repeated checks that could hurt performance
+	 * @param sourceFile
+	 * @param destinationFile
+	 * @return boolean
+	 */
+	protected boolean moveFile(File sourceFile, File destinationFile) {
+		try {
+			// not checking if file exists to help with performance
+			// assumption is caller has created the destination file folder
+			Files.move(sourceFile.toPath(), destinationFile.toPath(), REPLACE_EXISTING);
+			return true;
+		} catch (IOException e) {
+			log.error("File move from {} to {} failed", sourceFile.getAbsolutePath(), destinationFile.getAbsolutePath(), e);
+			return false;
+		}
+	}
+
+	protected Pair<Boolean, File> downloadFile(DownloadType downloadType, File sigFile, String targetDir) {
+		String fileName = "";
+		String s3Prefix = "";
+
+		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
+		String sigFileName = sigFile.getName();
+
+		switch (downloadType) {
+			case BALANCE:
+				fileName = sigFileName.replace("_Balances.csv_sig", "_Balances.csv");
+				s3Prefix = ConfigLoader.getAccountBalanceS3Location();
+				break;
+			case EVENT:
+				fileName = sigFileName.replace(".evts_sig", ".evts");
+				s3Prefix = ConfigLoader.getEventFilesS3Location();
+				break;
+			case RCD:
+				fileName = sigFileName.replace(".rcd_sig", ".rcd");
+				s3Prefix =  ConfigLoader.getRecordFilesS3Location();
+				break;
+		}
+		String s3ObjectKey = s3Prefix + nodeAccountId + "/" + fileName;
+
+		String localFileName = targetDir + "/" + fileName;
+		return saveToLocal(bucketName, s3ObjectKey, localFileName);
 	}
 }

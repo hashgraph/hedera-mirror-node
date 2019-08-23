@@ -7,20 +7,15 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
+import lombok.extern.log4j.Log4j2;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
+@Log4j2
 public class LoggerStatus {
-
-	private static final Logger log = LogManager.getLogger("loggerstatus");
-	private static final Marker MARKER = MarkerManager.getMarker("LoggerStatus");
 
 	// Hash of last last successfully processed rcd file
 	private static String lastProcessedRcdHash = "";
@@ -33,7 +28,7 @@ public class LoggerStatus {
 	private static JsonObject jsonObject = new JsonObject();
 
 	public LoggerStatus() {
-		log.info(MARKER, "Loading configuration from {}", configSavePath);
+		log.info("Loading configuration from {}", configSavePath);
 		try {
 			jsonObject = getJsonObject(configSavePath);
 			
@@ -44,7 +39,7 @@ public class LoggerStatus {
 				lastProcessedEventHash = jsonObject.get("lastProcessedEventHash").getAsString();
 			}
 		} catch (FileNotFoundException ex) {
-			log.warn(MARKER, "Cannot load configuration from {}, Exception: {}", configSavePath, ex);
+			log.warn("Cannot load configuration from {}", configSavePath, ex);
 		}
 	}
 
@@ -59,7 +54,7 @@ public class LoggerStatus {
 		}
 		if (!name.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
 			jsonObject.addProperty("lastProcessedRcdHash", name);
-			log.info(MARKER, "Update lastProcessedRcdHash to be {}", name);
+			log.debug("Update lastProcessedRcdHash to be {}", name);
 		}
 	}
 
@@ -70,16 +65,16 @@ public class LoggerStatus {
 	public void setLastProcessedEventHash(String name) {
 		lastProcessedEventHash = name;
 		jsonObject.addProperty("lastProcessedEventHash", name);
-		log.info(MARKER, "Update lastProcessedEventHash to be {}", name);
+		log.debug("Update lastProcessedEventHash to be {}", name);
 	}
 
 	public void saveToFile() {
 		try (FileWriter file = new FileWriter(configSavePath)) {
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 			gson.toJson(jsonObject, file);
-			log.info(MARKER, "Successfully wrote configuration to {}", configSavePath);
+			log.debug("Successfully wrote configuration to {}", configSavePath);
 		} catch (IOException ex) {
-			log.warn(MARKER, "Fail to write configuration to {}, Exception: {}", configSavePath, ex);
+			log.warn("Failed to write configuration to {}", configSavePath, ex);
 		}
 	}
 

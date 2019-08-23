@@ -12,14 +12,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -28,9 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -39,14 +34,13 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Log4j2
 public class Utility {
-	private static final Logger log = LogManager.getLogger("utility");
-	private static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
-	private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
+
   private static final Long SCALAR = 1_000_000_000L;
 
-	private static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 of previous files
-	private static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
+//	private static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 of previous files
+//	private static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
 	private static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 	private static final byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of corresponding RecordFile
 
@@ -70,61 +64,38 @@ public class Utility {
 	 * @return
 	 */
 	public static Pair<byte[], byte[]> extractHashAndSigFromFile(File file) {
-		FileInputStream stream = null;
 		byte[] sig = null;
 
 		if (file.exists() == false) {
-			log.info(MARKER, "File does not exist " + file.getPath());
+			log.info("File does not exist {}", file.getPath());
 			return null;
 		}
 
-		try {
-			stream = new FileInputStream(file);
-			DataInputStream dis = new DataInputStream(stream);
+		try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
 			byte[] fileHash = new byte[48];
 
 			while (dis.available() != 0) {
-				try {
-					byte typeDelimiter = dis.readByte();
+				byte typeDelimiter = dis.readByte();
 
-					switch (typeDelimiter) {
-						case TYPE_FILE_HASH:
-							dis.read(fileHash);
-							// log.info(MARKER, "File Hash = " + Hex.encodeHexString(fileHash));
-							break;
+				switch (typeDelimiter) {
+					case TYPE_FILE_HASH:
+						dis.read(fileHash);
+						break;
 
-						case TYPE_SIGNATURE:
-							int sigLength = dis.readInt();
-							// log.info(MARKER, "sigLength = " + sigLength);
-							byte[] sigBytes = new byte[sigLength];
-							dis.readFully(sigBytes);
-							// log.info(MARKER, "File {} Signature = {} ", file.getName(), Hex.encodeHexString(sigBytes));
-							sig = sigBytes;
-							break;
-						default:
-							log.error(MARKER, "extractHashAndSigFromFile :: Exception Unknown record file delimiter {}", typeDelimiter);
-					}
-
-				} catch (Exception e) {
-					log.error(MARKER, "extractHashAndSigFromFile :: Exception ", e);
-					break;
+					case TYPE_SIGNATURE:
+						int sigLength = dis.readInt();
+						byte[] sigBytes = new byte[sigLength];
+						dis.readFully(sigBytes);
+						sig = sigBytes;
+						break;
+					default:
+						log.error("Unknown record file delimiter {} in file {}", typeDelimiter, file);
 				}
 			}
 
 			return Pair.of(fileHash, sig);
-		} catch (FileNotFoundException e) {
-			log.error(MARKER, "extractHashAndSigFromFile :: File Not Found Error");
-		} catch (IOException e) {
-			log.error(MARKER, "extractHashAndSigFromFile :: IOException Error");
 		} catch (Exception e) {
-			log.error(MARKER, "extractHashAndSigFromFile :: Parsing Error");
-		} finally {
-			try {
-				if (stream != null)
-					stream.close();
-			} catch (IOException ex) {
-				log.error("extractHashAndSigFromFile :: Exception in close the stream {}", ex);
-			}
+			log.error("Unable to extract hash and signature from file {}", file, e);
 		}
 
 		return null;
@@ -152,7 +123,7 @@ public class Utility {
 			return fileHash;
 
 		} catch (NoSuchAlgorithmException e) {
-			log.error(LOGM_EXCEPTION, "Exception {}", e);
+			log.error("Exception {}", e);
 			return null;
 		}
 	}
@@ -298,9 +269,9 @@ public class Utility {
 		try (final FileInputStream fis = new FileInputStream(new File(location))) {
 			bytes = fis.readAllBytes();
 		} catch (FileNotFoundException ex) {
-            log.error(MARKER, "getBytes() failed - file {} not found", location);
+            log.error("getBytes() failed - file {} not found", location);
 		} catch (IOException ex) {
-            log.error(MARKER, "getBytes() failed, Exception: {}", ex);
+            log.error("getBytes() failed, Exception: {}", ex);
 		}
 		return bytes;
 	}
@@ -517,14 +488,12 @@ public class Utility {
 		File parsedDir = new File(pathToSaveTo);
 		parsedDir.mkdirs();
 
-		File destFile = new File(pathToSaveTo + "/" + sourceFile.getName());
+		Path destination = Paths.get(pathToSaveTo, sourceFile.getName());
 		try {
-			Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			log.info(MARKER, sourceFile.toPath() + " has been moved to " + destFile.getPath());
-		} catch (IOException ex) {
-			log.error(MARKER, "Fail to move {} to {} : {}",
-					fileName, parsedDir.getName(),
-					ex);
+			Files.move(sourceFile.toPath(), destination, StandardCopyOption.REPLACE_EXISTING);
+			log.trace("{} has been moved to {}", sourceFile, pathToSaveTo);
+		} catch (Exception e) {
+			log.error("Error moving file {} to {}", sourceFile, pathToSaveTo, e);
 		}
 	}
 

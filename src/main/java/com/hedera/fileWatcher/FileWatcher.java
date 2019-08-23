@@ -8,9 +8,7 @@ import java.nio.file.*;
 import java.util.concurrent.TimeUnit;
 
 public abstract class FileWatcher {
-    private static final Logger log = LogManager.getLogger("filewatcher");
-    private static final Marker MARKER = MarkerManager.getMarker("WATCH");
-
+    protected final Logger log = LogManager.getLogger(getClass());
     private final File pathToWatch;
 
     public FileWatcher(File pathToWatch) {
@@ -21,7 +19,11 @@ public abstract class FileWatcher {
     }
 
     public void watch() {
+        // Invoke on startup to check for any changed files while this process was down.
+        onCreate();
+
         try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
+            log.info("Watching directory for changes: {}", pathToWatch.getAbsoluteFile());
             Path path = pathToWatch.toPath();
             WatchKey rootKey = path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
             boolean valid = rootKey.isValid();
@@ -35,7 +37,7 @@ public abstract class FileWatcher {
                 }
 
                 if (Utility.checkStopFile()) {
-                    log.info(MARKER, "Stop file found, stopping.");
+                    log.info("Stop file found, stopping.");
                     return;
                 }
 
@@ -57,7 +59,7 @@ public abstract class FileWatcher {
                 valid = key.reset();
             }
         } catch (Exception e) {
-            log.error(MARKER, "Exception : {}", e);
+            log.error("Error starting watch service", e);
         }
     }
 

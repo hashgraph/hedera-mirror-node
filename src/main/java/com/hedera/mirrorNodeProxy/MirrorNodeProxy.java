@@ -1,32 +1,29 @@
 package com.hedera.mirrorNodeProxy;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirrorservice.CryptoServiceMirror;
 import com.hedera.mirrorservice.FileServiceMirror;
 import com.hedera.mirrorservice.SmartContractServiceMirror;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NodeAddress;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
+
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 
+import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
  * The MirrorNodeProxy runs a grpc server that accepts HAPI transactions, and forwards them unchanged to the node specified in the transaction body. 
  */
+@Log4j2
 public class MirrorNodeProxy {
-	private static final Logger log = LogManager.getLogger("proxy");
-	static final Marker MARKER = MarkerManager.getMarker("MIRROR_NODE");
+
 	private static String nodeInfoFile;
 
 	static HashMap<String, Pair<String, Integer>> accountIDHostPort;
@@ -40,50 +37,49 @@ public class MirrorNodeProxy {
 	 * This accepts one parameter to start the proxy, a configuration file which specifies a port number to listen to as well as the json file name which contains a list of nodes's host and port.
 	 */
 	public static void main(String[] args) {
-		new MirrorNodeProxy(ConfigLoader.getProxyPort(), ConfigLoader.getNodeInfoFile());
+		new MirrorNodeProxy(ConfigLoader.getProxyPort());
 	}
 
-	public MirrorNodeProxy(int port, String nodeInfoFileName) {
-		nodeInfoFile = nodeInfoFileName;
+	public MirrorNodeProxy(int port) {
 		server = NettyServerBuilder.forPort(port)
 				.addService(new CryptoServiceMirror())
 				.addService(new FileServiceMirror())
 				.addService(new SmartContractServiceMirror())
 				.build();
-		log.info(MARKER, "Starting NETTY server on port " + port);
+		log.info("Starting Netty server on port {}", port);
 
 		try {
 			server.start();
-			log.info(MARKER, "NettyServer STARTED .");
+			log.info("Netty server started");
 			Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownNetty));
 			loadAccountIDHostPort();
 			while(true){
 				Thread.sleep(5000);
 			}
 
-		} catch (Throwable eth) {
-			eth.printStackTrace();
-			log.error(MARKER, eth.getMessage(), eth);
-			log.info(MARKER, "MirrorNodeMain - ERROR starting GRPC server ! ");
+		} catch (Throwable t) {
+			log.error("Error starting GRPC server", t);
 		}
-
 	}
 
 	public static void loadAccountIDHostPort() {
 		accountIDHostPort = new HashMap<>();
-		log.info(MARKER, "Loading nodes info from " + nodeInfoFile);
+		log.info("Loading nodes info from {}", nodeInfoFile);
+
 		try {
-			JsonObject nodesInfo = Utility.getJsonInput(nodeInfoFile);
-			Set<Map.Entry<String, JsonElement>> entrySet = nodesInfo.entrySet();
-			for (Map.Entry<String, JsonElement> entry : entrySet) {
-				JsonObject jsonObject = entry.getValue().getAsJsonObject();
-				String host = jsonObject.get("host").getAsString();
-				int port = jsonObject.get("port").getAsInt();
-				accountIDHostPort.put(entry.getKey(), Pair.of(host, port));
+			byte[] addressBookBytes = Utility.getBytes(ConfigLoader.getAddressBookFile());
+			if (addressBookBytes != null) {
+				NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
+				for (NodeAddress address : nodeAddressBook.getNodeAddressList()) {
+					String host = address.getIpAddress().toStringUtf8();
+					int port = address.getPortno();
+					String node = address.getMemo().toStringUtf8();
+					accountIDHostPort.put(node, Pair.of(host, port));				}
+			} else {
+				log.error("Address book file {} is empty or unavailable", ConfigLoader.getAddressBookFile());
 			}
-			log.info(MARKER, "Loaded nodes info successfully");
-		} catch (Exception ex) {
-			log.error(MARKER, "Get an exception while loading NodesInfo {}", ex);
+		} catch (IOException ex) {
+			log.warn("Failed to load account IDs from {}", ConfigLoader.getAddressBookFile(), ex);
 		}
 	}
 
@@ -97,10 +93,10 @@ public class MirrorNodeProxy {
 	 */
 	void shutdownNetty() {
 		try {
-			log.info(MARKER, "NettyServer SHUTTING DOWN .");
+			log.info("Netty server shutting down");
 			this.server.awaitTermination(5, TimeUnit.SECONDS);
 		} catch (InterruptedException ex) {
-			log.error(MARKER, "Error in shutdownNetty {}", ex);
+			log.error("Error shutting down netty", ex);
 		}
 	}
 }
