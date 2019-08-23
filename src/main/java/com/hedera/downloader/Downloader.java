@@ -251,7 +251,6 @@ public abstract class Downloader {
 
 					if (!newLastValidBalanceFileName.equals(lastValidFileName)) {
 						ConfigLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
-						ConfigLoader.saveToFile();
 					}
 				}
 
