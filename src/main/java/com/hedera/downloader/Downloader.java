@@ -216,7 +216,7 @@ public abstract class Downloader {
 									File file = result.getRight();
 									if (file != null) {
 										// move the file to the valid directory
-								        File fTo = new File(file.getAbsolutePath().replace("/tmp/", "/valid/"));
+								        File fTo = new File(file.getAbsolutePath().replace("/tmp/", "/valid/") + file.getName());
 								        if (moveFile(file, fTo)) {
 											files.add(file.getName());
 										}
