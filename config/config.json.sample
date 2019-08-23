@@ -8,7 +8,7 @@
   "proxyPort": 50777,
   "addressBookFile": "./config/0.0.102",
   "accountBalancesS3Location": "accountBalances/balance",
-  "eventFilesS3Location": "eventstreams/events_",
+  "eventFilesS3Location": "eventStreams/events_",
   "recordFilesS3Location": "recordstreams/record",
   "dbName":"postgres",
   "dbUrl": "jdbc:postgresql://127.0.0.1:5432/postgres?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC",

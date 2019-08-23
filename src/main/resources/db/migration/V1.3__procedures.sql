@@ -72,4 +72,16 @@ END
 $$ LANGUAGE plpgsql
 ;
 
-GRANT ALL ON FUNCTION f_entity_create TO ${db-user};
+GRANT ALL ON FUNCTION f_entity_create (
+  _shard t_entities.entity_shard%TYPE
+  ,_realm t_entities.entity_realm%TYPE
+  ,_num t_entities.entity_num%TYPE
+  ,_type_id t_entities.fk_entity_type_id%TYPE
+  ,_exp_time_sec t_entities.exp_time_seconds%TYPE
+  ,_exp_time_nanos t_entities.exp_time_nanos%TYPE
+  ,_exp_time_ns t_entities.exp_time_ns%TYPE
+  ,_auto_renew t_entities.auto_renew_period%TYPE
+  ,_admin_key BYTEA
+  ,_key BYTEA
+  ,_proxy_acc_id t_entities.fk_prox_acc_id%TYPE
+) TO ${db-user};
