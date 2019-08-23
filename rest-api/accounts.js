@@ -18,10 +18,10 @@ const getAccounts = function (req, res) {
             [{ shard: 'entity_shard', realm: 'entity_realm', num: 'entity_num' }],
             'entityId');
 
-    const [balanceQuery, balanceParams] = utils.parseParams(req, 'balance',
+    const [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance',
         ['balance']);
 
-    let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'publickey',
+    let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'account.publickey',
         ['e.key']);
 
     pubKeyQuery = pubKeyQuery === '' ? '' :
@@ -35,15 +35,15 @@ const getAccounts = function (req, res) {
         utils.parseParams(req, 'pageanchor', ['t.consensus_seconds']);
     anchorQuery = anchorQuery.replace('=', '<=');
 
-    const { limitOffsetQuery, limitOffsetParams, order, limit, offset } =
-        utils.parsePaginationAndOrderParams(req, 'asc');
+    const { limitQuery, limitParams, order, limit } =
+        utils.parseLimitAndOrderParams(req, 'asc');
 
     let querySuffix = '';
     querySuffix += (accountQuery === '' ? '' : ' and ') + accountQuery;
     querySuffix += (balanceQuery === '' ? '' : ' and ') + balanceQuery;
     querySuffix += (pubKeyQuery === '' ? '' : ' and ') + pubKeyQuery;
     querySuffix += ' order by num ' + order + '\n';
-    querySuffix += limitOffsetQuery;
+    querySuffix += limitQuery;
 
     const entitySql =
         "select concat(e.entity_shard, '.', e.entity_realm, '.', e.entity_num) as account\n" +
@@ -63,7 +63,7 @@ const getAccounts = function (req, res) {
     const entityParams = accountParams
         .concat(balanceParams)
         .concat(pubKeyParams)
-        .concat(limitOffsetParams);
+        .concat(limitParams);
 
     const pgEntityQuery = utils.convertMySqlStyleQueryToPostgress(
         entitySql, entityParams);
@@ -97,8 +97,15 @@ const getAccounts = function (req, res) {
             row.expiry_timestamp = utils.nsToSecNs(row.exp_time_ns);
             delete row.exp_time_ns;
 
-            row.balance.balance = row.account_balance;
+            row.balance.balance = Number(row.account_balance);
             delete row.account_balance;
+
+            row.auto_renew_period = Number(row.auto_renew_period);
+        }
+
+        let anchorAcc = '0.0.0';
+        if (results.rows.length > 0) {
+            anchorAcc = results.rows[results.rows.length - 1].account;
         }
 
         ret.accounts = results.rows;
@@ -107,8 +114,9 @@ const getAccounts = function (req, res) {
             ret.accounts.length + ' === limit: ' + limit);
 
         ret.links = {
-            next: utils.getPaginationLink(req, (ret.accounts.length !== limit),
-                limit, offset, order)
+            next: utils.getPaginationLink(req,
+                (ret.accounts.length !== limit),
+                'account.id', anchorAcc, order)
         }
 
         logger.debug("getAccounts returning " +
@@ -145,8 +153,9 @@ const getOneAccount = function (req, res) {
     anchorQuery = anchorQuery.replace('=', '<=');
 
     const resultTypeQuery = utils.parseResultParams(req);
-    const { limitOffsetQuery, limitOffsetParams, order, limit, offset } =
-        utils.parsePaginationAndOrderParams(req);
+    const { limitQuery, limitParams, order, limit } =
+        utils.parseLimitAndOrderParams(req);
+
 
 
     let ret = {
@@ -217,11 +226,11 @@ const getOneAccount = function (req, res) {
         resultTypeQuery + '\n' +
         '     order by t.consensus_seconds ' + order +
         '     , t.consensus_nanos ' + order + '\n' +
-        '     ' + limitOffsetQuery;
+        '     ' + limitQuery;
     const innerParams = accountParams
         .concat(tsParams)
         .concat(anchorParams)
-        .concat(limitOffsetParams);
+        .concat(limitParams);
 
     let transactionsQuery =
         "select  concat(etrans.entity_shard, '.', etrans.entity_realm, '.'," +
@@ -287,7 +296,8 @@ const getOneAccount = function (req, res) {
                     .send('Error: Could not get balance');
                 return;
             }
-            ret.balance.amount = balanceResults.rows[0].balance;
+            ret.balance.amount = Number(balanceResults.rows[0].balance);
+            ret.auto_renew_period = Number(ret.auto_renew_period);
 
             // Process the results of t_entities query
             if (entityResults.rows.length !== 1) {
@@ -307,21 +317,22 @@ const getOneAccount = function (req, res) {
             const tl = transactions.createTransferLists(
                 transactionsResults.rows, ret);
             ret = tl.ret;
-            let anchorSeconds = tl.anchorSeconds;
+            let anchorSecNs = tl.anchorSecNs;
+
 
             // Pagination links
             ret.links = {
                 next: utils.getPaginationLink(req,
                     (ret.transactions.length !== limit),
-                    limit, offset, order, anchorSeconds)
+                    'timestamp', anchorSecNs, order)
             }
 
-            logger.debug("getBalances returning " +
+            logger.debug("getOneAccount returning " +
                 balanceResults.rows.length + " entries");
             res.json(ret);
         })
         .catch(err => {
-            logger.error("getBalances error: " +
+            logger.error("getOneAccount error: " +
                 JSON.stringify(err.stack));
             res.status(500)
                 .send('Internal error');

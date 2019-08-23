@@ -61,7 +61,7 @@ describe('/accounts tests', () => {
         expect(accounts.length).toEqual(1);
     });
 
-    for (let balanceOptions of ['', 'balance=gt:100', 'balance=gt:100&balance=lte:10000000000000']) {
+    for (let balanceOptions of ['', 'account.balance=gt:100', 'account.balance=gt:100&account.balance=lte:10000000000000']) {
         for (let accOptions of ['', 'account.id=gte:1', 'account.id=gte:1&account.id=lt:99999999']) {
             for (let orderOptions of ['', 'order=desc', 'order=asc']) {
 

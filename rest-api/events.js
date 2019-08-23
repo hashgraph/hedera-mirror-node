@@ -23,13 +23,15 @@ const getEvents = function (req, res) {
         utils.parseParams(req, 'pageanchor', ['tev.consensus_timestamp_ns']);
 
     anchorQuery = anchorQuery.replace('=', '<=');
-    const { limitOffsetQuery, limitOffsetParams, order, limit, offset } =
-        utils.parsePaginationAndOrderParams(req);
+
+    const { limitQuery, limitParams, order, limit } =
+        utils.parseLimitAndOrderParams(req);
+
 
     let sqlParams = tsParams
         .concat(nodeParams)
         .concat(anchorParams)
-        .concat(limitOffsetParams);
+        .concat(limitParams);
 
     let querySuffix = '';
     querySuffix += (tsQuery === '' ? ''
@@ -39,7 +41,7 @@ const getEvents = function (req, res) {
     querySuffix += (anchorQuery === '' ? ''
         : (querySuffix === '' ? ' where ' : ' and ')) + anchorQuery;
     querySuffix += 'order by tev.consensus_timestamp_ns ' + order + '\n';
-    querySuffix += limitOffsetQuery;
+    querySuffix += limitQuery;
 
     let sqlQuery =
         "select  *\n" +
@@ -68,8 +70,7 @@ const getEvents = function (req, res) {
             return;
         }
 
-        let anchorNs = results.rows.length > 0 ?
-            utils.nsToSecNs(results.rows[0].consensus_timestamp_ns) : 0;
+
 
         for (let row of results.rows) {
             row.consensus_timestamp = utils.nsToSecNs(row.consensus_timestamp_ns);
@@ -79,10 +80,13 @@ const getEvents = function (req, res) {
             ret.events.push(row);
         }
 
+        const anchorSecNs = results.rows.length > 0 ?
+            utils.nsToSecNs(results.rows[0].consensus_timestamp_ns) : 0;
+
         ret.links = {
             next: utils.getPaginationLink(req,
                 (ret.events.length !== limit),
-                limit, offset, order, anchorNs)
+                'timestamp', anchorSecNs, order)
         }
 
         logger.debug("getEvents returning " +

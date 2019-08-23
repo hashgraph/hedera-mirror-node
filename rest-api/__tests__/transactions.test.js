@@ -6,7 +6,7 @@ const utils = require('../utils.js');
 
 beforeAll(async () => {
     console.log('Jest starting!');
-    jest.setTimeout(10000);
+    jest.setTimeout(20000);
 });
 
 afterAll(() => {
@@ -31,9 +31,9 @@ describe('transaction tests', () => {
         }
         testAccountTsNs = transactions[0].consensus_timestamp;
 
-
         expect(transactions.length).toBeGreaterThan(10);
-        expect(testAccountNum).toBeTruthy();
+        expect(testAccountNum).toBeDefined();
+        expect(testAccountTsNs).toBeDefined();
     });
 
     test('Get transactions with limit parameters', async () => {
@@ -95,7 +95,7 @@ describe('transaction tests', () => {
         expect(next).not.toBe(undefined);
     });
 
-    for (let tsOptions of ['', 'timestamp=gt:1560300000', 'timestamp=gt:100&timestamp=lte:5000000000']) {
+    for (let tsOptions of ['', 'timestamp=gt:1560300000', 'timestamp=gt:100&timestamp=lte:' + testAccountTsNs]) {
         for (let accOptions of ['', 'account.id=gte:1', 'account.id=gte:1&account.id=lt:99999999']) {
             for (let orderOptions of ['', 'order=desc', 'order=asc']) {
 
@@ -109,7 +109,7 @@ describe('transaction tests', () => {
                         let response = await request(server).get(apiPrefix + '/transactions' + (extraParams === '' ? '' : '?') + extraParams);
                         expect(response.status).toEqual(200);
                         let transactions = JSON.parse(response.text).transactions;
-                        expect(transactions.length).toEqual(1000);
+                        expect(transactions.length).toEqual(utils.globals.MAX_LIMIT);
 
                         let check = true;
                         let prevSeconds = utils.secNsToSeconds(transactions[0].consensus_timestamp);
@@ -123,14 +123,54 @@ describe('transaction tests', () => {
                         }
                         expect(check).toBeTruthy();
 
-                        let next = JSON.parse(response.text).links.next;
-                        expect(next).not.toBe(null);
+                        // Validate that pagination works and that it doesn't have any gaps
+                        const bigPageEntries = transactions
+                        let paginatedEntries = [];
+                        const numPages = 5;
+                        const pageSize = utils.globals.MAX_LIMIT / numPages;
+                        const firstTs = orderOptions === 'order=asc' ?
+                            transactions[transactions.length - 1].consensus_timestamp :
+                            transactions[0].consensus_timestamp;
 
-                        next = next.replace(new RegExp('^.*' + apiPrefix), apiPrefix);
-                        response = await request(server).get(next);
-                        expect(response.status).toEqual(200);
-                        transactions = JSON.parse(response.text).transactions;
-                        expect(transactions.length).toEqual(1000);
+                        for (let index = 0; index < numPages; index++) {
+                            const nextUrl = paginatedEntries.length === 0 ?
+                                apiPrefix + '/transactions' +
+                                (extraParams === '' ? '' : '?') + extraParams +
+                                (extraParams === '' ? '?' : '&') + 'timestamp=lte:' + firstTs +
+                                '&limit=' + pageSize :
+                                JSON.parse(response.text).links.next
+                                    .replace(new RegExp('^.*' + apiPrefix), apiPrefix);
+                            console.log(nextUrl);
+                            response = await request(server).get(nextUrl);
+                            expect(response.status).toEqual(200);
+                            let chunk = JSON.parse(response.text).transactions;
+                            expect(chunk.length).toEqual(pageSize);
+                            paginatedEntries = paginatedEntries.concat(chunk);
+
+                            let next = JSON.parse(response.text).links.next;
+                            expect(next).not.toBe(null);
+                        }
+
+                        check = (paginatedEntries.length === bigPageEntries.length);
+                        expect(check).toBeTruthy();
+
+                        check = true;
+                        for (i = 0; i < utils.globals.MAX_LIMIT; i++) {
+                            if (bigPageEntries[i].transaction_id !== paginatedEntries[i].transaction_id ||
+                                bigPageEntries[i].consensus_timestamp !== paginatedEntries[i].consensus_timestamp) {
+                                check = false;
+                            }
+                        }
+                        expect(check).toBeTruthy();
+
+                        // let next = JSON.parse(response.text).links.next;
+                        // expect(next).not.toBe(null);
+
+                        // next = next.replace(new RegExp('^.*' + apiPrefix), apiPrefix);
+                        // response = await request(server).get(next);
+                        // expect(response.status).toEqual(200);
+                        // transactions = JSON.parse(response.text).transactions;
+                        // expect(transactions.length).toEqual(1000);
 
                         check = true;
                         for (let txn of transactions) {
