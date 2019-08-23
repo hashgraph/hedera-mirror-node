@@ -262,7 +262,6 @@ public class ConfigLoader {
 					lastValidBalanceFileName = configJsonObject.get("lastValidBalanceFileName").getAsString();
 					configJsonObject.remove("lastValidBalanceFileName");
 				}
-				saveToFile();
 				balanceJsonObject = new JsonObject();
 				balanceJsonObject.addProperty("lastValidBalanceFileName", lastValidBalanceFileName);
 				saveBalanceDataToFile();
@@ -278,7 +277,6 @@ public class ConfigLoader {
 					lastValidRcdFileHash = configJsonObject.get("lastValidRcdFileHash").getAsString();
 					configJsonObject.remove("lastValidRcdFileHash");
 				}
-				saveToFile();
 				recordsJsonObject = new JsonObject();
 				recordsJsonObject.addProperty("lastValidRcdFileName", lastValidRcdFileName);
 				recordsJsonObject.addProperty("lastValidRcdFileHash", lastValidRcdFileHash);
@@ -488,16 +486,6 @@ public class ConfigLoader {
 		balanceJsonObject.addProperty("lastValidBalanceFileName", name);
 		log.info(MARKER, "Update lastValidBalanceFileName to be {}", name);
 		saveBalanceDataToFile();
-	}
-
-	public static void saveToFile() {
-		try (FileWriter file = new FileWriter(configSavePath)) {
-			Gson gson = new GsonBuilder().setPrettyPrinting().create();
-			gson.toJson(configJsonObject, file);
-			log.info(MARKER, "Successfully wrote configuration to {}", configSavePath);
-		} catch (IOException ex) {
-			log.warn(MARKER, "Fail to write configuration to {}, Exception: {}", configSavePath, ex);
-		}
 	}
 
 	public static void saveBalanceDataToFile() {

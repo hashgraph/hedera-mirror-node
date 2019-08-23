@@ -127,7 +127,6 @@ public class AccountBalancesDownloader extends Downloader {
 		}
 		if (!newLastValidBalanceFileName.equals(lastValidBalanceFileName)) {
 			ConfigLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
-			ConfigLoader.saveToFile();
 		}
 	}
 }
