@@ -6,6 +6,7 @@ import com.hedera.utilities.Utility;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationVersion;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -30,6 +31,8 @@ public class DatabaseUtilities {
         if (!migrated) {
             Flyway.configure()
                     .dataSource(dataSource)
+                    .baselineOnMigrate(true)
+                    .baselineVersion(MigrationVersion.fromVersion("0"))
                     .placeholders(ImmutableMap.of(
                             "api-user", ConfigLoader.getApiUsername(),
                             "api-password", ConfigLoader.getApiPassword(),
