@@ -22,3 +22,5 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 ;
+
+GRANT ALL ON FUNCTION f_file_create(_file_name t_record_files.name%TYPE) TO ${db-user};
