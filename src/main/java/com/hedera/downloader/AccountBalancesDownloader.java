@@ -115,7 +115,7 @@ public class AccountBalancesDownloader extends Downloader {
 			}
 
 			if (!valid) {
-				log.warn("File could not be verified by at least 2/3 of nodes: {}", fileName);
+				log.error("File could not be verified by at least 2/3 of nodes: {}", fileName);
 			}
 		}
 		if (!newLastValidBalanceFileName.equals(lastValidBalanceFileName)) {

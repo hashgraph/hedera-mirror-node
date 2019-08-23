@@ -147,34 +147,38 @@ public class EventStreamFileDownloader extends Downloader {
 
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 		for (String fileName : sigFilesMap.keySet()) {
+			boolean valid = false;
 			List<File> sigFiles = sigFilesMap.get(fileName);
+
 			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
 			if (sigFiles == null || !Utility.greaterThanSuperMajorityNum(sigFiles.size(), nodeAccountIds.size())) {
 				log.warn("Signature file count does not exceed 2/3 of nodes");
 				continue;
-			} else {
-				// validSigFiles are signed by node'key and contains the same Hash which has been agreed by more than
-				// 2/3 nodes
-				List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
-				if (validSigFiles != null) {
-					for (File validSigFile : validSigFiles) {
-						Pair<Boolean, File> fileResult = downloadFile(DownloadType.EVENT, validSigFile, tmpDir);
-						File file = fileResult.getRight();
-						if (file != null &&	Utility.hashMatch(validSigFile, file)) {
-							log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
-							// move the file to the valid directory
-					        File fTo = new File(validDir + file.getName());
+			}
 
-							if (moveFile(file, fTo)) {
-								break;
-							}
-						} else if (file != null) {
-							log.warn("Hash of {} doesn't match the hash contained in the signature file. Will try to download a event file with same timestamp from other nodes", file);
-						}
+			// validSigFiles are signed by node key and contains the same hash which has been agreed by more than 2/3
+			List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
+
+			for (File validSigFile : validSigFiles) {
+				Pair<Boolean, File> fileResult = downloadFile(DownloadType.EVENT, validSigFile, tmpDir);
+				File file = fileResult.getRight();
+				if (file != null &&	Utility.hashMatch(validSigFile, file)) {
+					log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
+					// move the file to the valid directory
+					File fTo = new File(validDir + file.getName());
+
+					if (moveFile(file, fTo)) {
+						log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
+						valid = true;
+						break;
 					}
-				} else {
-					log.info("No valid signature files");
+				} else if (file != null) {
+					log.warn("Hash of {} doesn't match the hash contained in the signature file. Will try to download a event file with same timestamp from other nodes", file);
 				}
+			}
+
+			if (!valid) {
+				log.error("File could not be verified by at least 2/3 of nodes: {}", fileName);
 			}
 		}
 	}
