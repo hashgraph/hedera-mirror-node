@@ -14,8 +14,6 @@ const createTransferLists = function (rows, arr) {
     // will show up as separate rows. Combine those into a single transferlist for
     // a given transaction_id
     let transactions = {};
-    let anchorSecNs = null;  // Used for pagination to anchor the subsequent 
-    // paginated queries based on 'seconds'
 
     for (let row of rows) {
         if (!(row.transaction_id in transactions)) {
@@ -24,6 +22,7 @@ const createTransferLists = function (rows, arr) {
             transactions[row.transaction_id]['valid_start_timestamp'] = utils.nsToSecNs(row['valid_start_ns']);
             transactions[row.transaction_id]['charged_tx_fee'] = Number(row['charged_tx_fee']);
             transactions[row.transaction_id]['transaction_id'] = row['transaction_id'];
+            transactions[row.transaction_id]['transaction_ie'] = row['transaction_id2'];
             transactions[row.transaction_id]['id'] = row['id'];
             transactions[row.transaction_id]['memo'] = row['memo'];
             transactions[row.transaction_id]['result'] = row['result'];
@@ -39,15 +38,10 @@ const createTransferLists = function (rows, arr) {
         });
     }
 
-    if (rows.length > 0) {
-        anchorSecNs = utils.nsToSecNs(rows[rows.length - 1].consensus_ns);
-    }
+    const anchorSecNs = (rows.length > 0) ?
+        utils.nsToSecNs(rows[rows.length - 1].consensus_ns) : 0;
 
-    // Push all transactions in a return array
-    for (let transaction of Object.values(transactions)) {
-        transaction.memoAsString = transaction.memo.toString(); // TODO: Remove this someday
-        arr.transactions.push(transaction);
-    }
+    arr.transactions = Object.values(transactions);
 
     return ({
         ret: arr,
@@ -59,13 +53,9 @@ const createTransferLists = function (rows, arr) {
 /**
  * Handler function for /transactions API.
  * @param {Request} req HTTP request object
- * @param {Response} res HTTP response object
- * @return {} None.
+ * @return {Promise} Promise for PostgreSQL query
  */
-const getTransactions = function (req, res) {
-    logger.debug("--------------------  getTransactions --------------------");
-    logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
-
+const getTransactions = function (req) {
     // Parse the filter parameters for credit/debit, account-numbers, 
     // timestamp, and pagination (limit)
     const creditDebit = utils.parseCreditDebitParams(req);
@@ -97,8 +87,6 @@ const getTransactions = function (req, res) {
     // query to generate the output to return to the REST query.
     let innerQuery =
         'select distinct t.id\n' +
-        '	, t.vs_seconds\n' +
-        '	, t.vs_nanos\n' +
         '	, t.consensus_ns\n' +
         'from t_transactions t\n' +
         '	, t_cryptotransferlists ctl\n' +
@@ -116,9 +104,10 @@ const getTransactions = function (req, res) {
         .concat(limitParams);
 
     let sqlQuery =
-        "select  concat(etrans.entity_shard, '.', etrans.entity_realm, '.'," +
-        "           etrans.entity_num, '-', t.vs_seconds, '-', t.vs_nanos) " +
-        "           as transaction_id\n" +
+        "select concat(etrans.entity_shard, '.', etrans.entity_realm, '.'," +
+        "       etrans.entity_num, '-', " +
+        "       substring(t.valid_start_ns::varchar(19), 1, 10), '-', " +
+        "       right(t.valid_start_ns::varchar(19),9)) as transaction_id\n" +
         "   , t.memo\n" +
         '	, t.consensus_ns\n' +
         '   , valid_start_ns\n' +
@@ -150,37 +139,32 @@ const getTransactions = function (req, res) {
         pgSqlQuery + JSON.stringify(sqlParams));
 
     // Execute query
-    pool.query(pgSqlQuery, sqlParams, (error, results) => {
-        let ret = {
-            transactions: [],
-            links: {
-                next: null
+    return (pool
+        .query(pgSqlQuery, sqlParams)
+        .then(results => {
+            let ret = {
+                transactions: [],
+                links: {
+                    next: null
+                }
+            };
+
+            const tl = createTransferLists(results.rows, ret);
+            ret = tl.ret;
+            let anchorSecNs = tl.anchorSecNs;
+
+            ret.links = {
+                next: utils.getPaginationLink(req,
+                    (ret.transactions.length !== limit),
+                    'timestamp', anchorSecNs, order)
             }
-        };
 
-        if (error) {
-            logger.error("getTransactions error: " +
-                JSON.stringify(error, Object.getOwnPropertyNames(error)));
-            res.json(ret);
-            return;
-        }
+            logger.debug("getTransactions returning " +
+                ret.transactions.length + " entries");
 
-
-        const tl = createTransferLists(results.rows, ret);
-        ret = tl.ret;
-        let anchorSecNs = tl.anchorSecNs;
-
-        ret.links = {
-            next: utils.getPaginationLink(req,
-                (ret.transactions.length !== limit),
-                'timestamp', anchorSecNs, order)
-        }
-
-        logger.debug("getTransactions returning " +
-            ret.transactions.length + " entries");
-
-        res.json(ret);
-    })
+            return (ret);
+        })
+    );
 }
 
 /**
@@ -193,13 +177,15 @@ const getOneTransaction = function (req, res) {
     logger.debug("--------------------  getTransactions --------------------");
     logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
 
-    const accountQuery = 'transaction_id = ?\n';
-    const sqlParams = req.params.id.split(/[.-]/);
+    // The transaction id is in the format of 'shard.realm.num-ssssssssss.nnnnnnnnn'
+    // convert it in shard, realm, num and nanoseconds parameters
+    const sqlParams = req.params.id.replace(/(\d{10})-(\d{9})/, '$1$2').split(/[.-]/);
 
     let sqlQuery =
-        "select  concat(etrans.entity_shard, '.', etrans.entity_realm, '.'," +
-        "           etrans.entity_num, '-', t.vs_seconds, '-', t.vs_nanos) " +
-        "           as transaction_id\n" +
+        "select concat(etrans.entity_shard, '.', etrans.entity_realm, '.'," +
+        "       etrans.entity_num, '-', " +
+        "       substring(t.valid_start_ns::varchar(19), 1, 10), '-', " +
+        "       right(t.valid_start_ns::varchar(19),9)) as transaction_id\n" +
         "   , t.memo\n" +
         '	, t.consensus_ns\n' +
         '   , valid_start_ns\n' +
@@ -224,9 +210,7 @@ const getOneTransaction = function (req, res) {
         " where etrans.entity_shard = ?\n" +
         "   and  etrans.entity_realm = ?\n" +
         "   and  etrans.entity_num = ?\n" +
-        "   and  t.vs_seconds = ?\n" +
-        "   and  t.vs_nanos = ?\n";
-
+        "   and  t.valid_start_ns = ?\n";
 
     const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(
         sqlQuery, sqlParams);
@@ -247,7 +231,6 @@ const getOneTransaction = function (req, res) {
                 .send('Not found');
             return;
         }
-
 
         const tl = createTransferLists(results.rows, ret);
         ret = tl.ret;

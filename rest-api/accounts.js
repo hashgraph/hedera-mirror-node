@@ -5,14 +5,12 @@ const transactions = require('./transactions.js');
 /**
  * Handler function for /accounts API.
  * @param {Request} req HTTP request object
- * @param {Response} res HTTP response object
- * @return {} None.
+ * @return {Promise} Promise for PostgreSQL query
  */
-const getAccounts = function (req, res) {
+const getAccounts = function (req) {
     logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
 
-    // Parse the filter parameters for account-numbers, balances, publicKey and pagination (limit/offset)
-
+    // Parse the filter parameters for account-numbers, balances, publicKey and pagination
     const [accountQuery, accountParams] =
         utils.parseParams(req, 'account.id',
             [{ shard: 'entity_shard', realm: 'entity_realm', num: 'entity_num' }],
@@ -30,10 +28,6 @@ const getAccounts = function (req, res) {
         " and e.entity_num = ab.num and " +
         pubKeyQuery +
         ")";
-
-    let [anchorQuery, anchorParams] =
-        utils.parseParams(req, 'pageanchor', ['t.consensus_seconds']);
-    anchorQuery = anchorQuery.replace('=', '<=');
 
     const { limitQuery, limitParams, order, limit } =
         utils.parseLimitAndOrderParams(req, 'asc');
@@ -72,58 +66,54 @@ const getAccounts = function (req, res) {
         pgEntityQuery + JSON.stringify(entityParams));
 
     // Execute query
-    pool.query(pgEntityQuery, entityParams, (error, results) => {
-        let ret = {
-            accounts: [],
-            links: {
-                next: null
+    return (pool
+        .query(pgEntityQuery, entityParams)
+        .then(results => {
+            let ret = {
+                accounts: [],
+                links: {
+                    next: null
+                }
+            };
+
+            for (let row of results.rows) {
+                row.balance = {};
+                row.balance.timestamp = '' + row.balance_asof_seconds + '.' +
+                    ((row.balance_asof_nanos + '000000000').substring(0, 9));
+                delete row.balance_asof_seconds;
+                delete row.balance_asof_nanos;
+
+                row.expiry_timestamp = utils.nsToSecNs(row.exp_time_ns);
+                delete row.exp_time_ns;
+
+                row.balance.balance = Number(row.account_balance);
+                delete row.account_balance;
+
+                row.auto_renew_period = Number(row.auto_renew_period);
             }
-        };
 
-        if (error) {
-            logger.error("getAccounts error: " +
-                JSON.stringify(error, Object.getOwnPropertyNames(error)));
-            res.json(ret);
-            return;
-        }
+            let anchorAcc = '0.0.0';
+            if (results.rows.length > 0) {
+                anchorAcc = results.rows[results.rows.length - 1].account;
+            }
 
-        for (let row of results.rows) {
-            row.balance = {};
-            row.balance.timestamp = '' + row.balance_asof_seconds + '.' +
-                ((row.balance_asof_nanos + '000000000').substring(0, 9));
-            delete row.balance_asof_seconds;
-            delete row.balance_asof_nanos;
+            ret.accounts = results.rows;
 
-            row.expiry_timestamp = utils.nsToSecNs(row.exp_time_ns);
-            delete row.exp_time_ns;
+            logger.debug("ret.accounts.length: " +
+                ret.accounts.length + ' === limit: ' + limit);
 
-            row.balance.balance = Number(row.account_balance);
-            delete row.account_balance;
+            ret.links = {
+                next: utils.getPaginationLink(req,
+                    (ret.accounts.length !== limit),
+                    'account.id', anchorAcc, order)
+            }
 
-            row.auto_renew_period = Number(row.auto_renew_period);
-        }
+            logger.debug("getAccounts returning " +
+                ret.accounts.length + " entries");
 
-        let anchorAcc = '0.0.0';
-        if (results.rows.length > 0) {
-            anchorAcc = results.rows[results.rows.length - 1].account;
-        }
-
-        ret.accounts = results.rows;
-
-        logger.debug("ret.accounts.length: " +
-            ret.accounts.length + ' === limit: ' + limit);
-
-        ret.links = {
-            next: utils.getPaginationLink(req,
-                (ret.accounts.length !== limit),
-                'account.id', anchorAcc, order)
-        }
-
-        logger.debug("getAccounts returning " +
-            ret.accounts.length + " entries");
-
-        res.json(ret);
-    });
+            return (ret);
+        })
+    )
 }
 
 
@@ -136,7 +126,7 @@ const getAccounts = function (req, res) {
 const getOneAccount = function (req, res) {
     logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
 
-    // Parse the filter parameters for account-numbers, balance, and pagination (limit/offset)
+    // Parse the filter parameters for account-numbers, balance, and pagination
 
     const acc = utils.parseEntityId(req.params.id);
 
@@ -148,15 +138,9 @@ const getOneAccount = function (req, res) {
     const [tsQuery, tsParams] =
         utils.parseParams(req, 'timestamp', ['t.consensus_seconds']);
 
-    let [anchorQuery, anchorParams] =
-        utils.parseParams(req, 'pageanchor', ['t.consensus_seconds']);
-    anchorQuery = anchorQuery.replace('=', '<=');
-
     const resultTypeQuery = utils.parseResultParams(req);
     const { limitQuery, limitParams, order, limit } =
         utils.parseLimitAndOrderParams(req);
-
-
 
     let ret = {
         balance: {
@@ -222,14 +206,12 @@ const getOneAccount = function (req, res) {
         '   and t.fk_result_id = tr.id\n' +
         (accountQuery === '' ? '' : '     and ') + accountQuery + '\n' +
         (tsQuery === '' ? '' : '     and ') + tsQuery + '\n' +
-        (anchorQuery === '' ? '' : '     and ') + anchorQuery + '\n' +
         resultTypeQuery + '\n' +
         '     order by t.consensus_seconds ' + order +
         '     , t.consensus_nanos ' + order + '\n' +
         '     ' + limitQuery;
     const innerParams = accountParams
         .concat(tsParams)
-        .concat(anchorParams)
         .concat(limitParams);
 
     let transactionsQuery =

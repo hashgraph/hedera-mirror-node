@@ -5,14 +5,13 @@ const utils = require('./utils.js');
 /**
  * Handler function for /balances API.
  * @param {Request} req HTTP request object
- * @param {Response} res HTTP response object
- * @return {} None.
+ * @return {Promise} Promise for PostgreSQL query
  */
-const getBalances = function (req, res) {
+const getBalances = function (req) {
     logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
 
     // Parse the filter parameters for credit/debit, account-numbers, 
-    // timestamp and pagination (anchor and limit/offset)
+    // timestamp and pagination
     let [accountQuery, accountParams] =
         utils.parseParams(req, 'account.id',
             [{ shard: 'ab.shard', realm: 'ab.realm', num: 'ab.num' }],
@@ -22,7 +21,7 @@ const getBalances = function (req, res) {
     // modify that to be timestamp <= xxxx, so we return the latest balances
     // as of the user-supplied timestamp.
     if ('timestamp' in req.query) {
-        const pattern = /^(eq:)?(\d*)$/;
+        const pattern = /^(eq:)?(\d*\.?\d*)$/;
         const replacement = "lte:$2";
         if (Array.isArray(req.query.timestamp)) {
             for (let index = 0; index < req.query.timestamp.length; index++) {
@@ -87,52 +86,48 @@ const getBalances = function (req, res) {
         pgSqlQuery + JSON.stringify(sqlParams));
 
     // Execute query
-    pool.query(pgSqlQuery, sqlParams, (error, results) => {
-        let ret = {
-            timestamp: null,
-            balances: [],
-            links: {
-                next: null
+    return (pool
+        .query(pgSqlQuery, sqlParams)
+        .then(results => {
+            let ret = {
+                timestamp: null,
+                balances: [],
+                links: {
+                    next: null
+                }
+            };
+
+            // Go through all results, and collect them by seconds.
+            // These need to be returned as an array (and not an object) because
+            // per ECMA ES2015, the order of keys parsable as integers are implicitly 
+            // sorted (i.e. insert order is not maintained)
+            // let retObj = {}
+            for (let row of results.rows) {
+                let ns = utils.nsToSecNs(row.snapshot_time_ns);
+
+                if (ret.timestamp === null) {
+                    ret.timestamp = ns;
+                }
+                ret.balances.push({
+                    'account': row.account,
+                    'balance': Number(row.balance)
+                });
             }
-        };
+            const anchorAccountId = results.rows.length > 0 ?
+                results.rows[results.rows.length - 1].account : 0;
 
-        if (error) {
-            logger.error("getBalances error: " +
-                JSON.stringify(error, Object.getOwnPropertyNames(error)));
-            res.json(ret);
-            return;
-        }
-
-        // Go through all results, and collect them by seconds.
-        // These need to be returned as an array (and not an object) because
-        // per ECMA ES2015, the order of keys parsable as integers are implicitly 
-        // sorted (i.e. insert order is not maintained)
-        // let retObj = {}
-        for (let row of results.rows) {
-            let ns = utils.nsToSecNs(row.snapshot_time_ns);
-
-            if (ret.timestamp === null) {
-                ret.timestamp = ns;
+            // Pagination links
+            ret.links = {
+                next: utils.getPaginationLink(req,
+                    (ret.balances.length !== limit),
+                    'account.id', anchorAccountId, order)
             }
-            ret.balances.push({
-                'account': row.account,
-                'balance': Number(row.balance)
-            });
-        }
-        const anchorAccountId = results.rows.length > 0 ?
-            results.rows[results.rows.length - 1].account : 0;
 
-        // Pagination links
-        ret.links = {
-            next: utils.getPaginationLink(req,
-                (ret.balances.length !== limit),
-                'account.id', anchorAccountId, order)
-        }
-
-        logger.debug("getBalances returning " +
-            ret.balances.length + " entries");
-        res.json(ret);
-    })
+            logger.debug("getBalances returning " +
+                ret.balances.length + " entries");
+            return (ret);
+        })
+    )
 }
 
 module.exports = {

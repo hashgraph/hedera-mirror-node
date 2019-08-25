@@ -3,26 +3,47 @@
 const utils = require('./utils.js');
 
 /**
+ * Processes one row of the results of the SQL query and format into API return format
+ * @param {Array} row One row of the SQL query result
+ * @return {Array} row Processed row
+ */
+const processRow = function (row) {
+    row.consensus_timestamp = utils.nsToSecNs(row.consensus_timestamp_ns);
+    row.created_timestamp = utils.nsToSecNs(row.created_timestamp_ns);
+    delete row.consensus_timestamp_ns;
+    delete row.created_timestamp_ns;
+
+    row.id = Number(row.id);
+    row.self_parent_id = Number(row.self_parent_id);
+    row.other_parent_id = Number(row.other_parent_id);
+    row.creator_node_id = Number(row.creator_node_id);
+    row.other_node_id = Number(row.other_node_id);
+    row.consensus_order = Number(row.consensus_order);
+    row.creator_seq = Number(row.creator_seq);
+    row.other_seq = Number(row.other_seq);
+    row.self_parent_generation = Number(row.self_parent_generation);
+    row.other_parent_generation = Number(row.other_parent_generation);
+    row.generation = Number(row.generation);
+    row.latency_ns = Number(row.latency_ns);
+
+    return (row);
+}
+
+/**
  * Handler function for /events API.
  * @param {Request} req HTTP request object
- * @param {Response} res HTTP response object
- * @return {} None.
+ * @return {Promise} Promise for PostgreSQL query
  */
-const getEvents = function (req, res) {
+const getEvents = function (req) {
     logger.debug("--------------------  getEvents --------------------");
     logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
 
-    // Parse the filter parameters for timestamp,
-    // nodequery and pagination (anchor and limit/offset)
+    // Parse the filter parameters for timestamp, nodequery and pagination
     const [tsQuery, tsParams] =
         utils.parseParams(req, 'timestamp', ['tev.consensus_timestamp_ns'], 'timestamp_ns');
 
     const [nodeQuery, nodeParams] =
         utils.parseParams(req, 'creatornode', ['tev.creator_node_id']);
-    let [anchorQuery, anchorParams] =
-        utils.parseParams(req, 'pageanchor', ['tev.consensus_timestamp_ns']);
-
-    anchorQuery = anchorQuery.replace('=', '<=');
 
     const { limitQuery, limitParams, order, limit } =
         utils.parseLimitAndOrderParams(req);
@@ -30,7 +51,6 @@ const getEvents = function (req, res) {
 
     let sqlParams = tsParams
         .concat(nodeParams)
-        .concat(anchorParams)
         .concat(limitParams);
 
     let querySuffix = '';
@@ -38,8 +58,7 @@ const getEvents = function (req, res) {
         : (querySuffix === '' ? ' where ' : ' and ')) + tsQuery;
     querySuffix += (nodeQuery === '' ? ''
         : (querySuffix === '' ? ' where ' : ' and ')) + nodeQuery;
-    querySuffix += (anchorQuery === '' ? ''
-        : (querySuffix === '' ? ' where ' : ' and ')) + anchorQuery;
+
     querySuffix += 'order by tev.consensus_timestamp_ns ' + order + '\n';
     querySuffix += limitQuery;
 
@@ -55,45 +74,35 @@ const getEvents = function (req, res) {
         pgSqlQuery + JSON.stringify(sqlParams));
 
     // Execute query
-    pool.query(pgSqlQuery, sqlParams, (error, results) => {
-        let ret = {
-            events: [],
-            links: {
-                next: null
+    return (pool
+        .query(pgSqlQuery, sqlParams)
+        .then(results => {
+            let ret = {
+                events: [],
+                links: {
+                    next: null
+                }
+            };
+
+            for (let row of results.rows) {
+                ret.events.push(processRow(row));
             }
-        };
 
-        if (error) {
-            logger.error("getEvents error: " +
-                JSON.stringify(error, Object.getOwnPropertyNames(error)));
-            res.json(ret);
-            return;
-        }
+            const anchorSecNs = results.rows.length > 0 ?
+                results.rows[results.rows.length - 1].consensus_timestamp : 0;
 
+            ret.links = {
+                next: utils.getPaginationLink(req,
+                    (ret.events.length !== limit),
+                    'timestamp', anchorSecNs, order)
+            }
 
+            logger.debug("getEvents returning " +
+                ret.events.length + " entries");
 
-        for (let row of results.rows) {
-            row.consensus_timestamp = utils.nsToSecNs(row.consensus_timestamp_ns);
-            row.created_timestamp = utils.nsToSecNs(row.created_timestamp_ns);
-            delete row.consensus_timestamp_ns;
-            delete row.created_timestamp_ns;
-            ret.events.push(row);
-        }
-
-        const anchorSecNs = results.rows.length > 0 ?
-            utils.nsToSecNs(results.rows[0].consensus_timestamp_ns) : 0;
-
-        ret.links = {
-            next: utils.getPaginationLink(req,
-                (ret.events.length !== limit),
-                'timestamp', anchorSecNs, order)
-        }
-
-        logger.debug("getEvents returning " +
-            ret.events.length + " entries");
-
-        res.json(ret);
-    })
+            return (ret);
+        })
+    )
 }
 
 /**
@@ -135,11 +144,7 @@ const getOneEvent = function (req, res) {
         }
 
         for (let row of results.rows) {
-            row.consensus_timestamp = utils.nsToSecNs(row.consensus_timestamp_ns);
-            row.created_timestamp = utils.nsToSecNs(row.created_timestamp_ns);
-            row.delete(consensus_timestamp_ns);
-            row.delete(created_timestamp_ns)
-            ret.events.push(row);
+            ret.events.push(processRow(row));
         }
 
         if (ret.events.length === 0) {

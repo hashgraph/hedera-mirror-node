@@ -11,11 +11,13 @@
   "license": "Apache-2.0",
   "dependencies": {
     "body-parser": "^1.19.0",
+    "compression": "^1.7.4",
     "cors": "^2.8.5",
     "dotenv": "^8.0.0",
     "express": "^4.17.1",
     "log4js": "^4.3.1",
     "mathjs": "^6.0.4",
+    "node-cache": "^4.2.1",
     "pg": "^7.11.0"
   },
   "devDependencies": {
