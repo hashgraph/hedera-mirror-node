@@ -3,6 +3,7 @@ const math = require('mathjs');
 
 // Global constants
 const globals = {
+    CACHE_TTL: 10, // Time to live for the cache (seconds)
     MAX_LIMIT: 1000
 }
 
@@ -52,7 +53,8 @@ const parseComparatorSymbol = function (fields, req, type = null) {
     };
 
     for (let item of req) {
-        //Force a simple account number (e.g. 1234 or 0.0.1234) to 'eq:0.0.1234' form to allow for consistent processing 
+        //Force a simple account number (e.g. 1234 or 0.0.1234) to 'eq:0.0.1234' form 
+        // to allow for consistent processing 
         if ((/^(\d)+$/.test(item)) ||
             (/^(\d)+\.(\d)+\.(\d)+$/.test(item))) {
             item = "eq:" + item;
@@ -88,10 +90,11 @@ const parseComparatorSymbol = function (fields, req, type = null) {
                             ')';
                         vals = vals.concat([entity.shard, entity.realm, entity.num]);
                     } else if (type === 'timestamp_ns') {
-                        // Expect timestamp input as (a) just seconds, (b) seconds.mmm (3-digit milliseconds), 
+                        // Expect timestamp input as (a) just seconds, 
+                        // (b) seconds.mmm (3-digit milliseconds), 
                         // or (c) seconds.nnnnnnnnn (9-digit nanoseconds)
-                        // Convert all of these formats to (seconds * 10^9 + nanoseconds) format, after 
-                        // validating that all characters are digits
+                        // Convert all of these formats to (seconds * 10^9 + nanoseconds) format, 
+                        // after validating that all characters are digits
                         let tsSplit = entityId.split('.');
                         let seconds = /^(\d)+$/.test(tsSplit[0]) ? tsSplit[0] : 0;
                         let nanos = (tsSplit.length == 2 && /^(\d)+$/.test(tsSplit[1])) ? tsSplit[1] : 0;
@@ -195,12 +198,11 @@ const parseResultParams = function (req) {
         query = '     and result != \'SUCCESS\'';
     }
     return (query);
-    //    return ((req.query.result === 'successful') ? 'successful' : 'all');
 }
 
 
 /**
- * Parse the pagination (limit/offset) and order parameters
+ * Parse the pagination (limit) and order parameters
  * @param {HTTPRequest} req HTTP query request object
  * @param {String} defaultOrder Order of sorting (defaults to descending)
  * @return {Object} {query, params, order} SQL query, values and order
@@ -251,17 +253,15 @@ const convertMySqlStyleQueryToPostgress = function (sqlQuery, sqlParams) {
  * Create pagination (next) link
  * @param {HTTPRequest} req HTTP query request object
  * @param {Boolean} isEnd Is the next link valid or not
- * @param {Integer} limit Limit value
- * @param {Integer} offset Offset value
+ * @param {String} field The query parameter field name
+ * @param {Any} lastValue THe last val for the 'next' queries in the pagination. 
  * @param {String} order Order of sorting the results
- * @param {Integer} anchorSecNs The time (seconds.nanos) limit for the 'next' queries in the pagination. 
  * @return {String} next Fully formed link to the next page
  */
 const getPaginationLink = function (req, isEnd, field, lastValue, order) {
     const port = process.env.PORT;
     const portquery = (Number(port) === 80) ? '' : (':' + port);
-    //let anchorNs = anchorSecNs === undefined ? undefined : secNsToNs(anchorSecNs);
-    //req = getTimeQueryForPagination(req, order, anchorNs);
+
     var next = '';
 
     if (!isEnd) {

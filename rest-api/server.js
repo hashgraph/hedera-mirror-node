@@ -16,6 +16,8 @@ const balances = require('./balances.js');
 const events = require('./events.js');
 const accounts = require('./accounts.js');
 const eventAnalytics = require('./eventAnalytics.js');
+const cacher = require('./cacher.js');
+var compression = require('compression');
 
 
 // Logger
@@ -60,18 +62,21 @@ app.use(bodyParser.urlencoded({
     extended: false
 }));
 app.use(bodyParser.json());
+app.use(compression());
 app.use(cors());
+
+
 
 let apiPrefix = '/api/v1';
 
 // routes 
-app.get(apiPrefix + '/transactions', transactions.getTransactions);
+app.get(apiPrefix + '/transactions', (req, res) => cacher.getResponse(req, res, transactions.getTransactions));
 app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
-app.get(apiPrefix + '/balances', balances.getBalances);
-app.get(apiPrefix + '/events/', events.getEvents);
+app.get(apiPrefix + '/balances', (req, res) => cacher.getResponse(req, res, balances.getBalances));
+app.get(apiPrefix + '/events', (req, res) => cacher.getResponse(req, res, events.getEvents));
 app.get(apiPrefix + '/events/:id', events.getOneEvent);
 app.get(apiPrefix + '/events/analytics', eventAnalytics.getEventAnalytics);
-app.get(apiPrefix + '/accounts', accounts.getAccounts);
+app.get(apiPrefix + '/accounts', (req, res) => cacher.getResponse(req, res, accounts.getAccounts));
 app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
 
 if (process.env.NODE_ENV !== 'test') {
