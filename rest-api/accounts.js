@@ -8,8 +8,6 @@ const transactions = require('./transactions.js');
  * @return {Promise} Promise for PostgreSQL query
  */
 const getAccounts = function (req) {
-    logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
-
     // Parse the filter parameters for account-numbers, balances, publicKey and pagination
     const [accountQuery, accountParams] =
         utils.parseParams(req, 'account.id',
@@ -20,8 +18,7 @@ const getAccounts = function (req) {
         ['balance']);
 
     let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'account.publickey',
-        ['e.key']);
-
+        ['e.key'], 'hexstring');
     pubKeyQuery = pubKeyQuery === '' ? '' :
         "(e.entity_shard = ab.shard \n" +
         " and e.entity_realm = ab.realm\n" +
@@ -90,6 +87,9 @@ const getAccounts = function (req) {
                 delete row.account_balance;
 
                 row.auto_renew_period = Number(row.auto_renew_period);
+
+                row.admin_key = utils.encodeKey(row.admin_key);
+                row.key = utils.encodeKey(row.key);
             }
 
             let anchorAcc = '0.0.0';
@@ -98,9 +98,6 @@ const getAccounts = function (req) {
             }
 
             ret.accounts = results.rows;
-
-            logger.debug("ret.accounts.length: " +
-                ret.accounts.length + ' === limit: ' + limit);
 
             ret.links = {
                 next: utils.getPaginationLink(req,
@@ -176,7 +173,7 @@ const getOneAccount = function (req, res) {
     const pgEntityQuery = utils.convertMySqlStyleQueryToPostgress(
         entitySql, entityParams);
 
-    logger.debug("getOneAccount transactions query: " +
+    logger.debug("getOneAccount entity query: " +
         pgEntityQuery + JSON.stringify(entityParams));
     // Execute query & get a promise
     const entityPromise = pool.query(pgEntityQuery, entityParams);
@@ -291,6 +288,10 @@ const getOneAccount = function (req, res) {
             for (let row of entityResults.rows) {
                 row.expiry_timestamp = utils.nsToSecNs(row.exp_time_ns);
                 delete row.exp_time_ns;
+
+                row.admin_key = utils.encodeKey(row.admin_key);
+                row.key = utils.encodeKey(row.key);
+
             }
             ret.entity_data = entityResults.rows;
 

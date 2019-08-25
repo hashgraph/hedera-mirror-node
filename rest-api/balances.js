@@ -1,6 +1,8 @@
 'use strict';
 const math = require('mathjs');
+const config = require('./config.js');
 const utils = require('./utils.js');
+
 
 /**
  * Handler function for /balances API.
@@ -8,8 +10,6 @@ const utils = require('./utils.js');
  * @return {Promise} Promise for PostgreSQL query
  */
 const getBalances = function (req) {
-    logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
-
     // Parse the filter parameters for credit/debit, account-numbers, 
     // timestamp and pagination
     let [accountQuery, accountParams] =
@@ -39,7 +39,7 @@ const getBalances = function (req) {
         ['abh.balance']);
 
     let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'account.publickey',
-        ['e.key']);
+        ['e.key'], 'hexstring');
     pubKeyQuery = pubKeyQuery === '' ? '' :
         "(e.entity_shard = ab.shard \n" +
         " and e.entity_realm = ab.realm\n" +
@@ -51,11 +51,10 @@ const getBalances = function (req) {
         utils.parseLimitAndOrderParams(req, 'desc');
 
     // Use the inner query to find the latest snapshot timestamp from the balance history table
-    const maxBigInt = 9223372036854775807;
     let innerQuery =
         " select snapshot_time_ns from t_account_balance_history\n" +
         " where " +
-        (tsQuery === '' ? ('snapshot_time_ns < ' + maxBigInt) : tsQuery) + '\n' +
+        (tsQuery === '' ? ('snapshot_time_ns < ' + config.limits.MAX_BIGINT) : tsQuery) + '\n' +
         " order by snapshot_time_ns desc limit 1";
 
     let sqlQuery =
@@ -65,6 +64,7 @@ const getBalances = function (req) {
         "    , abh.balance\n" +
         " from t_account_balance_history as abh\n" +
         "    , t_account_balances ab\n" +
+        (pubKeyQuery === '' ? '' : ', t_entities e\n') +
         " Where ab.id = abh.fk_balance_id\n" +
         " and snapshot_time_ns = (" + innerQuery + ")\n" +
         (accountQuery === '' ? '' : '     and ') + accountQuery + "\n" +

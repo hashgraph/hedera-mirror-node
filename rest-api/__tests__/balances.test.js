@@ -1,5 +1,6 @@
 const request = require('supertest');
 const math = require('mathjs');
+const config = require('../config.js');
 const server = require('../server');
 const utils = require('../utils.js');
 
@@ -34,7 +35,7 @@ describe('/balances tests', () => {
                             let response = await request(server).get(apiPrefix + '/balances' + (extraParams === '' ? '' : '?') + extraParams);
                             expect(response.status).toEqual(200);
 
-                            const currentSeconds = Math.floor(new Date().getTime() / 1000) - 3600;
+                            const currentSeconds = Math.floor(new Date().getTime() / 1000) - (60 * 60);
                             expect(utils.secNsToSeconds(JSON.parse(response.text).timestamp)).toBeGreaterThan(currentSeconds);
 
                             let balances = JSON.parse(response.text).balances;
@@ -44,7 +45,7 @@ describe('/balances tests', () => {
                             const bigPageEntries = balances;
                             let paginatedEntries = [];
                             const numPages = 5;
-                            const pageSize = utils.globals.MAX_LIMIT / numPages;
+                            const pageSize = config.limits.RESPONSE_ROWS / numPages;
                             const firstAcc = orderOptions === 'order=asc' ?
                                 balances[balances.length - 1].account :
                                 balances[0].account;
@@ -71,7 +72,7 @@ describe('/balances tests', () => {
                             expect(check).toBeTruthy();
 
                             check = true;
-                            for (i = 0; i < utils.globals.MAX_LIMIT; i++) {
+                            for (i = 0; i < config.limits.RESPONSE_ROWS; i++) {
                                 if (bigPageEntries[i].account !== paginatedEntries[i].account ||
                                     bigPageEntries[i].balance !== paginatedEntries[i].balance) {
                                     check = false;

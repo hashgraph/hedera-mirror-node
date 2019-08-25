@@ -1,11 +1,7 @@
 'use strict';
 const math = require('mathjs');
+const config = require('./config.js');
 
-// Global constants
-const globals = {
-    CACHE_TTL: 10, // Time to live for the cache (seconds)
-    MAX_LIMIT: 1000
-}
 
 /**
  * Split the account number into shard, realm and num fields. 
@@ -34,12 +30,12 @@ const parseEntityId = function (acc) {
 /**
  * Parse the comparator symbols (i.e. gt, lt, etc.) and convert to SQL style query
  * @param {Array} fields Array of fields in the query (e.g. 'account.id' or 'timestamp')
- * @param {Array} req Array of values (e.g. 20 or gt:10)
+ * @param {Array} valArr Array of values (e.g. 20 or gt:10)
  * @param {String} type One of 'entityId' or 'timestamp' for special interpretation as 
  *          an entity (shard.realm.entity format), or timestamp_ns (ssssssssss.nnnnnnnnn)
  * @return {Object} {queryString, queryVals} Constructed SQL query string and values.
  */
-const parseComparatorSymbol = function (fields, req, type = null) {
+const parseComparatorSymbol = function (fields, valArr, type = null) {
     let queryStr = '';
     let vals = [];
 
@@ -52,10 +48,11 @@ const parseComparatorSymbol = function (fields, req, type = null) {
         'ne': ' != '
     };
 
-    for (let item of req) {
+    for (let item of valArr) {
         //Force a simple account number (e.g. 1234 or 0.0.1234) to 'eq:0.0.1234' form 
         // to allow for consistent processing 
-        if ((/^(\d)+$/.test(item)) ||
+        const pattern = type === 'hexstring' ? /^([A-Fa-f0-9])+$/ : /^(\d)+$/;
+        if ((pattern.test(item)) ||
             (/^(\d)+\.(\d)+\.(\d)+$/.test(item))) {
             item = "eq:" + item;
         }
@@ -64,16 +61,17 @@ const parseComparatorSymbol = function (fields, req, type = null) {
         let splitItem = item.split(":");
         if (splitItem.length == 2) {
             let op = splitItem[0]
-            let entityId = splitItem[1];
+            let val = splitItem[1];
 
             let entity = null;
 
             if (type === 'entityId') {
-                entity = parseEntityId(entityId);
+                entity = parseEntityId(val);
             }
 
             if (((type === 'entityId' && entity.num !== 0) ||
-                (type !== 'entityId' && !isNaN(entityId))) &&
+                (type === 'hexstring') ||
+                (type !== 'entityId' && !isNaN(val))) &&
                 (op in opsMap)) {
 
                 let fieldQueryStr = '';
@@ -95,7 +93,7 @@ const parseComparatorSymbol = function (fields, req, type = null) {
                         // or (c) seconds.nnnnnnnnn (9-digit nanoseconds)
                         // Convert all of these formats to (seconds * 10^9 + nanoseconds) format, 
                         // after validating that all characters are digits
-                        let tsSplit = entityId.split('.');
+                        let tsSplit = val.split('.');
                         let seconds = /^(\d)+$/.test(tsSplit[0]) ? tsSplit[0] : 0;
                         let nanos = (tsSplit.length == 2 && /^(\d)+$/.test(tsSplit[1])) ? tsSplit[1] : 0;
                         let ts = '' + seconds + (nanos + '000000000').substring(0, 9);
@@ -103,7 +101,7 @@ const parseComparatorSymbol = function (fields, req, type = null) {
                         vals.push(ts);
                     } else {
                         fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
-                        vals.push(entityId);
+                        vals.push((type === 'hexstring' ? '\\x' : '') + val);
                     }
                     fieldQueryStr += (fieldQueryStr === '' ? '' : ' or ') +
                         fquery;
@@ -211,8 +209,8 @@ const parseLimitAndOrderParams = function (req, defaultOrder = 'desc') {
     // Parse the limit parameter
     let limitQuery = '';
     let limitParams = [];
-    let lVal = getIntegerParam(req.query['limit'], globals.MAX_LIMIT);
-    let limitValue = lVal === '' ? globals.MAX_LIMIT : lVal;
+    let lVal = getIntegerParam(req.query['limit'], config.limits.RESPONSE_ROWS);
+    let limitValue = lVal === '' ? config.limits.RESPONSE_ROWS : lVal;
     limitQuery = 'limit ? ';
     limitParams.push(limitValue);
 
@@ -365,11 +363,60 @@ const secNsToSeconds = function (secNs) {
 * @return {Number} limit Max # entries to be returned.
 */
 const returnEntriesLimit = function (type) {
-    return (globals.MAX_LIMIT);
+    return (config.limits.RESPONSE_ROWS);
+}
+
+/**
+* Converts the byte array returned by SQL queries into hex string
+* @param {ByteArray} byteArray Array of bytes to be converted to hex string
+* @return {hexString} Converted hex string
+*/
+const toHexString = function (byteArray) {
+    return (byteArray === null ? null :
+        (byteArray.reduce((output, elem) =>
+            (output + ('0' + elem.toString(16)).slice(-2)), ''))
+    );
+}
+
+/**
+* Converts a key for returning in JSON output
+* @param {Array} key Byte array representing the key
+* @return {Object} Key object - with type decoration for ED25519, if detected
+*/
+const encodeKey = function (key) {
+    let ret;
+
+    if (key === null) {
+        return (null);
+    }
+
+    let hs = toHexString(key);
+    const pattern = /^1220([A-Fa-f0-9]*)$/;
+    const replacement = "$1";
+    if (pattern.test(hs)) {
+        ret = {
+            '_type': 'ED25519',
+            'key': hs.replace(pattern, replacement)
+        }
+    } else {
+        ret = {
+            '_type': 'ProtobufEncoded',
+            'key': hs
+        }
+    }
+    return (ret);
+}
+
+/**
+* Base64 encoding of a byte array for returning in JSON output
+* @param {Array} key Byte array to be encoded
+* @return {String} base64 encoded string
+*/
+const encodeBase64 = function (buffer) {
+    return (buffer.toString('base64'));
 }
 
 module.exports = {
-    globals: globals,
     parseParams: parseParams,
     parseCreditDebitParams: parseCreditDebitParams,
     parseLimitAndOrderParams: parseLimitAndOrderParams,
@@ -380,5 +427,8 @@ module.exports = {
     nsToSecNs: nsToSecNs,
     secNsToNs: secNsToNs,
     secNsToSeconds: secNsToSeconds,
-    returnEntriesLimit: returnEntriesLimit
+    returnEntriesLimit: returnEntriesLimit,
+    toHexString: toHexString,
+    encodeKey: encodeKey,
+    encodeBase64: encodeBase64
 }
