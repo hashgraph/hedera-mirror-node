@@ -35,9 +35,6 @@ const processRow = function (row) {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getEvents = function (req) {
-    logger.debug("--------------------  getEvents --------------------");
-    logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
-
     // Parse the filter parameters for timestamp, nodequery and pagination
     const [tsQuery, tsParams] =
         utils.parseParams(req, 'timestamp', ['tev.consensus_timestamp_ns'], 'timestamp_ns');

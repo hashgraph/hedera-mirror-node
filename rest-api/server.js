@@ -5,18 +5,21 @@ require("dotenv").config({
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const Pool = require('pg').Pool
+const Pool = require('pg').Pool;
 const app = express();
-const cors = require('cors')
+const cors = require('cors');
 const log4js = require('log4js');
 const logger = log4js.getLogger();
 
+const config = require('./config.js');
 const transactions = require('./transactions.js');
 const balances = require('./balances.js');
 const events = require('./events.js');
 const accounts = require('./accounts.js');
 const eventAnalytics = require('./eventAnalytics.js');
-const cacher = require('./cacher.js');
+const utils = require('./utils.js');
+const Cacher = require('./cacher.js');
+
 var compression = require('compression');
 
 
@@ -65,18 +68,26 @@ app.use(bodyParser.json());
 app.use(compression());
 app.use(cors());
 
-
+let caches = {};
+for (const api of [
+    { name: 'transactions', ttl: config.ttls.transactions },
+    { name: 'balances', ttl: config.ttls.balances },
+    { name: 'accounts', ttl: config.ttls.accounts },
+    { name: 'events', ttl: config.ttls.events }
+]) {
+    caches[api.name] = new Cacher(api.ttl);
+}
 
 let apiPrefix = '/api/v1';
 
 // routes 
-app.get(apiPrefix + '/transactions', (req, res) => cacher.getResponse(req, res, transactions.getTransactions));
+app.get(apiPrefix + '/transactions', (req, res) => caches['transactions'].getResponse(req, res, transactions.getTransactions));
 app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
-app.get(apiPrefix + '/balances', (req, res) => cacher.getResponse(req, res, balances.getBalances));
-app.get(apiPrefix + '/events', (req, res) => cacher.getResponse(req, res, events.getEvents));
+app.get(apiPrefix + '/balances', (req, res) => caches['balances'].getResponse(req, res, balances.getBalances));
+app.get(apiPrefix + '/events', (req, res) => caches['events'].getResponse(req, res, events.getEvents));
 app.get(apiPrefix + '/events/:id', events.getOneEvent);
 app.get(apiPrefix + '/events/analytics', eventAnalytics.getEventAnalytics);
-app.get(apiPrefix + '/accounts', (req, res) => cacher.getResponse(req, res, accounts.getAccounts));
+app.get(apiPrefix + '/accounts', (req, res) => caches['accounts'].getResponse(req, res, accounts.getAccounts));
 app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
 
 if (process.env.NODE_ENV !== 'test') {

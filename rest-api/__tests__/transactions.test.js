@@ -1,7 +1,9 @@
 const request = require('supertest');
 const math = require('mathjs');
+const config = require('../config.js');
 const server = require('../server');
 const utils = require('../utils.js');
+
 
 
 beforeAll(async () => {
@@ -109,7 +111,7 @@ describe('transaction tests', () => {
                         let response = await request(server).get(apiPrefix + '/transactions' + (extraParams === '' ? '' : '?') + extraParams);
                         expect(response.status).toEqual(200);
                         let transactions = JSON.parse(response.text).transactions;
-                        expect(transactions.length).toEqual(utils.globals.MAX_LIMIT);
+                        expect(transactions.length).toEqual(config.limits.RESPONSE_ROWS);
 
                         let check = true;
                         let prevSeconds = utils.secNsToSeconds(transactions[0].consensus_timestamp);
@@ -127,7 +129,7 @@ describe('transaction tests', () => {
                         const bigPageEntries = transactions
                         let paginatedEntries = [];
                         const numPages = 5;
-                        const pageSize = utils.globals.MAX_LIMIT / numPages;
+                        const pageSize = config.limits.RESPONSE_ROWS / numPages;
                         const firstTs = orderOptions === 'order=asc' ?
                             transactions[transactions.length - 1].consensus_timestamp :
                             transactions[0].consensus_timestamp;
@@ -155,7 +157,7 @@ describe('transaction tests', () => {
                         expect(check).toBeTruthy();
 
                         check = true;
-                        for (i = 0; i < utils.globals.MAX_LIMIT; i++) {
+                        for (i = 0; i < config.limits.RESPONSE_ROWS; i++) {
                             if (bigPageEntries[i].transaction_id !== paginatedEntries[i].transaction_id ||
                                 bigPageEntries[i].consensus_timestamp !== paginatedEntries[i].consensus_timestamp) {
                                 check = false;
