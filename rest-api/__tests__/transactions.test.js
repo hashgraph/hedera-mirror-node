@@ -16,8 +16,8 @@ afterAll(() => {
 });
 
 describe('transaction tests', () => {
-    let testAccountNum;
-    let testAccountTsNs;
+    let testAccountNum = 3; // Node 3
+    let testAccountTsNs = new Date().getTime() / 1000;
     let apiPrefix = '/api/v1';
 
     test('Get transactions with no parameters', async () => {
