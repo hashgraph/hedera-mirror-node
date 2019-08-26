@@ -13,7 +13,9 @@ import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 public class Entities {
 	private static int FK_ACCOUNT = 0;
 	private static int FK_CONTRACT = 0;
@@ -57,13 +59,21 @@ public class Entities {
 		}
     }       
 
-	private long updateEntity(long shard, long realm, long num, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
-	    
+	private long updateEntity(int fk_entity_type, long shard, long realm, long num, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
+		
 		long entityId = 0;
 		
 	    if (shard + realm + num == 0 ) {
 	        return 0;
 	    }
+
+	    entityId = createOrGetEntity(shard, realm, num, fk_entity_type);
+	    
+	    if ((exp_time_nanos + exp_time_seconds + auto_renew_period + fk_proxy_account_id == 0) && (admin_key == null) && (key == null)) {
+	    	// nothing to update
+	    	return entityId;
+	    }
+	    
 	    // build the SQL to prepare a statement
 	    String sqlUpdate = "UPDATE t_entities SET ";
 	    int fieldCount = 0;
@@ -103,8 +113,9 @@ public class Entities {
 	    sqlUpdate += " WHERE entity_shard = ?";
 	    sqlUpdate += " AND entity_realm = ?";
 	    sqlUpdate += " AND entity_num = ?";
+	    sqlUpdate += " AND fk_entity_type_id = ?";
 	    sqlUpdate += " RETURNING id";
-
+	    
 	    // inserts or returns an existing entity
         PreparedStatement updateEntity = Entities.connect.prepareStatement(sqlUpdate);
 
@@ -142,6 +153,8 @@ public class Entities {
         updateEntity.setLong(fieldCount, realm);
     	fieldCount += 1;
         updateEntity.setLong(fieldCount, num);
+    	fieldCount += 1;
+        updateEntity.setLong(fieldCount, fk_entity_type);
 
         updateEntity.execute();
         
@@ -161,27 +174,31 @@ public class Entities {
 	}
 
 	public long updateEntity(FileID fileId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
-		return updateEntity(fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id);
+		return updateEntity(FK_FILE, fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id);
 	}
 	public long updateEntity(ContractID contractId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
-		return updateEntity(contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id);
+		return updateEntity(FK_CONTRACT, contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id);
 	}
 	public long updateEntity(AccountID accountId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
-		return updateEntity(accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id);
+		return updateEntity(FK_ACCOUNT, accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id);
 	}
 
-	private long deleteEntity(long shard, long realm, long num) throws SQLException {
+	private long deleteEntity(int fk_entity_type, long shard, long realm, long num) throws SQLException {
 	    
 		long entityId = 0;
 		
 	    if (shard + realm + num == 0 ) {
 	        return 0;
 	    }
+
+	    entityId = createOrGetEntity(shard, realm, num, fk_entity_type);
+
 	    // build the SQL to prepare a statement
 	    String sqlDelete = "UPDATE t_entities SET deleted = true";
 	    sqlDelete += " WHERE entity_shard = ?";
 	    sqlDelete += " AND entity_realm = ?";
 	    sqlDelete += " AND entity_num = ?";
+	    sqlDelete += " AND fk_entity_type_id = ?";
 	    sqlDelete += " RETURNING id";
 
 	    // inserts or returns an existing entity
@@ -190,6 +207,7 @@ public class Entities {
 	    deleteEntity.setLong(1, shard);
         deleteEntity.setLong(2, realm);
         deleteEntity.setLong(3, num);
+        deleteEntity.setLong(4, fk_entity_type);
 
         deleteEntity.execute();
         
@@ -209,27 +227,31 @@ public class Entities {
 	}
 
 	public long deleteEntity(FileID fileId) throws SQLException {
-		return deleteEntity(fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum());
+		return deleteEntity(FK_FILE, fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum());
 	}
 	public long deleteEntity(ContractID contractId) throws SQLException {
-		return deleteEntity(contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum());
+		return deleteEntity(FK_CONTRACT, contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum());
 	}
 	public long deleteEntity(AccountID accountId) throws SQLException {
-		return deleteEntity(accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum());
+		return deleteEntity(FK_ACCOUNT, accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum());
 	}
 	
-	private long unDeleteEntity(long shard, long realm, long num) throws SQLException {
+	private long unDeleteEntity(int fk_entity_type, long shard, long realm, long num) throws SQLException {
 	    
 		long entityId = 0;
 		
 	    if (shard + realm + num == 0 ) {
 	        return 0;
 	    }
+
+	    entityId = createOrGetEntity(shard, realm, num, fk_entity_type);
+
 	    // build the SQL to prepare a statement
 	    String sqlDelete = "UPDATE t_entities SET deleted = false";
 	    sqlDelete += " WHERE entity_shard = ?";
 	    sqlDelete += " AND entity_realm = ?";
 	    sqlDelete += " AND entity_num = ?";
+	    sqlDelete += " AND fk_entity_type_id = ?";
 	    sqlDelete += " RETURNING id";
 
 	    // inserts or returns an existing entity
@@ -238,6 +260,7 @@ public class Entities {
 	    deleteEntity.setLong(1, shard);
         deleteEntity.setLong(2, realm);
         deleteEntity.setLong(3, num);
+        deleteEntity.setLong(4, fk_entity_type);
 
         deleteEntity.execute();
         
@@ -256,13 +279,13 @@ public class Entities {
 	}
 
 	public long unDeleteEntity(FileID fileId) throws SQLException {
-		return unDeleteEntity(fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum());
+		return unDeleteEntity(FK_FILE, fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum());
 	}
 	public long unDeleteEntity(ContractID contractId) throws SQLException {
-		return unDeleteEntity(contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum());
+		return unDeleteEntity(FK_CONTRACT, contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum());
 	}
 	public long unDeleteEntity(AccountID accountId) throws SQLException {
-		return unDeleteEntity(accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum());
+		return unDeleteEntity(FK_ACCOUNT, accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum());
 	}
 
 	private long createEntity(long shard, long realm, long num, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id, int fk_entity_type) throws SQLException {
