@@ -55,6 +55,9 @@ public class DatabaseUtilities {
                 Connection connection = dataSource.getConnection();
                 migrate();
                 return connection;
+            } catch (RuntimeException e) {
+                log.info("Stop file found, stopping.");
+                System.exit(0);
             } catch (Exception e) {
                 log.warn("Unable to connect to database. Will retry in {}ms: {}", dataSource.getConnectionTimeout(), e.getMessage());
             }
