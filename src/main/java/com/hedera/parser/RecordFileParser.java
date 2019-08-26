@@ -224,7 +224,7 @@ public class RecordFileParser {
 	}
 
 	public static void parseNewFiles(String pathName) {
-		log.info( "Parsing record files from {}", pathName);
+		log.debug( "Parsing record files from {}", pathName);
 		if (RecordFileLogger.start()) {
 
 			File file = new File(pathName);
@@ -247,7 +247,7 @@ public class RecordFileParser {
 					log.trace("Processing record files: {}", fullPaths);
 					loadRecordFiles(fullPaths);
 				} else {
-					log.info("No files to parse");
+					log.debug("No files to parse");
 				}
 			} else {
 				log.error("Input parameter {} is not a folder", pathName);
