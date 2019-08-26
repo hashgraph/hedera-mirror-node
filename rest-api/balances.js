@@ -60,16 +60,15 @@ const getBalances = function (req) {
     let sqlQuery =
         "Select \n" +
         "    abh.snapshot_time_ns\n" +
-        "    , concat(ab.shard, '.', ab.realm, '.', ab.num) as account\n" +
+        "    , ab.shard, ab.realm, ab.num\n" +
         "    , abh.balance\n" +
         " from t_account_balance_history as abh\n" +
         "    , t_account_balances ab\n" +
         (pubKeyQuery === '' ? '' : ', t_entities e\n') +
         " Where ab.id = abh.fk_balance_id\n" +
         " and snapshot_time_ns = (" + innerQuery + ")\n" +
-        (accountQuery === '' ? '' : '     and ') + accountQuery + "\n" +
-        (pubKeyQuery === '' ? '' : '     and ') + pubKeyQuery + "\n" +
-        (balanceQuery === '' ? '' : '     and ') + balanceQuery + "\n" +
+        ' and ' + 
+        [accountQuery, pubKeyQuery, balanceQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
         " order by (ab.shard, ab.realm, ab.num) " + order + "\n" +
         "     " + limitQuery;
 
@@ -104,6 +103,7 @@ const getBalances = function (req) {
             // let retObj = {}
             for (let row of results.rows) {
                 let ns = utils.nsToSecNs(row.snapshot_time_ns);
+                row.account = row.shard + '.' + row.realm + '.' + row.num;
 
                 if (ret.timestamp === null) {
                     ret.timestamp = ns;

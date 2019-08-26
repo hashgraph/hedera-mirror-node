@@ -3,9 +3,8 @@ const nodeCache = require('node-cache')
 class Cacher {
 
     constructor(ttl) {
-        this.cache = new nodeCache({stdTTL: ttl});
+        this.cache = new nodeCache({ stdTTL: ttl });
     }
-    // stdTTL: time to live in seconds for every generated cache element.
 
     /**
      * Get a key for caching API responses using the request URL
@@ -29,28 +28,45 @@ class Cacher {
     getResponse(req, res, func) {
         logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
 
-        // If a cached copy exists, return that.
-        const url = this.getUrlFromRequest(req);
-        const content = this.cache.get(url);
-        if (content) {
-            res.json(content);
-        } else {
-            // Invoke the function to query the database, and store the results 
-            // before returning from the API
-            func(req)
-                .then(content => {
-                    this.cache.set(url, content);
-                    res.json(content);
-                })
-                .catch(error => {
-                    logger.error("Error processing " + req.originalUrl +
-                        JSON.stringify(error, Object.getOwnPropertyNames(error)));
-                    res.status(404)
-                        .send('Internal error');
-                })
-        }
-    }
+        // TODO: Enable intellgent caching later by detecting if the content is 
+        // cacheable by checking if the response to the query will not change.
+        // For now, we disable caching.
+        func(req)
+            .then(content => {
+                res.json(content);
+            })
+            .catch(error => {
+                logger.error("Error processing " + req.originalUrl +
+                    JSON.stringify(error, Object.getOwnPropertyNames(error)));
+                res.status(500)
+                    .send('Internal error');
+            });
 
+        /*
+                // TODO: Enable this code for caching later
+        
+                // If a cached copy exists, return that.
+                const url = this.getUrlFromRequest(req);
+                const content = this.cache.get(url);
+                if (content) {
+                    res.json(content);
+                } else {
+                    // Invoke the function to query the database, and store the results 
+                    // before returning from the API
+                    func(req)
+                        .then(content => {
+                            this.cache.set(url, content);
+                            res.json(content);
+                        })
+                        .catch(error => {
+                            logger.error("Error processing " + req.originalUrl +
+                                JSON.stringify(error, Object.getOwnPropertyNames(error)));
+                            res.status(500)
+                                .send('Internal error');
+                        })
+                }
+            */
+    }
 }
 
 module.exports = Cacher

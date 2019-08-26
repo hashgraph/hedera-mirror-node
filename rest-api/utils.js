@@ -31,8 +31,11 @@ const parseEntityId = function (acc) {
  * Parse the comparator symbols (i.e. gt, lt, etc.) and convert to SQL style query
  * @param {Array} fields Array of fields in the query (e.g. 'account.id' or 'timestamp')
  * @param {Array} valArr Array of values (e.g. 20 or gt:10)
- * @param {String} type One of 'entityId' or 'timestamp' for special interpretation as 
- *          an entity (shard.realm.entity format), or timestamp_ns (ssssssssss.nnnnnnnnn)
+ * @param {String} type Type of the field such as:
+ *      'entityId': Could be just a number like 1234 that gets converted to 0.0.1234, or a full 
+ *          entity id in shard.realm.entityId form; or
+ *      'timestamp': Could be just in seconds followed by optional decimal point and millis or nanos; or
+ *      'hexstring': a hexstring
  * @return {Object} {queryString, queryVals} Constructed SQL query string and values.
  */
 const parseComparatorSymbol = function (fields, valArr, type = null) {
@@ -49,19 +52,19 @@ const parseComparatorSymbol = function (fields, valArr, type = null) {
     };
 
     for (let item of valArr) {
-        //Force a simple account number (e.g. 1234 or 0.0.1234) to 'eq:0.0.1234' form 
-        // to allow for consistent processing 
-        const pattern = type === 'hexstring' ? /^([A-Fa-f0-9])+$/ : /^(\d)+$/;
-        if ((pattern.test(item)) ||
-            (/^(\d)+\.(\d)+\.(\d)+$/.test(item))) {
-            item = "eq:" + item;
-        }
-
         // Split the gt:number into operation and value and create a SQL query string
         let splitItem = item.split(":");
-        if (splitItem.length == 2) {
-            let op = splitItem[0]
-            let val = splitItem[1];
+        if (splitItem.length === 1 || splitItem.length === 2) {
+            let op;
+            let val;
+            if (splitItem.length === 1) {
+                // No operator specified. Just use "eq:"
+                op = "eq";
+                val = splitItem[0];
+            } else {
+                op = splitItem[0]
+                val = splitItem[1];
+            }
 
             let entity = null;
 
@@ -69,11 +72,7 @@ const parseComparatorSymbol = function (fields, valArr, type = null) {
                 entity = parseEntityId(val);
             }
 
-            if (((type === 'entityId' && entity.num !== 0) ||
-                (type === 'hexstring') ||
-                (type !== 'entityId' && !isNaN(val))) &&
-                (op in opsMap)) {
-
+            if (op in opsMap) {
                 let fieldQueryStr = '';
                 for (let f of fields) {
                     let fquery = '';
@@ -100,6 +99,7 @@ const parseComparatorSymbol = function (fields, valArr, type = null) {
                         fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
                         vals.push(ts);
                     } else {
+                        // All other types (including hexstring) are handled here
                         fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
                         vals.push((type === 'hexstring' ? '\\x' : '') + val);
                     }
@@ -191,9 +191,9 @@ const parseResultParams = function (req) {
     let query = '';
 
     if (resultType === 'success') {
-        query = '     and result=\'SUCCESS\'';
+        query = '     result=\'SUCCESS\'';
     } else if (resultType === 'fail') {
-        query = '     and result != \'SUCCESS\'';
+        query = '     result != \'SUCCESS\'';
     }
     return (query);
 }

@@ -29,15 +29,9 @@ const getAccounts = function (req) {
     const { limitQuery, limitParams, order, limit } =
         utils.parseLimitAndOrderParams(req, 'asc');
 
-    let querySuffix = '';
-    querySuffix += (accountQuery === '' ? '' : ' and ') + accountQuery;
-    querySuffix += (balanceQuery === '' ? '' : ' and ') + balanceQuery;
-    querySuffix += (pubKeyQuery === '' ? '' : ' and ') + pubKeyQuery;
-    querySuffix += ' order by num ' + order + '\n';
-    querySuffix += limitQuery;
 
     const entitySql =
-        "select concat(e.entity_shard, '.', e.entity_realm, '.', e.entity_num) as account\n" +
+        "select e.entity_shard, e.entity_realm, e.entity_num\n" +
         ", et.name as entity_type, exp_time_ns, auto_renew_period, admin_key, key, deleted\n" +
         ", ab.balance as account_balance\n" +
         ", abrt.seconds as balance_asof_seconds, abrt.nanos as balance_asof_nanos\n" +
@@ -49,7 +43,10 @@ const getAccounts = function (req) {
         " and ab.shard = e.entity_shard\n" +
         " and ab.realm = e.entity_realm\n" +
         " and ab.num = e.entity_num\n" +
-        querySuffix;
+        "   and " + 
+        [accountQuery, balanceQuery, pubKeyQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
+        " order by num " + order + "\n" +
+        limitQuery;
 
     const entityParams = accountParams
         .concat(balanceParams)
@@ -75,6 +72,11 @@ const getAccounts = function (req) {
 
             for (let row of results.rows) {
                 row.balance = {};
+                row.account = row.entity_shard + '.' + row.entity_realm + '.' + row.entity_num;
+                delete row.entity_shard;
+                delete row.entity_realm;
+                delete row.entity_num;
+
                 row.balance.timestamp = '' + row.balance_asof_seconds + '.' +
                     ((row.balance_asof_nanos + '000000000').substring(0, 9));
                 delete row.balance_asof_seconds;
@@ -212,9 +214,8 @@ const getOneAccount = function (req, res) {
         .concat(limitParams);
 
     let transactionsQuery =
-        "select  concat(etrans.entity_shard, '.', etrans.entity_realm, '.'," +
-        "           etrans.entity_num, '-', t.vs_seconds, '-', t.vs_nanos) " +
-        "           as transaction_id\n" +
+        "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
+        "   , t.valid_start_ns\n" +
         "   , t.memo\n" +
         "   , t.consensus_seconds\n" +
         "   , t.consensus_nanos\n" +
@@ -224,11 +225,13 @@ const getOneAccount = function (req, res) {
         "   , t.fk_trans_type_id\n" +
         "   , ttt.name\n" +
         "   , t.fk_node_acc_id\n" +
-        "   , concat(enode.entity_shard, '.', enode.entity_realm, '.', " +
-        "       enode.entity_num) as node\n" +
+        "   , enode.entity_shard as node_shard\n" +
+        "   , enode.entity_realm as node_realm\n" +
+        "   , enode.entity_num as node_num\n" +
         "   , account_id\n" +
-        "   , concat(eaccount.entity_shard, '.', eaccount.entity_realm, " +
-        "       '.', eaccount.entity_num) as account\n" +
+        "   , eaccount.entity_shard as account_shard\n" +
+        "   , eaccount.entity_realm as account_realm\n" +
+        "   , eaccount.entity_num as account_num\n" +
         "   , amount\n" +
         "   , t.charged_tx_fee\n" +
         " from (" + innerQuery + ") as tlist\n" +

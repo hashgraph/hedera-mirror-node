@@ -50,19 +50,13 @@ const getEvents = function (req) {
         .concat(nodeParams)
         .concat(limitParams);
 
-    let querySuffix = '';
-    querySuffix += (tsQuery === '' ? ''
-        : (querySuffix === '' ? ' where ' : ' and ')) + tsQuery;
-    querySuffix += (nodeQuery === '' ? ''
-        : (querySuffix === '' ? ' where ' : ' and ')) + nodeQuery;
-
-    querySuffix += 'order by tev.consensus_timestamp_ns ' + order + '\n';
-    querySuffix += limitQuery;
-
     let sqlQuery =
         "select  *\n" +
         " from t_events tev\n" +
-        querySuffix;
+        " where " +
+        [tsQuery, nodeQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
+        'order by tev.consensus_timestamp_ns ' + order + '\n' +
+        limitQuery;
 
     const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(
         sqlQuery, sqlParams);

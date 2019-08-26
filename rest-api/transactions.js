@@ -16,6 +16,16 @@ const createTransferLists = function (rows, arr) {
     let transactions = {};
 
     for (let row of rows) {
+        // Construct a transaction id using format: shard.realm.num-sssssssssss-nnnnnnnnn
+        const epochSecondsDigits = 10; // ('' + (Math.round)(new Date().getTime() / 1000)).length
+        row.transaction_id = row.entity_shard + '.' +
+            row.entity_realm + '.' +
+            row.entity_num + '-' +
+            row.valid_start_ns.slice(0, epochSecondsDigits) + '-' +
+            row.valid_start_ns.slice(epochSecondsDigits);
+        row.node = row.node_shard + '.' + row.node_realm + '.' + row.node_num;
+        row.account = row.account_shard + '.' + row.account_realm + '.' + row.account_num;
+
         if (!(row.transaction_id in transactions)) {
             transactions[row.transaction_id] = {};
             transactions[row.transaction_id]['consensus_timestamp'] = utils.nsToSecNs(row['consensus_ns']);
@@ -95,19 +105,16 @@ const getTransactions = function (req) {
         'where ctl.fk_trans_id = t.id\n' +
         '   and eaccount.id = ctl.account_id\n' +
         '   and t.fk_result_id = tr.id\n' +
-        (accountQuery === '' ? '' : '     and ') + accountQuery + '\n' +
-        (tsQuery === '' ? '' : '     and ') + tsQuery + '\n' +
-        resultTypeQuery + '\n' +
+        '   and ' +
+        [accountQuery, tsQuery, resultTypeQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
         '     order by t.consensus_ns ' + order + '\n' +
         '     ' + limitQuery;
     let sqlParams = accountParams.concat(tsParams)
         .concat(limitParams);
 
     let sqlQuery =
-        "select concat(etrans.entity_shard, '.', etrans.entity_realm, '.'," +
-        "       etrans.entity_num, '-', " +
-        "       substring(t.valid_start_ns::varchar(19), 1, 10), '-', " +
-        "       right(t.valid_start_ns::varchar(19),9)) as transaction_id\n" +
+        "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
+        "   , t.valid_start_ns\n" +
         "   , t.memo\n" +
         '	, t.consensus_ns\n' +
         '   , valid_start_ns\n' +
@@ -115,11 +122,13 @@ const getTransactions = function (req) {
         "   , t.fk_trans_type_id\n" +
         "   , ttt.name\n" +
         "   , t.fk_node_acc_id\n" +
-        "   , concat(enode.entity_shard, '.', enode.entity_realm, '.', " +
-        "       enode.entity_num) as node\n" +
+        "   , enode.entity_shard as node_shard\n" +
+        "   , enode.entity_realm as node_realm\n" +
+        "   , enode.entity_num as node_num\n" +
         "   , account_id\n" +
-        "   , concat(eaccount.entity_shard, '.', eaccount.entity_realm, " +
-        "       '.', eaccount.entity_num) as account\n" +
+        "   , eaccount.entity_shard as account_shard\n" +
+        "   , eaccount.entity_realm as account_realm\n" +
+        "   , eaccount.entity_num as account_num\n" +
         "   , amount\n" +
         "   , t.charged_tx_fee\n" +
         " from (" + innerQuery + ") as tlist\n" +
@@ -182,10 +191,8 @@ const getOneTransaction = function (req, res) {
     const sqlParams = req.params.id.replace(/(\d{10})-(\d{9})/, '$1$2').split(/[.-]/);
 
     let sqlQuery =
-        "select concat(etrans.entity_shard, '.', etrans.entity_realm, '.'," +
-        "       etrans.entity_num, '-', " +
-        "       substring(t.valid_start_ns::varchar(19), 1, 10), '-', " +
-        "       right(t.valid_start_ns::varchar(19),9)) as transaction_id\n" +
+        "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
+        "   , t.valid_start_ns\n" +
         "   , t.memo\n" +
         '	, t.consensus_ns\n' +
         '   , valid_start_ns\n' +
@@ -193,11 +200,13 @@ const getOneTransaction = function (req, res) {
         "   , t.fk_trans_type_id\n" +
         "   , ttt.name\n" +
         "   , t.fk_node_acc_id\n" +
-        "   , concat(enode.entity_shard, '.', enode.entity_realm, '.', " +
-        "       enode.entity_num) as node\n" +
+        "   , enode.entity_shard as node_shard\n" +
+        "   , enode.entity_realm as node_realm\n" +
+        "   , enode.entity_num as node_num\n" +
         "   , account_id\n" +
-        "   , concat(eaccount.entity_shard, '.', eaccount.entity_realm, " +
-        "       '.', eaccount.entity_num) as account\n" +
+        "   , eaccount.entity_shard as account_shard\n" +
+        "   , eaccount.entity_realm as account_realm\n" +
+        "   , eaccount.entity_num as account_num\n" +
         "   , amount\n" +
         "   , charged_tx_fee\n" +
         " from t_transactions t\n" +
