@@ -50,6 +50,7 @@ public class DatabaseUtilities {
                 if (Utility.checkStopFile()) {
                     log.info("Stop file found, stopping.");
                     System.exit(0);
+                    
                 }
 
                 Connection connection = dataSource.getConnection();
