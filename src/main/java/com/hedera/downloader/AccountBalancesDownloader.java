@@ -22,6 +22,7 @@ public class AccountBalancesDownloader extends Downloader {
 	public AccountBalancesDownloader() {
 		Utility.createDirIfNotExists(validDir);
 		Utility.createDirIfNotExists(tmpDir);
+		Utility.purgeDirectory(tmpDir);
 	}
 
 	public static void main(String[] args) {

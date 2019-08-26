@@ -29,6 +29,8 @@ public class RecordFileDownloader extends Downloader {
 	public RecordFileDownloader() {
 		Utility.createDirIfNotExists(validDir);
 		Utility.createDirIfNotExists(tmpDir);
+		
+		Utility.purgeDirectory(tmpDir);
 	}
 
 	public static void downloadNewRecordfiles(RecordFileDownloader downloader) {

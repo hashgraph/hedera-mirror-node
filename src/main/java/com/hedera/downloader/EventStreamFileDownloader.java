@@ -29,6 +29,7 @@ public class EventStreamFileDownloader extends Downloader {
 	public EventStreamFileDownloader() {
 		Utility.createDirIfNotExists(validDir);
 		Utility.createDirIfNotExists(tmpDir);
+		Utility.purgeDirectory(tmpDir);
 	}
 
 	public static void downloadNewEventfiles(EventStreamFileDownloader downloader) {
