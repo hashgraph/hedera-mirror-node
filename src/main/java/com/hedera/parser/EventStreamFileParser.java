@@ -3,9 +3,9 @@ package com.hedera.parser;
 import com.google.common.base.Stopwatch;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.platform.Transaction;
-import com.hedera.recordFileLogger.LoggerStatus;
 import com.hedera.utilities.Utility;
 
 import lombok.extern.log4j.Log4j2;
@@ -40,9 +40,6 @@ public class EventStreamFileParser {
 
 	private static Connection connect = null;
 
-	private static ConfigLoader configLoader;
-	private static LoggerStatus loggerStatus = new LoggerStatus();
-
 	private static final Long PARENT_HASH_NULL = null;
 	private static final long PARENT_HASH_NOT_FOUND_MATCH = -2;
 
@@ -61,12 +58,13 @@ public class EventStreamFileParser {
 	 * 		the name of record file to read
 	 * @param previousFileHash
 	 * 		previous file hash
+	 * @throws Exception 
 	 */
-	static public LoadResult loadEventStreamFile(String fileName, String previousFileHash) {
+	static public LoadResult loadEventStreamFile(String fileName, String previousFileHash) throws Exception {
 
 		File file = new File(fileName);
 		String readPrevFileHash;
-
+		ApplicationStatus applicationStatus = new ApplicationStatus();
 		// for >= version3, we need to calculate hash for content;
 		boolean calculateContentHash = false;
 
@@ -123,7 +121,7 @@ public class EventStreamFileParser {
 
 						if (!Arrays.equals(new byte[48], readPrevFileHashBytes) && !readPrevFileHash.contentEquals(
 								previousFileHash)) {
-							if (configLoader.getStopLoggingIfEventHashMismatchAfter().compareTo(fileName) < 0) {
+							if (applicationStatus.getBypassEventHashMismatchUntilAfter().compareTo(fileName) < 0) {
 								// last file for which mismatch is allowed is in the past
 								log.error("Hash mismatch for file {}. Previous = {}, Current = {}", fileName, previousFileHash, readPrevFileHash);
 								return LoadResult.STOP;
@@ -175,7 +173,7 @@ public class EventStreamFileParser {
 		}
 		String thisFileHash = Utility.bytesToHex(md.digest());
 
-		LoggerStatus.setLastProcessedEventHash(thisFileHash);
+		applicationStatus.updateLastProcessedEventHash(thisFileHash);
 		return LoadResult.OK;
 	}
 
@@ -418,9 +416,12 @@ public class EventStreamFileParser {
 
 	/**
 	 * read and parse a list of EventStream files
+	 * @throws Exception 
 	 */
-	static public boolean loadEventStreamFiles(List<String> fileNames) {
-		String prevFileHash = loggerStatus.getLastProcessedEventHash();
+	static public boolean loadEventStreamFiles(List<String> fileNames) throws Exception {
+		ApplicationStatus applicationStatus = new ApplicationStatus();
+		
+		String prevFileHash = applicationStatus.getLastProcessedEventHash();
 		for (String name : fileNames) {
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, stopping");
@@ -430,7 +431,7 @@ public class EventStreamFileParser {
 			if (loadResult == LoadResult.STOP) {
 				return false;
 			}
-			prevFileHash = loggerStatus.getLastProcessedEventHash();
+			prevFileHash = applicationStatus.getLastProcessedEventHash();
 			if (loadResult == LoadResult.OK) {
 				Utility.moveFileToParsedDir(name, PARSED_DIR);
 			}
@@ -480,7 +481,9 @@ public class EventStreamFileParser {
 		return null;
 	}
 
-	public static boolean parseNewFiles(String pathName) {
+	public static boolean parseNewFiles(String pathName) throws Exception {
+		ApplicationStatus applicationStatus = new ApplicationStatus();
+		
 		log.info( "Parsing event files from {}", pathName);
 		if (pathName == null) {
 			return false;
@@ -498,7 +501,6 @@ public class EventStreamFileParser {
 				return false;
 			}
 		}
-		configLoader = new ConfigLoader();
 
 		if (Utility.checkStopFile()) {
 			log.info("Stop file found, stopping");
@@ -510,7 +512,7 @@ public class EventStreamFileParser {
 		boolean result = true;
 		if (file.isFile()) {
 			log.info("Loading event file {}", pathName);
-			if (loadEventStreamFile(pathName, loggerStatus.getLastProcessedEventHash()) == LoadResult.STOP) {
+			if (loadEventStreamFile(pathName, applicationStatus.getLastProcessedEventHash()) == LoadResult.STOP) {
 				result = false;
 			}
 		} else if (file.isDirectory()) { //if it's a directory
@@ -526,12 +528,8 @@ public class EventStreamFileParser {
 
 			log.info("Loading {} event files from directory {}", fullPaths.size(), pathName);
 
-			if (fullPaths != null) {
-				log.trace("Event files: {}", fullPaths);
-				result = loadEventStreamFiles(fullPaths);
-			} else {
-				log.info("No files to parse");
-			}
+			log.trace("Event files: {}", fullPaths);
+			result = loadEventStreamFiles(fullPaths);
 		} else {
 			log.error("Event file {} does not exist", pathName);
 		}
@@ -545,7 +543,7 @@ public class EventStreamFileParser {
 		return result;
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		String pathName;
 
 		while (true) {

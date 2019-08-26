@@ -2,6 +2,7 @@ package com.hedera.downloader;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
@@ -33,7 +34,7 @@ public class RecordFileDownloader extends Downloader {
 		Utility.purgeDirectory(tmpDir);
 	}
 
-	public static void downloadNewRecordfiles(RecordFileDownloader downloader) {
+	public static void downloadNewRecordfiles(RecordFileDownloader downloader) throws Exception {
 		setupCloudConnection();
 
 		HashMap<String, List<File>> sigFilesMap;
@@ -57,7 +58,7 @@ public class RecordFileDownloader extends Downloader {
 		}
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		RecordFileDownloader downloader = new RecordFileDownloader();
 
 		while (true) {
@@ -74,10 +75,12 @@ public class RecordFileDownloader extends Downloader {
 	 * (1) Sort .rcd files by timestamp,
 	 * (2) Verify the .rcd files to see if the file Hash matches prevFileHash
 	 * @param validDir
+	 * @throws Exception 
 	 */
-	public static void verifyValidRecordFiles(String validDir) {
-		String lastValidRcdFileName =  ConfigLoader.getLastValidRcdFileName();
-		String lastValidRcdFileHash = ConfigLoader.getLastValidRcdFileHash();
+	public static void verifyValidRecordFiles(String validDir) throws Exception {
+		ApplicationStatus applicationStatus = new ApplicationStatus();
+		String lastValidRcdFileName =  applicationStatus.getLastValidDownloadedRecordFileName();
+		String lastValidRcdFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
 		File validDirFile = new File(validDir);
 		if (!validDirFile.exists()) {
 			return;
@@ -113,9 +116,8 @@ public class RecordFileDownloader extends Downloader {
 			}
 
 			if (!newLastValidRcdFileName.equals(lastValidRcdFileName)) {
-				ConfigLoader.setLastValidRcdFileHash(newLastValidRcdFileHash);
-				ConfigLoader.setLastValidRcdFileName(newLastValidRcdFileName);
-//				ConfigLoader.saveRecordsDataToFile();
+				applicationStatus.updateLastValidDownloadedRecordFileHash(newLastValidRcdFileHash);
+				applicationStatus.updateLastValidDownloadedRecordFileName(newLastValidRcdFileName);
 			}
 
 		} catch (Exception ex) {

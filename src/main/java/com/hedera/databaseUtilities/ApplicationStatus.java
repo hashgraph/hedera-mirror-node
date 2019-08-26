@@ -10,72 +10,150 @@ import lombok.extern.log4j.Log4j2;
 public class ApplicationStatus {
 
 	public enum ApplicationStatusCode {
-		LVDRF		// Last valid downloaded record file name
-		,LVDRFH		// Last valid downloaded record file hash
-		,LVDBF		// Last valid downloaded balance file name
-		,LVDEF		// Last valid downloaded event file name
-		,LVDEFH		// Last valid downloaded event file hash
-		,EHMBUA		// Event hash mismatch bypass until after
-		,RHMBUA		// Record hash mismatch bypass until after
-		,LPEH		// Last processed record hash
-		,LPRH		// Last processed event hash
+		LAST_VALID_DOWNLOADED_RECORD_FILE
+		,LAST_VALID_DOWNLOADED_RECORD_FILE_HASH		
+		,LAST_VALID_DOWNLOADED_BALANCE_FILE
+		,LAST_VALID_DOWNLOADED_EVENT_FILE
+		,LAST_VALID_DOWNLOADED_EVENT_FILE_HASH
+		,EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER
+		,RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER
+		,LAST_PROCESSED_EVENT_HASH
+		,LAST_PROCESSED_RECORD_HASH
 	}
 	
-	public static boolean setStatus(ApplicationStatusCode code, String statusValue) {
+	private void updateStatus(ApplicationStatusCode code, String statusValue) throws Exception {
 		
 	    try (Connection connect = DatabaseUtilities.getConnection()) {
 	    	log.debug("Updating application status for : {}", code.name());
 	
-	    	try {
-				PreparedStatement updateValue = connect.prepareStatement(
-						"UPDATE t_application_status SET "
-						+ " status_value = ? "
-						+ " WHERE status_code = ?");
-		
-				updateValue.setString(1, statusValue);
-				updateValue.setString(2, code.name());
-				
-				updateValue.execute();
-				updateValue.close();
+			PreparedStatement updateValue = connect.prepareStatement(
+					"UPDATE t_application_status SET "
+					+ " status_value = ? "
+					+ " WHERE status_code = ?");
 	
-				return true;
-			} catch (Exception e) {
-				log.error("Error updating application status for : {}, {}", code.name(), e);
-			}
+			updateValue.setString(1, statusValue);
+			updateValue.setString(2, code.name());
+			
+			updateValue.execute();
+			updateValue.close();
+
 	    } catch (Exception e) {
-	        log.error("Error connecting to database", e);
+			log.error("Error updating application status for : {}, {}", code.name(), e);
+			throw e;
 	    }
-	    return false;
 	}
 
-	public static String getStatus(ApplicationStatusCode code) {
+	public String getStatus(ApplicationStatusCode code) throws Exception {
 		String value = "";
 	    try (Connection connect = DatabaseUtilities.getConnection()) {
 	    	log.debug("Getting application status for : {}", code.name());
 	
-	    	try {
-				PreparedStatement getValue = connect.prepareStatement(
-						"SELECT status_value FROM t_application_status "
-						+ " WHERE status_code = ?");
-		
-				getValue.setString(1, code.name());
-				getValue.execute();
-				ResultSet appStatus = getValue.getResultSet();
+			PreparedStatement getValue = connect.prepareStatement(
+					"SELECT status_value FROM t_application_status "
+					+ " WHERE status_code = ?");
+	
+			getValue.setString(1, code.name());
+			getValue.execute();
+			ResultSet appStatus = getValue.getResultSet();
 
-				if (appStatus.next()) {
-					value = appStatus.getString(1);
-					if (value == null) { value = "";}
-				} else {
-					log.error("Application status code {} does not exist in the database", code.name());
-				}
-				appStatus.close();
-				getValue.close();
-			} catch (Exception e) {
-				log.error("Error getting application status for : {}, {}", code.name(), e);
+			if (appStatus.next()) {
+				value = appStatus.getString(1);
+				if (value == null) { value = "";}
+			} else {
+				log.error("Application status code {} does not exist in the database", code.name());
 			}
+			appStatus.close();
+			getValue.close();
 	    } catch (Exception e) {
-	        log.error("Error connecting to database", e);
+			log.error("Error getting application status for : {}, {}", code.name(), e);
+			throw e;
 	    }
 	    return value;
+	}
+	
+	public String getLastValidDownloadedBalanceFileName() throws Exception {
+		return getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
+	}
+
+	public void updateLastValidDownloadedBalanceFileName(String name) throws Exception {
+		updateStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, name);
+	}
+	
+	public String getLastValidDownloadedRecordFileName() throws Exception {
+		return getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
+	}
+
+	public void updateLastValidDownloadedRecordFileName(String name) throws Exception {
+		log.trace("Update lastValidRcdFileName to be {}", name);
+		updateStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, name);
+	}
+
+	public String getLastValidDownloadedRecordFileHash() throws Exception {
+		return getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
+	}
+
+	public void updateLastValidDownloadedRecordFileHash(String hash) throws Exception {
+		log.trace("Update lastValidRcdFileHash to be {}", hash);
+		updateStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH, hash);
+		
+	}
+
+	public String getLastValidDownloadedEventFileName() throws Exception {
+		return getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE);
+	}
+
+	public void updateLastValidDownloadedEventFileName(String name) throws Exception {
+		log.trace("Update lastValidEventFileName to be {}", name);
+		updateStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE, name);
+	}
+
+	public String getLastValidDownloadedEventFileHash() throws Exception {
+		return getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH);
+	}
+
+	public void updateLastValidDownloadedEventFileHash(String hash) throws Exception {
+		log.trace("Update lastValidEventFileHash to be {}", hash);
+		updateStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH, hash);
+	}
+
+	public String getBypassRecordHashMismatchUntilAfter() throws Exception {
+		return getStatus(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
+	}
+	public void updateBypassRecordHashMismatchUntilAfter(String bypassUntilAfter) throws Exception {
+		updateStatus(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, bypassUntilAfter);
+	}
+	public String getBypassEventHashMismatchUntilAfter() throws Exception {
+		return getStatus(ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
+	}
+	public void updateBypassEventHashMismatchUntilAfter(String bypassUntilAfter) throws Exception {
+		updateStatus(ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER, bypassUntilAfter);
+	}
+	public String getLastProcessedRcdHash() throws Exception {
+		return getStatus(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
+	}
+
+	public void updateLastProcessedRcdHash(String hash) throws Exception {
+		log.trace("Update last processed record hash to be {}", hash);
+		if (hash.isEmpty()) {
+			return;
+		}
+		if (!hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
+			updateStatus(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, hash);
+		}
+	}
+
+	public String getLastProcessedEventHash() throws Exception {
+		return getStatus(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH);
+	}
+
+	public void updateLastProcessedEventHash(String hash) throws Exception {
+		log.trace("Update last processed event hash to be {}", hash);
+		if (hash.isEmpty()) {
+			return;
+		}
+		if (!hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
+			updateStatus(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH, hash);
+		}
+		
 	}
 }

@@ -10,6 +10,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
 
@@ -63,9 +64,11 @@ public class AccountBalancesDownloader extends Downloader {
 	 *  (3) compare the Hash of _Balances.csv file with Hash which has been agreed on by valid signatures, if match, move the _Balances.csv file into `valid` directory; else download _Balances.csv file from other valid node folder, and compare the Hash until find a match one
 	 *  return the name of directory which contains valid _Balances.csv files
 	 * @param sigFilesMap
+	 * @throws Exception 
 	 */
-	private void verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) {
-		String lastValidBalanceFileName = ConfigLoader.getLastValidBalanceFileName();
+	private void verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) throws Exception {
+		ApplicationStatus applicationStatus = new ApplicationStatus();
+		String lastValidBalanceFileName = applicationStatus.getLastValidDownloadedBalanceFileName();
 		String newLastValidBalanceFileName = lastValidBalanceFileName;
 
 		// reload address book and keys
@@ -120,7 +123,7 @@ public class AccountBalancesDownloader extends Downloader {
 			}
 		}
 		if (!newLastValidBalanceFileName.equals(lastValidBalanceFileName)) {
-			ConfigLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
+			applicationStatus.updateLastValidDownloadedBalanceFileName(newLastValidBalanceFileName);
 		}
 	}
 }
