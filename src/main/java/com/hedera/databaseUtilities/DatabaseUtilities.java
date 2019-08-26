@@ -49,7 +49,6 @@ public class DatabaseUtilities {
             try {
                 if (Utility.checkStopFile()) {
                     log.info("Stop file found, stopping.");
-                    log.info("Stop file found, stopping.");
                     System.exit(0);
                 }
 
