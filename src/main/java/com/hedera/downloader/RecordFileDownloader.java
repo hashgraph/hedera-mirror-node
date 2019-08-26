@@ -113,7 +113,7 @@ public class RecordFileDownloader extends Downloader {
 			if (!newLastValidRcdFileName.equals(lastValidRcdFileName)) {
 				ConfigLoader.setLastValidRcdFileHash(newLastValidRcdFileHash);
 				ConfigLoader.setLastValidRcdFileName(newLastValidRcdFileName);
-				ConfigLoader.saveRecordsDataToFile();
+//				ConfigLoader.saveRecordsDataToFile();
 			}
 
 		} catch (Exception ex) {

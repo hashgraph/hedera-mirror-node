@@ -175,8 +175,7 @@ public class EventStreamFileParser {
 		}
 		String thisFileHash = Utility.bytesToHex(md.digest());
 
-		loggerStatus.setLastProcessedEventHash(thisFileHash);
-		loggerStatus.saveToFile();
+		LoggerStatus.setLastProcessedEventHash(thisFileHash);
 		return LoadResult.OK;
 	}
 

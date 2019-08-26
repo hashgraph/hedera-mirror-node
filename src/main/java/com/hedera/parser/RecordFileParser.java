@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,7 +35,6 @@ public class RecordFileParser {
 	static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
 	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 
-	private static LoggerStatus loggerStatus = new LoggerStatus();
 	private static String thisFileHash = "";
 
 	private static Instant timeStart;
@@ -191,8 +191,7 @@ public class RecordFileParser {
 			}
 
 			log.info("Finished parsing {} transactions from record file {} in {}", counter, file.getName(), stopwatch);
-			loggerStatus.setLastProcessedRcdHash(thisFileHash);
-			loggerStatus.saveToFile();
+			LoggerStatus.setLastProcessedRcdHash(thisFileHash);
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
 			return true;
@@ -206,8 +205,10 @@ public class RecordFileParser {
 	 */
 	static public void loadRecordFiles(List<String> fileNames) {
 
-		String prevFileHash = loggerStatus.getLastProcessedRcdHash();
+		String prevFileHash = LoggerStatus.getLastProcessedRcdHash();
 
+		Collections.sort(fileNames);
+		
 		for (String name : fileNames) {
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, stopping");

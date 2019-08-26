@@ -1,18 +1,17 @@
 package com.hedera.recordFileLogger;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.databaseUtilities.ApplicationStatus.ApplicationStatusCode;
 
 import lombok.extern.log4j.Log4j2;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 
 @Log4j2
 public class LoggerStatus {
@@ -30,52 +29,64 @@ public class LoggerStatus {
 	public LoggerStatus() {
 		log.info("Loading configuration from {}", configSavePath);
 		try {
-			jsonObject = getJsonObject(configSavePath);
+			File file = new File (configSavePath);
 			
-			if (jsonObject.has("lastProcessedRcdHash")) {
-				lastProcessedRcdHash = jsonObject.get("lastProcessedRcdHash").getAsString();
-			}
-			if (jsonObject.has("lastProcessedEventHash")) {
-				lastProcessedEventHash = jsonObject.get("lastProcessedEventHash").getAsString();
+			if (file.exists()) {
+				jsonObject = getJsonObject(configSavePath);
+				
+				if (jsonObject.has("lastProcessedRcdHash")) {
+					lastProcessedRcdHash = jsonObject.get("lastProcessedRcdHash").getAsString();
+				}
+				if (jsonObject.has("lastProcessedEventHash")) {
+					lastProcessedEventHash = jsonObject.get("lastProcessedEventHash").getAsString();
+				}
+				if (ApplicationStatus.setStatus(ApplicationStatusCode.LPRH, lastProcessedRcdHash)) {
+					if (ApplicationStatus.setStatus(ApplicationStatusCode.LPEH, lastProcessedEventHash)) {
+						file.delete();
+					}
+				}
+			} else {
+				lastProcessedRcdHash = ApplicationStatus.getStatus(ApplicationStatusCode.LPRH);
+				lastProcessedEventHash = ApplicationStatus.getStatus(ApplicationStatusCode.LPEH);
 			}
 		} catch (FileNotFoundException ex) {
 			log.warn("Cannot load configuration from {}", configSavePath, ex);
 		}
 	}
 
-	public String getLastProcessedRcdHash() {
-		return lastProcessedRcdHash;
+	public static String getLastProcessedRcdHash() {
+		return ApplicationStatus.getStatus(ApplicationStatusCode.LPRH);
 	}
 
-	public void setLastProcessedRcdHash(String name) {
-		lastProcessedRcdHash = name;
-		if (name.isEmpty()) {
+	public static void setLastProcessedRcdHash(String hash) {
+		if (hash.isEmpty()) {
 			return;
 		}
-		if (!name.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
-			jsonObject.addProperty("lastProcessedRcdHash", name);
-			log.debug("Update lastProcessedRcdHash to be {}", name);
+		if (!hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
+			if (ApplicationStatus.setStatus(ApplicationStatusCode.LPRH, hash)) {
+				log.debug("Update last processed record hash to be {}", hash);
+			} else {
+				log.error("Unable to save last processed record hash to database");
+			}
 		}
 	}
 
-	public String getLastProcessedEventHash() {
-		return lastProcessedEventHash;
+	public static String getLastProcessedEventHash() {
+		return ApplicationStatus.getStatus(ApplicationStatusCode.LPEH);
 	}
 
-	public void setLastProcessedEventHash(String name) {
-		lastProcessedEventHash = name;
-		jsonObject.addProperty("lastProcessedEventHash", name);
-		log.debug("Update lastProcessedEventHash to be {}", name);
-	}
-
-	public void saveToFile() {
-		try (FileWriter file = new FileWriter(configSavePath)) {
-			Gson gson = new GsonBuilder().setPrettyPrinting().create();
-			gson.toJson(jsonObject, file);
-			log.debug("Successfully wrote configuration to {}", configSavePath);
-		} catch (IOException ex) {
-			log.warn("Failed to write configuration to {}", configSavePath, ex);
+	public static void setLastProcessedEventHash(String hash) {
+		if (hash.isEmpty()) {
+			return;
 		}
+		if (!hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
+			if (ApplicationStatus.setStatus(ApplicationStatusCode.LPEH, hash)) {
+				log.debug("Update last processed event hash to be {}", hash);
+			} else {
+				log.error("Unable to save last processed event hash to database");
+			}
+		}
+		
 	}
 
 	/***
@@ -88,7 +99,7 @@ public class LoggerStatus {
 	 * @throws JsonSyntaxException if the file does not represent a Json object
 	 * @throws FileNotFoundException if the file doesn't exist
 	 */
-	public JsonObject getJsonObject(
+	private JsonObject getJsonObject(
 			final String location) throws JsonIOException, JsonSyntaxException, FileNotFoundException {
 
 		final JsonParser parser = new JsonParser();
@@ -98,7 +109,7 @@ public class LoggerStatus {
 			final FileReader file = new FileReader(location);
 		} catch (FileNotFoundException e) {
 			setLastProcessedRcdHash("");
-			saveToFile();
+			setLastProcessedEventHash("");
 		}
 		final FileReader file = new FileReader(location);
 		return (JsonObject) parser.parse(file);

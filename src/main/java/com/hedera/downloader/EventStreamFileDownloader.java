@@ -122,7 +122,6 @@ public class EventStreamFileDownloader extends Downloader {
 			if (!newLastValidEventFileName.equals(lastValidEventFileName)) {
 				ConfigLoader.setLastValidEventFileHash(newLastValidEventFileHash);
 				ConfigLoader.setLastValidEventFileName(newLastValidEventFileName);
-				ConfigLoader.saveEventsDataToFile();
 			}
 
 		} catch (Exception ex) {
