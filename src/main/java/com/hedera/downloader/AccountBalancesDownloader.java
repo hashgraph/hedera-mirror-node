@@ -1,6 +1,8 @@
 package com.hedera.downloader;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +47,7 @@ public class AccountBalancesDownloader extends Downloader {
 					// balance files with sig verification
 					HashMap<String, List<File>> sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
 					//Verify signature files and download corresponding files of valid signature files
+					
 					downloader.verifySigsAndDownloadBalanceFiles(sigFilesMap);
 				} else {
 					downloader.downloadBalanceFiles();
@@ -75,7 +78,10 @@ public class AccountBalancesDownloader extends Downloader {
 		// reload address book and keys
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 
-		for (String fileName : sigFilesMap.keySet()) {
+		List<String> fileNames = new ArrayList<String>(sigFilesMap.keySet());
+		Collections.sort(fileNames);
+		
+		for (String fileName : fileNames) {
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, stopping");
 				break;
@@ -110,8 +116,8 @@ public class AccountBalancesDownloader extends Downloader {
 								fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
 							newLastValidBalanceFileName = file.getName();
 							log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
-							valid = true;
 						}
+						valid = true;
 						break;
 					}
 				} else if (file != null) {

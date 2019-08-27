@@ -340,8 +340,9 @@ public abstract class Downloader {
 						}
 
 						String s3ObjectKey = summary.getKey();
-						if (isNeededSigFile(s3ObjectKey, type) &&
-								s3KeyComparator.compare(s3ObjectKey, prefix + lastValidFileName) > 0) {
+
+						if (((isNeededSigFile(s3ObjectKey, type) && s3KeyComparator.compare(s3ObjectKey, prefix + lastValidFileName) > 0))
+								|| (lastValidFileName.isEmpty())) {
 							String saveTarget = saveFilePath + s3ObjectKey;
 							Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey, saveTarget);
 							if (result.getLeft()) count++;
