@@ -20,10 +20,8 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Environment:**
-- Browser: [e.g. Chrome 76]
 - OS: [e.g. Ubuntu 18.04]
 - Version: [e.g. 1.0.1]
 
 **Additional Context**
 Add any other context about the problem here.
-
