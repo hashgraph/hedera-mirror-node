@@ -26,8 +26,10 @@ public class EventStreamFileDownloader extends Downloader {
 	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
 	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.EVENTS);
 	private static File fileValidDir = new File(validDir);
+	private static ApplicationStatus applicationStatus;
 
-	public EventStreamFileDownloader() {
+	public EventStreamFileDownloader() throws Exception {
+		applicationStatus = new ApplicationStatus();
 		Utility.createDirIfNotExists(validDir);
 		Utility.createDirIfNotExists(tmpDir);
 		Utility.purgeDirectory(tmpDir);
@@ -66,7 +68,7 @@ public class EventStreamFileDownloader extends Downloader {
 		}
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		if (Utility.checkStopFile()) {
 			log.info("Stop file found, exiting");
 			System.exit(0);
@@ -93,7 +95,6 @@ public class EventStreamFileDownloader extends Downloader {
 	 * @throws Exception 
 	 */
 	public static void verifyValidFiles() throws Exception {
-		ApplicationStatus applicationStatus = new ApplicationStatus();
 		String lastValidEventFileName = applicationStatus.getLastValidDownloadedEventFileName();
 		String lastValidEventFileHash = applicationStatus.getLastValidDownloadedEventFileHash();
 		

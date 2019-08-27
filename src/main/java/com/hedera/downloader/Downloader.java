@@ -58,12 +58,15 @@ public abstract class Downloader {
 	protected List<String> nodeAccountIds;
 
 	protected static ClientConfiguration clientConfiguration;
+	
+	protected static ApplicationStatus applicationStatus;
 
 	String saveFilePath = "";
 
 	public enum DownloadType {RCD, BALANCE, EVENT};
 
-	public Downloader() {
+	public Downloader() throws Exception {
+		applicationStatus = new ApplicationStatus();
 		bucketName = ConfigLoader.getBucketName();
 
 		// Define retryPolicy
@@ -147,7 +150,6 @@ public abstract class Downloader {
 	@Deprecated
 	protected void downloadBalanceFiles() throws Exception {
 		String s3Prefix = ConfigLoader.getAccountBalanceS3Location();
-		ApplicationStatus applicationStatus = new ApplicationStatus();
 		String lastValidFileName = applicationStatus.getLastValidDownloadedBalanceFileName();
 		saveFilePath = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
 
@@ -274,7 +276,6 @@ public abstract class Downloader {
 	protected HashMap<String, List<File>> downloadSigFiles(DownloadType type) throws Exception {
 		String s3Prefix = null;
 		String lastValidFileName = null;
-		ApplicationStatus applicationStatus = new ApplicationStatus();
 		switch (type) {
 			case RCD:
 				s3Prefix = ConfigLoader.getRecordFilesS3Location();

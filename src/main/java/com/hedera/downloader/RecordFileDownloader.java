@@ -26,11 +26,12 @@ public class RecordFileDownloader extends Downloader {
 
 	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
 	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.RECORDS);
+	private static ApplicationStatus applicationStatus;
 
-	public RecordFileDownloader() {
+	public RecordFileDownloader() throws Exception {
+		applicationStatus = new ApplicationStatus();
 		Utility.createDirIfNotExists(validDir);
 		Utility.createDirIfNotExists(tmpDir);
-		
 		Utility.purgeDirectory(tmpDir);
 	}
 
@@ -78,7 +79,6 @@ public class RecordFileDownloader extends Downloader {
 	 * @throws Exception 
 	 */
 	public static void verifyValidRecordFiles(String validDir) throws Exception {
-		ApplicationStatus applicationStatus = new ApplicationStatus();
 		String lastValidRcdFileName =  applicationStatus.getLastValidDownloadedRecordFileName();
 		String lastValidRcdFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
 		File validDirFile = new File(validDir);

@@ -35,7 +35,11 @@ public class RecordFileParser {
 	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 
 	private static String thisFileHash = "";
+	private static ApplicationStatus applicationStatus;
 
+	public RecordFileParser() throws Exception {
+		applicationStatus = new ApplicationStatus();
+	}
 	/**
 	 * Given a service record name, read and parse and return as a list of service record pair
 	 *
@@ -49,8 +53,6 @@ public class RecordFileParser {
 		File file = new File(fileName);
 		String newFileHash = "";
 		
-		ApplicationStatus applicationStatus = new ApplicationStatus();
-
 		if (file.exists() == false) {
 			log.warn("File does not exist {}", fileName);
 			return false;
@@ -199,7 +201,6 @@ public class RecordFileParser {
 	 * @throws Exception 
 	 */
 	static public void loadRecordFiles(List<String> fileNames) throws Exception {
-		ApplicationStatus applicationStatus = new ApplicationStatus();
 		String prevFileHash = applicationStatus.getLastProcessedRcdHash();
 
 		Collections.sort(fileNames);
@@ -254,6 +255,7 @@ public class RecordFileParser {
 
 	public static void main(String[] args) throws Exception {
 		String pathName;
+		applicationStatus = new ApplicationStatus();
 
 		while (true) {
 			if (Utility.checkStopFile()) {

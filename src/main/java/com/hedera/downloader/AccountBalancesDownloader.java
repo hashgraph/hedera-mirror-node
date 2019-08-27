@@ -19,14 +19,16 @@ public class AccountBalancesDownloader extends Downloader {
 
 	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
 	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.BALANCE);
+	private static ApplicationStatus applicationStatus;
 
-	public AccountBalancesDownloader() {
+	public AccountBalancesDownloader() throws Exception {
+		applicationStatus = new ApplicationStatus();
 		Utility.createDirIfNotExists(validDir);
 		Utility.createDirIfNotExists(tmpDir);
 		Utility.purgeDirectory(tmpDir);
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		AccountBalancesDownloader downloader = new AccountBalancesDownloader();
 
 		while (true) {
@@ -67,7 +69,6 @@ public class AccountBalancesDownloader extends Downloader {
 	 * @throws Exception 
 	 */
 	private void verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) throws Exception {
-		ApplicationStatus applicationStatus = new ApplicationStatus();
 		String lastValidBalanceFileName = applicationStatus.getLastValidDownloadedBalanceFileName();
 		String newLastValidBalanceFileName = lastValidBalanceFileName;
 

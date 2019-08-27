@@ -3,6 +3,7 @@ package com.hedera.databaseUtilities;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.HashMap;
 
 import lombok.extern.log4j.Log4j2;
 
@@ -21,15 +22,44 @@ public class ApplicationStatus {
 		,LAST_PROCESSED_RECORD_HASH
 	}
 	
+	private HashMap<ApplicationStatusCode, String> applicationStatusMap = new HashMap<ApplicationStatusCode, String>();
+	
+	private static final String updateSQL = "UPDATE t_application_status SET "
+			+ " status_value = ? "
+			+ " WHERE status_code = ?";
+	
+	private static final String selectSQL = 
+			"SELECT status_value FROM t_application_status "
+			+ " WHERE status_code = ?";
+	
+	public ApplicationStatus() throws Exception {
+		String value = "";
+		value = getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
+		applicationStatusMap.put(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, value);
+		value = getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
+		applicationStatusMap.put(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH, value);
+		value = getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
+		applicationStatusMap.put(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, value);
+		value = getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE);
+		applicationStatusMap.put(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE, value);
+		value = getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH);
+		applicationStatusMap.put(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH, value);
+		value = getStatus(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH);
+		applicationStatusMap.put(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH, value);
+		value = getStatus(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
+		applicationStatusMap.put(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, value);
+		value = getStatus(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
+		applicationStatusMap.put(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, value);
+		value = getStatus(ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
+		applicationStatusMap.put(ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER, value);
+	}
+	
 	private void updateStatus(ApplicationStatusCode code, String statusValue) throws Exception {
 		
 	    try (Connection connect = DatabaseUtilities.getConnection()) {
-	    	log.debug("Updating application status for : {}", code.name());
+	    	log.trace("Updating application status for : {}", code.name());
 	
-			PreparedStatement updateValue = connect.prepareStatement(
-					"UPDATE t_application_status SET "
-					+ " status_value = ? "
-					+ " WHERE status_code = ?");
+			PreparedStatement updateValue = connect.prepareStatement(updateSQL);
 	
 			updateValue.setString(1, statusValue);
 			updateValue.setString(2, code.name());
@@ -46,11 +76,9 @@ public class ApplicationStatus {
 	public String getStatus(ApplicationStatusCode code) throws Exception {
 		String value = "";
 	    try (Connection connect = DatabaseUtilities.getConnection()) {
-	    	log.debug("Getting application status for : {}", code.name());
+	    	log.trace("Getting application status for : {}", code.name());
 	
-			PreparedStatement getValue = connect.prepareStatement(
-					"SELECT status_value FROM t_application_status "
-					+ " WHERE status_code = ?");
+			PreparedStatement getValue = connect.prepareStatement(selectSQL);
 	
 			getValue.setString(1, code.name());
 			getValue.execute();
@@ -61,6 +89,7 @@ public class ApplicationStatus {
 				if (value == null) { value = "";}
 			} else {
 				log.error("Application status code {} does not exist in the database", code.name());
+				throw new RuntimeException("Application status code " + code.name() + " does not exist in the database.");
 			}
 			appStatus.close();
 			getValue.close();
@@ -72,88 +101,89 @@ public class ApplicationStatus {
 	}
 	
 	public String getLastValidDownloadedBalanceFileName() throws Exception {
-		return getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
+		return applicationStatusMap.get(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
 	}
 
 	public void updateLastValidDownloadedBalanceFileName(String name) throws Exception {
 		updateStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, name);
+		applicationStatusMap.replace(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, name);
 	}
 	
 	public String getLastValidDownloadedRecordFileName() throws Exception {
-		return getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
+		return applicationStatusMap.get(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
 	}
 
 	public void updateLastValidDownloadedRecordFileName(String name) throws Exception {
-		log.trace("Update lastValidRcdFileName to be {}", name);
 		updateStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, name);
+		applicationStatusMap.replace(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, name);
 	}
 
 	public String getLastValidDownloadedRecordFileHash() throws Exception {
-		return getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
+		return applicationStatusMap.get(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
 	}
 
 	public void updateLastValidDownloadedRecordFileHash(String hash) throws Exception {
-		log.trace("Update lastValidRcdFileHash to be {}", hash);
 		updateStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH, hash);
-		
+		applicationStatusMap.replace(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH, hash);
 	}
 
 	public String getLastValidDownloadedEventFileName() throws Exception {
-		return getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE);
+		return applicationStatusMap.get(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE);
 	}
 
 	public void updateLastValidDownloadedEventFileName(String name) throws Exception {
-		log.trace("Update lastValidEventFileName to be {}", name);
 		updateStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE, name);
+		applicationStatusMap.replace(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE, name);
 	}
 
 	public String getLastValidDownloadedEventFileHash() throws Exception {
-		return getStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH);
+		return applicationStatusMap.get(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH);
 	}
 
 	public void updateLastValidDownloadedEventFileHash(String hash) throws Exception {
-		log.trace("Update lastValidEventFileHash to be {}", hash);
 		updateStatus(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH, hash);
+		applicationStatusMap.replace(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH, hash);
 	}
 
 	public String getBypassRecordHashMismatchUntilAfter() throws Exception {
-		return getStatus(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
+		return applicationStatusMap.get(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
 	}
 	public void updateBypassRecordHashMismatchUntilAfter(String bypassUntilAfter) throws Exception {
 		updateStatus(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, bypassUntilAfter);
+		applicationStatusMap.replace(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, bypassUntilAfter);
 	}
 	public String getBypassEventHashMismatchUntilAfter() throws Exception {
-		return getStatus(ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
+		return applicationStatusMap.get(ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
 	}
 	public void updateBypassEventHashMismatchUntilAfter(String bypassUntilAfter) throws Exception {
 		updateStatus(ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER, bypassUntilAfter);
+		applicationStatusMap.replace(ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER, bypassUntilAfter);
 	}
 	public String getLastProcessedRcdHash() throws Exception {
-		return getStatus(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
+		return applicationStatusMap.get(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
 	}
 
 	public void updateLastProcessedRcdHash(String hash) throws Exception {
-		log.trace("Update last processed record hash to be {}", hash);
 		if (hash.isEmpty()) {
 			return;
 		}
 		if (!hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
 			updateStatus(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, hash);
+			applicationStatusMap.replace(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, hash);
 		}
 	}
 
 	public String getLastProcessedEventHash() throws Exception {
-		return getStatus(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH);
+		return applicationStatusMap.get(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH);
 	}
 
 	public void updateLastProcessedEventHash(String hash) throws Exception {
-		log.trace("Update last processed event hash to be {}", hash);
 		if (hash.isEmpty()) {
 			return;
 		}
 		if (!hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")) {
 			updateStatus(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH, hash);
+			applicationStatusMap.replace(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH, hash);
 		}
-		
 	}
 }

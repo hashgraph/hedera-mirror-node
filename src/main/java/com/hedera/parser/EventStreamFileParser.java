@@ -50,7 +50,10 @@ public class EventStreamFileParser {
 	}
 
 	private static final String PARSED_DIR = "/parsedEventStreamFiles/";
+	private static ApplicationStatus applicationStatus;
 
+	public EventStreamFileParser() throws Exception {
+		applicationStatus = new ApplicationStatus();	}
 	/**
 	 * Given a EventStream file name, read and parse and return as a list of service record pair
 	 *
@@ -64,7 +67,6 @@ public class EventStreamFileParser {
 
 		File file = new File(fileName);
 		String readPrevFileHash;
-		ApplicationStatus applicationStatus = new ApplicationStatus();
 		// for >= version3, we need to calculate hash for content;
 		boolean calculateContentHash = false;
 
@@ -419,7 +421,6 @@ public class EventStreamFileParser {
 	 * @throws Exception 
 	 */
 	static public boolean loadEventStreamFiles(List<String> fileNames) throws Exception {
-		ApplicationStatus applicationStatus = new ApplicationStatus();
 		
 		String prevFileHash = applicationStatus.getLastProcessedEventHash();
 		for (String name : fileNames) {
@@ -482,7 +483,6 @@ public class EventStreamFileParser {
 	}
 
 	public static boolean parseNewFiles(String pathName) throws Exception {
-		ApplicationStatus applicationStatus = new ApplicationStatus();
 		
 		log.info( "Parsing event files from {}", pathName);
 		if (pathName == null) {
