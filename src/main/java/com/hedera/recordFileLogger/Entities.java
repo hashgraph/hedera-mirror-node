@@ -69,7 +69,7 @@ public class Entities {
 
 	    entityId = createOrGetEntity(shard, realm, num, fk_entity_type);
 	    
-	    if ((exp_time_nanos + exp_time_seconds + auto_renew_period + fk_proxy_account_id == 0) && (admin_key == null) && (key == null)) {
+	    if ((exp_time_nanos == 0) && (exp_time_seconds == 0) && (auto_renew_period == 0) && (fk_proxy_account_id == 0) && (admin_key == null) && (key == null)) {
 	    	// nothing to update
 	    	return entityId;
 	    }
