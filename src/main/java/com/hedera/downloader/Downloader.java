@@ -412,7 +412,9 @@ public abstract class Downloader {
 
 	void shutdownTransferManager() {
 		log.info("Shutting down");
-		xfer_mgr.shutdownNow();
+		if (xfer_mgr != null) {
+			xfer_mgr.shutdownNow();
+		}
 	}
 
 	protected static void setupCloudConnection() {

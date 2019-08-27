@@ -49,7 +49,7 @@ public class DatabaseUtilities {
             try {
                 if (Utility.checkStopFile()) {
                     log.info("Stop file found, stopping.");
-                    throw new RuntimeException("System is stopped");
+                    System.exit(0);
                 }
 
                 Connection connection = dataSource.getConnection();
