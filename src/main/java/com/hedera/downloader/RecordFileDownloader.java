@@ -105,7 +105,11 @@ public class RecordFileDownloader extends Downloader {
 						prevFileHash.equals(Hex.encodeHexString(new byte[48]))) {
 					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(rcdName));
 					newLastValidRcdFileName = new File(rcdName).getName();
+				} else if (ConfigLoader.getStopLoggingIfRecordHashMismatchAfter().compareTo(new File(rcdName).getName()) > 0) {
+					newLastValidRcdFileName = new File(rcdName).getName();
+					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(rcdName));
 				} else {
+					log.warn("File Hash Mismatch with previous : {}", rcdName);
 					break;
 				}
 			}
