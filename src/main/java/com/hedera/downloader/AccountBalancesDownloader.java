@@ -116,8 +116,8 @@ public class AccountBalancesDownloader extends Downloader {
 								fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
 							newLastValidBalanceFileName = file.getName();
 							log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
-							valid = true;
 						}
+						valid = true;
 						break;
 					}
 				} else if (file != null) {
