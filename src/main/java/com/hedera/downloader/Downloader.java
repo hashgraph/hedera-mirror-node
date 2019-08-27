@@ -18,6 +18,7 @@ import com.google.common.base.Stopwatch;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
@@ -57,12 +58,15 @@ public abstract class Downloader {
 	protected List<String> nodeAccountIds;
 
 	protected static ClientConfiguration clientConfiguration;
+	
+	protected static ApplicationStatus applicationStatus;
 
 	String saveFilePath = "";
 
 	public enum DownloadType {RCD, BALANCE, EVENT};
 
-	public Downloader() {
+	public Downloader() throws Exception {
+		applicationStatus = new ApplicationStatus();
 		bucketName = ConfigLoader.getBucketName();
 
 		// Define retryPolicy
@@ -140,13 +144,13 @@ public abstract class Downloader {
 
 	/**
 	 *  Download all balance .csv files with timestamp later than lastValidBalanceFileName
+	 * @throws Exception 
 	 */
 
 	@Deprecated
-	protected void downloadBalanceFiles() throws IOException {
+	protected void downloadBalanceFiles() throws Exception {
 		String s3Prefix = ConfigLoader.getAccountBalanceS3Location();
-		String fileType = ".csv";
-		String lastValidFileName = ConfigLoader.getLastValidBalanceFileName();
+		String lastValidFileName = applicationStatus.getLastValidDownloadedBalanceFileName();
 		saveFilePath = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
 
 		// refresh node account ids
@@ -237,7 +241,7 @@ public abstract class Downloader {
 					}
 
 					if (!newLastValidBalanceFileName.equals(lastValidFileName)) {
-						ConfigLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
+						applicationStatus.updateLastValidDownloadedBalanceFileName(newLastValidBalanceFileName);
 					}
 				}
 
@@ -267,31 +271,28 @@ public abstract class Downloader {
 	 *  If type is DownloadType.BALANCE:
 	 * 		key: _Balances.csv_sig file name
 	 * 		value: a list of _Balances.csv_sig files with the same name and from different nodes folder;
+	 * @throws Exception 
 	 */
-	protected HashMap<String, List<File>> downloadSigFiles(DownloadType type) throws IOException {
+	protected HashMap<String, List<File>> downloadSigFiles(DownloadType type) throws Exception {
 		String s3Prefix = null;
-		String fileType = null;
 		String lastValidFileName = null;
 		switch (type) {
 			case RCD:
 				s3Prefix = ConfigLoader.getRecordFilesS3Location();
-				fileType = ".rcd_sig";
-				lastValidFileName = ConfigLoader.getLastValidRcdFileName();
+				lastValidFileName = applicationStatus.getLastValidDownloadedRecordFileName();
 
 				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.RECORDS);
 				break;
 
 			case BALANCE:
 				s3Prefix = "accountBalances/balance";
-				fileType = "_Balances.csv_sig";
-				lastValidFileName = ConfigLoader.getLastValidBalanceFileName();
+				lastValidFileName = applicationStatus.getLastValidDownloadedBalanceFileName();
 				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.BALANCE);
 				break;
 
 			case EVENT:
 				s3Prefix = ConfigLoader.getEventFilesS3Location();
-				fileType = ".evts_sig";
-				lastValidFileName = ConfigLoader.getLastValidEventFileName();
+				lastValidFileName = applicationStatus.getLastValidDownloadedEventFileName();
 				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.EVENTS);
 				break;
 

@@ -17,7 +17,6 @@
   "apiUsername":"api",
   "apiPassword":"mysecretpassword",
   "maxDownloadItems": 10,
-  "stopLoggingIfRecordHashMismatch": "X",
   "persistClaims": false,
   "persistFiles": "ALL",
   "persistContracts": true,

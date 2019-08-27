@@ -2,6 +2,7 @@ package com.hedera.downloader;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.parser.EventStreamFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
@@ -25,10 +26,13 @@ public class EventStreamFileDownloader extends Downloader {
 	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
 	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.EVENTS);
 	private static File fileValidDir = new File(validDir);
+	private static ApplicationStatus applicationStatus;
 
-	public EventStreamFileDownloader() {
+	public EventStreamFileDownloader() throws Exception {
+		applicationStatus = new ApplicationStatus();
 		Utility.createDirIfNotExists(validDir);
 		Utility.createDirIfNotExists(tmpDir);
+		Utility.purgeDirectory(tmpDir);
 	}
 
 	public static void downloadNewEventfiles(EventStreamFileDownloader downloader) {
@@ -64,7 +68,7 @@ public class EventStreamFileDownloader extends Downloader {
 		}
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		if (Utility.checkStopFile()) {
 			log.info("Stop file found, exiting");
 			System.exit(0);
@@ -88,10 +92,12 @@ public class EventStreamFileDownloader extends Downloader {
 	 * (2) Verify the .evts files to see if the file Hash matches prevFileHash
 	 *
 	 * @param validDir
+	 * @throws Exception 
 	 */
-	public static void verifyValidFiles() {
-		String lastValidEventFileName = ConfigLoader.getLastValidEventFileName();
-		String lastValidEventFileHash = ConfigLoader.getLastValidEventFileHash();
+	public static void verifyValidFiles() throws Exception {
+		String lastValidEventFileName = applicationStatus.getLastValidDownloadedEventFileName();
+		String lastValidEventFileHash = applicationStatus.getLastValidDownloadedEventFileHash();
+		
 		String lastValidEventFileName2 = lastValidEventFileName;
 		try (Stream<Path> pathStream = Files.walk(fileValidDir.toPath())) {
 			List<String> fileNames = pathStream.filter(p -> Utility.isEventStreamFile(p.toString()))
@@ -120,9 +126,8 @@ public class EventStreamFileDownloader extends Downloader {
 			}
 
 			if (!newLastValidEventFileName.equals(lastValidEventFileName)) {
-				ConfigLoader.setLastValidEventFileHash(newLastValidEventFileHash);
-				ConfigLoader.setLastValidEventFileName(newLastValidEventFileName);
-				ConfigLoader.saveEventsDataToFile();
+				applicationStatus.updateLastValidDownloadedEventFileHash(newLastValidEventFileHash);
+				applicationStatus.updateLastValidDownloadedEventFileName(newLastValidEventFileName);
 			}
 
 		} catch (Exception ex) {

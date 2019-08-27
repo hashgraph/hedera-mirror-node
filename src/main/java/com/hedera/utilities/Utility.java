@@ -511,4 +511,18 @@ public class Utility {
 		}
 		return true;
 	}
+	
+	public static void purgeDirectory(String dir) {
+		purgeDirectory(new File(dir));
+	
+	}
+	public static void purgeDirectory(File dir) {
+		if ( ! dir.exists()) { return; };
+		
+	    for (File file: dir.listFiles()) {
+	        if (file.isDirectory())
+	            purgeDirectory(file);
+	        file.delete();
+	    }
+	}	
 }

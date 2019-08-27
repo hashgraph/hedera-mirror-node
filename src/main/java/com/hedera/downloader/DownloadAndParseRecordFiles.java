@@ -10,7 +10,7 @@ import com.hedera.utilities.Utility;
 @Log4j2
 public class DownloadAndParseRecordFiles {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		RecordFileDownloader downloader = new RecordFileDownloader();
 
 		while (true) {
