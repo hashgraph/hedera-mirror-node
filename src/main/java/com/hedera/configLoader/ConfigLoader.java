@@ -44,6 +44,15 @@ public class ConfigLoader {
 	// path of addressBook file
 	private static String addressBookFile = "./config/0.0.102";
 
+	private static final int DEFAULT_ACCOUNT_BALANCES_INSERT_BATCH_SIZE = 2000;
+	private static int accountBalancesInsertBatchSize = DEFAULT_ACCOUNT_BALANCES_INSERT_BATCH_SIZE;
+
+	private static final int DEFAULT_ACCOUNT_BALANCES_FILE_BUFFER_SIZE = 200_000;
+	private static int accountBalancesFileBufferSize = DEFAULT_ACCOUNT_BALANCES_FILE_BUFFER_SIZE;
+
+	private static final boolean DEFAULT_ACCOUNT_BALANCES_USE_TRANSACTION = false;
+	private static boolean accountBalancesUseTransaction = DEFAULT_ACCOUNT_BALANCES_USE_TRANSACTION;
+
 	// location of account balances on S3
 	private static String accountBalanceS3Location = "accountBalances/balance";
 
@@ -52,6 +61,9 @@ public class ConfigLoader {
 
 	//location of eventStream files on S3
 	private static String eventFilesS3Location = "eventstreams/events_";
+
+	private static final long DEFAULT_SYSTEM_SHARD_NUM = 0L;
+	private static long systemShardNum = DEFAULT_SYSTEM_SHARD_NUM;
 
 	private static boolean persistClaims = false;
 
@@ -132,6 +144,24 @@ public class ConfigLoader {
 			}
 			if (configJsonObject.has("addressBookFile")) {
 				addressBookFile = configJsonObject.get("addressBookFile").getAsString();
+			}
+			if (configJsonObject.has("accountBalancesInsertBatchSize")) {
+				var i = configJsonObject.get("accountBalancesInsertBatchSize").getAsInt();
+				if (i > 0) {
+					accountBalancesInsertBatchSize = i;
+				}
+			}
+			if (configJsonObject.has("accountBalancesFileBufferSize")) {
+				var i = configJsonObject.get("accountBalancesFileBufferSize").getAsInt();
+				if (i > 0) {
+					accountBalancesFileBufferSize = i;
+				}
+			}
+			if (configJsonObject.has("accountBalancesUseTransaction")) {
+				accountBalancesUseTransaction = configJsonObject.get("accountBalancesUseTransaction").getAsBoolean();
+			}
+			if (configJsonObject.has("systemShardNum")) {
+				systemShardNum = configJsonObject.get("systemShardNum").getAsLong();
 			}
 			if (configJsonObject.has("accountBalancesS3Location")) {
 				accountBalanceS3Location = configJsonObject.get("accountBalancesS3Location").getAsString();
@@ -276,8 +306,24 @@ public class ConfigLoader {
 		addressBookFile = newAddressBookFile;
 	}
 
+	public static int getAccountBalancesInsertBatchSize() {
+		return accountBalancesInsertBatchSize;
+	}
+
+	public static int getAccountBalancesFileBufferSize() {
+		return accountBalancesFileBufferSize;
+	}
+
+	public static boolean getAccountBalancesUseTransaction() {
+		return accountBalancesUseTransaction;
+	}
+
 	public static String getAccountBalanceS3Location() {
 		return accountBalanceS3Location;
+	}
+
+	public static long getSystemShardNum() {
+		return systemShardNum;
 	}
 
 	public static String getRecordFilesS3Location() {

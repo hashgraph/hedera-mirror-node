@@ -2,6 +2,17 @@
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### New account_balances schema
+
+  Added tables `account_balances` and `account_balance_sets`
+
+### Updates to config.json
+
+  Added `accountBalancesInsertBatchSize`
+  Added `accountBalancesFileBufferSize`
+  Added `accountBalancesUseTransaction`
+  Added `systemShardNum`
+
 ### Removal of records.json, balance.json, events.json and loggerStatus.json
 
 These files are no longer used by mirror node, instead the data they used to store is persisted in the database. The table keeping this data is `t_application_status`.

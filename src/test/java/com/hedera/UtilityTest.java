@@ -5,7 +5,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
