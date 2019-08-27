@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -142,13 +144,18 @@ public class RecordFileDownloader extends Downloader {
 		// reload address book and keys
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 
-		for (String fileName : sigFilesMap.keySet()) {
+		List<String> fileNames = new ArrayList<String>(sigFilesMap.keySet());
+
+		Collections.sort(fileNames);
+
+		for (String fileName : fileNames) {
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, stopping");
 				break;
 			}
 			boolean valid = false;
 			List<File> sigFiles = sigFilesMap.get(fileName);
+			
 			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
 			if (sigFiles == null || !Utility.greaterThanSuperMajorityNum(sigFiles.size(), nodeAccountIds.size())) {
 				log.warn("Signature file count does not exceed 2/3 of nodes");
@@ -157,7 +164,6 @@ public class RecordFileDownloader extends Downloader {
 
 			// validSigFiles are signed by node key and contains the same hash which has been agreed by more than 2/3 nodes
 			List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
-
 			for (File validSigFile : validSigFiles) {
 				if (Utility.checkStopFile()) {
 					log.info("Stop file found, stopping");
