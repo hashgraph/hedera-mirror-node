@@ -141,7 +141,6 @@ public class RecordFileDownloader extends Downloader {
 		Collections.sort(fileNames);
 
 		for (String fileName : fileNames) {
-			System.out.println(fileName);
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, stopping");
 				break;
