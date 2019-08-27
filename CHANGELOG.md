@@ -2,6 +2,10 @@
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Removal of records.json, balance.json, events.json and loggerStatus.json
+
+These files are no longer used by mirror node, instead the data they used to store is persisted in the database. The table keeping this data is `t_application_status`.
+
 ### Flyway database management in java code
 
 Database upgrades are now performed automatically when the mirror node components start. Note the following additions to `config.json` to support this process.

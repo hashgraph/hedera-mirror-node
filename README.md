@@ -210,7 +210,6 @@ Note: Changes to this file while downloading or processing is taking place may b
 | apiUsername | `"api"` | The database user for the REST API |
 | apiPassword | `"mysecretpassword"` | The password for the REST API user |
 | maxDownloadItems | `0` | The maximum number of new files to download at a time, set to `0` in production, change to `10` or other low number for testing or catching up with a large number of files. |
-| stopLoggingIfHashMismatch | "" | If you wish to skip past a file as a result of a hash mismatch, you can input the name of the record file before which hash mismatches will be ignored. e.g. `2019-06-12T18/05/22.198241001Z.rcd` will allow hash mismatches on any files prior to that file name, after this file, a hash mismatch will result in an error being logged and processing to stop.
 | persistClaims | `false` | Determines whether claim data is persisted to the database or not |
 | persistFiles | `"ALL"` | Determines whether file data is persisted to the database or not, can be set to `ALL`, `NONE` or `SYSTEM`. `SYSTEM` means only files with a file number lower than `1000` will be persisted |
 | persistContracts | `true` | Determines whether contract data is persisted to the database or not |
@@ -238,11 +237,6 @@ Sample `./.env` file.
 HEDERA_S3_ACCESS_KEY=accessKey
 HEDERA_S3_SECRET_KEY=secretKey
 ```
-
-### loggerStatus.json
-
-This isn't strictly speaking a configuration file, it is created at runtime by the mirror node software and holds the hash of the last successfully parsed file. It is held in a separate file to `config.json` to ensure downloads and processing don't overwrite each-other's changes.
-
 ## Installing the database
 
 You can skip this step if you're using Docker containers.
@@ -387,13 +381,28 @@ DB_HOST=localhost
 
 `PORT` is the port number the REST API will listen onto.
 
+## Application status data
+
+The mirror node saves its current state to the database in a table called `t_application_status`.
+While the values in this table are updated in real time, any changes you wish to make here to promote to the application require that you first stop the application, make the changes in the database, then restart the application
+
+| Status name  | Description  |
+|---|---|---|
+| Event hash mismatch bypass until after | If a hash mismatch occurs before this event file name, processing into the database will stop. Leave blank to catch all mismatches, set to `X` to bypass all or set to the filename before which hash mismatches are ok and understood |
+| Record hash mismatch bypass until after | If a hash mismatch occurs before this record name, processing into the database will stop. Leave blank to catch all mismatches, set to `X` to bypass all or set to the filename before which hash mismatches are ok and understood |
+| Last processed record hash | The hash of the last record file processed into the database |
+| Last processed event hash | The hash of the last event file processed into the database |
+| Last valid downloaded record file name | The name of the last record file to have passed signature verification |
+| Last valid downloaded record file hash | The hash of the last record file to have passed signature verification |
+| Last valid downloaded event file name | The name of the last event file to have passed signature verification |
+| Last valid downloaded event file hash | The hash of the last event file to have passed signature verification |
+| Last valid downloaded balance file name | The name of the last balance file to have passed signature verification |
+
 ## If things don't appear to be working properly
 
 ### Checking for errors
 
-Set log levels to WARN as a minimum to start with. INFO is very verbose.
-
-Check for errors in the `output/recordStream.log` file.
+Check for errors in the `output/hedera-mirror-node.log` file. Log files are rotated every 100Mb by default, archived log files can be found in the 'logs' folder.
 
 ### Record files
 
@@ -405,4 +414,4 @@ If there are no files in this folder, it's possible that either you `0.0.102` fi
 * If your `maxDownloadItems` is set to 0 in the `config.json` file, the docker image downloads all new signature files from all nodes before starting processing into the database. If there are many files to catch up, it may be a long while before processing of these files takes place.
 You may try to set the `maxDownloadItems` to a number such as 10 or 20 to download and process new files in batches.
 
-* The above also applies if you are running the `downloader.DownloadAndParseRecordFiles` java class.
+* The above also applies if you are running the `downloader.DownloadAndParseRecordFiles` java class standalone.
