@@ -141,3 +141,5 @@ local.properties
 config/records.json
 config/loggerStatus.json
 config/balance.json
+/.idea/
+/*.iml
