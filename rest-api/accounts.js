@@ -135,7 +135,7 @@ const getOneAccount = function (req, res) {
     }
 
     const [tsQuery, tsParams] =
-        utils.parseParams(req, 'timestamp', ['t.consensus_seconds']);
+        utils.parseParams(req, 'timestamp', ['t.consensus_ns'], 'timestamp_ns');
 
     const resultTypeQuery = utils.parseResultParams(req);
     const { limitQuery, limitParams, order, limit } =
@@ -191,10 +191,6 @@ const getOneAccount = function (req, res) {
 
     const innerQuery =
         'select distinct t.id\n' +
-        '	, t.vs_seconds\n' +
-        '	, t.vs_nanos\n' +
-        '	, t.consensus_seconds\n' +
-        '	, t.consensus_nanos\n' +
         '	, t.consensus_ns\n' +
         'from t_transactions t\n' +
         '	, t_cryptotransferlists ctl\n' +
@@ -206,8 +202,7 @@ const getOneAccount = function (req, res) {
         (accountQuery === '' ? '' : '     and ') + accountQuery + '\n' +
         (tsQuery === '' ? '' : '     and ') + tsQuery + '\n' +
         resultTypeQuery + '\n' +
-        '     order by t.consensus_seconds ' + order +
-        '     , t.consensus_nanos ' + order + '\n' +
+        '     order by t.consensus_ns ' + order + '\n' +
         '     ' + limitQuery;
     const innerParams = accountParams
         .concat(tsParams)
@@ -217,8 +212,6 @@ const getOneAccount = function (req, res) {
         "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
         "   , t.valid_start_ns\n" +
         "   , t.memo\n" +
-        "   , t.consensus_seconds\n" +
-        "   , t.consensus_nanos\n" +
         "   , t.consensus_ns\n" +
         '   , valid_start_ns\n' +
         "   , ttr.result\n" +
@@ -241,7 +234,8 @@ const getOneAccount = function (req, res) {
         "   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n" +
         "   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n" +
         "   left outer join t_cryptotransferlists ctl on  ctl.fk_trans_id = t.id\n" +
-        "   join t_entities eaccount on eaccount.id = ctl.account_id\n";
+        "   join t_entities eaccount on eaccount.id = ctl.account_id\n" +
+        "   order by t.consensus_ns " + order + "\n";
 
 
     const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgress(

@@ -84,11 +84,11 @@ describe('transaction tests', () => {
         expect(response.status).toEqual(200);
         let transactions = JSON.parse(response.text).transactions;
         expect(transactions.length).toEqual(1000);
-        let check = true;
+        let check = false;
         for (let xfer of transactions[0].transfers) {
             let acc = xfer.account.split('.')[2];
-            if (acc < accLow || acc > accHigh) {
-                check = false;
+            if (acc > accLow && acc < accHigh) {
+                check = true;
             }
         }
         expect(check).toBeTruthy();
