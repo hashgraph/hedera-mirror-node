@@ -15,9 +15,8 @@ jobs:
   build:
     <<: *defaults
     steps:
+
     - checkout
-    - restore_cache:
-        key: maven
       
     - run:
         name: Install
@@ -25,7 +24,3 @@ jobs:
 
     - store_test_results:
         path: target/surefire-reports
-    - save_cache:
-        key: maven
-        paths:
-        - ~/.m2
