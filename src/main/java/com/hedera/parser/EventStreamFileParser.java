@@ -3,8 +3,8 @@ package com.hedera.parser;
 import com.google.common.base.Stopwatch;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
-import com.hedera.databaseUtilities.ApplicationStatus;
-import com.hedera.databaseUtilities.DatabaseUtilities;
+import com.hedera.databaseutilities.ApplicationStatus;
+import com.hedera.databaseutilities.DatabaseUtilities;
 import com.hedera.platform.Transaction;
 import com.hedera.utilities.Utility;
 

@@ -12,7 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
-import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.databaseutilities.ApplicationStatus;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
 

@@ -1,6 +1,6 @@
 package com.hedera.parser;
 
-import com.hedera.databaseUtilities.DatabaseUtilities;
+import com.hedera.databaseutilities.DatabaseUtilities;
 import lombok.extern.log4j.Log4j2;
 
 import java.sql.Connection;

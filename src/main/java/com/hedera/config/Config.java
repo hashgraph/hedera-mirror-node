@@ -13,11 +13,15 @@ public class Config {
     @Value("${postgresql.url}")
     private String url;
 
+    @Value("${postgresql.dbname}")
+    private String dbname;
+
     @Value("${postgresql.username}")
     private String username;
     
     @Value("${postgresql.password}")
     private String password;
+
  
     /**
      * @return the url
@@ -31,6 +35,20 @@ public class Config {
      */
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    /**
+     * @return the dbname
+     */
+    public String getDbname() {
+        return dbname;
+    }
+
+    /**
+     * @param dbname the dbname to set
+     */
+    public void setDbname(String dbname) {
+        this.dbname = dbname;
     }
 
     /**

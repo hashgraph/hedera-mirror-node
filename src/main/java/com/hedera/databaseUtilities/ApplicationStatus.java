@@ -1,4 +1,4 @@
-package com.hedera.databaseUtilities;
+package com.hedera.databaseutilities;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

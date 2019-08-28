@@ -13,7 +13,7 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.addressBook.NetworkAddressBook;
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.databaseUtilities.DatabaseUtilities;
+import com.hedera.databaseutilities.DatabaseUtilities;
 import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;

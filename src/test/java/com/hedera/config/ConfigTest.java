@@ -19,6 +19,7 @@ public class ConfigTest {
   public void shouldHaveDefaultConfig() {
 
     assertEquals("jdbc:postgresql://localhost:5433/hederamirror", config.getUrl());
+    assertEquals("hederamirror", config.getDbname());
     assertEquals("hederamirror", config.getUsername());
     assertEquals("mysecretpassword", config.getPassword());
 
