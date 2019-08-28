@@ -269,8 +269,6 @@ public class RecordFileParser {
 			if (pathName != null) {
 				parseNewFiles(pathName);
 			}
-			
-			TimeUnit.MILLISECONDS.sleep(15);
 		}
 	}
 
