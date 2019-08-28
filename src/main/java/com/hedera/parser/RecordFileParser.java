@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.TextFormat;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
@@ -269,6 +270,7 @@ public class RecordFileParser {
 			if (pathName != null) {
 				parseNewFiles(pathName);
 			}
+			Uninterruptibles.sleepUninterruptibly(15, TimeUnit.MILLISECONDS);
 		}
 	}
 
