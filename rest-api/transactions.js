@@ -114,7 +114,6 @@ const getTransactions = function (req) {
 
     let sqlQuery =
         "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
-        "   , t.valid_start_ns\n" +
         "   , t.memo\n" +
         '	, t.consensus_ns\n' +
         '   , valid_start_ns\n' +
@@ -192,7 +191,6 @@ const getOneTransaction = function (req, res) {
 
     let sqlQuery =
         "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
-        "   , t.valid_start_ns\n" +
         "   , t.memo\n" +
         '	, t.consensus_ns\n' +
         '   , valid_start_ns\n' +

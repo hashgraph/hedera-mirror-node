@@ -270,7 +270,6 @@ public class RecordFileParser {
 			if (pathName != null) {
 				parseNewFiles(pathName);
 			}
-			
 			Uninterruptibles.sleepUninterruptibly(15, TimeUnit.MILLISECONDS);
 		}
 	}
