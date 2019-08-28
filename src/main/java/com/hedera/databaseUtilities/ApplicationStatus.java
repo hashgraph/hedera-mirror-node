@@ -22,7 +22,7 @@ public class ApplicationStatus {
 		,LAST_PROCESSED_RECORD_HASH
 	}
 	
-	private ConcurrentHashMap<ApplicationStatusCode, String> applicationStatusMap = new ConcurrentHashMap<ApplicationStatusCode, String>();
+	private static ConcurrentHashMap<ApplicationStatusCode, String> applicationStatusMap = new ConcurrentHashMap<ApplicationStatusCode, String>();
 	
 	private static final String updateSQL = "UPDATE t_application_status SET "
 			+ " status_value = ? "
