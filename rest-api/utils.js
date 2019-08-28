@@ -107,8 +107,6 @@ const parseComparatorSymbol = function (fields, valArr, type = null) {
                         fquery;
                 }
 
-                // fieldQueryStr = '(' + fieldQueryStr + ')';
-
                 queryStr += (queryStr === '' ? '' : ' and ') + fieldQueryStr;
             }
         }
