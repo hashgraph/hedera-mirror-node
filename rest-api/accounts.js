@@ -189,21 +189,17 @@ const getOneAccount = function (req, res) {
             creditDebit === 'debit' ? ' and ctl.amount < 0 ' : '');
     const accountParams = [acc.shard, acc.realm, acc.num];
 
-    const innerQuery =
-        'select distinct t.id\n' +
-        '	, t.consensus_ns\n' +
-        'from t_transactions t\n' +
-        '	, t_cryptotransferlists ctl\n' +
-        '	, t_entities eaccount\n' +
-        '   , t_transaction_results tr\n' +
-        'where ctl.fk_trans_id = t.id\n' +
-        '   and eaccount.id = ctl.account_id\n' +
-        '   and t.fk_result_id = tr.id\n' +
-        (accountQuery === '' ? '' : '     and ') + accountQuery + '\n' +
-        (tsQuery === '' ? '' : '     and ') + tsQuery + '\n' +
-        resultTypeQuery + '\n' +
-        '     order by t.consensus_ns ' + order + '\n' +
-        '     ' + limitQuery;
+    let innerQuery =
+    '      select distinct t.consensus_ns\n' +
+    '       from t_transactions t\n' +
+    '       join t_transaction_results tr on t.fk_result_id = tr.id\n' +
+    '       join t_cryptotransferlists ctl on t.id = ctl.fk_trans_id\n' +
+    '       join t_entities eaccount on eaccount.id = ctl.account_id\n' +
+    '       where ' +
+            [accountQuery, tsQuery, resultTypeQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
+    '       order by t.consensus_ns ' + order + '\n' +
+    '        ' + limitQuery;
+
     const innerParams = accountParams
         .concat(tsParams)
         .concat(limitParams);
@@ -228,7 +224,7 @@ const getOneAccount = function (req, res) {
         "   , amount\n" +
         "   , t.charged_tx_fee\n" +
         " from (" + innerQuery + ") as tlist\n" +
-        "   join t_transactions t on tlist.id = t.id\n" +
+        "   join t_transactions t on tlist.consensus_ns = t.consensus_ns\n" +
         "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +
         "   join t_entities enode on enode.id = t.fk_node_acc_id\n" +
         "   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n" +
