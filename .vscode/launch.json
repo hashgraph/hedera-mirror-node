@@ -1,0 +1,91 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Debug (Launch) - Current File",
+      "request": "launch",
+      "mainClass": "${file}"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Launch)-NetworkAddressBook<MirrorNode>",
+      "request": "launch",
+      "mainClass": "com.hedera.addressBook.NetworkAddressBook",
+      "projectName": "MirrorNode"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Launch)-BalanceFileLogger<MirrorNode>",
+      "request": "launch",
+      "mainClass": "com.hedera.balanceFileLogger.BalanceFileLogger",
+      "projectName": "MirrorNode"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Launch)-AccountBalancesDownloader<MirrorNode>",
+      "request": "launch",
+      "mainClass": "com.hedera.downloader.AccountBalancesDownloader",
+      "projectName": "MirrorNode"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Launch)-DownloadAndParseEventFiles<MirrorNode>",
+      "request": "launch",
+      "mainClass": "com.hedera.downloader.DownloadAndParseEventFiles",
+      "projectName": "MirrorNode"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Launch)-DownloadAndParseRecordFiles<MirrorNode>",
+      "request": "launch",
+      "mainClass": "com.hedera.downloader.DownloadAndParseRecordFiles",
+      "projectName": "MirrorNode"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Launch)-EventStreamFileDownloader<MirrorNode>",
+      "request": "launch",
+      "mainClass": "com.hedera.downloader.EventStreamFileDownloader",
+      "projectName": "MirrorNode"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Launch)-RecordFileDownloader<MirrorNode>",
+      "request": "launch",
+      "mainClass": "com.hedera.downloader.RecordFileDownloader",
+      "projectName": "MirrorNode"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Launch)-MirrorNodeProxy<MirrorNode>",
+      "request": "launch",
+      "mainClass": "com.hedera.mirrorNodeProxy.MirrorNodeProxy",
+      "projectName": "MirrorNode"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Launch)-EventStreamAnalytics<MirrorNode>",
+      "request": "launch",
+      "mainClass": "com.hedera.parser.EventStreamAnalytics",
+      "projectName": "MirrorNode"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Launch)-EventStreamFileParser<MirrorNode>",
+      "request": "launch",
+      "mainClass": "com.hedera.parser.EventStreamFileParser",
+      "projectName": "MirrorNode"
+    },
+    {
+      "type": "java",
+      "name": "Debug (Launch)-RecordFileParser<MirrorNode>",
+      "request": "launch",
+      "mainClass": "com.hedera.parser.RecordFileParser",
+      "projectName": "MirrorNode"
+    }
+  ]
+}
