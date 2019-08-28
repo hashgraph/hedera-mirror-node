@@ -244,20 +244,6 @@ const convertMySqlStyleQueryToPostgress = function (sqlQuery, sqlParams) {
     return (sqlQueryNonInject);
 }
 
-
-/**
- * Debug helper: creates a displayable query for debugging
- * @param {String} sqlQuery MySql style query
- * @param {Array of values} sqlParams Values of positional parameters
- * @return {String} SQL query with Postgres style positional parameters
- */
-const createDebugQuery = function (sqlQuery, sqlParams) {
-    for (let i = 1; i <= sqlParams.length; i ++) {
-        sqlQuery = sqlQuery.replace('$'+ i, sqlParams[i - 1]);
-    }
-    logger.debug("SQL_Query: " + sqlQuery);
-}
-
 /**
  * Create pagination (next) link
  * @param {HTTPRequest} req HTTP query request object
