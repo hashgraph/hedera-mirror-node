@@ -416,7 +416,7 @@ While the values in this table are updated in real time, any changes you wish to
 | Last valid downloaded event file hash | The hash of the last event file to have passed signature verification |
 | Last valid downloaded balance file name | The name of the last balance file to have passed signature verification |
 
-## If things don't appear to be working properly
+## Troubleshooting
 
 ### Checking for errors
 
@@ -433,3 +433,12 @@ If there are no files in this folder, it's possible that either you `0.0.102` fi
 You may try to set the `maxDownloadItems` to a number such as 10 or 20 to download and process new files in batches.
 
 * The above also applies if you are running the `downloader.DownloadAndParseRecordFiles` java class standalone.
+
+## Contributing
+
+Refer to [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## License
+
+Apache License 2.0, see [LICENSE](LICENSE).
+
