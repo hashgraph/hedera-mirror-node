@@ -295,9 +295,6 @@
 				<version>2.0.0</version>
 				<configuration>
 					<canUpdateCopyright>true</canUpdateCopyright>
-					<excludes>
-						<exclude>**/*.test.js</exclude>
-					</excludes>
 					<includes>
 						<include>**/*.java</include>
 						<include>**/*.js</include>
