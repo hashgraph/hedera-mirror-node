@@ -1,4 +1,5 @@
 version: 2
+executorType: machine
 
 workflows:
   version: 2
