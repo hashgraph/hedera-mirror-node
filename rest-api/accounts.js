@@ -191,8 +191,7 @@ const getOneAccount = function (req, res) {
 
     const innerQuery =
         'select distinct t.id\n' +
-        '	, t.vs_seconds\n' +
-        '	, t.vs_nanos\n' +
+        '	, t.valid_stard_ns\n' +
         '	, t.consensus_seconds\n' +
         '	, t.consensus_nanos\n' +
         '	, t.consensus_ns\n' +
@@ -215,7 +214,6 @@ const getOneAccount = function (req, res) {
 
     let transactionsQuery =
         "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
-        "   , t.valid_start_ns\n" +
         "   , t.memo\n" +
         "   , t.consensus_seconds\n" +
         "   , t.consensus_nanos\n" +
