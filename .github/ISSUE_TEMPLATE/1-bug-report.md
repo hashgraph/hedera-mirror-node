@@ -20,8 +20,11 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Environment:**
+- Java: [e.g. OpenJDK 11.0.4]
+- Node: [e.g. v12.9.1-x86]
 - OS: [e.g. Ubuntu 18.04]
 - Version: [e.g. 1.0.1]
 
 **Additional Context**
-Add any other context about the problem here.
+Add any other context about the problem here. Attach any logs here, if applicable.
+
