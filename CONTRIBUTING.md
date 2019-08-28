@@ -72,6 +72,8 @@ contributing. All issue types follow the same general lifecycle. Differences are
       active for more than 30 days. This will help keep the issue queue to a manageable size and
       reduce noise.
 4. **Issue closure**
+    - Issues should be closed when a PR is merged or closed manually by the submitter or maintainer
+      if it is determined that is not necessary.
 
 ## Pull Requests
 
@@ -79,12 +81,12 @@ Like most open source projects, we use Pull Requests (PRs) to track code changes
 
 ### PR Creation
 
-1. **Fork** the [hedera-mirror-node](https://github.com/hashgraph/hedera-mirror-node) repo  
+1. Fork the [hedera-mirror-node](https://github.com/hashgraph/hedera-mirror-node) repo
 
 Go to the [project](https://github.com/hashgraph/hedera-mirror-node) page then hit the `Fork`
 button to fork your own copy of the repository to your GitHub account.
 
-2. **Clone** the forked repo to your local working directory.
+2. Clone the forked repo to your local working directory.
 ```sh
 $ git clone https://github.com/$your_github_account/hedera-mirror-node.git   
 ```
@@ -152,7 +154,7 @@ $ git commit -s -m 'Update README'
 
 ### PR Lifecycle
 
-Now that you've [created](#pr-creation) your PR and [signed off](#sign-off) any commits, you can proceed to submit it:
+Now that you've [created](#pr-creation) your PR and [signed off](#sign-off) any commits, you can proceed to submit it.
 
 1. **Submitting**
     - It is preferred, but not required, to have a PR tied to a specific issue. There can be
@@ -186,7 +188,7 @@ Now that you've [created](#pr-creation) your PR and [signed off](#sign-off) any 
       owner is unsure of any comment, reach out to the person who added the comment in Discord. Once all comments
       have been addressed, the PR is ready to be merged.
 4. **Merge or Close**
-    - PRs should stay open until merged or be closed if they have not been active for more than 30 days.
+    - PRs should stay open until merged or be closed if the submitter has not been responsive for more than 30 days.
       This will help keep the PR queue to a manageable size and reduce noise.
 
 ## Releases
