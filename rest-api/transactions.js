@@ -72,12 +72,19 @@ const getTransactions = function (req) {
 
     let [accountQuery, accountParams] =
         utils.parseParams(req, 'account.id', [{
-            shard: 'eaccount.entity_shard',
-            realm: 'eaccount.entity_realm',
-            num: 'eaccount.entity_num'
+            shard: 'entity_shard',
+            realm: 'entity_realm',
+            num: 'entity_num'
+
         }], 'entityId');
 
     if (accountQuery !== '') {
+        accountQuery = 
+            'ctl.account_id in\n' +
+            '    (select distinct id\n' +
+            '     from t_entities\n' +                                                   
+            '     where (' + accountQuery + 
+            '     and eaccount.fk_entity_type_id in (select id from t_entity_types)))\n';
         accountQuery = accountQuery +
             (creditDebit === 'credit' ? ' and ctl.amount > 0 ' :
                 creditDebit === 'debit' ? ' and ctl.amount < 0 ' : '');
@@ -96,19 +103,16 @@ const getTransactions = function (req) {
     // The transaction ids returned from this query is then used in the outer 
     // query to generate the output to return to the REST query.
     let innerQuery =
-        'select distinct t.id\n' +
-        '	, t.consensus_ns\n' +
-        'from t_transactions t\n' +
-        '	, t_cryptotransferlists ctl\n' +
-        '	, t_entities eaccount\n' +
-        '   , t_transaction_results tr\n' +
-        'where ctl.fk_trans_id = t.id\n' +
-        '   and eaccount.id = ctl.account_id\n' +
-        '   and t.fk_result_id = tr.id\n' +
-        '   and ' +
-        [accountQuery, tsQuery, resultTypeQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
-        '     order by t.consensus_ns ' + order + '\n' +
-        '     ' + limitQuery;
+    '      select distinct t.consensus_ns\n' +
+    '       from t_transactions t\n' +
+    '       join t_transaction_results tr on t.fk_result_id = tr.id\n' +
+    '       join t_cryptotransferlists ctl on t.id = ctl.fk_trans_id\n' +
+    '       join t_entities eaccount on eaccount.id = ctl.account_id\n' +
+    '       where ' +
+            [accountQuery, tsQuery, resultTypeQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
+    '       order by t.consensus_ns ' + order + '\n' +
+    '        ' + limitQuery;
+
     let sqlParams = accountParams.concat(tsParams)
         .concat(limitParams);
 
@@ -131,13 +135,14 @@ const getTransactions = function (req) {
         "   , amount\n" +
         "   , t.charged_tx_fee\n" +
         " from (" + innerQuery + ") as tlist\n" +
-        "   join t_transactions t on tlist.id = t.id\n" +
+        "   join t_transactions t on tlist.consensus_ns = t.consensus_ns\n" +
         "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +
         "   join t_entities enode on enode.id = t.fk_node_acc_id\n" +
         "   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n" +
         "   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n" +
         "   left outer join t_cryptotransferlists ctl on  ctl.fk_trans_id = t.id\n" +
-        "   join t_entities eaccount on eaccount.id = ctl.account_id\n";
+        "   join t_entities eaccount on eaccount.id = ctl.account_id\n" +
+        "   order by t.consensus_ns " + order + "\n";
 
 
     const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(

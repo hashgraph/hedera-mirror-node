@@ -22,13 +22,19 @@ const Cacher = require('./cacher.js');
 
 var compression = require('compression');
 
+const port = process.env.PORT;
+if (port === undefined || isNaN(Number(port))) {
+    logger.error('Server started with unknown port');
+    console.log('Please specify the port');
+    process.exit(1);
+}
 
 // Logger
 log4js.configure({
     appenders: {
         everything: {
             type: 'file',
-            filename: '../logs/hedera_mirrornode_api_temp.log'
+            filename: '../logs/hedera_mirrornode_api_' + port + '.log' // ensure port is a legit number above
         }
     },
     categories: {
@@ -39,13 +45,6 @@ log4js.configure({
     }
 });
 global.logger = log4js.getLogger();
-
-const port = process.env.PORT;
-if (port === undefined) {
-    logger.error('Server started with unknown port');
-    console.log('Please specify the port');
-    process.exit(1);
-}
 
 
 // Postgres pool

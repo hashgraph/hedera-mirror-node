@@ -107,8 +107,6 @@ const parseComparatorSymbol = function (fields, valArr, type = null) {
                         fquery;
                 }
 
-                fieldQueryStr = '(' + fieldQueryStr + ')';
-
                 queryStr += (queryStr === '' ? '' : ' and ') + fieldQueryStr;
             }
         }
@@ -245,7 +243,6 @@ const convertMySqlStyleQueryToPostgress = function (sqlQuery, sqlParams) {
 
     return (sqlQueryNonInject);
 }
-
 
 /**
  * Create pagination (next) link
