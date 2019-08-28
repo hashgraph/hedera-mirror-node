@@ -1,6 +1,8 @@
 package com.hedera.downloader;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
 
@@ -18,13 +21,16 @@ public class AccountBalancesDownloader extends Downloader {
 
 	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
 	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.BALANCE);
+	private static ApplicationStatus applicationStatus;
 
-	public AccountBalancesDownloader() {
+	public AccountBalancesDownloader() throws Exception {
+		applicationStatus = new ApplicationStatus();
 		Utility.createDirIfNotExists(validDir);
 		Utility.createDirIfNotExists(tmpDir);
+		Utility.purgeDirectory(tmpDir);
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		AccountBalancesDownloader downloader = new AccountBalancesDownloader();
 
 		while (true) {
@@ -41,6 +47,7 @@ public class AccountBalancesDownloader extends Downloader {
 					// balance files with sig verification
 					HashMap<String, List<File>> sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
 					//Verify signature files and download corresponding files of valid signature files
+					
 					downloader.verifySigsAndDownloadBalanceFiles(sigFilesMap);
 				} else {
 					downloader.downloadBalanceFiles();
@@ -62,15 +69,19 @@ public class AccountBalancesDownloader extends Downloader {
 	 *  (3) compare the Hash of _Balances.csv file with Hash which has been agreed on by valid signatures, if match, move the _Balances.csv file into `valid` directory; else download _Balances.csv file from other valid node folder, and compare the Hash until find a match one
 	 *  return the name of directory which contains valid _Balances.csv files
 	 * @param sigFilesMap
+	 * @throws Exception 
 	 */
-	private void verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) {
-		String lastValidBalanceFileName = ConfigLoader.getLastValidBalanceFileName();
+	private void verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) throws Exception {
+		String lastValidBalanceFileName = applicationStatus.getLastValidDownloadedBalanceFileName();
 		String newLastValidBalanceFileName = lastValidBalanceFileName;
 
 		// reload address book and keys
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 
-		for (String fileName : sigFilesMap.keySet()) {
+		List<String> fileNames = new ArrayList<String>(sigFilesMap.keySet());
+		Collections.sort(fileNames);
+		
+		for (String fileName : fileNames) {
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, stopping");
 				break;
@@ -105,8 +116,8 @@ public class AccountBalancesDownloader extends Downloader {
 								fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
 							newLastValidBalanceFileName = file.getName();
 							log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
-							valid = true;
 						}
+						valid = true;
 						break;
 					}
 				} else if (file != null) {
@@ -119,7 +130,7 @@ public class AccountBalancesDownloader extends Downloader {
 			}
 		}
 		if (!newLastValidBalanceFileName.equals(lastValidBalanceFileName)) {
-			ConfigLoader.setLastValidBalanceFileName(newLastValidBalanceFileName);
+			applicationStatus.updateLastValidDownloadedBalanceFileName(newLastValidBalanceFileName);
 		}
 	}
 }

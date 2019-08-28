@@ -5,8 +5,8 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.MessageDigest;
-import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,7 +14,7 @@ import com.google.common.base.Stopwatch;
 import com.google.protobuf.TextFormat;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
-import com.hedera.recordFileLogger.LoggerStatus;
+import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
 import com.hedera.utilities.Utility;
@@ -34,13 +34,11 @@ public class RecordFileParser {
 	static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
 	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 
-	private static LoggerStatus loggerStatus = new LoggerStatus();
 	private static String thisFileHash = "";
+	private static ApplicationStatus applicationStatus;
 
-	private static Instant timeStart;
-	private static String nowTime() {
-		return Instant.now().getEpochSecond() * 1000000000 + Instant.now().getNano() - timeStart.getEpochSecond() * 1000000000 + timeStart.getNano() + "-";
-
+	public RecordFileParser() throws Exception {
+		applicationStatus = new ApplicationStatus();
 	}
 	/**
 	 * Given a service record name, read and parse and return as a list of service record pair
@@ -48,15 +46,13 @@ public class RecordFileParser {
 	 * @param fileName
 	 * 		the name of record file to read
 	 * @return return previous file hash
+	 * @throws Exception 
 	 */
-	static public boolean loadRecordFile(String fileName, String previousFileHash) {
-
-		timeStart = Instant.now();
+	static public boolean loadRecordFile(String fileName, String previousFileHash) throws Exception {
 
 		File file = new File(fileName);
-		FileInputStream stream = null;
 		String newFileHash = "";
-
+		
 		if (file.exists() == false) {
 			log.warn("File does not exist {}", fileName);
 			return false;
@@ -101,7 +97,7 @@ public class RecordFileParser {
 
 								if (!newFileHash.contentEquals(previousFileHash)) {
 
-									if (ConfigLoader.getStopLoggingIfRecordHashMismatchAfter().compareTo(Utility.getFileName(fileName)) < 0) {
+									if (applicationStatus.getBypassRecordHashMismatchUntilAfter().compareTo(Utility.getFileName(fileName)) < 0) {
 										// last file for which mismatch is allowed is in the past
 										log.error("Hash mismatch for file {}. Previous = {}, Current = {}", fileName, previousFileHash, newFileHash);
 										return false;
@@ -191,8 +187,7 @@ public class RecordFileParser {
 			}
 
 			log.info("Finished parsing {} transactions from record file {} in {}", counter, file.getName(), stopwatch);
-			loggerStatus.setLastProcessedRcdHash(thisFileHash);
-			loggerStatus.saveToFile();
+			applicationStatus.updateLastProcessedRcdHash(thisFileHash);
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
 			return true;
@@ -203,11 +198,13 @@ public class RecordFileParser {
 
 	/**
 	 * read and parse a list of record files
+	 * @throws Exception 
 	 */
-	static public void loadRecordFiles(List<String> fileNames) {
+	static public void loadRecordFiles(List<String> fileNames) throws Exception {
+		String prevFileHash = applicationStatus.getLastProcessedRcdHash();
 
-		String prevFileHash = loggerStatus.getLastProcessedRcdHash();
-
+		Collections.sort(fileNames);
+		
 		for (String name : fileNames) {
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, stopping");
@@ -223,8 +220,8 @@ public class RecordFileParser {
 		}
 	}
 
-	public static void parseNewFiles(String pathName) {
-		log.info( "Parsing record files from {}", pathName);
+	public static void parseNewFiles(String pathName) throws Exception {
+		log.debug( "Parsing record files from {}", pathName);
 		if (RecordFileLogger.start()) {
 
 			File file = new File(pathName);
@@ -247,7 +244,7 @@ public class RecordFileParser {
 					log.trace("Processing record files: {}", fullPaths);
 					loadRecordFiles(fullPaths);
 				} else {
-					log.info("No files to parse");
+					log.debug("No files to parse");
 				}
 			} else {
 				log.error("Input parameter {} is not a folder", pathName);
@@ -256,8 +253,9 @@ public class RecordFileParser {
 		}
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		String pathName;
+		applicationStatus = new ApplicationStatus();
 
 		while (true) {
 			if (Utility.checkStopFile()) {

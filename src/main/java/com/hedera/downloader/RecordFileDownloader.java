@@ -2,6 +2,7 @@ package com.hedera.downloader;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
@@ -14,6 +15,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,13 +28,16 @@ public class RecordFileDownloader extends Downloader {
 
 	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
 	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.RECORDS);
+	private static ApplicationStatus applicationStatus;
 
-	public RecordFileDownloader() {
+	public RecordFileDownloader() throws Exception {
+		applicationStatus = new ApplicationStatus();
 		Utility.createDirIfNotExists(validDir);
 		Utility.createDirIfNotExists(tmpDir);
+		Utility.purgeDirectory(tmpDir);
 	}
 
-	public static void downloadNewRecordfiles(RecordFileDownloader downloader) {
+	public static void downloadNewRecordfiles(RecordFileDownloader downloader) throws Exception {
 		setupCloudConnection();
 
 		HashMap<String, List<File>> sigFilesMap;
@@ -55,7 +61,7 @@ public class RecordFileDownloader extends Downloader {
 		}
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		RecordFileDownloader downloader = new RecordFileDownloader();
 
 		while (true) {
@@ -72,10 +78,11 @@ public class RecordFileDownloader extends Downloader {
 	 * (1) Sort .rcd files by timestamp,
 	 * (2) Verify the .rcd files to see if the file Hash matches prevFileHash
 	 * @param validDir
+	 * @throws Exception 
 	 */
-	public static void verifyValidRecordFiles(String validDir) {
-		String lastValidRcdFileName =  ConfigLoader.getLastValidRcdFileName();
-		String lastValidRcdFileHash = ConfigLoader.getLastValidRcdFileHash();
+	public static void verifyValidRecordFiles(String validDir) throws Exception {
+		String lastValidRcdFileName =  applicationStatus.getLastValidDownloadedRecordFileName();
+		String lastValidRcdFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
 		File validDirFile = new File(validDir);
 		if (!validDirFile.exists()) {
 			return;
@@ -105,15 +112,18 @@ public class RecordFileDownloader extends Downloader {
 						prevFileHash.equals(Hex.encodeHexString(new byte[48]))) {
 					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(rcdName));
 					newLastValidRcdFileName = new File(rcdName).getName();
+				} else if (applicationStatus.getBypassRecordHashMismatchUntilAfter().compareTo(new File(rcdName).getName()) > 0) {
+					newLastValidRcdFileName = new File(rcdName).getName();
+					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(rcdName));
 				} else {
+					log.warn("File Hash Mismatch with previous : {}", rcdName);
 					break;
 				}
 			}
 
 			if (!newLastValidRcdFileName.equals(lastValidRcdFileName)) {
-				ConfigLoader.setLastValidRcdFileHash(newLastValidRcdFileHash);
-				ConfigLoader.setLastValidRcdFileName(newLastValidRcdFileName);
-				ConfigLoader.saveRecordsDataToFile();
+				applicationStatus.updateLastValidDownloadedRecordFileHash(newLastValidRcdFileHash);
+				applicationStatus.updateLastValidDownloadedRecordFileName(newLastValidRcdFileName);
 			}
 
 		} catch (Exception ex) {
@@ -134,13 +144,18 @@ public class RecordFileDownloader extends Downloader {
 		// reload address book and keys
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier();
 
-		for (String fileName : sigFilesMap.keySet()) {
+		List<String> fileNames = new ArrayList<String>(sigFilesMap.keySet());
+
+		Collections.sort(fileNames);
+
+		for (String fileName : fileNames) {
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, stopping");
 				break;
 			}
 			boolean valid = false;
 			List<File> sigFiles = sigFilesMap.get(fileName);
+			
 			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
 			if (sigFiles == null || !Utility.greaterThanSuperMajorityNum(sigFiles.size(), nodeAccountIds.size())) {
 				log.warn("Signature file count does not exceed 2/3 of nodes");
@@ -149,7 +164,6 @@ public class RecordFileDownloader extends Downloader {
 
 			// validSigFiles are signed by node key and contains the same hash which has been agreed by more than 2/3 nodes
 			List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
-
 			for (File validSigFile : validSigFiles) {
 				if (Utility.checkStopFile()) {
 					log.info("Stop file found, stopping");
