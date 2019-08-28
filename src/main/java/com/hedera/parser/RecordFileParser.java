@@ -102,6 +102,9 @@ public class RecordFileParser {
 										// last file for which mismatch is allowed is in the past
 										log.error("Hash mismatch for file {}. Previous = {}, Current = {}", fileName, previousFileHash, newFileHash);
 										return false;
+									} else if (applicationStatus.getAwaitRecordGenesisEvent() && Utility.hashIsGenesis(newFileHash)) {
+										log.info("Genesis event found for file {}.", fileName);
+										applicationStatus.setAwaitRecordGenesisEvent();
 									}
 								}
 								break;

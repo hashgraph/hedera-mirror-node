@@ -479,6 +479,10 @@ public class Utility {
 		return (hash.isEmpty() || hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"));
 	}
 	
+	public static boolean hashIsGenesis(String hash) {
+		return hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+	}
+
 	public static void moveFileToParsedDir(String fileName, String subDir) {
 		File sourceFile = new File(fileName);
 		String pathToSaveTo = sourceFile.getParentFile().getParentFile().getPath() + subDir;

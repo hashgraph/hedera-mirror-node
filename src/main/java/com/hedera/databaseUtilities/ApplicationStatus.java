@@ -20,6 +20,8 @@ public class ApplicationStatus {
 		,RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER
 		,LAST_PROCESSED_EVENT_HASH
 		,LAST_PROCESSED_RECORD_HASH
+		,AWAIT_RECORD_GENESIS_EVENT
+		,AWAIT_EVENT_GENESIS_EVENT
 	}
 	
 	private static ConcurrentHashMap<ApplicationStatusCode, String> applicationStatusMap = new ConcurrentHashMap<ApplicationStatusCode, String>();
@@ -144,6 +146,21 @@ public class ApplicationStatus {
 	}
 	public String getLastProcessedRcdHash() throws Exception {
 		return getStatus(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
+	}
+
+	public void setAwaitRecordGenesisEvent() throws Exception {
+		updateStatus(ApplicationStatusCode.AWAIT_RECORD_GENESIS_EVENT, "false");
+	}
+	public boolean getAwaitRecordGenesisEvent() throws Exception {
+		String await = getStatus(ApplicationStatusCode.AWAIT_RECORD_GENESIS_EVENT);
+		return (await.contentEquals("true") ? true : false);
+	}
+	public void setAwaitEventGenesisEvent() throws Exception {
+		updateStatus(ApplicationStatusCode.AWAIT_EVENT_GENESIS_EVENT, "false");
+	}
+	public boolean getAwaitEventGenesisEvent() throws Exception {
+		String await = getStatus(ApplicationStatusCode.AWAIT_EVENT_GENESIS_EVENT);
+		return (await.contentEquals("true") ? true : false);
 	}
 
 	public void updateLastProcessedRcdHash(String hash) throws Exception {

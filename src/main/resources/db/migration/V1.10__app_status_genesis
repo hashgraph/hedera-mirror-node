@@ -1,0 +1,2 @@
+INSERT INTO t_application_status (status_name, status_code, status_value) VALUES ('Await record genesis event', 'AWAIT_RECORD_GENESIS_EVENT','true');
+INSERT INTO t_application_status (status_name, status_code, status_value) VALUES ('Await event genesis event', 'AWAIT_EVENT_GENESIS_EVENT','true');
