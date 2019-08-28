@@ -18,7 +18,11 @@ jobs:
     - checkout
     - restore_cache:
         key: maven
-    - run: ./mvnw install
+      
+    - run:
+        name: Install
+        command: mvn -B clean install
+
     - store_test_results:
         path: target/surefire-reports
     - save_cache:
