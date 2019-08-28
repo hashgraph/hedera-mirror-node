@@ -58,8 +58,6 @@ public class RecordFileLogger {
         ,ID
         ,FK_NODE_ACCOUNT_ID
         ,MEMO
-        ,VS_SECONDS
-        ,VS_NANOS
         ,VALID_START_NS
         ,FK_TRANS_TYPE_ID
         ,FK_PAYER_ACCOUNT_ID
@@ -157,10 +155,10 @@ public class RecordFileLogger {
         }
 		try {
 			sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
-					+ " (id, fk_node_acc_id, memo, vs_seconds, vs_nanos, valid_start_ns, fk_trans_type_id, fk_payer_acc_id"
+					+ " (id, fk_node_acc_id, memo, valid_start_ns, fk_trans_type_id, fk_payer_acc_id"
 					+ ", fk_result_id, consensus_seconds, consensus_nanos, consensus_ns, fk_cud_entity_id, charged_tx_fee"
 					+ ", initial_balance, fk_rec_file_id)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 					+ " RETURNING id");
 			sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
 					+ " (fk_trans_id, account_id, amount)"
@@ -301,8 +299,6 @@ public class RecordFileLogger {
 			sqlInsertTransaction.setLong(F_TRANSACTION.ID.ordinal(), fkTransactionId);
 			sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), fkNodeAccountId);
 			sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), body.getMemo().getBytes());
-			sqlInsertTransaction.setLong(F_TRANSACTION.VS_SECONDS.ordinal(), seconds);
-			sqlInsertTransaction.setLong(F_TRANSACTION.VS_NANOS.ordinal(), nanos);
 			sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), validStartNs);
 			sqlInsertTransaction.setInt(F_TRANSACTION.FK_TRANS_TYPE_ID.ordinal(), getTransactionTypeId(body));
 			sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), fileId);

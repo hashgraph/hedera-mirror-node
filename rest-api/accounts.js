@@ -200,13 +200,12 @@ const getOneAccount = function (req, res) {
     '       order by t.consensus_ns ' + order + '\n' +
     '        ' + limitQuery;
 
-    const innerParams = accountParams
+  const innerParams = accountParams
         .concat(tsParams)
         .concat(limitParams);
 
     let transactionsQuery =
         "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
-        "   , t.valid_start_ns\n" +
         "   , t.memo\n" +
         "   , t.consensus_ns\n" +
         '   , valid_start_ns\n' +

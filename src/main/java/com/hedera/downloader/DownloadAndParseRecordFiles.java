@@ -2,6 +2,9 @@ package com.hedera.downloader;
 
 import lombok.extern.log4j.Log4j2;
 
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.parser.RecordFileParser;
@@ -32,6 +35,9 @@ public class DownloadAndParseRecordFiles {
 			if (pathName != null) {
 				RecordFileParser.parseNewFiles(pathName);
 			}
+
+			Uninterruptibles.sleepUninterruptibly(15, TimeUnit.MILLISECONDS);
+			
 		}
 	}
 }

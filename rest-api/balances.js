@@ -14,7 +14,7 @@ const getBalances = function (req) {
     // timestamp and pagination
     let [accountQuery, accountParams] =
         utils.parseParams(req, 'account.id',
-            [{ shard: 'ab.shard', realm: 'ab.realm', num: 'ab.num' }],
+            [{ shard: '0', realm: '(ab.account_id).realm_num', num: '(ab.account_id).num' }],
             'entityId');
 
     // if the request has a timestamp=xxxx or timestamp=eq:xxxxx, then 
@@ -32,45 +32,35 @@ const getBalances = function (req) {
         }
     }
 
-    const [tsQuery, tsParams] = utils.parseParams(req,
-        'timestamp', ['snapshot_time_ns'], 'timestamp_ns');
+    let [tsQuery, tsParams] = utils.parseParams(req,
+        'timestamp', ['ab.consensus_timestamp'], 'timestamp_ns');
 
-    const [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance',
-        ['abh.balance']);
+    let [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance',
+        ['ab.balance']);
 
     let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'account.publickey',
         ['e.key'], 'hexstring');
-    pubKeyQuery = pubKeyQuery === '' ? '' :
-        "(e.entity_shard = ab.shard \n" +
-        " and e.entity_realm = ab.realm\n" +
-        " and e.entity_num = ab.num and " +
-        pubKeyQuery +
-        ")";
+    let joinEntities = ('' !== pubKeyQuery); // Only need to join t_entites if we're selecting on publickey.
 
     const { limitQuery, limitParams, order, limit } =
         utils.parseLimitAndOrderParams(req, 'desc');
 
     // Use the inner query to find the latest snapshot timestamp from the balance history table
-    let innerQuery =
-        " select snapshot_time_ns from t_account_balance_history\n" +
-        " where " +
-        (tsQuery === '' ? ('snapshot_time_ns < ' + config.limits.MAX_BIGINT) : tsQuery) + '\n' +
-        " order by snapshot_time_ns desc limit 1";
-
     let sqlQuery =
-        "Select \n" +
-        "    abh.snapshot_time_ns\n" +
-        "    , ab.shard, ab.realm, ab.num\n" +
-        "    , abh.balance\n" +
-        " from t_account_balance_history as abh\n" +
-        "    , t_account_balances ab\n" +
-        (pubKeyQuery === '' ? '' : ', t_entities e\n') +
-        " Where ab.id = abh.fk_balance_id\n" +
-        " and snapshot_time_ns = (" + innerQuery + ")\n" +
-        ' and ' + 
-        [accountQuery, pubKeyQuery, balanceQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
-        " order by (ab.shard, ab.realm, ab.num) " + order + "\n" +
-        "     " + limitQuery;
+        "select ab.consensus_timestamp, (ab.account_id).type_id as entity_type_id,\n" +
+        "(ab.account_id).realm_num as realm_num, (ab.account_id).num as entity_num, ab.balance\n" +
+        " from account_balances ab\n";
+    if (joinEntities) {
+        sqlQuery += " join t_entities e\n" +
+            " on e.entity_realm = (ab.account_id).realm_num\n" +
+            " and e.entity_num = (ab.account_id).num\n" +
+            " and e.entity_shard = 0 and e.fk_entity_type_id = 1\n";
+    }
+    sqlQuery += " where " +
+        [tsQuery, accountQuery, pubKeyQuery, balanceQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
+        " order by consensus_timestamp desc, " +
+        ['entity_type_id', 'realm_num', 'entity_num'].map(q => q + ' ' + order).join(',') +
+        " " + limitQuery;
 
     let sqlParams = tsParams
         .concat(accountParams)
@@ -96,14 +86,18 @@ const getBalances = function (req) {
                 }
             };
 
+            function accountIdFromRow(row) {
+                return '0.' + row.realm_num + '.' + row.entity_num;
+            }
+
             // Go through all results, and collect them by seconds.
             // These need to be returned as an array (and not an object) because
             // per ECMA ES2015, the order of keys parsable as integers are implicitly 
             // sorted (i.e. insert order is not maintained)
             // let retObj = {}
             for (let row of results.rows) {
-                let ns = utils.nsToSecNs(row.snapshot_time_ns);
-                row.account = row.shard + '.' + row.realm + '.' + row.num;
+                let ns = utils.nsToSecNs(row.consensus_timestamp);
+                row.account = accountIdFromRow(row);
 
                 if (ret.timestamp === null) {
                     ret.timestamp = ns;
@@ -113,6 +107,7 @@ const getBalances = function (req) {
                     'balance': Number(row.balance)
                 });
             }
+
             const anchorAccountId = results.rows.length > 0 ?
                 results.rows[results.rows.length - 1].account : 0;
 
@@ -127,7 +122,7 @@ const getBalances = function (req) {
                 ret.balances.length + " entries");
             return (ret);
         })
-    )
+    );
 }
 
 module.exports = {
