@@ -58,9 +58,6 @@ public class ConfigLoader {
 	// the directory where we store the RecordStream files
 	private static String downloadToDir = "./MirrorNodeData";
 
-	// the port of mirrorNodeProxy;
-	private static int proxyPort = 50777;
-
 	// path of addressBook file
 	private static String addressBookFile = "./config/0.0.102";
 
@@ -158,9 +155,6 @@ public class ConfigLoader {
 			}
 			if (configJsonObject.has("downloadToDir")) {
 				downloadToDir = configJsonObject.get("downloadToDir").getAsString();
-			}
-			if (configJsonObject.has("proxyPort")) {
-				proxyPort = configJsonObject.get("proxyPort").getAsInt();
 			}
 			if (configJsonObject.has("addressBookFile")) {
 				addressBookFile = configJsonObject.get("addressBookFile").getAsString();
@@ -312,10 +306,6 @@ public class ConfigLoader {
 
 	public static String getDefaultTmpDir(OPERATION_TYPE operation) {
 		return getDefaultParseDir(operation).replace("/valid", "/tmp");
-	}
-
-	public static int getProxyPort() {
-		return proxyPort;
 	}
 
 	public static String getAddressBookFile() {
