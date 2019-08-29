@@ -1,4 +1,6 @@
-[![CircleCI](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master.svg?style=shield&circle-token=710f183adf8aa2890272404e0c53e10898b94882)](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master)
+[![CircleCI](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master.svg?style=shield)](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master)
+
+![GitHub](https://img.shields.io/github/license/hashgraph/hedera-mirror-node)
 
 # Beta Mirror Node
 
