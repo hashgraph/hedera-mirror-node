@@ -55,7 +55,7 @@ public class ApplicationStatus {
 	private void updateStatus(ApplicationStatusCode code, String statusValue) throws Exception {
 		
 	    try (Connection connect = DatabaseUtilities.getConnection()) {
-	    	log.trace("Updating application status for : {}", code.name());
+	    	log.trace("Updating application status for : {} to {}", code.name(), statusValue);
 	
 			PreparedStatement updateValue = connect.prepareStatement(updateSQL);
 	
@@ -107,6 +107,7 @@ public class ApplicationStatus {
 				throw e;
 		    }
 		}
+    	log.trace("Returning application status for : {}, {}", code.name(), value);
 	    return value;
 	}
 	
@@ -162,7 +163,7 @@ public class ApplicationStatus {
 	public void updateBypassEventHashMismatchUntilAfter(String bypassUntilAfter) throws Exception {
 		updateStatus(ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER, bypassUntilAfter);
 	}
-	public String getLastProcessedRcdHash() throws Exception {
+	public String getLastProcessedRecdordHash() throws Exception {
 		return getStatus(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
 	}
 

@@ -22,7 +22,6 @@ package com.hedera.downloader;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
-import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
@@ -48,10 +47,8 @@ public class RecordFileDownloader extends Downloader {
 
 	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
 	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.RECORDS);
-	private static ApplicationStatus applicationStatus;
 
 	public RecordFileDownloader() throws Exception {
-		applicationStatus = new ApplicationStatus();
 		Utility.createDirIfNotExists(validDir);
 		Utility.createDirIfNotExists(tmpDir);
 		Utility.purgeDirectory(tmpDir);
@@ -69,7 +66,7 @@ public class RecordFileDownloader extends Downloader {
 
 			if (validDir != null) {
 //				new Thread(() -> {
-					verifyValidRecordFiles(validDir);
+//					verifyValidRecordFiles(validDir);
 //				}).start();
 			} else {
 			}
@@ -101,21 +98,21 @@ public class RecordFileDownloader extends Downloader {
 	 * @throws Exception 
 	 */
 	public static void verifyValidRecordFiles(String validDir) throws Exception {
-		String lastValidRcdFileName =  applicationStatus.getLastValidDownloadedRecordFileName();
-		String lastValidRcdFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
+		String lastValidRecordFileName =  applicationStatus.getLastValidDownloadedRecordFileName();
+		String lastValidRecordFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
 		File validDirFile = new File(validDir);
 		if (!validDirFile.exists()) {
 			return;
 		}
 		try (Stream<Path> pathStream = Files.walk(validDirFile.toPath())) {
 			List<String> fileNames = pathStream.filter(p -> Utility.isRecordFile(p.toString()))
-					.filter(p -> lastValidRcdFileName.isEmpty() ||
-							fileNameComparator.compare(p.toFile().getName(), lastValidRcdFileName) > 0)
+					.filter(p -> lastValidRecordFileName.isEmpty() ||
+							fileNameComparator.compare(p.toFile().getName(), lastValidRecordFileName) > 0)
 					.sorted(pathComparator)
 					.map(p -> p.toString()).collect(Collectors.toList());
 
-			String newLastValidRcdFileName = lastValidRcdFileName;
-			String newLastValidRcdFileHash = lastValidRcdFileHash;
+			String newLastValidRcdFileName = lastValidRecordFileName;
+			String newLastValidRcdFileHash = lastValidRecordFileHash;
 
 			for (String rcdName : fileNames) {
 				if (Utility.checkStopFile()) {
@@ -136,12 +133,17 @@ public class RecordFileDownloader extends Downloader {
 					newLastValidRcdFileName = new File(rcdName).getName();
 					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(rcdName));
 				} else {
+					log.warn("File Hash Mismatch with previous : {}, expected {}, got {}", rcdName, newLastValidRcdFileHash, prevFileHash);
+					log.warn("Expected {}", newLastValidRcdFileHash);
+					log.warn("Got {}", prevFileHash);
+					
 					log.warn("File Hash Mismatch with previous : {}", rcdName);
+					
 					break;
 				}
 			}
 
-			if (!newLastValidRcdFileName.equals(lastValidRcdFileName)) {
+			if (!newLastValidRcdFileName.equals(lastValidRecordFileName)) {
 				applicationStatus.updateLastValidDownloadedRecordFileHash(newLastValidRcdFileHash);
 				applicationStatus.updateLastValidDownloadedRecordFileName(newLastValidRcdFileName);
 			}
@@ -151,6 +153,45 @@ public class RecordFileDownloader extends Downloader {
 		}
 	}
 
+	/**
+	 * Verify the .rcd files to see if the file Hash matches prevFileHash
+	 * @param fileToCheck
+	 * @throws Exception 
+	 */
+	public static boolean verifyValidRecordFile(File objfileToCheck) throws Exception {
+		String lastValidRecordFileName =  applicationStatus.getLastValidDownloadedRecordFileName();
+		String lastValidRecordFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
+		if (!objfileToCheck.exists()) {
+			return false;
+		}
+		String newLastValidRcdFileName = lastValidRecordFileName;
+		String newLastValidRcdFileHash = lastValidRecordFileHash;
+
+		String prevFileHash = RecordFileParser.readPrevFileHash(objfileToCheck.getPath());
+		if (prevFileHash == null) {
+			log.warn("Doesn't contain valid prevFileHash: {}", objfileToCheck.getPath());
+			return false;
+		}
+		if (newLastValidRcdFileHash.isEmpty() ||
+				newLastValidRcdFileHash.equals(prevFileHash) ||
+				prevFileHash.equals(Hex.encodeHexString(new byte[48]))) {
+			newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(objfileToCheck.getPath()));
+			newLastValidRcdFileName = objfileToCheck.getName();
+		} else if (applicationStatus.getBypassRecordHashMismatchUntilAfter().compareTo(objfileToCheck.getName()) > 0) {
+			newLastValidRcdFileName = objfileToCheck.getName();
+			newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(objfileToCheck.getPath()));
+		} else {
+			log.warn("File Hash Mismatch with previous : {}, expected {}, got {}", objfileToCheck.getPath(), newLastValidRcdFileHash, prevFileHash);
+			return false;
+		}
+
+		if (!newLastValidRcdFileName.equals(lastValidRecordFileName)) {
+			applicationStatus.updateLastValidDownloadedRecordFileHash(newLastValidRcdFileHash);
+			applicationStatus.updateLastValidDownloadedRecordFileName(newLastValidRcdFileName);
+		}
+
+		return true;
+	}
 	/**
 	 *  For each group of signature Files with the same file name:
 	 *  (1) verify that the signature files are signed by corresponding node's PublicKey;
@@ -193,14 +234,25 @@ public class RecordFileDownloader extends Downloader {
 				Pair<Boolean, File> rcdFileResult = downloadFile(DownloadType.RCD, validSigFile, tmpDir);
 				File rcdFile = rcdFileResult.getRight();
 				if (rcdFile != null && Utility.hashMatch(validSigFile, rcdFile)) {
-					// move the file to the valid directory
-					File fTo = new File(validDir + "/" + rcdFile.getName());
+					try {
+						if (verifyValidRecordFile(rcdFile)) {
+							// move the file to the valid directory
+							File fTo = new File(validDir + "/" + rcdFile.getName());
 
-					if (moveFile(rcdFile, fTo)) {
-						log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
-						valid = true;
+							if (moveFile(rcdFile, fTo)) {
+								log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
+								valid = true;
+								break;
+							}
+						} else {
+							valid = false;
+							break;
+						}
+					} catch (Exception e) {
+						valid = false;
 						break;
 					}
+						
 				} else if (rcdFile != null) {
 					log.warn("Hash of {} doesn't match the hash contained in the signature file. Will try to download a record file with same timestamp from other nodes", rcdFile);
 				}
