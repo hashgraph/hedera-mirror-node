@@ -248,7 +248,6 @@
 					<finalName>mirrorNode</finalName>
 					<archive>
 						<manifest>
-							<mainClass>com.hedera.mirrorNodeProxy.MirrorNodeProxy</mainClass>
 							<addClasspath>true</addClasspath>
 							<classpathPrefix>lib/</classpathPrefix>
 							<useUniqueVersions>false</useUniqueVersions>
