@@ -16,11 +16,15 @@ jobs:
     steps:
     - checkout
     - restore_cache:
-        key: maven
+        keys:
+          - maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
+          - maven-v1-{{ .Branch }}
+          - maven-v1-
     - run: ./mvnw install
     - store_test_results:
         path: target/surefire-reports
     - save_cache:
-        key: maven
+        key: maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
         paths:
         - ~/.m2
+
