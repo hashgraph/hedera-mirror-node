@@ -712,7 +712,8 @@ public class RecordFileLogger {
 		if (transactionTypes.containsKey(transactionName)) {
 			return transactionTypes.get(transactionName);
 		} else {
-			return transactionTypes.get("unknown");
+			log.error("Transaction type {} not known to mirror node, storing 'UNKNOWN'", transactionName);
+			return transactionTypes.get("UNKNOWN");
 		}
 	}
 
