@@ -27,6 +27,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.time.Instant;
 
 public class UtilityTest {
@@ -84,5 +85,18 @@ public class UtilityTest {
 		Assert.assertEquals("0.0.3", triple.getLeft());
 		Assert.assertEquals("2019-07-25T19_57_21.217420Z", triple.getMiddle());
 		Assert.assertEquals("evts_sig", triple.getRight());
+	}
+
+	@Test
+	public void hashMatchTest() {
+		boolean match = Utility.hashMatch(new File("src/test/resources/2019-08-29T21_40_26.063806Z.rcd_sig"),
+				new File("src/test/resources/2019-08-29T21_40_26.063806Z.rcd"));
+		Assert.assertTrue(match);
+	}
+	@Test
+	public void hashMatchFailTest() {
+		boolean match = Utility.hashMatch(new File("src/test/resources/2019-08-29T21_40_26.063806Z.rcd_sig"),
+				new File("src/test/resources/2019-08-30T03_10_39.614546001Z.rcd"));
+		Assert.assertFalse(match);
 	}
 }

@@ -41,10 +41,8 @@ public class AccountBalancesDownloader extends Downloader {
 
 	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
 	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.BALANCE);
-	private static ApplicationStatus applicationStatus;
 
 	public AccountBalancesDownloader() throws Exception {
-		applicationStatus = new ApplicationStatus();
 		Utility.createDirIfNotExists(validDir);
 		Utility.createDirIfNotExists(tmpDir);
 		Utility.purgeDirectory(tmpDir);

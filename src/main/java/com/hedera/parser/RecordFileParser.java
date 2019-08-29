@@ -56,7 +56,6 @@ public class RecordFileParser {
 	static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
 	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 
-	private static String thisFileHash = "";
 	private static ApplicationStatus applicationStatus;
 
 	public RecordFileParser() throws Exception {
@@ -70,17 +69,19 @@ public class RecordFileParser {
 	 * @return return previous file hash
 	 * @throws Exception 
 	 */
-	static public boolean loadRecordFile(String fileName, String previousFileHash) throws Exception {
+	static public boolean loadRecordFile(String fileName) throws Exception {
 
+		String previousFileHash = applicationStatus.getLastProcessedRecordHash();
 		File file = new File(fileName);
-		String newFileHash = "";
+		String thisFileHash = "";
+		String newReadPreviousFileHash = "";
 		
 		if (file.exists() == false) {
 			log.warn("File does not exist {}", fileName);
 			return false;
 		}
 		long counter = 0;
-		byte[] readFileHash = new byte[48];
+		byte[] readPreviousFileHash = new byte[48];
 		INIT_RESULT initFileResult = RecordFileLogger.initFile(fileName);
 		Stopwatch stopwatch = Stopwatch.createStarted();
 
@@ -105,23 +106,25 @@ public class RecordFileParser {
 						switch (typeDelimiter) {
 							case TYPE_PREV_HASH:
 								md.update(typeDelimiter);
-								dis.read(readFileHash);
-								md.update(readFileHash);
+								dis.read(readPreviousFileHash);
+								md.update(readPreviousFileHash);
 
 								if (Utility.hashIsEmpty(previousFileHash)) {
 									log.error("Previous file hash not available");
-									previousFileHash = Hex.encodeHexString(readFileHash);
+									previousFileHash = Hex.encodeHexString(readPreviousFileHash);
 								} else {
 									log.trace("Previous file Hash = {}", previousFileHash);
 								}
-								newFileHash = Hex.encodeHexString(readFileHash);
-								log.trace("New file Hash = {}", newFileHash);
 
-								if (!newFileHash.contentEquals(previousFileHash)) {
+								newReadPreviousFileHash = Hex.encodeHexString(readPreviousFileHash);
+
+								log.trace("New file Hash = {}", newReadPreviousFileHash);
+
+								if (!newReadPreviousFileHash.contentEquals(previousFileHash)) {
 
 									if (applicationStatus.getBypassRecordHashMismatchUntilAfter().compareTo(Utility.getFileName(fileName)) < 0) {
 										// last file for which mismatch is allowed is in the past
-										log.error("Hash mismatch for file {}. Previous = {}, Current = {}", fileName, previousFileHash, newFileHash);
+										log.error("Hash mismatch for file {}. Previous = {}, Current = {}", fileName, previousFileHash, newReadPreviousFileHash);
 										return false;
 									}
 								}
@@ -199,7 +202,7 @@ public class RecordFileParser {
 				}
 				byte[] fileHash = md.digest();
 				thisFileHash = Utility.bytesToHex(fileHash);
-
+				
 				log.trace("Calculated file hash for the current file {}", thisFileHash);
 
 				RecordFileLogger.completeFile(thisFileHash, previousFileHash);
@@ -209,7 +212,7 @@ public class RecordFileParser {
 			}
 
 			log.info("Finished parsing {} transactions from record file {} in {}", counter, file.getName(), stopwatch);
-			applicationStatus.updateLastProcessedRcdHash(thisFileHash);
+			applicationStatus.updateLastProcessedRecordHash(thisFileHash);
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
 			return true;
@@ -223,8 +226,6 @@ public class RecordFileParser {
 	 * @throws Exception 
 	 */
 	static public void loadRecordFiles(List<String> fileNames) throws Exception {
-		String prevFileHash = applicationStatus.getLastProcessedRcdHash();
-
 		Collections.sort(fileNames);
 		
 		for (String name : fileNames) {
@@ -233,8 +234,7 @@ public class RecordFileParser {
 				return;
 			}
 
-			if (loadRecordFile(name, prevFileHash)) {
-				prevFileHash = thisFileHash;
+			if (loadRecordFile(name)) {
 				Utility.moveFileToParsedDir(name, "/parsedRecordFiles/");
 			} else {
 				return;
