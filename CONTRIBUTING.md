@@ -10,7 +10,7 @@ process to help get your contribution accepted.
   - [Types](#issue-types)
   - [Lifecycle](#issue-lifecycle)
 - [Pull Requests](#pull-requests)
-  - [Creation](#pr-creation)
+  - [Forking](#forking)
   - [Sign Off](#sign-off)
   - [Lifecycle](#pr-lifecycle)
 - [Releases](#releases)
@@ -79,7 +79,7 @@ contributing. All issue types follow the same general lifecycle. Differences are
 
 Like most open source projects, we use Pull Requests (PRs) to track code changes.
 
-### PR Creation
+### Forking
 
 1. Fork the [hedera-mirror-node](https://github.com/hashgraph/hedera-mirror-node) repo
 
@@ -154,7 +154,7 @@ $ git commit -s -m 'Update README'
 
 ### PR Lifecycle
 
-Now that you've [created](#pr-creation) your PR and [signed off](#sign-off) any commits, you can proceed to submit it.
+Now that you've got your [forked](#forking) branch and [signed off](#sign-off) any commits, you can proceed to submit it.
 
 1. **Submitting**
     - It is preferred, but not required, to have a PR tied to a specific issue. There can be
