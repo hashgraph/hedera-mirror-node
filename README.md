@@ -405,7 +405,7 @@ The mirror node saves its current state to the database in a table called `t_app
 While the values in this table are updated in real time, any changes you wish to make here to promote to the application require that you first stop the application, make the changes in the database, then restart the application
 
 | Status name  | Description  |
-|---|---|---|
+|---|---|
 | Event hash mismatch bypass until after | If a hash mismatch occurs before this event file name, processing into the database will stop. Leave blank to catch all mismatches, set to `X` to bypass all or set to the filename before which hash mismatches are ok and understood |
 | Record hash mismatch bypass until after | If a hash mismatch occurs before this record name, processing into the database will stop. Leave blank to catch all mismatches, set to `X` to bypass all or set to the filename before which hash mismatches are ok and understood |
 | Last processed record hash | The hash of the last record file processed into the database |
@@ -420,7 +420,8 @@ While the values in this table are updated in real time, any changes you wish to
 
 ### Checking for errors
 
-Check for errors in the `output/hedera-mirror-node.log` file. Log files are rotated every 100Mb by default, archived log files can be found in the 'logs' folder.
+Check for errors in the `logs/hedera-mirror-node.log` file. Log files are rotated every 100MB by default and stored in the same folder.
+The log directory can be overriden by passing `-DlogDir=customDir` on command line.
 
 ### Record files
 
