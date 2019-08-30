@@ -34,7 +34,6 @@ import lombok.extern.log4j.Log4j2;
 import com.hedera.addressBook.NetworkAddressBook;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
-import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -43,6 +42,7 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -328,7 +328,13 @@ public class RecordFileLogger {
 			sqlInsertTransaction.setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), fkPayerAccountId);
 
 			long fk_result_id = -1;
-			String responseCode = ResponseCodeEnum.forNumber(txRecord.getReceipt().getStatus().getNumber()).getValueDescriptor().getName();
+			String responseCode = "";
+			try {
+				responseCode = ResponseCodeEnum.forNumber(txRecord.getReceipt().getStatus().getNumber()).getValueDescriptor().getName();
+			} catch (Exception e) {
+				log.error("Unknown response code, com.hederahashgraph.api library likely out of date. Exception {}", e );
+ 				throw e;
+			}
 
 			fk_result_id = transactionResults.get(responseCode);
 
