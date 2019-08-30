@@ -163,11 +163,11 @@ public class ApplicationStatus {
 	public void updateBypassEventHashMismatchUntilAfter(String bypassUntilAfter) throws Exception {
 		updateStatus(ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER, bypassUntilAfter);
 	}
-	public String getLastProcessedRecdordHash() throws Exception {
+	public String getLastProcessedRecordHash() throws Exception {
 		return getStatus(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
 	}
 
-	public void updateLastProcessedRcdHash(String hash) throws Exception {
+	public void updateLastProcessedRecorddHash(String hash) throws Exception {
 		if (hash.isEmpty()) {
 			return;
 		}
