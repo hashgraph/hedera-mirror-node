@@ -44,7 +44,7 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
+    command: java -cp mirrorNode.jar com.hedera.balancefilelogger.BalanceFileLogger
 
   # this downloads and processes record files and puts the result in the database, its behaviour is controlled by ./config/config.json
   mirror-node-record-download-parse:

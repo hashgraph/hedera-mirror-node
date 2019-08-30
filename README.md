@@ -341,7 +341,7 @@ This project provides the ability to log balances for all accounts, including hi
 Run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
+java -cp mirrorNode.jar com.hedera.balancefilelogger.BalanceFileLogger
 ```
 
 ### To download and parse record files in one command

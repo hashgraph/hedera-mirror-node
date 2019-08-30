@@ -1,4 +1,4 @@
-package com.hedera.balanceFileLogger;
+package com.hedera.balancefilelogger;
 
 /*-
  * ‌
