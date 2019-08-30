@@ -154,11 +154,11 @@ public class RecordFileDownloader extends Downloader {
 	 * @throws Exception 
 	 */
 	public static boolean verifyValidRecordFile(File objfileToCheck) throws Exception {
-		String lastValidRecordFileName =  applicationStatus.getLastValidDownloadedRecordFileName();
-		String lastValidRecordFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
 		if (!objfileToCheck.exists()) {
 			return false;
 		}
+		String lastValidRecordFileName =  applicationStatus.getLastValidDownloadedRecordFileName();
+		String lastValidRecordFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
 		String newLastValidRcdFileName = lastValidRecordFileName;
 		String newLastValidRcdFileHash = lastValidRecordFileHash;
 
