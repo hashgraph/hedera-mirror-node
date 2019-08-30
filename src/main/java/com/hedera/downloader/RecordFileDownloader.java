@@ -64,13 +64,6 @@ public class RecordFileDownloader extends Downloader {
 			// Verify signature files and download .rcd files of valid signature files
 			downloader.verifySigsAndDownloadRecordFiles(sigFilesMap);
 
-			if (validDir != null) {
-//				new Thread(() -> {
-//					verifyValidRecordFiles(validDir);
-//				}).start();
-			} else {
-			}
-
 			xfer_mgr.shutdownNow();
 
 		} catch (IOException e) {
@@ -87,64 +80,6 @@ public class RecordFileDownloader extends Downloader {
 				break;
 			}
 			downloadNewRecordfiles(downloader);
-		}
-	}
-
-	/**
-	 * Check if there is any missing .rcd file:
-	 * (1) Sort .rcd files by timestamp,
-	 * (2) Verify the .rcd files to see if the file Hash matches prevFileHash
-	 * @param validDir
-	 * @throws Exception 
-	 */
-	public static void verifyValidRecordFiles(String validDir) throws Exception {
-		String lastValidRecordFileName =  applicationStatus.getLastValidDownloadedRecordFileName();
-		String lastValidRecordFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
-		File validDirFile = new File(validDir);
-		if (!validDirFile.exists()) {
-			return;
-		}
-		try (Stream<Path> pathStream = Files.walk(validDirFile.toPath())) {
-			List<String> fileNames = pathStream.filter(p -> Utility.isRecordFile(p.toString()))
-					.filter(p -> lastValidRecordFileName.isEmpty() ||
-							fileNameComparator.compare(p.toFile().getName(), lastValidRecordFileName) > 0)
-					.sorted(pathComparator)
-					.map(p -> p.toString()).collect(Collectors.toList());
-
-			String newLastValidRcdFileName = lastValidRecordFileName;
-			String newLastValidRcdFileHash = lastValidRecordFileHash;
-
-			for (String rcdName : fileNames) {
-				if (Utility.checkStopFile()) {
-					log.info("Stop file found, stopping");
-					break;
-				}
-				String prevFileHash = RecordFileParser.readPrevFileHash(rcdName);
-				if (prevFileHash == null) {
-					log.warn("Doesn't contain valid prevFileHash: {}", rcdName);
-					break;
-				}
-				if (newLastValidRcdFileHash.isEmpty() ||
-						newLastValidRcdFileHash.equals(prevFileHash) ||
-						prevFileHash.equals(Hex.encodeHexString(new byte[48]))) {
-					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getRecordFileHash(rcdName));
-					newLastValidRcdFileName = new File(rcdName).getName();
-				} else if (applicationStatus.getBypassRecordHashMismatchUntilAfter().compareTo(new File(rcdName).getName()) > 0) {
-					newLastValidRcdFileName = new File(rcdName).getName();
-					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getRecordFileHash(rcdName));
-				} else {
-					log.warn("File Hash Mismatch with previous : {}, expected {}, got {}", rcdName, newLastValidRcdFileHash, prevFileHash);
-					break;
-				}
-			}
-
-			if (!newLastValidRcdFileName.equals(lastValidRecordFileName)) {
-				applicationStatus.updateLastValidDownloadedRecordFileHash(newLastValidRcdFileHash);
-				applicationStatus.updateLastValidDownloadedRecordFileName(newLastValidRcdFileName);
-			}
-
-		} catch (Exception ex) {
-			log.error("Failed to verify record files in {}", validDir, ex);
 		}
 	}
 
