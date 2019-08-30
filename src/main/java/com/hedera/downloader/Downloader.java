@@ -21,8 +21,7 @@ package com.hedera.downloader;
  */
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.*;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.amazonaws.services.s3.AmazonS3;
@@ -79,7 +78,7 @@ public abstract class Downloader {
 
 	protected static ClientConfiguration clientConfiguration;
 	
-	protected static ApplicationStatus applicationStatus;
+	protected ApplicationStatus applicationStatus;
 
 	String saveFilePath = "";
 
@@ -123,6 +122,7 @@ public abstract class Downloader {
 			}
 		};
 
+		setupCloudConnection();
 		Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownTransferManager));
 	}
 
@@ -361,8 +361,7 @@ public abstract class Downloader {
 
 						String s3ObjectKey = summary.getKey();
 
-						if (((isNeededSigFile(s3ObjectKey, type) && s3KeyComparator.compare(s3ObjectKey, prefix + lastValidFileName) > 0))
-								|| (lastValidFileName.isEmpty())) {
+						if (isNeededSigFile(s3ObjectKey, type) && (s3KeyComparator.compare(s3ObjectKey, prefix + lastValidFileName) > 0 || lastValidFileName.isEmpty())) {
 							String saveTarget = saveFilePath + s3ObjectKey;
 							Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey, saveTarget);
 							if (result.getLeft()) count++;
@@ -455,7 +454,7 @@ public abstract class Downloader {
 						.withClientConfiguration(clientConfiguration)
 						.build();
 			}
-		} else {
+		} else if (ConfigLoader.getCloudProvider() == CLOUD_PROVIDER.GCP) {
 			if (ConfigLoader.getAccessKey().contentEquals("")) {
 				s3Client = AmazonS3ClientBuilder.standard()
 						.withEndpointConfiguration(
@@ -474,6 +473,13 @@ public abstract class Downloader {
 						.withClientConfiguration(clientConfiguration)
 						.build();
 			}
+		} else {
+			s3Client = AmazonS3ClientBuilder.standard()
+					.withPathStyleAccessEnabled(true)
+					.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("http://localhost:8001", ConfigLoader.getClientRegion()))
+					.withClientConfiguration(clientConfiguration)
+					.withCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()))
+					.build();
 		}
 		xfer_mgr = TransferManagerBuilder.standard()
 				.withS3Client(s3Client).build();

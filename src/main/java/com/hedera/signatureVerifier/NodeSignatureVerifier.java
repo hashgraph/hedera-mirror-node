@@ -47,12 +47,10 @@ import java.util.Set;
 @Log4j2
 public class NodeSignatureVerifier {
 
-	private static String nodeAddressBookLocation;
-
 	Map<String, PublicKey> nodeIDPubKeyMap;
 
 	public NodeSignatureVerifier() {
-		nodeAddressBookLocation = ConfigLoader.getAddressBookFile();
+		String nodeAddressBookLocation = ConfigLoader.getAddressBookFile();
 
 		nodeIDPubKeyMap = new HashMap<>();
 		//load Node Details
@@ -119,6 +117,9 @@ public class NodeSignatureVerifier {
 
 	public boolean verifySignatureFile(File sigFile) {
 		Pair<byte[], byte[]> hashAndSig = Utility.extractHashAndSigFromFile(sigFile);
+		if (hashAndSig == null) {
+			return false;
+		}
 
 		//Signed Data is the Hash of unsigned File
 		byte[] signedData = hashAndSig.getLeft();

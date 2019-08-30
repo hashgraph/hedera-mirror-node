@@ -42,7 +42,7 @@ public class DownloadAndParseRecordFiles {
 				break;
 			}
 			// download files
- 			RecordFileDownloader.downloadNewRecordfiles(downloader);
+			downloader.download();
 
 			// process files
 			if (Utility.checkStopFile()) {
