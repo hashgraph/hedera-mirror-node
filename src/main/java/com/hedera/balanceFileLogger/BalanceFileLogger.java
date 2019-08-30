@@ -29,7 +29,7 @@ import java.util.List;
 import com.google.common.base.Stopwatch;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
-import com.hedera.databaseUtilities.DatabaseUtilities;
+import com.hedera.databaseutilities.DatabaseUtilities;
 import com.hedera.fileWatcher.FileWatcher;
 import com.hedera.mirror.dataset.AccountBalancesFileLoader;
 import com.hedera.utilities.Utility;
