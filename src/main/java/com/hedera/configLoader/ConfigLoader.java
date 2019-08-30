@@ -1,4 +1,4 @@
-package com.hedera.configLoader;
+package com.hedera.configloader;
 
 /*-
  * ‌

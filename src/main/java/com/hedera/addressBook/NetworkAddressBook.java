@@ -24,7 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 
-import com.hedera.configLoader.ConfigLoader;
+import com.hedera.configloader.ConfigLoader;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Client;

@@ -30,8 +30,8 @@ import java.util.Map;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.hedera.configLoader.ConfigLoader;
-import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.configloader.ConfigLoader;
+import com.hedera.configloader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.databaseutilities.ApplicationStatus;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;

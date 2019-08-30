@@ -21,7 +21,7 @@ package com.hedera.databaseutilities;
  */
 
 import com.google.common.collect.ImmutableMap;
-import com.hedera.configLoader.ConfigLoader;
+import com.hedera.configloader.ConfigLoader;
 import com.hedera.utilities.Utility;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.log4j.Log4j2;

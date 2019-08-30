@@ -21,8 +21,8 @@ package com.hedera.parser;
  */
 
 import com.google.common.base.Stopwatch;
-import com.hedera.configLoader.ConfigLoader;
-import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.configloader.ConfigLoader;
+import com.hedera.configloader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.databaseutilities.ApplicationStatus;
 import com.hedera.databaseutilities.DatabaseUtilities;
 import com.hedera.platform.Transaction;

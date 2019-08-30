@@ -35,9 +35,9 @@ import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.configLoader.ConfigLoader;
-import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
-import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.configloader.ConfigLoader;
+import com.hedera.configloader.ConfigLoader.CLOUD_PROVIDER;
+import com.hedera.configloader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.databaseutilities.ApplicationStatus;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.NodeAddress;

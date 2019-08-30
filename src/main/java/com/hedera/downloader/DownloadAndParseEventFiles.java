@@ -22,8 +22,8 @@ package com.hedera.downloader;
 
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.configLoader.ConfigLoader;
-import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.configloader.ConfigLoader;
+import com.hedera.configloader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.parser.EventStreamFileParser;
 import com.hedera.utilities.Utility;
 

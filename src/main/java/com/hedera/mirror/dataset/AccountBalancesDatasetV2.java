@@ -20,7 +20,7 @@ package com.hedera.mirror.dataset;
  * ‍
  */
 
-import com.hedera.configLoader.ConfigLoader;
+import com.hedera.configloader.ConfigLoader;
 import com.hedera.mirror.exception.InvalidDatasetException;
 import com.hedera.mirror.util.TimestampConverter;
 import lombok.Getter;

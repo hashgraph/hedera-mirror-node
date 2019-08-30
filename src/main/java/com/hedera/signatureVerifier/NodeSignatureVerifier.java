@@ -21,7 +21,7 @@ package com.hedera.signatureVerifier;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.configLoader.ConfigLoader;
+import com.hedera.configloader.ConfigLoader;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;

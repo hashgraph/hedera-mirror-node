@@ -25,8 +25,8 @@ import lombok.extern.log4j.Log4j2;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.Uninterruptibles;
-import com.hedera.configLoader.ConfigLoader;
-import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.configloader.ConfigLoader;
+import com.hedera.configloader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.utilities.Utility;
 
