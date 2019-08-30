@@ -24,7 +24,7 @@ import com.hedera.configloader.ConfigLoader;
 import com.hedera.configloader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.databaseutilities.ApplicationStatus;
 import com.hedera.parser.EventStreamFileParser;
-import com.hedera.signatureVerifier.NodeSignatureVerifier;
+import com.hedera.signatureverifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
 
 import lombok.extern.log4j.Log4j2;

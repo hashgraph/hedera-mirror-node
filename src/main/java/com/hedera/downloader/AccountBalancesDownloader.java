@@ -33,7 +33,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import com.hedera.configloader.ConfigLoader;
 import com.hedera.configloader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.databaseutilities.ApplicationStatus;
-import com.hedera.signatureVerifier.NodeSignatureVerifier;
+import com.hedera.signatureverifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
 
 @Log4j2

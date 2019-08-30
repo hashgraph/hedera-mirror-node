@@ -1,4 +1,4 @@
-package com.hedera.signatureVerifier;
+package com.hedera.signatureverifier;
 
 /*-
  * ‌
