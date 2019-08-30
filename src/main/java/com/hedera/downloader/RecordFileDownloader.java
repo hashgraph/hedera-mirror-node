@@ -131,7 +131,7 @@ public class RecordFileDownloader extends Downloader {
 					newLastValidRcdFileName = new File(rcdName).getName();
 				} else if (applicationStatus.getBypassRecordHashMismatchUntilAfter().compareTo(new File(rcdName).getName()) > 0) {
 					newLastValidRcdFileName = new File(rcdName).getName();
-					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(rcdName));
+					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getRecordFileHash(rcdName));
 				} else {
 					log.warn("File Hash Mismatch with previous : {}, expected {}, got {}", rcdName, newLastValidRcdFileHash, prevFileHash);
 					log.warn("Expected {}", newLastValidRcdFileHash);
@@ -175,11 +175,11 @@ public class RecordFileDownloader extends Downloader {
 		if (newLastValidRcdFileHash.isEmpty() ||
 				newLastValidRcdFileHash.equals(prevFileHash) ||
 				prevFileHash.equals(Hex.encodeHexString(new byte[48]))) {
-			newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(objfileToCheck.getPath()));
+			newLastValidRcdFileHash = Utility.bytesToHex(Utility.getRecordFileHash(objfileToCheck.getPath()));
 			newLastValidRcdFileName = objfileToCheck.getName();
 		} else if (applicationStatus.getBypassRecordHashMismatchUntilAfter().compareTo(objfileToCheck.getName()) > 0) {
 			newLastValidRcdFileName = objfileToCheck.getName();
-			newLastValidRcdFileHash = Utility.bytesToHex(Utility.getFileHash(objfileToCheck.getPath()));
+			newLastValidRcdFileHash = Utility.bytesToHex(Utility.getRecordFileHash(objfileToCheck.getPath()));
 		} else {
 			log.warn("File Hash Mismatch with previous : {}, expected {}, got {}", objfileToCheck.getPath(), newLastValidRcdFileHash, prevFileHash);
 			return false;
