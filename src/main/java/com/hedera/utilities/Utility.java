@@ -164,9 +164,9 @@ public class Utility {
 	 * @return byte array of hash value
 	 */
 	public static byte[] getRecordFileHash(String fileName) {
-		try (FileInputStream stream = new FileInputStream(new File(fileName)); DataInputStream dis =
+		try (DataInputStream dis =
 				new DataInputStream(
-						stream)) {
+						new FileInputStream(new File(fileName)))) {
 			MessageDigest md = MessageDigest.getInstance("SHA-384");
 			MessageDigest mdForContent = MessageDigest.getInstance("SHA-384");
 
