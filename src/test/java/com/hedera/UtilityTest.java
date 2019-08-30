@@ -91,6 +91,12 @@ public class UtilityTest {
 	public void hashMatchTest() {
 		boolean match = Utility.hashMatch(new File("src/test/resources/2019-08-29T21_40_26.063806Z.rcd_sig"),
 				new File("src/test/resources/2019-08-29T21_40_26.063806Z.rcd"));
-		System.out.println(match);
+		Assert.assertTrue(match);
+	}
+	@Test
+	public void hashMatchFailTest() {
+		boolean match = Utility.hashMatch(new File("src/test/resources/2019-08-29T21_40_26.063806Z.rcd_sig"),
+				new File("src/test/resources/2019-08-30T03_10_39.614546001Z.rcd"));
+		Assert.assertFalse(match);
 	}
 }
