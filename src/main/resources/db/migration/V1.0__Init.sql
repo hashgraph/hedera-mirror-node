@@ -1,12 +1,4 @@
 
-CREATE USER ${api-user} WITH
-	LOGIN
-	NOCREATEDB
-	NOCREATEROLE
-	NOINHERIT
-	NOREPLICATION
-	CONNECTION LIMIT -1
-	PASSWORD '${api-password}';
 
 CREATE SEQUENCE s_transaction_types_seq;
 CREATE SEQUENCE s_record_files_seq;
