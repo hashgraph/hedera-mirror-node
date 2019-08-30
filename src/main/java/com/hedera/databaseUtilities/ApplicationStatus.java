@@ -167,7 +167,7 @@ public class ApplicationStatus {
 		return getStatus(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
 	}
 
-	public void updateLastProcessedRecorddHash(String hash) throws Exception {
+	public void updateLastProcessedRecordHash(String hash) throws Exception {
 		if (hash.isEmpty()) {
 			return;
 		}
