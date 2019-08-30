@@ -39,7 +39,7 @@
 
 	<properties>
 		<flyway.version>5.2.4</flyway.version>
-		<hedera.protobuf.version>0.3.3</hedera.protobuf.version>
+		<hedera.protobuf.version>0.3.4</hedera.protobuf.version>
 		<hedera.sdk.version>0.5.0</hedera.sdk.version>
 		<junit.jupiter.version>5.5.1</junit.jupiter.version>
 		<junit.jupiter.platform.version>1.5.1</junit.jupiter.platform.version>

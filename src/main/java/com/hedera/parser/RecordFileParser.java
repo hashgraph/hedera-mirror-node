@@ -71,7 +71,7 @@ public class RecordFileParser {
 	 */
 	static public boolean loadRecordFile(String fileName) throws Exception {
 
-		String previousFileHash = applicationStatus.getLastProcessedRecdordHash();
+		String previousFileHash = applicationStatus.getLastProcessedRecordHash();
 		File file = new File(fileName);
 		String thisFileHash = ""; //Hex.encodeHexString(Utility.getFileHash(file.getPath()));
 		String newReadPreviousFileHash = "";
@@ -212,7 +212,7 @@ public class RecordFileParser {
 			}
 
 			log.info("Finished parsing {} transactions from record file {} in {}", counter, file.getName(), stopwatch);
-			applicationStatus.updateLastProcessedRcdHash(thisFileHash);
+			applicationStatus.updateLastProcessedRecordHash(thisFileHash);
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
 			return true;
