@@ -39,10 +39,10 @@ public class AccountBalancesFileLoaderTest {
         System.out.println(Paths.get(path.toURI()));
         final var cut = new AccountBalancesFileLoader(Paths.get(path.toURI()));
         cut.loadAccountBalances();
-        // assertAll(
-        //         () -> assertEquals(2, cut.getValidRowCount())
-        //         ,() -> assertFalse(cut.isInsertErrors())
-        // );
+        assertAll(
+                () -> assertEquals(2, cut.getValidRowCount())
+                ,() -> assertFalse(cut.isInsertErrors())
+        );
         // TODO assert the rows actually added to the database.
     }
 }
