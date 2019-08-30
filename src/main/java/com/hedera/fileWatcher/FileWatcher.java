@@ -1,4 +1,4 @@
-package com.hedera.fileWatcher;
+package com.hedera.filewatcher;
 
 /*-
  * ‌
