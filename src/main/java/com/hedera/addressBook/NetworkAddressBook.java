@@ -1,4 +1,4 @@
-package com.hedera.addressBook;
+package com.hedera.addressbook;
 
 /*-
  * ‌

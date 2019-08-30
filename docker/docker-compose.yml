@@ -93,7 +93,7 @@ services:
     volumes:
       - ./MirrorNodeData:/MirrorNodeData
       - ./runtime:/MirrorNodeCode
-    command: java -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
+    command: java -cp mirrorNode.jar com.hedera.addressbook.NetworkAddressBook
 
   # this runs the REST API for mirror node
   mirror-node-rest-api:

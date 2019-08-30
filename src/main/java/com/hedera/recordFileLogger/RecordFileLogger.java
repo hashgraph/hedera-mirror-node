@@ -31,7 +31,7 @@ import java.util.HashMap;
 
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.addressBook.NetworkAddressBook;
+import com.hedera.addressbook.NetworkAddressBook;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseutilities.DatabaseUtilities;
 import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;

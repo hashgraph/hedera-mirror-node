@@ -199,7 +199,7 @@ OPERATOR_KEY=your account's private key
 Run the following command to update the address book at the location specified in `config.json`.
 
 ```shell
-java -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
+java -cp mirrorNode.jar com.hedera.addressbook.NetworkAddressBook
 ```
 
 If no errors are output, the file specified by the `addressBookFile` parameter of the `config.json` file will now contain the network's address book.
