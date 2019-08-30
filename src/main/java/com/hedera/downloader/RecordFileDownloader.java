@@ -240,11 +240,9 @@ public class RecordFileDownloader extends Downloader {
 								break;
 							}
 						} else {
-							valid = false;
 							break;
 						}
 					} catch (Exception e) {
-						valid = false;
 						break;
 					}
 						
