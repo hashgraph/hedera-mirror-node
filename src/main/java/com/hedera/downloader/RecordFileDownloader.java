@@ -134,11 +134,6 @@ public class RecordFileDownloader extends Downloader {
 					newLastValidRcdFileHash = Utility.bytesToHex(Utility.getRecordFileHash(rcdName));
 				} else {
 					log.warn("File Hash Mismatch with previous : {}, expected {}, got {}", rcdName, newLastValidRcdFileHash, prevFileHash);
-					log.warn("Expected {}", newLastValidRcdFileHash);
-					log.warn("Got {}", prevFileHash);
-					
-					log.warn("File Hash Mismatch with previous : {}", rcdName);
-					
 					break;
 				}
 			}
