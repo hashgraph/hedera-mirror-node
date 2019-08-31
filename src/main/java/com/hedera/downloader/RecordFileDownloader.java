@@ -33,63 +33,43 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.*;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Log4j2
 public class RecordFileDownloader extends Downloader {
 
-	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
-	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.RECORDS);
-	private static ApplicationStatus applicationStatus;
+	private final String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
+	private final String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.RECORDS);
 
 	public RecordFileDownloader() throws Exception {
-		applicationStatus = new ApplicationStatus();
-		Utility.createDirIfNotExists(validDir);
-		Utility.createDirIfNotExists(tmpDir);
+		Utility.ensureDirectory(validDir);
+		Utility.ensureDirectory(tmpDir);
 		Utility.purgeDirectory(tmpDir);
-	}
-
-	public static void downloadNewRecordfiles(RecordFileDownloader downloader) throws Exception {
-		setupCloudConnection();
-
-		HashMap<String, List<File>> sigFilesMap;
-		try {
-			sigFilesMap = downloader.downloadSigFiles(DownloadType.RCD);
-
-			// Verify signature files and download .rcd files of valid signature files
-			downloader.verifySigsAndDownloadRecordFiles(sigFilesMap);
-
-			if (validDir != null) {
-//				new Thread(() -> {
-					verifyValidRecordFiles(validDir);
-//				}).start();
-			} else {
-			}
-
-			xfer_mgr.shutdownNow();
-
-		} catch (IOException e) {
-			log.error("Error downloading and verifying new record files", e);
-		}
 	}
 
 	public static void main(String[] args) throws Exception {
 		RecordFileDownloader downloader = new RecordFileDownloader();
 
-		while (true) {
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found, stopping");
-				break;
-			}
-			downloadNewRecordfiles(downloader);
+		while (!Utility.checkStopFile()) {
+			downloader.download();
+		}
+
+		xfer_mgr.shutdownNow();
+	}
+
+	public void download() {
+		HashMap<String, List<File>> sigFilesMap;
+		try {
+			sigFilesMap = downloadSigFiles(DownloadType.RCD);
+
+			// Verify signature files and download .rcd files of valid signature files
+			verifySigsAndDownloadRecordFiles(sigFilesMap);
+			verifyValidRecordFiles(validDir);
+		} catch (Exception e) {
+			log.error("Error downloading and verifying new record files", e);
 		}
 	}
 
@@ -100,14 +80,11 @@ public class RecordFileDownloader extends Downloader {
 	 * @param validDir
 	 * @throws Exception 
 	 */
-	public static void verifyValidRecordFiles(String validDir) throws Exception {
+	private void verifyValidRecordFiles(String validDir) throws Exception {
 		String lastValidRcdFileName =  applicationStatus.getLastValidDownloadedRecordFileName();
 		String lastValidRcdFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
-		File validDirFile = new File(validDir);
-		if (!validDirFile.exists()) {
-			return;
-		}
-		try (Stream<Path> pathStream = Files.walk(validDirFile.toPath())) {
+
+		try (Stream<Path> pathStream = Files.walk(Paths.get(validDir))) {
 			List<String> fileNames = pathStream.filter(p -> Utility.isRecordFile(p.toString()))
 					.filter(p -> lastValidRcdFileName.isEmpty() ||
 							fileNameComparator.compare(p.toFile().getName(), lastValidRcdFileName) > 0)
@@ -178,7 +155,7 @@ public class RecordFileDownloader extends Downloader {
 			
 			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
 			if (sigFiles == null || !Utility.greaterThanSuperMajorityNum(sigFiles.size(), nodeAccountIds.size())) {
-				log.warn("Signature file count does not exceed 2/3 of nodes");
+				log.warn("Signature file count for {} does not exceed 2/3 of nodes", fileName);
 				continue;
 			}
 
