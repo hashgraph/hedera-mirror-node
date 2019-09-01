@@ -25,19 +25,22 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
+import com.hedera.utilities.Utility;
 import io.github.cdimascio.dotenv.Dotenv;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.*;
 
 @Log4j2
 public class ConfigLoader {
 
 	public static enum CLOUD_PROVIDER {
-		S3
-		,GCP
+		S3,
+		GCP,
+		LOCAL; // Testing
 	}
 
 	// cloud provider, must be either S3 or GCP
@@ -113,12 +116,23 @@ public class ConfigLoader {
 	private static JsonObject configJsonObject;
 	
 	public static enum OPERATION_TYPE {
-		BALANCE
-		,RECORDS
-		,EVENTS
+               BALANCE
+               ,RECORDS
+               ,EVENTS
 	}
 
+	// TODO: Replace this hack with Spring Boot properties
 	static {
+		File configFile = new File(configSavePath);
+		if (configFile.exists()) {
+			load(configSavePath);
+		} else {
+			configFile = Utility.getResource("config.json");
+			load(configFile.getAbsolutePath());
+		}
+	}
+
+	private static void load(String configSavePath) {
 		log.info("Loading configuration from {}", configSavePath);
 		try {
 
@@ -126,13 +140,7 @@ public class ConfigLoader {
 
 			if (configJsonObject.has("cloud-provider")) {
 				String provider = configJsonObject.get("cloud-provider").getAsString();
-				if (provider.contentEquals("GCP")) {
-					cloudProvider = CLOUD_PROVIDER.GCP;
-				} else if (provider.contentEquals("S3")) {
-					cloudProvider = CLOUD_PROVIDER.S3;
-				} else {
-					log.error("Cloud provider {} not recognized, must be one of S3 or GCP", provider);
-				}
+				cloudProvider = CLOUD_PROVIDER.valueOf(provider);
 			}
 			if (configJsonObject.has("clientRegion")) {
 				clientRegion = configJsonObject.get("clientRegion").getAsString();
@@ -308,6 +316,10 @@ public class ConfigLoader {
 		return getDefaultParseDir(operation).replace("/valid", "/tmp");
 	}
 
+	public static void setDownloadToDir(String downloadToDir) {
+		ConfigLoader.downloadToDir = downloadToDir;
+	}
+
 	public static String getAddressBookFile() {
 		return addressBookFile;
 	}
@@ -318,6 +330,10 @@ public class ConfigLoader {
 
 	public static int getAccountBalancesInsertBatchSize() {
 		return accountBalancesInsertBatchSize;
+	}
+
+	public static void setCloudProvider(CLOUD_PROVIDER cloudProvider) {
+		ConfigLoader.cloudProvider = cloudProvider;
 	}
 
 	public static int getAccountBalancesFileBufferSize() {
@@ -365,6 +381,10 @@ public class ConfigLoader {
 
 	public static int getMaxDownloadItems() {
 		return maxDownloadItems;
+	}
+
+	public static void setMaxDownloadItems(int maxDownloadItems) {
+		ConfigLoader.maxDownloadItems = maxDownloadItems;
 	}
 
 	public static boolean getPersistClaims() {

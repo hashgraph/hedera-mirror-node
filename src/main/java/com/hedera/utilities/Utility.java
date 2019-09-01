@@ -20,6 +20,7 @@ package com.hedera.utilities;
  * ‍
  */
 
+import com.google.common.io.Resources;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -35,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -44,6 +46,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.*;
 import java.security.MessageDigest;
@@ -74,16 +77,10 @@ public class Utility {
 	 * Verify if a file's hash is equal to the hash contained in sig file
 	 * @return
 	 */
-	public static boolean hashMatch(File sigFile, File file) {
-		byte[] fileHash;
-		if (isRecordFile(file.getPath())) {
-			fileHash = Utility.getRecordFileHash(file.getPath());
-		} else if (isEventStreamFile(file.getPath())) {
-			fileHash = Utility.getFileHash(file.getPath());
-		} else {
-			fileHash = Utility.getFileHash(file.getPath());
-		}
-		return Arrays.equals(fileHash, extractHashAndSigFromFile(sigFile).getLeft());
+	public static boolean hashMatch(File sigFile, File rcdFile) {
+		byte[] fileHash = Utility.getFileHash(rcdFile.getPath());
+		Pair<byte[], byte[]> sigPair = extractHashAndSigFromFile(sigFile);
+		return sigPair == null ? false : Arrays.equals(fileHash, sigPair.getLeft());
 	}
 	/**
 	 * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this signature
@@ -118,6 +115,7 @@ public class Utility {
 						break;
 					default:
 						log.error("Unknown record file delimiter {} in file {}", typeDelimiter, file);
+						return null;
 				}
 			}
 
@@ -283,18 +281,6 @@ public class Utility {
 	public static String accountIDToString(final AccountID accountID) {
 		return String.format("%d.%d.%d", accountID.getShardNum(),
 				accountID.getRealmNum(), accountID.getAccountNum());
-	}
-
-	/**
-	 * Compare if two AccountIDs are the same
-	 * @param id1
-	 * @param id2
-	 * @return
-	 */
-	public static boolean isSameAccountID(final AccountID id1, final AccountID id2) {
-		return id1.getAccountNum() == id2.getAccountNum()
-				&& id1.getShardNum() == id2.getShardNum()
-				&& id1.getRealmNum() == id2.getRealmNum();
 	}
 
 	public static Instant convertToInstant(final Timestamp timestamp) {
@@ -514,7 +500,7 @@ public class Utility {
 		}
 		return path.substring(lastIndexOf + 1);
 	}
-	
+
 	public static boolean isBalanceFile(String filename) {
 		return filename.endsWith("Balances.csv");
 	}
@@ -581,7 +567,7 @@ public class Utility {
 	public static boolean hashIsEmpty(String hash) {
 		return (hash.isEmpty() || hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"));
 	}
-	
+
 	public static void moveFileToParsedDir(String fileName, String subDir) {
 		File sourceFile = new File(fileName);
 		String pathToSaveTo = sourceFile.getParentFile().getParentFile().getPath() + subDir;
@@ -614,18 +600,60 @@ public class Utility {
 		}
 		return true;
 	}
-	
+
 	public static void purgeDirectory(String dir) {
 		purgeDirectory(new File(dir));
-	
+
 	}
 	public static void purgeDirectory(File dir) {
 		if ( ! dir.exists()) { return; };
-		
+
 	    for (File file: dir.listFiles()) {
 	        if (file.isDirectory())
 	            purgeDirectory(file);
 	        file.delete();
 	    }
+	}
+	public static void ensureDirectory(String path) {
+		if (StringUtils.isBlank(path)) {
+			throw new IllegalArgumentException("Empty path");
+		}
+
+		File directory = new File(path);
+		directory.mkdirs();
+
+		if (!directory.exists()) {
+			throw new IllegalStateException("Unable to create directory " + directory.getAbsolutePath());
+		}
+		if (!directory.isDirectory()) {
+			throw new IllegalStateException("Not a directory " + directory.getAbsolutePath());
+		}
+		if (!directory.canRead() || !directory.canWrite()) {
+			throw new IllegalStateException("Insufficient permissions for directory " + directory.getAbsolutePath());
+		}
+	}
+
+	public static File getResource(String path) {
+		ClassLoader[] classLoaders = { Thread.currentThread().getContextClassLoader(), Utility.class.getClassLoader(), ClassLoader.getSystemClassLoader() };
+		URL url = null;
+
+		for (ClassLoader classLoader : classLoaders) {
+			if (classLoader != null) {
+				url = classLoader.getResource(path);
+				if (url != null) {
+					break;
+				}
+			}
+		}
+
+		if (url == null) {
+			throw new RuntimeException("Cannot find resource: " + path);
+		}
+
+		try {
+			return new File(url.toURI().getSchemeSpecificPart());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 }
