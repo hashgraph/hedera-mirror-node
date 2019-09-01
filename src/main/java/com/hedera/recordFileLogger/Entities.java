@@ -126,7 +126,7 @@ public class Entities {
 
 	    if (fk_proxy_account_id != 0) {
 	    	if (bDoComma) sqlUpdate += ",";
-	    	sqlUpdate += "proxy_account_id = ?";
+	    	sqlUpdate += "fk_prox_acc_id = ?";
 	    	bDoComma = true;
 	    }
 	    
