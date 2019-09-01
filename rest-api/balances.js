@@ -78,7 +78,7 @@ const getBalances = function (req) {
     sqlQuery += " where " +
         [tsQuery, accountQuery, pubKeyQuery, balanceQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
         " order by consensus_timestamp desc, " +
-        ['entity_type_id', 'realm_num', 'entity_num'].map(q => q + ' ' + order).join(',') +
+        ['account_realm_num', 'account_num'].map(q => q + ' ' + order).join(',') +
         " " + limitQuery;
 
     let sqlParams = tsParams
