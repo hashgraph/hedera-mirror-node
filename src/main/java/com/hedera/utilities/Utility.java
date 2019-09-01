@@ -217,6 +217,7 @@ public class Utility {
 
 					default:
 						log.error("Exception Unknown record file delimiter {}", typeDelimiter);
+						return null;
 				}
 			}
 			if (record_format_version >= RECORD_FORMAT_VERSION) {
@@ -224,7 +225,7 @@ public class Utility {
 			}
 			return md.digest();
 		} catch (Exception e) {
-			log.error("Exception {}", e);
+			log.error("Unable to calculate hash for file: {}", fileName, e);
 			return null;
 		}
 	}
