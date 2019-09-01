@@ -197,7 +197,7 @@ public final class AccountBalancesFileLoader implements AutoCloseable {
 				final var insertSet = conn.prepareStatement(
 						"insert into account_balance_sets (consensus_timestamp) values (?) on conflict do nothing returning is_complete, processing_start_timestamp;");
 				final var insertBalance = conn.prepareStatement(
-						"insert into account_balances (consensus_timestamp, account_id, balance) values (?, ('a', ?, ?), ?) on conflict do nothing;");
+						"insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values (?, ?, ?, ?) on conflict do nothing;");
 				final var updateSet = conn.prepareStatement(
 						"update account_balance_sets set is_complete = true, processing_end_timestamp = now() at time zone 'utc' where consensus_timestamp = ? and is_complete = false;");
 

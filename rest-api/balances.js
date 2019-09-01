@@ -33,7 +33,7 @@ const getBalances = function (req) {
     // timestamp and pagination
     let [accountQuery, accountParams] =
         utils.parseParams(req, 'account.id',
-            [{ shard: '0', realm: '(ab.account_id).realm_num', num: '(ab.account_id).num' }],
+            [{ shard: '0', realm: 'ab.account_realm_num', num: 'ab.account_num' }],
             'entityId');
 
     // if the request has a timestamp=xxxx or timestamp=eq:xxxxx, then 
@@ -66,13 +66,13 @@ const getBalances = function (req) {
 
     // Use the inner query to find the latest snapshot timestamp from the balance history table
     let sqlQuery =
-        "select ab.consensus_timestamp, (ab.account_id).type_id as entity_type_id,\n" +
-        "(ab.account_id).realm_num as realm_num, (ab.account_id).num as entity_num, ab.balance\n" +
+        "select ab.consensus_timestamp,\n" +
+        "ab.account_realm_num as realm_num, ab.account_num as entity_num, ab.balance\n" +
         " from account_balances ab\n";
     if (joinEntities) {
         sqlQuery += " join t_entities e\n" +
-            " on e.entity_realm = (ab.account_id).realm_num\n" +
-            " and e.entity_num = (ab.account_id).num\n" +
+            " on e.entity_realm = ab.account_realm_num\n" +
+            " and e.entity_num = ab.account_num\n" +
             " and e.entity_shard = 0 and e.fk_entity_type_id = 1\n";
     }
     sqlQuery += " where " +
