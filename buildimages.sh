@@ -40,7 +40,7 @@ cp -n ../config/config.json runtime/config/config.json
 
 set -e
 cp -r ../target/lib/* runtime/lib
-cp ../target/mirrorNode.jar runtime/mirrorNode.jar
+cp ../target/mirror-node.jar runtime/mirror-node.jar
 cp -r ../rest-api/* runtime/rest-api
 
 cp ./restapi.sh runtime/

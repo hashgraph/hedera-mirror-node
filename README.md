@@ -199,7 +199,7 @@ OPERATOR_KEY=your account's private key
 Run the following command to update the address book at the location specified in `config.json`.
 
 ```shell
-java -cp mirrorNode.jar com.hedera.addressBook.NetworkAddressBook
+java -cp mirror-node.jar com.hedera.addressBook.NetworkAddressBook
 ```
 
 If no errors are output, the file specified by the `addressBookFile` parameter of the `config.json` file will now contain the network's address book.
@@ -300,7 +300,7 @@ WARNING: All illegal access operations will be denied in a future release
 Run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.downloader.RecordFileDownloader
+java -cp mirror-node.jar com.hedera.downloader.RecordFileDownloader
 ```
 
 Record files and signature files will be downloaded from S3 to the location specified in the `config.json` file.
@@ -310,7 +310,7 @@ Record files and signature files will be downloaded from S3 to the location spec
 Run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.downloader.AccountBalancesDownloader
+java -cp mirror-node.jar com.hedera.downloader.AccountBalancesDownloader
 ```
 
 Balance files will be downloaded from S3 to the location specified in the `config.json` file.
@@ -331,7 +331,7 @@ shard,realm,number,balance
 Run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.parser.RecordFileParser
+java -cp mirror-node.jar com.hedera.parser.RecordFileParser
 ```
 
 ### To Parse Balance file(s)
@@ -341,13 +341,13 @@ This project provides the ability to log balances for all accounts, including hi
 Run the following command:
 
 ```shell
-java -cp mirrorNode.jar com.hedera.balanceFileLogger.BalanceFileLogger
+java -cp mirror-node.jar com.hedera.balanceFileLogger.BalanceFileLogger
 ```
 
 ### To download and parse record files in one command
 
 ```shell
-java -cp mirrorNode.jar com.hedera.downloader.DownloadAndParseRecordFiles
+java -cp mirror-node.jar com.hedera.downloader.DownloadAndParseRecordFiles
 ```
 
 ## Docker compose
