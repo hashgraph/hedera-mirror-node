@@ -104,7 +104,9 @@ public class RecordFileParser {
 								} else {
 									log.trace("Previous file Hash = {}", previousFileHash);
 								}
+
 								newFileHash = Hex.encodeHexString(readFileHash);
+
 								log.trace("New file Hash = {}", newFileHash);
 
 								if (!newFileHash.contentEquals(previousFileHash)) {
@@ -174,7 +176,7 @@ public class RecordFileParser {
 			}
 
 			log.info("Finished parsing {} transactions from record file {} in {}", counter, file.getName(), stopwatch);
-			applicationStatus.updateLastProcessedRcdHash(thisFileHash);
+			applicationStatus.updateLastProcessedRecordHash(thisFileHash);
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
 			return true;
@@ -189,8 +191,7 @@ public class RecordFileParser {
 	 * @throws Exception 
 	 */
 	static public void loadRecordFiles(List<String> fileNames) throws Exception {
-		String prevFileHash = applicationStatus.getLastProcessedRcdHash();
-
+		String prevFileHash = applicationStatus.getLastProcessedRecordHash();
 		Collections.sort(fileNames);
 		
 		for (String name : fileNames) {

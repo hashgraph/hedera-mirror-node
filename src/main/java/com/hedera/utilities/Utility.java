@@ -69,7 +69,7 @@ public class Utility {
 		return stopFile.exists();
 	}
 	/**
-	 * Verify if a .rcd file's hash is equal to the hash contained in .rcd_sig file
+	 * Verify if a file's hash is equal to the hash contained in sig file
 	 * @return
 	 */
 	public static boolean hashMatch(File sigFile, File rcdFile) {
@@ -709,7 +709,6 @@ public class Utility {
 	        file.delete();
 	    }
 	}
-
 	public static void ensureDirectory(String path) {
 		if (StringUtils.isBlank(path)) {
 			throw new IllegalArgumentException("Empty path");

@@ -72,10 +72,8 @@ public class RecordFileDownloader extends Downloader {
 	}
 
 	/**
-	 * Check if there is any missing .rcd file:
-	 * (1) Sort .rcd files by timestamp,
-	 * (2) Verify the .rcd files to see if the file Hash matches prevFileHash
-	 * @param validDir
+	 * Verify the .rcd files to see if the file Hash matches prevFileHash
+	 * @param fileToCheck
 	 * @throws Exception 
 	 */
 	private void verifyValidRecordFiles(String validDir) throws Exception {
@@ -125,7 +123,6 @@ public class RecordFileDownloader extends Downloader {
 			log.error("Failed to verify record files in {}", validDir, ex);
 		}
 	}
-
 	/**
 	 *  For each group of signature Files with the same file name:
 	 *  (1) verify that the signature files are signed by corresponding node's PublicKey;
@@ -169,8 +166,7 @@ public class RecordFileDownloader extends Downloader {
 				File rcdFile = rcdFileResult.getRight();
 				if (rcdFile != null && Utility.hashMatch(validSigFile, rcdFile)) {
 					// move the file to the valid directory
-					File fTo = new File(validDir + "/" + rcdFile.getName());
-
+					File fTo = new File(validDir + "/" + rcdFile.getName());					
 					if (moveFile(rcdFile, fTo)) {
 						log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
 						valid = true;
