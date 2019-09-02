@@ -61,10 +61,8 @@ public class Utility {
 
   private static final Long SCALAR = 1_000_000_000L;
 
-	static final int RECORD_FORMAT_VERSION = 2;
 	private static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 	private static final byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of corresponding RecordFile
-
 
 	public static boolean checkStopFile() {
 		File stopFile = new File("./stop");
