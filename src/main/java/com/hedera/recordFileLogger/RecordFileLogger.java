@@ -233,8 +233,10 @@ public class RecordFileLogger {
 			fileCreate.close();
 			
 			if (fileId == 0) {
+				log.trace("File {} already exists in the database.", fileName);
 				return INIT_RESULT.SKIP;
 			} else {
+				log.trace("Added file {} to the database.", fileName);
 				return INIT_RESULT.OK;
 			}
 

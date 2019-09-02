@@ -25,6 +25,7 @@ import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.databaseUtilities.DatabaseUtilities;
+import com.hedera.filedelimiters.FileDelimiter;
 import com.hedera.platform.Transaction;
 import com.hedera.utilities.Utility;
 
@@ -50,20 +51,12 @@ import java.util.stream.Collectors;
 @Log4j2
 public class EventStreamFileParser {
 
-	private static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 or previous files
-	private static final byte EVENT_STREAM_FILE_VERSION_CURRENT = 3;
-	private static final byte EVENT_STREAM_FILE_VERSION_LEGACY = 2;
-	private static final byte STREAM_EVENT_VERSION = 2;
-	private static final byte STREAM_EVENT_START_NO_TRANS_WITH_VERSION = 0x5b;
-	private static final byte STREAM_EVENT_START_WITH_VERSION = 0x5a;
-	private static final byte commEventLast = 0x46;
 
 	private static Connection connect = null;
 
 	private static final Long PARENT_HASH_NULL = null;
 	private static final long PARENT_HASH_NOT_FOUND_MATCH = -2;
 
-	private static final String HASH_ALGORITHM = "SHA-384";
 
 	private enum LoadResult {
 		OK, STOP, ERROR
@@ -112,25 +105,25 @@ public class EventStreamFileParser {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 
 		try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
-			md = MessageDigest.getInstance(HASH_ALGORITHM);
+			md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
 
 			long counter = 0;
 			int eventStreamFileVersion = dis.readInt();
 			md.update(Utility.integerToBytes(eventStreamFileVersion));
 
 			log.debug("Loading event file {} with version {}", fileName, eventStreamFileVersion);
-			if (eventStreamFileVersion < EVENT_STREAM_FILE_VERSION_LEGACY) {
+			if (eventStreamFileVersion < FileDelimiter.EVENT_STREAM_FILE_VERSION_LEGACY) {
 				log.error("EventStream file format version doesn't match.");
 				return LoadResult.ERROR;
-			} else if (eventStreamFileVersion >= EVENT_STREAM_FILE_VERSION_CURRENT) {
-				mdForContent = MessageDigest.getInstance(HASH_ALGORITHM);
+			} else if (eventStreamFileVersion >= FileDelimiter.EVENT_STREAM_FILE_VERSION_CURRENT) {
+				mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
 				calculateContentHash = true;
 			}
 
 			while (dis.available() != 0) {
 				byte typeDelimiter = dis.readByte();
 				switch (typeDelimiter) {
-					case TYPE_PREV_HASH:
+					case FileDelimiter.EVENT_TYPE_PREV_HASH:
 						md.update(typeDelimiter);
 						byte[] readPrevFileHashBytes = new byte[48];
 						dis.readFully(readPrevFileHashBytes);
@@ -151,7 +144,7 @@ public class EventStreamFileParser {
 						}
 						break;
 
-					case STREAM_EVENT_START_NO_TRANS_WITH_VERSION:
+					case FileDelimiter.EVENT_STREAM_START_NO_TRANS_WITH_VERSION:
 						if (calculateContentHash) {
 							mdForContent.update(typeDelimiter);
 							if (!loadEvent(dis, mdForContent, true)) {
@@ -165,7 +158,7 @@ public class EventStreamFileParser {
 						}
 						counter++;
 						break;
-					case STREAM_EVENT_START_WITH_VERSION:
+					case FileDelimiter.EVENT_STREAM_START_WITH_VERSION:
 						if (calculateContentHash) {
 							mdForContent.update(typeDelimiter);
 							if (!loadEvent(dis, mdForContent, false)) {
@@ -200,11 +193,11 @@ public class EventStreamFileParser {
 	}
 
 	static boolean loadEvent(DataInputStream dis, MessageDigest md, boolean noTxs) throws IOException {
-		if (dis.readInt() != STREAM_EVENT_VERSION) {
+		if (dis.readInt() != FileDelimiter.EVENT_STREAM_VERSION) {
 			log.error("EventStream format version doesn't match.");
 			return false;
 		}
-		md.update(Utility.integerToBytes(STREAM_EVENT_VERSION));
+		md.update(Utility.integerToBytes(FileDelimiter.EVENT_STREAM_VERSION));
 
 		long creatorId = dis.readLong();
 		md.update(Utility.longToBytes(creatorId));
@@ -241,11 +234,11 @@ public class EventStreamFileParser {
 		md.update(Utility.instantToBytes(timeCreated));
 
 		byte[] signature = readByteArray(dis, md);
-		if (dis.readByte() != commEventLast) {
+		if (dis.readByte() != FileDelimiter.EVENT_COMM_EVENT_LAST) {
 			log.warn("Event end marker incorrect");
 			return false;
 		}
-		md.update(commEventLast);
+		md.update(FileDelimiter.EVENT_COMM_EVENT_LAST);
 
 		// event's hash
 		byte[] hash = readByteArray(dis, md);
@@ -480,13 +473,13 @@ public class EventStreamFileParser {
 			int eventStreamFileVersion = dis.readInt();
 
 			log.trace("EventStream file format version {}", eventStreamFileVersion);
-			if (eventStreamFileVersion < EVENT_STREAM_FILE_VERSION_LEGACY) {
+			if (eventStreamFileVersion < FileDelimiter.EVENT_STREAM_FILE_VERSION_LEGACY) {
 				log.error("EventStream file format version doesn't match");
 				return null;
 			}
 			while (dis.available() != 0) {
 				byte typeDelimiter = dis.readByte();
-				if (typeDelimiter == TYPE_PREV_HASH) {
+				if (typeDelimiter == FileDelimiter.EVENT_TYPE_PREV_HASH) {
 					byte[] readPrevFileHashBytes = new byte[48];
 					dis.read(readPrevFileHashBytes);
 					readPrevFileHash = Hex.encodeHexString(readPrevFileHashBytes);

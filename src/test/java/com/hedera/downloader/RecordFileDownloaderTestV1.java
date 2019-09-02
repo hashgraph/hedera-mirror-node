@@ -25,7 +25,6 @@ import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.utilities.Utility;
 import io.findify.s3mock.S3Mock;
-import jdk.jshell.execution.Util;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RecordFileDownloaderTest {
+public class RecordFileDownloaderTestV1 {
 
     @Mock
     private ApplicationStatus applicationStatus;
@@ -68,7 +67,7 @@ public class RecordFileDownloaderTest {
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
-                .from("recordstreams")
+                .from("recordstreamsV1")
                 .to(ConfigLoader.getBucketName(), "recordstreams");
 
         s3 = S3Mock.create(8001, s3Path.toString());
@@ -152,7 +151,7 @@ public class RecordFileDownloaderTest {
     @DisplayName("Signature doesn't match file")
     void signatureMismatch() throws Exception {
         fileCopier.copy();
-        Files.walk(s3Path).filter(p -> Utility.isRecordSigFile(p.toString())).forEach(RecordFileDownloaderTest::corruptFile);
+        Files.walk(s3Path).filter(p -> Utility.isRecordSigFile(p.toString())).forEach(RecordFileDownloaderTestV1::corruptFile);
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
@@ -191,7 +190,7 @@ public class RecordFileDownloaderTest {
     @DisplayName("Invalid or incomplete record file")
     void invalidRecord() throws Exception {
         fileCopier.copy();
-        Files.walk(s3Path).filter(p -> Utility.isRecordFile(p.toString())).forEach(RecordFileDownloaderTest::corruptFile);
+        Files.walk(s3Path).filter(p -> Utility.isRecordFile(p.toString())).forEach(RecordFileDownloaderTestV1::corruptFile);
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
