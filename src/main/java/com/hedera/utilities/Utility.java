@@ -318,15 +318,15 @@ public class Utility {
 			if (record_format_version == FileDelimiter.RECORD_FORMAT_VERSION) {
 				md.update(mdForContent.digest());
 			}
-			readFileHash = md.digest();
-			
-			log.trace("Calculated file hash for the current file {}", Hex.encodeHexString(readFileHash));
+
+			byte[] fileHash = md.digest();
+			log.trace("Calculated file hash for the current file {}", () -> Hex.encodeHexString(fileHash));
+			return fileHash;
 
 		} catch (Exception e) {
 			log.error("Error reading hash for file {}", filename, e);
 			return null;
 		}
-		return readFileHash;
 	}
 
 	public static AccountID stringToAccountID(final String string) throws IllegalArgumentException{
