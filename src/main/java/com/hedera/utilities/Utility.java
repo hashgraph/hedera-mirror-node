@@ -1,5 +1,7 @@
 package com.hedera.utilities;
 
+
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,7 +22,6 @@ package com.hedera.utilities;
  * ‍
  */
 
-import com.google.common.io.Resources;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -29,6 +30,7 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.downloader.Downloader;
+import com.hedera.filedelimiters.FileDelimiter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -61,12 +63,6 @@ import java.util.regex.Pattern;
 public class Utility {
 
   private static final Long SCALAR = 1_000_000_000L;
-
-//	private static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 of previous files
-//	private static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
-	private static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
-	private static final byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of corresponding RecordFile
-
 
 	public static boolean checkStopFile() {
 		File stopFile = new File("./stop");
@@ -102,11 +98,11 @@ public class Utility {
 				byte typeDelimiter = dis.readByte();
 
 				switch (typeDelimiter) {
-					case TYPE_FILE_HASH:
+					case FileDelimiter.SIGNATURE_TYPE_FILE_HASH:
 						dis.read(fileHash);
 						break;
 
-					case TYPE_SIGNATURE:
+					case FileDelimiter.SIGNATURE_TYPE_SIGNATURE:
 						int sigLength = dis.readInt();
 						byte[] sigBytes = new byte[sigLength];
 						dis.readFully(sigBytes);
@@ -135,22 +131,188 @@ public class Utility {
 	 */
 	public static byte[] getFileHash(String fileName) {
 		MessageDigest md;
-		try {
-			md = MessageDigest.getInstance("SHA-384");
-
-			byte[] array = new byte[0];
+		if (getFileExtension(fileName).contentEquals("rcd")) {
+			return getRecordFileHash(fileName);
+		} else if (getFileExtension(fileName).contentEquals("evt")) {
+			return getEventFileHash(fileName);
+		} else {
 			try {
-				array = Files.readAllBytes(Paths.get(fileName));
-			} catch (IOException e) {
+				md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+	
+				byte[] array = new byte[0];
+				try {
+					array = Files.readAllBytes(Paths.get(fileName));
+				} catch (IOException e) {
+					log.error("Exception {}", e);
+				}
+				byte[] fileHash = md.digest(array);
+				return fileHash;
+	
+			} catch (NoSuchAlgorithmException e) {
 				log.error("Exception {}", e);
+				return null;
 			}
-			byte[] fileHash = md.digest(array);
-			return fileHash;
+		}
+	}
+	
+	private static byte[] getEventFileHash(String filename) {
+		var file = new File(filename);
+		// for >= version3, we need to calculate hash for content;
+		boolean calculateContentHash = false;
 
-		} catch (NoSuchAlgorithmException e) {
-			log.error("Exception {}", e);
+		// MessageDigest for getting the file Hash
+		// suppose file[i] = p[i] || h[i] || c[i];
+		// p[i] denotes the bytes before previousFileHash;
+		// h[i] denotes the hash of file i - 1, i.e., previousFileHash;
+		// c[i] denotes the bytes after previousFileHash;
+		// '||' means concatenation
+		// for Version2, h[i + 1] = hash(p[i] || h[i] || c[i]);
+		// for Version3, h[i + 1] = hash(p[i] || h[i] || hash(c[i]))
+		MessageDigest md;
+
+		// is only used in Version3, for getting the Hash for content after prevFileHash in current file, i.e., hash
+		// (c[i])
+		MessageDigest mdForContent = null;
+
+		try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
+			md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+
+			int eventStreamFileVersion = dis.readInt();
+			md.update(Utility.integerToBytes(eventStreamFileVersion));
+
+			log.debug("Loading event file {} with version {}", filename, eventStreamFileVersion);
+			if (eventStreamFileVersion < FileDelimiter.EVENT_STREAM_FILE_VERSION_LEGACY) {
+				log.error("EventStream file format version doesn't match. File is: {}", filename);
+				return null;
+			} else if (eventStreamFileVersion >= FileDelimiter.EVENT_STREAM_FILE_VERSION_CURRENT) {
+				mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+				calculateContentHash = true;
+			}
+
+			while (dis.available() != 0) {
+				byte typeDelimiter = dis.readByte();
+				switch (typeDelimiter) {
+					case FileDelimiter.EVENT_TYPE_PREV_HASH:
+						md.update(typeDelimiter);
+						byte[] readPrevFileHashBytes = new byte[48];
+						dis.readFully(readPrevFileHashBytes);
+						md.update(readPrevFileHashBytes);
+						break;
+
+					case FileDelimiter.EVENT_STREAM_START_NO_TRANS_WITH_VERSION:
+						if (calculateContentHash) {
+							mdForContent.update(typeDelimiter);
+						} else {
+							md.update(typeDelimiter);
+						}
+						break;
+					case FileDelimiter.EVENT_STREAM_START_WITH_VERSION:
+						if (calculateContentHash) {
+							mdForContent.update(typeDelimiter);
+						} else {
+							md.update(typeDelimiter);
+						}
+						break;
+					default:
+						log.error("Unknown record file delimiter {} for file", typeDelimiter, file);
+				}
+			}
+			log.trace("Successfully calculated hash for {}", filename);
+		} catch (Exception e) {
+			log.error("Error parsing event file {}", filename, e);
 			return null;
 		}
+
+		if (calculateContentHash) {
+			byte[] contentHash = mdForContent.digest();
+			md.update(contentHash);
+		}
+
+		return md.digest();
+	}
+	
+	private static byte[] getRecordFileHash(String filename) {
+		byte[] readFileHash = new byte[48];
+		
+		try (DataInputStream dis = new DataInputStream(new FileInputStream(filename))) {
+			MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+			MessageDigest mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+
+			int record_format_version = dis.readInt();
+			int version = dis.readInt();
+
+			md.update(Utility.integerToBytes(record_format_version));
+			md.update(Utility.integerToBytes(version));
+
+			log.info("Calculating hash for version {} record file: {}", record_format_version, filename);
+
+			while (dis.available() != 0) {
+
+				try {
+					byte typeDelimiter = dis.readByte();
+
+					switch (typeDelimiter) {
+						case FileDelimiter.RECORD_TYPE_PREV_HASH:
+							md.update(typeDelimiter);
+							dis.read(readFileHash);
+							md.update(readFileHash);
+							break;
+						case FileDelimiter.RECORD_TYPE_RECORD:
+
+							int byteLength = dis.readInt();
+							byte[] rawBytes = new byte[byteLength];
+							dis.readFully(rawBytes);
+							if (record_format_version >= FileDelimiter.RECORD_FORMAT_VERSION) {
+								mdForContent.update(typeDelimiter);
+								mdForContent.update(Utility.integerToBytes(byteLength));
+								mdForContent.update(rawBytes);
+							} else {
+								md.update(typeDelimiter);
+								md.update(Utility.integerToBytes(byteLength));
+								md.update(rawBytes);
+							}
+
+							byteLength = dis.readInt();
+							rawBytes = new byte[byteLength];
+							dis.readFully(rawBytes);
+
+							if (record_format_version >= FileDelimiter.RECORD_FORMAT_VERSION) {
+								mdForContent.update(Utility.integerToBytes(byteLength));
+								mdForContent.update(rawBytes);
+
+							} else {
+								md.update(Utility.integerToBytes(byteLength));
+								md.update(rawBytes);
+							}
+
+							break;
+						case FileDelimiter.RECORD_TYPE_SIGNATURE:
+							int sigLength = dis.readInt();
+							byte[] sigBytes = new byte[sigLength];
+							dis.readFully(sigBytes);
+							log.trace("File {} has signature {}", filename, Hex.encodeHexString(sigBytes));
+							break;
+						default:
+							log.error("Unknown record file delimiter {} for file {}", typeDelimiter, filename);
+					}
+				} catch (Exception e) {
+					log.error("Exception {}", e);
+					return null;
+				}
+			}
+
+			if (record_format_version >= FileDelimiter.RECORD_FORMAT_VERSION) {
+				md.update(mdForContent.digest());
+			}
+			readFileHash = md.digest();
+			
+			log.trace("Calculated file hash for the current file {}", Hex.encodeHexString(readFileHash));
+
+		} catch (Exception e) {
+			log.error("Error reading hash for file {}", filename, e);
+			return null;
+		}
+		return readFileHash;
 	}
 
 	public static AccountID stringToAccountID(final String string) throws IllegalArgumentException{
