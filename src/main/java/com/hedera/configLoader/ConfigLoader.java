@@ -123,9 +123,10 @@ public class ConfigLoader {
 
 	// TODO: Replace this hack with Spring Boot properties
 	static {
-		File configFile = new File(configSavePath);
+		String configPath = dotEnv.get("HEDERA_MIRROR_CONFIG_PATH", configSavePath);
+		File configFile = new File(configPath);
 		if (configFile.exists()) {
-			load(configSavePath);
+			load(configPath);
 		} else {
 			configFile = Utility.getResource("config.json");
 			load(configFile.getAbsolutePath());
