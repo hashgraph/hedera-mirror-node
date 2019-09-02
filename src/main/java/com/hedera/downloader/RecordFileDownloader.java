@@ -22,7 +22,6 @@ package com.hedera.downloader;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
-import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
@@ -32,7 +31,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
