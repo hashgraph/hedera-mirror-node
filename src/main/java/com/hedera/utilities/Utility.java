@@ -20,7 +20,6 @@ package com.hedera.utilities;
  * ‍
  */
 
-import com.google.common.io.Resources;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -63,8 +62,6 @@ public class Utility {
   private static final Long SCALAR = 1_000_000_000L;
 
 	static final int RECORD_FORMAT_VERSION = 2;
-	private static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 of previous files
-	private static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
 	private static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
 	private static final byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of corresponding RecordFile
 
