@@ -25,32 +25,51 @@ const transactions = require('./transactions.js');
 /**
  * Processes one row of the results of the SQL query and format into API return format
  * @param {Object} row One row of the SQL query result
- * @return {Object} row Processed row
+ * @return {Object} accRecord Processed account record
  */
 const processRow = function (row) {
-    row.balance = {};
-    row.account = row.entity_shard + '.' + row.entity_realm + '.' + row.entity_num;
-    delete row.entity_shard;
-    delete row.entity_realm;
-    delete row.entity_num;
+    let accRecord = {};
+    accRecord.balance = {};
+    accRecord.account = row.entity_shard + '.' + row.entity_realm + '.' + row.entity_num;
+    accRecord.balance.timestamp = utils.nsToSecNs(row.consensus_timestamp);
+    accRecord.balance.balance = Number(row.account_balance);
+    accRecord.expiry_timestamp = utils.nsToSecNs(row.exp_time_ns);
+    accRecord.auto_renew_period = Number(row.auto_renew_period);
+    accRecord.admin_key = utils.encodeKey(row.admin_key);
+    accRecord.key = utils.encodeKey(row.key);
+    accRecord.deleted = row.deleted;
+    accRecord.entity_type = row.entity_type;
 
-    row.balance.timestamp = utils.nsToSecNs(row.consensus_timestamp);
-    delete row.consensus_timestamp;
-
-    row.expiry_timestamp = utils.nsToSecNs(row.exp_time_ns);
-    delete row.exp_time_ns;
-
-    row.balance.balance = Number(row.account_balance);
-    delete row.account_balance;
-
-    row.auto_renew_period = Number(row.auto_renew_period);
-
-    row.admin_key = utils.encodeKey(row.admin_key);
-    row.key = utils.encodeKey(row.key);
-
-    return (row);
+    return (accRecord);
 }
 
+const getAccountQueryPrefix = function() {
+    const ACCOUNT_ENTITY_TYPE = 1;
+    const prefix = 
+        "select ab.balance as account_balance\n" +
+        "    , ab.consensus_timestamp as consensus_timestamp\n" +
+        "    , " + process.env.SHARD_NUM + " as entity_shard\n" +
+        "    , ab.account_realm_num as entity_realm\n" +
+        "    , ab.account_num as entity_num\n" +
+        "    , e.exp_time_ns\n" +
+        "    , e.auto_renew_period\n" +
+        "    , e.admin_key\n" +
+        "    , e.key\n" +
+        "    , e.deleted\n" +
+        "    , et.name as entity_type\n" +
+        "from account_balances ab\n" +
+        "full outer join t_entities e\n" +
+        "    on (ab.account_realm_num = e.entity_realm\n" +
+        "        and ab.account_num =  e.entity_num\n" +
+        "        and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + ")\n" +
+        "join t_entity_types et\n" +
+        "    on et.id = " + ACCOUNT_ENTITY_TYPE + "\n" +
+        "where \n" +
+        "    ab.consensus_timestamp = (select max(consensus_timestamp) from account_balances)\n" +
+        "    and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + "\n";
+
+    return (prefix);
+}
 
 /**
  * Handler function for /accounts API.
@@ -73,24 +92,11 @@ const getAccounts = function (req) {
     const { limitQuery, limitParams, order, limit } =
         utils.parseLimitAndOrderParams(req, 'asc');
 
-
-    const entitySql = 
-        "select ab.balance as account_balance\n" +
-        "    , ab.consensus_timestamp as consensus_timestamp\n" +
-        "    , " + process.env.SHARD_NUM + " as entity_shard\n" +
-            "    , ab.account_realm_num as entity_realm\n" +
-            "    , ab.account_num as entity_num\n" +
-            "    , e.exp_time_ns, e.auto_renew_period, e.admin_key, e.key, e.deleted\n" +
-            "    , et.name as entity_type\n" +
-            "from account_balances ab\n" +
-            "left outer join t_entities e on (ab.account_realm_num = e.entity_realm and ab.account_num =  e.entity_num)\n" +
-            "left outer join t_entity_types et on et.id = e.fk_entity_type_id\n" +
-        "where \n" +
-            "ab.consensus_timestamp = (select consensus_timestamp from account_balances order by consensus_timestamp desc limit 1)\n" +
-        "and \n" +
-            [accountQuery, balanceQuery, pubKeyQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
-            " order by ab.account_num " + order + "\n" +
-            limitQuery;
+    const entitySql = getAccountQueryPrefix() +
+        "    and \n" +
+        [accountQuery, balanceQuery, pubKeyQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
+        " order by ab.account_num " + order + "\n" +
+        limitQuery;
 
     const entityParams = accountParams
         .concat(balanceParams)
@@ -167,22 +173,7 @@ const getOneAccount = function (req, res) {
         transactions: []
     };
 
-    const entitySql = 
-        "select ab.balance as account_balance\n" +
-        "    , ab.consensus_timestamp as consensus_timestamp\n" +
-        "    , " + process.env.SHARD_NUM + " as entity_shard\n" +
-            "    , ab.account_realm_num as entity_realm\n" +
-            "    , ab.account_num as entity_num\n" +
-            "    , e.exp_time_ns, e.auto_renew_period, e.admin_key, e.key, e.deleted\n" +
-            "    , et.name as entity_type\n" +
-            "from account_balances ab\n" +
-            "left outer join t_entities e\n" +
-            "  on (ab.account_realm_num = e.entity_realm and ab.account_num =  e.entity_num)\n" +
-            "left outer join t_entity_types et\n" +
-            "  on et.id = e.fk_entity_type_id\n" +
-        "where \n" +
-            "ab.consensus_timestamp =\n" +
-            "  (select consensus_timestamp from account_balances order by consensus_timestamp desc limit 1)\n" +
+    const entitySql = getAccountQueryPrefix() +
         "and (ab.account_realm_num  =  ? and ab.account_num  =  ?)\n";
 
     const entityParams = [acc.realm, acc.num];
