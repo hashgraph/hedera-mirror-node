@@ -263,55 +263,50 @@ public class Utility {
 
 			while (dis.available() != 0) {
 
-				try {
-					byte typeDelimiter = dis.readByte();
+				byte typeDelimiter = dis.readByte();
 
-					switch (typeDelimiter) {
-						case FileDelimiter.RECORD_TYPE_PREV_HASH:
+				switch (typeDelimiter) {
+					case FileDelimiter.RECORD_TYPE_PREV_HASH:
+						md.update(typeDelimiter);
+						dis.read(readFileHash);
+						md.update(readFileHash);
+						break;
+					case FileDelimiter.RECORD_TYPE_RECORD:
+
+						int byteLength = dis.readInt();
+						byte[] rawBytes = new byte[byteLength];
+						dis.readFully(rawBytes);
+						if (record_format_version >= FileDelimiter.RECORD_FORMAT_VERSION) {
+							mdForContent.update(typeDelimiter);
+							mdForContent.update(Utility.integerToBytes(byteLength));
+							mdForContent.update(rawBytes);
+						} else {
 							md.update(typeDelimiter);
-							dis.read(readFileHash);
-							md.update(readFileHash);
-							break;
-						case FileDelimiter.RECORD_TYPE_RECORD:
+							md.update(Utility.integerToBytes(byteLength));
+							md.update(rawBytes);
+						} 
+						
+						byteLength = dis.readInt();
+						rawBytes = new byte[byteLength];
+						dis.readFully(rawBytes);
 
-							int byteLength = dis.readInt();
-							byte[] rawBytes = new byte[byteLength];
-							dis.readFully(rawBytes);
-							if (record_format_version >= FileDelimiter.RECORD_FORMAT_VERSION) {
-								mdForContent.update(typeDelimiter);
-								mdForContent.update(Utility.integerToBytes(byteLength));
-								mdForContent.update(rawBytes);
-							} else {
-								md.update(typeDelimiter);
-								md.update(Utility.integerToBytes(byteLength));
-								md.update(rawBytes);
-							} 
-							
-							byteLength = dis.readInt();
-							rawBytes = new byte[byteLength];
-							dis.readFully(rawBytes);
-
-							if (record_format_version >= FileDelimiter.RECORD_FORMAT_VERSION) {
-								mdForContent.update(Utility.integerToBytes(byteLength));
-								mdForContent.update(rawBytes);
-							} else {
-								md.update(Utility.integerToBytes(byteLength));
-								md.update(rawBytes);
-							} 
-							break;
-						case FileDelimiter.RECORD_TYPE_SIGNATURE:
-							int sigLength = dis.readInt();
-							byte[] sigBytes = new byte[sigLength];
-							dis.readFully(sigBytes);
-							log.trace("File {} has signature {}", () -> filename, () -> Hex.encodeHexString(sigBytes));
-							break;
-						default:
-							log.error("Unknown record file delimiter {} for file {}", typeDelimiter, filename);
-							return null;
-					}
-				} catch (Exception e) {
-					log.error("Exception {}", e);
-					return null;
+						if (record_format_version >= FileDelimiter.RECORD_FORMAT_VERSION) {
+							mdForContent.update(Utility.integerToBytes(byteLength));
+							mdForContent.update(rawBytes);
+						} else {
+							md.update(Utility.integerToBytes(byteLength));
+							md.update(rawBytes);
+						} 
+						break;
+					case FileDelimiter.RECORD_TYPE_SIGNATURE:
+						int sigLength = dis.readInt();
+						byte[] sigBytes = new byte[sigLength];
+						dis.readFully(sigBytes);
+						log.trace("File {} has signature {}", () -> filename, () -> Hex.encodeHexString(sigBytes));
+						break;
+					default:
+						log.error("Unknown record file delimiter {} for file {}", typeDelimiter, filename);
+						return null;
 				}
 			}
 
