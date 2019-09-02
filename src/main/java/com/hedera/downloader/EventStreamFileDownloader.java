@@ -138,7 +138,7 @@ public class EventStreamFileDownloader extends Downloader {
 				if (newLastValidEventFileHash.isEmpty() ||
 						newLastValidEventFileHash.equals(prevFileHash) ||
 						prevFileHash.equals(Hex.encodeHexString(new byte[48]))) {
-					newLastValidEventFileHash = Utility.bytesToHex(Utility.getRecordFileHash(fileName));
+					newLastValidEventFileHash = Utility.bytesToHex(Utility.getFileHash(fileName));
 					newLastValidEventFileName = new File(fileName).getName();
 				} else {
 					break;
