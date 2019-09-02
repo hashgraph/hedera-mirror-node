@@ -61,7 +61,11 @@ public class RecordFileParser {
 	 *
 	 * @param fileName
 	 * 		the name of record file to read
-	 * @return return previous file hash
+	 * @param previousFileHash
+	 * 		the hash of the previous record file in the series
+	 * @param thisFileHash
+	 * 		the hash of this file
+	 * @return return boolean indicating method success
 	 * @throws Exception 
 	 */
 	static public boolean loadRecordFile(String fileName, String previousFileHash, String thisFileHash) throws Exception {
@@ -127,18 +131,16 @@ public class RecordFileParser {
 
 								TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
 
-								if (initFileResult != INIT_RESULT.SKIP) {
-									boolean bStored = RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord);
-									if (bStored) {
-										if (log.isTraceEnabled()) {
-											log.trace("Transaction = {}, Record = {}", Utility.printTransaction(transaction), TextFormat.shortDebugString(txRecord));
-										} else {
-											log.debug("Stored transaction with consensus timestamp {}", txRecord.getConsensusTimestamp());
-										}
+								boolean bStored = RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord);
+								if (bStored) {
+									if (log.isTraceEnabled()) {
+										log.trace("Transaction = {}, Record = {}", Utility.printTransaction(transaction), TextFormat.shortDebugString(txRecord));
 									} else {
-										RecordFileLogger.rollback();
-										return false;
+										log.debug("Stored transaction with consensus timestamp {}", txRecord.getConsensusTimestamp());
 									}
+								} else {
+									RecordFileLogger.rollback();
+									return false;
 								}
 								break;
 							case FileDelimiter.RECORD_TYPE_SIGNATURE:
@@ -152,9 +154,9 @@ public class RecordFileParser {
 
 							default:
 								log.error("Unknown record file delimiter {} for file {}", typeDelimiter, file);
+								RecordFileLogger.rollback();
+								return false;
 						}
-
-
 					} catch (Exception e) {
 						log.error("Exception {}", e);
 						RecordFileLogger.rollback();
@@ -167,6 +169,7 @@ public class RecordFileParser {
 				RecordFileLogger.completeFile(thisFileHash, previousFileHash);
 			} catch (Exception e) {
 				log.error("Error parsing record file {} after {}", file, stopwatch, e);
+				RecordFileLogger.rollback();
 				return false;
 			}
 
@@ -174,7 +177,6 @@ public class RecordFileParser {
 			applicationStatus.updateLastProcessedRcdHash(thisFileHash);
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
-			RecordFileLogger.rollback();
 			return true;
 		} else {
 			RecordFileLogger.rollback();
@@ -188,11 +190,11 @@ public class RecordFileParser {
 	 */
 	static public void loadRecordFiles(List<String> fileNames) throws Exception {
 		String prevFileHash = applicationStatus.getLastProcessedRcdHash();
-		String thisFileHash = "";
 
 		Collections.sort(fileNames);
 		
 		for (String name : fileNames) {
+			String thisFileHash = "";
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, stopping");
 				return;

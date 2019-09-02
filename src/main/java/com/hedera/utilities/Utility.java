@@ -127,7 +127,7 @@ public class Utility {
 	 *
 	 * @param fileName
 	 * 		file name
-	 * @return byte array of hash value
+	 * @return byte array of hash value of null if calculating has failed
 	 */
 	public static byte[] getFileHash(String fileName) {
 		MessageDigest md;
@@ -155,6 +155,13 @@ public class Utility {
 		}
 	}
 	
+	/**
+	 * Calculate SHA384 hash of an event file
+	 *
+	 * @param filename
+	 * 		file name
+	 * @return byte array of hash value of null if calculating has failed
+	 */
 	private static byte[] getEventFileHash(String filename) {
 		var file = new File(filename);
 		// for >= version3, we need to calculate hash for content;
@@ -168,13 +175,14 @@ public class Utility {
 		// '||' means concatenation
 		// for Version2, h[i + 1] = hash(p[i] || h[i] || c[i]);
 		// for Version3, h[i + 1] = hash(p[i] || h[i] || hash(c[i]))
-		MessageDigest md;
 
 		// is only used in Version3, for getting the Hash for content after prevFileHash in current file, i.e., hash
 		// (c[i])
-		MessageDigest mdForContent = null;
 
 		try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
+			MessageDigest md;
+			MessageDigest mdForContent = null;
+
 			md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
 
 			int eventStreamFileVersion = dis.readInt();
@@ -182,7 +190,7 @@ public class Utility {
 
 			log.debug("Loading event file {} with version {}", filename, eventStreamFileVersion);
 			if (eventStreamFileVersion < FileDelimiter.EVENT_STREAM_FILE_VERSION_LEGACY) {
-				log.error("EventStream file format version doesn't match. File is: {}", filename);
+				log.error("EventStream file format version {} doesn't match. File is: {}", eventStreamFileVersion, filename);
 				return null;
 			} else if (eventStreamFileVersion >= FileDelimiter.EVENT_STREAM_FILE_VERSION_CURRENT) {
 				mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
@@ -214,23 +222,30 @@ public class Utility {
 						}
 						break;
 					default:
-						log.error("Unknown file delimiter {} for event file {}", typeDelimiter, file);
+						log.error("Unknown event file delimiter {} for file {}", typeDelimiter, file);
+						return null;
 				}
 			}
 			log.trace("Successfully calculated hash for {}", filename);
+			if (calculateContentHash) {
+				byte[] contentHash = mdForContent.digest();
+				md.update(contentHash);
+			}
+
+			return md.digest();
 		} catch (Exception e) {
 			log.error("Error parsing event file {}", filename, e);
 			return null;
 		}
-
-		if (calculateContentHash) {
-			byte[] contentHash = mdForContent.digest();
-			md.update(contentHash);
-		}
-
-		return md.digest();
 	}
 	
+	/**
+	 * Calculate SHA384 hash of a record file
+	 *
+	 * @param filename
+	 * 		file name
+	 * @return byte array of hash value of null if calculating has failed
+	 */
 	private static byte[] getRecordFileHash(String filename) {
 		byte[] readFileHash = new byte[48];
 		
@@ -244,7 +259,7 @@ public class Utility {
 			md.update(Utility.integerToBytes(record_format_version));
 			md.update(Utility.integerToBytes(version));
 
-			log.info("Calculating hash for version {} record file: {}", record_format_version, filename);
+			log.debug("Calculating hash for version {} record file: {}", record_format_version, filename);
 
 			while (dis.available() != 0) {
 
@@ -270,8 +285,8 @@ public class Utility {
 								md.update(typeDelimiter);
 								md.update(Utility.integerToBytes(byteLength));
 								md.update(rawBytes);
-							}
-
+							} 
+							
 							byteLength = dis.readInt();
 							rawBytes = new byte[byteLength];
 							dis.readFully(rawBytes);
@@ -279,18 +294,16 @@ public class Utility {
 							if (record_format_version >= FileDelimiter.RECORD_FORMAT_VERSION) {
 								mdForContent.update(Utility.integerToBytes(byteLength));
 								mdForContent.update(rawBytes);
-
 							} else {
 								md.update(Utility.integerToBytes(byteLength));
 								md.update(rawBytes);
-							}
-
+							} 
 							break;
 						case FileDelimiter.RECORD_TYPE_SIGNATURE:
 							int sigLength = dis.readInt();
 							byte[] sigBytes = new byte[sigLength];
 							dis.readFully(sigBytes);
-							log.trace("File {} has signature {}", filename, Hex.encodeHexString(sigBytes));
+							log.trace("File {} has signature {}", () -> filename, () -> Hex.encodeHexString(sigBytes));
 							break;
 						default:
 							log.error("Unknown record file delimiter {} for file {}", typeDelimiter, filename);
@@ -302,7 +315,7 @@ public class Utility {
 				}
 			}
 
-			if (record_format_version >= FileDelimiter.RECORD_FORMAT_VERSION) {
+			if (record_format_version == FileDelimiter.RECORD_FORMAT_VERSION) {
 				md.update(mdForContent.digest());
 			}
 			readFileHash = md.digest();
