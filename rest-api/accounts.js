@@ -192,7 +192,8 @@ const getOneAccount = function (req, res) {
     const entitySql = getAccountQueryPrefix() +
         "and (\n" +
         "    (ab.account_realm_num  =  ? and ab.account_num  =  ?)\n" +
-        "    or (e.entity_realm = ? and e.entity_num = ?)\n" +
+        "    or (e.entity_realm = ? and e.entity_num = ?\n" +
+        "        and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + ")\n" +
         ")\n";
 
     const entityParams = [acc.realm, acc.num, acc.realm, acc.num];
