@@ -139,16 +139,10 @@ public class Utility {
 			try {
 				md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
 	
-				byte[] array = new byte[0];
-				try {
-					array = Files.readAllBytes(Paths.get(fileName));
-				} catch (IOException e) {
-					log.error("Exception {}", e);
-				}
-				byte[] fileHash = md.digest(array);
-				return fileHash;
+				byte[] array = Files.readAllBytes(Paths.get(fileName));
+				return md.digest(array);
 	
-			} catch (NoSuchAlgorithmException e) {
+			} catch (NoSuchAlgorithmException | IOException e) {
 				log.error("Exception {}", e);
 				return null;
 			}
