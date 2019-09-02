@@ -109,7 +109,7 @@ public class Utility {
 						sig = sigBytes;
 						break;
 					default:
-						log.error("Unknown record file delimiter {} in file {}", typeDelimiter, file);
+						log.error("Unknown file delimiter {} in signature file {}", typeDelimiter, file);
 						return null;
 				}
 			}
@@ -214,7 +214,7 @@ public class Utility {
 						}
 						break;
 					default:
-						log.error("Unknown record file delimiter {} for file", typeDelimiter, file);
+						log.error("Unknown file delimiter {} for event file {}", typeDelimiter, file);
 				}
 			}
 			log.trace("Successfully calculated hash for {}", filename);
@@ -294,6 +294,7 @@ public class Utility {
 							break;
 						default:
 							log.error("Unknown record file delimiter {} for file {}", typeDelimiter, filename);
+							return null;
 					}
 				} catch (Exception e) {
 					log.error("Exception {}", e);
