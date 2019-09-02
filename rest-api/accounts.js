@@ -21,6 +21,7 @@
 const utils = require('./utils.js');
 const transactions = require('./transactions.js');
 
+const ACCOUNT_ENTITY_TYPE = 1;
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -31,12 +32,12 @@ const processRow = function (row) {
     let accRecord = {};
     accRecord.balance = {};
     accRecord.account = row.entity_shard + '.' + row.entity_realm + '.' + row.entity_num;
-    accRecord.balance.timestamp = utils.nsToSecNs(row.consensus_timestamp);
-    accRecord.balance.balance = Number(row.account_balance);
-    accRecord.expiry_timestamp = utils.nsToSecNs(row.exp_time_ns);
-    accRecord.auto_renew_period = Number(row.auto_renew_period);
-    accRecord.admin_key = utils.encodeKey(row.admin_key);
-    accRecord.key = utils.encodeKey(row.key);
+    accRecord.balance.timestamp = (row.consensus_timestamp === null) ? null : utils.nsToSecNs(row.consensus_timestamp);
+    accRecord.balance.balance = (row.account_balance === null) ? null : Number(row.account_balance);
+    accRecord.expiry_timestamp = (row.exp_time_ns === null) ? null : utils.nsToSecNs(row.exp_time_ns);
+    accRecord.auto_renew_period = (row.auto_renew_period=== null) ? null : Number(row.auto_renew_period);
+    accRecord.admin_key = (row.admin_key === null) ? null : utils.encodeKey(row.admin_key);
+    accRecord.key = (row.key === null) ? null : utils.encodeKey(row.key);
     accRecord.deleted = row.deleted;
     accRecord.entity_type = row.entity_type;
 
@@ -44,29 +45,29 @@ const processRow = function (row) {
 }
 
 const getAccountQueryPrefix = function() {
-    const ACCOUNT_ENTITY_TYPE = 1;
     const prefix = 
         "select ab.balance as account_balance\n" +
         "    , ab.consensus_timestamp as consensus_timestamp\n" +
         "    , " + process.env.SHARD_NUM + " as entity_shard\n" +
-        "    , ab.account_realm_num as entity_realm\n" +
-        "    , ab.account_num as entity_num\n" +
+        "    , coalesce(ab.account_realm_num, e.entity_realm) as entity_realm\n" +
+        "    , coalesce(ab.account_num, e.entity_num) as entity_num\n" +
         "    , e.exp_time_ns\n" +
         "    , e.auto_renew_period\n" +
         "    , e.admin_key\n" +
         "    , e.key\n" +
         "    , e.deleted\n" +
         "    , et.name as entity_type\n" +
-        "from account_balances ab\n" +
+        "from (\n" +
+        "    select * from account_balances\n" +
+        "    where consensus_timestamp = (select max(consensus_timestamp) from account_balances)\n" +
+        ") ab\n" +
         "full outer join t_entities e\n" +
         "    on (ab.account_realm_num = e.entity_realm\n" +
         "        and ab.account_num =  e.entity_num\n" +
         "        and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + ")\n" +
         "join t_entity_types et\n" +
         "    on et.id = " + ACCOUNT_ENTITY_TYPE + "\n" +
-        "where \n" +
-        "    ab.consensus_timestamp = (select max(consensus_timestamp) from account_balances)\n" +
-        "    and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + "\n";
+        "where 1=1\n";
 
     return (prefix);
 }
@@ -78,10 +79,22 @@ const getAccountQueryPrefix = function() {
  */
 const getAccounts = function (req) {
     // Parse the filter parameters for account-numbers, balances, publicKey and pagination
-    const [accountQuery, accountParams] =
+
+    // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we 
+    // need to look  for the given account.id in both account_balances and t_entities table and combine with an 'or'
+    const [accountQueryForAccountBalances, accountParamsForAccountBalances] =
         utils.parseParams(req, 'account.id',
             [{ shard: process.env.SHARD_NUM, realm: 'ab.account_realm_num', num: 'ab.account_num' }],
             'entityId');
+    const [accountQueryForEntity, accountParamsForEntity] =
+        utils.parseParams(req, 'account.id',
+            [{ shard: process.env.SHARD_NUM, realm: 'e.entity_realm', num: ' e.entity_num' }],
+            'entityId');
+    const accountQuery = accountQueryForAccountBalances === '' ? '' :
+        "(\n" + 
+        "    " + accountQueryForAccountBalances + "\n" +
+        "    or (" + accountQueryForEntity + " and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + ")\n" +
+        ")\n";
 
     const [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance',
         ['ab.balance']);
@@ -95,10 +108,11 @@ const getAccounts = function (req) {
     const entitySql = getAccountQueryPrefix() +
         "    and \n" +
         [accountQuery, balanceQuery, pubKeyQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
-        " order by ab.account_num " + order + "\n" +
+        " order by coalesce(ab.account_num, e.entity_num) " + order + "\n" +
         limitQuery;
 
-    const entityParams = accountParams
+    const entityParams = accountParamsForAccountBalances
+        .concat(accountParamsForEntity)
         .concat(balanceParams)
         .concat(pubKeyParams)
         .concat(limitParams);
@@ -173,10 +187,15 @@ const getOneAccount = function (req, res) {
         transactions: []
     };
 
+    // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we 
+    // need to look  for the given account.id in both account_balances and t_entities table and combine with an 'or'
     const entitySql = getAccountQueryPrefix() +
-        "and (ab.account_realm_num  =  ? and ab.account_num  =  ?)\n";
+        "and (\n" +
+        "    (ab.account_realm_num  =  ? and ab.account_num  =  ?)\n" +
+        "    or (e.entity_realm = ? and e.entity_num = ?)\n" +
+        ")\n";
 
-    const entityParams = [acc.realm, acc.num];
+    const entityParams = [acc.realm, acc.num, acc.realm, acc.num];
     const pgEntityQuery = utils.convertMySqlStyleQueryToPostgress(
         entitySql, entityParams);
 
