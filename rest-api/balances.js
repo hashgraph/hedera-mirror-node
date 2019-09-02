@@ -65,6 +65,12 @@ const getBalances = function (req) {
         utils.parseLimitAndOrderParams(req, 'desc');
 
     // Use the inner query to find the latest snapshot timestamp from the balance history table
+    let innerQuery =	
+        "select consensus_timestamp from account_balances ab\n" +
+        " where\n" +
+        (tsQuery === '' ? '1=1' : tsQuery) + '\n' +
+        "order by consensus_timestamp desc limit 1";
+
     let sqlQuery =
         "select ab.consensus_timestamp,\n" +
         "ab.account_realm_num as realm_num, ab.account_num as entity_num, ab.balance\n" +
@@ -76,7 +82,9 @@ const getBalances = function (req) {
             " and e.entity_shard = 0 and e.fk_entity_type_id = 1\n";
     }
     sqlQuery += " where " +
-        [tsQuery, accountQuery, pubKeyQuery, balanceQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
+        " consensus_timestamp = (" + innerQuery + ")\n" +
+        " and\n" + 
+        [accountQuery, pubKeyQuery, balanceQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
         " order by consensus_timestamp desc, " +
         ['account_realm_num', 'account_num'].map(q => q + ' ' + order).join(',') +
         " " + limitQuery;

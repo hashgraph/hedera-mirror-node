@@ -21,6 +21,57 @@
 const utils = require('./utils.js');
 const transactions = require('./transactions.js');
 
+const ACCOUNT_ENTITY_TYPE = 1;
+
+/**
+ * Processes one row of the results of the SQL query and format into API return format
+ * @param {Object} row One row of the SQL query result
+ * @return {Object} accRecord Processed account record
+ */
+const processRow = function (row) {
+    let accRecord = {};
+    accRecord.balance = {};
+    accRecord.account = row.entity_shard + '.' + row.entity_realm + '.' + row.entity_num;
+    accRecord.balance.timestamp = (row.consensus_timestamp === null) ? null : utils.nsToSecNs(row.consensus_timestamp);
+    accRecord.balance.balance = (row.account_balance === null) ? null : Number(row.account_balance);
+    accRecord.expiry_timestamp = (row.exp_time_ns === null) ? null : utils.nsToSecNs(row.exp_time_ns);
+    accRecord.auto_renew_period = (row.auto_renew_period=== null) ? null : Number(row.auto_renew_period);
+    accRecord.admin_key = (row.admin_key === null) ? null : utils.encodeKey(row.admin_key);
+    accRecord.key = (row.key === null) ? null : utils.encodeKey(row.key);
+    accRecord.deleted = row.deleted;
+    accRecord.entity_type = row.entity_type;
+
+    return (accRecord);
+}
+
+const getAccountQueryPrefix = function() {
+    const prefix = 
+        "select ab.balance as account_balance\n" +
+        "    , ab.consensus_timestamp as consensus_timestamp\n" +
+        "    , " + process.env.SHARD_NUM + " as entity_shard\n" +
+        "    , coalesce(ab.account_realm_num, e.entity_realm) as entity_realm\n" +
+        "    , coalesce(ab.account_num, e.entity_num) as entity_num\n" +
+        "    , e.exp_time_ns\n" +
+        "    , e.auto_renew_period\n" +
+        "    , e.admin_key\n" +
+        "    , e.key\n" +
+        "    , e.deleted\n" +
+        "    , et.name as entity_type\n" +
+        "from (\n" +
+        "    select * from account_balances\n" +
+        "    where consensus_timestamp = (select max(consensus_timestamp) from account_balances)\n" +
+        ") ab\n" +
+        "full outer join t_entities e\n" +
+        "    on (ab.account_realm_num = e.entity_realm\n" +
+        "        and ab.account_num =  e.entity_num\n" +
+        "        and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + ")\n" +
+        "join t_entity_types et\n" +
+        "    on et.id = " + ACCOUNT_ENTITY_TYPE + "\n" +
+        "where 1=1\n";
+
+    return (prefix);
+}
+
 /**
  * Handler function for /accounts API.
  * @param {Request} req HTTP request object
@@ -28,46 +79,40 @@ const transactions = require('./transactions.js');
  */
 const getAccounts = function (req) {
     // Parse the filter parameters for account-numbers, balances, publicKey and pagination
-    const [accountQuery, accountParams] =
+
+    // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we 
+    // need to look  for the given account.id in both account_balances and t_entities table and combine with an 'or'
+    const [accountQueryForAccountBalances, accountParamsForAccountBalances] =
         utils.parseParams(req, 'account.id',
-            [{ shard: 'entity_shard', realm: 'entity_realm', num: 'entity_num' }],
+            [{ shard: process.env.SHARD_NUM, realm: 'ab.account_realm_num', num: 'ab.account_num' }],
             'entityId');
+    const [accountQueryForEntity, accountParamsForEntity] =
+        utils.parseParams(req, 'account.id',
+            [{ shard: process.env.SHARD_NUM, realm: 'e.entity_realm', num: ' e.entity_num' }],
+            'entityId');
+    const accountQuery = accountQueryForAccountBalances === '' ? '' :
+        "(\n" + 
+        "    " + accountQueryForAccountBalances + "\n" +
+        "    or (" + accountQueryForEntity + " and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + ")\n" +
+        ")\n";
 
     const [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance',
-        ['balance']);
+        ['ab.balance']);
 
     let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'account.publickey',
         ['e.key'], 'hexstring');
-    pubKeyQuery = pubKeyQuery === '' ? '' :
-        "(e.entity_shard = ab.shard \n" +
-        " and e.entity_realm = ab.realm\n" +
-        " and e.entity_num = ab.num and " +
-        pubKeyQuery +
-        ")";
 
     const { limitQuery, limitParams, order, limit } =
         utils.parseLimitAndOrderParams(req, 'asc');
 
-
-    const entitySql =
-        "select e.entity_shard, e.entity_realm, e.entity_num\n" +
-        ", et.name as entity_type, exp_time_ns, auto_renew_period, admin_key, key, deleted\n" +
-        ", ab.balance as account_balance\n" +
-        ", abrt.seconds as balance_asof_seconds, abrt.nanos as balance_asof_nanos\n" +
-        "from t_entities e\n" +
-        ", t_entity_types et\n" +
-        ", t_account_balances ab\n" +
-        ", t_account_balance_refresh_time abrt\n" +
-        " where et.id = e.fk_entity_type_id\n" +
-        " and ab.shard = e.entity_shard\n" +
-        " and ab.realm = e.entity_realm\n" +
-        " and ab.num = e.entity_num\n" +
-        "   and " + 
+    const entitySql = getAccountQueryPrefix() +
+        "    and \n" +
         [accountQuery, balanceQuery, pubKeyQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
-        " order by num " + order + "\n" +
+        " order by coalesce(ab.account_num, e.entity_num) " + order + "\n" +
         limitQuery;
 
-    const entityParams = accountParams
+    const entityParams = accountParamsForAccountBalances
+        .concat(accountParamsForEntity)
         .concat(balanceParams)
         .concat(pubKeyParams)
         .concat(limitParams);
@@ -90,35 +135,13 @@ const getAccounts = function (req) {
             };
 
             for (let row of results.rows) {
-                row.balance = {};
-                row.account = row.entity_shard + '.' + row.entity_realm + '.' + row.entity_num;
-                delete row.entity_shard;
-                delete row.entity_realm;
-                delete row.entity_num;
-
-                row.balance.timestamp = '' + row.balance_asof_seconds + '.' +
-                    ((row.balance_asof_nanos + '000000000').substring(0, 9));
-                delete row.balance_asof_seconds;
-                delete row.balance_asof_nanos;
-
-                row.expiry_timestamp = utils.nsToSecNs(row.exp_time_ns);
-                delete row.exp_time_ns;
-
-                row.balance.balance = Number(row.account_balance);
-                delete row.account_balance;
-
-                row.auto_renew_period = Number(row.auto_renew_period);
-
-                row.admin_key = utils.encodeKey(row.admin_key);
-                row.key = utils.encodeKey(row.key);
+                ret.accounts.push(processRow(row));
             }
 
             let anchorAcc = '0.0.0';
-            if (results.rows.length > 0) {
-                anchorAcc = results.rows[results.rows.length - 1].account;
+            if (ret.accounts.length > 0) {
+                anchorAcc = ret.accounts[ret.accounts.length - 1].account;
             }
-
-            ret.accounts = results.rows;
 
             ret.links = {
                 next: utils.getPaginationLink(req,
@@ -161,36 +184,19 @@ const getOneAccount = function (req, res) {
         utils.parseLimitAndOrderParams(req);
 
     let ret = {
-        balance: {
-            timestamp: null,
-            amount: null,
-        },
-        entity_data: [],
         transactions: []
     };
 
-    const timeQuerySql =
-        "select seconds, nanos from  t_account_balance_refresh_time limit 1";
-    // Execute query & get a promise
-    const timePromise = pool.query(timeQuerySql);
+    // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we 
+    // need to look  for the given account.id in both account_balances and t_entities table and combine with an 'or'
+    const entitySql = getAccountQueryPrefix() +
+        "and (\n" +
+        "    (ab.account_realm_num  =  ? and ab.account_num  =  ?)\n" +
+        "    or (e.entity_realm = ? and e.entity_num = ?\n" +
+        "        and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + ")\n" +
+        ")\n";
 
-    const balanceSql =
-        "select balance\n" +
-        " from t_account_balances\n" +
-        " where shard = $1 and realm = $2 and num = $3\n";
-    const balanceParams = [acc.shard, acc.realm, acc.num];
-    // Execute query & get a promise
-    const balancePromise = pool.query(balanceSql, balanceParams);
-
-    const entitySql =
-        "select tet.name as entity_type, exp_time_ns, auto_renew_period, admin_key, key, deleted\n" +
-        "from t_entities te\n" +
-        ", t_entity_types tet\n" +
-        " where tet.id = te.fk_entity_type_id\n" +
-        " and entity_shard = ?\n" +
-        " and entity_realm = ?\n" +
-        " and entity_num = ?\n"
-    const entityParams = [acc.shard, acc.realm, acc.num];
+    const entityParams = [acc.realm, acc.num, acc.realm, acc.num];
     const pgEntityQuery = utils.convertMySqlStyleQueryToPostgress(
         entitySql, entityParams);
 
@@ -198,6 +204,8 @@ const getOneAccount = function (req, res) {
         pgEntityQuery + JSON.stringify(entityParams));
     // Execute query & get a promise
     const entityPromise = pool.query(pgEntityQuery, entityParams);
+
+     // Now, query the transactions for this entity
 
     const creditDebit = utils.parseCreditDebitParams(req);
 
@@ -262,34 +270,13 @@ const getOneAccount = function (req, res) {
     const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);
 
 
-    // After all 3 of the promises (for all three queries) have been resolved...
-    Promise.all([timePromise, balancePromise, entityPromise, transactionsPromise])
+    // After all promises (for all of the above queries) have been resolved...
+    Promise.all([entityPromise, transactionsPromise])
         .then(function (values) {
-            const timeResults = values[0];
-            const balanceResults = values[1];
-            const entityResults = values[2];
-            const transactionsResults = values[3];
+            const entityResults = values[0];
+            const transactionsResults = values[1];
 
-            // Process the results of t_account_balance_refresh_time query
-            if (timeResults.rows.length !== 1) {
-                res.status(500)
-                    .send('Error: Could not get balance');
-                return;
-            }
-
-            ret.balance.timestamp = '' + timeResults.rows[0].seconds +
-                '.' + ((timeResults.rows[0].nanos + '000000000').substring(0, 9));
-
-            // Process the results of t_account_balances query
-            if (balanceResults.rows.length !== 1) {
-                res.status(500)
-                    .send('Error: Could not get balance');
-                return;
-            }
-            ret.balance.amount = Number(balanceResults.rows[0].balance);
-            ret.auto_renew_period = Number(ret.auto_renew_period);
-
-            // Process the results of t_entities query
+            // Process the results of entities query
             if (entityResults.rows.length !== 1) {
                 res.status(500)
                     .send('Error: Could not get entity information');
@@ -297,15 +284,11 @@ const getOneAccount = function (req, res) {
             }
 
             for (let row of entityResults.rows) {
-                row.expiry_timestamp = utils.nsToSecNs(row.exp_time_ns);
-                delete row.exp_time_ns;
-
-                row.admin_key = utils.encodeKey(row.admin_key);
-                row.key = utils.encodeKey(row.key);
-
+                const r = processRow(row);
+                for (let key in r) {
+                    ret[key] = r[key];
+                }
             }
-            ret.entity_data = entityResults.rows;
-
 
             // Process the results of t_transactions query
             const tl = transactions.createTransferLists(
@@ -322,7 +305,7 @@ const getOneAccount = function (req, res) {
             }
 
             logger.debug("getOneAccount returning " +
-                balanceResults.rows.length + " entries");
+                ret.transactions.length + " transactions entries");
             res.json(ret);
         })
         .catch(err => {
