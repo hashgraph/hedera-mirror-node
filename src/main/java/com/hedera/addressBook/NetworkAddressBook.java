@@ -54,7 +54,7 @@ public class NetworkAddressBook {
 	static Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
     static byte[] addressBookBytes = new byte[0];
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
         var client = createHederaClient();
 
@@ -65,7 +65,7 @@ public class NetworkAddressBook {
                     .setFileId(new FileId(0, 0, 102))
                     .execute();
 
-            update(contents.getFileContents().getContents().toByteArray());
+            savetoDisk(contents.getFileContents().getContents().toByteArray());
 			log.info("New address book successfully saved to {}", addressBookFile);
         } catch (FileNotFoundException e) {
     		log.error("Address book file {} not found.", addressBookFile);
@@ -78,32 +78,7 @@ public class NetworkAddressBook {
 		}
 	}
 
-    public static void update(byte[] newContents) throws IOException {
-    	addressBookBytes = newContents;
-    	try {
-    		NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
-    		savetoDisk();
-    		
-    	} catch (Exception e) {
-    		log.warn("Unable to parse incomplete address book");
-    	}
-    }
-
-    public static void append(byte[] extraContents) throws IOException {
-    	byte[] newAddressBook = Arrays.copyOf(addressBookBytes, addressBookBytes.length + extraContents.length);
-    	System.arraycopy(extraContents, 0, addressBookBytes, addressBookBytes.length, extraContents.length);
-    	
-    	try {
-    		NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(newAddressBook);
-    		addressBookBytes = newAddressBook;
-    		savetoDisk();
-    		
-    	} catch (Exception e) {
-    		log.warn("Unable to parse incomplete address book");
-    	}
-    }
-
-    private static void savetoDisk() throws IOException {
+    private static void savetoDisk(byte[] addressBookBytes) throws IOException {
         FileOutputStream fos = new FileOutputStream(addressBookFile);
         fos.write(addressBookBytes);
         fos.close();
