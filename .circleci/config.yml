@@ -1,30 +1,77 @@
 version: 2
 
+defaults: &defaults
+  docker:
+    - image: adoptopenjdk:11-jdk-hotspot
+
+references:
+  workspace_root: &workspace_root
+    /tmp/workspace
+  attach_workspace: &attach_workspace
+    attach_workspace:
+      at: *workspace_root
+
 workflows:
   version: 2
   main:
     jobs:
-    - build
-
-defaults: &defaults
-  docker:
-  - image: adoptopenjdk:11-jdk-hotspot
+      - build:
+          filters:  # required since `release_artifacts` has tag filters AND requires `build`
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
+      - release_artifacts:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
 
 jobs:
   build:
     <<: *defaults
     steps:
-    - checkout
-    - restore_cache:
-        keys:
-          - maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
-          - maven-v1-{{ .Branch }}
-          - maven-v1-
-    - run: ./mvnw install
-    - store_test_results:
-        path: target/surefire-reports
-    - save_cache:
-        key: maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
-        paths:
-        - ~/.m2
+      - checkout
+      - restore_cache:
+          keys:
+            - maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
+            - maven-v1-{{ .Branch }}
+            - maven-v1-
+      - run:
+          name: Running maven
+          command: ./mvnw install
+      - store_test_results:
+          path: target/surefire-reports
+      - save_cache:
+          key: maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
+          paths:
+          - ~/.m2
+      - run:
+          name: Collecting mirror-node assets
+          command: |
+            mkdir -p /tmp/workspace/mirror-node/
+            mv target/mirror-node.jar /tmp/workspace/mirror-node/
+            mv target/config /tmp/workspace/mirror-node/
+            mv target/lib /tmp/workspace/mirror-node/
+            mv systemd /tmp/workspace/mirror-node/
+      - persist_to_workspace:
+          root: *workspace_root
+          paths:
+            - mirror-node
 
+  release_artifacts:
+    <<: *defaults
+    steps:
+      - *attach_workspace
+      - run:
+          name: Generating mirror-node.tgz
+          working_directory: /tmp/workspace/
+          command: |
+            _tagged_dir=mirror-node-${CIRCLE_TAG}
+            mv mirror-node "${_tagged_dir}"
+            tar -czf /tmp/mirror-node.tgz "${_tagged_dir}"
+      - store_artifacts:
+          path: /tmp/mirror-node.tgz
