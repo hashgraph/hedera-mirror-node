@@ -68,9 +68,10 @@ jobs:
       - *attach_workspace
       - run:
           name: Generating mirror-node.tgz
-          working_directory: /tmp/workspace/mirror-node/
+          working_directory: /tmp/workspace/
           command: |
-            echo "${CIRCLE_TAG}"
-            tar -czf /tmp/mirror-node.tgz mirror-node.jar config lib systemd
+            _tagged_dir=mirror-node-${CIRCLE_TAG}
+            mv mirror-node "${_tagged_dir}"
+            tar -czf /tmp/mirror-node.tgz "${_tagged_dir}"
       - store_artifacts:
           path: /tmp/mirror-node.tgz
