@@ -645,6 +645,15 @@ public class RecordFileLogger {
                     if ( ! bSkip) {
                     	sqlInsertFileData.addBatch();
                     }
+                    
+                	// update the local address book
+                	FileID updatedFile = body.getFileAppend().getFileID();
+
+                	if ((updatedFile.getFileNum() == 102) && (updatedFile.getShardNum() == 0) && (updatedFile.getRealmNum() == 0)) {
+                		// we have an address book update, refresh the local file
+                		NetworkAddressBook.append(contents);
+                	}
+                    
             	}
             } else if (body.hasFileCreate()) {
             	if (ConfigLoader.getPersistFiles().contentEquals("ALL") || (ConfigLoader.getPersistFiles().contentEquals("SYSTEM") && txRecord.getReceipt().getFileID().getFileNum() < 1000)) {
@@ -673,7 +682,7 @@ public class RecordFileLogger {
 
             	if ((updatedFile.getFileNum() == 102) && (updatedFile.getShardNum() == 0) && (updatedFile.getRealmNum() == 0)) {
             		// we have an address book update, refresh the local file
-            		NetworkAddressBook.writeFile(body.getFileUpdate().getContents().toByteArray());
+            		NetworkAddressBook.update(body.getFileUpdate().getContents().toByteArray());
             	}
 
             } else if (body.hasFreeze()) {
