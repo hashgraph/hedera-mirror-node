@@ -31,6 +31,7 @@ import java.util.HashMap;
 
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.addressBook.DatabaseAddressBook;
 import com.hedera.addressBook.NetworkAddressBook;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.DatabaseUtilities;
@@ -67,6 +68,8 @@ public class RecordFileLogger {
 	private static PreparedStatement sqlInsertFileData;
 	private static PreparedStatement sqlInsertContractCall;
 	private static PreparedStatement sqlInsertClaimData;
+	
+	private static boolean addressBookUpdate = false;
 	
 	public enum INIT_RESULT {
 		OK
@@ -272,9 +275,15 @@ public class RecordFileLogger {
 			
 			fileClose.execute();
 			fileClose.close();
+			
+			if (addressBookUpdate) {
+				DatabaseAddressBook.saveToDisk(connect);
+				addressBookUpdate = false;
+			}
+			
 			// commit the changes to the database
 			connect.commit();
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			log.error("Error completing file in database", e);
 			rollback();
 			return false;
@@ -567,9 +576,6 @@ public class RecordFileLogger {
 
 	                        sqlInsertTransferList.addBatch();
 	                    }
-//	                    if ( ! bSkip) {
-//	                    	sqlInsertTransferList.executeBatch();
-//	                    }
                     }
                 } catch (SQLException e) {
                     if (e.getSQLState().contentEquals("23505")) {
@@ -651,7 +657,7 @@ public class RecordFileLogger {
 
                 	if ((updatedFile.getFileNum() == 102) && (updatedFile.getShardNum() == 0) && (updatedFile.getRealmNum() == 0)) {
                 		// we have an address book update, refresh the local file
-                		NetworkAddressBook.append(contents);
+                		addressBookUpdate = true;
                 	}
                     
             	}
@@ -682,7 +688,7 @@ public class RecordFileLogger {
 
             	if ((updatedFile.getFileNum() == 102) && (updatedFile.getShardNum() == 0) && (updatedFile.getRealmNum() == 0)) {
             		// we have an address book update, refresh the local file
-            		NetworkAddressBook.update(body.getFileUpdate().getContents().toByteArray());
+            		addressBookUpdate = true;
             	}
 
             } else if (body.hasFreeze()) {
@@ -733,19 +739,6 @@ public class RecordFileLogger {
 			return transactionTypes.get("UNKNOWN");
 		}
 	}
-
-//	private static long insertTransaction(PreparedStatement insertTransaction) throws SQLException {
-//        if ( bSkip) { return 0;}
-//        
-//		insertTransaction.execute();
-//
-//        ResultSet newId = insertTransaction.getResultSet();
-//        newId.next();
-//        Long txId = newId.getLong(1);
-//        newId.close();
-//
-//        return txId;
-//	}
 
 	public static void insertContractResults(PreparedStatement insert, long fkTxId, byte[] functionParams, long gasSupplied, byte[] callResult, long gasUsed) throws SQLException {
         if ( bSkip) { return;}
