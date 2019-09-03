@@ -216,7 +216,7 @@ If set to another value, the downloader will download available files, wait `dow
 ### Logging
 
 By default, logging will output to the console and to `logs/hedera-mirror-node.log`.
-Should you wish to change the logging, copy the `log4j2.xml` file from `src/main/resources` or `target` to the same location as the `mirrorNode.jar` file, edit accordingly and include the following in your `java` command:
+Should you wish to change the logging, copy the `log4j2.xml` file from `src/main/resources` or `target` to the same location as the `mirror-node.jar` file, edit accordingly and include the following in your `java` command:
 
 ```shell
     -Dlog4j.configurationFile=./log4j2.xml
@@ -225,7 +225,7 @@ Should you wish to change the logging, copy the `log4j2.xml` file from `src/main
 for example
 
 ```shell
-    java -Dlog4j.configurationFile=./log4j2.xml -cp mirrorNode.jar com.hedera.parser.RecordFileParser
+    java -Dlog4j.configurationFile=./log4j2.xml -cp mirror-node.jar com.hedera.parser.RecordFileParser
 ```
 
 This will ensure that the `log4j2.xml` file is used to direct logging accordingly.

@@ -1,0 +1,14 @@
+[Unit]
+After=network.target
+Description=Hedera Mirror Node Account Balance File Parser
+
+[Service]
+Environment=HEDERA_MIRROR_CONFIG_PATH=/usr/etc/mirror-node/config.json
+ExecStart=/usr/bin/java -cp mirror-node.jar com.hedera.balanceFileLogger.BalanceFileLogger
+Restart=on-failure
+RestartSec=3
+Type=simple
+WorkingDirectory=/usr/lib/mirror-node
+
+[Install]
+WantedBy=multi-user.target

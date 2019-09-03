@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.hedera</groupId>
-	<artifactId>MirrorNode</artifactId>
+	<artifactId>mirror-node</artifactId>
 	<version>0.1-SNAPSHOT</version>
 	<name>Hedera Mirror Node</name>
 	<description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
@@ -261,7 +261,7 @@
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>3.1.0</version>
 				<configuration>
-					<finalName>mirrorNode</finalName>
+					<finalName>${project.artifactId}</finalName>
 					<archive>
 						<manifest>
 							<addClasspath>true</addClasspath>
