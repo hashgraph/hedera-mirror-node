@@ -66,7 +66,6 @@ public class NetworkAddressBook {
                     .execute();
 
             update(contents.getFileContents().getContents().toByteArray());
-			log.info("New address book successfully saved to {}", addressBookFile);
         } catch (FileNotFoundException e) {
     		log.error("Address book file {} not found.", addressBookFile);
         } catch (IOException e) {
@@ -80,33 +79,21 @@ public class NetworkAddressBook {
 
     public static void update(byte[] newContents) throws IOException {
     	addressBookBytes = newContents;
-    	try {
-    		NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
-    		savetoDisk();
-    		
-    	} catch (Exception e) {
-    		log.warn("Unable to parse incomplete address book");
-    	}
+		savetoDisk();
     }
 
     public static void append(byte[] extraContents) throws IOException {
     	byte[] newAddressBook = Arrays.copyOf(addressBookBytes, addressBookBytes.length + extraContents.length);
-    	System.arraycopy(extraContents, 0, addressBookBytes, addressBookBytes.length, extraContents.length);
-    	
-    	try {
-    		NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(newAddressBook);
-    		addressBookBytes = newAddressBook;
-    		savetoDisk();
-    		
-    	} catch (Exception e) {
-    		log.warn("Unable to parse incomplete address book");
-    	}
+    	System.arraycopy(extraContents, 0, newAddressBook, addressBookBytes.length, extraContents.length);
+    	addressBookBytes = newAddressBook;
+		savetoDisk();
     }
 
     private static void savetoDisk() throws IOException {
         FileOutputStream fos = new FileOutputStream(addressBookFile);
         fos.write(addressBookBytes);
         fos.close();
+		log.info("New address book successfully saved to {}", addressBookFile);
     }
     
 	private static Client createHederaClient() {
