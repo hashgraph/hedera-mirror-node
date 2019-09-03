@@ -22,6 +22,7 @@ package com.hedera.addressBook;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 import com.hedera.configLoader.ConfigLoader;
@@ -33,6 +34,7 @@ import com.hedera.hashgraph.sdk.HederaNetworkException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.file.FileId;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 
 import io.github.cdimascio.dotenv.Dotenv;
 
@@ -50,6 +52,7 @@ public class NetworkAddressBook {
 
 	static Client client;
 	static Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+    static byte[] addressBookBytes = new byte[0];
     
     public static void main(String[] args) {
 
@@ -62,7 +65,7 @@ public class NetworkAddressBook {
                     .setFileId(new FileId(0, 0, 102))
                     .execute();
 
-            writeFile(contents.getFileContents().getContents().toByteArray());
+            update(contents.getFileContents().getContents().toByteArray());
 			log.info("New address book successfully saved to {}", addressBookFile);
         } catch (FileNotFoundException e) {
     		log.error("Address book file {} not found.", addressBookFile);
@@ -75,9 +78,34 @@ public class NetworkAddressBook {
 		}
 	}
 
-    public static void writeFile(byte[] newContents) throws IOException {
+    public static void update(byte[] newContents) throws IOException {
+    	addressBookBytes = newContents;
+    	try {
+    		NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
+    		savetoDisk();
+    		
+    	} catch (Exception e) {
+    		log.warn("Unable to parse incomplete address book");
+    	}
+    }
+
+    public static void append(byte[] extraContents) throws IOException {
+    	byte[] newAddressBook = Arrays.copyOf(addressBookBytes, addressBookBytes.length + extraContents.length);
+    	System.arraycopy(extraContents, 0, addressBookBytes, addressBookBytes.length, extraContents.length);
+    	
+    	try {
+    		NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(newAddressBook);
+    		addressBookBytes = newAddressBook;
+    		savetoDisk();
+    		
+    	} catch (Exception e) {
+    		log.warn("Unable to parse incomplete address book");
+    	}
+    }
+
+    private static void savetoDisk() throws IOException {
         FileOutputStream fos = new FileOutputStream(addressBookFile);
-        fos.write(newContents);
+        fos.write(addressBookBytes);
         fos.close();
     }
     
