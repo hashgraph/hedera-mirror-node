@@ -97,7 +97,10 @@ public class RecordFileDownloaderTest {
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
-                .allMatch(p -> Utility.isRecordFile(p.toString()));
+                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get("2019-07-01T14:13:00.317763Z.rcd"))
+                .contains(Paths.get("2019-07-01T14:29:00.302068Z.rcd"));
     }
 
     @Test
@@ -109,7 +112,10 @@ public class RecordFileDownloaderTest {
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
-                .allMatch(p -> Utility.isRecordFile(p.toString()));
+                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get("2019-08-30T18_10_05.249678Z.rcd"))
+                .contains(Paths.get("2019-08-30T18_10_00.419072Z.rcd"));
     }
 
     @Test
@@ -132,7 +138,9 @@ public class RecordFileDownloaderTest {
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(1)
-                .allMatch(p -> Utility.isRecordFile(p.toString()));
+                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get("2019-08-30T18_10_00.419072Z.rcd"));
     }
 
     @Test
@@ -179,29 +187,35 @@ public class RecordFileDownloaderTest {
     @Test
     @DisplayName("Doesn't match last valid hash")
     void hashMismatchWithPrevious() throws Exception {
+        final String filename = "2019-08-30T18_10_05.249678Z.rcd";
         when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
         when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
         when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("");
-        fileCopier.filterFiles("2019-08-30T18_10_05.249678Z.rcd*").copy(); // Skip first file with zero hash
+        fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(1)
-                .allMatch(p -> Utility.isRecordFile(p.toString()));
+                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get(filename));
     }
 
     @Test
     @DisplayName("Bypass previous hash mismatch")
     void hashMismatchWithBypass() throws Exception {
+        final String filename = "2019-08-30T18_10_05.249678Z.rcd";
         when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
         when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
         when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("2019-07-02T00:00:00.000000Z.rcd");
-        fileCopier.filterFiles("2019-08-30T18_10_05.249678Z.rcd*").copy(); // Skip first file with zero hash
+        fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(1)
-                .allMatch(p -> Utility.isRecordFile(p.toString()));
+                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get(filename));
     }
 
     @Test
