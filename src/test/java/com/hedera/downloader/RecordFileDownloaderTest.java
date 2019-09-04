@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RecordFileDownloaderTestV1 {
+public class RecordFileDownloaderTest {
 
     @Mock
     private ApplicationStatus applicationStatus;
@@ -57,7 +57,7 @@ public class RecordFileDownloaderTestV1 {
 
     @BeforeEach
     void before() throws Exception {
-        ConfigLoader.setAddressBookFile("./config/0.0.102.sample");
+        ConfigLoader.setAddressBookFile("./config/0.0.102-testnet");
         ConfigLoader.setCloudProvider(ConfigLoader.CLOUD_PROVIDER.LOCAL);
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
         ConfigLoader.setMaxDownloadItems(100);
@@ -67,7 +67,7 @@ public class RecordFileDownloaderTestV1 {
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
-                .from("recordstreamsV1")
+                .from("recordstreams", "v2")
                 .to(ConfigLoader.getBucketName(), "recordstreams");
 
         s3 = S3Mock.create(8001, s3Path.toString());
@@ -83,15 +83,39 @@ public class RecordFileDownloaderTestV1 {
     }
 
     @Test
-    @DisplayName("Downloaded and verified")
-    void download() throws Exception {
+    @DisplayName("Download and verify V1 files")
+    void downloadV1() throws Exception {
+        ConfigLoader.setAddressBookFile("./config/0.0.102.sample");
+        fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
+                .from("recordstreams", "v1")
+                .to(ConfigLoader.getBucketName(), "recordstreams");
         fileCopier.copy();
+
         downloader.download();
+
         verify(applicationStatus).updateLastValidDownloadedRecordFileName("2019-07-01T14:29:00.302068Z.rcd");
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
-                .allMatch(p -> Utility.isRecordFile(p.toString()));
+                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get("2019-07-01T14:13:00.317763Z.rcd"))
+                .contains(Paths.get("2019-07-01T14:29:00.302068Z.rcd"));
+    }
+
+    @Test
+    @DisplayName("Download and verify V2 files")
+    void downloadV2() throws Exception {
+        fileCopier.copy();
+        downloader.download();
+        verify(applicationStatus).updateLastValidDownloadedRecordFileName("2019-08-30T18_10_05.249678Z.rcd");
+        assertThat(Files.walk(validPath))
+                .filteredOn(p -> !p.toFile().isDirectory())
+                .hasSize(2)
+                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get("2019-08-30T18_10_05.249678Z.rcd"))
+                .contains(Paths.get("2019-08-30T18_10_00.419072Z.rcd"));
     }
 
     @Test
@@ -114,7 +138,9 @@ public class RecordFileDownloaderTestV1 {
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(1)
-                .allMatch(p -> Utility.isRecordFile(p.toString()));
+                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get("2019-08-30T18_10_00.419072Z.rcd"));
     }
 
     @Test
@@ -151,7 +177,7 @@ public class RecordFileDownloaderTestV1 {
     @DisplayName("Signature doesn't match file")
     void signatureMismatch() throws Exception {
         fileCopier.copy();
-        Files.walk(s3Path).filter(p -> Utility.isRecordSigFile(p.toString())).forEach(RecordFileDownloaderTestV1::corruptFile);
+        Files.walk(s3Path).filter(p -> Utility.isRecordSigFile(p.toString())).forEach(RecordFileDownloaderTest::corruptFile);
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
@@ -161,36 +187,42 @@ public class RecordFileDownloaderTestV1 {
     @Test
     @DisplayName("Doesn't match last valid hash")
     void hashMismatchWithPrevious() throws Exception {
+        final String filename = "2019-08-30T18_10_05.249678Z.rcd";
         when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
         when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
         when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("");
-        fileCopier.copy();
+        fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(2)
-                .allMatch(p -> Utility.isRecordFile(p.toString()));
+                .hasSize(1)
+                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get(filename));
     }
 
     @Test
     @DisplayName("Bypass previous hash mismatch")
     void hashMismatchWithBypass() throws Exception {
+        final String filename = "2019-08-30T18_10_05.249678Z.rcd";
         when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
         when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
         when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("2019-07-02T00:00:00.000000Z.rcd");
-        fileCopier.copy();
+        fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(2)
-                .allMatch(p -> Utility.isRecordFile(p.toString()));
+                .hasSize(1)
+                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get(filename));
     }
 
     @Test
     @DisplayName("Invalid or incomplete record file")
     void invalidRecord() throws Exception {
         fileCopier.copy();
-        Files.walk(s3Path).filter(p -> Utility.isRecordFile(p.toString())).forEach(RecordFileDownloaderTestV1::corruptFile);
+        Files.walk(s3Path).filter(p -> Utility.isRecordFile(p.toString())).forEach(RecordFileDownloaderTest::corruptFile);
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
