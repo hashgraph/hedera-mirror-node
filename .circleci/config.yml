@@ -45,6 +45,8 @@ jobs:
           command: ./mvnw install
       - store_test_results:
           path: target/surefire-reports
+      - store_artifacts:
+          path: target
       - save_cache:
           key: maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
           paths:
