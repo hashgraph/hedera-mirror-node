@@ -53,7 +53,7 @@ jobs:
           - ~/.m2
       - run:
           name: Upload Code Coverage to Coveralls
-          command: mvn coveralls:report -DrepoToken=$COVERALLS_REPO_TOKEN
+          command: ./mvnw coveralls:report -DrepoToken=$COVERALLS_REPO_TOKEN
       - run:
           name: Collecting mirror-node assets
           command: |
