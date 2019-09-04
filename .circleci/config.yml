@@ -52,6 +52,9 @@ jobs:
           paths:
           - ~/.m2
       - run:
+          name: Upload Code Coverage to Coveralls
+          command: mvn coveralls:report -DrepoToken=$COVERALLS_REPO_TOKEN
+      - run:
           name: Collecting mirror-node assets
           command: |
             mkdir -p /tmp/workspace/mirror-node/
@@ -63,6 +66,7 @@ jobs:
           root: *workspace_root
           paths:
             - mirror-node
+  
 
   release_artifacts:
     <<: *defaults

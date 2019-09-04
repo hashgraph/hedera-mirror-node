@@ -49,6 +49,8 @@
 		<protobuf.plugin.version>0.5.0</protobuf.plugin.version>
 		<protoc.version>3.5.1</protoc.version>
 		<jacoco.version>0.8.4</jacoco.version>
+		<coveralls.version>4.3.0</coveralls.version>
+		<jaxb.version>2.3.0</jaxb.version>
 	</properties>
 
 	<dependencies>
@@ -357,6 +359,20 @@
 						<jacoco-agent.destfile>target/jacoco.exec</jacoco-agent.destfile>
 					</systemPropertyVariables>
 				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.eluder.coveralls</groupId>
+				<artifactId>coveralls-maven-plugin</artifactId>
+				<version>${coveralls.version}</version>
+				<dependencies>
+					<!-- This is required because of an existing bug in coveralls-maven-plugin -->
+					<dependency>
+						<groupId>javax.xml.bind</groupId>
+						<artifactId>jaxb-api</artifactId>
+						<version>${jaxb.version}</version>
+					</dependency>
+				</dependencies>
 			</plugin>
 		</plugins>
 	</build>
