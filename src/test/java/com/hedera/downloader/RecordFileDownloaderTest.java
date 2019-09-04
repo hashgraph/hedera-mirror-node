@@ -84,7 +84,7 @@ public class RecordFileDownloaderTest {
     @Test
     @DisplayName("Download and verify V1 files")
     void downloadV1() throws Exception {
-        ConfigLoader.setAddressBookFile("./config/0.0.102.sample");
+        ConfigLoader.setAddressBookFile(Utility.getResource("0.0.102-test-v1").getAbsolutePath());
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from("recordstreams", "v1")
                 .to(ConfigLoader.getBucketName(), "recordstreams");

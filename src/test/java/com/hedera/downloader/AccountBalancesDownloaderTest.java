@@ -57,7 +57,7 @@ public class AccountBalancesDownloaderTest {
 
     @BeforeEach
     void before() throws Exception {
-        ConfigLoader.setAddressBookFile("./config/0.0.102.0.testnet.hedera.com-public.testnet");
+        ConfigLoader.setAddressBookFile("./config/0.0.102-testnet");
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
         ConfigLoader.setMaxDownloadItems(100);
 
@@ -85,11 +85,14 @@ public class AccountBalancesDownloaderTest {
     void downloadAndVerify() throws Exception {
         fileCopier.copy();
         downloader.download();
-        verify(applicationStatus).updateLastValidDownloadedBalanceFileName("2019-08-29T05_30_00.036937001Z_Balances.csv");
+        verify(applicationStatus).updateLastValidDownloadedBalanceFileName("2019-08-30T18_30_00.010147001Z_Balances.csv");
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
-                .allMatch(p -> Utility.isBalanceFile(p.toString()));
+                .allMatch(p -> Utility.isBalanceFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get("2019-08-30T18_15_00.016002001Z_Balances.csv"))
+                .contains(Paths.get("2019-08-30T18_30_00.010147001Z_Balances.csv"));
     }
 
     @Test
@@ -112,7 +115,9 @@ public class AccountBalancesDownloaderTest {
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(1)
-                .allMatch(p -> Utility.isBalanceFile(p.toString()));
+                .allMatch(p -> Utility.isBalanceFile(p.toString()))
+                .extracting(Path::getFileName)
+                .contains(Paths.get("2019-08-30T18_15_00.016002001Z_Balances.csv"));
     }
 
     @Test

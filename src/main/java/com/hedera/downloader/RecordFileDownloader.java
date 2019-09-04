@@ -55,6 +55,7 @@ public class RecordFileDownloader extends Downloader {
 			downloader.download();
 		}
 
+        log.info("Stop file found, stopping");
 		xfer_mgr.shutdownNow();
 	}
 
