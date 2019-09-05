@@ -21,8 +21,8 @@ package com.hedera.mirror.dataset;
  */
 
 import com.google.common.base.Stopwatch;
-import com.hedera.configloader.ConfigLoader;
-import com.hedera.databaseutilities.DatabaseUtilities;
+import com.hedera.mirror.config.ConfigLoader;
+import com.hedera.mirror.util.DatabaseUtilities;
 import com.hedera.mirror.exception.InvalidDatasetException;
 import com.hedera.mirror.util.TimestampConverter;
 import lombok.Getter;

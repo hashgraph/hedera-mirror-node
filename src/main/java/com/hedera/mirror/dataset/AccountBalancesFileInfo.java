@@ -24,7 +24,6 @@ import com.hedera.mirror.util.TimestampConverter;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
-import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.regex.Matcher;

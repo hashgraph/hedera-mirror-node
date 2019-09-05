@@ -29,7 +29,7 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import com.hedera.databaseutilities.ApplicationStatus;
+import com.hedera.mirror.util.ApplicationStatus;
 
 import lombok.extern.log4j.Log4j2;
 

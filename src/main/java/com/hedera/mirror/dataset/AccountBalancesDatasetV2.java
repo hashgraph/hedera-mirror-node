@@ -20,12 +20,11 @@ package com.hedera.mirror.dataset;
  * ‍
  */
 
-import com.hedera.configloader.ConfigLoader;
+import com.hedera.mirror.config.ConfigLoader;
 import com.hedera.mirror.exception.InvalidDatasetException;
 import com.hedera.mirror.util.TimestampConverter;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.logging.log4j.message.ParameterizedMessage;
 
 import javax.annotation.Nullable;
 import java.io.BufferedReader;
