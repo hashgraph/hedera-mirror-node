@@ -35,7 +35,8 @@ public class DownloadAndParseRecordFiles {
 
 	public static void main(String[] args) throws Exception {
 		RecordFileDownloader downloader = new RecordFileDownloader();
-
+		RecordFileParser recordFileParser = new RecordFileParser();
+		
 		while (true) {
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, stopping");
@@ -53,7 +54,7 @@ public class DownloadAndParseRecordFiles {
 			String pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
 	
 			if (pathName != null) {
-				RecordFileParser.parseNewFiles(pathName);
+				recordFileParser.parseNewFiles(pathName);
 			}
 
 			Uninterruptibles.sleepUninterruptibly(15, TimeUnit.MILLISECONDS);

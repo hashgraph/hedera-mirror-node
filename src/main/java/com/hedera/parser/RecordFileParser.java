@@ -51,7 +51,7 @@ import org.apache.commons.codec.binary.Hex;
 @Log4j2
 public class RecordFileParser {
 
-	private static ApplicationStatus applicationStatus;
+	protected ApplicationStatus applicationStatus;
 
 	public RecordFileParser() throws Exception {
 		applicationStatus = new ApplicationStatus();
@@ -68,7 +68,7 @@ public class RecordFileParser {
 	 * @return return boolean indicating method success
 	 * @throws Exception 
 	 */
-	static public boolean loadRecordFile(String fileName, String previousFileHash, String thisFileHash) throws Exception {
+	public boolean loadRecordFile(String fileName, String previousFileHash, String thisFileHash) throws Exception {
 
 		File file = new File(fileName);
 		String newFileHash = "";
@@ -190,7 +190,7 @@ public class RecordFileParser {
 	 * read and parse a list of record files
 	 * @throws Exception 
 	 */
-	static public void loadRecordFiles(List<String> fileNames) throws Exception {
+	public void loadRecordFiles(List<String> fileNames) throws Exception {
 		String prevFileHash = applicationStatus.getLastProcessedRecordHash();
 		Collections.sort(fileNames);
 		
@@ -210,7 +210,7 @@ public class RecordFileParser {
 		}
 	}
 
-	public static void parseNewFiles(String pathName) throws Exception {
+	public void parseNewFiles(String pathName) throws Exception {
 		log.debug( "Parsing record files from {}", pathName);
 		if (RecordFileLogger.start()) {
 
@@ -245,7 +245,7 @@ public class RecordFileParser {
 
 	public static void main(String[] args) throws Exception {
 		String pathName;
-		applicationStatus = new ApplicationStatus();
+		RecordFileParser recordFileParser = new RecordFileParser();
 
 		while (true) {
 			if (Utility.checkStopFile()) {
@@ -256,7 +256,7 @@ public class RecordFileParser {
 			pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
 
 			if (pathName != null) {
-				parseNewFiles(pathName);
+				recordFileParser.parseNewFiles(pathName);
 			}
 			Uninterruptibles.sleepUninterruptibly(15, TimeUnit.MILLISECONDS);
 		}
