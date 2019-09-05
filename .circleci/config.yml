@@ -45,10 +45,15 @@ jobs:
           command: ./mvnw install
       - store_test_results:
           path: target/surefire-reports
+      - store_artifacts:
+          path: target/site/jacoco/index.html
       - save_cache:
           key: maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
           paths:
           - ~/.m2
+      - run:
+          name: Upload Code Coverage to Coveralls
+          command: ./mvnw coveralls:report -DrepoToken=$COVERALLS_REPO_TOKEN
       - run:
           name: Collecting mirror-node assets
           command: |
@@ -61,6 +66,7 @@ jobs:
           root: *workspace_root
           paths:
             - mirror-node
+  
 
   release_artifacts:
     <<: *defaults
