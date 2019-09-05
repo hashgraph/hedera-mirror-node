@@ -42,8 +42,6 @@ docker/MirrorNodePostgresData/
 config/loggerStatus.json
 .env
 mirrordata/
-postgres/Done.txt
-postgres/TODO.TXT
 config/0.0.102
 MirrorNodeData/
 docker/stop

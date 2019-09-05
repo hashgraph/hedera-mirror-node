@@ -9,6 +9,7 @@ Restart=on-failure
 RestartSec=3
 Type=simple
 WorkingDirectory=/usr/lib/mirror-node
+LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target

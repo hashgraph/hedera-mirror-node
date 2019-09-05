@@ -62,6 +62,7 @@ jobs:
             mv target/config /tmp/workspace/mirror-node/
             mv target/lib /tmp/workspace/mirror-node/
             mv systemd /tmp/workspace/mirror-node/
+            mv scripts /tmp/workspace/mirror-node/
       - persist_to_workspace:
           root: *workspace_root
           paths:
