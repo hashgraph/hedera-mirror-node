@@ -40,7 +40,7 @@
 	<properties>
 		<flyway.version>5.2.4</flyway.version>
 		<hedera.protobuf.version>0.3.4</hedera.protobuf.version>
-		<hedera.sdk.version>0.5.0</hedera.sdk.version>
+		<hedera.sdk.version>0.5.2</hedera.sdk.version>
 		<junit.jupiter.version>5.5.1</junit.jupiter.version>
 		<junit.jupiter.platform.version>1.5.1</junit.jupiter.platform.version>
 		<log4j-version>2.8.2</log4j-version>
@@ -303,6 +303,9 @@
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.0.0-M3</version>
+				<configuration>
+					<excludedGroups>IntegrationTest</excludedGroups>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
