@@ -31,38 +31,37 @@ const utils = require('./utils.js');
 const createTransferLists = function (rows, arr) {
     // If the transaction has a transferlist (i.e. list of individual trasnfers, it 
     // will show up as separate rows. Combine those into a single transferlist for
-    // a given transaction_id
+    // a given consensus_ns (Note that there could be two records for the same
+    // transaction-id where one would pass and others could fail as duplicates)
     let transactions = {};
+    const epochSecondsDigits = 10; // ('' + (Math.round)(new Date().getTime() / 1000)).length
 
     for (let row of rows) {
-        // Construct a transaction id using format: shard.realm.num-sssssssssss-nnnnnnnnn
-        const epochSecondsDigits = 10; // ('' + (Math.round)(new Date().getTime() / 1000)).length
-        row.transaction_id = row.entity_shard + '.' +
-            row.entity_realm + '.' +
-            row.entity_num + '-' +
-            row.valid_start_ns.slice(0, epochSecondsDigits) + '-' +
-            row.valid_start_ns.slice(epochSecondsDigits);
-        row.node = row.node_shard + '.' + row.node_realm + '.' + row.node_num;
-        row.account = row.account_shard + '.' + row.account_realm + '.' + row.account_num;
+        if (!(row.consensus_ns in transactions)) {
+            transactions[row.consensus_ns] = {};
+            transactions[row.consensus_ns]['consensus_timestamp'] = utils.nsToSecNs(row['consensus_ns']);
+            transactions[row.consensus_ns]['valid_start_timestamp'] = utils.nsToSecNs(row['valid_start_ns']);
+            transactions[row.consensus_ns]['charged_tx_fee'] = Number(row['charged_tx_fee']);
+            transactions[row.consensus_ns]['id'] = row['id'];
+            transactions[row.consensus_ns]['memo_base64'] = utils.encodeBase64(row['memo']);
+            transactions[row.consensus_ns]['result'] = row['result'];
+            transactions[row.consensus_ns]['name'] = row['name'];
+            transactions[row.consensus_ns]['node'] =
+                row.node_shard + '.' + row.node_realm + '.' + row.node_num;
 
-        if (!(row.transaction_id in transactions)) {
-            transactions[row.transaction_id] = {};
-            transactions[row.transaction_id]['consensus_timestamp'] = utils.nsToSecNs(row['consensus_ns']);
-            transactions[row.transaction_id]['valid_start_timestamp'] = utils.nsToSecNs(row['valid_start_ns']);
-            transactions[row.transaction_id]['charged_tx_fee'] = Number(row['charged_tx_fee']);
-            transactions[row.transaction_id]['transaction_id'] = row['transaction_id'];
-            transactions[row.transaction_id]['transaction_ie'] = row['transaction_id2'];
-            transactions[row.transaction_id]['id'] = row['id'];
-            transactions[row.transaction_id]['memo_base64'] = utils.encodeBase64(row['memo']);
-            transactions[row.transaction_id]['result'] = row['result'];
-            transactions[row.transaction_id]['name'] = row['name'];
-            transactions[row.transaction_id]['node'] = row['node'];
+            // Construct a transaction id using format: shard.realm.num-sssssssssss-nnnnnnnnn
+            transactions[row.consensus_ns]['transaction_id'] =
+                row.entity_shard + '.' +
+                row.entity_realm + '.' +
+                row.entity_num + '-' +
+                row.valid_start_ns.slice(0, epochSecondsDigits) + '-' +
+                row.valid_start_ns.slice(epochSecondsDigits);
 
-            transactions[row.transaction_id].transfers = []
+            transactions[row.consensus_ns].transfers = []
         }
 
-        transactions[row.transaction_id].transfers.push({
-            account: row.account,
+        transactions[row.consensus_ns].transfers.push({
+            account: row.account_shard + '.' + row.account_realm + '.' + row.account_num,
             amount: Number(row.amount)
         });
     }
@@ -241,7 +240,8 @@ const getOneTransaction = function (req, res) {
         " where etrans.entity_shard = ?\n" +
         "   and  etrans.entity_realm = ?\n" +
         "   and  etrans.entity_num = ?\n" +
-        "   and  t.valid_start_ns = ?\n";
+        "   and  t.valid_start_ns = ?\n" +
+        " order by consensus_ns asc"; // In case of duplicate transactions, only the first succeeds
 
     const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(
         sqlQuery, sqlParams);
