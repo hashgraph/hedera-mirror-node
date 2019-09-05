@@ -1,6 +1,6 @@
 [![CircleCI](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master.svg?style=shield)](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master)
-![Coveralls github branch](https://img.shields.io/coveralls/github/hashgraph/hedera-mirror-node/master)
-![GitHub](https://img.shields.io/github/license/hashgraph/hedera-mirror-node)
+[![Coveralls github branch](https://img.shields.io/coveralls/github/hashgraph/hedera-mirror-node/master)](https://coveralls.io/github/hashgraph/hedera-mirror-node?branch=master)
+[![GitHub](https://img.shields.io/github/license/hashgraph/hedera-mirror-node)](LICENSE)
 
 # Beta Mirror Node
 
