@@ -39,43 +39,39 @@ import com.hedera.utilities.Utility;
 @Log4j2
 public class AccountBalancesDownloader extends Downloader {
 
-	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
-	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.BALANCE);
+	private final String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
+	private final String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.BALANCE);
 
 	public AccountBalancesDownloader() throws Exception {
-		Utility.createDirIfNotExists(validDir);
-		Utility.createDirIfNotExists(tmpDir);
+		Utility.ensureDirectory(validDir);
+		Utility.ensureDirectory(tmpDir);
 		Utility.purgeDirectory(tmpDir);
 	}
 
 	public static void main(String[] args) throws Exception {
 		AccountBalancesDownloader downloader = new AccountBalancesDownloader();
 
-		while (true) {
+		while (!Utility.checkStopFile()) {
+			downloader.download();
+		}
 
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found, stopping");
-				break;
+		log.info("Stop file found, stopping");
+		xfer_mgr.shutdownNow();
+	}
+
+	public void download() {
+		try {
+			if (ConfigLoader.getBalanceVerifySigs()) {
+				// balance files with sig verification
+				Map<String, List<File>> sigFilesMap = downloadSigFiles(DownloadType.BALANCE);
+
+				// Verify signature files and download corresponding files of valid signature files
+				verifySigsAndDownloadBalanceFiles(sigFilesMap);
+			} else {
+				downloadBalanceFiles();
 			}
-
-			try {
-				setupCloudConnection();
-
-				if (ConfigLoader.getBalanceVerifySigs()) {
-					// balance files with sig verification
-					HashMap<String, List<File>> sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
-					//Verify signature files and download corresponding files of valid signature files
-					
-					downloader.verifySigsAndDownloadBalanceFiles(sigFilesMap);
-				} else {
-					downloader.downloadBalanceFiles();
-				}
-
-				xfer_mgr.shutdownNow();
-
-			} catch (Exception e) {
-				log.error("Error downloading balance files", e);
-			}
+		} catch (Exception e) {
+			log.error("Error downloading balance files", e);
 		}
 	}
 

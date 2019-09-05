@@ -29,7 +29,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.*;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RecordFileDownloaderTest {
+public class AccountBalancesDownloaderTest {
 
     @Mock
     private ApplicationStatus applicationStatus;
@@ -53,7 +53,7 @@ public class RecordFileDownloaderTest {
     private Path validPath;
     private S3Mock s3;
     private FileCopier fileCopier;
-    private RecordFileDownloader downloader;
+    private AccountBalancesDownloader downloader;
 
     @BeforeEach
     void before() throws Exception {
@@ -61,19 +61,18 @@ public class RecordFileDownloaderTest {
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
         ConfigLoader.setMaxDownloadItems(100);
 
-        downloader = new RecordFileDownloader();
+        downloader = new AccountBalancesDownloader();
         downloader.applicationStatus = applicationStatus;
 
-        validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));
+        validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.BALANCE));
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
-                .from("recordstreams", "v2")
-                .to(ConfigLoader.getBucketName(), "recordstreams");
+                .from("accountBalances")
+                .to(ConfigLoader.getBucketName(), "accountBalances");
 
         s3 = S3Mock.create(8001, s3Path.toString());
         s3.start();
 
-        when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("");
-        when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("");
+        when(applicationStatus.getLastValidDownloadedBalanceFileName()).thenReturn("");
     }
 
     @AfterEach
@@ -82,39 +81,18 @@ public class RecordFileDownloaderTest {
     }
 
     @Test
-    @DisplayName("Download and verify V1 files")
-    void downloadV1() throws Exception {
-        ConfigLoader.setAddressBookFile(Utility.getResource("0.0.102-test-v1").getAbsolutePath());
-        fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
-                .from("recordstreams", "v1")
-                .to(ConfigLoader.getBucketName(), "recordstreams");
+    @DisplayName("Download and verify signatures")
+    void downloadAndVerify() throws Exception {
         fileCopier.copy();
-
         downloader.download();
-
-        verify(applicationStatus).updateLastValidDownloadedRecordFileName("2019-07-01T14:29:00.302068Z.rcd");
+        verify(applicationStatus).updateLastValidDownloadedBalanceFileName("2019-08-30T18_30_00.010147001Z_Balances.csv");
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .allMatch(p -> Utility.isBalanceFile(p.toString()))
                 .extracting(Path::getFileName)
-                .contains(Paths.get("2019-07-01T14:13:00.317763Z.rcd"))
-                .contains(Paths.get("2019-07-01T14:29:00.302068Z.rcd"));
-    }
-
-    @Test
-    @DisplayName("Download and verify V2 files")
-    void downloadV2() throws Exception {
-        fileCopier.copy();
-        downloader.download();
-        verify(applicationStatus).updateLastValidDownloadedRecordFileName("2019-08-30T18_10_05.249678Z.rcd");
-        assertThat(Files.walk(validPath))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(2)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
-                .extracting(Path::getFileName)
-                .contains(Paths.get("2019-08-30T18_10_05.249678Z.rcd"))
-                .contains(Paths.get("2019-08-30T18_10_00.419072Z.rcd"));
+                .contains(Paths.get("2019-08-30T18_15_00.016002001Z_Balances.csv"))
+                .contains(Paths.get("2019-08-30T18_30_00.010147001Z_Balances.csv"));
     }
 
     @Test
@@ -137,15 +115,15 @@ public class RecordFileDownloaderTest {
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(1)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
+                .allMatch(p -> Utility.isBalanceFile(p.toString()))
                 .extracting(Path::getFileName)
-                .contains(Paths.get("2019-08-30T18_10_00.419072Z.rcd"));
+                .contains(Paths.get("2019-08-30T18_15_00.016002001Z_Balances.csv"));
     }
 
     @Test
     @DisplayName("Missing signatures")
     void missingSignatures() throws Exception {
-        fileCopier.filterFiles("*.rcd").copy();
+        fileCopier.filterFiles("*Balances.csv").copy();
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
@@ -153,8 +131,8 @@ public class RecordFileDownloaderTest {
     }
 
     @Test
-    @DisplayName("Missing records")
-    void missingRecords() throws Exception {
+    @DisplayName("Missing balances")
+    void missingBalances() throws Exception {
         fileCopier.filterFiles("*_sig").copy();
         downloader.download();
         assertThat(Files.walk(validPath))
@@ -165,7 +143,7 @@ public class RecordFileDownloaderTest {
     @Test
     @DisplayName("Less than 2/3 signatures")
     void lessThanTwoThirdSignatures() throws Exception {
-        fileCopier.filterDirectories("record0.0.3").filterDirectories("record0.0.4").copy();
+        fileCopier.filterDirectories("balance0.0.3").filterDirectories("balance0.0.4").copy();
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
@@ -176,7 +154,7 @@ public class RecordFileDownloaderTest {
     @DisplayName("Signature doesn't match file")
     void signatureMismatch() throws Exception {
         fileCopier.copy();
-        Files.walk(s3Path).filter(p -> Utility.isRecordSigFile(p.toString())).forEach(RecordFileDownloaderTest::corruptFile);
+        Files.walk(s3Path).filter(p -> Utility.isBalanceSigFile(p.toString())).forEach(AccountBalancesDownloaderTest::corruptFile);
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
@@ -184,44 +162,10 @@ public class RecordFileDownloaderTest {
     }
 
     @Test
-    @DisplayName("Doesn't match last valid hash")
-    void hashMismatchWithPrevious() throws Exception {
-        final String filename = "2019-08-30T18_10_05.249678Z.rcd";
-        when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
-        when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
-        when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("");
-        fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
-        downloader.download();
-        assertThat(Files.walk(validPath))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(1)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
-                .extracting(Path::getFileName)
-                .contains(Paths.get(filename));
-    }
-
-    @Test
-    @DisplayName("Bypass previous hash mismatch")
-    void hashMismatchWithBypass() throws Exception {
-        final String filename = "2019-08-30T18_10_05.249678Z.rcd";
-        when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
-        when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
-        when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("2019-07-02T00:00:00.000000Z.rcd");
-        fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
-        downloader.download();
-        assertThat(Files.walk(validPath))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(1)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
-                .extracting(Path::getFileName)
-                .contains(Paths.get(filename));
-    }
-
-    @Test
-    @DisplayName("Invalid or incomplete record file")
-    void invalidRecord() throws Exception {
+    @DisplayName("Invalid or incomplete file")
+    void invalidBalanceFile() throws Exception {
         fileCopier.copy();
-        Files.walk(s3Path).filter(p -> Utility.isRecordFile(p.toString())).forEach(RecordFileDownloaderTest::corruptFile);
+        Files.walk(s3Path).filter(p -> Utility.isBalanceFile(p.toString())).forEach(AccountBalancesDownloaderTest::corruptFile);
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
@@ -229,7 +173,7 @@ public class RecordFileDownloaderTest {
     }
 
     @Test
-    @DisplayName("Error moving record to valid folder")
+    @DisplayName("Error moving file to valid folder")
     void errorMovingFile() throws Exception {
         fileCopier.copy();
         validPath.toFile().delete();
