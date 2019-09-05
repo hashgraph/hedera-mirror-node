@@ -4,7 +4,7 @@
 cd "$(dirname $0)/.."
 version=$(ls -1 -d "../"mirror-node-v* | tr '\n' '\0' | xargs -0 -n 1 basename | tail -1 | sed -e "s/mirror-node-//")
 if [ -z "${version}" ]; then
-    echo "Can find mirror-node-v* versioned parent directory. Unrecognized layout. Aborting"
+    echo "Can't find mirror-node-v* versioned parent directory. Unrecognized layout. Aborting"
     exit 1
 fi
 
@@ -53,7 +53,7 @@ sudo systemctl enable mirror-record-downloader.service
 sudo systemctl enable mirror-record-parser.service
 
 echo "Starting services"
-sudo rm "${usrlib}/stop"
+sudo rm -f "${usrlib}/stop"
 sudo systemctl start mirror-balance-downloader.service
 sudo systemctl start mirror-balance-parser.service
 sudo systemctl start mirror-record-downloader.service
