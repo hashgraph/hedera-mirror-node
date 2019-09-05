@@ -2,7 +2,7 @@
 
 # CD to parent directory containing scripts, lib, mirror-node.jar, etc.
 cd "$(dirname $0)/.."
-version=$(ls -1 -d "../"mirror-node-v* | tr '\n' '\0' | xargs -0 -n 1 basename | tail -1 | sed -e "s/mirror-node-//")
+version=$(ls -1 -d "../"mirror-node-[vb]* | tr '\n' '\0' | xargs -0 -n 1 basename | tail -1 | sed -e "s/mirror-node-//")
 if [ -z "${version}" ]; then
     echo "Can't find mirror-node-v* versioned parent directory. Unrecognized layout. Aborting"
     exit 1
