@@ -53,6 +53,16 @@ public class DatabaseUtilities {
                     .dataSource(dataSource)
                     .baselineOnMigrate(true)
                     .baselineVersion(MigrationVersion.fromVersion("0"))
+
+                    // Allow missing migrations without failing the overall migration.
+                    // This would allow the database to have a "V1.23" migration in it (before the product is 1.0-ready),
+                    // that gets removed by developers at a future point.
+                    // When the software is updated and no longer has V1.23 in it (bad migration file removed by dev),
+                    // but flyway sees a database that had V1.23 in it - ignore this issue and continue flyway migrations.
+                    // This allows development to more easily "fix" some bad initial migration files without resorting
+                    // to `flyway repair`.
+                    .ignoreMissingMigrations(true)
+
                     .placeholders(ImmutableMap.of(
                             "api-user", ConfigLoader.getApiUsername(),
                             "api-password", ConfigLoader.getApiPassword(),
