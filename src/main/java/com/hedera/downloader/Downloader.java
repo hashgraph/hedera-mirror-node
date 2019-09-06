@@ -444,6 +444,7 @@ public abstract class Downloader {
 				s3Client = AmazonS3ClientBuilder.standard()
 						.withRegion(ConfigLoader.getClientRegion())
 						.withClientConfiguration(clientConfiguration)
+						.withCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()))
 						.build();
 			} else {
 				s3Client = AmazonS3ClientBuilder.standard()
@@ -461,6 +462,7 @@ public abstract class Downloader {
 								new AwsClientBuilder.EndpointConfiguration(
 										"https://storage.googleapis.com", ConfigLoader.getClientRegion()))
 						.withClientConfiguration(clientConfiguration)
+						.withCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()))
 						.build();
 			} else {
 				s3Client = AmazonS3ClientBuilder.standard()
