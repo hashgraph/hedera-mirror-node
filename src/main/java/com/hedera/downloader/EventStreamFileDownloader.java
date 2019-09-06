@@ -22,7 +22,7 @@ package com.hedera.downloader;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
-import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.mirror.config.EventProperties;
 import com.hedera.parser.EventStreamFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
@@ -30,80 +30,56 @@ import com.hedera.utilities.Utility;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.scheduling.annotation.Scheduled;
 
+import javax.inject.Named;
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
+import java.nio.file.*;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Log4j2
+@Named
 public class EventStreamFileDownloader extends Downloader {
 
-	private static String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
-	private static String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.EVENTS);
-	private static File fileValidDir = new File(validDir);
-	private static ApplicationStatus applicationStatus;
+	private final String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
+	private final String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.EVENTS);
+	private final EventProperties eventProperties;
 
-	public EventStreamFileDownloader() throws Exception {
-		applicationStatus = new ApplicationStatus();
-		Utility.createDirIfNotExists(validDir);
-		Utility.createDirIfNotExists(tmpDir);
+	public EventStreamFileDownloader(EventProperties eventProperties) {
+		this.eventProperties = eventProperties;
+		Utility.ensureDirectory(validDir);
+		Utility.ensureDirectory(tmpDir);
 		Utility.purgeDirectory(tmpDir);
 	}
 
-	public static void downloadNewEventfiles(EventStreamFileDownloader downloader) {
-		setupCloudConnection();
-		if (Utility.checkStopFile()) {
-			log.info("Stop file found, exiting");
-			System.exit(0);
+	@Scheduled(fixedRateString = "${hedera.mirror.event.downloader.frequency:100}")
+	public void download() {
+		if (!eventProperties.isEnabled()) {
+			return;
 		}
 
-		HashMap<String, List<File>> sigFilesMap;
+		if (Utility.checkStopFile()) {
+			log.info("Stop file found");
+			return;
+		}
+
 		try {
-			sigFilesMap = downloader.downloadSigFiles(DownloadType.EVENT);
+			Map<String, List<File>> sigFilesMap = downloadSigFiles(DownloadType.EVENT);
 
 			if (Utility.checkStopFile()) {
-				xfer_mgr.shutdownNow();
 				log.info("Stop file found, exiting");
-				System.exit(0);
+				return;
 			}
 			
 			// Verify signature files and download .evts files of valid signature files
-			downloader.verifySigsAndDownloadEventStreamFiles(sigFilesMap);
-
-			if (validDir != null) {
-//				new Thread(() -> {
-					verifyValidFiles();
-//				}).start();
-			}
-
-			xfer_mgr.shutdownNow();
-
+			verifySigsAndDownloadEventStreamFiles(sigFilesMap);
+			verifyValidFiles();
 		} catch (Exception e) {
 			log.error("Error downloading and verifying new event files", e);
 		}
-	}
-
-	public static void main(String[] args) throws Exception {
-		if (Utility.checkStopFile()) {
-			log.info("Stop file found, exiting");
-			System.exit(0);
-		}
-
-		EventStreamFileDownloader downloader = new EventStreamFileDownloader();
-
-		while (true) {
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found, stopping");
-				break;
-			}
-			downloadNewEventfiles(downloader);
-		}
-		
 	}
 
 	/**
@@ -111,15 +87,14 @@ public class EventStreamFileDownloader extends Downloader {
 	 * (1) Sort .evts files by timestamp,
 	 * (2) Verify the .evts files to see if the file Hash matches prevFileHash
 	 *
-	 * @param validDir
 	 * @throws Exception 
 	 */
-	public static void verifyValidFiles() throws Exception {
+	private void verifyValidFiles() throws Exception {
 		String lastValidEventFileName = applicationStatus.getLastValidDownloadedEventFileName();
 		String lastValidEventFileHash = applicationStatus.getLastValidDownloadedEventFileHash();
 		
 		String lastValidEventFileName2 = lastValidEventFileName;
-		try (Stream<Path> pathStream = Files.walk(fileValidDir.toPath())) {
+		try (Stream<Path> pathStream = Files.walk(Paths.get(validDir))) {
 			List<String> fileNames = pathStream.filter(p -> Utility.isEventStreamFile(p.toString()))
 					.filter(p -> lastValidEventFileName2.isEmpty() ||
 							fileNameComparator.compare(p.toFile().getName(), lastValidEventFileName2) > 0)

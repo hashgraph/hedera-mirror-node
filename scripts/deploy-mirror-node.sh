@@ -12,7 +12,9 @@ usrlib=/usr/lib/mirror-node/
 ts=$(date -u +%s)
 upgrade=0
 
-if [ -d "${usrlib}" ]; then
+sudo mkdir -p /usr/etc/mirror-node "${usrlib}" /var/lib/mirror-node
+
+if [ -f "${usrlib}/mirror-node.jar" ]; then
     upgrade=1
     echo "Upgrading to ${version}"
 
@@ -20,41 +22,31 @@ if [ -d "${usrlib}" ]; then
     sudo touch "${usrlib}/stop"
     sleep 5
 
-    sudo systemctl stop mirror-balance-downloader.service
-    sudo systemctl stop mirror-balance-parser.service
-    sudo systemctl stop mirror-record-downloader.service
-    sudo systemctl stop mirror-record-parser.service
+    # Optionally stop these since some of these might not exist
+    sudo systemctl stop mirror-balance-downloader.service || true
+    sudo systemctl stop mirror-balance-parser.service || true
+    sudo systemctl stop mirror-record-downloader.service || true
+    sudo systemctl stop mirror-record-parser.service || true
+    sudo systemctl stop mirror-node.service || true
+    sudo rm -f /etc/systemd/systemd/mirror-*.service
 
     echo "Backing up binaries"
-    sudo mv "${usrlib}/lib" "${usrlib}/lib.${ts}.old"
+    sudo rm -rf "${usrlib}/lib"* "${usrlib}/logs" "${usrlib}/mirror-node.jar."*
     sudo mv "${usrlib}/mirror-node.jar" "${usrlib}/mirror-node.jar.${ts}.old"
 else
     echo "Fresh install of ${version}"
+    echo "Copying config (will need to be edited)"
+    cp -n config/* /usr/etc/mirror-node/
 fi
 
 echo "Copying binaries"
-sudo mkdir -p /usr/etc/mirror-node "${usrlib}" /var/lib/mirror-node
-sudo cp -R lib/ mirror-node.jar "${usrlib}"
-
-if [ ${upgrade} -eq 0 ]; then
-    echo "Copying config (will need to be edited)"
-    cp -n config/* /usr/etc/mirror-node/
-else
-    echo "Removing last version of binaries"
-    sudo rm -rf "${usrlib}/lib.${ts}.old" "${usrlib}/mirror-node.jar.${ts}.old"
-fi
+sudo cp mirror-node.jar "${usrlib}"
 
 echo "Setting up systemd services"
-sudo cp systemd/*mirror*.service /etc/systemd/system
+sudo cp scripts/*mirror*.service /etc/systemd/system
 sudo systemctl daemon-reload
-sudo systemctl enable mirror-balance-downloader.service
-sudo systemctl enable mirror-balance-parser.service
-sudo systemctl enable mirror-record-downloader.service
-sudo systemctl enable mirror-record-parser.service
+sudo systemctl enable mirror-node.service
 
 echo "Starting services"
 sudo rm -f "${usrlib}/stop"
-sudo systemctl start mirror-balance-downloader.service
-sudo systemctl start mirror-balance-parser.service
-sudo systemctl start mirror-record-downloader.service
-sudo systemctl start mirror-record-parser.service
+sudo systemctl start mirror-node.service

@@ -1,0 +1,13 @@
+logging:
+  level:
+    root: warn
+    com.hedera: info
+spring:
+  application:
+    name: hedera-mirror-node
+  flyway:
+    enabled: false
+  task:
+    scheduling:
+      pool:
+        size: 6

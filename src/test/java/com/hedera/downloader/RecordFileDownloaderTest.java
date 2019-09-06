@@ -23,6 +23,7 @@ package com.hedera.downloader;
 import com.hedera.FileCopier;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.mirror.config.RecordProperties;
 import com.hedera.utilities.Utility;
 import io.findify.s3mock.S3Mock;
 import org.apache.commons.io.FileUtils;
@@ -61,7 +62,7 @@ public class RecordFileDownloaderTest {
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
         ConfigLoader.setMaxDownloadItems(100);
 
-        downloader = new RecordFileDownloader();
+        downloader = new RecordFileDownloader(new RecordProperties());
         downloader.applicationStatus = applicationStatus;
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));

@@ -26,12 +26,15 @@ import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.filedelimiters.FileDelimiter;
+import com.hedera.mirror.config.EventProperties;
 import com.hedera.platform.Transaction;
 import com.hedera.utilities.Utility;
 
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
+import org.springframework.scheduling.annotation.Scheduled;
 
+import javax.inject.Named;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.File;
@@ -49,24 +52,28 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Log4j2
-public class EventStreamFileParser {
-
+@Named
+public class EventStreamFileParser implements FileParser {
 
 	private static Connection connect = null;
-
 	private static final Long PARENT_HASH_NULL = null;
 	private static final long PARENT_HASH_NOT_FOUND_MATCH = -2;
-
 
 	private enum LoadResult {
 		OK, STOP, ERROR
 	}
 
 	private static final String PARSED_DIR = "/parsedEventStreamFiles/";
-	private static ApplicationStatus applicationStatus;
+	private static final ApplicationStatus applicationStatus = new ApplicationStatus();
 
-	public EventStreamFileParser() throws Exception {
-		applicationStatus = new ApplicationStatus();	}
+	private final String pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
+	private final EventProperties eventProperties;
+
+	public EventStreamFileParser(EventProperties eventProperties) {
+		this.eventProperties = eventProperties;
+		Utility.ensureDirectory(pathName);
+	}
+
 	/**
 	 * Given a EventStream file name, read and parse and return as a list of service record pair
 	 *
@@ -76,7 +83,7 @@ public class EventStreamFileParser {
 	 * 		previous file hash
 	 * @throws Exception 
 	 */
-	static public LoadResult loadEventStreamFile(String fileName, String previousFileHash) throws Exception {
+	private LoadResult loadEventStreamFile(String fileName, String previousFileHash) throws Exception {
 
 		File file = new File(fileName);
 		String readPrevFileHash;
@@ -192,7 +199,7 @@ public class EventStreamFileParser {
 		return LoadResult.OK;
 	}
 
-	static boolean loadEvent(DataInputStream dis, MessageDigest md, boolean noTxs) throws IOException {
+	private boolean loadEvent(DataInputStream dis, MessageDigest md, boolean noTxs) throws IOException {
 		if (dis.readInt() != FileDelimiter.EVENT_STREAM_VERSION) {
 			log.error("EventStream format version doesn't match.");
 			return false;
@@ -285,7 +292,7 @@ public class EventStreamFileParser {
 	 * @param consensusOrder
 	 * @return
 	 */
-	static boolean storeEvent(long creatorId, long creatorSeq, long otherId, long otherSeq, long selfParentGen,
+	private boolean storeEvent(long creatorId, long creatorSeq, long otherId, long otherSeq, long selfParentGen,
 			long otherParentGen, byte[] selfParentHash, byte[] otherParentHash, int[] txCounts,
 			Instant timeCreated, byte[] signature, byte[] hash, Instant consensusTimeStamp, long consensusOrder) {
 		try {
@@ -361,7 +368,7 @@ public class EventStreamFileParser {
 	 * @return
 	 * @throws SQLException
 	 */
-	static long getIdForParent(byte[] hash, String name) throws SQLException {
+	private long getIdForParent(byte[] hash, String name) throws SQLException {
 		if (hash == null) {
 			return PARENT_HASH_NULL;
 		} else {
@@ -384,7 +391,7 @@ public class EventStreamFileParser {
 	}
 
 	/** read an Instant from a data stream */
-	static Instant readInstant(DataInput dis)
+	private Instant readInstant(DataInput dis)
 			throws IOException {
 		Instant time = Instant.ofEpochSecond(//
 				dis.readLong(), // from getEpochSecond()
@@ -392,14 +399,14 @@ public class EventStreamFileParser {
 		return time;
 	}
 
-	static byte[] readByteArray(DataInputStream dis, MessageDigest md)
+	private byte[] readByteArray(DataInputStream dis, MessageDigest md)
 			throws IOException {
 		int len = dis.readInt();
 		md.update(Utility.integerToBytes(len));
 		return readByteArrayOfLength(dis, len, md);
 	}
 
-	static byte[] readNullableByteArray(DataInputStream dis, MessageDigest md) throws IOException {
+	private byte[] readNullableByteArray(DataInputStream dis, MessageDigest md) throws IOException {
 		int len = dis.readInt();
 		md.update(Utility.integerToBytes(len));
 		if (len < 0) {
@@ -409,7 +416,7 @@ public class EventStreamFileParser {
 		}
 	}
 
-	private static byte[] readByteArrayOfLength(DataInputStream dis, int len, MessageDigest md) throws IOException {
+	private byte[] readByteArrayOfLength(DataInputStream dis, int len, MessageDigest md) throws IOException {
 		int checksum = dis.readInt();
 		md.update(Utility.integerToBytes(checksum));
 
@@ -433,7 +440,7 @@ public class EventStreamFileParser {
 	 * read and parse a list of EventStream files
 	 * @throws Exception 
 	 */
-	static public boolean loadEventStreamFiles(List<String> fileNames) throws Exception {
+	private boolean loadEventStreamFiles(List<String> fileNames) throws Exception {
 		
 		String prevFileHash = applicationStatus.getLastProcessedEventHash();
 		for (String name : fileNames) {
@@ -495,81 +502,55 @@ public class EventStreamFileParser {
 		return null;
 	}
 
-	public static boolean parseNewFiles(String pathName) throws Exception {
-		
-		log.info( "Parsing event files from {}", pathName);
-		if (pathName == null) {
-			return false;
-		}
-
-		File file = new File(pathName);
-		// if the path doesn't exist, and it denotes a file, return false to stop processing;
-		// if the path doesn't exist, and it denotes a path, we try to create the directories, and return false when creation fails
-		if (!file.exists()) {
-			if (file.isFile()) {
-				log.info("File {} does not exist", pathName);
-				return false;
-			} else if (!file.mkdirs()) {
-				log.info("Directory {} does not exist and cannot be created", pathName);
-				return false;
-			}
-		}
-
-		if (Utility.checkStopFile()) {
-			log.info("Stop file found, stopping");
-			return false;
-		}
-
-		connect = DatabaseUtilities.openDatabase(connect);
-
-		boolean result = true;
-		if (file.isFile()) {
-			log.info("Loading event file {}", pathName);
-			if (loadEventStreamFile(pathName, applicationStatus.getLastProcessedEventHash()) == LoadResult.STOP) {
-				result = false;
-			}
-		} else if (file.isDirectory()) { //if it's a directory
-
-			String[] files = file.list(); // get all files under the directory
-			Arrays.sort(files);           // sorted by name (timestamp)
-
-			// add director prefix to get full path
-			List<String> fullPaths = Arrays.asList(files).stream()
-					.filter(f -> Utility.isEventStreamFile(f))
-					.map(s -> file + "/" + s)
-					.collect(Collectors.toList());
-
-			log.info("Loading {} event files from directory {}", fullPaths.size(), pathName);
-
-			log.trace("Event files: {}", fullPaths);
-			result = loadEventStreamFiles(fullPaths);
-		} else {
-			log.error("Event file {} does not exist", pathName);
-		}
-
+	@Override
+	@Scheduled(fixedRateString = "${hedera.mirror.event.parser.frequency:100}")
+	public void parse() {
 		try {
-			connect = DatabaseUtilities.closeDatabase(connect);
-		} catch (SQLException e) {
-			log.error("Error closing database connection", e);
-		}
+			if (!eventProperties.isEnabled()) {
+				return;
+			}
 
-		return result;
-	}
-
-	public static void main(String[] args) throws Exception {
-		String pathName;
-
-		while (true) {
 			if (Utility.checkStopFile()) {
-				log.info("Stop file found, exiting");
-				System.exit(0);
+				log.info("Stop file found");
+				return;
 			}
 
-			pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
+			log.info("Parsing event files from {}", pathName);
+			File file = new File(pathName);
+			connect = DatabaseUtilities.openDatabase(connect);
 
-			if (pathName != null && !parseNewFiles(pathName)) {
-				break;
+			boolean result = true;
+			if (file.isFile()) {
+				log.info("Loading event file {}", pathName);
+				if (loadEventStreamFile(pathName, applicationStatus.getLastProcessedEventHash()) == LoadResult.STOP) {
+					result = false;
+				}
+			} else if (file.isDirectory()) { //if it's a directory
+
+				String[] files = file.list(); // get all files under the directory
+				Arrays.sort(files);           // sorted by name (timestamp)
+
+				// add director prefix to get full path
+				List<String> fullPaths = Arrays.asList(files).stream()
+						.filter(f -> Utility.isEventStreamFile(f))
+						.map(s -> file + "/" + s)
+						.collect(Collectors.toList());
+
+				log.info("Loading {} event files from directory {}", fullPaths.size(), pathName);
+
+				log.trace("Event files: {}", fullPaths);
+				result = loadEventStreamFiles(fullPaths);
+			} else {
+				log.error("Event file {} does not exist", pathName);
 			}
+
+			try {
+				connect = DatabaseUtilities.closeDatabase(connect);
+			} catch (SQLException e) {
+				log.error("Error closing database connection", e);
+			}
+		} catch (Exception e) {
+			log.error("Error parsing record files", e);
 		}
 	}
 }

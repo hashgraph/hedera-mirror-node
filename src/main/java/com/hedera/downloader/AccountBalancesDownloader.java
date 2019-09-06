@@ -23,44 +23,49 @@ package com.hedera.downloader;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.hedera.mirror.config.BalanceProperties;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
-import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
+import org.springframework.scheduling.annotation.Scheduled;
+
+import javax.inject.Named;
 
 @Log4j2
+@Named
 public class AccountBalancesDownloader extends Downloader {
 
 	private final String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
 	private final String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.BALANCE);
 
-	public AccountBalancesDownloader() throws Exception {
+	private final BalanceProperties balanceProperties;
+
+	public AccountBalancesDownloader(BalanceProperties balanceProperties) {
+		this.balanceProperties = balanceProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);
 		Utility.purgeDirectory(tmpDir);
 	}
 
-	public static void main(String[] args) throws Exception {
-		AccountBalancesDownloader downloader = new AccountBalancesDownloader();
-
-		while (!Utility.checkStopFile()) {
-			downloader.download();
-		}
-
-		log.info("Stop file found, stopping");
-		xfer_mgr.shutdownNow();
-	}
-
+	@Scheduled(fixedRateString = "${hedera.mirror.balance.downloader.frequency:100}")
 	public void download() {
 		try {
+			if (!balanceProperties.isEnabled()) {
+				return;
+			}
+
+			if (Utility.checkStopFile()) {
+				log.info("Stop file found");
+				return;
+			}
+
 			if (ConfigLoader.getBalanceVerifySigs()) {
 				// balance files with sig verification
 				Map<String, List<File>> sigFilesMap = downloadSigFiles(DownloadType.BALANCE);

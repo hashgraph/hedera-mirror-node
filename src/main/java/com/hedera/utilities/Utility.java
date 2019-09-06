@@ -675,21 +675,6 @@ public class Utility {
 		}
 	}
 
-	/**
-	 * return false if the directory doesn't exist and we fail to create it;
-	 * return true if the directory exists or we create it successfully
-	 *
-	 * @param path
-	 * @return
-	 */
-	public static boolean createDirIfNotExists(String path) {
-		File file = new File(path);
-		if (!file.exists()) {
-			return file.mkdirs();
-		}
-		return true;
-	}
-
 	public static void purgeDirectory(String dir) {
 		purgeDirectory(new File(dir));
 

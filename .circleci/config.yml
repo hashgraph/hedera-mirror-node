@@ -50,7 +50,7 @@ jobs:
             - maven-v1-
       - run:
           name: Running maven
-          command: ./mvnw install
+          command: ./mvnw package
       - store_test_results:
           path: target/surefire-reports
       - store_artifacts:
@@ -66,17 +66,14 @@ jobs:
           name: Collecting mirror-node assets
           command: |
             mkdir -p /tmp/workspace/mirror-node/
-            mv target/mirror-node.jar /tmp/workspace/mirror-node/
-            mv target/config /tmp/workspace/mirror-node/
-            mv target/lib /tmp/workspace/mirror-node/
-            mv systemd /tmp/workspace/mirror-node/
+            mv target/mirror-node-*.jar /tmp/workspace/mirror-node/mirror-node.jar
+            mv config /tmp/workspace/mirror-node/
             mv scripts /tmp/workspace/mirror-node/
             mv rest-api /tmp/workspace/mirror-node/
       - persist_to_workspace:
           root: *workspace_root
           paths:
             - mirror-node
-
 
   release_artifacts:
     <<: *defaults
