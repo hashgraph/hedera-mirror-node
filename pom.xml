@@ -4,7 +4,7 @@
 
 	<groupId>com.hedera</groupId>
 	<artifactId>mirror-node</artifactId>
-	<version>0.1-SNAPSHOT</version>
+	<version>0.2-SNAPSHOT</version>
 	<name>Hedera Mirror Node</name>
 	<description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
 	<ciManagement>
