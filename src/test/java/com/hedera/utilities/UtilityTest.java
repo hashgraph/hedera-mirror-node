@@ -134,7 +134,7 @@ public class UtilityTest {
 	private Utility getCut() throws SQLException { return new Utility(); }
 
 	@Test
-	@DisplayName("null")
+	@DisplayName("protobufKeyToHexIfEd25519OrNull null key")
 	public void protobufKeyToHexIfEd25519OrNull_Null() throws InvalidProtocolBufferException, SQLException {
 		final var result = getCut().protobufKeyToHexIfEd25519OrNull(null);
 
@@ -142,7 +142,7 @@ public class UtilityTest {
 	}
 
 	@Test
-	@DisplayName("valid")
+	@DisplayName("protobufKeyToHexIfEd25519OrNull valid ED25519 key")
 	public void protobufKeyToHexIfEd25519OrNull_Valid() throws InvalidProtocolBufferException, SQLException {
 		final var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
 		final var input = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decode(instr))).build();
@@ -153,7 +153,7 @@ public class UtilityTest {
 	}
 
 	@Test
-	@DisplayName("threshold key (null)")
+	@DisplayName("protobufKeyToHexIfEd25519OrNull threshold key")
 	public void protobufKeyToHexIfEd25519OrNull_ThresholdKey() throws InvalidProtocolBufferException, SQLException {
 		final var ks = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
 		final var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decode(ks))).build();
