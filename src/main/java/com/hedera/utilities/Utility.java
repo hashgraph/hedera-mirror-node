@@ -741,7 +741,7 @@ public class Utility {
 	 * @return ED25519 public key as a String in hex encoding, or null
 	 * @throws InvalidProtocolBufferException if the protobufKey is not a valid protobuf encoding of a Key (BasicTypes.proto)
 	 */
-	public @Nullable String protobufKeyToHexIfEd25519OrNull(@Nullable final byte[] protobufKey)
+	public static @Nullable String protobufKeyToHexIfEd25519OrNull(@Nullable final byte[] protobufKey)
 			throws InvalidProtocolBufferException {
 		if ((null == protobufKey) || (0 == protobufKey.length)) return null;
 

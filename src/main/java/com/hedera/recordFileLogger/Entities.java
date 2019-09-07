@@ -62,8 +62,7 @@ public class Entities {
     }
 
 	private static Connection connect = null;
-    final private Utility utility = new Utility();
-	
+
 	public Entities(Connection connect) throws SQLException {
 		Entities.connect = connect;
 		if (Entities.connect != null) {
@@ -159,7 +158,7 @@ public class Entities {
 			fieldCount += 1;
 			String ed25519PublicKeyHex = null;
 			try {
-				ed25519PublicKeyHex = utility.protobufKeyToHexIfEd25519OrNull(key);
+				ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
 			} catch (InvalidProtocolBufferException e) {
 				log.error("Invalid ED25519 key could not be translated to hex text for entity {}.{}.{}. Column will be nulled. {}",
 						shard, realm, num, e);
@@ -349,7 +348,7 @@ public class Entities {
     	} else {
 			String ed25519PublicKeyHex = null;
 			try {
-				ed25519PublicKeyHex = utility.protobufKeyToHexIfEd25519OrNull(key);
+				ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
 			} catch (InvalidProtocolBufferException e) {
 				log.error("Invalid ED25519 key could not be translated to hex text for entity {}.{}.{}. Column will be nulled. {}",
 						shard, realm, num, e);
