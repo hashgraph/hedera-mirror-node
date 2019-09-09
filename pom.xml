@@ -95,6 +95,12 @@
 			<groupId>com.hedera.hashgraph</groupId>
 			<artifactId>hedera-protobuf-java-api</artifactId>
 			<version>${hedera-protobuf.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.hedera.hashgraph</groupId>

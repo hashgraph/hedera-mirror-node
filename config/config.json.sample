@@ -19,6 +19,5 @@
   "persistClaims": false,
   "persistFiles": "ALL",
   "persistContracts": true,
-  "persistCryptoTransferAmounts": true,
-  "balanceVerifySigs": true
+  "persistCryptoTransferAmounts": true
 }

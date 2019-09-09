@@ -66,15 +66,11 @@ public class AccountBalancesDownloader extends Downloader {
 				return;
 			}
 
-			if (ConfigLoader.getBalanceVerifySigs()) {
-				// balance files with sig verification
-				Map<String, List<File>> sigFilesMap = downloadSigFiles(DownloadType.BALANCE);
+			// balance files with sig verification
+			Map<String, List<File>> sigFilesMap = downloadSigFiles(DownloadType.BALANCE);
 
-				// Verify signature files and download corresponding files of valid signature files
-				verifySigsAndDownloadBalanceFiles(sigFilesMap);
-			} else {
-				downloadBalanceFiles();
-			}
+			// Verify signature files and download corresponding files of valid signature files
+			verifySigsAndDownloadBalanceFiles(sigFilesMap);
 		} catch (Exception e) {
 			log.error("Error downloading balance files", e);
 		}
