@@ -80,7 +80,7 @@ public class ConfigLoader {
 	private static String recordFilesS3Location = "recordstreams/record";
 
 	//location of eventStream files on S3
-	private static String eventFilesS3Location = "eventstreams/events_";
+	private static String eventFilesS3Location = "eventsStreams/events_";
 
 	private static final long DEFAULT_SYSTEM_SHARD_NUM = 0L;
 	private static long systemShardNum = DEFAULT_SYSTEM_SHARD_NUM;

@@ -29,13 +29,15 @@ import java.util.List;
 import com.google.common.base.Stopwatch;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
-import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.fileWatcher.FileWatcher;
+import com.hedera.mirror.config.BalanceProperties;
 import com.hedera.mirror.dataset.AccountBalancesFileLoader;
 import com.hedera.utilities.Utility;
 
+import javax.inject.Named;
 import java.time.Instant;
 
+@Named
 public class BalanceFileLogger extends FileWatcher {
 
 	enum BalanceSelect {
@@ -80,20 +82,22 @@ public class BalanceFileLogger extends FileWatcher {
 	private static long fileSeconds = 0;
 	private static long fileNanos = 0;
 	private static File balanceFilePath = new File(ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE));
-	
-	public BalanceFileLogger(File pathToWatch) {
-		super(pathToWatch);
-	}
 
-	public static void main(String[] args) {
-		FileWatcher fileWatcher = new BalanceFileLogger(balanceFilePath);
-		fileWatcher.watch();
+	private BalanceProperties balanceProperties;
+
+	public BalanceFileLogger(BalanceProperties balanceProperties) {
+		super(balanceFilePath);
+		this.balanceProperties = balanceProperties;
 	}
 
 	@Override
 	public void onCreate() {
 		processLastBalanceFile();
 		processAllFilesForHistory();
+	}
+
+	protected boolean isEnabled() {
+		return balanceProperties.isEnabled();
 	}
 
 	private File getLatestBalanceFile() throws IOException {

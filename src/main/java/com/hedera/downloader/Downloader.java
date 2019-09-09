@@ -84,7 +84,7 @@ public abstract class Downloader {
 
 	public enum DownloadType {RCD, BALANCE, EVENT};
 
-	public Downloader() throws Exception {
+	public Downloader() {
 		applicationStatus = new ApplicationStatus();
 		bucketName = ConfigLoader.getBucketName();
 
@@ -435,6 +435,7 @@ public abstract class Downloader {
 		log.info("Shutting down");
 		if (xfer_mgr != null) {
 			xfer_mgr.shutdownNow();
+			xfer_mgr = null;
 		}
 	}
 

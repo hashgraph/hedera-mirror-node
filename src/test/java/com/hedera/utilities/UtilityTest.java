@@ -97,6 +97,13 @@ public class UtilityTest {
 	}
 
 	@Test
+	void getInstantFromFileNameWhenBalance() {
+		String name = "2019-08-30T18_15_00.016002001Z_Balances.csv";
+		Instant instant = Utility.getInstantFromFileName(name);
+		assertThat(instant).isEqualTo(Instant.parse("2019-08-30T18:15:00.016002001Z"));
+	}
+
+	@Test
 	void getInstantFromEventStreamFileNameWhenEvent() {
 		String name = "2019-07-25T19_57_21.217420Z.evts_sig";
 		Instant instant = Utility.getInstantFromFileName(name);

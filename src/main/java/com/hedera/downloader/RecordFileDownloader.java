@@ -22,6 +22,7 @@ package com.hedera.downloader;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.mirror.config.RecordProperties;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
@@ -29,7 +30,9 @@ import com.hedera.utilities.Utility;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.scheduling.annotation.Scheduled;
 
+import javax.inject.Named;
 import java.io.File;
 import java.nio.file.*;
 import java.util.*;
@@ -37,32 +40,34 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Log4j2
+@Named
 public class RecordFileDownloader extends Downloader {
 
 	private final String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
 	private final String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.RECORDS);
 
-	public RecordFileDownloader() throws Exception {
+	private final RecordProperties recordProperties;
+
+	public RecordFileDownloader(RecordProperties recordProperties) {
+		this.recordProperties = recordProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);
 		Utility.purgeDirectory(tmpDir);
 	}
 
-	public static void main(String[] args) throws Exception {
-		RecordFileDownloader downloader = new RecordFileDownloader();
-
-		while (!Utility.checkStopFile()) {
-			downloader.download();
-		}
-
-        log.info("Stop file found, stopping");
-		xfer_mgr.shutdownNow();
-	}
-
+	@Scheduled(fixedRateString = "${hedera.mirror.record.downloader.frequency:100}")
 	public void download() {
-		HashMap<String, List<File>> sigFilesMap;
 		try {
-			sigFilesMap = downloadSigFiles(DownloadType.RCD);
+			if (!recordProperties.isEnabled()) {
+				return;
+			}
+
+			if (Utility.checkStopFile()) {
+				log.info("Stop file found");
+				return;
+			}
+
+			Map<String, List<File>> sigFilesMap = downloadSigFiles(DownloadType.RCD);
 
 			// Verify signature files and download .rcd files of valid signature files
 			verifySigsAndDownloadRecordFiles(sigFilesMap);
