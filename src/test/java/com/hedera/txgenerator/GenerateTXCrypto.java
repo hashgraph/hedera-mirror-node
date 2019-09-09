@@ -254,17 +254,17 @@ public final class GenerateTXCrypto {
         Thread.sleep(6000);
         log.info("Making 3 crypto transfers");
         // make crypto transfers to force record file close
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
 
         // sleep 6s to allow record file to be written
         log.info("Sleeping 6s");
         Thread.sleep(6000);
         log.info("Making 3 crypto transfers");
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
 
         System.out.println("Done");
     }    

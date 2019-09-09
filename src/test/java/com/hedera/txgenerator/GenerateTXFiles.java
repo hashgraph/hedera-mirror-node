@@ -65,178 +65,6 @@ public final class GenerateTXFiles {
 
         Client client = ExampleHelper.createHederaClient();
         
-        logTitle("Crypto Create with defaults");
-        long initialBalance = 1000;
-        log.info("Input > Initial Balance {}", initialBalance);
-        long txFee = 10_000_000;
-        log.info("Input > TX fee {}", txFee);
-        String memo = "";
-        log.info("Input > Memo {}", memo);
-        long txValidDuration = 60;
-        log.info("Input > Transaction Valid Duration {}", txValidDuration);
-        
-        // Create a new account with minimal properties
-        AccountCreateTransaction tx = new AccountCreateTransaction(client)
-            // The only _required_ property here is `key`
-            .setKey(newKey.getPublicKey())
-            .setInitialBalance(1000)
-            .setTransactionFee(txFee)
-            .setTransactionValidDuration(Duration.ofSeconds(txValidDuration));
-
-        log.info("Output > Account ID {}", tx.executeForReceipt().getAccountId());
-
-        logTitle("Crypto Create with all parameters");
-        initialBalance = 2000;
-        log.info("Input > Initial Balance {}", initialBalance);
-        txFee = 20_000_000;
-        log.info("Input > TX fee {}", txFee);
-        long autoRenewSeconds = 120 * 24 * 60 * 60; // 120 days
-        log.info("Input > AutoRenew {} seconds", autoRenewSeconds );
-        memo = "Account Create memo";
-        log.info("Input > Memo {}", memo );
-        String proxy = "0.0.3";
-        log.info("Input > Proxy {}", proxy );
-        long receiveThreshold = 10_000;
-        log.info("Input > Receive Threshold {}", receiveThreshold );
-        long sendThreshold = 15_000;
-        log.info("Input > Send Threshold {}", sendThreshold );
-        boolean receiveSigRequired = true;
-        log.info("Input > Receiver Signature Required {}", receiveSigRequired );
-        txValidDuration = 65;
-        log.info("Input > Transaction Valid Duration {}", txValidDuration);
-        
-        // Create fully populated account
-        tx = new AccountCreateTransaction(client)
-                // The only _required_ property here is `key`
-                .setKey(newKey.getPublicKey())
-                .setInitialBalance(initialBalance)
-                .setTransactionFee(txFee)
-                .setAutoRenewPeriod(Duration.ofSeconds(autoRenewSeconds))
-                .setMemo(memo)
-                .setProxyAccountId(AccountId.fromString(proxy))
-                .setReceiveRecordThreshold(receiveThreshold)
-                .setReceiverSignatureRequired(true)
-                .setSendRecordThreshold(sendThreshold)
-                .setTransactionValidDuration(Duration.ofSeconds(txValidDuration));
-
-        var accountId = tx.sign(newKey).executeForReceipt().getAccountId();
-        log.info("Output > Account ID {}", accountId.toString());
-
-        // transfer crypto no memo
-        logTitle("Crypto Transfer no memo");
-        long transferAmount = 200;
-        log.info("Input > Transfer amount {}", transferAmount);
-        String transferTo = "0.0.99";
-        log.info("Input > Transfer to {}", transferTo);
-        txFee = 21_000_000;
-        log.info("Input > TX fee {}", txFee);
-        memo = "";
-        log.info("Input > memo {}", memo);
-        txValidDuration = 75;
-        log.info("Input > Transaction Valid Duration {}", txValidDuration);
-        
-        CryptoTransferTransaction txTransfer = new CryptoTransferTransaction(client)
-        		.addRecipient(AccountId.fromString(transferTo), transferAmount)
-        		.addSender(ExampleHelper.getOperatorId(), transferAmount)
-        		.setTransactionFee(txFee)
-        		.setMemo(memo)
-        		.setTransactionValidDuration(Duration.ofSeconds(txValidDuration));
-        
-        var receipt = txTransfer.executeForReceipt();
-        
-        // transfer crypto with memo
-        logTitle("Crypto Transfer with memo");
-        transferAmount = 300;
-        log.info("Input > Transfer amount {}", transferAmount);
-        transferTo = "0.0.98";
-        log.info("Input > Transfer to {}", transferTo);
-        txFee = 22_000_000;
-        log.info("Input > TX fee {}", txFee);
-        memo = "Crypto Transfer memo";
-        log.info("Input > memo {}", memo);
-        txValidDuration = 80;
-        log.info("Input > Transaction Valid Duration {}", txValidDuration);
-        
-        txTransfer = new CryptoTransferTransaction(client)
-        		.addRecipient(AccountId.fromString(transferTo), transferAmount)
-        		.addSender(ExampleHelper.getOperatorId(), transferAmount)
-        		.setTransactionFee(txFee)
-        		.setMemo(memo)
-        		.setTransactionValidDuration(Duration.ofSeconds(txValidDuration));
-        
-        receipt = txTransfer.executeForReceipt();
-        
-        // update account
-        logTitle("Crypto update");
-        autoRenewSeconds = oneDayOfSeconds * 5;
-        log.info("Input > Auto Renew Seconds {}", autoRenewSeconds);
-        var expirationTime = Instant.now().plusSeconds(oneDayOfSeconds * 6);
-        log.info("Input > Expiration Time {}", expirationTime.getEpochSecond());
-        memo = "Update account memo";
-        log.info("Input > memo {}", memo);
-        proxy = "0.0.5";
-        log.info("Input > Proxy {}", proxy );
-        receiveThreshold = 15_000;
-        log.info("Input > Receive Threshold {}", receiveThreshold );
-        sendThreshold = 17_000;
-        log.info("Input > Send Threshold {}", sendThreshold );
-//        boolean receiveSigRequired = true;
-//        log.info("Input > Receiver Signature Required {}", receiveSigRequired );
-        Ed25519PrivateKey updatedKey = Ed25519PrivateKey.generate();
-        log.info("Input > new Key {}", updatedKey.getPublicKey() );
-
-        txFee = 23_000_000;
-        log.info("Input > TX fee {}", txFee);
-        txValidDuration = 85;
-        log.info("Input > Transaction Valid Duration {}", txValidDuration);
-
-        receipt = new AccountCreateTransaction(client)
-                // The only _required_ property here is `key`
-                .setKey(newKey.getPublicKey())
-                .setInitialBalance(initialBalance)
-                .setTransactionFee(txFee)
-                .executeForReceipt();
-
-        var accountToUpdate = receipt.getAccountId();
-        
-        receipt = new AccountUpdateTransaction(client)
-        		.setAccountForUpdate(accountToUpdate)
-        		.setAutoRenewPeriod(Duration.ofSeconds(autoRenewSeconds))
-        		.setExpirationTime(expirationTime)
-        		.setMemo(memo)
-        		.setProxyAccount(AccountId.fromString(proxy))
-        		.setReceiveRecordThreshold(receiveThreshold)
-        		.setSendRecordThreshold(sendThreshold)
-        		.setKey(updatedKey.getPublicKey())
-        		.setTransactionFee(txFee)
-        		.setTransactionValidDuration(Duration.ofSeconds(txValidDuration))
-        		.sign(updatedKey)
-        		.sign(newKey)
-        		.executeForReceipt();
-        
-        // delete account
-        logTitle("Crypto delete");
-        log.info("Input > Account to delete {}", accountId.toString());
-        log.info("Input > Transfer to account {}", ExampleHelper.getOperatorId());
-        memo = "Delete account memo";
-        log.info("Input > memo {}", memo);
-        
-        txFee = 24_000_000;
-        log.info("Input > TX fee {}", txFee);
-        txValidDuration = 90;
-        log.info("Input > Transaction Valid Duration {}", txValidDuration);
-
-        receipt = new AccountDeleteTransaction(client)
-        		.setDeleteAccountId(accountId)
-        		.setTransferAccountId(ExampleHelper.getOperatorId())
-        		.setMemo(memo)
-        		.setTransactionFee(txFee)
-        		.setTransactionValidDuration(Duration.ofSeconds(txValidDuration))
-        		.sign(updatedKey)
-        		.executeForReceipt();
-        
-        //TODO: Account add claim x2
-        //TODO: Account delete claim
         
         logTitle("Create file");
         String fileContents = "Hedera hashgraph is great!";
@@ -244,11 +72,11 @@ public final class GenerateTXFiles {
         long duration = 2592000;
         log.info("Input > Duration {}",  duration);
         log.info("Input > Key {}", ExampleHelper.getOperatorKey().getPublicKey());
-        txFee = 100_000_000;
+        long txFee = 100_000_000;
         log.info("Input > Transaction Fee {}",  txFee);
-        memo = "File create memo";
+        String memo = "File create memo";
         log.info("Input > memo {}", memo);
-        txValidDuration = 95;
+        long txValidDuration = 95;
         log.info("Input > Transaction Valid Duration {}", txValidDuration);
         
         FileCreateTransaction txFile = new FileCreateTransaction(client).setExpirationTime(
@@ -308,7 +136,7 @@ public final class GenerateTXFiles {
         log.info("Input > File ID {}", fileId.toString());
         fileContents = "So good";
         log.info ("Input > file contents {}", fileContents);
-        expirationTime = Instant.now().plusSeconds(oneDayOfSeconds * 6);
+        Instant expirationTime = Instant.now().plusSeconds(oneDayOfSeconds * 6);
         log.info("Input > Expiration Time {}", expirationTime.getEpochSecond());
         memo = "File update memo";
         log.info("Input > memo {}", memo);
@@ -376,7 +204,7 @@ public final class GenerateTXFiles {
         
 		// Contract Create
         logTitle("Contract Create");
-        autoRenewSeconds = oneDayOfSeconds * 4;
+        long autoRenewSeconds = oneDayOfSeconds * 4;
         log.info("Input > Auto renew seconds {}",  autoRenewSeconds);
         long gas = 100_000_000;
         log.info("Input > Gas {}",  gas);
@@ -482,17 +310,17 @@ public final class GenerateTXFiles {
         Thread.sleep(6000);
         log.info("Making 3 crypto transfers");
         // make crypto transfers to force record file close
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
 
         // sleep 6s to allow record file to be written
         log.info("Sleeping 6s");
         Thread.sleep(6000);
         log.info("Making 3 crypto transfers");
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
-        client.transferCryptoTo(accountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
+        client.transferCryptoTo(AccountId.fromString("0.0.3"), 10_000);
 
         System.out.println("Done");
         
