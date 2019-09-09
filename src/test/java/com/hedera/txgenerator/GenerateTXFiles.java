@@ -34,8 +34,8 @@ import com.hedera.utilities.ExampleHelper;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
-public final class GenerateTX {
-    private GenerateTX() { }
+public final class GenerateTXFiles {
+    private GenerateTXFiles() { }
 
     /**
      * Generates sample transactions for the purpose of creating record files
@@ -90,8 +90,8 @@ public final class GenerateTX {
         log.info("Input > Initial Balance {}", initialBalance);
         txFee = 20_000_000;
         log.info("Input > TX fee {}", txFee);
-        long duration = 120 * 24 * 60 * 60; // 120 days
-        log.info("Input > Duration {} seconds", duration );
+        long autoRenewSeconds = 120 * 24 * 60 * 60; // 120 days
+        log.info("Input > AutoRenew {} seconds", autoRenewSeconds );
         memo = "Account Create memo";
         log.info("Input > Memo {}", memo );
         String proxy = "0.0.3";
@@ -111,7 +111,7 @@ public final class GenerateTX {
                 .setKey(newKey.getPublicKey())
                 .setInitialBalance(initialBalance)
                 .setTransactionFee(txFee)
-                .setAutoRenewPeriod(Duration.ofSeconds(duration))
+                .setAutoRenewPeriod(Duration.ofSeconds(autoRenewSeconds))
                 .setMemo(memo)
                 .setProxyAccountId(AccountId.fromString(proxy))
                 .setReceiveRecordThreshold(receiveThreshold)
@@ -168,7 +168,7 @@ public final class GenerateTX {
         
         // update account
         logTitle("Crypto update");
-        long autoRenewSeconds = oneDayOfSeconds * 5;
+        autoRenewSeconds = oneDayOfSeconds * 5;
         log.info("Input > Auto Renew Seconds {}", autoRenewSeconds);
         var expirationTime = Instant.now().plusSeconds(oneDayOfSeconds * 6);
         log.info("Input > Expiration Time {}", expirationTime.getEpochSecond());
@@ -189,9 +189,18 @@ public final class GenerateTX {
         log.info("Input > TX fee {}", txFee);
         txValidDuration = 85;
         log.info("Input > Transaction Valid Duration {}", txValidDuration);
+
+        receipt = new AccountCreateTransaction(client)
+                // The only _required_ property here is `key`
+                .setKey(newKey.getPublicKey())
+                .setInitialBalance(initialBalance)
+                .setTransactionFee(txFee)
+                .executeForReceipt();
+
+        var accountToUpdate = receipt.getAccountId();
         
         receipt = new AccountUpdateTransaction(client)
-        		.setAccountForUpdate(accountId)
+        		.setAccountForUpdate(accountToUpdate)
         		.setAutoRenewPeriod(Duration.ofSeconds(autoRenewSeconds))
         		.setExpirationTime(expirationTime)
         		.setMemo(memo)
@@ -232,7 +241,7 @@ public final class GenerateTX {
         logTitle("Create file");
         String fileContents = "Hedera hashgraph is great!";
         log.info ("Input > file contents {}", fileContents);
-        duration = 2592000;
+        long duration = 2592000;
         log.info("Input > Duration {}",  duration);
         log.info("Input > Key {}", ExampleHelper.getOperatorKey().getPublicKey());
         txFee = 100_000_000;
@@ -335,7 +344,7 @@ public final class GenerateTX {
         txDelete.executeForReceipt();
         
         // Contracts
-        ClassLoader cl = GenerateTX.class.getClassLoader();
+        ClassLoader cl = GenerateTXFiles.class.getClassLoader();
         Gson gson = new Gson();
         JsonObject jsonObject;
 

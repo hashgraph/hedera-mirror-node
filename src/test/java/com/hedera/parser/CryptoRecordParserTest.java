@@ -1,0 +1,312 @@
+package com.hedera.parser;
+
+import com.hedera.DBCryptoTransfers;
+import com.hedera.DBEntity;
+import com.hedera.DBHelper;
+import com.hedera.DBTransaction;
+
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import com.hedera.FileCopier;
+import com.hedera.configLoader.ConfigLoader;
+import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.hashgraph.sdk.account.AccountId;
+import com.hedera.hashgraph.sdk.account.AccountUpdateTransaction;
+import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
+import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
+import com.hedera.utilities.ExampleHelper;
+import com.hedera.utilities.Utility;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.File;
+import java.nio.file.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@TestMethodOrder(OrderAnnotation.class)
+@ExtendWith(MockitoExtension.class)
+public class CryptoRecordParserTest {
+
+    @TempDir
+    Path dataPath;
+
+    @TempDir
+    Path s3Path;
+
+    private Path validPath;
+    private FileCopier fileCopier;
+    private RecordFileParser recordFileParser;
+    private ApplicationStatus applicationStatus = new ApplicationStatus();
+
+    // test setup
+	private static File[] files;
+    @BeforeEach
+    void before() throws Exception {
+    }
+
+    @AfterEach
+    void after() {
+    }
+
+    @Test
+    @Tag("IntegrationTest")
+    @Order(1)
+    @DisplayName("Parse record files")
+    void parseRecordFiles() throws Exception {
+        ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
+        ConfigLoader.setMaxDownloadItems(100);
+
+        DBHelper.deleteDatabaseData();
+        
+        recordFileParser = new RecordFileParser();
+        recordFileParser.applicationStatus = applicationStatus;
+
+        validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));
+        
+    	fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
+                .from("recordstreams", "cryptoTransactions")
+                .to(validPath);
+    	
+        fileCopier.copy();
+        files = validPath.toFile().listFiles();
+        Arrays.sort(files);
+        recordFileParser.parseNewFiles(validPath.toString());
+		
+    }
+    @Test
+    @Tag("IntegrationTest")
+    @Order(2)
+    @DisplayName("Parse record files - check counts")
+    void parseRecordFilesCheckCounts() throws Exception {
+    	assertEquals(5, DBHelper.countRecordFiles());
+    	assertEquals(14, DBHelper.countTransactions());
+    	assertEquals(9, DBHelper.countEntities());
+    	assertEquals(0, DBHelper.countContractResult());
+    	assertEquals(60, DBHelper.countCryptoTransferLists());
+    	assertEquals(0, DBHelper.countLiveHashes());
+    }
+        
+    @Test
+    @Tag("IntegrationTest")
+    @Order(2)
+    @DisplayName("Parse record files - check application status")
+    void parseRecordFilesCheckApplicationStatus() throws Exception {
+    	assertEquals("fd6f669c574a6661fe70c420a1a170ef583559fd949598706950b14403d1b64aec4d1becb149673e17817971f17465db", applicationStatus.getLastProcessedRecordHash());
+    }
+
+    @Test
+    @Tag("IntegrationTest")
+    @Order(2)
+    @DisplayName("Parse record files - check simple crypto create")
+    void parseRecordFilesCheckCryptoCreateSimple() throws Exception {
+    	// connect to database, read data, assert values
+    	long nodeAccount = 3;
+    	String memo = "";
+    	String transactionType = "CRYPTOCREATEACCOUNT";
+    	String result = "SUCCESS";
+    	long consensusSeconds = 1568033824;
+    	long consensusNanos = 458639000;
+    	long payerAccount = 2;
+    	long txFee = 8404260;
+    	long initialBalance = 1000;
+    	long newAccount = 1001;
+    	String recordFile = files[0].getName();
+    	long validStartNS = 1568033813854179000L;
+    	long consensusNS = 1568033824458639000L;
+    			
+    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNS);
+    	assertEquals(3, DBCryptoTransfers.checkCount(transaction.id));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -8404260));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 507679));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 7896581));
+
+    	// check entity
+    	DBEntity createdAccount = new DBEntity();
+    	createdAccount.getEntityDetails(transaction.cudEntity);
+    	assertEquals(2592000, createdAccount.autoRenewPeriod);
+    	assertEquals(0, createdAccount.proxyAccountNum);
+    	assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.key);
+    	assertEquals(1001, createdAccount.entityNum);
+    	assertEquals("account", createdAccount.entityType);
+    	//TODO: assertEquals(10000, createdAccount.receiveRecordThreshold);
+    	//TODO: assertEquals(15000, createdAccount.sendRecordThreshold);
+    	//TODO: assertEquals(true, createdAccount.receiverSignatureRequired);
+    }
+
+    @Test
+    @Tag("IntegrationTest")
+    @Order(2)
+    @DisplayName("Parse record files - check complex crypto create")
+    void parseRecordFilesCheckCryptoCreateComplex() throws Exception {
+    	// connect to database, read data, assert values
+    	//TODO: Transaction Valid Duration 65
+    	long nodeAccount = 3;
+    	String memo = "Account Create memo";
+    	String transactionType = "CRYPTOCREATEACCOUNT";
+    	String result = "SUCCESS";
+    	long consensusSeconds = 1568033825;
+    	long consensusNanos = 587673001;
+    	long payerAccount = 2;
+    	long txFee = 13777682;
+    	long initialBalance = 2000;
+    	long newAccount = 1002;
+    	String recordFile = files[1].getName();
+    	long validStartNS = 1568033815528678000L;
+    	long consensusNS = 1568033825587673001L;
+    			
+    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNS);
+    	assertEquals(3, DBCryptoTransfers.checkCount(transaction.id));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -13777682));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 525706));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 13251976));
+    	
+    	// check entity
+    	DBEntity createdAccount = new DBEntity();
+    	createdAccount.getEntityDetails(transaction.cudEntity);
+    	assertEquals(10368000, createdAccount.autoRenewPeriod);
+    	assertEquals(3, createdAccount.proxyAccountNum);
+    	assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.key);
+    	assertEquals(1002, createdAccount.entityNum);
+    	assertEquals("account", createdAccount.entityType);
+    	//TODO: assertEquals(10000, createdAccount.receiveRecordThreshold);
+    	//TODO: assertEquals(15000, createdAccount.sendRecordThreshold);
+    	//TODO: assertEquals(true, createdAccount.receiverSignatureRequired);
+    }
+
+    @Test
+    @Tag("IntegrationTest")
+    @Order(2)
+    @DisplayName("Parse record files - crypto transfer no memo")
+    void parseRecordFilesCheckCryptoTransferNoMemo() throws Exception {
+    	// connect to database, read data, assert values
+    	//TODO: Transaction Valid Duration 65
+    	long nodeAccount = 3;
+    	String memo = "";
+    	String transactionType = "CRYPTOTRANSFER";
+    	String result = "SUCCESS";
+    	long consensusSeconds = 1568033826;
+    	long consensusNanos = 590149000;
+    	long payerAccount = 2;
+    	long txFee = 84055;
+    	long initialBalance = 0;
+    	long newAccount = 0;
+    	String recordFile = files[1].getName();
+    	long validStartNS = 1568033816554155000L;
+    	long consensusNS = 1568033826590149000L;
+    			
+    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNS);
+    	assertEquals(5, DBCryptoTransfers.checkCount(transaction.id));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -84055));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 5126));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 78929));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 99, 200));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -200));
+    }
+
+    @Test
+    @Tag("IntegrationTest")
+    @Order(2)
+    @DisplayName("Parse record files - crypto transfer with memo")
+    void parseRecordFilesCheckCryptoTransferWithMemo() throws Exception {
+    	// connect to database, read data, assert values
+    	//TODO: Transaction Valid Duration 65
+    	long nodeAccount = 3;
+    	String memo = "Crypto Transfer memo";
+    	String transactionType = "CRYPTOTRANSFER";
+    	String result = "SUCCESS";
+    	long consensusSeconds = 1568033827;
+    	long consensusNanos = 588110000;
+    	long payerAccount = 2;
+    	long txFee = 84481;
+    	long initialBalance = 0;
+    	long newAccount = 0;
+    	String recordFile = files[1].getName();
+    	long validStartNS = 1568033817572140000L;
+    	long consensusNS = 1568033827588110000L;
+    			
+    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNS);
+    	assertEquals(5, DBCryptoTransfers.checkCount(transaction.id));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -84481));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 5156));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 79325));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 300));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -300));
+    }
+    @Test
+    @Tag("IntegrationTest")
+    @Order(2)
+    @DisplayName("Parse record files - crypto update")
+    void parseRecordFilesCheckCryptoUpdate() throws Exception {
+    	// connect to database, read data, assert values
+    	//TODO: Transaction Valid Duration 65
+    	long nodeAccount = 3;
+    	String memo = "Update account memo";
+    	String transactionType = "CRYPTOUPDATEACCOUNT";
+    	String result = "SUCCESS";
+    	long consensusSeconds = 1568033829;
+    	long consensusNanos = 664529000;
+    	long payerAccount = 2;
+    	long txFee = 410373;
+    	long initialBalance = 0;
+    	long updAccount = 1003;
+    	String recordFile = files[1].getName();
+    	long validStartNS = 1568033819609412000L;
+    	long consensusNS = 1568033829664529000L;
+    			
+    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, updAccount, recordFile, consensusNS);
+
+        assertEquals(3, DBCryptoTransfers.checkCount(transaction.id));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -410373));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 12047));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 398326));
+
+//        Ed25519PrivateKey updatedKey = Ed25519PrivateKey.generate();
+//        autoRenewSeconds = oneDayOfSeconds * 5;
+//        var expirationTime = Instant.now().plusSeconds(oneDayOfSeconds * 6);
+//        proxy = "0.0.5";
+    	// check entity
+    	DBEntity updatedAccount = new DBEntity();
+    	updatedAccount.getEntityDetails(transaction.cudEntity);
+    	assertEquals(432000, updatedAccount.autoRenewPeriod);
+    	assertEquals(1568552229, updatedAccount.expiryTimeSeconds);
+    	assertEquals(599705000, updatedAccount.expiryTimeNanos);
+    	assertEquals(1568552229599705000L, updatedAccount.expiryTimeNs);
+    	assertEquals(5, updatedAccount.proxyAccountNum);
+    	assertEquals("1220481d7771e05d9b4099f19c24d4fe361e01584d48979a8f02ff286cf36d61485e", updatedAccount.key);
+    	assertEquals(1003, updatedAccount.entityNum);
+    	assertEquals("account", updatedAccount.entityType);
+    	//TODO: assertEquals(10000, updatedAccount.receiveRecordThreshold);
+    	//TODO: assertEquals(15000, updatedAccount.sendRecordThreshold);
+    	//TODO: assertEquals(true, updatedAccount.receiverSignatureRequired);
+
+    }
+}
