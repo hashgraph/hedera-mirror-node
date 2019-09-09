@@ -2,7 +2,7 @@
 
 ## Record files
 
-* Recordstream files that have successfully been downloaded and parsed will be moved to `"downloadToDir"/recordstreams/parsedRecordFiles`
+Recordstream files that have successfully been downloaded and parsed will be moved to `"downloadToDir"/recordstreams/parsedRecordFiles`
 
 ## Known issue [Record downloader stops working with "Unable to connect to database" error](https://github.com/hashgraph/hedera-mirror-node/issues/197)
 
