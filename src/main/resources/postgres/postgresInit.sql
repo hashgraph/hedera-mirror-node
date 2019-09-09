@@ -1,26 +1,15 @@
 -- Change the values below if you are not installing via Docker (environment variable values come from .env file)
 
 -- name of the database
-\set db_name 'hederamirror'
+\set db_name 'mirror_node'
 --username
-\set db_user 'hederamirror'
+\set db_user 'mirror_node'
 --user password
-\set db_password 'mysecretpassword'
---owner of the database (usually postgres)
-\set db_owner 'postgres'
+\set db_password 'mirror_node_pass'
+\set db_owner 'mirror_node'
 
-CREATE DATABASE :db_name
-    WITH
-    OWNER = :db_owner
-    CONNECTION LIMIT = -1;
+create user :db_user with login createrole password :'db_password';
 
-CREATE USER :db_user WITH
-    LOGIN
-    NOCREATEDB
-    NOCREATEROLE
-    NOINHERIT
-    NOREPLICATION
-    CONNECTION LIMIT -1
-    PASSWORD ':db_password';
+create database :db_name with owner :db_owner;
 
 \c :db_name

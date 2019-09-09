@@ -156,12 +156,12 @@ Note: Changes to this file while downloading or processing is taking place may b
 | addressBookFile | `"./config/0.0.102"` | The location of the address book file file |
 | accountBalancesS3Location | `"accountBalances/balance"` | The location of the account balances files in the cloud bucket |
 | recordFilesS3Location | `"recordstreams/record"` | The location of the record files in the cloud bucket |
-| dbName | `"postgres"` | The name of the database |
-| dbUrl | `"jdbc:postgresql://localhost:5433/postgres"` | The connection string to access the database |
-| dbUsername | `"postgres"` | The username to access the database |
-| dbPassword | `"mysecretpassword"` | The password to access the database |
-| apiUsername | `"api"` | The database user for the REST API |
-| apiPassword | `"mysecretpassword"` | The password for the REST API user |
+| dbName | `"mirror_node"` | The name of the database |
+| dbUrl | `"jdbc:postgresql://localhost:5432/mirror_node"` | The connection string to access the database |
+| dbUsername | `"mirror_node"` | The username to access the database |
+| dbPassword | `"mirror_node_pass"` | The password to access the database |
+| apiUsername | `"mirror_api"` | The database user for the REST API |
+| apiPassword | `"mirror_api_pass"` | The password for the REST API user |
 | maxDownloadItems | `0` | The maximum number of new files to download at a time, set to `0` in production, change to `10` or other low number for testing or catching up with a large number of files. |
 | persistClaims | `false` | Determines whether claim data is persisted to the database or not |
 | persistFiles | `"ALL"` | Determines whether file data is persisted to the database or not, can be set to `ALL`, `NONE` or `SYSTEM`. `SYSTEM` means only files with a file number lower than `1000` will be persisted |
@@ -200,7 +200,9 @@ Flyway (https://flywaydb.org/getstarted/) is used to manage the database schema.
 
 All database scripts reside in `src/main/resources/postgres`.
 
-`postgresInit.sql` should be used to initialise the database and owner. Please edit the file with usernames, passwords, etc... you wish to use.
+`postgresInit.sql` should be used to initialise the database and owner.
+- Edit the file with usernames, passwords, etc... you wish to use.
+- Run the script as a DB admin user: `psql postgres -f src/main/resources/postgres/postgresInit.sql`
 
 Then flyway should be used to build the initial set of tables, and apply any changes. Those are determined by files names `Vx.x__`.
 Note: The `Vx.x` scripts use variables which you should set prior to running the scripts.
@@ -251,9 +253,9 @@ You can also unittest using jest by using `npm test`.
 example `.env` file:
 
 ```TEXT
-DB_USER=api
-DB_PASS=apipass
-DB_NAME=postgres
+DB_USER=mirror_api
+DB_PASS=mirror_api_pass
+DB_NAME=mirror_node
 # This is the port the REST API will listen onto
 PORT=5551
 # server hosting the database
