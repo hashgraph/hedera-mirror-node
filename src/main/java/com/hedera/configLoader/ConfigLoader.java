@@ -109,8 +109,6 @@ public class ConfigLoader {
 
     private static Dotenv dotEnv = Dotenv.configure().ignoreIfMissing().load();
 
-	private static boolean bBalanceVerifySigs = false;
-
 	private static String configSavePath = "./config/config.json";
 	
 	private static JsonObject configJsonObject;
@@ -247,12 +245,6 @@ public class ConfigLoader {
 			if (configJsonObject.has("persistCryptoTransferAmounts")) {
 				persistCryptoTransferAmounts = configJsonObject.get("persistCryptoTransferAmounts").getAsBoolean();
 			}
-
-
-			if (configJsonObject.has("balanceVerifySigs")) {
-				bBalanceVerifySigs = configJsonObject.get("balanceVerifySigs").getAsBoolean();
-			}
-
 		} catch (FileNotFoundException ex) {
 			log.error("Cannot load configuration from {}", configSavePath, ex);
 		}
@@ -399,9 +391,6 @@ public class ConfigLoader {
 	}
 	public static boolean getPersistCryptoTransferAmounts() {
 		return persistCryptoTransferAmounts;
-	}
-	public static boolean getBalanceVerifySigs() {
-		return bBalanceVerifySigs;
 	}
 
 	/***
