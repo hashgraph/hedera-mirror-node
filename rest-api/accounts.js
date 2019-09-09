@@ -222,7 +222,7 @@ const getOneAccount = function (req, res) {
     '      select distinct t.consensus_ns\n' +
     '       from t_transactions t\n' +
     '       join t_transaction_results tr on t.fk_result_id = tr.id\n' +
-    '       join t_cryptotransferlists ctl on t.id = ctl.fk_trans_id\n' +
+    '       join t_cryptotransferlists ctl on t.consensus_ns = ctl.consensus_timestamp\n' +
     '       join t_entities eaccount on eaccount.id = ctl.account_id\n' +
     '       where ' +
             [accountQuery, tsQuery, resultTypeQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
