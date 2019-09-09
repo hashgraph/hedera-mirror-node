@@ -28,11 +28,6 @@ import com.hedera.DBTransaction;
 import com.hedera.FileCopier;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.ApplicationStatus;
-import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.hashgraph.sdk.account.AccountUpdateTransaction;
-import com.hedera.hashgraph.sdk.account.CryptoTransferTransaction;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
-import com.hedera.utilities.ExampleHelper;
 import com.hedera.utilities.Utility;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,11 +40,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.nio.file.*;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @TestMethodOrder(OrderAnnotation.class)
@@ -156,7 +150,10 @@ public class CryptoRecordParserTest {
     	assertEquals(0, createdAccount.proxyAccountNum);
     	assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.key);
     	assertEquals(1001, createdAccount.entityNum);
+    	assertEquals(0, createdAccount.entityShard);
+    	assertEquals(0, createdAccount.entityRealm);
     	assertEquals("account", createdAccount.entityType);
+    	assertFalse(createdAccount.deleted);
     	//TODO: assertEquals(10000, createdAccount.receiveRecordThreshold);
     	//TODO: assertEquals(15000, createdAccount.sendRecordThreshold);
     	//TODO: assertEquals(true, createdAccount.receiverSignatureRequired);
@@ -196,7 +193,10 @@ public class CryptoRecordParserTest {
     	assertEquals(3, createdAccount.proxyAccountNum);
     	assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.key);
     	assertEquals(1002, createdAccount.entityNum);
+    	assertEquals(0, createdAccount.entityShard);
+    	assertEquals(0, createdAccount.entityRealm);
     	assertEquals("account", createdAccount.entityType);
+    	assertFalse(createdAccount.deleted);
     	//TODO: assertEquals(10000, createdAccount.receiveRecordThreshold);
     	//TODO: assertEquals(15000, createdAccount.sendRecordThreshold);
     	//TODO: assertEquals(true, createdAccount.receiverSignatureRequired);
@@ -289,10 +289,6 @@ public class CryptoRecordParserTest {
     	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 12047));
     	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 398326));
 
-//        Ed25519PrivateKey updatedKey = Ed25519PrivateKey.generate();
-//        autoRenewSeconds = oneDayOfSeconds * 5;
-//        var expirationTime = Instant.now().plusSeconds(oneDayOfSeconds * 6);
-//        proxy = "0.0.5";
     	// check entity
     	DBEntity updatedAccount = new DBEntity();
     	updatedAccount.getEntityDetails(transaction.cudEntity);
@@ -303,10 +299,58 @@ public class CryptoRecordParserTest {
     	assertEquals(5, updatedAccount.proxyAccountNum);
     	assertEquals("1220481d7771e05d9b4099f19c24d4fe361e01584d48979a8f02ff286cf36d61485e", updatedAccount.key);
     	assertEquals(1003, updatedAccount.entityNum);
+    	assertEquals(0, updatedAccount.entityShard);
+    	assertEquals(0, updatedAccount.entityRealm);
     	assertEquals("account", updatedAccount.entityType);
+    	assertFalse(updatedAccount.deleted);
     	//TODO: assertEquals(10000, updatedAccount.receiveRecordThreshold);
     	//TODO: assertEquals(15000, updatedAccount.sendRecordThreshold);
     	//TODO: assertEquals(true, updatedAccount.receiverSignatureRequired);
 
+    }
+    @Test
+    @Tag("IntegrationTest")
+    @Order(2)
+    @DisplayName("Parse record files - crypto delete")
+    void parseRecordFilesCheckCryptoDelete() throws Exception {
+    	// connect to database, read data, assert values
+    	//TODO: Transaction Valid Duration 65
+    	long nodeAccount = 3;
+    	String memo = "Delete account memo";
+    	String transactionType = "CRYPTODELETE";
+    	String result = "SUCCESS";
+    	long consensusSeconds = 1568033831;
+    	long consensusNanos = 679017000;
+    	long payerAccount = 2;
+    	long txFee = 6813352;
+    	long initialBalance = 0;
+    	long updAccount = 1004;
+    	String recordFile = files[2].getName();
+    	long validStartNS = 1568033821644081000L;
+    	long consensusNS = 1568033831679017000L;
+    			
+    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, updAccount, recordFile, consensusNS);
+
+        assertEquals(5, DBCryptoTransfers.checkCount(transaction.id));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -6813352));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 265394));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 6547958));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 1004, -2000));
+    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, 2000));
+
+    	// check entity
+    	DBEntity updatedAccount = new DBEntity();
+    	updatedAccount.getEntityDetails(transaction.cudEntity);
+    	assertEquals(0, updatedAccount.expiryTimeNs);
+    	assertEquals(0, updatedAccount.proxyAccountNum);
+    	assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", updatedAccount.key);
+    	assertEquals(1004, updatedAccount.entityNum);
+    	assertEquals(0, updatedAccount.entityShard);
+    	assertEquals(0, updatedAccount.entityRealm);
+    	assertEquals("account", updatedAccount.entityType);
+    	assertTrue(updatedAccount.deleted);
+    	//TODO: assertEquals(10000, updatedAccount.receiveRecordThreshold);
+    	//TODO: assertEquals(15000, updatedAccount.sendRecordThreshold);
+    	//TODO: assertEquals(true, updatedAccount.receiverSignatureRequired);
     }
 }
