@@ -283,22 +283,7 @@ While the values in this table are updated in real time, any changes you wish to
 
 ## Troubleshooting
 
-### Checking for errors
-
-Check for errors in the `logs/hedera-mirror-node.log` file. Log files are rotated every 100MB by default and stored in the same folder.
-The log directory can be overriden by passing `-DlogDir=customDir` on command line.
-
-### Record files
-
-* Recordstream files that have successfully been validated against signatures will be placed in the `"downloadToDir"/recordstreams/valid` directory.
-If there are no files in this folder, it's possible that either you `0.0.102` file is incorrect for this network, or signature files are still being downloaded.
-
-* Recordstream files that have successfully been parsed will be moved to `"downloadToDir"/recordstreams/parsedRecordFiles'
-
-* If your `maxDownloadItems` is set to 0 in the `config.json` file, the docker image downloads all new signature files from all nodes before starting processing into the database. If there are many files to catch up, it may be a long while before processing of these files takes place.
-You may try to set the `maxDownloadItems` to a number such as 10 or 20 to download and process new files in batches.
-
-* The above also applies if you are running the `downloader.DownloadAndParseRecordFiles` java class standalone.
+See [docs/troubleshooting.md](docs/troubleshooting.md)
 
 ## Contributing
 
