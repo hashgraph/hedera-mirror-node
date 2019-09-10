@@ -141,13 +141,14 @@ public class RecordFileDownloader extends Downloader {
 					if (rcdFile != null && Utility.hashMatch(validSigFile, rcdFile)) {
 						if (verifyHashChain(rcdFile)) {
 							// move the file to the valid directory
-							File validFile = Paths.get(validDir, rcdFile.getName()).toFile();
+							String name = rcdFile.getName();
+							String hash = Utility.bytesToHex(Utility.getFileHash(rcdFile.getAbsolutePath()));
+							File validFile = Paths.get(validDir, name).toFile();
 
 							if (moveFile(rcdFile, validFile)) {
 								log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
-								String hash = Utility.bytesToHex(Utility.getFileHash(validFile.getAbsolutePath()));
 								applicationStatus.updateLastValidDownloadedRecordFileHash(hash);
-								applicationStatus.updateLastValidDownloadedRecordFileName(validFile.getName());
+								applicationStatus.updateLastValidDownloadedRecordFileName(name);
 								valid = true;
 								break;
 							}
