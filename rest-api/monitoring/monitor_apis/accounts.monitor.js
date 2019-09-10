@@ -22,6 +22,7 @@
 
 const fetch = require("node-fetch");
 const common = require('./common.js');
+const config = require('./config/config.js');
 
 let testAccounts;
 
@@ -36,28 +37,27 @@ const getBaseUrl = (server) => {
 
 /**
  * Executes the /accounts API with no parameters
- * Expects the response to have 1000 entries, and timestamp in 
- * the FRESHNESS_EXPECTATION minutes
+ * Expects the response to have config.limits.RESPONSE_ROWS entries, and 
+ * timestamp in the last n minutes as specified in the config.fileUpdateRefreshTimes
  * @param {Object} server The server to run the test against
  * @return {} None. updates testAccounts variable
  */
 const getAccountsNoParams = async (server) => {
-    const FRESHNESS_EXPECTATION = 20; // minutes
 	const url = getBaseUrl(server);
     const response = await fetch(url);
 	const data = await response.json();
 	
 	common.logResult (server, url, 'getAccountsNoParams',
-		(data.accounts.length === 1000) ?
-		{result: true, msg: 'Received 1000 accounts'} : 
-		{result: false, msg: 'Received less than 1000 accounts'});
+		(data.accounts.length === config.limits.RESPONSE_ROWS) ?
+		{result: true, msg: `Received ${config.limits.RESPONSE_ROWS} accounts`} : 
+		{result: false, msg: `Received less than ${config.limits.RESPONSE_ROWS} accounts`});
 
 	const txSec = data.accounts[0].balance.timestamp.split('.')[0];
 	const currSec = Math.floor(new Date().getTime() / 1000);
 	const delta = currSec - txSec;
 	
 	common.logResult (server, url, 'getAccountsNoParams',
-		(delta < (60 * FRESHNESS_EXPECTATION)) ?
+		(delta < (2 * config.fileUpdateRefreshTimes.balances)) ?
 		{result: true, msg: `Freshness: Received accounts from ${delta} seconds ago`} : 
         {result: false, msg: `Freshness: Got stale accounts from ${delta} seconds ago`}
     );

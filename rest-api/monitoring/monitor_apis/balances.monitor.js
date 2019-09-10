@@ -22,6 +22,7 @@
 
 const fetch = require("node-fetch");
 const common = require('./common.js');
+const config = require('./config/config.js');
 
 let testBalances;
 let testBalancesTimestamp;
@@ -37,28 +38,27 @@ const getBaseUrl = (server) => {
 
 /**
  * Executes the /balances API with no parameters
- * Expects the response to have 1000 entries, and timestamp in 
- * the FRESHNESS_EXPECTATION minutes
+ * Expects the response to have config.limits.RESPONSE_ROWS entries, and 
+ * timestamp in the last n minutes as specified in the config.fileUpdateRefreshTimes
  * @param {Object} server The server to run the test against
  * @return {} None. updates testBalances variable
  */
 const getBalancesNoParams = async (server) => {
-    const FRESHNESS_EXPECTATION = 20; // minutes
 	const url = getBaseUrl(server);
     const response = await fetch(url);
 	const data = await response.json();
 	
 	common.logResult (server, url, 'getBalancesNoParams',
-		(data.balances.length === 1000) ?
-		{result: true, msg: 'Received 1000 balances'} : 
-		{result: false, msg: 'Received less than 1000 balances'});
+		(data.balances.length === config.limits.RESPONSE_ROWS) ?
+		{result: true, msg: `Received ${config.limits.RESPONSE_ROWS} balances`} : 
+		{result: false, msg: `Received less than ${config.limits.RESPONSE_ROWS} balances`});
 
 	const balancesSec = data.timestamp.split('.')[0];
 	const currSec = Math.floor(new Date().getTime() / 1000);
 	const delta = currSec - balancesSec;
 	
 	common.logResult (server, url, 'getBalancesNoParams',
-		(delta < (60 * FRESHNESS_EXPECTATION)) ?
+		(delta < (2 * config.fileUpdateRefreshTimes.balances)) ?
 		{result: true, msg: `Freshness: Received balances from ${delta} seconds ago`} : 
         {result: false, msg: `Freshness: Got stale balances from ${delta} seconds ago`}
     );
@@ -69,25 +69,24 @@ const getBalancesNoParams = async (server) => {
 
 /**
  * Executes the /balances API with timestamp filter
- * Expects the response to have 1000 entries, and to have a timestamp 
- * that is within BALANCE_TS_QUERY_TOLERANCE minutes
+ * Expects the response to have config.limits.RESPONSE_ROWS entries, and 
+ * timestamp in the last n minutes as specified in the config.fileUpdateRefreshTimes
  * @param {Object} server The server to run the test against
  * @return {} None. updates testBalances variable
  */
 const checkBalancesWithTimestamp = async (server) => {
-    const BALANCE_TS_QUERY_TOLERANCE = 30; // minutes
 	const url = getBaseUrl(server) + '?timestamp=lt:' + testBalancesTimestamp;
     const response = await fetch(url);
 	const data = await response.json();
 
 	common.logResult (server, url, 'checkBalancesWithTimestamp', 
-		(data.balances.length === 1000) ?
-		{result: true, msg: 'Received 1000 balances'} : 
-		{result: false, msg: 'Received less than 1000 balances'});
+		(data.balances.length === config.limits.RESPONSE_ROWS) ?
+		{result: true, msg: `Received ${config.limits.RESPONSE_ROWS} balances`} : 
+		{result: false, msg: `Received less than ${config.limits.RESPONSE_ROWS} balances`});
 
     common.logResult (server, url, 'checkBalancesWithTimestamp',
         ((data.timestamp < testBalancesTimestamp) && 
-        ((testBalancesTimestamp - data.timestamp) < (60 * BALANCE_TS_QUERY_TOLERANCE)))
+        ((testBalancesTimestamp - data.timestamp) < (2 * config.fileUpdateRefreshTimes.balances)))
         ?
 		{result: true, msg: 'Received older balances correctly'} : 
 		{result: false, msg: 'Did not receive older balances correctly'});

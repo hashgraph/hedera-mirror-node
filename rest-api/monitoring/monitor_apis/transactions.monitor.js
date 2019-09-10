@@ -22,6 +22,7 @@
 
 const fetch = require("node-fetch");
 const common = require('./common.js');
+const config = require('./config/config.js');
 
 let testTransactions;
 
@@ -36,28 +37,27 @@ const getBaseUrl = (server) => {
 
 /**
  * Executes the /transactions API with no parameters
- * Expects the response to have 1000 entries, and timestamp in 
- * the FRESHNESS_EXPECTATION minutes
+ * Expects the response to have config.limits.RESPONSE_ROWS entries, and 
+ * timestamp in the last n minutes as specified in the config.fileUpdateRefreshTimes
  * @param {Object} server The server to run the test against
  * @return {} None. updates testTransactions variable
  */
 const getTransactionsNoParams = async (server) => {
-    const FRESHNESS_EXPECTATION = 5; // minutes
 	const url = getBaseUrl(server);
     const response = await fetch(url);
 	const data = await response.json();
 
 	common.logResult (server, url, 'getTransactionsNoParams',
-		(data.transactions.length == 1000) ?
-		{result: true, msg: 'Received 1000 entries'} : 
-		{result: false, msg: 'Received less than 1000 entries'});
+		(data.transactions.length == config.limits.RESPONSE_ROWS) ?
+		{result: true, msg: `Received ${config.limits.RESPONSE_ROWS} entries`} : 
+		{result: false, msg: `Received less than ${config.limits.RESPONSE_ROWS} entries`});
 
 	const txSec = data.transactions[0].consensus_timestamp.split('.')[0];
 	const currSec = Math.floor(new Date().getTime() / 1000);
 	const delta = currSec - txSec;
 	
 	common.logResult (server, url, 'getTransactionsNoParams',
-		(delta < (60 * FRESHNESS_EXPECTATION)) ?
+		(delta < (2 * config.fileUpdateRefreshTimes.records)) ?
 		{result: true, msg: `Freshness: Received transactions from ${delta} seconds ago`} : 
         {result: false, msg: `Freshness: Got stale transactions from ${delta} seconds ago`}
     );
@@ -68,8 +68,8 @@ const getTransactionsNoParams = async (server) => {
 /**
  * Executes the /transactions API with timestamp filter of 1 ns before the first
  * transaction received in the getTransactionsNoParams call.
- * Expects the response to have 1000 entries, and the returned transactions list 
- * to be offset by 1 initial transaction.
+ * Expects the response to have config.limits.RESPONSE_ROWS entries, and the  
+ * returned transactions list to be offset by 1 initial transaction.
  * @param {Object} server The server to run the test against
  * @return {} None.
  */
@@ -79,10 +79,9 @@ const checkTransactionsWithTimestamp = async (server) => {
     const data = await response.json();
 
 	common.logResult (server, url, 'checkTransactionsWithTimestamp', 
-		(data.transactions.length === 1000) ?
-		{result: true, msg: 'Received 1000 entries'} : 
-		{result: false, msg: 'Received less than 1000 entries'});
-
+		(data.transactions.length === config.limits.RESPONSE_ROWS) ?
+		{result: true, msg: `Received ${config.limits.RESPONSE_ROWS} entries`} : 
+		{result: false, msg: `Received less than ${config.limits.RESPONSE_ROWS} entries`});
 
     common.logResult (server, url, 'checkTransactionsWithTimestamp',
 		(data.transactions[0].transaction_id === 
@@ -98,14 +97,13 @@ const checkTransactionsWithTimestamp = async (server) => {
  * @return {} None.
  */
 const getOneTransaction = async (server) => {
-    const MAX_DUPLICATES = 39; // The user could have submitted duplicate transactions
 	const txId = testTransactions[0].transaction_id;
 	const url = getBaseUrl(server) + '/' + txId;
     const response = await fetch(url);
 	const data = await response.json();
 	
 	common.logResult (server, url, 'getOneTransaction',
-		((data.transactions.length <= MAX_DUPLICATES)  && 
+		((data.transactions.length <= config.network.numNodes)  && 
 		(data.transactions[0].transaction_id === txId)) ?
 		{result: true, msg: 'Received correct transaction'} : 
 		{result: false, msg: 'Did not receive correct transaction'});
