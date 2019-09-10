@@ -17,195 +17,148 @@
  * limitations under the License.
  * ‍
  */
+'use strict';
+
 const request = require('supertest');
-const math = require('mathjs');
-const config = require('../config.js');
 const server = require('../server');
-const utils = require('../utils.js');
-
-
+const testutils = require('./testutils.js');
 
 beforeAll(async () => {
-    console.log('Jest starting!');
-    jest.setTimeout(20000);
+    jest.setTimeout(1000);
 });
 
 afterAll(() => {
-    // console.log('server closed!');
 });
 
-describe('transaction tests', () => {
-    let testAccountNum = 3; // Node 3
-    let testAccountTsNs = new Date().getTime() / 1000;
-    let apiPrefix = '/api/v1';
+/**
+ * This is the list of individual tests. Each test validates one query parameter
+ * such as timestamp=1234 or account.id=gt:5678.
+ * Definition of each test consists of the url string that is used in the query, and an
+ * array of checks to be performed on the resultant SQL query. 
+ * These individual tests can be combined to form complex combinations as shown in the
+ * definition of combinedtests below.
+ * NOTE: To add more tests, just give it a unique name, specifiy the url query string, and
+ * a set of checks you would like to perform on the resultant SQL query.
+ */
+const singletests = {
+    timestamp_lowerlimit: {
+        urlparam: 'timestamp=gte:1234',
+        checks: [
+            {field: 'consensus_ns', operator: '>=', value: 1234 +'000000000'}
+        ]
+    },
+    timestamp_higherlimit: {
+        urlparam: 'timestamp=lt:5678',
+        checks: [
+            {field: 'consensus_ns', operator: '<', value: 5678 +'000000000'}
+        ]
+    },
+    accountid_owerlimit: {
+        urlparam: 'account.id=gte:0.0.1111',
+        checks: [
+            {field: 'entity_num', operator: '>=', value: 1111}
+        ]
+    },
+    accountid_higherlimit: {
+        urlparam: 'account.id=lt:0.0.2222',
+        checks: [
+            {field: 'entity_num', operator: '<', value: 2222},
+        ]
+    },
+    accountid_equal: {
+        urlparam: 'account.id=0.0.3333',
+        checks: [
+            {field: 'entity_num', operator: '=', value: 3333}
+        ]
+    },
+    limit: {
+        urlparam: 'limit=99',
+        checks: [
+            {field: 'limit', operator: '=', value: 99}
+        ]
+    },    
+    order_asc: {
+        urlparam: 'order=asc',
+        checks: [
+            {field: 'order', operator: '=', value: 'asc'}
+        ]
+    },
+    result_fail: {
+        urlparam: 'result=fail',
+        checks: [
+            {field: 'result', operator: '!=', value: 'SUCCESS'}
+        ]
+    },
+    result_success: {
+        urlparam: 'result=success',
+        checks: [
+            {field: 'result', operator: '=', value: 'SUCCESS'}
+        ]
+    }
+};
 
-    test('Get transactions with no parameters', async () => {
-        const response = await request(server).get(apiPrefix + '/transactions');
-        expect(response.status).toEqual(200);
-        let transactions = JSON.parse(response.text).transactions;
+/**
+ * This list allows creation of combinations of individual tests to exercise presence
+ * of mulitple query parameters. The combined query string is created by adding the query 
+ * strings of each of the individual tests, and all checks from all of the individual tests
+ * are performed on the resultant SQL query
+ * NOTE: To add more combined tests, just add an entry to following array using the 
+ * individual (single) tests in the object above.
+ */
+const combinedtests = [
+    ['timestamp_lowerlimit', 'timestamp_higherlimit'],
+    ['accountid_lowerlimit', 'accountid_higherlimit'],
+    ['timestamp_lowerlimit', 'timestamp_higherlimit', 
+        'accountid-lowerlimit', 'accountid_higherlimit'],
+    ['timestamp_lowerlimit', 'accountid_higherlimit', 'limit'],
+    ['timestamp_higherlimit', 'accountid_lowerlimit', 'result_fail'],
+    ['limit', 'result_success', 'order_asc']
+];
 
-        testAccountNum = null;
-        for (let xfer of transactions[0].transfers) {
-            if (xfer.amount > 0) {
-                testAccountNum = xfer.account.split('.')[2];
+describe('Transaction tests', () => {
+    let api = '/api/v1/transactions';
+
+    // First, execute the single tests
+    for (const [name, item] of Object.entries(singletests)) {
+        test(`Transactions single test: ${name} - URL: ${item.urlparam}`, async () => {
+            let response = await request(server).get([api, item.urlparam].join('?'));
+
+            expect(response.status).toEqual(200);
+            const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+
+            // Verify the sql query against each of the specified checks
+            let check = true;
+            for (const checkitem of item.checks) {
+                check = check && testutils.checkSql (parsedparams, checkitem);
             }
-        }
-        testAccountTsNs = transactions[0].consensus_timestamp;
-
-        expect(transactions.length).toBeGreaterThan(10);
-        expect(testAccountNum).toBeDefined();
-        expect(testAccountTsNs).toBeDefined();
-    });
-
-    test('Get transactions with limit parameters', async () => {
-        const response = await request(server).get(apiPrefix + '/transactions?limit=10');
-        expect(response.status).toEqual(200);
-        let transactions = JSON.parse(response.text).transactions;
-        expect(transactions.length).toEqual(10);
-    });
-
-    test('Get transactions with timestamp & limit parameters', async () => {
-        let plusOne = math.add(math.bignumber(testAccountTsNs), math.bignumber(1));
-        let minusOne = math.subtract(math.bignumber(testAccountTsNs), math.bignumber(1));
-        const response = await request(server).get(apiPrefix + '/transactions' +
-            '?timestamp=gt:' + minusOne.toString() +
-            '&timestamp=lt:' + plusOne.toString() + '&limit=1');
-        expect(response.status).toEqual(200);
-        let transactions = JSON.parse(response.text).transactions;
-        expect(transactions.length).toEqual(1);
-    });
-
-
-    test('Get transactions with account id parameters', async () => {
-        console.log(apiPrefix + '/transactions' +
-            '?account.id=' + testAccountNum + '&type=credit&limit=1');
-        const response = await request(server).get(apiPrefix + '/transactions' +
-            '?account.id=' + testAccountNum + '&type=credit&limit=1');
-        expect(response.status).toEqual(200);
-        let transactions = JSON.parse(response.text).transactions;
-        expect(transactions.length).toEqual(1);
-        let check = false;
-        for (let xfer of transactions[0].transfers) {
-            if (xfer.account.split('.')[2] === testAccountNum) {
-                check = true;
-            }
-        }
-        expect(check).toBeTruthy();
-    });
-
-    test('Get transactions with account id range parameters', async () => {
-        let accLow = Math.max(0, Number(testAccountNum) - 1000);
-        let accHigh = Math.min(Number.MAX_SAFE_INTEGER, Number(testAccountNum) + 1000);
-        console.log(apiPrefix + '/transactions' +
-            '?account.id=gt:' + accLow + '&account.id=lt:' + accHigh);
-        const response = await request(server).get(apiPrefix + '/transactions' +
-            '?account.id=gt:' + accLow + '&account.id=lt:' + accHigh);
-        expect(response.status).toEqual(200);
-        let transactions = JSON.parse(response.text).transactions;
-        expect(transactions.length).toEqual(1000);
-        let check = false;
-        for (let xfer of transactions[0].transfers) {
-            let acc = xfer.account.split('.')[2];
-            if (acc > accLow && acc < accHigh) {
-                check = true;
-            }
-        }
-        expect(check).toBeTruthy();
-
-        let next = JSON.parse(response.text).links.next;
-        expect(next).not.toBe(undefined);
-    });
-
-    for (let tsOptions of ['', 'timestamp=gt:1560300000', 'timestamp=gt:100&timestamp=lte:' + testAccountTsNs]) {
-        for (let accOptions of ['', 'account.id=gte:1', 'account.id=gte:1&account.id=lt:99999999']) {
-            for (let orderOptions of ['', 'order=desc', 'order=asc']) {
-
-                test('/transactions tests with options: ' +
-                    '[' + tsOptions + ' - ' + accOptions + ' - ' + orderOptions + ']', async () => {
-                        let extraParams = tsOptions;
-                        extraParams += ((extraParams !== '' && accOptions !== '') ? '&' : '') + accOptions;
-                        extraParams += ((extraParams !== '' && orderOptions !== '') ? '&' : '') + orderOptions;
-
-                        console.log(apiPrefix + '/transactions' + (extraParams === '' ? '' : '?') + extraParams);
-                        let response = await request(server).get(apiPrefix + '/transactions' + (extraParams === '' ? '' : '?') + extraParams);
-                        expect(response.status).toEqual(200);
-                        let transactions = JSON.parse(response.text).transactions;
-                        expect(transactions.length).toEqual(config.limits.RESPONSE_ROWS);
-
-                        let check = true;
-                        let prevSeconds = utils.secNsToSeconds(transactions[0].consensus_timestamp);
-
-                        for (let txn of transactions) {
-                            if ((orderOptions === 'order=asc' && utils.secNsToSeconds(txn.consensus_timestamp) < prevSeconds) ||
-                                (orderOptions !== 'order=asc' && utils.secNsToSeconds(txn.consensus_timestamp) > prevSeconds)) {
-                                check = false;
-                            }
-                            prevSeconds = utils.secNsToSeconds(txn.seconds);
-                        }
-                        expect(check).toBeTruthy();
-
-                        // Validate that pagination works and that it doesn't have any gaps
-                        const bigPageEntries = transactions
-                        let paginatedEntries = [];
-                        const numPages = 5;
-                        const pageSize = config.limits.RESPONSE_ROWS / numPages;
-                        const firstTs = orderOptions === 'order=asc' ?
-                            transactions[transactions.length - 1].consensus_timestamp :
-                            transactions[0].consensus_timestamp;
-
-                        for (let index = 0; index < numPages; index++) {
-                            const nextUrl = paginatedEntries.length === 0 ?
-                                apiPrefix + '/transactions' +
-                                (extraParams === '' ? '' : '?') + extraParams +
-                                (extraParams === '' ? '?' : '&') + 'timestamp=lte:' + firstTs +
-                                '&limit=' + pageSize :
-                                JSON.parse(response.text).links.next
-                                    .replace(new RegExp('^.*' + apiPrefix), apiPrefix);
-                            console.log(nextUrl);
-                            response = await request(server).get(nextUrl);
-                            expect(response.status).toEqual(200);
-                            let chunk = JSON.parse(response.text).transactions;
-                            expect(chunk.length).toEqual(pageSize);
-                            paginatedEntries = paginatedEntries.concat(chunk);
-
-                            let next = JSON.parse(response.text).links.next;
-                            expect(next).not.toBe(null);
-                        }
-
-                        check = (paginatedEntries.length === bigPageEntries.length);
-                        expect(check).toBeTruthy();
-
-                        check = true;
-                        for (i = 0; i < config.limits.RESPONSE_ROWS; i++) {
-                            if (bigPageEntries[i].transaction_id !== paginatedEntries[i].transaction_id ||
-                                bigPageEntries[i].consensus_timestamp !== paginatedEntries[i].consensus_timestamp) {
-                                check = false;
-                            }
-                        }
-                        expect(check).toBeTruthy();
-
-                        // let next = JSON.parse(response.text).links.next;
-                        // expect(next).not.toBe(null);
-
-                        // next = next.replace(new RegExp('^.*' + apiPrefix), apiPrefix);
-                        // response = await request(server).get(next);
-                        // expect(response.status).toEqual(200);
-                        // transactions = JSON.parse(response.text).transactions;
-                        // expect(transactions.length).toEqual(1000);
-
-                        check = true;
-                        for (let txn of transactions) {
-                            if ((orderOptions === 'order=asc' && utils.secNsToSeconds(txn.seconds) < prevSeconds) ||
-                                (orderOptions !== 'order=asc' && utils.secNsToSeconds(txn.seconds) > prevSeconds)) {
-                                check = false;
-                            }
-                            prevSeconds = utils.secNsToSeconds(txn.seconds);
-                        }
-                        expect(check).toBeTruthy();
-
-                    });
-            }
-        }
+            expect (check).toBeTruthy();
+        })
     }
 
+    // And now, execute the combined tests
+    for (const combination of combinedtests) {
+        // Combine the individual (single) checks as specified in the combinedtests array
+        let combtest = {urls: [], checks: [], names: ''};
+        for (const testname of combination) {
+            if (testname in singletests) {
+                combtest.names += testname + ' ';
+                combtest.urls.push(singletests[testname].urlparam);
+                combtest.checks = combtest.checks.concat(singletests[testname].checks);
+            }
+        }
+        const comburl = combtest.urls.join('&');
+
+        test(`Transactions combinationn test: ${combtest.names} - URL: ${comburl}`, async () => {
+            let response = await request(server).get([api, comburl].join('?'));
+            expect(response.status).toEqual(200);
+            const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+
+            // Verify the sql query against each of the specified checks
+            let check = true;
+            for (const checkitem of combtest.checks) {
+                check = check && testutils.checkSql (parsedparams, checkitem);
+            }
+            expect (check).toBeTruthy();
+        })
+    }
 });

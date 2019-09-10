@@ -145,6 +145,10 @@ const getBalances = function (req) {
                     'account.id', anchorAccountId, order)
             }
 
+            if (process.env.NODE_ENV === 'test') {
+                ret.sqlQuery = results.sqlQuery;
+            }
+
             logger.debug("getBalances returning " +
                 ret.balances.length + " entries");
             return (ret);
