@@ -190,6 +190,10 @@ const getTransactions = function (req) {
                     'timestamp', anchorSecNs, order)
             }
 
+            if (process.env.NODE_ENV === 'test') {
+                ret.sqlQuery = results.sqlQuery;
+            }
+
             logger.debug("getTransactions returning " +
                 ret.transactions.length + " entries");
 
@@ -270,6 +274,10 @@ const getOneTransaction = function (req, res) {
             res.status(404)
                 .send('Not found');
             return;
+        }
+
+        if (process.env.NODE_ENV === 'test') {
+            ret.sqlQuery = results.sqlQuery;
         }
 
         logger.debug("getOneTransaction returning " +

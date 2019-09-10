@@ -24,7 +24,12 @@ require("dotenv").config({
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const Pool = require('pg').Pool;
+let Pool;
+if (process.env.NODE_ENV !== 'test') {
+    Pool = require('pg').Pool;
+} else {
+    Pool = require('./__tests__/mockpool.js'); // Use a mocked up DB for jest unit tests
+}
 const app = express();
 const cors = require('cors');
 const log4js = require('log4js');
@@ -41,7 +46,12 @@ const Cacher = require('./cacher.js');
 
 var compression = require('compression');
 
-const port = process.env.PORT;
+let port;
+if (process.env.NODE_ENV !== 'test') {
+    port = process.env.PORT;
+} else {
+    port = 3000; // Use a dummy port for jest unit tests
+}
 if (port === undefined || isNaN(Number(port))) {
     logger.error('Server started with unknown port');
     console.log('Please specify the port');

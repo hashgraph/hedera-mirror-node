@@ -147,6 +147,10 @@ const getAccounts = function (req) {
                     'account.id', anchorAcc, order)
             }
 
+            if (process.env.NODE_ENV === 'test') {
+                ret.sqlQuery = results.sqlQuery;
+            }
+
             logger.debug("getAccounts returning " +
                 ret.accounts.length + " entries");
 
@@ -288,12 +292,19 @@ const getOneAccount = function (req, res) {
                 }
             }
 
+            if (process.env.NODE_ENV === 'test') {
+                ret.entitySqlQuery = entityResults.sqlQuery;
+            }
+
             // Process the results of t_transactions query
             const tl = transactions.createTransferLists(
                 transactionsResults.rows, ret);
             ret = tl.ret;
             let anchorSecNs = tl.anchorSecNs;
 
+            if (process.env.NODE_ENV === 'test') {
+                ret.transactionsSqlQuery = transactionsResults.sqlQuery;
+            }
 
             // Pagination links
             ret.links = {
