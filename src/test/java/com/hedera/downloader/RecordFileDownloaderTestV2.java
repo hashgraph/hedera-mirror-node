@@ -72,9 +72,6 @@ public class RecordFileDownloaderTestV2 {
 
         s3 = S3Mock.create(8001, s3Path.toString());
         s3.start();
-
-        when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("");
-        when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("");
     }
 
     @AfterEach

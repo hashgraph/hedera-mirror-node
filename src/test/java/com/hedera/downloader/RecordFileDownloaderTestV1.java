@@ -72,9 +72,6 @@ public class RecordFileDownloaderTestV1 {
 
         s3 = S3Mock.create(8001, s3Path.toString());
         s3.start();
-
-        when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("");
-        when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("");
     }
 
     @AfterEach
@@ -163,13 +160,11 @@ public class RecordFileDownloaderTestV1 {
     void hashMismatchWithPrevious() throws Exception {
         when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
         when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
-        when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("");
         fileCopier.copy();
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(2)
-                .allMatch(p -> Utility.isRecordFile(p.toString()));
+                .hasSize(0);
     }
 
     @Test
