@@ -72,9 +72,6 @@ public class RecordFileDownloaderTest {
 
         s3 = S3Mock.create(8001, s3Path.toString());
         s3.start();
-
-        when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("");
-        when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("");
     }
 
     @AfterEach
@@ -190,15 +187,11 @@ public class RecordFileDownloaderTest {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
         when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
         when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
-        when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("");
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(1)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
-                .extracting(Path::getFileName)
-                .contains(Paths.get(filename));
+                .hasSize(0);
     }
 
     @Test
@@ -207,7 +200,7 @@ public class RecordFileDownloaderTest {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
         when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
         when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
-        when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("2019-07-02T00:00:00.000000Z.rcd");
+        when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("2019-09-01T00:00:00.000000Z.rcd");
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))
