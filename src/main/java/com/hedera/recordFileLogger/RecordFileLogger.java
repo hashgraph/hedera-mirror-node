@@ -334,7 +334,7 @@ public class RecordFileLogger {
                 }
             } else if (body.hasContractCreateInstance()) {
                 if (txRecord.getReceipt().hasContractID()) { // implies SUCCESS
-                    var contractId = txRecord.getReceipt().getContractID();
+                    final var contractId = txRecord.getReceipt().getContractID();
             		ContractCreateTransactionBody txMessage = body.getContractCreateInstance();
 	            	long expiration_time_sec = 0;
 	            	long expiration_time_nanos = 0;
@@ -354,7 +354,7 @@ public class RecordFileLogger {
                 initialBalance = body.getContractCreateInstance().getInitialBalance();
             } else if (body.hasContractDeleteInstance()) {
                 if (body.getContractDeleteInstance().hasContractID()) {
-                	var contractId = body.getContractDeleteInstance().getContractID();
+                	final var contractId = body.getContractDeleteInstance().getContractID();
                     if (doUpdateEntity) {
 						entityId = entities.deleteEntity(contractId);
 					} else {
@@ -363,7 +363,7 @@ public class RecordFileLogger {
                 }
             } else if (body.hasContractUpdateInstance()) {
         		ContractUpdateTransactionBody txMessage = body.getContractUpdateInstance();
-                var contractId = txMessage.getContractID();
+                final var contractId = txMessage.getContractID();
             	long expiration_time_sec = 0;
             	long expiration_time_nanos = 0;
             	if (txMessage.hasExpirationTime()) {
@@ -381,7 +381,7 @@ public class RecordFileLogger {
             	}
 
                 if (doUpdateEntity) {
-					long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
+					final long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
 					entityId = entities.updateEntity(contractId, expiration_time_sec,
 							expiration_time_nanos, auto_renew_period, key, proxy_account_id);
 				} else {
@@ -414,7 +414,7 @@ public class RecordFileLogger {
             	initialBalance = body.getCryptoCreateAccount().getInitialBalance();
             } else if (body.hasCryptoDelete()) {
                 if (body.getCryptoDelete().hasDeleteAccountID()) {
-                    var accountId = body.getCryptoDelete().getDeleteAccountID();
+                    final var accountId = body.getCryptoDelete().getDeleteAccountID();
                     if (doUpdateEntity) {
 						entityId = entities.deleteEntity(accountId);
 					} else {
@@ -427,7 +427,7 @@ public class RecordFileLogger {
                 }
             } else if (body.hasCryptoUpdateAccount()) {
         		CryptoUpdateTransactionBody txMessage = body.getCryptoUpdateAccount();
-                var accountId = txMessage.getAccountIDToUpdate();
+                final var accountId = txMessage.getAccountIDToUpdate();
             	long expiration_time_sec = 0;
             	long expiration_time_nanos = 0;
             	if (txMessage.hasExpirationTime()) {
@@ -445,7 +445,7 @@ public class RecordFileLogger {
             	}
 
 				if (doUpdateEntity) {
-					long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
+					final long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
 					entityId = entities.updateEntity(accountId, expiration_time_sec, expiration_time_nanos,
 							auto_renew_period, key, proxy_account_id);
 				} else {
@@ -474,7 +474,7 @@ public class RecordFileLogger {
                 }
             } else if (body.hasFileDelete()) {
                 if (body.getFileDelete().hasFileID()) {
-                    var fileId = body.getFileDelete().getFileID();
+                    final var fileId = body.getFileDelete().getFileID();
                 	if (doUpdateEntity) {
 						entityId = entities.deleteEntity(fileId);
 					} else {
@@ -483,7 +483,7 @@ public class RecordFileLogger {
                 }
             } else if (body.hasFileUpdate()) {
         		FileUpdateTransactionBody txMessage = body.getFileUpdate();
-                var fileId = txMessage.getFileID();
+                final var fileId = txMessage.getFileID();
             	long expiration_time_sec = 0;
             	long expiration_time_nanos = 0;
             	if (txMessage.hasExpirationTime()) {
@@ -498,26 +498,43 @@ public class RecordFileLogger {
             	}
 
             	if (doUpdateEntity) {
-					long proxy_account_id = 0;
+					final long proxy_account_id = 0;
 					entityId = entities.updateEntity(fileId, expiration_time_sec, expiration_time_nanos, auto_renew_period, key, proxy_account_id);
 				} else {
             		entityId = entities.createOrGetEntity(fileId);
 				}
 			} else if (body.hasSystemDelete()) {
 				if (body.getSystemDelete().hasContractID()) {
-					entities.createOrGetEntity(body.getSystemDelete().getContractID());
-                    entityId = entities.deleteEntity(body.getSystemDelete().getContractID());
+					final var contractId = body.getSystemDelete().getContractID();
+					if (doUpdateEntity) {
+						entityId = entities.deleteEntity(contractId);
+					} else {
+						entityId = entities.createOrGetEntity(contractId);
+					}
 				} else if (body.getSystemDelete().hasFileID()) {
-					entities.createOrGetEntity(body.getSystemDelete().getFileID());
-                    entityId = entities.deleteEntity(body.getSystemDelete().getFileID());
+					final var fileId = body.getSystemDelete().getFileID();
+
+					if (doUpdateEntity) {
+						entityId = entities.deleteEntity(fileId);
+					} else {
+						entities.createOrGetEntity(fileId);
+					}
 				}
 			} else if (body.hasSystemUndelete()) {
 				if (body.getSystemUndelete().hasContractID()) {
-					entities.createOrGetEntity(body.getSystemUndelete().getContractID());
-                    entityId = entities.unDeleteEntity(body.getSystemDelete().getContractID());
-				} else if (body.getSystemDelete().hasFileID()) {
-					entities.createOrGetEntity(body.getSystemUndelete().getFileID());
-                    entityId = entities.unDeleteEntity(body.getSystemDelete().getFileID());
+					final var contractId = body.getSystemUndelete().getContractID();
+					if (doUpdateEntity) {
+						entityId = entities.unDeleteEntity(contractId);
+					} else {
+						entityId = entities.createOrGetEntity(contractId);
+					}
+				} else if (body.getSystemUndelete().hasFileID()) {
+					final var fileId = body.getSystemUndelete().getFileID();
+					if (doUpdateEntity) {
+						entityId = entities.unDeleteEntity(fileId);
+					} else {
+						entityId = entities.createOrGetEntity(fileId);
+					}
 				}
 			}
 
@@ -532,7 +549,7 @@ public class RecordFileLogger {
 			sqlInsertTransaction.addBatch();
 
 			if ((txRecord.hasTransferList()) && (ConfigLoader.getPersistCryptoTransferAmounts())) {
-				if (body.hasCryptoCreateAccount() && txRecord.getReceipt().getStatus() == ResponseCodeEnum.SUCCESS) {
+				if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
 					insertCryptoCreateTransferList(consensusNs, txRecord, body, createdAccountId, fkPayerAccountId);
 				} else {
 					insertTransferList(consensusNs, txRecord.getTransferList());
@@ -541,10 +558,11 @@ public class RecordFileLogger {
 
             // TransactionBody-specific handlers.
             // If so-configured, each will update the SQL prepared statements via addBatch().
+			if (body.hasContractCall()) {
+				insertContractCall(consensusNs, body.getContractCall(), txRecord);
+			}
 			if (doUpdateEntity) {
-				if (body.hasContractCall()) {
-					insertContractCall(consensusNs, body.getContractCall(), txRecord);
-				} else if (body.hasContractCreateInstance()) {
+				 if (body.hasContractCreateInstance()) {
 					insertContractCreateInstance(consensusNs, body.getContractCreateInstance(), txRecord);
 				} else if (body.hasCryptoAddClaim()) {
 					insertCryptoAddClaim(consensusNs, body.getCryptoAddClaim());
