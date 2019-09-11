@@ -141,7 +141,7 @@ public class RecordFileParser implements FileParser {
 
 								TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
 
-								boolean bStored = RecordFileLogger.storeRecord(counter, Utility.convertToInstant(txRecord.getConsensusTimestamp()), transaction, txRecord);
+								boolean bStored = RecordFileLogger.storeRecord(transaction, txRecord);
 								if (bStored) {
 									if (log.isTraceEnabled()) {
 										log.trace("Transaction = {}, Record = {}", Utility.printTransaction(transaction), TextFormat.shortDebugString(txRecord));
@@ -158,9 +158,7 @@ public class RecordFileParser implements FileParser {
 								byte[] sigBytes = new byte[sigLength];
 								dis.readFully(sigBytes);
 								log.trace("File {} has signature {}", fileName, Hex.encodeHexString(sigBytes));
-								if (RecordFileLogger.storeSignature(Hex.encodeHexString(sigBytes))) {
-									break;
-								}
+								break;
 
 							default:
 								log.error("Unknown record file delimiter {} for file {}", typeDelimiter, file);
