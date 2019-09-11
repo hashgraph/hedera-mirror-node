@@ -294,6 +294,7 @@ public class RecordFileLogger {
 		try {
 
 			long fkTransactionId = 0;
+			long createdAccountId = 0;
 			
             ResultSet resultSet;
 			try {
@@ -422,6 +423,7 @@ public class RecordFileLogger {
 	            	}
 	            	long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
 	            	entityId = entities.createEntity(txRecord.getReceipt().getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key, proxy_account_id);
+	            	createdAccountId = entityId;
             	}
 
             	initialBalance = body.getCryptoCreateAccount().getInitialBalance();
@@ -550,12 +552,31 @@ public class RecordFileLogger {
 
                 try {
                     if (ConfigLoader.getPersistCryptoTransferAmounts()) {
+                    	boolean bAddInitialBalance = false;
 	                    for (int i = 0; i < pTransfer.getAccountAmountsCount(); i++) {
 	                        // insert
+	                    	long amount = pTransfer.getAccountAmounts(i).getAmount();
 	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.TXID.ordinal(), fkTransactionId);
 	                        long xferAccountId = entities.createOrGetEntity(pTransfer.getAccountAmounts(i).getAccountID());
 	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), xferAccountId);
-	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), pTransfer.getAccountAmounts(i).getAmount());
+	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
+	                        
+	                        if (body.hasCryptoCreateAccount()) {
+	                        	if ((initialBalance == Math.abs(amount)) && ((xferAccountId == fkPayerAccountId) || (xferAccountId == createdAccountId))) {
+	                        		bAddInitialBalance = false;
+	                        	}
+	                        }
+
+	                        sqlInsertTransferList.addBatch();
+	                    }
+	                    if (bAddInitialBalance) {
+	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.TXID.ordinal(), fkTransactionId);
+	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), fkPayerAccountId);
+	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), -initialBalance);
+
+	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.TXID.ordinal(), fkTransactionId);
+	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), createdAccountId);
+	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), initialBalance);
 
 	                        sqlInsertTransferList.addBatch();
 	                    }
