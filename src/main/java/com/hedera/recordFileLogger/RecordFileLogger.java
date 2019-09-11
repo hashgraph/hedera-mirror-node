@@ -560,11 +560,11 @@ public class RecordFileLogger {
             // If so-configured, each will update the SQL prepared statements via addBatch().
 			if (body.hasContractCall()) {
 				insertContractCall(consensusNs, body.getContractCall(), txRecord);
+			} else if (body.hasContractCreateInstance()) {
+				insertContractCreateInstance(consensusNs, body.getContractCreateInstance(), txRecord);
 			}
 			if (doUpdateEntity) {
-				 if (body.hasContractCreateInstance()) {
-					insertContractCreateInstance(consensusNs, body.getContractCreateInstance(), txRecord);
-				} else if (body.hasCryptoAddClaim()) {
+				  if (body.hasCryptoAddClaim()) {
 					insertCryptoAddClaim(consensusNs, body.getCryptoAddClaim());
 				} else if (body.hasFileAppend()) {
 					insertFileAppend(consensusNs, body.getFileAppend());
