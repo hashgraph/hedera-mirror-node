@@ -77,14 +77,8 @@ const createTransferLists = function (rows, arr) {
     })
 }
 
-
-/**
- * Handler function for /transactions API.
- * @param {Request} req HTTP request object
- * @return {Promise} Promise for PostgreSQL query
- */
-const getTransactions = function (req) {
-    // Parse the filter parameters for credit/debit, account-numbers, 
+const reqToSql = function(req) {
+    // Parse the filter parameters for credit/debit, account-numbers,
     // timestamp, and pagination (limit)
     const creditDebit = utils.parseCreditDebitParams(req);
 
@@ -96,18 +90,6 @@ const getTransactions = function (req) {
 
         }], 'entityId');
 
-    if (accountQuery !== '') {
-        accountQuery = 
-            'ctl.account_id in\n' +
-            '    (select distinct id\n' +
-            '     from t_entities\n' +                                                   
-            '     where (' + accountQuery + 
-            '     and eaccount.fk_entity_type_id in (select id from t_entity_types)))\n';
-        accountQuery = accountQuery +
-            (creditDebit === 'credit' ? ' and ctl.amount > 0 ' :
-                creditDebit === 'debit' ? ' and ctl.amount < 0 ' : '');
-    }
-
     const [tsQuery, tsParams] =
         utils.parseParams(req, 'timestamp', ['t.consensus_ns'], 'timestamp_ns');
 
@@ -115,21 +97,6 @@ const getTransactions = function (req) {
 
     const { limitQuery, limitParams, order, limit } =
         utils.parseLimitAndOrderParams(req);
-
-    // Create an inner query that returns the ids of transactions that 
-    // match the filter criteria based on the filter criteria in the REST query
-    // The transaction ids returned from this query is then used in the outer 
-    // query to generate the output to return to the REST query.
-    let innerQuery =
-    '      select distinct t.consensus_ns\n' +
-    '       from t_transactions t\n' +
-    '       join t_transaction_results tr on t.fk_result_id = tr.id\n' +
-    '       join t_cryptotransferlists ctl on t.id = ctl.fk_trans_id\n' +
-    '       join t_entities eaccount on eaccount.id = ctl.account_id\n' +
-    '       where ' +
-            [accountQuery, tsQuery, resultTypeQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
-    '       order by t.consensus_ns ' + order + '\n' +
-    '        ' + limitQuery;
 
     let sqlParams = accountParams.concat(tsParams)
         .concat(limitParams);
@@ -152,26 +119,49 @@ const getTransactions = function (req) {
         "   , eaccount.entity_num as account_num\n" +
         "   , amount\n" +
         "   , t.charged_tx_fee\n" +
-        " from (" + innerQuery + ") as tlist\n" +
-        "   join t_transactions t on tlist.consensus_ns = t.consensus_ns\n" +
+        "   from t_transactions t\n" +
         "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +
         "   join t_entities enode on enode.id = t.fk_node_acc_id\n" +
         "   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n" +
         "   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n" +
-        "   left outer join t_cryptotransferlists ctl on  ctl.fk_trans_id = t.id\n" +
+        "   left outer join t_cryptotransferlists ctl on  ctl.consensus_timestamp = t.consensus_ns\n" +
         "   join t_entities eaccount on eaccount.id = ctl.account_id\n" +
-        "   order by t.consensus_ns " + order + "\n";
+        "   where ";
+    if (accountQuery) {
+        sqlQuery += "ctl.account_id in (select id from t_entities\n" +
+            "\t\twhere " + accountQuery + " and fk_entity_type_id = 1 limit 1000)\n"; // Max limit on the inner query.
+    } else {
+        sqlQuery += "1=1\n";
+    }
+    sqlQuery += 'and ' + [tsQuery, resultTypeQuery].map(q => q === '' ? '1=1' : q).join(' and ');
+    if ('credit' === creditDebit) {
+        sqlQuery += ' and ctl.amount > 0 ';
+    } else if ('debit' === creditDebit) {
+        sqlQuery += ' and ctl.amount < 0 ';
+    }
+    sqlQuery += "   order by t.consensus_ns " + order + "\n" + limitQuery;
+    return {
+        limit: limit,
+        query: utils.convertMySqlStyleQueryToPostgress(sqlQuery, sqlParams),
+        order: order,
+        params: sqlParams
+    };
+};
 
-
-    const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(
-        sqlQuery, sqlParams);
+/**
+ * Handler function for /transactions API.
+ * @param {Request} req HTTP request object
+ * @return {Promise} Promise for PostgreSQL query
+ */
+const getTransactions = function (req) {
+    let query = reqToSql(req);
 
     logger.debug("getTransactions query: " +
-        pgSqlQuery + JSON.stringify(sqlParams));
+        query.query + JSON.stringify(query.params));
 
     // Execute query
     return (pool
-        .query(pgSqlQuery, sqlParams)
+        .query(query.query, query.params)
         .then(results => {
             let ret = {
                 transactions: [],
@@ -186,8 +176,8 @@ const getTransactions = function (req) {
 
             ret.links = {
                 next: utils.getPaginationLink(req,
-                    (ret.transactions.length !== limit),
-                    'timestamp', anchorSecNs, order)
+                    (ret.transactions.length !== query.limit),
+                    'timestamp', anchorSecNs, query.order)
             }
 
             if (process.env.NODE_ENV === 'test') {
@@ -239,7 +229,7 @@ const getOneTransaction = function (req, res) {
         "   join t_entities enode on enode.id = t.fk_node_acc_id\n" +
         "   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n" +
         "   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n" +
-        "   join t_cryptotransferlists ctl on  ctl.fk_trans_id = t.id\n" +
+        "   join t_cryptotransferlists ctl on  ctl.consensus_timestamp = t.consensus_ns\n" +
         "   join t_entities eaccount on eaccount.id = ctl.account_id\n" +
         " where etrans.entity_shard = ?\n" +
         "   and  etrans.entity_realm = ?\n" +
@@ -290,5 +280,6 @@ const getOneTransaction = function (req, res) {
 module.exports = {
     getTransactions: getTransactions,
     getOneTransaction: getOneTransaction,
-    createTransferLists: createTransferLists
+    createTransferLists: createTransferLists,
+    reqToSql: reqToSql
 }
