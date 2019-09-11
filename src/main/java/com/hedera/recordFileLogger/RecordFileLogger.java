@@ -552,7 +552,7 @@ public class RecordFileLogger {
 
                 try {
                     if (ConfigLoader.getPersistCryptoTransferAmounts()) {
-                    	boolean bAddInitialBalance = false;
+                    	boolean bAddInitialBalance = (body.hasCryptoCreateAccount() && txRecord.getReceipt().getStatus() == ResponseCodeEnum.SUCCESS);
 	                    for (int i = 0; i < pTransfer.getAccountAmountsCount(); i++) {
 	                        // insert
 	                    	long amount = pTransfer.getAccountAmounts(i).getAmount();
@@ -561,11 +561,11 @@ public class RecordFileLogger {
 	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), xferAccountId);
 	                        sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
 	                        
-	                        if (body.hasCryptoCreateAccount()) {
+	                        if (body.hasCryptoCreateAccount() && txRecord.getReceipt().getStatus() == ResponseCodeEnum.SUCCESS) {
 	                        	if ((initialBalance == Math.abs(amount)) && ((xferAccountId == fkPayerAccountId) || (xferAccountId == createdAccountId))) {
 	                        		bAddInitialBalance = false;
 	                        	}
-	                        }
+	                        } 
 
 	                        sqlInsertTransferList.addBatch();
 	                    }
