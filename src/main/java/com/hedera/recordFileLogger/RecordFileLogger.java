@@ -269,7 +269,11 @@ public class RecordFileLogger {
 	public static boolean storeRecord(Transaction transaction, TransactionRecord txRecord) throws Exception {
 
 		try {
+
+			long fkTransactionId = 0;
+			long createdAccountId = 0;
 			TransactionBody body;
+
 			if (transaction.hasBody()) {
 				body = transaction.getBody();
 			} else {
@@ -380,6 +384,7 @@ public class RecordFileLogger {
 	            	}
 	            	long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
 	            	entityId = entities.createEntity(txRecord.getReceipt().getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key, proxy_account_id);
+	            	createdAccountId = entityId;
             	}
 
             	initialBalance = body.getCryptoCreateAccount().getInitialBalance();
@@ -486,8 +491,12 @@ public class RecordFileLogger {
             sqlInsertTransaction.setLong(F_TRANSACTION.INITIAL_BALANCE.ordinal(), initialBalance);
 			sqlInsertTransaction.addBatch();
 
-			if (txRecord.hasTransferList()) {
-				insertTransferList(consensusNs, txRecord.getTransferList());
+			if ((txRecord.hasTransferList()) && (ConfigLoader.getPersistCryptoTransferAmounts())) {
+				if (body.hasCryptoCreateAccount() && txRecord.getReceipt().getStatus() == ResponseCodeEnum.SUCCESS) {
+					insertCryptoCreateTransferList(consensusNs, txRecord, body, createdAccountId, fkPayerAccountId);
+				} else {
+					insertTransferList(consensusNs, txRecord.getTransferList());
+				}
 			}
 
             // TransactionBody-specific handlers.
@@ -599,18 +608,64 @@ public class RecordFileLogger {
 		}
 	}
 
-	private static void insertTransferList(final long consensusTimestamp, final TransferList transactionBody)
+	private static void insertTransferList(final long consensusTimestamp, final TransferList transferList)
 			throws SQLException {
-		if (ConfigLoader.getPersistCryptoTransferAmounts()) {
-			for (int i = 0; i < transactionBody.getAccountAmountsCount(); ++i) {
-				sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-				var aa = transactionBody.getAccountAmounts(i);
-				sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(),
-						entities.createOrGetEntity(aa.getAccountID()));
-				sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), aa.getAmount());
-				sqlInsertTransferList.addBatch();
-			}
+    	
+		for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
+			sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
+			var aa = transferList.getAccountAmounts(i);
+			sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(),
+					entities.createOrGetEntity(aa.getAccountID()));
+			sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), aa.getAmount());
+			sqlInsertTransferList.addBatch();
 		}
+	}
+
+	private static void insertCryptoCreateTransferList(final long consensusTimestamp, final TransactionRecord txRecord, final TransactionBody body, final long createdAccountId, final long payerAccountId)
+			throws SQLException {
+		
+    	long initialBalance = 0;
+    	long createdAccountNum = 0;
+    	long payerAccountNum = 0;
+    	
+		// no need to add missing initial balance to transfer list if this is realm and shard <> 0
+		boolean addInitialBalance = (txRecord.getReceipt().getAccountID().getShardNum() == 0) && (txRecord.getReceipt().getAccountID().getRealmNum() == 0);
+
+    	if (addInitialBalance) {
+    		initialBalance = body.getCryptoCreateAccount().getInitialBalance();
+    		createdAccountNum = txRecord.getReceipt().getAccountID().getAccountNum();
+    		payerAccountNum = body.getTransactionID().getAccountID().getAccountNum();
+    	}
+    	TransferList transferList = txRecord.getTransferList();
+		for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
+			sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
+			var aa = transferList.getAccountAmounts(i);
+			long amount = aa.getAmount();
+			long account = aa.getAccountID().getAccountNum();
+			
+			sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(),
+					entities.createOrGetEntity(aa.getAccountID()));
+			sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
+			sqlInsertTransferList.addBatch();
+			
+        	if (addInitialBalance && (initialBalance == aa.getAmount()) && (account == createdAccountNum)) {
+        		addInitialBalance = false;
+        	}
+		}
+		
+        if (addInitialBalance) {
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), payerAccountId);
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), -initialBalance);
+
+            sqlInsertTransferList.addBatch();
+            
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), createdAccountId);
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), initialBalance);
+
+            sqlInsertTransferList.addBatch();
+        }
 	}
 
 	private static boolean isFileAddressBook(final FileID fileId) {
