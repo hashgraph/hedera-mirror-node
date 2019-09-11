@@ -648,7 +648,7 @@ public class RecordFileLogger {
 			sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
 			sqlInsertTransferList.addBatch();
 			
-        	if ((initialBalance == Math.abs(aa.getAmount())) && ((account == payerAccountNum) || (account == createdAccountNum))) {
+        	if (addInitialBalance && (initialBalance == aa.getAmount()) && (account == createdAccountNum)) {
         		addInitialBalance = false;
         	}
 		}
@@ -658,6 +658,8 @@ public class RecordFileLogger {
             sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), payerAccountId);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), -initialBalance);
 
+            sqlInsertTransferList.addBatch();
+            
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), createdAccountId);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), initialBalance);
