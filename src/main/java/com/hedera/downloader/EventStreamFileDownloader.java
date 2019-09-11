@@ -62,9 +62,8 @@ public class EventStreamFileDownloader extends Downloader {
 			System.exit(0);
 		}
 
-		HashMap<String, List<File>> sigFilesMap;
 		try {
-			sigFilesMap = downloader.downloadSigFiles(DownloadType.EVENT);
+			var sigFilesMap = downloader.downloadSigFiles(DownloadType.EVENT);
 
 			if (Utility.checkStopFile()) {
 				xfer_mgr.shutdownNow();

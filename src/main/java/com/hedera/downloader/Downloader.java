@@ -56,8 +56,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class Downloader {
 	protected final Logger log = LogManager.getLogger(getClass());
@@ -218,23 +220,23 @@ public abstract class Downloader {
 						String s3ObjectKey = summary.getKey();
 						if (!s3ObjectKey.contains("latest")) { // ignore latest.csv
 							if ((s3ObjectKey.compareTo(prefix + lastValidFileName) > 0) || (lastValidFileName.contentEquals(""))) {
-								Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey, saveFilePath + "/" + s3ObjectKey.replace("accountBalances/balance/0.0.3/", ""));
-								if (result == null) {
+								PendingDownload pendingDownload;
+								try {
+									var saveTarget = saveFilePath + "/" + s3ObjectKey.replace("accountBalances/balance/0.0.3/", "");
+									pendingDownload = saveToLocal(bucketName, s3ObjectKey, saveTarget);
+								} catch (Exception ex) {
+									log.error("Failed downloading {}", s3ObjectKey, ex);
 									return;
 								}
 								if (maxDownloadCount != 0) downloadCount++;
 
-								if (result.getLeft()) {
-									File file = result.getRight();
-									if (file != null) {
-										// move the file to the valid directory
-								    File fTo = new File(file.getAbsolutePath().replace("/tmp/", "/valid/"));
-								    if (moveFile(file, fTo)) {
-											files.add(file.getName());
-										}
+								if (pendingDownload.waitForCompletion()) {
+									File file = pendingDownload.getFile();
+									// move the file to the valid directory
+									File fTo = new File(file.getAbsolutePath().replace("/tmp/", "/valid/"));
+									if (moveFile(file, fTo)) {
+										files.add(file.getName());
 									}
-								} else if (result.getRight() == null) {
-									log.error("Failed to download key {} from cloud", s3ObjectKey);
 								}
 							}
 						}
@@ -293,7 +295,7 @@ public abstract class Downloader {
 	 * 		value: a list of _Balances.csv_sig files with the same name and from different nodes folder;
 	 * @throws Exception 
 	 */
-	protected HashMap<String, List<File>> downloadSigFiles(DownloadType type) throws Exception {
+	protected Map<String, List<File>> downloadSigFiles(DownloadType type) throws Exception {
 		String s3Prefix = null;
 		String lastValidFileName = null;
 		switch (type) {
@@ -320,115 +322,132 @@ public abstract class Downloader {
 				throw new UnsupportedOperationException("Invalid DownloadType " + type);
 		}
 
-		HashMap<String, List<File>> sigFilesMap = new HashMap<>();
+		final var sigFilesMap = new ConcurrentHashMap<String, List<File>>();
 
 		// refresh node account ids
+		if (Utility.checkStopFile()) {
+			log.info("Stop file found, stopping");
+			return sigFilesMap;
+		}
 		nodeAccountIds = loadNodeAccountIDs();
+		var threads = new LinkedList<Thread>();
+		/**
+		 * For each node, create a thread that will make S3 ListObject requests as many times as necessary to
+		 * start maxDownloads download operations.
+		 */
 		for (String nodeAccountId : nodeAccountIds) {
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found, stopping");
-				break;
-			}
-			log.debug("Downloading {} signature files for node {} created after file {}", type, nodeAccountId, lastValidFileName);
-			// Get a list of objects in the bucket, 100 at a time
-			String prefix = s3Prefix + nodeAccountId + "/";
-			int count = 0;
-			int downloadCount = 0;
-			int downloadMax = ConfigLoader.getMaxDownloadItems();
-			Stopwatch stopwatch = Stopwatch.createStarted();
+			String finalLastValidFileName = lastValidFileName;
+			String finalS3Prefix = s3Prefix;
+			var t = new Thread(() -> {
+				log.debug("Downloading {} signature files for node {} created after file {}", type, nodeAccountId, finalLastValidFileName);
+				// Get a list of objects in the bucket, 100 at a time
+				String prefix = finalS3Prefix + nodeAccountId + "/";
+				int downloadCount = 0;
+				int downloadMax = ConfigLoader.getMaxDownloadItems();
+				Stopwatch stopwatch = Stopwatch.createStarted();
 
-			ListObjectsRequest listRequest = new ListObjectsRequest()
-					.withBucketName(bucketName)
-					.withPrefix(prefix)
-					.withDelimiter("/")
-					.withMarker(prefix + lastValidFileName)
-					.withMaxKeys(100);
-			ObjectListing objects = s3Client.listObjects(listRequest);
-			try {
-				while(downloadCount <= downloadMax) {
-					if (Utility.checkStopFile()) {
-						log.info("Stop file found, stopping");
-						break;
-					}
-					List<S3ObjectSummary> summaries = objects.getObjectSummaries();
-					for(S3ObjectSummary summary : summaries) {
-						if (Utility.checkStopFile()) {
-							log.info("Stop file found, stopping");
-							break;
-						} else if (downloadCount >= downloadMax) {
-							break;
-						}
+				ListObjectsRequest listRequest = new ListObjectsRequest()
+						.withBucketName(bucketName)
+						.withPrefix(prefix)
+						.withDelimiter("/")
+						.withMarker(prefix + finalLastValidFileName)
+						.withMaxKeys(100);
+				ObjectListing objects = s3Client.listObjects(listRequest);
+				var pendingDownloads = new LinkedList<PendingDownload>();
+				try {
+					// Loop through the list of remote files beginning a download for each relevant sig file.
+					while (downloadCount <= downloadMax) {
+						List<S3ObjectSummary> summaries = objects.getObjectSummaries();
+						for (S3ObjectSummary summary : summaries) {
+							if (downloadCount >= downloadMax) {
+								break;
+							}
 
-						String s3ObjectKey = summary.getKey();
+							String s3ObjectKey = summary.getKey();
 
-						if (isNeededSigFile(s3ObjectKey, type) && (s3KeyComparator.compare(s3ObjectKey, prefix + lastValidFileName) > 0 || lastValidFileName.isEmpty())) {
-							String saveTarget = saveFilePath + s3ObjectKey;
-							Pair<Boolean, File> result = saveToLocal(bucketName, s3ObjectKey, saveTarget);
-							if (result.getLeft()) count++;
-							if (downloadMax != 0) downloadCount++;
-
-							File sigFile = result.getRight();
-							if (sigFile != null) {
-								String fileName = sigFile.getName();
-								List<File> files = sigFilesMap.getOrDefault(fileName, new ArrayList<>());
-								files.add(sigFile);
-								sigFilesMap.put(fileName, files);
+							if (isNeededSigFile(s3ObjectKey, type) &&
+									(s3KeyComparator.compare(s3ObjectKey, prefix + finalLastValidFileName) > 0 || finalLastValidFileName.isEmpty())) {
+								String saveTarget = saveFilePath + s3ObjectKey;
+								try {
+									pendingDownloads.add(saveToLocal(bucketName, s3ObjectKey, saveTarget));
+									if (downloadMax != 0) downloadCount++;
+								} catch (Exception ex) {
+									log.error("Failed downloading {}", s3ObjectKey, ex);
+									return;
+								}
 							}
 						}
+						if (downloadCount >= downloadMax) {
+							break;
+						} else if (objects.isTruncated()) {
+							objects = s3Client.listNextBatchOfObjects(objects);
+						} else {
+							break;
+						}
 					}
-					if (Utility.checkStopFile()) {
-						log.info("Stop file found, stopping");
-						break;
-					} else if (downloadCount >= downloadMax) {
-						break;
-					} else if (objects.isTruncated()) {
-						objects = s3Client.listNextBatchOfObjects(objects);
-					} else {
-						break;
-					}
+
+					/**
+					 * With the list of pending downloads - wait for them to complete and add them to the list
+					 * of downloaded signature files.
+					 */
+					var ref = new Object() {
+						int count = 0;
+					};
+					pendingDownloads.forEach((pd) -> {
+						try {
+							if (pd.waitForCompletion()) {
+								ref.count++;
+								File sigFile = pd.getFile();
+								String fileName = sigFile.getName();
+								synchronized (this) {
+									List<File> files = sigFilesMap.getOrDefault(fileName, Collections.synchronizedList(new ArrayList<>()));
+									if (files.isEmpty()) {
+										sigFilesMap.put(fileName, files);
+									}
+									files.add(sigFile);
+								}
+							}
+						} catch (InterruptedException ex) {
+							log.error("Failed downloading {} in {}", pd.getS3key(), pd.getStopwatch(), ex);
+						}
+					});
+					log.info("Downloaded {} {} signatures for node {} in {}", ref.count, type, nodeAccountId, stopwatch);
+				} catch (Exception e) {
+					log.error("Error downloading {} signature files for node {} after {}", type, nodeAccountId, stopwatch, e);
 				}
-				log.info("Downloaded {} {} signatures for node {} in {}", count, type, nodeAccountId, stopwatch);
-			} catch (Exception e) {
-				log.error("Error downloading {} signature files for node {} after {}", type, nodeAccountId, stopwatch, e);
-			}
+			});
+
+			t.start();
+			threads.add(t);
 		}
+		threads.forEach((t) -> {
+			try {
+				t.join();
+			} catch (InterruptedException ex) {
+				log.error("Failed joining downloader threads", ex);
+			}
+		});
 
 		return sigFilesMap;
 	}
 
 	/**
-	 * return a pair of download result:
-	 * boolean: download it or not.
-	 * True means we download it successfully; False means it already exists or we fail to download it;
-	 * File is the local file
+	 * Returns a PendingDownload for which the caller can waitForCompletion() to wait for the download to complete.
 	 * @param bucket_name
 	 * @param s3ObjectKey
 	 * @param localFilepath
 	 * @return
 	 */
-	protected Pair<Boolean, File> saveToLocal(String bucket_name, String s3ObjectKey, String localFilepath)  {
+	protected PendingDownload saveToLocal(String bucket_name, String s3ObjectKey, String localFilepath) throws Exception {
 		// ensure filePaths have OS specific separator
 		localFilepath = localFilepath.replace("/", "~");
 		localFilepath = localFilepath.replace("\\", "~");
 		localFilepath = localFilepath.replace("~", File.separator);
 
 		File f = new File(localFilepath).getAbsoluteFile();
-		Stopwatch stopwatch = Stopwatch.createStarted();
 
-		try {
-			Download download = xfer_mgr.download(bucket_name, s3ObjectKey, f);
-			download.waitForCompletion();
-			if (download.isDone()) {
-				log.debug("Finished downloading {} in {}", s3ObjectKey, stopwatch);
-				return Pair.of(true, f);
-			} else {
-				log.error("Failed downloading {} after {}", s3ObjectKey, stopwatch);
-				return Pair.of(false, null);
-			}
-		} catch (Exception ex) {
-			log.error("Failed downloading {} after {}", s3ObjectKey, stopwatch, ex);
-		}
-		return Pair.of(false, null);
+		Download download = xfer_mgr.download(bucket_name, s3ObjectKey, f);
+		return new PendingDownload(download, f, s3ObjectKey);
 	}
 
 	void shutdownTransferManager() {
@@ -530,6 +549,13 @@ public abstract class Downloader {
 		String s3ObjectKey = s3Prefix + nodeAccountId + "/" + fileName;
 
 		String localFileName = targetDir + "/" + fileName;
-		return saveToLocal(bucketName, s3ObjectKey, localFileName);
+		try {
+			var pendingDownload = saveToLocal(bucketName, s3ObjectKey, localFileName);
+			pendingDownload.waitForCompletion();
+			return Pair.of(pendingDownload.isDownloadSuccessful(), pendingDownload.getFile());
+		} catch (Exception ex) {
+			log.error("Failed downloading {}", s3ObjectKey, ex);
+			return Pair.of(false, null);
+		}
 	}
 }
