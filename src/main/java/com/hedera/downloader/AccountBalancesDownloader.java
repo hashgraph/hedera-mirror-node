@@ -63,7 +63,7 @@ public class AccountBalancesDownloader extends Downloader {
 
 				if (ConfigLoader.getBalanceVerifySigs()) {
 					// balance files with sig verification
-					HashMap<String, List<File>> sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
+					var sigFilesMap = downloader.downloadSigFiles(DownloadType.BALANCE);
 					//Verify signature files and download corresponding files of valid signature files
 					
 					downloader.verifySigsAndDownloadBalanceFiles(sigFilesMap);

@@ -61,9 +61,8 @@ public class RecordFileDownloader extends Downloader {
 	}
 
 	public void download() {
-		HashMap<String, List<File>> sigFilesMap;
 		try {
-			sigFilesMap = downloadSigFiles(DownloadType.RCD);
+			var sigFilesMap = downloadSigFiles(DownloadType.RCD);
 
 			// Verify signature files and download .rcd files of valid signature files
 			verifySigsAndDownloadRecordFiles(sigFilesMap);
@@ -113,11 +112,11 @@ public class RecordFileDownloader extends Downloader {
 
 		Collections.sort(fileNames);
 
+		if (Utility.checkStopFile()) {
+			log.info("Stop file found, stopping");
+			return;
+		}
 		for (String fileName : fileNames) {
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found, stopping");
-				break;
-			}
 			boolean valid = false;
 			List<File> sigFiles = sigFilesMap.get(fileName);
 
