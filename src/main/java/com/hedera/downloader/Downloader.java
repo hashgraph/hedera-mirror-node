@@ -39,6 +39,8 @@ import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.mirror.config.CommonDownloaderProperties;
+import com.hedera.mirror.config.DownloaderProperties;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
@@ -75,6 +77,7 @@ public abstract class Downloader {
 	protected static String bucketName;
 
 	protected static TransferManager xfer_mgr;
+	protected static DownloaderProperties downloaderProperties;
 
 	protected static AmazonS3 s3Client;
 
@@ -90,11 +93,7 @@ public abstract class Downloader {
 	
 	protected ApplicationStatus applicationStatus;
 
-	protected int awsListObjectsMaxKeys = 100;
-
-	private int signatureDownloadMaxThreads = 5;
-	private int signatureDownloadQueueSize = 50;
-	private int awsMaxConnections = 500;
+	private final CommonDownloaderProperties commonProps;
 
 	/**
 	 * Thread pool used one per node during the download process for signatures.
@@ -105,19 +104,13 @@ public abstract class Downloader {
 
 	public enum DownloadType {RCD, BALANCE, EVENT};
 
-	public Downloader() {
-		signatureDownloadThreadPool = new ThreadPoolExecutor(Math.min(signatureDownloadMaxThreads, 5),
-				signatureDownloadMaxThreads, 5, TimeUnit.SECONDS,
-				new ArrayBlockingQueue<Runnable>(signatureDownloadQueueSize));
+	public Downloader(final CommonDownloaderProperties props) {
+		commonProps = props;
+		signatureDownloadThreadPool = new ThreadPoolExecutor(commonProps.getCoreThreads(), commonProps.getMaxThreads(),
+				120, TimeUnit.SECONDS,
+				new ArrayBlockingQueue<Runnable>(commonProps.getTaskQueueSize()));
 
 		applicationStatus = new ApplicationStatus();
-		bucketName = ConfigLoader.getBucketName();
-
-		// Define retryPolicy
-		clientConfiguration = new ClientConfiguration();
-		clientConfiguration.setRetryPolicy(
-				PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(5));
-		clientConfiguration.setMaxConnections(awsMaxConnections);
 
 		nodeAccountIds = loadNodeAccountIDs();
 
@@ -149,7 +142,7 @@ public abstract class Downloader {
 		};
 
 		setupCloudConnection();
-		Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownTransferManager));
+		Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
 	}
 
 	List<String> loadNodeAccountIDs() {
@@ -253,7 +246,7 @@ public abstract class Downloader {
 				// Get a list of objects in the bucket, 100 at a time
 				String prefix = finalS3Prefix + nodeAccountId + "/";
 				int downloadCount = 0;
-				int downloadMax = ConfigLoader.getMaxDownloadItems();
+				int downloadMax = commonProps.getMaxDownloadItems();
 				Stopwatch stopwatch = Stopwatch.createStarted();
 
 				ListObjectsRequest listRequest = new ListObjectsRequest()
@@ -261,7 +254,7 @@ public abstract class Downloader {
 						.withPrefix(prefix)
 						.withDelimiter("/")
 						.withMarker(prefix + finalLastValidFileName)
-						.withMaxKeys(awsListObjectsMaxKeys);
+						.withMaxKeys(commonProps.getListObjectsMaxKeys());
 				ObjectListing objects = s3Client.listObjects(listRequest);
 				var pendingDownloads = new LinkedList<PendingDownload>();
 				try {
@@ -363,19 +356,39 @@ public abstract class Downloader {
 		return new PendingDownload(download, f, s3ObjectKey);
 	}
 
-	void shutdownTransferManager() {
-		log.info("Shutting down");
-		if (xfer_mgr != null) {
-			xfer_mgr.shutdownNow();
-			xfer_mgr = null;
-		}
+	void shutdown() {
 		if (signatureDownloadThreadPool != null) {
 			signatureDownloadThreadPool.shutdown();
 			signatureDownloadThreadPool = null;
 		}
+		shutdownTransferManager();
 	}
 
-	protected static void setupCloudConnection() {
+	static synchronized void shutdownTransferManager() {
+		if (xfer_mgr != null) {
+			xfer_mgr.shutdownNow();
+			xfer_mgr = null;
+		}
+	}
+
+	void shutdownThreadPool() {
+		log.info("Shutting down");
+	}
+
+	protected static synchronized void setupCloudConnection() {
+		if (xfer_mgr != null) {
+			return;
+		}
+
+		downloaderProperties = new DownloaderProperties();
+		bucketName = ConfigLoader.getBucketName();
+
+		// Define retryPolicy
+		clientConfiguration = new ClientConfiguration();
+		clientConfiguration.setRetryPolicy(
+				PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(5));
+		clientConfiguration.setMaxConnections(downloaderProperties.getMaxConnections());
+
 		if (ConfigLoader.getCloudProvider() == CLOUD_PROVIDER.S3) {
 			if (ConfigLoader.getAccessKey().contentEquals("")) {
 				s3Client = AmazonS3ClientBuilder.standard()
@@ -424,9 +437,9 @@ public abstract class Downloader {
 				.withExecutorFactory(new ExecutorFactory() {
 					@Override
 					public ExecutorService newExecutor() {
-						final var max = ConfigLoader.getTransferManagerMaxThreads();
-						return new ThreadPoolExecutor(Math.min(max, 10), max, 60, TimeUnit.SECONDS,
-								new ArrayBlockingQueue<Runnable>(300));
+						return new ThreadPoolExecutor(downloaderProperties.getCoreThreads(), downloaderProperties.getMaxThreads(),
+								120, TimeUnit.SECONDS,
+								new ArrayBlockingQueue<Runnable>(downloaderProperties.getTaskQueueSize()));
 					}
 				})
 				.withS3Client(s3Client).build();

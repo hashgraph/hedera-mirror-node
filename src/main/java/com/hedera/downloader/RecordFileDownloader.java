@@ -51,6 +51,7 @@ public class RecordFileDownloader extends Downloader {
 	private final RecordProperties recordProperties;
 
 	public RecordFileDownloader(RecordProperties recordProperties) {
+		super(recordProperties.getDownloader());
 		this.recordProperties = recordProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);

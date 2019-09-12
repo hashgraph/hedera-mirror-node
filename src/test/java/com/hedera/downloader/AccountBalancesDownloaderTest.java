@@ -55,14 +55,15 @@ public class AccountBalancesDownloaderTest {
     private S3Mock s3;
     private FileCopier fileCopier;
     private AccountBalancesDownloader downloader;
+    private BalanceProperties properties = new BalanceProperties();
 
     @BeforeEach
     void before() throws Exception {
         ConfigLoader.setAddressBookFile("./config/0.0.102-testnet");
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
-        ConfigLoader.setMaxDownloadItems(100);
+        properties.getDownloader().setMaxDownloadItems(100);
 
-        downloader = new AccountBalancesDownloader(new BalanceProperties());
+        downloader = new AccountBalancesDownloader(properties);
         downloader.applicationStatus = applicationStatus;
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.BALANCE));
@@ -110,15 +111,20 @@ public class AccountBalancesDownloaderTest {
     @Test
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {
-        ConfigLoader.setMaxDownloadItems(1);
-        fileCopier.copy();
-        downloader.download();
-        assertThat(Files.walk(validPath))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(1)
-                .allMatch(p -> Utility.isBalanceFile(p.toString()))
-                .extracting(Path::getFileName)
-                .contains(Paths.get("2019-08-30T18_15_00.016002001Z_Balances.csv"));
+        var pre = properties.getDownloader().getMaxDownloadItems();
+        try {
+            properties.getDownloader().setMaxDownloadItems(1);
+            fileCopier.copy();
+            downloader.download();
+            assertThat(Files.walk(validPath))
+                    .filteredOn(p -> !p.toFile().isDirectory())
+                    .hasSize(1)
+                    .allMatch(p -> Utility.isBalanceFile(p.toString()))
+                    .extracting(Path::getFileName)
+                    .contains(Paths.get("2019-08-30T18_15_00.016002001Z_Balances.csv"));
+        } finally {
+            properties.getDownloader().setMaxDownloadItems(pre);
+        }
     }
 
     @Test

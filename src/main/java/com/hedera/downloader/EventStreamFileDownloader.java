@@ -49,6 +49,7 @@ public class EventStreamFileDownloader extends Downloader {
 	private final EventProperties eventProperties;
 
 	public EventStreamFileDownloader(EventProperties eventProperties) {
+		super(eventProperties.getDownloader());
 		this.eventProperties = eventProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);

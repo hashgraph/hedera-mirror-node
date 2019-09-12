@@ -73,12 +73,6 @@ public class ConfigLoader {
 	private static final boolean DEFAULT_ACCOUNT_BALANCES_USE_TRANSACTION = false;
 	private static boolean accountBalancesUseTransaction = DEFAULT_ACCOUNT_BALANCES_USE_TRANSACTION;
 
-	private static final int DEFAULT_TRANSFER_MANAGER_MAX_THREADS = 60;
-	private static int transferManagerMaxThreads = DEFAULT_TRANSFER_MANAGER_MAX_THREADS;
-
-	private static final int DEFAULT_DOWNLOADER_MAX_THREADS = 13;
-	private static int downloaderMaxThreads = DEFAULT_DOWNLOADER_MAX_THREADS;
-
 	// location of account balances on S3
 	private static String accountBalanceS3Location = "accountBalances/balance";
 
@@ -110,8 +104,6 @@ public class ConfigLoader {
     private static String dbUserName = "";
     // database password
     private static String dbPassword = "";
-    // max download items for testing
-    private static int maxDownloadItems = 0;
 
     private static Dotenv dotEnv = Dotenv.configure().ignoreIfMissing().load();
 
@@ -187,18 +179,6 @@ public class ConfigLoader {
 			if (configJsonObject.has("accountBalancesUseTransaction")) {
 				accountBalancesUseTransaction = configJsonObject.get("accountBalancesUseTransaction").getAsBoolean();
 			}
-			if (configJsonObject.has("transferManagerMaxThreads")) {
-				var i = configJsonObject.get("transferManagerMaxThreads").getAsInt();
-				if (i > 0) {
-					transferManagerMaxThreads = i;
-				}
-			}
-			if (configJsonObject.has("downloaderMaxThreads")) {
-				var i = configJsonObject.get("downloaderMaxThreads").getAsInt();
-				if (i > 0) {
-					downloaderMaxThreads = i;
-				}
-			}
 			if (configJsonObject.has("systemShardNum")) {
 				systemShardNum = configJsonObject.get("systemShardNum").getAsLong();
 			}
@@ -247,10 +227,7 @@ public class ConfigLoader {
 					dbPassword = configJsonObject.get("dbPassword").getAsString();
 				}
 			}
-			if (configJsonObject.has("maxDownloadItems")) {
-				maxDownloadItems = configJsonObject.get("maxDownloadItems").getAsInt();
-			}
-			
+
 			if (configJsonObject.has("persistClaims")) {
 				persistClaims = configJsonObject.get("persistClaims").getAsBoolean();
 			}
@@ -359,13 +336,6 @@ public class ConfigLoader {
 		return accountBalanceS3Location;
 	}
 
-	public static int getTransferManagerMaxThreads() {
-		return transferManagerMaxThreads;
-	}
-	public static int getDownloaderMaxThreads() {
-		return downloaderMaxThreads;
-	}
-
 	public static long getSystemShardNum() {
 		return systemShardNum;
 	}
@@ -395,14 +365,6 @@ public class ConfigLoader {
 	}
 	public static String getDBPassword() {
 		return dbPassword;
-	}
-
-	public static int getMaxDownloadItems() {
-		return maxDownloadItems;
-	}
-
-	public static void setMaxDownloadItems(int maxDownloadItems) {
-		ConfigLoader.maxDownloadItems = maxDownloadItems;
 	}
 
 	public static boolean getPersistClaims() {

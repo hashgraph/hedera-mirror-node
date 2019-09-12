@@ -48,6 +48,7 @@ public class AccountBalancesDownloader extends Downloader {
 	private final BalanceProperties balanceProperties;
 
 	public AccountBalancesDownloader(BalanceProperties balanceProperties) {
+		super(balanceProperties.getDownloader());
 		this.balanceProperties = balanceProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);
