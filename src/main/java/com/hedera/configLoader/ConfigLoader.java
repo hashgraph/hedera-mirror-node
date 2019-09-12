@@ -76,7 +76,7 @@ public class ConfigLoader {
 	private static final int DEFAULT_TRANSFER_MANAGER_MAX_THREADS = 60;
 	private static int transferManagerMaxThreads = DEFAULT_TRANSFER_MANAGER_MAX_THREADS;
 
-	private static final int DEFAULT_DOWNLOADER_MAX_THREADS = 39;
+	private static final int DEFAULT_DOWNLOADER_MAX_THREADS = 13;
 	private static int downloaderMaxThreads = DEFAULT_DOWNLOADER_MAX_THREADS;
 
 	// location of account balances on S3
