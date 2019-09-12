@@ -211,56 +211,21 @@ const getOneAccount = function (req, res) {
 
     const creditDebit = utils.parseCreditDebitParams(req);
 
-    const accountQuery = 'eaccount.entity_shard = ?\n' +
-        '    and eaccount.entity_realm = ?\n' +
-        '    and eaccount.entity_num = ?' +
+    const accountQuery = 'entity_shard = ?\n' +
+        '    and entity_realm = ?\n' +
+        '    and entity_num = ?' +
         (creditDebit === 'credit' ? ' and ctl.amount > 0 ' :
             creditDebit === 'debit' ? ' and ctl.amount < 0 ' : '');
     const accountParams = [acc.shard, acc.realm, acc.num];
 
-    let innerQuery =
-    '      select distinct t.consensus_ns\n' +
-    '       from t_transactions t\n' +
-    '       join t_transaction_results tr on t.fk_result_id = tr.id\n' +
-    '       join t_cryptotransferlists ctl on t.consensus_ns = ctl.consensus_timestamp\n' +
-    '       join t_entities eaccount on eaccount.id = ctl.account_id\n' +
-    '       where ' +
-            [accountQuery, tsQuery, resultTypeQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
-    '       order by t.consensus_ns ' + order + '\n' +
-    '        ' + limitQuery;
+    let innerQuery = transactions.getTransactionsInnerQuery(accountQuery, tsQuery, resultTypeQuery, 
+        limitQuery, creditDebit, order);
 
-  const innerParams = accountParams
-        .concat(tsParams)
-        .concat(limitParams);
+    const innerParams = accountParams
+            .concat(tsParams)
+            .concat(limitParams);
 
-    let transactionsQuery =
-        "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
-        "   , t.memo\n" +
-        "   , t.consensus_ns\n" +
-        '   , valid_start_ns\n' +
-        "   , ttr.result\n" +
-        "   , t.fk_trans_type_id\n" +
-        "   , ttt.name\n" +
-        "   , t.fk_node_acc_id\n" +
-        "   , enode.entity_shard as node_shard\n" +
-        "   , enode.entity_realm as node_realm\n" +
-        "   , enode.entity_num as node_num\n" +
-        "   , account_id\n" +
-        "   , eaccount.entity_shard as account_shard\n" +
-        "   , eaccount.entity_realm as account_realm\n" +
-        "   , eaccount.entity_num as account_num\n" +
-        "   , amount\n" +
-        "   , t.charged_tx_fee\n" +
-        " from (" + innerQuery + ") as tlist\n" +
-        "   join t_transactions t on tlist.consensus_ns = t.consensus_ns\n" +
-        "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +
-        "   join t_entities enode on enode.id = t.fk_node_acc_id\n" +
-        "   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n" +
-        "   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n" +
-        "   left outer join t_cryptotransferlists ctl on  ctl.fk_trans_id = t.id\n" +
-        "   join t_entities eaccount on eaccount.id = ctl.account_id\n" +
-        "   order by t.consensus_ns " + order + "\n";
-
+    let transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
 
     const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgress(
         transactionsQuery, innerParams);

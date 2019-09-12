@@ -77,6 +77,86 @@ const createTransferLists = function (rows, arr) {
     })
 }
 
+/**
+ * Cryptotransfer transactions queries are orgnaized as follows: First there's an inner query that selects the 
+ * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to 
+ * extract all relevant information for those transactions. 
+ * This function returns the outer query base on the consensus_timestamps list returned by the inner query.
+ * Also see: getTransactionsInnerQuery function
+ * @param {String} innerQuery SQL query that provides a list of unique transactions that match the query criteria
+ * @param {String} order Sorting order  
+ * @return {String} outerQuery Fully formed SQL query
+ */
+const getTransactionsOuterQuery = function (innerQuery, order) {
+    let outerQuery = 
+        "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
+        "   , t.memo\n" +
+        '	, t.consensus_ns\n' +
+        '   , valid_start_ns\n' +
+        "   , ttr.result\n" +
+        "   , t.fk_trans_type_id\n" +
+        "   , ttt.name\n" +
+        "   , t.fk_node_acc_id\n" +
+        "   , enode.entity_shard as node_shard\n" +
+        "   , enode.entity_realm as node_realm\n" +
+        "   , enode.entity_num as node_num\n" +
+        "   , account_id\n" +
+        "   , eaccount.entity_shard as account_shard\n" +
+        "   , eaccount.entity_realm as account_realm\n" +
+        "   , eaccount.entity_num as account_num\n" +
+        "   , amount\n" +
+        "   , t.charged_tx_fee\n" +
+        " from (" + innerQuery + ") as tlist\n" +
+        "   join t_transactions t on tlist.consensus_timestamp = t.consensus_ns\n" +
+        "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +
+        "   join t_entities enode on enode.id = t.fk_node_acc_id\n" +
+        "   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n" +
+        "   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n" +
+        "   left outer join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl.consensus_timestamp\n" +
+        "   join t_entities eaccount on eaccount.id = ctl.account_id\n" +
+        "   order by t.consensus_ns " + order + "\n";
+    return (outerQuery);
+}
+
+/**
+ * Cryptotransfer transactions queries are orgnaized as follows: First there's an inner query that selects the 
+ * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to 
+ * extract all relevant information for those transactions. 
+ * This function forms the inner query base based on all the query criteria specified in the REST URL
+ * It selects a list of unique transactions (consensus_timestamps).
+ * Also see: getTransactionsOuterQuery function
+ * @param {String} accountQuery SQL query that filters based on the account ids
+ * @param {String} tsQuery SQL query that filters based on the timestamps
+ * @param {String} resultTypeQuery SQL query that filters based on the result types
+ * @param {String} limitQuery SQL query that limits the number of unique transactions returned
+ * @param {String} creditDebit Either 'credit', 'debit' to filter based on credit or debit transactions
+ * @param {String} order Sorting order  
+ * @return {String} innerQuery SQL query that filters transactions based on various types of queries
+ */
+const getTransactionsInnerQuery = function (accountQuery, tsQuery, resultTypeQuery, limitQuery, creditDebit, order) {
+    let innerQuery =
+    '      select distinct ctl.consensus_timestamp\n' +
+    '       from t_cryptotransferlists ctl\n' +
+    '       join t_transactions t on t.consensus_ns = ctl.consensus_timestamp\n' +
+    '       join t_transaction_results tr on t.fk_result_id = tr.id\n' +
+    '       join t_entities eaccount on eaccount.id = ctl.account_id\n' +
+    '       where ';
+    if (accountQuery) {
+        innerQuery += "ctl.account_id in (select id from t_entities\n" +
+            "\t\twhere " + accountQuery + " and fk_entity_type_id = 1 limit 1000)\n"; // Max limit on the inner query.
+    } else {
+        innerQuery += "1=1\n";
+    }
+    innerQuery += 'and ' + [tsQuery, resultTypeQuery].map(q => q === '' ? '1=1' : q).join(' and ');
+    if ('credit' === creditDebit) {
+        innerQuery += ' and ctl.amount > 0 ';
+    } else if ('debit' === creditDebit) {
+        innerQuery += ' and ctl.amount < 0 ';
+    }
+    innerQuery += "   order by ctl.consensus_timestamp " + order + "\n" + limitQuery;
+    return (innerQuery);
+}
+
 const reqToSql = function(req) {
     // Parse the filter parameters for credit/debit, account-numbers,
     // timestamp, and pagination (limit)
@@ -101,45 +181,10 @@ const reqToSql = function(req) {
     let sqlParams = accountParams.concat(tsParams)
         .concat(limitParams);
 
-    let sqlQuery =
-        "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
-        "   , t.memo\n" +
-        '	, t.consensus_ns\n' +
-        '   , valid_start_ns\n' +
-        "   , ttr.result\n" +
-        "   , t.fk_trans_type_id\n" +
-        "   , ttt.name\n" +
-        "   , t.fk_node_acc_id\n" +
-        "   , enode.entity_shard as node_shard\n" +
-        "   , enode.entity_realm as node_realm\n" +
-        "   , enode.entity_num as node_num\n" +
-        "   , account_id\n" +
-        "   , eaccount.entity_shard as account_shard\n" +
-        "   , eaccount.entity_realm as account_realm\n" +
-        "   , eaccount.entity_num as account_num\n" +
-        "   , amount\n" +
-        "   , t.charged_tx_fee\n" +
-        "   from t_transactions t\n" +
-        "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +
-        "   join t_entities enode on enode.id = t.fk_node_acc_id\n" +
-        "   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n" +
-        "   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n" +
-        "   left outer join t_cryptotransferlists ctl on  ctl.consensus_timestamp = t.consensus_ns\n" +
-        "   join t_entities eaccount on eaccount.id = ctl.account_id\n" +
-        "   where ";
-    if (accountQuery) {
-        sqlQuery += "ctl.account_id in (select id from t_entities\n" +
-            "\t\twhere " + accountQuery + " and fk_entity_type_id = 1 limit 1000)\n"; // Max limit on the inner query.
-    } else {
-        sqlQuery += "1=1\n";
-    }
-    sqlQuery += 'and ' + [tsQuery, resultTypeQuery].map(q => q === '' ? '1=1' : q).join(' and ');
-    if ('credit' === creditDebit) {
-        sqlQuery += ' and ctl.amount > 0 ';
-    } else if ('debit' === creditDebit) {
-        sqlQuery += ' and ctl.amount < 0 ';
-    }
-    sqlQuery += "   order by t.consensus_ns " + order + "\n" + limitQuery;
+    let innerQuery = getTransactionsInnerQuery(accountQuery, tsQuery, resultTypeQuery, limitQuery, creditDebit, order);
+    let sqlQuery = getTransactionsOuterQuery(innerQuery, order);
+
+
     return {
         limit: limit,
         query: utils.convertMySqlStyleQueryToPostgress(sqlQuery, sqlParams),
@@ -281,5 +326,7 @@ module.exports = {
     getTransactions: getTransactions,
     getOneTransaction: getOneTransaction,
     createTransferLists: createTransferLists,
-    reqToSql: reqToSql
+    reqToSql: reqToSql,
+    getTransactionsInnerQuery: getTransactionsInnerQuery,
+    getTransactionsOuterQuery: getTransactionsOuterQuery
 }
