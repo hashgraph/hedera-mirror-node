@@ -67,13 +67,13 @@ public class EventStreamFileDownloader extends Downloader {
 		}
 
 		try {
-			Map<String, List<File>> sigFilesMap = downloadSigFiles(DownloadType.EVENT);
-
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, exiting");
 				return;
 			}
-			
+
+			final var sigFilesMap = downloadSigFiles(DownloadType.EVENT);
+
 			// Verify signature files and download .evts files of valid signature files
 			verifySigsAndDownloadEventStreamFiles(sigFilesMap);
 			verifyValidFiles();

@@ -69,7 +69,7 @@ public class RecordFileDownloader extends Downloader {
 				return;
 			}
 
-			Map<String, List<File>> sigFilesMap = downloadSigFiles(DownloadType.RCD);
+			final var sigFilesMap = downloadSigFiles(DownloadType.RCD);
 			verifySigsAndDownloadRecordFiles(sigFilesMap);
 		} catch (Exception e) {
 			log.error("Error downloading and verifying new record files", e);
@@ -117,11 +117,11 @@ public class RecordFileDownloader extends Downloader {
 
 		Collections.sort(fileNames);
 
+		if (Utility.checkStopFile()) {
+			log.info("Stop file found, stopping");
+			return;
+		}
 		for (String fileName : fileNames) {
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found, stopping");
-				break;
-			}
 			boolean valid = false;
 			List<File> sigFiles = sigFilesMap.get(fileName);
 
