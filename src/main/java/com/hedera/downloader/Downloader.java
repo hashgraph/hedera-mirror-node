@@ -60,10 +60,12 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -91,13 +93,17 @@ public abstract class Downloader {
 	/**
 	 * Thread pool used one per node during the download process for signatures.
 	 */
-	ExecutorService sigDownloadThreadPool = Executors.newFixedThreadPool(ConfigLoader.getDownloaderMaxThreads());
+	ExecutorService sigDownloadThreadPool;
 
 	String saveFilePath = "";
 
 	public enum DownloadType {RCD, BALANCE, EVENT};
 
 	public Downloader() throws Exception {
+		final var max = ConfigLoader.getDownloaderMaxThreads();
+		sigDownloadThreadPool = new ThreadPoolExecutor(Math.min(max, 5), max, 5, TimeUnit.SECONDS,
+				new ArrayBlockingQueue<Runnable>(50));
+
 		applicationStatus = new ApplicationStatus();
 		bucketName = ConfigLoader.getBucketName();
 
@@ -105,6 +111,7 @@ public abstract class Downloader {
 		clientConfiguration = new ClientConfiguration();
 		clientConfiguration.setRetryPolicy(
 				PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(5));
+		clientConfiguration.setMaxConnections(500);
 
 		nodeAccountIds = loadNodeAccountIDs();
 
@@ -422,7 +429,7 @@ public abstract class Downloader {
 							log.error("Failed downloading {} in {}", pd.getS3key(), pd.getStopwatch(), ex);
 						}
 					});
-					log.info("Downloaded {} {} signatures for node {} in {}", ref.count, type, nodeAccountId);
+					log.info("Downloaded {} {} signatures for node {} in {}", ref.count, type, nodeAccountId, stopwatch);
 				} catch (Exception e) {
 					log.error("Error downloading {} signature files for node {} after {}", type, nodeAccountId, stopwatch, e);
 				}
@@ -466,6 +473,9 @@ public abstract class Downloader {
 		log.info("Shutting down");
 		if (xfer_mgr != null) {
 			xfer_mgr.shutdownNow();
+		}
+		if (sigDownloadThreadPool != null) {
+			sigDownloadThreadPool.shutdown();
 		}
 	}
 
@@ -516,7 +526,9 @@ public abstract class Downloader {
 				.withExecutorFactory(new ExecutorFactory() {
 					@Override
 					public ExecutorService newExecutor() {
-						return Executors.newFixedThreadPool(ConfigLoader.getTransferManagerMaxThreads());
+						final var max = ConfigLoader.getTransferManagerMaxThreads();
+						return new ThreadPoolExecutor(Math.min(max, 10), max, 60, TimeUnit.SECONDS,
+								new ArrayBlockingQueue<Runnable>(300));
 					}
 				})
 				.withS3Client(s3Client).build();
