@@ -44,11 +44,12 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @TestMethodOrder(OrderAnnotation.class)
 @ExtendWith(MockitoExtension.class)
-public class CryptoRecordParserTest {
+public class CryptoRecordParserTestIT {
 
     @TempDir
     Path dataPath;
@@ -72,7 +73,6 @@ public class CryptoRecordParserTest {
     }
 
     @Test
-    @Tag("IntegrationTest")
     @Order(1)
     @DisplayName("Parse record files")
     void parseRecordFiles() throws Exception {
@@ -97,20 +97,20 @@ public class CryptoRecordParserTest {
 		
     }
     @Test
-    @Tag("IntegrationTest")
     @Order(2)
     @DisplayName("Parse record files - check counts")
     void parseRecordFilesCheckCounts() throws Exception {
-    	assertEquals(5, DBHelper.countRecordFiles());
-    	assertEquals(14, DBHelper.countTransactions());
-    	assertEquals(9, DBHelper.countEntities());
-    	assertEquals(0, DBHelper.countContractResult());
-    	assertEquals(60, DBHelper.countCryptoTransferLists());
-    	assertEquals(0, DBHelper.countLiveHashes());
+    	assertAll(
+                () -> assertEquals(5, DBHelper.countRecordFiles())
+                ,() -> assertEquals(14, DBHelper.countTransactions())
+                ,() -> assertEquals(9, DBHelper.countEntities())
+                ,() -> assertEquals(0, DBHelper.countContractResult())
+                ,() -> assertEquals(60, DBHelper.countCryptoTransferLists())
+                ,() -> assertEquals(0, DBHelper.countLiveHashes())
+        );    	
     }
         
     @Test
-    @Tag("IntegrationTest")
     @Order(2)
     @DisplayName("Parse record files - check application status")
     void parseRecordFilesCheckApplicationStatus() throws Exception {
@@ -118,7 +118,6 @@ public class CryptoRecordParserTest {
     }
 
     @Test
-    @Tag("IntegrationTest")
     @Order(2)
     @DisplayName("Parse record files - check simple crypto create")
     void parseRecordFilesCheckCryptoCreateSimple() throws Exception {
@@ -138,29 +137,31 @@ public class CryptoRecordParserTest {
     	long consensusNS = 1568033824458639000L;
     			
     	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNS);
-    	assertEquals(3, DBCryptoTransfers.checkCount(transaction.id));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -8404260));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 507679));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 7896581));
 
-    	// check entity
     	DBEntity createdAccount = new DBEntity();
     	createdAccount.getEntityDetails(transaction.cudEntity);
-    	assertEquals(2592000, createdAccount.autoRenewPeriod);
-    	assertEquals(0, createdAccount.proxyAccountNum);
-    	assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.key);
-    	assertEquals(1001, createdAccount.entityNum);
-    	assertEquals(0, createdAccount.entityShard);
-    	assertEquals(0, createdAccount.entityRealm);
-    	assertEquals("account", createdAccount.entityType);
-    	assertFalse(createdAccount.deleted);
+    	
+    	assertAll(
+    	    	() -> assertEquals(3, DBCryptoTransfers.checkCount(transaction.id))
+    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -8404260))
+    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 507679))
+    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 7896581))
+    	    	,() -> assertEquals(2592000, createdAccount.autoRenewPeriod)
+    	    	,() -> assertEquals(0, createdAccount.proxyAccountNum)
+    	    	,() -> assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.key)
+    	    	,() -> assertEquals(1001, createdAccount.entityNum)
+    	    	,() -> assertEquals(0, createdAccount.entityShard)
+    	    	,() -> assertEquals(0, createdAccount.entityRealm)
+    	    	,() -> assertEquals("account", createdAccount.entityType)
+    	    	,() -> assertFalse(createdAccount.deleted)
+        );    	
+
     	//TODO: assertEquals(10000, createdAccount.receiveRecordThreshold);
     	//TODO: assertEquals(15000, createdAccount.sendRecordThreshold);
     	//TODO: assertEquals(true, createdAccount.receiverSignatureRequired);
     }
 
     @Test
-    @Tag("IntegrationTest")
     @Order(2)
     @DisplayName("Parse record files - check complex crypto create")
     void parseRecordFilesCheckCryptoCreateComplex() throws Exception {
@@ -181,29 +182,30 @@ public class CryptoRecordParserTest {
     	long consensusNS = 1568033825587673001L;
     			
     	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNS);
-    	assertEquals(3, DBCryptoTransfers.checkCount(transaction.id));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -13777682));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 525706));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 13251976));
-    	
-    	// check entity
     	DBEntity createdAccount = new DBEntity();
     	createdAccount.getEntityDetails(transaction.cudEntity);
-    	assertEquals(10368000, createdAccount.autoRenewPeriod);
-    	assertEquals(3, createdAccount.proxyAccountNum);
-    	assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.key);
-    	assertEquals(1002, createdAccount.entityNum);
-    	assertEquals(0, createdAccount.entityShard);
-    	assertEquals(0, createdAccount.entityRealm);
-    	assertEquals("account", createdAccount.entityType);
-    	assertFalse(createdAccount.deleted);
+
+    	assertAll(
+    	    	() -> assertEquals(3, DBCryptoTransfers.checkCount(transaction.id))
+    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -13777682))
+    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 525706))
+    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 13251976))
+    	    	,() -> assertEquals(10368000, createdAccount.autoRenewPeriod)
+    	    	,() -> assertEquals(3, createdAccount.proxyAccountNum)
+    	    	,() -> assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.key)
+    	    	,() -> assertEquals(1002, createdAccount.entityNum)
+    	    	,() -> assertEquals(0, createdAccount.entityShard)
+    	    	,() -> assertEquals(0, createdAccount.entityRealm)
+    	    	,() -> assertEquals("account", createdAccount.entityType)
+    	    	,() -> assertFalse(createdAccount.deleted)
+        );    	
+    	
     	//TODO: assertEquals(10000, createdAccount.receiveRecordThreshold);
     	//TODO: assertEquals(15000, createdAccount.sendRecordThreshold);
     	//TODO: assertEquals(true, createdAccount.receiverSignatureRequired);
     }
 
     @Test
-    @Tag("IntegrationTest")
     @Order(2)
     @DisplayName("Parse record files - crypto transfer no memo")
     void parseRecordFilesCheckCryptoTransferNoMemo() throws Exception {
@@ -224,16 +226,17 @@ public class CryptoRecordParserTest {
     	long consensusNS = 1568033826590149000L;
     			
     	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNS);
-    	assertEquals(5, DBCryptoTransfers.checkCount(transaction.id));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -84055));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 5126));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 78929));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 99, 200));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -200));
+    	assertAll(
+    			() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.id))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -84055))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 5126))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 78929))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 99, 200))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -200))
+		);
     }
 
     @Test
-    @Tag("IntegrationTest")
     @Order(2)
     @DisplayName("Parse record files - crypto transfer with memo")
     void parseRecordFilesCheckCryptoTransferWithMemo() throws Exception {
@@ -254,15 +257,16 @@ public class CryptoRecordParserTest {
     	long consensusNS = 1568033827588110000L;
     			
     	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNS);
-    	assertEquals(5, DBCryptoTransfers.checkCount(transaction.id));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -84481));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 5156));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 79325));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 300));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -300));
+    	assertAll(
+    			() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.id))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -84481))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 5156))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 79325))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 300))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -300))
+		);
     }
     @Test
-    @Tag("IntegrationTest")
     @Order(2)
     @DisplayName("Parse record files - crypto update")
     void parseRecordFilesCheckCryptoUpdate() throws Exception {
@@ -283,33 +287,33 @@ public class CryptoRecordParserTest {
     	long consensusNS = 1568033829664529000L;
     			
     	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, updAccount, recordFile, consensusNS);
-
-        assertEquals(3, DBCryptoTransfers.checkCount(transaction.id));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -410373));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 12047));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 398326));
-
-    	// check entity
     	DBEntity updatedAccount = new DBEntity();
     	updatedAccount.getEntityDetails(transaction.cudEntity);
-    	assertEquals(432000, updatedAccount.autoRenewPeriod);
-    	assertEquals(1568552229, updatedAccount.expiryTimeSeconds);
-    	assertEquals(599705000, updatedAccount.expiryTimeNanos);
-    	assertEquals(1568552229599705000L, updatedAccount.expiryTimeNs);
-    	assertEquals(5, updatedAccount.proxyAccountNum);
-    	assertEquals("1220481d7771e05d9b4099f19c24d4fe361e01584d48979a8f02ff286cf36d61485e", updatedAccount.key);
-    	assertEquals(1003, updatedAccount.entityNum);
-    	assertEquals(0, updatedAccount.entityShard);
-    	assertEquals(0, updatedAccount.entityRealm);
-    	assertEquals("account", updatedAccount.entityType);
-    	assertFalse(updatedAccount.deleted);
+
+    	assertAll(
+    			() -> assertEquals(3, DBCryptoTransfers.checkCount(transaction.id))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -410373))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 12047))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 398326))
+    			,() -> assertEquals(432000, updatedAccount.autoRenewPeriod)
+    			,() -> assertEquals(1568552229, updatedAccount.expiryTimeSeconds)
+    			,() -> assertEquals(599705000, updatedAccount.expiryTimeNanos)
+    			,() -> assertEquals(1568552229599705000L, updatedAccount.expiryTimeNs)
+    			,() -> assertEquals(5, updatedAccount.proxyAccountNum)
+    			,() -> assertEquals("1220481d7771e05d9b4099f19c24d4fe361e01584d48979a8f02ff286cf36d61485e", updatedAccount.key)
+    			,() -> assertEquals(1003, updatedAccount.entityNum)
+    			,() -> assertEquals(0, updatedAccount.entityShard)
+    			,() -> assertEquals(0, updatedAccount.entityRealm)
+    			,() -> assertEquals("account", updatedAccount.entityType)
+    			,() -> assertFalse(updatedAccount.deleted)
+		);
+
     	//TODO: assertEquals(10000, updatedAccount.receiveRecordThreshold);
     	//TODO: assertEquals(15000, updatedAccount.sendRecordThreshold);
     	//TODO: assertEquals(true, updatedAccount.receiverSignatureRequired);
 
     }
     @Test
-    @Tag("IntegrationTest")
     @Order(2)
     @DisplayName("Parse record files - crypto delete")
     void parseRecordFilesCheckCryptoDelete() throws Exception {
@@ -330,25 +334,24 @@ public class CryptoRecordParserTest {
     	long consensusNS = 1568033831679017000L;
     			
     	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, consensusSeconds, consensusNanos, payerAccount, txFee, initialBalance, updAccount, recordFile, consensusNS);
-
-        assertEquals(5, DBCryptoTransfers.checkCount(transaction.id));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -6813352));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 265394));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 6547958));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 1004, -2000));
-    	assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, 2000));
-
-    	// check entity
     	DBEntity updatedAccount = new DBEntity();
     	updatedAccount.getEntityDetails(transaction.cudEntity);
-    	assertEquals(0, updatedAccount.expiryTimeNs);
-    	assertEquals(0, updatedAccount.proxyAccountNum);
-    	assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", updatedAccount.key);
-    	assertEquals(1004, updatedAccount.entityNum);
-    	assertEquals(0, updatedAccount.entityShard);
-    	assertEquals(0, updatedAccount.entityRealm);
-    	assertEquals("account", updatedAccount.entityType);
-    	assertTrue(updatedAccount.deleted);
+    	assertAll(
+    			() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.id))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, -6813352))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 3, 265394))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 98, 6547958))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 1004, -2000))
+    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.id, 2, 2000))
+    			,() -> assertEquals(0, updatedAccount.expiryTimeNs)
+    			,() -> assertEquals(0, updatedAccount.proxyAccountNum)
+    			,() -> assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", updatedAccount.key)
+    			,() -> assertEquals(1004, updatedAccount.entityNum)
+    			,() -> assertEquals(0, updatedAccount.entityShard)
+    			,() -> assertEquals(0, updatedAccount.entityRealm)
+    			,() -> assertEquals("account", updatedAccount.entityType)
+    			,() -> assertTrue(updatedAccount.deleted)
+		);
     	//TODO: assertEquals(10000, updatedAccount.receiveRecordThreshold);
     	//TODO: assertEquals(15000, updatedAccount.sendRecordThreshold);
     	//TODO: assertEquals(true, updatedAccount.receiverSignatureRequired);
