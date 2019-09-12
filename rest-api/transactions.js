@@ -249,7 +249,19 @@ const getOneTransaction = function (req, res) {
 
     // The transaction id is in the format of 'shard.realm.num-ssssssssss.nnnnnnnnn'
     // convert it in shard, realm, num and nanoseconds parameters
-    const sqlParams = req.params.id.replace(/(\d{10})-(\d{9})/, '$1$2').split(/[.-]/);
+    let txIdMatches = req.params.id.match(/(\d+)\.(\d+)\.(\d+)-(\d*)-(\d*)/);
+    if (txIdMatches === null || txIdMatches.length != 6) {
+        logger.info(`getOneTransaction: Invalid transaction id ${req.params.id}`);
+        res.status(404)
+            .send('Invalid Transaction id. Please use "shard.realm.num-ssssssssss.nnnnnnnnn" ' +
+                'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds');
+        return;
+    }
+    const sqlParams = [
+        txIdMatches[1], txIdMatches[2], txIdMatches[3], 
+        txIdMatches[4] + '' + txIdMatches[5]
+    ];
+
 
     let sqlQuery =
         "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
