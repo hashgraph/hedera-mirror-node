@@ -29,6 +29,8 @@ import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
 
+import static com.amazonaws.services.s3.transfer.Transfer.TransferState.Completed;
+
 /**
  * The results of a pending download from the AWS TransferManager.
  * Call waitForCompletion() to wait for the transfer to complete and get the status of whether it was successful
@@ -36,7 +38,6 @@ import java.io.File;
  */
 @Log4j2
 @Value
-@ToString(includeFieldNames=true)
 public class PendingDownload {
 	Download download;
 	Stopwatch stopwatch;
@@ -63,13 +64,17 @@ public class PendingDownload {
 		alreadyWaited = true;
 		try {
 			download.waitForCompletion();
-			if (download.isDone()) {
+			if (download.isDone() && (Completed == download.getState())) {
 				log.debug("Finished downloading {} in {}", s3key, stopwatch);
 				downloadSuccessful = true;
 			} else {
 				log.error("Failed downloading {} after {}", s3key, stopwatch);
 				downloadSuccessful = false;
 			}
+		} catch (InterruptedException e) {
+			log.error("Failed downloading {} after {}", s3key, stopwatch, e);
+			downloadSuccessful = false;
+			throw e;
 		} catch (Exception ex) {
 			log.error("Failed downloading {} after {}", s3key, stopwatch, ex);
 			downloadSuccessful = false;
