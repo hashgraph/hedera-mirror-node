@@ -22,7 +22,7 @@ public class BalanceProperties {
     public class BalanceDownloaderProperties implements CommonDownloaderProperties {
         private Duration frequency = Duration.ofMillis(100L);
 
-        @Min(1)
+        @Min(0)
         private int coreThreads = 5;
         @Min(1)
         private int maxThreads = 5;

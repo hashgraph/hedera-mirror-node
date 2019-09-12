@@ -13,7 +13,7 @@ public class DownloaderProperties {
     @Min(0)
     private int maxConnections = 500;
 
-    @Min(1)
+    @Min(0)
     private int coreThreads = 20;
     @Min(0)
     private int maxThreads = 60;
