@@ -247,9 +247,9 @@ const getOneTransaction = function (req, res) {
     logger.debug("--------------------  getTransactions --------------------");
     logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
 
-    // The transaction id is in the format of 'shard.realm.num-ssssssssss.nnnnnnnnn'
+    // The transaction id is in the format of 'shard.realm.num-ssssssssss-nnnnnnnnn'
     // convert it in shard, realm, num and nanoseconds parameters
-    let txIdMatches = req.params.id.match(/(\d+)\.(\d+)\.(\d+)-(\d*)-(\d*)/);
+    let txIdMatches = req.params.id.match(/(\d+)\.(\d+)\.(\d+)-(\d{10})-(\d{9})/);
     if (txIdMatches === null || txIdMatches.length != 6) {
         logger.info(`getOneTransaction: Invalid transaction id ${req.params.id}`);
         res.status(404)
