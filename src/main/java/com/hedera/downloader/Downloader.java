@@ -104,7 +104,7 @@ public abstract class Downloader {
 
 	public enum DownloadType {RCD, BALANCE, EVENT};
 
-	public Downloader(final CommonDownloaderProperties props) {
+	public Downloader(final CommonDownloaderProperties props, final DownloaderProperties dlProps) {
 		commonProps = props;
 		signatureDownloadThreadPool = new ThreadPoolExecutor(commonProps.getCoreThreads(), commonProps.getMaxThreads(),
 				120, TimeUnit.SECONDS,
@@ -141,7 +141,7 @@ public abstract class Downloader {
 			}
 		};
 
-		setupCloudConnection();
+		setupCloudConnection(dlProps);
 		Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
 	}
 
@@ -246,15 +246,18 @@ public abstract class Downloader {
 				// Get a list of objects in the bucket, 100 at a time
 				String prefix = finalS3Prefix + nodeAccountId + "/";
 				int downloadCount = 0;
-				int downloadMax = commonProps.getMaxDownloadItems();
+				int downloadMax = commonProps.getBatchSize();
 				Stopwatch stopwatch = Stopwatch.createStarted();
 
+				// batchSize (number of items we plan do download in a single batch) times 2 for file + sig
+				// + 5 for any other files we may skip
+				final var listSize = (commonProps.getBatchSize() * 2) + 5;
 				ListObjectsRequest listRequest = new ListObjectsRequest()
 						.withBucketName(bucketName)
 						.withPrefix(prefix)
 						.withDelimiter("/")
 						.withMarker(prefix + finalLastValidFileName)
-						.withMaxKeys(commonProps.getListObjectsMaxKeys());
+						.withMaxKeys(listSize);
 				ObjectListing objects = s3Client.listObjects(listRequest);
 				var pendingDownloads = new LinkedList<PendingDownload>();
 				try {
@@ -361,6 +364,7 @@ public abstract class Downloader {
 			signatureDownloadThreadPool.shutdown();
 			signatureDownloadThreadPool = null;
 		}
+		log.info("Shutting down");
 		shutdownTransferManager();
 	}
 
@@ -371,16 +375,12 @@ public abstract class Downloader {
 		}
 	}
 
-	void shutdownThreadPool() {
-		log.info("Shutting down");
-	}
-
-	protected static synchronized void setupCloudConnection() {
+	protected static synchronized void setupCloudConnection(DownloaderProperties dlProps) {
 		if (xfer_mgr != null) {
 			return;
 		}
 
-		downloaderProperties = new DownloaderProperties();
+		downloaderProperties = dlProps;
 		bucketName = ConfigLoader.getBucketName();
 
 		// Define retryPolicy

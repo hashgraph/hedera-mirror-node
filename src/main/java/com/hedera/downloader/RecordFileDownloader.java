@@ -22,6 +22,7 @@ package com.hedera.downloader;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.mirror.config.DownloaderProperties;
 import com.hedera.mirror.config.RecordProperties;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
@@ -50,8 +51,8 @@ public class RecordFileDownloader extends Downloader {
 
 	private final RecordProperties recordProperties;
 
-	public RecordFileDownloader(RecordProperties recordProperties) {
-		super(recordProperties.getDownloader());
+	public RecordFileDownloader(RecordProperties recordProperties, DownloaderProperties downloaderProperties) {
+		super(recordProperties.getDownloader(), downloaderProperties);
 		this.recordProperties = recordProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.hedera.mirror.config.BalanceProperties;
+import com.hedera.mirror.config.DownloaderProperties;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -47,8 +48,8 @@ public class AccountBalancesDownloader extends Downloader {
 
 	private final BalanceProperties balanceProperties;
 
-	public AccountBalancesDownloader(BalanceProperties balanceProperties) {
-		super(balanceProperties.getDownloader());
+	public AccountBalancesDownloader(BalanceProperties balanceProperties, DownloaderProperties downloaderProperties) {
+		super(balanceProperties.getDownloader(), downloaderProperties);
 		this.balanceProperties = balanceProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);

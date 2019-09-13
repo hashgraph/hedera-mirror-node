@@ -28,13 +28,11 @@ public class EventProperties {
         @Min(0)
         private int coreThreads = 5;
         @Min(1)
-        private int maxThreads = 5;
+        private int maxThreads = 13;
         @Min(1)
         private int taskQueueSize = 50;
         @Min(1)
-        private int listObjectsMaxKeys = 100;
-        @Min(1)
-        private int maxDownloadItems = 10;
+        private int batchSize = 15;
     }
 
     @Data
