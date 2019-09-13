@@ -360,18 +360,16 @@ public abstract class Downloader {
 	}
 
 	void shutdown() {
+		log.info("Shutting down");
 		if (signatureDownloadThreadPool != null) {
 			signatureDownloadThreadPool.shutdown();
 			signatureDownloadThreadPool = null;
 		}
-		log.info("Shutting down");
-		shutdownTransferManager();
-	}
-
-	static synchronized void shutdownTransferManager() {
-		if (xfer_mgr != null) {
-			xfer_mgr.shutdownNow();
-			xfer_mgr = null;
+		synchronized (Downloader.class) {
+			if (xfer_mgr != null) {
+				xfer_mgr.shutdownNow();
+				xfer_mgr = null;
+			}
 		}
 	}
 
