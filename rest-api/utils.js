@@ -22,6 +22,14 @@ const math = require('mathjs');
 const config = require('./config.js');
 
 const ENTITY_TYPE_FILE = 3;
+/**
+ * Check if the given number is numeric 
+ * @param {String} n Number to test
+ * @return {Boolean} true if n is numeric, false otherwise
+ */
+function isNumeric(n) {
+    return (!isNaN(parseFloat(n)) && isFinite(n));
+}
 
 /**
  * Split the account number into shard, realm and num fields. 
@@ -37,11 +45,15 @@ const parseEntityId = function (acc) {
 
     const aSplit = acc.split(".");
     if (aSplit.length == 3) {
-        ret.shard = aSplit[0];
-        ret.realm = aSplit[1];
-        ret.num = aSplit[2]
+        if (isNumeric(aSplit[0]) && isNumeric(aSplit[1]) && isNumeric(aSplit[2])) {
+            ret.shard = aSplit[0];
+            ret.realm = aSplit[1];
+            ret.num = aSplit[2]
+        }
     } else if (aSplit.length == 1) {
-        ret.num = acc;
+        if (isNumeric(acc)) {
+            ret.num = acc;
+        }
     }
     return (ret);
 }
@@ -122,6 +134,13 @@ const parseComparatorSymbol = function (fields, valArr, type = null, valueTransl
                         let ts = '' + seconds + (nanos + '000000000').substring(0, 9);
                         fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
                         vals.push(ts);
+                    } else if (type === 'balance') {
+                        if (isNumeric(val)) {
+                            fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
+                            vals.push(val);
+                        } else {
+                            fquery += '(1=1)';
+                        }
                     } else {
                         fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
                         vals.push(val);
@@ -279,8 +298,12 @@ const convertMySqlStyleQueryToPostgress = function (sqlQuery, sqlParams) {
  * @return {String} next Fully formed link to the next page
  */
 const getPaginationLink = function (req, isEnd, field, lastValue, order) {
-    const port = process.env.PORT;
-    const portquery = (Number(port) === 80) ? '' : (':' + port);
+    let urlPrefix;
+    if (process.env.PORT != undefined && process.env.INCLUDE_PATH_IN_NEXT_LINKS == 1) {
+        urlPrefix = req.protocol + '://' + req.hostname + ':' + process.env.PORT;
+    } else {
+        urlPrefix = '';
+    }
 
     var next = '';
 
@@ -323,7 +346,7 @@ const getPaginationLink = function (req, isEnd, field, lastValue, order) {
                 next += (next === '' ? '?' : '&') + q + '=' + v;
             }
         }
-        next = req.protocol + '://' + req.hostname + portquery + req.path + next;
+        next = urlPrefix + req.path + next;
     }
     return (next === '' ? null : next);
 }

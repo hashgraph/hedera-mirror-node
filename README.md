@@ -162,7 +162,6 @@ Note: Changes to this file while downloading or processing is taking place may b
 | dbPassword | `"mirror_node_pass"` | The password to access the database |
 | apiUsername | `"mirror_api"` | The database user for the REST API |
 | apiPassword | `"mirror_api_pass"` | The password for the REST API user |
-| maxDownloadItems | `0` | The maximum number of new files to download at a time, set to `0` in production, change to `10` or other low number for testing or catching up with a large number of files. |
 | persistClaims | `false` | Determines whether claim data is persisted to the database or not |
 | persistFiles | `"ALL"` | Determines whether file data is persisted to the database or not, can be set to `ALL`, `NONE` or `SYSTEM`. `SYSTEM` means only files with a file number lower than `1000` will be persisted |
 | persistContracts | `true` | Determines whether contract data is persisted to the database or not |
@@ -250,7 +249,7 @@ Create a `.env` file as per below and run with `npm start`.
 
 You can also unittest using jest by using `npm test`.
 
-example `.env` file:
+example `.env` file (note: there is a env.sample file in this directory):
 
 ```TEXT
 DB_USER=mirror_api
@@ -260,6 +259,12 @@ DB_NAME=mirror_node
 PORT=5551
 # server hosting the database
 DB_HOST=localhost
+# Shard number
+SHARD_NUM=0
+# Whether to include the host:port in the next links returned from the rest api
+INCLUDE_PATH_IN_NEXT_LINKS=0
+
+
 ```
 
 `PORT` is the port number the REST API will listen onto.

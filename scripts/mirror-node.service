@@ -11,6 +11,9 @@ RestartSec=1
 SuccessExitStatus=143
 Type=simple
 WorkingDirectory=/usr/lib/mirror-node
+ExecStartPre=-/bin/rm -f /usr/lib/mirror-node/stop
+ExecStop=/usr/bin/touch /usr/lib/mirror-node/stop
+ExecStop=/usr/bin/timeout 20 /usr/bin/tail --pid=${MAINPID} -f /dev/null
 
 [Install]
 WantedBy=multi-user.target

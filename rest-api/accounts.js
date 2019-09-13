@@ -87,7 +87,7 @@ const getAccounts = function (req) {
         ")\n";
 
     const [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance',
-        ['ab.balance']);
+        ['ab.balance'], 'balance');
 
     let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'account.publickey',
         ['e.ed25519_public_key_hex'], null, (s) => {return s.toLowerCase();});
