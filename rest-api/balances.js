@@ -80,7 +80,7 @@ const getBalances = function (req) {
             " on e.entity_realm = ab.account_realm_num\n" +
             " and e.entity_num = ab.account_num\n" +
             " and e.entity_shard = process.env.SHARD_NUM\n" +
-            " and e.fk_entity_type_id < 3\n";
+            " and e.fk_entity_type_id < " + utils.ENTITY_TYPE_FILE + "\n";
     }
     sqlQuery += " where " +
         " consensus_timestamp = (" + innerQuery + ")\n" +

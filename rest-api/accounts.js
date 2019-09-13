@@ -56,7 +56,7 @@ const getAccountQueryPrefix = function() {
         "    on (" + process.env.SHARD_NUM + " = e.entity_shard\n" +
         "        and ab.account_realm_num = e.entity_realm\n" +
         "        and ab.account_num =  e.entity_num\n" +
-        "        and e.fk_entity_type_id < 3)\n" +
+        "        and e.fk_entity_type_id < " + utils.ENTITY_TYPE_FILE + ")\n" +
         "where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balances)\n";
         
     return (prefix);
@@ -83,7 +83,7 @@ const getAccounts = function (req) {
     const accountQuery = accountQueryForAccountBalances === '' ? '' :
         "(\n" + 
         "    " + accountQueryForAccountBalances + "\n" +
-        "    or (" + accountQueryForEntity + " and e.fk_entity_type_id < 3)\n" +
+        "    or (" + accountQueryForEntity + " and e.fk_entity_type_id < " + utils.ENTITY_TYPE_FILE + ")\n" +
         ")\n";
 
     const [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance',
@@ -188,7 +188,7 @@ const getOneAccount = function (req, res) {
         "and (\n" +
         "    (ab.account_realm_num  =  ? and ab.account_num  =  ?)\n" +
         "    or (e.entity_shard = ? and e.entity_realm = ? and e.entity_num = ?\n" +
-        "        and e.fk_entity_type_id < 3)\n" +
+        "        and e.fk_entity_type_id < " + utils.ENTITY_TYPE_FILE + ")\n" +
         ")\n";
 
     const entityParams = [acc.realm, acc.num, process.env.SHARD_NUM, acc.realm, acc.num];
