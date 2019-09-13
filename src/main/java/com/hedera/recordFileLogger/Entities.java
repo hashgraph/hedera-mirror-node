@@ -135,7 +135,6 @@ public class Entities {
 	    sqlUpdate += " WHERE entity_shard = ?";
 	    sqlUpdate += " AND entity_realm = ?";
 	    sqlUpdate += " AND entity_num = ?";
-	    sqlUpdate += " AND fk_entity_type_id = ?";
 	    sqlUpdate += " RETURNING id";
 	    
 	    // inserts or returns an existing entity
@@ -184,8 +183,6 @@ public class Entities {
         updateEntity.setLong(fieldCount, realm);
     	fieldCount += 1;
         updateEntity.setLong(fieldCount, num);
-    	fieldCount += 1;
-        updateEntity.setLong(fieldCount, fk_entity_type);
 
         updateEntity.execute();
         
@@ -229,7 +226,6 @@ public class Entities {
 	    sqlDelete += " WHERE entity_shard = ?";
 	    sqlDelete += " AND entity_realm = ?";
 	    sqlDelete += " AND entity_num = ?";
-	    sqlDelete += " AND fk_entity_type_id = ?";
 	    sqlDelete += " RETURNING id";
 
 	    // inserts or returns an existing entity
@@ -238,7 +234,6 @@ public class Entities {
 	    deleteEntity.setLong(1, shard);
         deleteEntity.setLong(2, realm);
         deleteEntity.setLong(3, num);
-        deleteEntity.setLong(4, fk_entity_type);
 
         deleteEntity.execute();
         
@@ -282,7 +277,6 @@ public class Entities {
 	    sqlDelete += " WHERE entity_shard = ?";
 	    sqlDelete += " AND entity_realm = ?";
 	    sqlDelete += " AND entity_num = ?";
-	    sqlDelete += " AND fk_entity_type_id = ?";
 	    sqlDelete += " RETURNING id";
 
 	    // inserts or returns an existing entity
@@ -291,7 +285,6 @@ public class Entities {
 	    deleteEntity.setLong(1, shard);
         deleteEntity.setLong(2, realm);
         deleteEntity.setLong(3, num);
-        deleteEntity.setLong(4, fk_entity_type);
 
         deleteEntity.execute();
         
@@ -323,7 +316,7 @@ public class Entities {
 							  long auto_renew_period, byte[] key, long fk_proxy_account_id, int fk_entity_type)
 			throws SQLException {
 
-		long entityId = getCachedEntityId(shard, realm, num, fk_entity_type);
+		long entityId = getCachedEntityId(shard, realm, num);
 		if (entityId != -1) {
 			return entityId;
 		}
@@ -383,7 +376,7 @@ public class Entities {
 	}
 	private long createOrGetEntity(long shard, long realm, long num, int fk_entity_type) throws SQLException {
 		
-		long entityId = getCachedEntityId(shard, realm, num, fk_entity_type);
+		long entityId = getCachedEntityId(shard, realm, num);
 		if (entityId != -1) {
 			return entityId;
 		}
@@ -406,7 +399,7 @@ public class Entities {
 		entityId = entityCreate.getLong(1);
 		entityCreate.close();
 
-        String entity = shard + "-" + realm + "-" + num + "-" + fk_entity_type;
+        String entity = shard + "-" + realm + "-" + num;
         entities.put(entity, entityId);
         return entityId;
 	}
@@ -421,8 +414,8 @@ public class Entities {
         return createOrGetEntity(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum(), FK_ACCOUNT);
     }
 
-    private long getCachedEntityId(long shard, long realm, long num, int fk_entity_type) {
-        String entity = shard + "-" + realm + "-" + num + "-" + fk_entity_type;
+    private long getCachedEntityId(long shard, long realm, long num) {
+        String entity = shard + "-" + realm + "-" + num;
     	
         if (shard + realm + num == 0 ) {
             return 0;
