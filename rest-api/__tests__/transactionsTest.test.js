@@ -72,7 +72,7 @@ test('transactions by account eq', () => {
     let sql = transactions.reqToSql({query: {'account.id': '0.1.123'}});
     let expected = normalizeSql(boilerplatePrefix + 
         ` where ctl.account_id in (select id from t_entities
-            where ((entity_shard  =  $1 and entity_realm  =  $2 and entity_num  =  $3 )) and fk_entity_type_id = 1 limit 1000)
+            where ((entity_shard  =  $1 and entity_realm  =  $2 and entity_num  =  $3 )) and fk_entity_type_id < 3 limit 1000)
         and 1=1 and 1=1   order by ctl.consensus_timestamp desc
         limit $4 ) as tlist` +
         boilerplateSufffix)

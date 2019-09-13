@@ -21,8 +21,6 @@
 const utils = require('./utils.js');
 const transactions = require('./transactions.js');
 
-const ACCOUNT_ENTITY_TYPE = 1;
-
 /**
  * Processes one row of the results of the SQL query and format into API return format
  * @param {Object} row One row of the SQL query result
@@ -38,7 +36,6 @@ const processRow = function (row) {
     accRecord.auto_renew_period = (row.auto_renew_period=== null) ? null : Number(row.auto_renew_period);
     accRecord.key = (row.key === null) ? null : utils.encodeKey(row.key);
     accRecord.deleted = row.deleted;
-    accRecord.entity_type = row.entity_type;
 
     return (accRecord);
 }
@@ -54,19 +51,14 @@ const getAccountQueryPrefix = function() {
         "    , e.auto_renew_period\n" +
         "    , e.key\n" +
         "    , e.deleted\n" +
-        "    , et.name as entity_type\n" +
-        "from (\n" +
-        "    select * from account_balances\n" +
-        "    where consensus_timestamp = (select max(consensus_timestamp) from account_balances)\n" +
-        ") ab\n" +
+        "from account_balances ab\n" +
         "full outer join t_entities e\n" +
-        "    on (ab.account_realm_num = e.entity_realm\n" +
+        "    on (" + process.env.SHARD_NUM + " = e.entity_shard\n" +
+        "        and ab.account_realm_num = e.entity_realm\n" +
         "        and ab.account_num =  e.entity_num\n" +
-        "        and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + ")\n" +
-        "join t_entity_types et\n" +
-        "    on et.id = " + ACCOUNT_ENTITY_TYPE + "\n" +
-        "where 1=1\n";
-
+        "        and e.fk_entity_type_id < 3)\n" +
+        "where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balances)\n";
+        
     return (prefix);
 }
 
@@ -91,7 +83,7 @@ const getAccounts = function (req) {
     const accountQuery = accountQueryForAccountBalances === '' ? '' :
         "(\n" + 
         "    " + accountQueryForAccountBalances + "\n" +
-        "    or (" + accountQueryForEntity + " and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + ")\n" +
+        "    or (" + accountQueryForEntity + " and e.fk_entity_type_id < 3)\n" +
         ")\n";
 
     const [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance',
@@ -176,6 +168,7 @@ const getOneAccount = function (req, res) {
     if (acc.num === 0) {
         res.status(400)
             .send('Invalid account number');
+        return;
     }
 
     const [tsQuery, tsParams] =
@@ -194,11 +187,11 @@ const getOneAccount = function (req, res) {
     const entitySql = getAccountQueryPrefix() +
         "and (\n" +
         "    (ab.account_realm_num  =  ? and ab.account_num  =  ?)\n" +
-        "    or (e.entity_realm = ? and e.entity_num = ?\n" +
-        "        and e.fk_entity_type_id = " + ACCOUNT_ENTITY_TYPE + ")\n" +
+        "    or (e.entity_shard = ? and e.entity_realm = ? and e.entity_num = ?\n" +
+        "        and e.fk_entity_type_id < 3)\n" +
         ")\n";
 
-    const entityParams = [acc.realm, acc.num, acc.realm, acc.num];
+    const entityParams = [acc.realm, acc.num, process.env.SHARD_NUM, acc.realm, acc.num];
     const pgEntityQuery = utils.convertMySqlStyleQueryToPostgress(
         entitySql, entityParams);
 

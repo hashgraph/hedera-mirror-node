@@ -143,7 +143,7 @@ const getTransactionsInnerQuery = function (accountQuery, tsQuery, resultTypeQue
     '       where ';
     if (accountQuery) {
         innerQuery += "ctl.account_id in (select id from t_entities\n" +
-            "\t\twhere " + accountQuery + " and fk_entity_type_id = 1 limit 1000)\n"; // Max limit on the inner query.
+            "\t\twhere " + accountQuery + " and fk_entity_type_id < 3 limit 1000)\n"; // Max limit on the inner query.
     } else {
         innerQuery += "1=1\n";
     }
