@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.hedera.mirror.config.BalanceProperties;
+import com.hedera.mirror.config.DownloaderProperties;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -47,7 +48,8 @@ public class AccountBalancesDownloader extends Downloader {
 
 	private final BalanceProperties balanceProperties;
 
-	public AccountBalancesDownloader(BalanceProperties balanceProperties) {
+	public AccountBalancesDownloader(BalanceProperties balanceProperties, DownloaderProperties downloaderProperties) {
+		super(balanceProperties.getDownloader(), downloaderProperties);
 		this.balanceProperties = balanceProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);
@@ -67,7 +69,7 @@ public class AccountBalancesDownloader extends Downloader {
 			}
 
 			// balance files with sig verification
-			Map<String, List<File>> sigFilesMap = downloadSigFiles(DownloadType.BALANCE);
+			final var sigFilesMap = downloadSigFiles(DownloadType.BALANCE);
 
 			// Verify signature files and download corresponding files of valid signature files
 			verifySigsAndDownloadBalanceFiles(sigFilesMap);

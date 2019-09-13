@@ -22,6 +22,7 @@ package com.hedera.downloader;
 
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.mirror.config.DownloaderProperties;
 import com.hedera.mirror.config.RecordProperties;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
@@ -50,7 +51,8 @@ public class RecordFileDownloader extends Downloader {
 
 	private final RecordProperties recordProperties;
 
-	public RecordFileDownloader(RecordProperties recordProperties) {
+	public RecordFileDownloader(RecordProperties recordProperties, DownloaderProperties downloaderProperties) {
+		super(recordProperties.getDownloader(), downloaderProperties);
 		this.recordProperties = recordProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);
@@ -69,7 +71,7 @@ public class RecordFileDownloader extends Downloader {
 				return;
 			}
 
-			Map<String, List<File>> sigFilesMap = downloadSigFiles(DownloadType.RCD);
+			final var sigFilesMap = downloadSigFiles(DownloadType.RCD);
 			verifySigsAndDownloadRecordFiles(sigFilesMap);
 		} catch (Exception e) {
 			log.error("Error downloading and verifying new record files", e);
@@ -117,11 +119,11 @@ public class RecordFileDownloader extends Downloader {
 
 		Collections.sort(fileNames);
 
+		if (Utility.checkStopFile()) {
+			log.info("Stop file found, stopping");
+			return;
+		}
 		for (String fileName : fileNames) {
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found, stopping");
-				break;
-			}
 			boolean valid = false;
 			List<File> sigFiles = sigFilesMap.get(fileName);
 

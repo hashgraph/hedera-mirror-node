@@ -104,8 +104,6 @@ public class ConfigLoader {
     private static String dbUserName = "";
     // database password
     private static String dbPassword = "";
-    // max download items for testing
-    private static int maxDownloadItems = 0;
 
     private static Dotenv dotEnv = Dotenv.configure().ignoreIfMissing().load();
 
@@ -229,10 +227,7 @@ public class ConfigLoader {
 					dbPassword = configJsonObject.get("dbPassword").getAsString();
 				}
 			}
-			if (configJsonObject.has("maxDownloadItems")) {
-				maxDownloadItems = configJsonObject.get("maxDownloadItems").getAsInt();
-			}
-			
+
 			if (configJsonObject.has("persistClaims")) {
 				persistClaims = configJsonObject.get("persistClaims").getAsBoolean();
 			}
@@ -370,14 +365,6 @@ public class ConfigLoader {
 	}
 	public static String getDBPassword() {
 		return dbPassword;
-	}
-
-	public static int getMaxDownloadItems() {
-		return maxDownloadItems;
-	}
-
-	public static void setMaxDownloadItems(int maxDownloadItems) {
-		ConfigLoader.maxDownloadItems = maxDownloadItems;
 	}
 
 	public static boolean getPersistClaims() {

@@ -23,6 +23,7 @@ package com.hedera.downloader;
 import com.hedera.FileCopier;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.mirror.config.DownloaderProperties;
 import com.hedera.mirror.config.RecordProperties;
 import com.hedera.utilities.Utility;
 import io.findify.s3mock.S3Mock;
@@ -55,14 +56,15 @@ public class RecordFileDownloaderTest {
     private S3Mock s3;
     private FileCopier fileCopier;
     private RecordFileDownloader downloader;
+    private RecordProperties properties = new RecordProperties();
 
     @BeforeEach
     void before() throws Exception {
         ConfigLoader.setAddressBookFile("./config/0.0.102-testnet");
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
-        ConfigLoader.setMaxDownloadItems(100);
+        properties.getDownloader().setBatchSize(100);
 
-        downloader = new RecordFileDownloader(new RecordProperties());
+        downloader = new RecordFileDownloader(properties, new DownloaderProperties());
         downloader.applicationStatus = applicationStatus;
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));
@@ -129,7 +131,7 @@ public class RecordFileDownloaderTest {
     @Test
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {
-        ConfigLoader.setMaxDownloadItems(1);
+        properties.getDownloader().setBatchSize(1);
         fileCopier.copy();
         downloader.download();
         assertThat(Files.walk(validPath))
