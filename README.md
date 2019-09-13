@@ -250,7 +250,7 @@ Create a `.env` file as per below and run with `npm start`.
 
 You can also unittest using jest by using `npm test`.
 
-example `.env` file:
+example `.env` file (note: there is a env.sample file in this directory):
 
 ```TEXT
 DB_USER=mirror_api
@@ -260,6 +260,12 @@ DB_NAME=mirror_node
 PORT=5551
 # server hosting the database
 DB_HOST=localhost
+# Shard number
+SHARD_NUM=0
+# Whether to include the host:port in the next links returned from the rest api
+INCLUDE_PATH_IN_NEXT_LINKS=0
+
+
 ```
 
 `PORT` is the port number the REST API will listen onto.
