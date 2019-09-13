@@ -21,6 +21,7 @@
 const math = require('mathjs');
 const config = require('./config.js');
 
+const ENTITY_TYPE_FILE = 3;
 /**
  * Check if the given number is numeric 
  * @param {String} n Number to test
@@ -474,5 +475,6 @@ module.exports = {
     returnEntriesLimit: returnEntriesLimit,
     toHexString: toHexString,
     encodeKey: encodeKey,
-    encodeBase64: encodeBase64
+    encodeBase64: encodeBase64,
+    ENTITY_TYPE_FILE: ENTITY_TYPE_FILE
 }

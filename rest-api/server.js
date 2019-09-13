@@ -112,9 +112,6 @@ let apiPrefix = '/api/v1';
 app.get(apiPrefix + '/transactions', (req, res) => caches['transactions'].getResponse(req, res, transactions.getTransactions));
 app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
 app.get(apiPrefix + '/balances', (req, res) => caches['balances'].getResponse(req, res, balances.getBalances));
-app.get(apiPrefix + '/events', (req, res) => caches['events'].getResponse(req, res, events.getEvents));
-app.get(apiPrefix + '/events/:id', events.getOneEvent);
-app.get(apiPrefix + '/events/analytics', eventAnalytics.getEventAnalytics);
 app.get(apiPrefix + '/accounts', (req, res) => caches['accounts'].getResponse(req, res, accounts.getAccounts));
 app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
 
