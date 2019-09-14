@@ -175,7 +175,7 @@ public class RecordFileLogger {
 					+ " VALUES (?, ?, ?, ?, ?)");
 
 			sqlInsertClaimData = connect.prepareStatement("INSERT INTO t_livehashes"
-					+ " (consensus_timstamp, livehash)"
+					+ " (consensus_timestamp, livehash)"
 					+ " VALUES (?, ?)");
 			
 		} catch (SQLException e) {
