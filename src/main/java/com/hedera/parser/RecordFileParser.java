@@ -140,17 +140,12 @@ public class RecordFileParser implements FileParser {
 								dis.readFully(rawBytes);
 
 								TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
+								RecordFileLogger.storeRecord(transaction, txRecord);
 
-								boolean bStored = RecordFileLogger.storeRecord(transaction, txRecord);
-								if (bStored) {
-									if (log.isTraceEnabled()) {
-										log.trace("Transaction = {}, Record = {}", Utility.printTransaction(transaction), TextFormat.shortDebugString(txRecord));
-									} else {
-										log.debug("Stored transaction with consensus timestamp {}", txRecord.getConsensusTimestamp());
-									}
+								if (log.isTraceEnabled()) {
+									log.trace("Transaction = {}, Record = {}", Utility.printTransaction(transaction), TextFormat.shortDebugString(txRecord));
 								} else {
-									RecordFileLogger.rollback();
-									return false;
+									log.debug("Stored transaction with consensus timestamp {}", txRecord.getConsensusTimestamp());
 								}
 								break;
 							case FileDelimiter.RECORD_TYPE_SIGNATURE:
