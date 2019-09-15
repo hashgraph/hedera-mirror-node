@@ -251,7 +251,7 @@ const parseComparatorSymbol = function (fields, valArr, type = null, valueTransl
             }
         }
     }
-    // queryStr = queryStr === '' ? '1=1' : queryStr;
+    queryStr = queryStr === '' ? '1=1' : queryStr;
 
     return ({
         queryStr: '(' + queryStr + ')',
