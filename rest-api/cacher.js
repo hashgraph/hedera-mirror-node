@@ -17,7 +17,9 @@
  * limitations under the License.
  * ‍
  */
-const nodeCache = require('node-cache')
+const nodeCache = require('node-cache');
+const utils = require('./utils.js');
+
 
 class Cacher {
 
@@ -50,9 +52,14 @@ class Cacher {
         // TODO: Enable intellgent caching later by detecting if the content is 
         // cacheable by checking if the response to the query will not change.
         // For now, we disable caching.
-        func(req)
-            .then(content => {
-                res.json(content);
+        func(req, res)
+            .then(data => {
+                if (data.code != utils.httpStatusCodes.OK) {
+                    res.status(data.code)
+                        .send(data.contents);
+                } else {
+                    res.json(data.contents);
+                }
             })
             .catch(error => {
                 logger.error("Error processing " + req.originalUrl +

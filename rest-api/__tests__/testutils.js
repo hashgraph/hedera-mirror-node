@@ -123,7 +123,31 @@ const parseSqlQueryAndParams = function(sqlquery, sqlparams, orderprefix = '') {
     }
 }
 
+const testBadParams = function (request, server, url, param, badValues) {
+    const opList = ['', 'eq:', 'lt:', 'gt:', 'lte:', 'gte:'];
+    let opListIndex = 0;
+    for (const opt of badValues) {
+        const op = opList[opListIndex];
+        opListIndex = (opListIndex + 1) % opList.length;
+
+        const queryparam = `${param}=${op}${opt}`;
+        const fullUrl = url + '?' + queryparam;
+        test(`Test: ${fullUrl}`, async () => {
+            console.log(fullUrl);
+            let response = await request(server).get(fullUrl);
+            expect(response.status).toBeGreaterThanOrEqual(400);
+        });
+    }
+}
+
+const badParamsList = function () {
+    return (['', '"', 'abcd', '!@#$%^&*(){}_+~`', '123456789012345678901234567890', '1a23', 
+        '0.a', 'a.0.3', '0-0-3']);
+}
+
 module.exports = {
     checkSql: checkSql,
-    parseSqlQueryAndParams: parseSqlQueryAndParams
+    parseSqlQueryAndParams: parseSqlQueryAndParams,
+    testBadParams: testBadParams,
+    badParamsList: badParamsList
 }
