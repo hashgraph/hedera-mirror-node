@@ -61,7 +61,7 @@ jobs:
           paths:
           - ~/.m2
       - codecov/upload:
-          file: target/site/jacoco/index.xml
+          file: target/site/jacoco/jacoco.xml
       - run:
           name: Collecting mirror-node assets
           command: |
