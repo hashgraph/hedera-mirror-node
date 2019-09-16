@@ -79,7 +79,7 @@ const getBalances = function (req) {
         sqlQuery += " join t_entities e\n" +
             " on e.entity_realm = ab.account_realm_num\n" +
             " and e.entity_num = ab.account_num\n" +
-            " and e.entity_shard = process.env.SHARD_NUM\n" +
+            " and e.entity_shard = " + process.env.SHARD_NUM + "\n" +
             " and e.fk_entity_type_id < " + utils.ENTITY_TYPE_FILE + "\n";
     }
     sqlQuery += " where " +

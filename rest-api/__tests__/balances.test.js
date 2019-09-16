@@ -89,6 +89,12 @@ const singletests = {
             {field: 'balance', operator: '<', value: 5432100},
         ]
     },
+    accountpublickey_equal: {
+        urlparam: 'account.publickey=6bd7b31fd59fc1b51314ac90253dfdbffa18eec48c00051e92635fe964a08c9b',
+        checks: [
+            {field: 'ed25519_public_key_hex', operator: '=', value: '6bd7b31fd59fc1b51314ac90253dfdbffa18eec48c00051e92635fe964a08c9b'}
+        ]
+    },
     limit: {
         urlparam: 'limit=99',
         checks: [
