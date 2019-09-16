@@ -1,11 +1,8 @@
-version: 2.1
+version: 2
 
 defaults: &defaults
   docker:
     - image: adoptopenjdk:11-jdk-hotspot
-
-orbs:
-  codecov: codecov/codecov@1.0.5
 
 references:
   workspace_root: &workspace_root
@@ -60,8 +57,9 @@ jobs:
           key: maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
           paths:
           - ~/.m2
-      - codecov/upload:
-          file: target/site/jacoco/jacoco.xml
+      - run:
+          name: Upload code coverage
+          command: bash <(curl -s https://codecov.io/bash)
       - run:
           name: Collecting mirror-node assets
           command: |
