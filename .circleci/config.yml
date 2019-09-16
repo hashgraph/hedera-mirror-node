@@ -4,6 +4,9 @@ defaults: &defaults
   docker:
     - image: adoptopenjdk:11-jdk-hotspot
 
+orbs:
+  codecov: codecov/codecov@1.0.5
+
 references:
   workspace_root: &workspace_root
     /tmp/workspace
@@ -53,15 +56,12 @@ jobs:
           command: ./mvnw package
       - store_test_results:
           path: target/surefire-reports
-      - store_artifacts:
-          path: target/site/jacoco/index.html
       - save_cache:
           key: maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
           paths:
           - ~/.m2
-      - run:
-          name: Upload Code Coverage to Coveralls
-          command: ./mvnw coveralls:report -DrepoToken=$COVERALLS_REPO_TOKEN
+      - codecov/upload:
+          file: target/site/jacoco/index.xml
       - run:
           name: Collecting mirror-node assets
           command: |
