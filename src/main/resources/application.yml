@@ -12,6 +12,7 @@ logging:
   level:
     root: warn
     com.hedera: info
+    db.migration: info
     #org.hibernate.SQL: debug
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 spring:
