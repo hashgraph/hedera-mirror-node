@@ -133,10 +133,6 @@ public class RecordFileDownloader extends Downloader {
 				continue;
 			}
 
-			if (true) {
-				log.warn("test");
-			}
-
 			// validSigFiles are signed by node key and contains the same hash which has been agreed by more than 2/3 nodes
 			List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
 			for (File validSigFile : validSigFiles) {
