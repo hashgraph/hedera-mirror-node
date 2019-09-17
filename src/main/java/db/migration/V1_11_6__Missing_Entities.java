@@ -2,6 +2,7 @@ package db.migration;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.configLoader.ConfigLoader;
+import com.hedera.mirror.domain.Entity;
 import com.hedera.recordFileLogger.Entities;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import lombok.extern.log4j.Log4j2;
@@ -35,7 +36,7 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
                 ++count;
 
                 if (StringUtils.isNotBlank(line)) {
-                    storeAccount(entities, line);
+                    updateAccount(entities, line);
                 }
 
                 line = reader.readLine();
@@ -45,10 +46,11 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
         log.info("Successfully loaded {} lines from {} in {}", count, accountInfoFile, stopwatch);
     }
 
-    private void storeAccount(Entities entities, String line) {
+    private void updateAccount(Entities entities, String line) {
         try {
             byte[] data = Base64.decodeBase64(line);
             AccountInfo accountInfo = AccountInfo.parseFrom(data);
+
             long expirationSec = 0L;
             long expirationNanos = 0L;
             if (accountInfo.hasExpirationTime()) {
@@ -71,10 +73,18 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
                 proxyAccountId = entities.createOrGetEntity(accountInfo.getProxyAccountID());
             }
 
-            long entityId = entities.createEntity(accountInfo.getAccountID(), expirationSec, expirationNanos, autoRenewPeriod, key, proxyAccountId);
-            log.trace("Created account entity {}", entityId);
+            boolean delete = accountInfo.getDeleted();
+            Entity entity = entities.getEntity(accountInfo.getAccountID());
 
-            if (accountInfo.getDeleted()) {
+            if (entity == null) {
+                entities.createEntity(accountInfo.getAccountID(), expirationSec, expirationNanos, autoRenewPeriod, key, proxyAccountId);
+            } else if (entity.getKey() == null || entity.getExpTimeSeconds() == null) {
+                entities.updateEntity(accountInfo.getAccountID(), expirationSec, expirationNanos, autoRenewPeriod, key, proxyAccountId);
+            } else { // Don't update existing entities that have valid data
+                delete = false;
+            }
+
+            if (delete) {
                 entities.deleteEntity(accountInfo.getAccountID());
                 log.warn("Deleting account: {}", accountInfo.getAccountID().getAccountNum());
             }
