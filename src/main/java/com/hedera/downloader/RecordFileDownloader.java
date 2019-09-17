@@ -171,6 +171,7 @@ public class RecordFileDownloader extends Downloader {
 				log.error("File could not be verified by at least 2/3 of nodes: {}", fileName);
 			}
 		}
+if (false) return;
 	}
 
 }
