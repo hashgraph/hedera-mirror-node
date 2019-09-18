@@ -91,7 +91,7 @@ public abstract class Downloader {
 
 	protected static ClientConfiguration clientConfiguration;
 	
-	protected ApplicationStatus applicationStatus;
+	protected final ApplicationStatus applicationStatus;
 
 	private final CommonDownloaderProperties commonProps;
 
@@ -104,13 +104,12 @@ public abstract class Downloader {
 
 	public enum DownloadType {RCD, BALANCE, EVENT};
 
-	public Downloader(final CommonDownloaderProperties props, final DownloaderProperties dlProps) {
+	public Downloader(ApplicationStatus applicationStatus, CommonDownloaderProperties props, DownloaderProperties dlProps) {
+		this.applicationStatus = applicationStatus;
 		commonProps = props;
 		signatureDownloadThreadPool = new ThreadPoolExecutor(commonProps.getCoreThreads(), commonProps.getMaxThreads(),
 				120, TimeUnit.SECONDS,
 				new ArrayBlockingQueue<Runnable>(commonProps.getTaskQueueSize()));
-
-		applicationStatus = new ApplicationStatus();
 
 		nodeAccountIds = loadNodeAccountIDs();
 

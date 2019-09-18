@@ -55,11 +55,11 @@ import javax.inject.Named;
 public class RecordFileParser implements FileParser {
 
 	private final String pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
-	private static final ApplicationStatus applicationStatus = new ApplicationStatus();
-
+	private final ApplicationStatus applicationStatus;
 	private final RecordProperties recordProperties;
 
-	public RecordFileParser(RecordProperties recordProperties) {
+	public RecordFileParser(ApplicationStatus applicationStatus, RecordProperties recordProperties) {
+		this.applicationStatus = applicationStatus;
 		this.recordProperties = recordProperties;
 		Utility.ensureDirectory(pathName);
 	}

@@ -23,6 +23,7 @@ package com.hedera.downloader;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.mirror.config.DownloaderProperties;
+import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.mirror.config.RecordProperties;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
@@ -38,8 +39,6 @@ import javax.inject.Named;
 import java.io.File;
 import java.nio.file.*;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Log4j2
 @Named
@@ -51,8 +50,8 @@ public class RecordFileDownloader extends Downloader {
 
 	private final RecordProperties recordProperties;
 
-	public RecordFileDownloader(RecordProperties recordProperties, DownloaderProperties downloaderProperties) {
-		super(recordProperties.getDownloader(), downloaderProperties);
+	public RecordFileDownloader(ApplicationStatus applicationStatus, RecordProperties recordProperties, DownloaderProperties downloaderProperties) {
+		super(applicationStatus, recordProperties.getDownloader(), downloaderProperties);
 		this.recordProperties = recordProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);

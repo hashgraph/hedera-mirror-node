@@ -64,8 +64,7 @@ public class AccountBalancesDownloaderTest {
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
         properties.getDownloader().setBatchSize(100);
 
-        downloader = new AccountBalancesDownloader(properties, new DownloaderProperties());
-        downloader.applicationStatus = applicationStatus;
+        downloader = new AccountBalancesDownloader(applicationStatus, properties, new DownloaderProperties());
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.BALANCE));
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)

@@ -28,50 +28,24 @@ import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationVersion;
 
+import javax.inject.Named;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+/**
+ * @deprecated Use Spring Data repositories with domain objects
+ */
+@Deprecated(forRemoval = true, since = "v0.3.0")
 @Log4j2
+@Named
 public class DatabaseUtilities {
 
-    private static final HikariDataSource dataSource;
-    private static volatile boolean migrated = false;
+    private static volatile DataSource dataSource;
 
-    static {
-        dataSource = new HikariDataSource();
-        dataSource.setConnectionTimeout(3000L);
-        dataSource.setInitializationFailTimeout(-1L);
-        dataSource.setJdbcUrl(ConfigLoader.getDBUrl());
-        dataSource.setPassword(ConfigLoader.getDBPassword());
-        dataSource.setUsername(ConfigLoader.getDBUserName());
-    }
-
-    // No synchronization since it's okay to run concurrently as flyway will lock tables anyway
-    public static final void migrate() {
-        if (!migrated) {
-            Flyway.configure()
-                    .dataSource(dataSource)
-                    .baselineOnMigrate(true)
-                    .baselineVersion(MigrationVersion.fromVersion("0"))
-
-                    // Allow missing migrations without failing the overall migration.
-                    // This would allow the database to have a "V1.23" migration in it (before the product is 1.0-ready),
-                    // that gets removed by developers at a future point.
-                    // When the software is updated and no longer has V1.23 in it (bad migration file removed by dev),
-                    // but flyway sees a database that had V1.23 in it - ignore this issue and continue flyway migrations.
-                    // This allows development to more easily "fix" some bad initial migration files without resorting
-                    // to `flyway repair`.
-                    .ignoreMissingMigrations(true)
-
-                    .placeholders(ImmutableMap.of(
-                            "api-user", ConfigLoader.getApiUsername(),
-                            "api-password", ConfigLoader.getApiPassword(),
-                            "db-name", ConfigLoader.getDBName(),
-                            "db-user", ConfigLoader.getDBUserName()))
-                    .load()
-                    .migrate();
-            migrated = true;
-        }
+    // Temporary hack until we remove this class and migrate to repositories
+    DatabaseUtilities(DataSource dataSource) {
+        DatabaseUtilities.dataSource = dataSource;
     }
 
     public static final Connection getConnection() {
@@ -82,27 +56,17 @@ public class DatabaseUtilities {
                     System.exit(0);
                 }
 
-                Connection connection = dataSource.getConnection();
-                migrate();
-                return connection;
+                return dataSource.getConnection();
             } catch (Exception e) {
-                log.warn("Unable to connect to database. Will retry in {}ms: {}", dataSource.getConnectionTimeout(), e.getMessage());
+                log.warn("Unable to connect to database: {}", e.getMessage());
             }
         }
     }
 
-    /*
-     * @deprecated Use getConnection()
-     */
-    @Deprecated(forRemoval = true)
     public static Connection openDatabase(Connection connect) {
         return getConnection();
     }
 
-    /*
-     * @deprecated Use try-with-resources
-     */
-    @Deprecated(forRemoval = true)
     public static Connection closeDatabase(Connection connect) throws SQLException {
         connect.close();
         return null;

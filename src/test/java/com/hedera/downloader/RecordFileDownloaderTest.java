@@ -64,8 +64,7 @@ public class RecordFileDownloaderTest {
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
         properties.getDownloader().setBatchSize(100);
 
-        downloader = new RecordFileDownloader(properties, new DownloaderProperties());
-        downloader.applicationStatus = applicationStatus;
+        downloader = new RecordFileDownloader(applicationStatus, properties, new DownloaderProperties());
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)

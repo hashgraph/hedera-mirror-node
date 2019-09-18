@@ -64,12 +64,12 @@ public class EventStreamFileParser implements FileParser {
 	}
 
 	private static final String PARSED_DIR = "/parsedEventStreamFiles/";
-	private static final ApplicationStatus applicationStatus = new ApplicationStatus();
-
+	private final ApplicationStatus applicationStatus;
 	private final String pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.EVENTS);
 	private final EventProperties eventProperties;
 
-	public EventStreamFileParser(EventProperties eventProperties) {
+	public EventStreamFileParser(ApplicationStatus applicationStatus, EventProperties eventProperties) {
+		this.applicationStatus = applicationStatus;
 		this.eventProperties = eventProperties;
 		Utility.ensureDirectory(pathName);
 	}

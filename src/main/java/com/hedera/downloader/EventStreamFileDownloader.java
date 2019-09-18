@@ -23,6 +23,7 @@ package com.hedera.downloader;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.mirror.config.DownloaderProperties;
+import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.mirror.config.EventProperties;
 import com.hedera.parser.EventStreamFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
@@ -49,8 +50,8 @@ public class EventStreamFileDownloader extends Downloader {
 	private final String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.EVENTS);
 	private final EventProperties eventProperties;
 
-	public EventStreamFileDownloader(EventProperties eventProperties, DownloaderProperties downloaderProperties) {
-		super(eventProperties.getDownloader(), downloaderProperties);
+	public EventStreamFileDownloader(ApplicationStatus applicationStatus, EventProperties eventProperties, DownloaderProperties downloaderProperties) {
+		super(applicationStatus, eventProperties.getDownloader(), downloaderProperties);
 		this.eventProperties = eventProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);
