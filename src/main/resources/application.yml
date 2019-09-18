@@ -11,7 +11,7 @@ hedera:
 logging:
   level:
     root: warn
-    com.hedera: error
+    com.hedera: info
     #org.hibernate.SQL: debug
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 spring:

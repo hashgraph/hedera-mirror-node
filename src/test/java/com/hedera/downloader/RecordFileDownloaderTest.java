@@ -187,8 +187,8 @@ public class RecordFileDownloaderTest {
     @DisplayName("Doesn't match last valid hash")
     void hashMismatchWithPrevious() throws Exception {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
-        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE)).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
-        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH)).thenReturn("123");
+        doReturn("2019-07-01T14:12:00.000000Z.rcd").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
+        doReturn("123").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))
@@ -200,9 +200,9 @@ public class RecordFileDownloaderTest {
     @DisplayName("Bypass previous hash mismatch")
     void hashMismatchWithBypass() throws Exception {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
-        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE)).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
-        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH)).thenReturn("123");
-        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER)).thenReturn("2019-09-01T00:00:00.000000Z.rcd");
+        doReturn("2019-07-01T14:12:00.000000Z.rcd").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
+        doReturn("123").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
+        doReturn("2019-09-01T00:00:00.000000Z.rcd").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))

@@ -52,6 +52,7 @@
 		<jib.version>1.5.1</jib.version>
 		<junit-jupiter.version>5.5.2</junit-jupiter.version>
 		<start-class>com.hedera.MirrorNodeApplication</start-class>
+		<testcontainers.version>1.12.1</testcontainers.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -167,13 +168,14 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>1.12.1</version>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
-			<version>1.12.1</version>
+			<version>${testcontainers.version}</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.findify</groupId>

@@ -85,7 +85,7 @@ public class RecordFileDownloader extends Downloader {
 	private boolean verifyHashChain(File recordFile) throws Exception {
 		String recordPath = recordFile.getAbsolutePath();
 		String lastValidRecordFileHash = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
-		String bypassMismatch = StringUtils.defaultIfBlank(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER), "");
+		String bypassMismatch = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
 		String prevFileHash = RecordFileParser.readPrevFileHash(recordPath);
 
 		if (prevFileHash == null) {
