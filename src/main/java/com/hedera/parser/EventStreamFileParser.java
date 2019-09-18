@@ -23,6 +23,7 @@ package com.hedera.parser;
 import com.google.common.base.Stopwatch;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.filedelimiters.FileDelimiter;
@@ -32,6 +33,7 @@ import com.hedera.utilities.Utility;
 
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.inject.Named;
@@ -143,7 +145,7 @@ public class EventStreamFileParser implements FileParser {
 
 						if (!Arrays.equals(new byte[48], readPrevFileHashBytes) && !readPrevFileHash.contentEquals(
 								previousFileHash)) {
-							if (applicationStatusRepository.getBypassEventHashMismatchUntilAfter().compareTo(fileName) < 0) {
+							if (applicationStatusRepository.findByStatusCode(ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER).compareTo(fileName) < 0) {
 								// last file for which mismatch is allowed is in the past
 								log.error("Hash mismatch for file {}. Previous = {}, Current = {}", fileName, previousFileHash, readPrevFileHash);
 								return LoadResult.STOP;
@@ -194,8 +196,9 @@ public class EventStreamFileParser implements FileParser {
 			md.update(contentHash);
 		}
 		String thisFileHash = Utility.bytesToHex(md.digest());
-
-		applicationStatusRepository.updateLastProcessedEventHash(thisFileHash);
+		if (StringUtils.isNotBlank(thisFileHash) && !thisFileHash.equals(EMPTY_HASH)) {
+			applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH, thisFileHash);
+		}
 		return LoadResult.OK;
 	}
 
@@ -442,7 +445,7 @@ public class EventStreamFileParser implements FileParser {
 	 */
 	private boolean loadEventStreamFiles(List<String> fileNames) throws Exception {
 		
-		String prevFileHash = applicationStatusRepository.getLastProcessedEventHash();
+		String prevFileHash = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH);
 		for (String name : fileNames) {
 			if (Utility.checkStopFile()) {
 				log.info("Stop file found, stopping");
@@ -452,7 +455,7 @@ public class EventStreamFileParser implements FileParser {
 			if (loadResult == LoadResult.STOP) {
 				return false;
 			}
-			prevFileHash = applicationStatusRepository.getLastProcessedEventHash();
+			prevFileHash = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH);
 			if (loadResult == LoadResult.OK) {
 				Utility.moveFileToParsedDir(name, PARSED_DIR);
 			}
@@ -522,7 +525,7 @@ public class EventStreamFileParser implements FileParser {
 			boolean result = true;
 			if (file.isFile()) {
 				log.info("Loading event file {}", pathName);
-				if (loadEventStreamFile(pathName, applicationStatusRepository.getLastProcessedEventHash()) == LoadResult.STOP) {
+				if (loadEventStreamFile(pathName, applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH)) == LoadResult.STOP) {
 					result = false;
 				}
 			} else if (file.isDirectory()) { //if it's a directory

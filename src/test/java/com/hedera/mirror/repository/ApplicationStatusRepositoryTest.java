@@ -33,69 +33,18 @@ import static org.assertj.core.api.Assertions.*;
 @Testcontainers(disabledWithoutDocker = true)
 public class ApplicationStatusRepositoryTest extends IntegrationTest {
 
-    private final String EXPECTED = UUID.randomUUID().toString();
-
     @Resource
     private ApplicationStatusRepository applicationStatusRepository;
 
     @Test
-    void updateStatusValue() throws Exception {
-        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH, EXPECTED);
-        assertThat(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH)).isEqualTo(EXPECTED);
-        assertThat(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH)).isEqualTo(EXPECTED); // Should see no sql query in logs
-    }
+    void updateStatusValue() {
+        String expected = "value1";
+        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH, expected);
+        assertThat(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH)).isEqualTo(expected);
 
-    @Test
-    void updateBypassEventHashMismatchUntilAfter() throws Exception {
-        applicationStatusRepository.updateBypassEventHashMismatchUntilAfter(EXPECTED);
-        assertThat(applicationStatusRepository.getBypassEventHashMismatchUntilAfter()).isEqualTo(EXPECTED);
-    }
-
-    @Test
-    void updateBypassRecordHashMismatchUntilAfter() throws Exception {
-        applicationStatusRepository.updateBypassRecordHashMismatchUntilAfter(EXPECTED);
-        assertThat(applicationStatusRepository.getBypassRecordHashMismatchUntilAfter()).isEqualTo(EXPECTED);
-    }
-
-    @Test
-    void updateLastProcessedEventHash() throws Exception {
-        applicationStatusRepository.updateLastProcessedEventHash(EXPECTED);
-        assertThat(applicationStatusRepository.getLastProcessedEventHash()).isEqualTo(EXPECTED);
-    }
-
-    @Test
-    void updateLastProcessedRecordHash() throws Exception {
-        applicationStatusRepository.updateLastProcessedEventHash(EXPECTED);
-        assertThat(applicationStatusRepository.getLastProcessedEventHash()).isEqualTo(EXPECTED);
-    }
-
-    @Test
-    void updateLastValidDownloadedBalanceFileName() throws Exception {
-        applicationStatusRepository.updateLastValidDownloadedBalanceFileName(EXPECTED);
-        assertThat(applicationStatusRepository.getLastValidDownloadedBalanceFileName()).isEqualTo(EXPECTED);
-    }
-
-    @Test
-    void updateLastValidDownloadedEventFileHash() throws Exception {
-        applicationStatusRepository.updateLastValidDownloadedEventFileHash(EXPECTED);
-        assertThat(applicationStatusRepository.getLastValidDownloadedEventFileHash()).isEqualTo(EXPECTED);
-    }
-
-    @Test
-    void updateLastValidDownloadedEventFileName() throws Exception {
-        applicationStatusRepository.updateLastValidDownloadedEventFileName(EXPECTED);
-        assertThat(applicationStatusRepository.getLastValidDownloadedEventFileName()).isEqualTo(EXPECTED);
-    }
-
-    @Test
-    void updateLastValidDownloadedRecordFileHash() throws Exception {
-        applicationStatusRepository.updateLastValidDownloadedRecordFileHash(EXPECTED);
-        assertThat(applicationStatusRepository.getLastValidDownloadedRecordFileHash()).isEqualTo(EXPECTED);
-    }
-
-    @Test
-    void updateLastValidDownloadedRecordFileName() throws Exception {
-        applicationStatusRepository.updateLastValidDownloadedRecordFileName(EXPECTED);
-        assertThat(applicationStatusRepository.getLastValidDownloadedRecordFileName()).isEqualTo(EXPECTED);
+        // Check cache invalidation
+        expected = "value2";
+        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH, expected);
+        assertThat(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH)).isEqualTo(expected);
     }
 }

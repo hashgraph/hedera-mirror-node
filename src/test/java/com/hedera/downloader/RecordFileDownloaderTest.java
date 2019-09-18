@@ -22,6 +22,7 @@ package com.hedera.downloader;
 
 import com.hedera.FileCopier;
 import com.hedera.configLoader.ConfigLoader;
+import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.config.DownloaderProperties;
 import com.hedera.mirror.config.RecordProperties;
@@ -91,7 +92,7 @@ public class RecordFileDownloaderTest {
 
         downloader.download();
 
-        verify(applicationStatusRepository).updateLastValidDownloadedRecordFileName("2019-07-01T14:29:00.302068Z.rcd");
+        verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-07-01T14:29:00.302068Z.rcd");
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
@@ -106,7 +107,7 @@ public class RecordFileDownloaderTest {
     void downloadV2() throws Exception {
         fileCopier.copy();
         downloader.download();
-        verify(applicationStatusRepository).updateLastValidDownloadedRecordFileName("2019-08-30T18_10_05.249678Z.rcd");
+        verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_05.249678Z.rcd");
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
@@ -186,8 +187,8 @@ public class RecordFileDownloaderTest {
     @DisplayName("Doesn't match last valid hash")
     void hashMismatchWithPrevious() throws Exception {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
-        when(applicationStatusRepository.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
-        when(applicationStatusRepository.getLastValidDownloadedRecordFileHash()).thenReturn("123");
+        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE)).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
+        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH)).thenReturn("123");
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))
@@ -199,9 +200,9 @@ public class RecordFileDownloaderTest {
     @DisplayName("Bypass previous hash mismatch")
     void hashMismatchWithBypass() throws Exception {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
-        when(applicationStatusRepository.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
-        when(applicationStatusRepository.getLastValidDownloadedRecordFileHash()).thenReturn("123");
-        when(applicationStatusRepository.getBypassRecordHashMismatchUntilAfter()).thenReturn("2019-09-01T00:00:00.000000Z.rcd");
+        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE)).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
+        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH)).thenReturn("123");
+        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER)).thenReturn("2019-09-01T00:00:00.000000Z.rcd");
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))

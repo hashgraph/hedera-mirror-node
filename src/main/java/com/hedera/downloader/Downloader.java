@@ -38,6 +38,7 @@ import com.google.common.base.Stopwatch;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.config.CommonDownloaderProperties;
 import com.hedera.mirror.config.DownloaderProperties;
@@ -207,19 +208,19 @@ public abstract class Downloader {
 		switch (type) {
 			case RCD:
 				s3Prefix = ConfigLoader.getRecordFilesS3Location();
-				lastValidFileName = applicationStatusRepository.getLastValidDownloadedRecordFileName();
+				lastValidFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
 				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.RECORDS);
 				break;
 
 			case BALANCE:
 				s3Prefix = "accountBalances/balance";
-				lastValidFileName = applicationStatusRepository.getLastValidDownloadedBalanceFileName();
+				lastValidFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
 				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.BALANCE);
 				break;
 
 			case EVENT:
 				s3Prefix = ConfigLoader.getEventFilesS3Location();
-				lastValidFileName = applicationStatusRepository.getLastValidDownloadedEventFileName();
+				lastValidFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE);
 				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.EVENTS);
 				break;
 

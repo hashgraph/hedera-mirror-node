@@ -23,6 +23,7 @@ package com.hedera.downloader;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.mirror.config.DownloaderProperties;
+import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.config.EventProperties;
 import com.hedera.parser.EventStreamFileParser;
@@ -93,8 +94,8 @@ public class EventStreamFileDownloader extends Downloader {
 	 * @throws Exception 
 	 */
 	private void verifyValidFiles() throws Exception {
-		String lastValidEventFileName = applicationStatusRepository.getLastValidDownloadedEventFileName();
-		String lastValidEventFileHash = applicationStatusRepository.getLastValidDownloadedEventFileHash();
+		String lastValidEventFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE);
+		String lastValidEventFileHash = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH);
 		
 		String lastValidEventFileName2 = lastValidEventFileName;
 		try (Stream<Path> pathStream = Files.walk(Paths.get(validDir))) {
@@ -124,8 +125,8 @@ public class EventStreamFileDownloader extends Downloader {
 			}
 
 			if (!newLastValidEventFileName.equals(lastValidEventFileName)) {
-				applicationStatusRepository.updateLastValidDownloadedEventFileHash(newLastValidEventFileHash);
-				applicationStatusRepository.updateLastValidDownloadedEventFileName(newLastValidEventFileName);
+				applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH, newLastValidEventFileHash);
+				applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE, newLastValidEventFileName);
 			}
 
 		} catch (Exception ex) {

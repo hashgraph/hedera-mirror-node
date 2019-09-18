@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.config.BalanceProperties;
 import com.hedera.mirror.config.DownloaderProperties;
@@ -89,7 +90,7 @@ public class AccountBalancesDownloader extends Downloader {
 	 * @throws Exception 
 	 */
 	private void verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) throws Exception {
-		String lastValidBalanceFileName = applicationStatusRepository.getLastValidDownloadedBalanceFileName();
+		String lastValidBalanceFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
 		String newLastValidBalanceFileName = lastValidBalanceFileName;
 
 		// reload address book and keys
@@ -147,7 +148,7 @@ public class AccountBalancesDownloader extends Downloader {
 			}
 		}
 		if (!newLastValidBalanceFileName.equals(lastValidBalanceFileName)) {
-			applicationStatusRepository.updateLastValidDownloadedBalanceFileName(newLastValidBalanceFileName);
+			applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, newLastValidBalanceFileName);
 		}
 	}
 }

@@ -33,6 +33,7 @@ import com.google.common.base.Stopwatch;
 import com.google.protobuf.TextFormat;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
+import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.filedelimiters.FileDelimiter;
 import com.hedera.mirror.config.RecordProperties;
@@ -43,6 +44,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.inject.Named;
@@ -119,7 +121,7 @@ public class RecordFileParser implements FileParser {
 
 								if (!newFileHash.contentEquals(previousFileHash)) {
 
-									if (applicationStatusRepository.getBypassRecordHashMismatchUntilAfter().compareTo(Utility.getFileName(fileName)) < 0) {
+									if (applicationStatusRepository.findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER).compareTo(Utility.getFileName(fileName)) < 0) {
 										// last file for which mismatch is allowed is in the past
 										log.error("Hash mismatch for file {}. Previous = {}, Current = {}", fileName, previousFileHash, newFileHash);
 										RecordFileLogger.rollback();
@@ -177,7 +179,9 @@ public class RecordFileParser implements FileParser {
 			}
 
 			log.info("Finished parsing {} transactions from record file {} in {}", counter, file.getName(), stopwatch);
-			applicationStatusRepository.updateLastProcessedRecordHash(thisFileHash);
+			if (StringUtils.isNotBlank(thisFileHash) && !thisFileHash.equals(EMPTY_HASH)) {
+				applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, thisFileHash);
+			}
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
 			return true;
@@ -192,7 +196,7 @@ public class RecordFileParser implements FileParser {
 	 * @throws Exception 
 	 */
 	private void loadRecordFiles(List<String> fileNames) throws Exception {
-		String prevFileHash = applicationStatusRepository.getLastProcessedRecordHash();
+		String prevFileHash = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
 		Collections.sort(fileNames);
 		
 		for (String name : fileNames) {

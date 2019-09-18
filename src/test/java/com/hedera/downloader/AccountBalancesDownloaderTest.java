@@ -22,6 +22,7 @@ package com.hedera.downloader;
 
 import com.hedera.FileCopier;
 import com.hedera.configLoader.ConfigLoader;
+import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.config.BalanceProperties;
 import com.hedera.mirror.config.DownloaderProperties;
@@ -74,7 +75,7 @@ public class AccountBalancesDownloaderTest {
         s3 = S3Mock.create(8001, s3Path.toString());
         s3.start();
 
-        when(applicationStatusRepository.getLastValidDownloadedBalanceFileName()).thenReturn("");
+        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE)).thenReturn("");
     }
 
     @AfterEach
@@ -87,7 +88,7 @@ public class AccountBalancesDownloaderTest {
     void downloadAndVerify() throws Exception {
         fileCopier.copy();
         downloader.download();
-        verify(applicationStatusRepository).updateLastValidDownloadedBalanceFileName("2019-08-30T18_30_00.010147001Z_Balances.csv");
+        verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, "2019-08-30T18_30_00.010147001Z_Balances.csv");
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
