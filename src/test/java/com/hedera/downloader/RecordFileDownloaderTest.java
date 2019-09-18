@@ -22,7 +22,7 @@ package com.hedera.downloader;
 
 import com.hedera.FileCopier;
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.config.DownloaderProperties;
 import com.hedera.mirror.config.RecordProperties;
 import com.hedera.utilities.Utility;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.*;
 public class RecordFileDownloaderTest {
 
     @Mock
-    private ApplicationStatus applicationStatus;
+    private ApplicationStatusRepository applicationStatusRepository;
 
     @TempDir
     Path dataPath;
@@ -64,7 +64,7 @@ public class RecordFileDownloaderTest {
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
         properties.getDownloader().setBatchSize(100);
 
-        downloader = new RecordFileDownloader(applicationStatus, properties, new DownloaderProperties());
+        downloader = new RecordFileDownloader(applicationStatusRepository, properties, new DownloaderProperties());
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
@@ -91,7 +91,7 @@ public class RecordFileDownloaderTest {
 
         downloader.download();
 
-        verify(applicationStatus).updateLastValidDownloadedRecordFileName("2019-07-01T14:29:00.302068Z.rcd");
+        verify(applicationStatusRepository).updateLastValidDownloadedRecordFileName("2019-07-01T14:29:00.302068Z.rcd");
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
@@ -106,7 +106,7 @@ public class RecordFileDownloaderTest {
     void downloadV2() throws Exception {
         fileCopier.copy();
         downloader.download();
-        verify(applicationStatus).updateLastValidDownloadedRecordFileName("2019-08-30T18_10_05.249678Z.rcd");
+        verify(applicationStatusRepository).updateLastValidDownloadedRecordFileName("2019-08-30T18_10_05.249678Z.rcd");
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
@@ -186,8 +186,8 @@ public class RecordFileDownloaderTest {
     @DisplayName("Doesn't match last valid hash")
     void hashMismatchWithPrevious() throws Exception {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
-        when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
-        when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
+        when(applicationStatusRepository.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
+        when(applicationStatusRepository.getLastValidDownloadedRecordFileHash()).thenReturn("123");
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))
@@ -199,9 +199,9 @@ public class RecordFileDownloaderTest {
     @DisplayName("Bypass previous hash mismatch")
     void hashMismatchWithBypass() throws Exception {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
-        when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
-        when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
-        when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("2019-09-01T00:00:00.000000Z.rcd");
+        when(applicationStatusRepository.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
+        when(applicationStatusRepository.getLastValidDownloadedRecordFileHash()).thenReturn("123");
+        when(applicationStatusRepository.getBypassRecordHashMismatchUntilAfter()).thenReturn("2019-09-01T00:00:00.000000Z.rcd");
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))

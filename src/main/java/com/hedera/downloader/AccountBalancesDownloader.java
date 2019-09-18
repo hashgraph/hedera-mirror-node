@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.config.BalanceProperties;
 import com.hedera.mirror.config.DownloaderProperties;
 import lombok.extern.log4j.Log4j2;
@@ -48,8 +48,8 @@ public class AccountBalancesDownloader extends Downloader {
 	private final String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.BALANCE);
 	private final BalanceProperties balanceProperties;
 
-	public AccountBalancesDownloader(ApplicationStatus applicationStatus, BalanceProperties balanceProperties, DownloaderProperties downloaderProperties) {
-		super(applicationStatus, balanceProperties.getDownloader(), downloaderProperties);
+	public AccountBalancesDownloader(ApplicationStatusRepository applicationStatusRepository, BalanceProperties balanceProperties, DownloaderProperties downloaderProperties) {
+		super(applicationStatusRepository, balanceProperties.getDownloader(), downloaderProperties);
 		this.balanceProperties = balanceProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);
@@ -89,7 +89,7 @@ public class AccountBalancesDownloader extends Downloader {
 	 * @throws Exception 
 	 */
 	private void verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) throws Exception {
-		String lastValidBalanceFileName = applicationStatus.getLastValidDownloadedBalanceFileName();
+		String lastValidBalanceFileName = applicationStatusRepository.getLastValidDownloadedBalanceFileName();
 		String newLastValidBalanceFileName = lastValidBalanceFileName;
 
 		// reload address book and keys
@@ -147,7 +147,7 @@ public class AccountBalancesDownloader extends Downloader {
 			}
 		}
 		if (!newLastValidBalanceFileName.equals(lastValidBalanceFileName)) {
-			applicationStatus.updateLastValidDownloadedBalanceFileName(newLastValidBalanceFileName);
+			applicationStatusRepository.updateLastValidDownloadedBalanceFileName(newLastValidBalanceFileName);
 		}
 	}
 }

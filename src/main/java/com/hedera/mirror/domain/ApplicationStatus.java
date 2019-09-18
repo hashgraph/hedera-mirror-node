@@ -27,7 +27,7 @@ import javax.persistence.*;
 @Data
 @Entity
 @Table(name = "t_application_status")
-public class ApplicationStatusPojo {
+public class ApplicationStatus {
 
     @Id
     @Enumerated(EnumType.STRING)

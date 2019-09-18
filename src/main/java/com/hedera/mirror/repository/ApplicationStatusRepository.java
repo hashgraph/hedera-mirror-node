@@ -1,4 +1,4 @@
-package com.hedera.databaseUtilities;
+package com.hedera.mirror.repository;
 
 /*-
  * ‌
@@ -21,7 +21,7 @@ package com.hedera.databaseUtilities;
  */
 
 import com.hedera.mirror.CacheConfiguration;
-import com.hedera.mirror.domain.ApplicationStatusPojo;
+import com.hedera.mirror.domain.ApplicationStatus;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
@@ -34,18 +34,18 @@ import javax.transaction.Transactional;
 
 @Transactional
 @CacheConfig(cacheNames = "application_status", cacheManager = CacheConfiguration.EXPIRE_AFTER_5M)
-public interface ApplicationStatus extends CrudRepository<ApplicationStatusPojo, ApplicationStatusCode> {
+public interface ApplicationStatusRepository extends CrudRepository<ApplicationStatus, ApplicationStatusCode> {
 
 	String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
 
 	@Cacheable(sync = true)
 	default String findByStatusCode(ApplicationStatusCode statusCode) {
-		return findById(statusCode).map(ApplicationStatusPojo::getStatusValue).orElse("");
+		return findById(statusCode).map(ApplicationStatus::getStatusValue).orElse("");
 	}
 
 	@Modifying
 	@CacheEvict(key = "#statusCode")
-	@Query("update ApplicationStatusPojo set statusValue = ?2 where statusCode = ?1")
+	@Query("update ApplicationStatus set statusValue = ?2 where statusCode = ?1")
 	void updateStatusValue(ApplicationStatusCode statusCode, String statusValue);
 
 	default String getBypassEventHashMismatchUntilAfter() {

@@ -23,7 +23,7 @@ package com.hedera.downloader;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.mirror.config.DownloaderProperties;
-import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.config.RecordProperties;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
@@ -50,8 +50,8 @@ public class RecordFileDownloader extends Downloader {
 
 	private final RecordProperties recordProperties;
 
-	public RecordFileDownloader(ApplicationStatus applicationStatus, RecordProperties recordProperties, DownloaderProperties downloaderProperties) {
-		super(applicationStatus, recordProperties.getDownloader(), downloaderProperties);
+	public RecordFileDownloader(ApplicationStatusRepository applicationStatusRepository, RecordProperties recordProperties, DownloaderProperties downloaderProperties) {
+		super(applicationStatusRepository, recordProperties.getDownloader(), downloaderProperties);
 		this.recordProperties = recordProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);
@@ -83,8 +83,8 @@ public class RecordFileDownloader extends Downloader {
 	 */
 	private boolean verifyHashChain(File recordFile) throws Exception {
 		String recordPath = recordFile.getAbsolutePath();
-		String lastValidRecordFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
-		String bypassMismatch = StringUtils.defaultIfBlank(applicationStatus.getBypassRecordHashMismatchUntilAfter(), "");
+		String lastValidRecordFileHash = applicationStatusRepository.getLastValidDownloadedRecordFileHash();
+		String bypassMismatch = StringUtils.defaultIfBlank(applicationStatusRepository.getBypassRecordHashMismatchUntilAfter(), "");
 		String prevFileHash = RecordFileParser.readPrevFileHash(recordPath);
 
 		if (prevFileHash == null) {
@@ -152,8 +152,8 @@ public class RecordFileDownloader extends Downloader {
 
 							if (moveFile(rcdFile, validFile)) {
 								log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
-								applicationStatus.updateLastValidDownloadedRecordFileHash(hash);
-								applicationStatus.updateLastValidDownloadedRecordFileName(name);
+								applicationStatusRepository.updateLastValidDownloadedRecordFileHash(hash);
+								applicationStatusRepository.updateLastValidDownloadedRecordFileName(name);
 								valid = true;
 								break;
 							}

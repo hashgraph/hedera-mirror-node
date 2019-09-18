@@ -33,7 +33,7 @@ import com.google.common.base.Stopwatch;
 import com.google.protobuf.TextFormat;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
-import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.filedelimiters.FileDelimiter;
 import com.hedera.mirror.config.RecordProperties;
 import com.hedera.recordFileLogger.RecordFileLogger;
@@ -55,11 +55,11 @@ import javax.inject.Named;
 public class RecordFileParser implements FileParser {
 
 	private final String pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
-	private final ApplicationStatus applicationStatus;
+	private final ApplicationStatusRepository applicationStatusRepository;
 	private final RecordProperties recordProperties;
 
-	public RecordFileParser(ApplicationStatus applicationStatus, RecordProperties recordProperties) {
-		this.applicationStatus = applicationStatus;
+	public RecordFileParser(ApplicationStatusRepository applicationStatusRepository, RecordProperties recordProperties) {
+		this.applicationStatusRepository = applicationStatusRepository;
 		this.recordProperties = recordProperties;
 		Utility.ensureDirectory(pathName);
 	}
@@ -119,7 +119,7 @@ public class RecordFileParser implements FileParser {
 
 								if (!newFileHash.contentEquals(previousFileHash)) {
 
-									if (applicationStatus.getBypassRecordHashMismatchUntilAfter().compareTo(Utility.getFileName(fileName)) < 0) {
+									if (applicationStatusRepository.getBypassRecordHashMismatchUntilAfter().compareTo(Utility.getFileName(fileName)) < 0) {
 										// last file for which mismatch is allowed is in the past
 										log.error("Hash mismatch for file {}. Previous = {}, Current = {}", fileName, previousFileHash, newFileHash);
 										RecordFileLogger.rollback();
@@ -177,7 +177,7 @@ public class RecordFileParser implements FileParser {
 			}
 
 			log.info("Finished parsing {} transactions from record file {} in {}", counter, file.getName(), stopwatch);
-			applicationStatus.updateLastProcessedRecordHash(thisFileHash);
+			applicationStatusRepository.updateLastProcessedRecordHash(thisFileHash);
 			return true;
 		} else if (initFileResult == INIT_RESULT.SKIP) {
 			return true;
@@ -192,7 +192,7 @@ public class RecordFileParser implements FileParser {
 	 * @throws Exception 
 	 */
 	private void loadRecordFiles(List<String> fileNames) throws Exception {
-		String prevFileHash = applicationStatus.getLastProcessedRecordHash();
+		String prevFileHash = applicationStatusRepository.getLastProcessedRecordHash();
 		Collections.sort(fileNames);
 		
 		for (String name : fileNames) {
