@@ -40,6 +40,7 @@ public class DBEntity {
 	public long expiryTimeNanos = 0;
 	public long autoRenewPeriod = 0;
 	public String key = "";
+	public String ed25519KeyHex = "";
 	public long proxyAccountNum = 0;
 	public boolean deleted = false;
 	public long expiryTimeNs = 0;
@@ -49,7 +50,7 @@ public class DBEntity {
         try {
         	connect = DatabaseUtilities.openDatabase(connect);
         	PreparedStatement query = connect.prepareStatement("SELECT e.entity_num, e.entity_realm, e.entity_shard, et.name"
-        			+ ", e.exp_time_seconds, e.exp_time_nanos, e.auto_renew_period, e.key, e.fk_prox_acc_id, e.deleted, e.exp_time_ns, e2.entity_num AS prox_acc_num"
+        			+ ", e.exp_time_seconds, e.exp_time_nanos, e.auto_renew_period, e.key, e.ed25519_public_key_hex, e.fk_prox_acc_id, e.deleted, e.exp_time_ns, e2.entity_num AS prox_acc_num"
         			+ " FROM t_entities e"
         			+ " JOIN t_entity_types et ON et.id = e.fk_entity_type_id"
         			+ " LEFT OUTER JOIN t_entities e2 ON e2.id = e.fk_prox_acc_id"
@@ -66,8 +67,10 @@ public class DBEntity {
             	expiryTimeSeconds = resultSet.getLong("exp_time_seconds");
             	expiryTimeNanos = resultSet.getLong("exp_time_nanos");
             	autoRenewPeriod = resultSet.getLong("auto_renew_period");
-            	key = Hex.toHexString(resultSet.getBytes("key"));
-            	System.out.println(entityNum + "-" + key);
+            	if ( null != resultSet.getBytes("key")) {
+            		key = Hex.toHexString(resultSet.getBytes("key"));
+            	}
+        		ed25519KeyHex = resultSet.getString("ed25519_public_key_hex");
             	proxyAccountNum = resultSet.getLong("prox_acc_num");
             	deleted = resultSet.getBoolean("deleted");
             	expiryTimeNs = resultSet.getLong("exp_time_ns");

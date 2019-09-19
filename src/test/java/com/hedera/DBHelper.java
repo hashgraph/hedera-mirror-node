@@ -23,7 +23,6 @@ package com.hedera;
 import lombok.extern.log4j.Log4j2;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
@@ -79,18 +78,18 @@ public class DBHelper {
         try {
         	connect = DatabaseUtilities.openDatabase(connect);
 
-        	connect.createStatement().execute("DELETE FROM t_record_files");
-        	connect.createStatement().execute("DELETE FROM t_record_files");
+        	connect.createStatement().execute("DELETE FROM t_cryptotransferlists");
         	connect.createStatement().execute("DELETE FROM t_file_data");
         	connect.createStatement().execute("DELETE FROM t_contract_result");
         	connect.createStatement().execute("DELETE FROM t_livehashes");
-        	connect.createStatement().execute("DELETE FROM t_cryptotransferlists");
         	connect.createStatement().execute("DELETE FROM t_transactions");
+        	connect.createStatement().execute("DELETE FROM t_record_files");
         	connect.createStatement().execute("DELETE FROM t_entities");
         	connect.createStatement().execute("DELETE FROM t_events");
         	connect.createStatement().execute("DELETE FROM account_balance_sets");
         	connect.createStatement().execute("DELETE FROM account_balances");
         	connect.createStatement().execute("UPDATE t_application_status SET status_value = ''");
+
         } catch (SQLException e) {
         	if (connect != null) {
         		connect.close();
@@ -101,7 +100,7 @@ public class DBHelper {
             connect.close();
         }
     }
-    public static DBTransaction checkTransaction(long validStartNs, long nodeAccountNum, String memo, String transactionType, String result, long consensusSeconds, long consensusNanos
+    public static DBTransaction checkTransaction(long validStartNs, long nodeAccountNum, String memo, String transactionType, String result
     		, long payerAccountId, long chargedTxFee, long initialBalance, long cudEntity, String FileName, long consensusNs) throws Exception {
     	//TODO: Add valid duration for transaction
     	DBTransaction transaction = new DBTransaction();
@@ -114,8 +113,6 @@ public class DBHelper {
     	assertEquals(memo,transaction.memo);
     	assertEquals(transactionType, transaction.transactionType);
     	assertEquals(result, transaction.result);
-    	assertEquals(consensusSeconds, transaction.consensusSeconds);
-    	assertEquals(consensusNanos, transaction.consensusNanos);
     	if (payerAccountId != 0) {
     		entity.getEntityDetails(transaction.payerAccountId);
     		assertEquals(payerAccountId, entity.entityNum);

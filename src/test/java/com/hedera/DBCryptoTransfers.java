@@ -30,7 +30,7 @@ import java.sql.SQLException;
 @Log4j2
 public class DBCryptoTransfers {
 
-    public static long checkExists(long transactionId, long accountNum, long amount) throws Exception {
+    public static long checkExists(long consensusNS, long accountNum, long amount) throws Exception {
         Connection connect = null;
         long count = 0;
         try {
@@ -41,11 +41,11 @@ public class DBCryptoTransfers {
         			+ " WHERE ctl.account_id = e.id"
         			+ " AND e.entity_num = ?"
         			+ " AND ctl.amount = ?"
-        			+ " AND ctl.fk_trans_id = ?");
+        			+ " AND ctl.consensus_timestamp = ?");
         	
         	query.setLong(1, accountNum);
         	query.setLong(2, amount);
-        	query.setLong(3, transactionId);
+        	query.setLong(3, consensusNS);
             ResultSet resultSet = query.executeQuery();
             while (resultSet.next()) {
             	count = resultSet.getLong("row_count");
@@ -62,16 +62,16 @@ public class DBCryptoTransfers {
         }
         return count;
     }
-    public static long checkCount(long transactionId) throws Exception {
+    public static long checkCount(long consensusNS) throws Exception {
         Connection connect = null;
         long count = 0;
         try {
         	connect = DatabaseUtilities.openDatabase(connect);
         	PreparedStatement query = connect.prepareStatement("SELECT count(*) AS row_count"
         			+ " FROM t_cryptotransferlists ctl"
-        			+ " WHERE ctl.fk_trans_id = ?");
+        			+ " WHERE ctl.consensus_timestamp = ?");
         	
-        	query.setLong(1, transactionId);
+        	query.setLong(1, consensusNS);
             ResultSet resultSet = query.executeQuery();
             while (resultSet.next()) {
             	count = resultSet.getLong("row_count");
