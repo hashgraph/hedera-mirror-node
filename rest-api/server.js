@@ -24,7 +24,12 @@ require("dotenv").config({
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const Pool = require('pg').Pool;
+let Pool;
+if (process.env.NODE_ENV !== 'test') {
+    Pool = require('pg').Pool;
+} else {
+    Pool = require('./__tests__/mockpool.js'); // Use a mocked up DB for jest unit tests
+}
 const app = express();
 const cors = require('cors');
 const log4js = require('log4js');
@@ -41,7 +46,12 @@ const Cacher = require('./cacher.js');
 
 var compression = require('compression');
 
-const port = process.env.PORT;
+let port;
+if (process.env.NODE_ENV !== 'test') {
+    port = process.env.PORT;
+} else {
+    port = 3000; // Use a dummy port for jest unit tests
+}
 if (port === undefined || isNaN(Number(port))) {
     logger.error('Server started with unknown port');
     console.log('Please specify the port');
@@ -102,9 +112,6 @@ let apiPrefix = '/api/v1';
 app.get(apiPrefix + '/transactions', (req, res) => caches['transactions'].getResponse(req, res, transactions.getTransactions));
 app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
 app.get(apiPrefix + '/balances', (req, res) => caches['balances'].getResponse(req, res, balances.getBalances));
-app.get(apiPrefix + '/events', (req, res) => caches['events'].getResponse(req, res, events.getEvents));
-app.get(apiPrefix + '/events/:id', events.getOneEvent);
-app.get(apiPrefix + '/events/analytics', eventAnalytics.getEventAnalytics);
 app.get(apiPrefix + '/accounts', (req, res) => caches['accounts'].getResponse(req, res, accounts.getAccounts));
 app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
 

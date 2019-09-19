@@ -29,11 +29,15 @@ import java.sql.Types;
 import java.time.Instant;
 import java.util.HashMap;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import lombok.extern.log4j.Log4j2;
+
+import static java.sql.Types.VARBINARY;
+import static java.sql.Types.VARCHAR;
 
 @Log4j2
 public class Entities {
@@ -52,13 +56,13 @@ public class Entities {
     	,EXP_TIME_NANOS
     	,EXP_TIME_NS
     	,AUTO_RENEW
-    	,ADMIN_KEY
+    	,ED25519_PUBLIC_KEY_HEX
     	,KEY
     	,FK_PROXY_ACCOUNT_ID
     }
 
 	private static Connection connect = null;
-	
+
 	public Entities(Connection connect) throws SQLException {
 		Entities.connect = connect;
 		if (Entities.connect != null) {
@@ -77,10 +81,9 @@ public class Entities {
 	            resultSet.close();      
 			}
 		}
-    }       
+    }
 
-	private long updateEntity(int fk_entity_type, long shard, long realm, long num, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
-		
+	private long updateEntity(int fk_entity_type, long shard, long realm, long num, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] key, long fk_proxy_account_id) throws SQLException {
 		long entityId = 0;
 		
 	    if (shard + realm + num == 0 ) {
@@ -89,7 +92,7 @@ public class Entities {
 
 	    entityId = createOrGetEntity(shard, realm, num, fk_entity_type);
 	    
-	    if ((exp_time_nanos == 0) && (exp_time_seconds == 0) && (auto_renew_period == 0) && (fk_proxy_account_id == 0) && (admin_key == null) && (key == null)) {
+	    if ((exp_time_nanos == 0) && (exp_time_seconds == 0) && (auto_renew_period == 0) && (fk_proxy_account_id == 0) && (key == null)) {
 	    	// nothing to update
 	    	return entityId;
 	    }
@@ -112,13 +115,12 @@ public class Entities {
 	    	bDoComma = true;
 	    }
 	    
-	    if (admin_key != null) {
-	    	if (bDoComma) sqlUpdate += ",";
-	    	sqlUpdate += "admin_key = ?";
-	    	bDoComma = true;
-	    }
-
 	    if (key != null) {
+	    	// The key has been specified, thus update this field either to null for non-ED25519 key or the hex value.
+			if (bDoComma) sqlUpdate += ",";
+			sqlUpdate += "ed25519_public_key_hex = ?";
+			bDoComma = true;
+
 	    	if (bDoComma) sqlUpdate += ",";
 	    	sqlUpdate += "key = ?";
 	    	bDoComma = true;
@@ -133,7 +135,6 @@ public class Entities {
 	    sqlUpdate += " WHERE entity_shard = ?";
 	    sqlUpdate += " AND entity_realm = ?";
 	    sqlUpdate += " AND entity_num = ?";
-	    sqlUpdate += " AND fk_entity_type_id = ?";
 	    sqlUpdate += " RETURNING id";
 	    
 	    // inserts or returns an existing entity
@@ -151,13 +152,22 @@ public class Entities {
 	    	fieldCount += 1;
 	    	updateEntity.setLong(fieldCount, auto_renew_period);
 	    }
-	    
-	    if (admin_key != null) {
-	    	fieldCount += 1;
-    		updateEntity.setBytes(fieldCount, admin_key);
-	    }
 
 	    if (key != null) {
+			fieldCount += 1;
+			String ed25519PublicKeyHex = null;
+			try {
+				ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
+			} catch (InvalidProtocolBufferException e) {
+				log.error("Invalid ED25519 key could not be translated to hex text for entity {}.{}.{}. Column will be nulled. {}",
+						shard, realm, num, e);
+			}
+			if (null != ed25519PublicKeyHex) {
+				updateEntity.setString(fieldCount, ed25519PublicKeyHex);
+			} else {
+				updateEntity.setNull(fieldCount, VARCHAR);
+			}
+
 	    	fieldCount += 1;
     		updateEntity.setBytes(fieldCount, key);
 	    }
@@ -173,8 +183,6 @@ public class Entities {
         updateEntity.setLong(fieldCount, realm);
     	fieldCount += 1;
         updateEntity.setLong(fieldCount, num);
-    	fieldCount += 1;
-        updateEntity.setLong(fieldCount, fk_entity_type);
 
         updateEntity.execute();
         
@@ -193,14 +201,14 @@ public class Entities {
 	    
 	}
 
-	public long updateEntity(FileID fileId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
-		return updateEntity(FK_FILE, fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id);
+	public long updateEntity(FileID fileId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] key, long fk_proxy_account_id) throws SQLException {
+		return updateEntity(FK_FILE, fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, key, fk_proxy_account_id);
 	}
-	public long updateEntity(ContractID contractId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
-		return updateEntity(FK_CONTRACT, contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id);
+	public long updateEntity(ContractID contractId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] key, long fk_proxy_account_id) throws SQLException {
+		return updateEntity(FK_CONTRACT, contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, key, fk_proxy_account_id);
 	}
-	public long updateEntity(AccountID accountId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
-		return updateEntity(FK_ACCOUNT, accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id);
+	public long updateEntity(AccountID accountId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] key, long fk_proxy_account_id) throws SQLException {
+		return updateEntity(FK_ACCOUNT, accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, key, fk_proxy_account_id);
 	}
 
 	private long deleteEntity(int fk_entity_type, long shard, long realm, long num) throws SQLException {
@@ -218,7 +226,6 @@ public class Entities {
 	    sqlDelete += " WHERE entity_shard = ?";
 	    sqlDelete += " AND entity_realm = ?";
 	    sqlDelete += " AND entity_num = ?";
-	    sqlDelete += " AND fk_entity_type_id = ?";
 	    sqlDelete += " RETURNING id";
 
 	    // inserts or returns an existing entity
@@ -227,7 +234,6 @@ public class Entities {
 	    deleteEntity.setLong(1, shard);
         deleteEntity.setLong(2, realm);
         deleteEntity.setLong(3, num);
-        deleteEntity.setLong(4, fk_entity_type);
 
         deleteEntity.execute();
         
@@ -271,7 +277,6 @@ public class Entities {
 	    sqlDelete += " WHERE entity_shard = ?";
 	    sqlDelete += " AND entity_realm = ?";
 	    sqlDelete += " AND entity_num = ?";
-	    sqlDelete += " AND fk_entity_type_id = ?";
 	    sqlDelete += " RETURNING id";
 
 	    // inserts or returns an existing entity
@@ -280,7 +285,6 @@ public class Entities {
 	    deleteEntity.setLong(1, shard);
         deleteEntity.setLong(2, realm);
         deleteEntity.setLong(3, num);
-        deleteEntity.setLong(4, fk_entity_type);
 
         deleteEntity.execute();
         
@@ -308,9 +312,11 @@ public class Entities {
 		return unDeleteEntity(FK_ACCOUNT, accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum());
 	}
 
-	private long createEntity(long shard, long realm, long num, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id, int fk_entity_type) throws SQLException {
+	private long createEntity(long shard, long realm, long num, long exp_time_seconds, long exp_time_nanos,
+							  long auto_renew_period, byte[] key, long fk_proxy_account_id, int fk_entity_type)
+			throws SQLException {
 
-		long entityId = getCachedEntityId(shard, realm, num, fk_entity_type);
+		long entityId = getCachedEntityId(shard, realm, num);
 		if (entityId != -1) {
 			return entityId;
 		}
@@ -329,15 +335,22 @@ public class Entities {
     	entityCreate.setLong(8, Utility.convertInstantToNanos(expiryTime));
 		entityCreate.setLong(9, auto_renew_period);
 
-		if (admin_key == null) {
-    		entityCreate.setBytes(10, new byte[0]);
-    	} else {
-    		entityCreate.setBytes(10, admin_key);
-    	}
-
     	if (key == null) {
-    		entityCreate.setBytes(11, new byte[0]);
+			entityCreate.setNull(10, VARCHAR);
+			entityCreate.setNull(11, VARBINARY);
     	} else {
+			String ed25519PublicKeyHex = null;
+			try {
+				ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
+			} catch (InvalidProtocolBufferException e) {
+				log.error("Invalid ED25519 key could not be translated to hex text for entity {}.{}.{}. Column will be nulled. {}",
+						shard, realm, num, e);
+			}
+			if (null != ed25519PublicKeyHex) {
+				entityCreate.setString(10, ed25519PublicKeyHex);
+			} else {
+				entityCreate.setNull(10, VARCHAR);
+			}
     		entityCreate.setBytes(11, key);
     	}
 
@@ -352,18 +365,18 @@ public class Entities {
 	    
 	}
 
-	public long createEntity(FileID fileId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
-		return createEntity(fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id, FK_FILE);
+	public long createEntity(FileID fileId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] key, long fk_proxy_account_id) throws SQLException {
+		return createEntity(fileId.getShardNum(),fileId.getRealmNum(), fileId.getFileNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, key, fk_proxy_account_id, FK_FILE);
 	}
-	public long createEntity(ContractID contractId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
-		return createEntity(contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id, FK_CONTRACT);
+	public long createEntity(ContractID contractId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] key, long fk_proxy_account_id) throws SQLException {
+		return createEntity(contractId.getShardNum(),contractId.getRealmNum(), contractId.getContractNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, key, fk_proxy_account_id, FK_CONTRACT);
 	}
-	public long createEntity(AccountID accountId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] admin_key, byte[] key, long fk_proxy_account_id) throws SQLException {
-		return createEntity(accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, admin_key, key, fk_proxy_account_id, FK_ACCOUNT);
+	public long createEntity(AccountID accountId, long exp_time_seconds, long exp_time_nanos, long auto_renew_period, byte[] key, long fk_proxy_account_id) throws SQLException {
+		return createEntity(accountId.getShardNum(),accountId.getRealmNum(), accountId.getAccountNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, key, fk_proxy_account_id, FK_ACCOUNT);
 	}
 	private long createOrGetEntity(long shard, long realm, long num, int fk_entity_type) throws SQLException {
 		
-		long entityId = getCachedEntityId(shard, realm, num, fk_entity_type);
+		long entityId = getCachedEntityId(shard, realm, num);
 		if (entityId != -1) {
 			return entityId;
 		}
@@ -378,15 +391,15 @@ public class Entities {
 		entityCreate.setLong(7, 0);
     	entityCreate.setLong(8, 0);
 		entityCreate.setLong(9, 0);
-		entityCreate.setBytes(10, new byte[0]);
-		entityCreate.setBytes(11, new byte[0]);
+		entityCreate.setNull(10, VARCHAR);
+		entityCreate.setNull(11, VARBINARY);
 		entityCreate.setLong(12, 0);
 		
 		entityCreate.execute();
 		entityId = entityCreate.getLong(1);
 		entityCreate.close();
 
-        String entity = shard + "-" + realm + "-" + num + "-" + fk_entity_type;
+        String entity = shard + "-" + realm + "-" + num;
         entities.put(entity, entityId);
         return entityId;
 	}
@@ -401,8 +414,8 @@ public class Entities {
         return createOrGetEntity(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum(), FK_ACCOUNT);
     }
 
-    private long getCachedEntityId(long shard, long realm, long num, int fk_entity_type) {
-        String entity = shard + "-" + realm + "-" + num + "-" + fk_entity_type;
+    private long getCachedEntityId(long shard, long realm, long num) {
+        String entity = shard + "-" + realm + "-" + num;
     	
         if (shard + realm + num == 0 ) {
             return 0;

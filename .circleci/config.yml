@@ -10,6 +10,14 @@ references:
   attach_workspace: &attach_workspace
     attach_workspace:
       at: *workspace_root
+  package_deliverable: &package_deliverable
+    run:
+      name: Generating mirror-node.tgz
+      working_directory: /tmp/workspace/
+      command: |
+        _tagged_dir=mirror-node-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
+        mv mirror-node "${_tagged_dir}"
+        tar -czf /tmp/workspace/mirror-node.tgz "${_tagged_dir}"
 
 workflows:
   version: 2
@@ -42,21 +50,26 @@ jobs:
             - maven-v1-
       - run:
           name: Running maven
-          command: ./mvnw install
+          command: ./mvnw package
       - store_test_results:
           path: target/surefire-reports
+      - store_artifacts:
+          path: target/site/jacoco/index.html
       - save_cache:
           key: maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
           paths:
           - ~/.m2
       - run:
+          name: Upload Code Coverage to Coveralls
+          command: ./mvnw coveralls:report -DrepoToken=$COVERALLS_REPO_TOKEN
+      - run:
           name: Collecting mirror-node assets
           command: |
             mkdir -p /tmp/workspace/mirror-node/
-            mv target/mirror-node.jar /tmp/workspace/mirror-node/
-            mv target/config /tmp/workspace/mirror-node/
-            mv target/lib /tmp/workspace/mirror-node/
-            mv systemd /tmp/workspace/mirror-node/
+            mv target/mirror-node-*.jar /tmp/workspace/mirror-node/mirror-node.jar
+            mv config /tmp/workspace/mirror-node/
+            mv scripts /tmp/workspace/mirror-node/
+            mv rest-api /tmp/workspace/mirror-node/
       - persist_to_workspace:
           root: *workspace_root
           paths:
@@ -66,12 +79,6 @@ jobs:
     <<: *defaults
     steps:
       - *attach_workspace
-      - run:
-          name: Generating mirror-node.tgz
-          working_directory: /tmp/workspace/
-          command: |
-            _tagged_dir=mirror-node-${CIRCLE_TAG}
-            mv mirror-node "${_tagged_dir}"
-            tar -czf /tmp/mirror-node.tgz "${_tagged_dir}"
+      - *package_deliverable
       - store_artifacts:
-          path: /tmp/mirror-node.tgz
+          path: /tmp/workspace/mirror-node.tgz

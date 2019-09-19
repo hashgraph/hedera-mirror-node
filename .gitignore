@@ -33,20 +33,12 @@ config/config.json
 config/config.json.gcp
 config/config.json.s3
 output/
-docker/MirrorNodeData/
-docker/runtime/
-docker/postgresInit.sql
-docker/.env
-docker/MirrorNodePostgresData/
 config/loggerStatus.json
 .env
 mirrordata/
-postgres/Done.txt
-postgres/TODO.TXT
 config/0.0.102
 MirrorNodeData/
-docker/stop
-docker/dropPostgres.sh
+MirrorNodePostgresData/
 
 # Created by https://www.gitignore.io/api/visualstudiocode
 # Edit at https://www.gitignore.io/?templates=visualstudiocode

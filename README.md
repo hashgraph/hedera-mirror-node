@@ -1,5 +1,6 @@
 [![CircleCI](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master.svg?style=shield)](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master)
-![GitHub](https://img.shields.io/github/license/hashgraph/hedera-mirror-node)
+[![Coveralls github branch](https://img.shields.io/coveralls/github/hashgraph/hedera-mirror-node/master)](https://coveralls.io/github/hashgraph/hedera-mirror-node?branch=master)
+[![GitHub](https://img.shields.io/github/license/hashgraph/hedera-mirror-node)](LICENSE)
 
 # Beta Mirror Node
 
@@ -52,91 +53,29 @@ The Beta mirror node works as follows:
 
 ### Requirements
 
-- [ ] Docker
-- [ ] Docker-compose
-- [ ] Address book update information:
-  - [ ] Node ID - your node of choice (e.g. 0.0.3)
-  - [ ] Node Address - IP address and port number of your node of choice (e.g. 35.232.131.251:50211)
-  - [ ] Operator ID - Your Hedera Account ID
-  - [ ] Operator Secret Key - The secret key that can sign transactions on behalf of your Operator ID.
+- JDK 11
+- Docker
+- Docker-compose
 
-```
+```bash
 git clone git@github.com:hashgraph/hedera-mirror-node.git
 cd hedera-mirror-node
 cp config/config.json.sample config/config.json
-nano config/config.json // Insert AWS S3 credentials. 
-cp docker/dotenv.sample docker/.env
-./buildimages.sh
-
-  // You'll now be asked a few questions to finalize automated mirror node configuration.
-
-  Compile source via 1-docker-compose, 2-local maven, 3-skip?
-  1) Docker
-  2) Local
-  3) Skip
-  #? 1
-
-  Would you like to fetch or use an existing address book file (0.0.102) (enter 1, 2, 3 or 4)?
-  1) Yes			3) Integration-Testnet
-  2) Skip			4) Public-Testnet
-
-  Choose 
-  (3) to copy the address book file we provide or 
-  (1) to generate it from the network itself
-    
-    #? 1
-
-    Input node address (x.x.x.x:port)
-    {{Node Address}}
-    Input node ID (0.0.x)
-    {{Node ID}}
-    Input operator ID (0.0.x)
-    {{Operator ID}}
-    Input operator key (302...)
-    {{Operator Secret Key}}
-```
-
-Follow instructions above for setting up the `config.json` file and the `.env` file in the `docker` folder to ensure environment variables are set correctly.
-
-Note: It is recommended that for a quickstart, only the AWS keys are input into the `config.json` file and all settings are left as they are.
-
-example `.env` file.
-
-```text
-POSTGRES_DB=postgres
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=mysecretpassword
-POSTGRES_PORT=5432
-PGDATA=/var/lib/postgresql/data/pgdata
-# This user is used by the REST API to gain read only access to the necessary database tables
-DB_USER=api
-DB_PASS=apipass
-DB_NAME=postgres
-# This is the port the REST API will listen onto
-PORT=5551
+cp config/dotenv.sample config/.env
+nano config/config.json # Insert AWS S3 credentials and bucket name
+nano config/.env # Adjust usernames and passwords
+./mvnw clean install
+docker-compose up
 ```
 
 Containers use persisted volumes as follows:
 
 - `./MirrorNodePostgresData` on your local machine maps to `/var/lib/postgresql/data` in the containers. This contains the files for the PostgreSQL database.
 Note: If you database container fails to initialise properly and the database fails to run, you will have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will not be run.
-
-- `./runtime` on your local machine maps to `/MirrorNodeCode` in the containers. This contains the runtime and configuration files for loading and parsing files.
-- `./MirrorNodeData` on your local machine maps to `/MirrorNodeData` in the containers. This contains files downloaded from S3 or GCP.
+- `./config` on your local machine maps to `/usr/etc/mirror-node` in the containers. This contains the configuration files for loading and parsing files.
+- `./MirrorNodeData` on your local machine maps to `/var/lib/mirror-node` in the container. This contains files downloaded from S3 or GCP.
 
 These are necessary not only for the database data to be persisted, but also so that the parsing containers can access file obtained via the downloading containers
-
-Docker compose scripts are available in the `docker` folder.
-
-A `buildImages.sh` script ensures the necessary data is available to the images via volumes, builds the images and starts the containers.
-
-`buildimages.sh` will first prompt whether youd like to compile sources either using a docker container, your local maven installation or skip the compilation, then prompt whether you want to download the 0.0.102 file from the network (it is recommended you do so the first time).
-If you answer 2 (no), the file will not be downloaded, if you answer 1 (yes), you will be prompted for the following information:
-
--Node address in the format of `ip:port` or `host:port`. (e.g. 192.168.0.2:50211)
--Node ID, the Hedera account for the node (e.g. 0.0.3).
--Operator ID, your account (e.g. 0.0.2031)
--Operator key, the private key for your account
 
 Note: Shutting down the database container via `docker-compose down` may result in a corrupted database that may not restart or may take longer than usual to restart.
 
@@ -154,31 +93,27 @@ You may now power down the docker image itself.
 
 ## Prerequisites
 
-This mirror node beta requires Java version 10 or above.
+This mirror node beta requires Java version 11.
 If you are planning on using the docker compose images, you'll need `Docker` installed.
 Without `Docker`, you will need to install `PostgreSQL` versions 10 or 11.
 
 ## Compile from source code
 
-Run `./mvnw install -DskipTests` from the `MirrorNode` directory.
+Run `./mvnw package -DskipTests` from the `MirrorNode` directory.
 
-This will compile a runnable mirror node jar file in the `target` directory and copy `config.json.sample` into the same directory.
-
-`cd target`
+This will compile a runnable mirror node jar file in the `target` directory.
 
 ## Setup your environment
 
-The build process has copied sample files to the `target/config` or the `/runtime/config` folder depending on whether you are running locally or via `docker-compose`.
+Pay close attention to the contents of these configuration files, they directly affect how the mirror node operates.
 
 - `config.json.sample` - rename this file to `config.json` and edit so that the configuration parameters that are appropriate to your environment are setup. See section below on configuration file specifics.
 
-- the file prefixed with '0.0.102' is the contents of a file hosted on Hedera with file ID `0.0.102`. This file contains the address book from the Hedera network which lists nodes and their public keys for signature verification purposes. Ensure the appropriate one for your network is identified in the `config.json` file (addressBookFile entry) otherwise signature verification will fail.
-
-Pay close attention to the contents of these configuration files, they directly affect how the mirror node operates.
+- The file prefixed with '0.0.102' is the contents of a file hosted on Hedera with file ID `0.0.102`. This file contains the address book from the Hedera network which lists nodes and their public keys for signature verification purposes. Ensure the appropriate one for your network is identified in the `config.json` file (addressBookFile entry) otherwise signature verification will fail.
 
 ### 0.0.102 file
 
-The `0.0.102` file contains the address book, that is the list of nodes, their account number and public key(s). This file is different on every network so it is imperative to ensure you have the correct one for each network, else the signature verification process will fail.
+The `0.0.102` file contains the address book, that is the list of nodes, their account number and public key(s). This file is different on every network so it is imperative to ensure you have the correct one for each network, else the signature verification process will fail. There are some sample address book files for various environments in the `config` folder that can be used. Alternatively, one can be manually downloaded from the network:
 
 #### Creating or updating the address book file (0.0.102 file)
 
@@ -199,7 +134,7 @@ OPERATOR_KEY=your account's private key
 Run the following command to update the address book at the location specified in `config.json`.
 
 ```shell
-java -cp mirror-node.jar com.hedera.addressBook.NetworkAddressBook
+java -cp target/mirror-node-*.jar -Dloader.main=com.hedera.addressBook.NetworkAddressBook org.springframework.boot.loader.PropertiesLauncher
 ```
 
 If no errors are output, the file specified by the `addressBookFile` parameter of the `config.json` file will now contain the network's address book.
@@ -221,13 +156,12 @@ Note: Changes to this file while downloading or processing is taking place may b
 | addressBookFile | `"./config/0.0.102"` | The location of the address book file file |
 | accountBalancesS3Location | `"accountBalances/balance"` | The location of the account balances files in the cloud bucket |
 | recordFilesS3Location | `"recordstreams/record"` | The location of the record files in the cloud bucket |
-| dbName | `"postgres"` | The name of the database |
-| dbUrl | `"jdbc:postgresql://localhost:5433/postgres"` | The connection string to access the database |
-| dbUsername | `"postgres"` | The username to access the database |
-| dbPassword | `"mysecretpassword"` | The password to access the database |
-| apiUsername | `"api"` | The database user for the REST API |
-| apiPassword | `"mysecretpassword"` | The password for the REST API user |
-| maxDownloadItems | `0` | The maximum number of new files to download at a time, set to `0` in production, change to `10` or other low number for testing or catching up with a large number of files. |
+| dbName | `"mirror_node"` | The name of the database |
+| dbUrl | `"jdbc:postgresql://localhost:5432/mirror_node"` | The connection string to access the database |
+| dbUsername | `"mirror_node"` | The username to access the database |
+| dbPassword | `"mirror_node_pass"` | The password to access the database |
+| apiUsername | `"mirror_api"` | The database user for the REST API |
+| apiPassword | `"mirror_api_pass"` | The password for the REST API user |
 | persistClaims | `false` | Determines whether claim data is persisted to the database or not |
 | persistFiles | `"ALL"` | Determines whether file data is persisted to the database or not, can be set to `ALL`, `NONE` or `SYSTEM`. `SYSTEM` means only files with a file number lower than `1000` will be persisted |
 | persistContracts | `true` | Determines whether contract data is persisted to the database or not |
@@ -265,9 +199,11 @@ Flyway (https://flywaydb.org/getstarted/) is used to manage the database schema.
 
 All database scripts reside in `src/main/resources/postgres`.
 
-`postgresInit.sql` should be used to initialise the database and owner. Please edit the file with usernames, passwords, etc... you wish to use.
+`postgresInit.sql` should be used to initialise the database and owner.
+- Edit the file with usernames, passwords, etc... you wish to use.
+- Run the script as a DB admin user: `psql postgres -f src/main/resources/postgres/postgresInit.sql`
 
-Then flyway should be used to biuld the initial set of tables, and apply any changes. Those are determined by files names `Vx.x__`.
+Then flyway should be used to build the initial set of tables, and apply any changes. Those are determined by files names `Vx.x__`.
 Note: The `Vx.x` scripts use variables which you should set prior to running the scripts.
 Example: `\set db_name='mydatabasename'`
 
@@ -275,13 +211,13 @@ Make sure the `config/config.json` or `.env` file have values that match the abo
 
 Check the output of the script carefully to ensure no errors occurred.
 
-## Upgrading the database
+## Running Locally
 
-Upgrades are performed by running the `migrate` command of the Flyway utility.
+You can skip this section if you're running docker containers. To run the Java downloader and parser:
 
-## Running the various mirror node components
-
-You can skip this section if you're running docker containers.
+```console
+java -jar target/mirror-node-*.jar
+```
 
 ### Note about error when running the software
 
@@ -295,70 +231,12 @@ WARNING: Use --illegal-access=warn to enable warnings of further illegal reflect
 WARNING: All illegal access operations will be denied in a future release
 ```
 
-### To Download RecordStream file(s)
-
-Run the following command:
-
-```shell
-java -cp mirror-node.jar com.hedera.downloader.RecordFileDownloader
-```
-
-Record files and signature files will be downloaded from S3 to the location specified in the `config.json` file.
-
-### To Download Balance file(s)
-
-Run the following command:
-
-```shell
-java -cp mirror-node.jar com.hedera.downloader.AccountBalancesDownloader
-```
-
-Balance files will be downloaded from S3 to the location specified in the `config.json` file.
-
-Example file
-
-```text
-year,month,day,hour,minute,second
-2019,JUNE,28,17,29,17
-shard,realm,number,balance
-0,0,1,0
-0,0,2,4530999689861900540
-... continues
-```
-
-### To Parse RecordStream file(s)
-
-Run the following command:
-
-```shell
-java -cp mirror-node.jar com.hedera.parser.RecordFileParser
-```
-
-### To Parse Balance file(s)
-
-This project provides the ability to log balances for all accounts, including history of balance changes
-
-Run the following command:
-
-```shell
-java -cp mirror-node.jar com.hedera.balanceFileLogger.BalanceFileLogger
-```
-
-### To download and parse record files in one command
-
-```shell
-java -cp mirror-node.jar com.hedera.downloader.DownloadAndParseRecordFiles
-```
-
 ## Docker compose
 
 Docker compose scripts are provided and run all the mirror node components:
 
 - PostgreSQL database
-- Balance files downloader
-- Balance files processor
-- Record files downloader and parser
-- 102 file updater
+- Java backend
 - REST API
 
 ## REST API
@@ -371,16 +249,22 @@ Create a `.env` file as per below and run with `npm start`.
 
 You can also unittest using jest by using `npm test`.
 
-example `.env` file:
+example `.env` file (note: there is a env.sample file in this directory):
 
 ```TEXT
-DB_USER=api
-DB_PASS=apipass
-DB_NAME=postgres
+DB_USER=mirror_api
+DB_PASS=mirror_api_pass
+DB_NAME=mirror_node
 # This is the port the REST API will listen onto
 PORT=5551
 # server hosting the database
 DB_HOST=localhost
+# Shard number
+SHARD_NUM=0
+# Whether to include the host:port in the next links returned from the rest api
+INCLUDE_PATH_IN_NEXT_LINKS=0
+
+
 ```
 
 `PORT` is the port number the REST API will listen onto.
@@ -404,22 +288,7 @@ While the values in this table are updated in real time, any changes you wish to
 
 ## Troubleshooting
 
-### Checking for errors
-
-Check for errors in the `logs/hedera-mirror-node.log` file. Log files are rotated every 100MB by default and stored in the same folder.
-The log directory can be overriden by passing `-DlogDir=customDir` on command line.
-
-### Record files
-
-* Recordstream files that have successfully been validated against signatures will be placed in the `"downloadToDir"/recordstreams/valid` directory.
-If there are no files in this folder, it's possible that either you `0.0.102` file is incorrect for this network, or signature files are still being downloaded.
-
-* Recordstream files that have successfully been parsed will be moved to `"downloadToDir"/recordstreams/parsedRecordFiles'
-
-* If your `maxDownloadItems` is set to 0 in the `config.json` file, the docker image downloads all new signature files from all nodes before starting processing into the database. If there are many files to catch up, it may be a long while before processing of these files takes place.
-You may try to set the `maxDownloadItems` to a number such as 10 or 20 to download and process new files in batches.
-
-* The above also applies if you are running the `downloader.DownloadAndParseRecordFiles` java class standalone.
+See [docs/troubleshooting.md](docs/troubleshooting.md)
 
 ## Contributing
 

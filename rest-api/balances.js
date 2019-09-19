@@ -55,10 +55,10 @@ const getBalances = function (req) {
         'timestamp', ['ab.consensus_timestamp'], 'timestamp_ns');
 
     let [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance',
-        ['ab.balance']);
+        ['ab.balance'], 'balance');
 
     let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'account.publickey',
-        ['e.key'], 'hexstring');
+        ['e.ed25519_public_key_hex'], null, (s) => {return s.toLowerCase();});
     let joinEntities = ('' !== pubKeyQuery); // Only need to join t_entites if we're selecting on publickey.
 
     const { limitQuery, limitParams, order, limit } =
@@ -79,7 +79,8 @@ const getBalances = function (req) {
         sqlQuery += " join t_entities e\n" +
             " on e.entity_realm = ab.account_realm_num\n" +
             " and e.entity_num = ab.account_num\n" +
-            " and e.entity_shard = 0 and e.fk_entity_type_id = 1\n";
+            " and e.entity_shard = " + process.env.SHARD_NUM + "\n" +
+            " and e.fk_entity_type_id < " + utils.ENTITY_TYPE_FILE + "\n";
     }
     sqlQuery += " where " +
         " consensus_timestamp = (" + innerQuery + ")\n" +
@@ -143,6 +144,10 @@ const getBalances = function (req) {
                 next: utils.getPaginationLink(req,
                     (ret.balances.length !== limit),
                     'account.id', anchorAccountId, order)
+            }
+
+            if (process.env.NODE_ENV === 'test') {
+                ret.sqlQuery = results.sqlQuery;
             }
 
             logger.debug("getBalances returning " +

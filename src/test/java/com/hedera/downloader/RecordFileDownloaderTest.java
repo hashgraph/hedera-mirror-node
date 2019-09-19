@@ -23,6 +23,8 @@ package com.hedera.downloader;
 import com.hedera.FileCopier;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.mirror.config.DownloaderProperties;
+import com.hedera.mirror.config.RecordProperties;
 import com.hedera.utilities.Utility;
 import io.findify.s3mock.S3Mock;
 import org.apache.commons.io.FileUtils;
@@ -54,14 +56,15 @@ public class RecordFileDownloaderTest {
     private S3Mock s3;
     private FileCopier fileCopier;
     private RecordFileDownloader downloader;
+    private RecordProperties properties = new RecordProperties();
 
     @BeforeEach
     void before() throws Exception {
         ConfigLoader.setAddressBookFile("./config/0.0.102-testnet");
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
-        ConfigLoader.setMaxDownloadItems(100);
+        properties.getDownloader().setBatchSize(100);
 
-        downloader = new RecordFileDownloader();
+        downloader = new RecordFileDownloader(properties, new DownloaderProperties());
         downloader.applicationStatus = applicationStatus;
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));
@@ -71,9 +74,6 @@ public class RecordFileDownloaderTest {
 
         s3 = S3Mock.create(8001, s3Path.toString());
         s3.start();
-
-        when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("");
-        when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("");
     }
 
     @AfterEach
@@ -131,7 +131,7 @@ public class RecordFileDownloaderTest {
     @Test
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {
-        ConfigLoader.setMaxDownloadItems(1);
+        properties.getDownloader().setBatchSize(1);
         fileCopier.copy();
         downloader.download();
         assertThat(Files.walk(validPath))
@@ -189,15 +189,11 @@ public class RecordFileDownloaderTest {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
         when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
         when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
-        when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("");
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(1)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
-                .extracting(Path::getFileName)
-                .contains(Paths.get(filename));
+                .hasSize(0);
     }
 
     @Test
@@ -206,7 +202,7 @@ public class RecordFileDownloaderTest {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
         when(applicationStatus.getLastValidDownloadedRecordFileName()).thenReturn("2019-07-01T14:12:00.000000Z.rcd");
         when(applicationStatus.getLastValidDownloadedRecordFileHash()).thenReturn("123");
-        when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("2019-07-02T00:00:00.000000Z.rcd");
+        when(applicationStatus.getBypassRecordHashMismatchUntilAfter()).thenReturn("2019-09-01T00:00:00.000000Z.rcd");
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(validPath))

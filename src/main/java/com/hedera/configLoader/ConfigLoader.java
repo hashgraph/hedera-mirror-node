@@ -80,7 +80,7 @@ public class ConfigLoader {
 	private static String recordFilesS3Location = "recordstreams/record";
 
 	//location of eventStream files on S3
-	private static String eventFilesS3Location = "eventstreams/events_";
+	private static String eventFilesS3Location = "eventsStreams/events_";
 
 	private static final long DEFAULT_SYSTEM_SHARD_NUM = 0L;
 	private static long systemShardNum = DEFAULT_SYSTEM_SHARD_NUM;
@@ -104,12 +104,8 @@ public class ConfigLoader {
     private static String dbUserName = "";
     // database password
     private static String dbPassword = "";
-    // max download items for testing
-    private static int maxDownloadItems = 0;
 
     private static Dotenv dotEnv = Dotenv.configure().ignoreIfMissing().load();
-
-	private static boolean bBalanceVerifySigs = false;
 
 	private static String configSavePath = "./config/config.json";
 	
@@ -231,10 +227,7 @@ public class ConfigLoader {
 					dbPassword = configJsonObject.get("dbPassword").getAsString();
 				}
 			}
-			if (configJsonObject.has("maxDownloadItems")) {
-				maxDownloadItems = configJsonObject.get("maxDownloadItems").getAsInt();
-			}
-			
+
 			if (configJsonObject.has("persistClaims")) {
 				persistClaims = configJsonObject.get("persistClaims").getAsBoolean();
 			}
@@ -247,12 +240,6 @@ public class ConfigLoader {
 			if (configJsonObject.has("persistCryptoTransferAmounts")) {
 				persistCryptoTransferAmounts = configJsonObject.get("persistCryptoTransferAmounts").getAsBoolean();
 			}
-
-
-			if (configJsonObject.has("balanceVerifySigs")) {
-				bBalanceVerifySigs = configJsonObject.get("balanceVerifySigs").getAsBoolean();
-			}
-
 		} catch (FileNotFoundException ex) {
 			log.error("Cannot load configuration from {}", configSavePath, ex);
 		}
@@ -380,14 +367,6 @@ public class ConfigLoader {
 		return dbPassword;
 	}
 
-	public static int getMaxDownloadItems() {
-		return maxDownloadItems;
-	}
-
-	public static void setMaxDownloadItems(int maxDownloadItems) {
-		ConfigLoader.maxDownloadItems = maxDownloadItems;
-	}
-
 	public static boolean getPersistClaims() {
 		return persistClaims;
 	}
@@ -399,9 +378,6 @@ public class ConfigLoader {
 	}
 	public static boolean getPersistCryptoTransferAmounts() {
 		return persistCryptoTransferAmounts;
-	}
-	public static boolean getBalanceVerifySigs() {
-		return bBalanceVerifySigs;
 	}
 
 	/***

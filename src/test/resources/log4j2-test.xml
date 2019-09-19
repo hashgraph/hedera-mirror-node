@@ -9,8 +9,5 @@
 		<Root level="WARN">
 			<AppenderRef ref="console"/>
 		</Root>
-		<Logger name="com.hedera" additivity="false" level="INFO">
-			<AppenderRef ref="console"/>
-		</Logger>
 	</Loggers>
 </Configuration>

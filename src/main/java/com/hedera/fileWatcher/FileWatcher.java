@@ -22,6 +22,9 @@ package com.hedera.fileWatcher;
 
 import com.hedera.utilities.Utility;
 import org.apache.logging.log4j.*;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 
 import java.io.File;
 import java.nio.file.*;
@@ -32,13 +35,20 @@ public abstract class FileWatcher {
     private final File pathToWatch;
 
     public FileWatcher(File pathToWatch) {
+        Utility.ensureDirectory(pathToWatch.getAbsolutePath());
         this.pathToWatch = pathToWatch;
-        if (!this.pathToWatch.exists()) {
-            this.pathToWatch.mkdirs();
-        }
     }
 
+    protected abstract boolean isEnabled();
+
+    @Async
+    @EventListener(ApplicationReadyEvent.class)
     public void watch() {
+        if (!isEnabled()) {
+            log.info("Skip watching directory: {}", pathToWatch);
+            return;
+        }
+
         // Invoke on startup to check for any changed files while this process was down.
         onCreate();
 
@@ -48,7 +58,7 @@ public abstract class FileWatcher {
             WatchKey rootKey = path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
             boolean valid = rootKey.isValid();
 
-            while (valid) {
+            while (valid && isEnabled()) {
                 WatchKey key;
                 try {
                     key = watcher.poll(100, TimeUnit.MILLISECONDS);

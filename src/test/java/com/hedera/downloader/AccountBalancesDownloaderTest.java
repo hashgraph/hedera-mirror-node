@@ -23,6 +23,8 @@ package com.hedera.downloader;
 import com.hedera.FileCopier;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.mirror.config.BalanceProperties;
+import com.hedera.mirror.config.DownloaderProperties;
 import com.hedera.utilities.Utility;
 import io.findify.s3mock.S3Mock;
 import org.apache.commons.io.FileUtils;
@@ -54,14 +56,15 @@ public class AccountBalancesDownloaderTest {
     private S3Mock s3;
     private FileCopier fileCopier;
     private AccountBalancesDownloader downloader;
+    private BalanceProperties properties = new BalanceProperties();
 
     @BeforeEach
     void before() throws Exception {
         ConfigLoader.setAddressBookFile("./config/0.0.102-testnet");
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
-        ConfigLoader.setMaxDownloadItems(100);
+        properties.getDownloader().setBatchSize(100);
 
-        downloader = new AccountBalancesDownloader();
+        downloader = new AccountBalancesDownloader(properties, new DownloaderProperties());
         downloader.applicationStatus = applicationStatus;
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.BALANCE));
@@ -109,7 +112,7 @@ public class AccountBalancesDownloaderTest {
     @Test
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {
-        ConfigLoader.setMaxDownloadItems(1);
+        properties.getDownloader().setBatchSize(1);
         fileCopier.copy();
         downloader.download();
         assertThat(Files.walk(validPath))
