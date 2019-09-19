@@ -40,17 +40,36 @@ function isNumeric(n) {
 /**
  * Validate input parameters for the rest apis
  * @param {String} param Parameter to be validated
- * @param {String} val Value to be validated
+ * @param {String} opAndVal operator:value to be validated
  * @return {Boolean} true if the parameter is valid. false otherwise
  */
-const paramValidityChecks = function (param, val) {
+const paramValidityChecks = function (param, opAndVal) {
     let ret = false;
+    let val = null;
+    let op = null;
 
-    if (val === undefined) {
+    if (opAndVal === undefined) {
         return (ret);
     }
 
-    val = val.replace(/(gte?\:|lte?\:|eq\:)/, '');
+    const splitVal = opAndVal.split(':');
+
+    if (splitVal.length == 1) {
+        op = 'eq';
+        val = splitVal[0];
+    } else if (splitVal.length == 2) {
+        op = splitVal[0];
+        val = splitVal[1];
+    } else {
+        return (ret);
+    }
+
+    // Validate operator
+    if (! /^(gte?|lte?|eq|ne)$/.test(op)) {
+        return (ret);
+    }
+
+    // Validate the value
     switch (param) {
         case 'account.id':
             // Accepted forms: shard.realm.num or num
@@ -103,28 +122,33 @@ const validateReq = function (req) {
         code: httpStatusCodes.OK,
         contents: 'OK'
     };
+    let badParams = [];
 
     // Check the validity of every query parameter
     for (const key in req.query) {
         if (Array.isArray(req.query[key])) {
             for (const val of req.query[key]) {
                 if (!paramValidityChecks(key, val)) {
-                    ret = {
-                        isValid: false,
-                        code: httpStatusCodes.BAD_REQUEST,
-                        contents: `Invalid parameter: ${key}`
-                    }
+                    badParams.push({message: `Invalid parameter: ${key}`});
                 }
             }
         } else {
             if (!paramValidityChecks(key, req.query[key])) {
-                ret = {
-                    isValid: false,
-                    code: httpStatusCodes.BAD_REQUEST,
-                    contents: `Invalid parameter: ${key}`
-                }
+                badParams.push({message: `Invalid parameter: ${key}`});
             }
         }
+    }
+
+    if (badParams.length !== 0) {
+        ret = {
+            isValid: false,
+            code: httpStatusCodes.BAD_REQUEST,
+            contents: {
+                _status: {
+                    messages: badParams
+                }
+            }
+        };
     }
     return (ret);
 }
