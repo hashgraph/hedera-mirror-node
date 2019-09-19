@@ -92,6 +92,31 @@ public final class GenerateTXFiles {
         var fileId = txFile.sign(newKey).executeForReceipt().getFileId();
         log.info("Output > File ID {}", fileId.toString());
 
+        logTitle("Create file 2");
+        fileContents = "Hedera hashgraph is great!";
+        log.info ("Input > file contents {}", fileContents);
+        duration = 2592000;
+        log.info("Input > Duration {}",  duration);
+        log.info("Input > Key {}", ExampleHelper.getOperatorKey().getPublicKey());
+        txFee = 100_000_000;
+        log.info("Input > Transaction Fee {}",  txFee);
+        memo = "File create memo";
+        log.info("Input > memo {}", memo);
+        txValidDuration = 95;
+        log.info("Input > Transaction Valid Duration {}", txValidDuration);
+        
+        txFile = new FileCreateTransaction(client).setExpirationTime(
+            Instant.now()
+                .plus(Duration.ofSeconds(duration)))
+            // Use the same key as the operator to "own" this file
+            .addKey(ExampleHelper.getOperatorKey().getPublicKey())
+            .setContents(fileContents.getBytes())
+            .setMemo(memo)
+            .setTransactionFee(txFee)
+    		.setTransactionValidDuration(Duration.ofSeconds(txValidDuration));
+
+        fileId = txFile.sign(newKey).executeForReceipt().getFileId();
+        log.info("Output > File ID {}", fileId.toString());
         
         logTitle("Append file");
         log.info("Input > File ID {}", fileId.toString());
@@ -132,6 +157,32 @@ public final class GenerateTXFiles {
         		.executeForReceipt();
 
         // file update
+        logTitle("Create file 3");
+        fileContents = "Hedera hashgraph is great!";
+        log.info ("Input > file contents {}", fileContents);
+        duration = 2592000;
+        log.info("Input > Duration {}",  duration);
+        log.info("Input > Key {}", ExampleHelper.getOperatorKey().getPublicKey());
+        txFee = 100_000_000;
+        log.info("Input > Transaction Fee {}",  txFee);
+        memo = "File create memo";
+        log.info("Input > memo {}", memo);
+        txValidDuration = 95;
+        log.info("Input > Transaction Valid Duration {}", txValidDuration);
+        
+        txFile = new FileCreateTransaction(client).setExpirationTime(
+            Instant.now()
+                .plus(Duration.ofSeconds(duration)))
+            // Use the same key as the operator to "own" this file
+            .addKey(ExampleHelper.getOperatorKey().getPublicKey())
+            .setContents(fileContents.getBytes())
+            .setMemo(memo)
+            .setTransactionFee(txFee)
+    		.setTransactionValidDuration(Duration.ofSeconds(txValidDuration));
+
+        fileId = txFile.sign(newKey).executeForReceipt().getFileId();
+        log.info("Output > File ID {}", fileId.toString());
+
         logTitle("Update file");
         log.info("Input > File ID {}", fileId.toString());
         fileContents = "So good";
@@ -152,9 +203,37 @@ public final class GenerateTXFiles {
         		.setMemo(memo)
         		.setTransactionFee(txFee)
         		.setTransactionValidDuration(Duration.ofSeconds(txValidDuration))
+        		.addKey(newPublicKey)
+        		.sign(newKey)
         		.executeForReceipt();
 
 		// file delete
+        logTitle("Create file 3");
+        fileContents = "Hedera hashgraph is great!";
+        log.info ("Input > file contents {}", fileContents);
+        duration = 2592000;
+        log.info("Input > Duration {}",  duration);
+        log.info("Input > Key {}", ExampleHelper.getOperatorKey().getPublicKey());
+        txFee = 100_000_000;
+        log.info("Input > Transaction Fee {}",  txFee);
+        memo = "File create memo";
+        log.info("Input > memo {}", memo);
+        txValidDuration = 95;
+        log.info("Input > Transaction Valid Duration {}", txValidDuration);
+        
+        txFile = new FileCreateTransaction(client).setExpirationTime(
+            Instant.now()
+                .plus(Duration.ofSeconds(duration)))
+            // Use the same key as the operator to "own" this file
+            .addKey(ExampleHelper.getOperatorKey().getPublicKey())
+            .setContents(fileContents.getBytes())
+            .setMemo(memo)
+            .setTransactionFee(txFee)
+    		.setTransactionValidDuration(Duration.ofSeconds(txValidDuration));
+
+        fileId = txFile.sign(newKey).executeForReceipt().getFileId();
+        log.info("Output > File ID {}", fileId.toString());
+        
         logTitle("Delete file");
         log.info("Input > deleting file {}.{}.{}", fileId.getShardNum(), fileId.getRealmNum(), fileId.getFileNum());
         txFee = 140_000_000;
@@ -171,140 +250,6 @@ public final class GenerateTXFiles {
         		.setTransactionValidDuration(Duration.ofSeconds(txValidDuration));
         txDelete.executeForReceipt();
         
-        // Contracts
-        ClassLoader cl = GenerateTXFiles.class.getClassLoader();
-        Gson gson = new Gson();
-        JsonObject jsonObject;
-
-        try (InputStream jsonStream = cl.getResourceAsStream("stateful.json")) {
-            if (jsonStream == null) {
-                throw new RuntimeException("failed to get stateful.json");
-            }
-
-            jsonObject = gson.fromJson(new InputStreamReader(jsonStream), JsonObject.class);
-        }
-
-        String byteCodeHex = jsonObject.getAsJsonPrimitive("object")
-            .getAsString();
-        byte[] byteCode = byteCodeHex.getBytes();
-
-        // create the contract's bytecode file
-        FileCreateTransaction fileTx = new FileCreateTransaction(client).setExpirationTime(
-            Instant.now()
-                .plus(Duration.ofSeconds(2592000)))
-            // Use the same key as the operator to "own" this file
-            .addKey(ExampleHelper.getOperatorKey().getPublicKey())
-            .setContents(byteCode)
-            .setTransactionFee(1_000_000_000);
-
-        TransactionReceipt fileReceipt = fileTx.executeForReceipt();
-        FileId contractFileId = fileReceipt.getFileId();
-
-//        System.out.println("contract bytecode file: " + contractFileId);
-        
-		// Contract Create
-        logTitle("Contract Create");
-        long autoRenewSeconds = oneDayOfSeconds * 4;
-        log.info("Input > Auto renew seconds {}",  autoRenewSeconds);
-        long gas = 100_000_000;
-        log.info("Input > Gas {}",  gas);
-        txFee = 1_000_000_000;
-        log.info("Input > Transaction Fee {}",  txFee);
-        txValidDuration = 120;
-        log.info("Input > Transaction Valid Duration {}", txValidDuration);
-        String constructor = "hello from hedera!";
-        log.info("Input > constructor {}", constructor);
-        memo = "Contract create memo";
-        log.info("Input > memo {}", memo);
-
-        //TODO: Add contract memo when supported by SDK
-        ContractCreateTransaction contractTx = new ContractCreateTransaction(client).setBytecodeFile(contractFileId)
-            .setAutoRenewPeriod(Duration.ofSeconds(autoRenewSeconds))
-            .setGas(gas)
-            .setTransactionFee(1_000_000_000)
-            .setTransactionValidDuration(Duration.ofSeconds(txValidDuration))
-//            .setAdminKey(adminKey)
-//            .setInitialBalance(intialBalance)
-            .setMemo(memo)
-//            .setProxyAccountId(proxyAccountId)
-            .setConstructorParams(
-                CallParams.constructor()
-                    .addString(constructor));
-
-        TransactionReceipt contractReceipt = contractTx.executeForReceipt();
-        ContractId newContractId = contractReceipt.getContractId();
-        log.info("Output > contract id {}", newContractId.toString());
-        
-		// Contract Call
-        logTitle("Contract Call");
-        gas = 200_000_000;
-        log.info("Input > Gas {}",  gas);
-        String parameters = "hello from hedera!";
-        log.info("Input > parameters {}", parameters);
-        txFee = 800_000_000;
-        log.info("Input > Transaction Fee {}",  txFee);
-        txValidDuration = 100;
-        log.info("Input > Transaction Valid Duration {}", txValidDuration);
-        memo = "Contract call memo";
-        log.info("Input > memo {}", memo);
-        
-        new ContractExecuteTransaction(client).setContractId(newContractId)
-        .setGas(gas)
-        .setFunctionParameters(CallParams.function("set_message")
-            .addString(parameters))
-        .setTransactionFee(txFee)
-        .setTransactionValidDuration(Duration.ofSeconds(txValidDuration))
-//        .setAmount(amount)
-        .setMemo(memo)
-        .executeForReceipt();
-        
-		// Contract update
-        logTitle("Contract Update");
-        autoRenewSeconds = oneDayOfSeconds * 2;
-        log.info("Input > Auto renew seconds {}",  autoRenewSeconds);
-        expirationTime = Instant.now().plusSeconds(oneDayOfSeconds * 3);
-        log.info("Input > Expiration Time {}", expirationTime.getEpochSecond());
-        txFee = 150_000_000;
-        log.info("Input > Transaction Fee {}",  txFee);
-        txValidDuration = 35;
-        log.info("Input > Transaction Valid Duration {}", txValidDuration);
-        memo = "Contract update memo";
-        log.info("Input > memo {}", memo);
-        
-        try {
-	        new ContractUpdateTransaction(client)
-	        	.setContractId(newContractId)
-	        	.setAutoRenewPeriod(Duration.ofSeconds(autoRenewSeconds))
-	        	.setExpirationTime(expirationTime)
-	//        	.setFileId(file)
-	        	.setMemo(memo)
-	//        	.setProxyAccount(account)
-	        	.setTransactionFee(txFee)
-	        	.setTransactionValidDuration(Duration.ofSeconds(txValidDuration))
-	        	.executeForReceipt();
-        } catch (Exception e) {
-        	log.info("Contract failed to update - it's immutable, that's ok");
-        }
-        
-		// Contract delete
-        logTitle("Contract Delete");
-        txFee = 6_000_000;
-        log.info("Input > Transaction Fee {}",  txFee);
-        txValidDuration = 40;
-        log.info("Input > Transaction Valid Duration {}", txValidDuration);
-        memo = "Contract delete memo";
-        log.info("Input > memo {}", memo);
-        
-        try {
-	        new ContractDeleteTransaction(client)
-	        	.setContractId(newContractId)
-	        	.setMemo(memo)
-	        	.setTransactionFee(txFee)
-	        	.setTransactionValidDuration(Duration.ofSeconds(txValidDuration))
-	        	.executeForReceipt();
-        } catch (Exception e) {
-        	log.info("Contract failed to delete - it's immutable, that's ok");
-        }
         // sleep 6s to allow record file to be written
         log.info("Sleeping 6s");
         Thread.sleep(6000);
