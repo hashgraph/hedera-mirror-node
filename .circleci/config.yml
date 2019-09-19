@@ -70,12 +70,16 @@ jobs:
           key: maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
           paths:
           - ~/.m2
+      - store_test_results:
+          path: target/surefire-reports
       - run:
           name: Upload Code Coverage
           command: bash <(curl -s https://codecov.io/bash)
       - run:
           name: Collecting mirror-node assets
           command: |
+            mkdir -p /tmp/workspace/test-results/mirror-node/
+            cp -R target/surefire-reports/* /tmp/workspace/test-results/mirror-node/
             mkdir -p /tmp/workspace/mirror-node/
             mv target/mirror-node-*.jar /tmp/workspace/mirror-node/mirror-node.jar
             mv config /tmp/workspace/mirror-node/
@@ -84,6 +88,7 @@ jobs:
           root: *workspace_root
           paths:
             - mirror-node
+            - test-results/mirror-node
 
   build_rest_api:
     docker:
@@ -113,6 +118,8 @@ jobs:
           working_directory: 'rest-api'
           name: Collecting rest-api assets
           command: |
+            mkdir -p /tmp/workspace/test-results/rest-api/
+            cp -R target/jest-junit/* /tmp/workspace/test-results/rest-api/
             npm pack
             mkdir -p /tmp/workspace/
             mv rest-api*.tgz /tmp/workspace/rest-api.tgz
@@ -120,10 +127,14 @@ jobs:
           root: *workspace_root
           paths:
             - rest-api.tgz
+            - test-results/rest-api
 
   build:
     <<: *defaults
     steps:
+      - *attach_workspace
+      - store_test_results:
+          path: /tmp/workspace/test-results/
       - run:
           name: Success
           command: echo "Build successful"
