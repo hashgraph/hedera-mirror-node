@@ -26,9 +26,11 @@ import com.hedera.DBTransaction;
  */
 
 import com.hedera.FileCopier;
+import com.hedera.IntegrationTest;
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.mirror.config.RecordProperties;
+import com.hedera.mirror.domain.ApplicationStatusCode;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.utilities.Utility;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestMethodOrder(OrderAnnotation.class)
 @ExtendWith(MockitoExtension.class)
-public class CryptoRecordParserTestIT {
+public class CryptoRecordParserTestIT extends IntegrationTest {
 
     @TempDir
     Path dataPath;
@@ -61,9 +63,9 @@ public class CryptoRecordParserTestIT {
     private Path validPath;
     private FileCopier fileCopier;
     private RecordFileParser recordFileParser;
-    private ApplicationStatus applicationStatus = new ApplicationStatus();
     private RecordProperties recordProperties = new RecordProperties();
     private String type = "account";
+    private ApplicationStatusRepository applicationStatusRepository;
     
     // test setup
 	private static File[] files;
@@ -83,7 +85,7 @@ public class CryptoRecordParserTestIT {
 
         DBHelper.deleteDatabaseData();
         
-        recordFileParser = new RecordFileParser(recordProperties);
+        recordFileParser = new RecordFileParser(applicationStatusRepository, recordProperties);
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));
         
@@ -116,7 +118,8 @@ public class CryptoRecordParserTestIT {
     @Order(2)
     @DisplayName("Parse record files - check application status")
     void parseRecordFilesCheckApplicationStatus() throws Exception {
-    	assertEquals("fd6f669c574a6661fe70c420a1a170ef583559fd949598706950b14403d1b64aec4d1becb149673e17817971f17465db", applicationStatus.getLastProcessedRecordHash());
+    	assertEquals("fd6f669c574a6661fe70c420a1a170ef583559fd949598706950b14403d1b64aec4d1becb149673e17817971f17465db"
+    			, applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH));
     }
 
     @Test

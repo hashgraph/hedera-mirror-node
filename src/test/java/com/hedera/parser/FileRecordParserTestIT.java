@@ -27,9 +27,12 @@ import com.hedera.DBTransaction;
  */
 
 import com.hedera.FileCopier;
+import com.hedera.IntegrationTest;
 import com.hedera.configLoader.ConfigLoader;
-import com.hedera.databaseUtilities.ApplicationStatus;
 import com.hedera.mirror.config.RecordProperties;
+import com.hedera.mirror.domain.ApplicationStatusCode;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
+import com.hedera.mirror.repository.TransactionsRepository;
 import com.hedera.utilities.Utility;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +47,8 @@ import java.io.File;
 import java.nio.file.*;
 import java.util.Arrays;
 
+import javax.transaction.Transactional;
+
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,7 +57,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestMethodOrder(OrderAnnotation.class)
 @ExtendWith(MockitoExtension.class)
-public class FileRecordParserTestIT {
+@Transactional
+public class FileRecordParserTestIT extends IntegrationTest {
 
     @TempDir
     Path dataPath;
@@ -63,7 +69,8 @@ public class FileRecordParserTestIT {
     private Path validPath;
     private FileCopier fileCopier;
     private RecordFileParser recordFileParser;
-    private ApplicationStatus applicationStatus = new ApplicationStatus();
+    private ApplicationStatusRepository applicationStatusRepository;
+    private TransactionsRepository transactionsRepository;
     private RecordProperties recordProperties = new RecordProperties();
     private String type = "file";
     // test setup
@@ -84,8 +91,8 @@ public class FileRecordParserTestIT {
 
         DBHelper.deleteDatabaseData();
         
-        recordFileParser = new RecordFileParser(recordProperties);
-
+        recordFileParser = new RecordFileParser(applicationStatusRepository, recordProperties);
+        
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));
         
     	fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
@@ -104,7 +111,7 @@ public class FileRecordParserTestIT {
     void parseRecordFilesCheckCounts() throws Exception {
     	assertAll(
                 () -> assertEquals(5, DBHelper.countRecordFiles())
-                ,() -> assertEquals(14, DBHelper.countTransactions())
+                ,() -> assertEquals(14, transactionsRepository.count()) //DBHelper.countTransactions())
                 ,() -> assertEquals(7, DBHelper.countEntities())
                 ,() -> assertEquals(0, DBHelper.countContractResult())
                 ,() -> assertEquals(54, DBHelper.countCryptoTransferLists())
@@ -117,7 +124,8 @@ public class FileRecordParserTestIT {
     @Order(2)
     @DisplayName("Parse record files - check application status")
     void parseRecordFilesCheckApplicationStatus() throws Exception {
-    	assertEquals("19643da6700d8767eb53fc81880c6a02366f2f33fc6541b366310d1de5b104e6bb9c0e2ac23c082b502b0ca503e96564", applicationStatus.getLastProcessedRecordHash());
+    	assertEquals("19643da6700d8767eb53fc81880c6a02366f2f33fc6541b366310d1de5b104e6bb9c0e2ac23c082b502b0ca503e96564", 
+    			applicationStatusRepository.findById(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH));
     }
 
     @Test
