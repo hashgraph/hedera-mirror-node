@@ -68,6 +68,14 @@ const getAccountQueryPrefix = function() {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getAccounts = function (req) {
+    // Validate query parameters first
+    const valid = utils.validateReq(req);
+    if (!valid.isValid) {
+        return (new Promise ((resolve, reject) => {
+            resolve (valid);
+        }));
+    }
+
     // Parse the filter parameters for account-numbers, balances, publicKey and pagination
 
     // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we 
@@ -146,7 +154,10 @@ const getAccounts = function (req) {
             logger.debug("getAccounts returning " +
                 ret.accounts.length + " entries");
 
-            return (ret);
+            return ({
+                code: utils.httpStatusCodes.OK,
+                contents: ret
+            });
         })
     )
 }

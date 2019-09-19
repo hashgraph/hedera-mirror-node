@@ -28,7 +28,14 @@ const utils = require('./utils.js');
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getBalances = function (req) {
+const getBalances = function (req, res) {
+    const valid = utils.validateReq(req);
+    if (!valid.isValid) {
+        return (new Promise ((resolve, reject) => {
+            resolve (valid);
+        }));
+    }
+
     // Parse the filter parameters for credit/debit, account-numbers, 
     // timestamp and pagination
     let [accountQuery, accountParams] =
@@ -152,7 +159,11 @@ const getBalances = function (req) {
 
             logger.debug("getBalances returning " +
                 ret.balances.length + " entries");
-            return (ret);
+            
+            return ({
+                code: utils.httpStatusCodes.OK,
+                contents: ret
+            });
         })
     );
 }
