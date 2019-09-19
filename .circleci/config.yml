@@ -82,6 +82,11 @@ jobs:
   build_rest_api:
     docker:
       - image: node:12.10.0
+      - image: circleci/postgres:9.6.14
+        environment:
+          POSTGRES_DB: mirror_node_integration
+          POSTGRES_USER: mirror_node
+          POSTGRES_PASSWORD: mirror_node_pass
     steps:
       - checkout:
       - restore_cache:
@@ -96,11 +101,16 @@ jobs:
       - save_cache:
           key: npm-v1-{{ .Branch }}-{{ checksum "rest-api/package-lock.json" }}
           paths:
+            - node_modules
+            - .node-flywaydb
             - ~/.npm
       - run:
           working_directory: 'rest-api'
           name: Run npm test
           command: npm test
+          environment:
+            TEST_DB_HOST: '127.0.0.1'
+            TEST_DB_NAME: 'mirror_node_integration'
       - store_test_results:
           path: rest-api/target/jest-junit
       - run:

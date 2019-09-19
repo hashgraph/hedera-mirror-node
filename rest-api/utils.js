@@ -581,7 +581,7 @@ const encodeKey = function (key) {
 * @return {String} base64 encoded string
 */
 const encodeBase64 = function (buffer) {
-    return (buffer.toString('base64'));
+    return ((null === buffer) ? null : buffer.toString('base64'));
 }
 
 module.exports = {
