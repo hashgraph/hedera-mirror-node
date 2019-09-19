@@ -24,21 +24,29 @@ workflows:
   main:
     jobs:
       - build_mirror_node:
-          filters:  # required since `release_artifacts` has tag filters AND requires `build`
+          filters: # required since `release_artifacts` has tag filters AND requires `this`
             branches:
               only: /.*/
             tags:
               only: /.*/
       - build_rest_api:
-          filters:  # required since `release_artifacts` has tag filters AND requires `build`
+          filters: # required since `release_artifacts` has tag filters AND requires `this`
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
+      - build: # required since `release_artifacts` has tag filters AND requires `this`
+          requires:
+            - build_mirror_node
+            - build_rest_api
+          filters:
             branches:
               only: /.*/
             tags:
               only: /.*/
       - release_artifacts:
           requires:
-            - build_mirror_node
-            - build_rest_api
+            - build
           filters:
             branches:
               ignore: /.*/
@@ -116,6 +124,13 @@ jobs:
           root: *workspace_root
           paths:
             - rest-api.tgz
+
+  build:
+    <<: *defaults
+    steps:
+      - run:
+          name: Success
+          command: echo "Build successful"
 
   release_artifacts:
     <<: *defaults
