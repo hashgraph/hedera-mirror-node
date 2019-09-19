@@ -28,6 +28,7 @@ import com.google.gson.JsonSyntaxException;
 import com.hedera.utilities.Utility;
 import io.github.cdimascio.dotenv.Dotenv;
 
+import lombok.*;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.*;
@@ -35,10 +36,14 @@ import java.io.*;
 @Log4j2
 public class ConfigLoader {
 
+	@Getter
+	@RequiredArgsConstructor
 	public static enum CLOUD_PROVIDER {
-		S3,
-		GCP,
-		LOCAL; // Testing
+		S3("https://s3.amazonaws.com"),
+		GCP("https://storage.googleapis.com"),
+		LOCAL("http://127.0.0.1:8001"); // Testing
+
+		private final String endpoint;
 	}
 
 	// cloud provider, must be either S3 or GCP
