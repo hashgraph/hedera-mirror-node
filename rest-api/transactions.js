@@ -199,6 +199,14 @@ const reqToSql = function(req) {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getTransactions = function (req) {
+    // Validate query parameters first
+    const valid = utils.validateReq(req);
+    if (!valid.isValid) {
+        return (new Promise ((resolve, reject) => {
+            resolve (valid);
+        }));
+    }
+
     let query = reqToSql(req);
 
     logger.debug("getTransactions query: " +
@@ -232,7 +240,10 @@ const getTransactions = function (req) {
             logger.debug("getTransactions returning " +
                 ret.transactions.length + " entries");
 
-            return (ret);
+            return ({
+                code: utils.httpStatusCodes.OK,
+                contents: ret
+            });
         })
     );
 }

@@ -156,12 +156,6 @@ Note: Changes to this file while downloading or processing is taking place may b
 | addressBookFile | `"./config/0.0.102"` | The location of the address book file file |
 | accountBalancesS3Location | `"accountBalances/balance"` | The location of the account balances files in the cloud bucket |
 | recordFilesS3Location | `"recordstreams/record"` | The location of the record files in the cloud bucket |
-| dbName | `"mirror_node"` | The name of the database |
-| dbUrl | `"jdbc:postgresql://localhost:5432/mirror_node"` | The connection string to access the database |
-| dbUsername | `"mirror_node"` | The username to access the database |
-| dbPassword | `"mirror_node_pass"` | The password to access the database |
-| apiUsername | `"mirror_api"` | The database user for the REST API |
-| apiPassword | `"mirror_api_pass"` | The password for the REST API user |
 | persistClaims | `false` | Determines whether claim data is persisted to the database or not |
 | persistFiles | `"ALL"` | Determines whether file data is persisted to the database or not, can be set to `ALL`, `NONE` or `SYSTEM`. `SYSTEM` means only files with a file number lower than `1000` will be persisted |
 | persistContracts | `true` | Determines whether contract data is persisted to the database or not |
@@ -175,13 +169,8 @@ Note: this requires additional information to be stored in the `config.json`, `.
 
 | json parameter name | corresponding environment variable |
 |---------------------|------------------------------------|
-| dbUsername | HEDERA_MIRROR_DB_USER |
-| dbPassword | HEDERA_MIRROR_DB_PASS |
 | accessKey | HEDERA_S3_ACCESS_KEY |
 | secretKey | HEDERA_S3_SECRET_KEY |
-| dbName | HEDERA_MIRROR_DB_NAME |
-| apiUsername | DB_USER |
-| apiPassword | DB_PASS |
 
 Sample `./.env` file.
 

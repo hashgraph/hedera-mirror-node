@@ -22,6 +22,12 @@ const math = require('mathjs');
 const config = require('./config.js');
 
 const ENTITY_TYPE_FILE = 3;
+
+const httpStatusCodes = {
+    OK: 200,
+    BAD_REQUEST: 400
+}
+
 /**
  * Check if the given number is numeric 
  * @param {String} n Number to test
@@ -29,6 +35,122 @@ const ENTITY_TYPE_FILE = 3;
  */
 function isNumeric(n) {
     return (!isNaN(parseFloat(n)) && isFinite(n));
+}
+
+/**
+ * Validate input parameters for the rest apis
+ * @param {String} param Parameter to be validated
+ * @param {String} opAndVal operator:value to be validated
+ * @return {Boolean} true if the parameter is valid. false otherwise
+ */
+const paramValidityChecks = function (param, opAndVal) {
+    let ret = false;
+    let val = null;
+    let op = null;
+
+    if (opAndVal === undefined) {
+        return (ret);
+    }
+
+    const splitVal = opAndVal.split(':');
+
+    if (splitVal.length == 1) {
+        op = 'eq';
+        val = splitVal[0];
+    } else if (splitVal.length == 2) {
+        op = splitVal[0];
+        val = splitVal[1];
+    } else {
+        return (ret);
+    }
+
+    // Validate operator
+    if (! /^(gte?|lte?|eq|ne)$/.test(op)) {
+        return (ret);
+    }
+
+    // Validate the value
+    switch (param) {
+        case 'account.id':
+            // Accepted forms: shard.realm.num or num
+            ret = (/^\d{1,10}\.\d{1,10}\.\d{1,10}$/.test(val) || /^\d{1,10}$/.test(val));
+            break;
+        case 'timestamp':
+            // Accepted forms: seconds or seconds.upto 9 digits
+            ret = (/^\d{1,10}$/.test(val) || /^\d{1,10}\.\d{1,9}$/.test(val));
+            break;
+        case 'account.balance':
+            // Accepted forms: Upto 50 billion
+            ret =  (/^\d{1,19}$/.test(val));
+            break;
+        case 'account.publickey':
+            // Acceptable forms: exactly 64 characters
+            ret =  (/^[0-9a-fA-F]{64}$/.test(val));
+            break;
+        case 'limit':
+            // Acceptable forms: upto 4 digits
+            ret =  (/^\d{1,4}$/.test(val));
+            break;
+        case 'order':
+            // Acceptable words: asc or desc
+            ret = ['asc', 'desc'].includes(val);
+            break;
+        case 'type':
+            // Acceptable words: credit or debig
+            ret = ['credit', 'debit'].includes(val);
+            break;
+        case 'result':
+            // Acceptable words: success or fail
+            ret = ['success', 'fail'].includes(val);
+            break;   
+        default:  
+            // Every parameter should be included here. Otherwise, it will not be accepted.
+            ret = false; 
+    }
+
+    return (ret);
+}
+
+/**
+ * Validate input http request object
+ * @param {HTTPRequest} req HTTP request object
+ * @return {Object} result of validity check, and return http code/contents
+ */
+const validateReq = function (req) {
+    let ret = {
+        isValid: true,
+        code: httpStatusCodes.OK,
+        contents: 'OK'
+    };
+    let badParams = [];
+
+    // Check the validity of every query parameter
+    for (const key in req.query) {
+        if (Array.isArray(req.query[key])) {
+            for (const val of req.query[key]) {
+                if (!paramValidityChecks(key, val)) {
+                    badParams.push({message: `Invalid parameter: ${key}`});
+                }
+            }
+        } else {
+            if (!paramValidityChecks(key, req.query[key])) {
+                badParams.push({message: `Invalid parameter: ${key}`});
+            }
+        }
+    }
+
+    if (badParams.length !== 0) {
+        ret = {
+            isValid: false,
+            code: httpStatusCodes.BAD_REQUEST,
+            contents: {
+                _status: {
+                    messages: badParams
+                }
+            }
+        };
+    }
+    return (ret);
 }
 
 /**
@@ -153,6 +275,7 @@ const parseComparatorSymbol = function (fields, valArr, type = null, valueTransl
             }
         }
     }
+    queryStr = queryStr === '' ? '1=1' : queryStr;
 
     return ({
         queryStr: '(' + queryStr + ')',
@@ -476,5 +599,7 @@ module.exports = {
     toHexString: toHexString,
     encodeKey: encodeKey,
     encodeBase64: encodeBase64,
+    validateReq: validateReq,
+    httpStatusCodes: httpStatusCodes,
     ENTITY_TYPE_FILE: ENTITY_TYPE_FILE
 }

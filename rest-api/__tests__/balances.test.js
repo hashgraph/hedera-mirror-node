@@ -172,5 +172,13 @@ describe('Balances tests', () => {
             expect (check).toBeTruthy();
         })
     }
+
+    // Negative testing
+    testutils.testBadParams(request, server, api, 'timestamp', testutils.badParamsList());
+    testutils.testBadParams(request, server, api, 'account.id', testutils.badParamsList());
+    testutils.testBadParams(request, server, api, 'account.balance', testutils.badParamsList());
+    testutils.testBadParams(request, server, api, 'account.publickey', testutils.badParamsList());
+    testutils.testBadParams(request, server, api, 'limit', testutils.badParamsList());
+    testutils.testBadParams(request, server, api, 'order', testutils.badParamsList());
 });
 

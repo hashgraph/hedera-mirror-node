@@ -23,6 +23,8 @@ package com.hedera.downloader;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
 import com.hedera.mirror.config.DownloaderProperties;
+import com.hedera.mirror.domain.ApplicationStatusCode;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.config.RecordProperties;
 import com.hedera.parser.RecordFileParser;
 import com.hedera.signatureVerifier.NodeSignatureVerifier;
@@ -38,8 +40,6 @@ import javax.inject.Named;
 import java.io.File;
 import java.nio.file.*;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Log4j2
 @Named
@@ -51,8 +51,8 @@ public class RecordFileDownloader extends Downloader {
 
 	private final RecordProperties recordProperties;
 
-	public RecordFileDownloader(RecordProperties recordProperties, DownloaderProperties downloaderProperties) {
-		super(recordProperties.getDownloader(), downloaderProperties);
+	public RecordFileDownloader(ApplicationStatusRepository applicationStatusRepository, RecordProperties recordProperties, DownloaderProperties downloaderProperties) {
+		super(applicationStatusRepository, recordProperties.getDownloader(), downloaderProperties);
 		this.recordProperties = recordProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);
@@ -84,8 +84,8 @@ public class RecordFileDownloader extends Downloader {
 	 */
 	private boolean verifyHashChain(File recordFile) throws Exception {
 		String recordPath = recordFile.getAbsolutePath();
-		String lastValidRecordFileHash = applicationStatus.getLastValidDownloadedRecordFileHash();
-		String bypassMismatch = StringUtils.defaultIfBlank(applicationStatus.getBypassRecordHashMismatchUntilAfter(), "");
+		String lastValidRecordFileHash = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
+		String bypassMismatch = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
 		String prevFileHash = RecordFileParser.readPrevFileHash(recordPath);
 
 		if (prevFileHash == null) {
@@ -153,8 +153,8 @@ public class RecordFileDownloader extends Downloader {
 
 							if (moveFile(rcdFile, validFile)) {
 								log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
-								applicationStatus.updateLastValidDownloadedRecordFileHash(hash);
-								applicationStatus.updateLastValidDownloadedRecordFileName(name);
+								applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH, hash);
+								applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, name);
 								valid = true;
 								break;
 							}
