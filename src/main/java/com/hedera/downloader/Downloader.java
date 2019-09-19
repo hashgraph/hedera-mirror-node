@@ -38,7 +38,8 @@ import com.google.common.base.Stopwatch;
 import com.hedera.configLoader.ConfigLoader;
 import com.hedera.configLoader.ConfigLoader.CLOUD_PROVIDER;
 import com.hedera.configLoader.ConfigLoader.OPERATION_TYPE;
-import com.hedera.databaseUtilities.ApplicationStatus;
+import com.hedera.mirror.domain.ApplicationStatusCode;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.config.CommonDownloaderProperties;
 import com.hedera.mirror.config.DownloaderProperties;
 import com.hedera.utilities.Utility;
@@ -91,7 +92,7 @@ public abstract class Downloader {
 
 	protected static ClientConfiguration clientConfiguration;
 	
-	protected ApplicationStatus applicationStatus;
+	protected final ApplicationStatusRepository applicationStatusRepository;
 
 	private final CommonDownloaderProperties commonProps;
 
@@ -104,13 +105,12 @@ public abstract class Downloader {
 
 	public enum DownloadType {RCD, BALANCE, EVENT};
 
-	public Downloader(final CommonDownloaderProperties props, final DownloaderProperties dlProps) {
+	public Downloader(ApplicationStatusRepository applicationStatusRepository, CommonDownloaderProperties props, DownloaderProperties dlProps) {
+		this.applicationStatusRepository = applicationStatusRepository;
 		commonProps = props;
 		signatureDownloadThreadPool = new ThreadPoolExecutor(commonProps.getCoreThreads(), commonProps.getMaxThreads(),
 				120, TimeUnit.SECONDS,
 				new ArrayBlockingQueue<Runnable>(commonProps.getTaskQueueSize()));
-
-		applicationStatus = new ApplicationStatus();
 
 		nodeAccountIds = loadNodeAccountIDs();
 
@@ -208,19 +208,19 @@ public abstract class Downloader {
 		switch (type) {
 			case RCD:
 				s3Prefix = ConfigLoader.getRecordFilesS3Location();
-				lastValidFileName = applicationStatus.getLastValidDownloadedRecordFileName();
+				lastValidFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
 				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.RECORDS);
 				break;
 
 			case BALANCE:
 				s3Prefix = "accountBalances/balance";
-				lastValidFileName = applicationStatus.getLastValidDownloadedBalanceFileName();
+				lastValidFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
 				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.BALANCE);
 				break;
 
 			case EVENT:
 				s3Prefix = ConfigLoader.getEventFilesS3Location();
-				lastValidFileName = applicationStatus.getLastValidDownloadedEventFileName();
+				lastValidFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE);
 				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.EVENTS);
 				break;
 

@@ -28,8 +28,6 @@ import com.google.gson.JsonSyntaxException;
 import com.hedera.utilities.Utility;
 import io.github.cdimascio.dotenv.Dotenv;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.*;
@@ -92,18 +90,6 @@ public class ConfigLoader {
 	private static boolean persistContracts = false;
 
 	private static boolean persistCryptoTransferAmounts = false;
-
-	private static String apiUsername = "";
-	private static String apiPassword = "";
-
-	//database url
-    private static String dbUrl = "";
-    // database name
-    private static String dbName = "";
-    // database user
-    private static String dbUserName = "";
-    // database password
-    private static String dbPassword = "";
 
     private static Dotenv dotEnv = Dotenv.configure().ignoreIfMissing().load();
 
@@ -191,43 +177,6 @@ public class ConfigLoader {
 			if (configJsonObject.has("eventFilesS3Location")) {
 				eventFilesS3Location = configJsonObject.get("eventFilesS3Location").getAsString();
 			}
-			apiUsername = dotEnv.get("DB_USER");
-			if (apiUsername == null) {
-				if (configJsonObject.has("apiUsername")) {
-					apiUsername = configJsonObject.get("apiUsername").getAsString();
-				}
-			}
-			apiPassword = dotEnv.get("DB_PASS");
-			if (apiPassword == null) {
-				if (configJsonObject.has("apiPassword")) {
-					apiPassword = configJsonObject.get("apiPassword").getAsString();
-				}
-			}
-			dbUrl = dotEnv.get("HEDERA_MIRROR_DB_URL");
-			if (dbUrl == null) {
-				if (configJsonObject.has("dbUrl")) {
-					dbUrl = configJsonObject.get("dbUrl").getAsString();
-				}
-			}
-			dbName = dotEnv.get("HEDERA_MIRROR_DB_NAME");
-			if (dbName == null) {
-				if (configJsonObject.has("dbName")) {
-					dbName = configJsonObject.get("dbName").getAsString();
-				}
-			}
-			dbUserName = dotEnv.get("HEDERA_MIRROR_DB_USER");
-			if (dbUserName == null) {
-				if (configJsonObject.has("dbUsername")) {
-					dbUserName = configJsonObject.get("dbUsername").getAsString();
-				}
-			}
-			dbPassword = dotEnv.get("HEDERA_MIRROR_DB_PASS");
-			if (dbPassword == null) {
-				if (configJsonObject.has("dbPassword")) {
-					dbPassword = configJsonObject.get("dbPassword").getAsString();
-				}
-			}
-
 			if (configJsonObject.has("persistClaims")) {
 				persistClaims = configJsonObject.get("persistClaims").getAsBoolean();
 			}
@@ -346,25 +295,6 @@ public class ConfigLoader {
 
 	public static String getEventFilesS3Location() {
 		return eventFilesS3Location;
-	}
-
-    public static String getApiUsername() {
-        return apiUsername;
-    }
-    public static String getApiPassword() {
-        return apiPassword;
-    }
-	public static String getDBUrl() {
-		return dbUrl;
-	}
-    public static String getDBName() {
-        return dbName;
-    }
-	public static String getDBUserName() {
-		return dbUserName;
-	}
-	public static String getDBPassword() {
-		return dbPassword;
 	}
 
 	public static boolean getPersistClaims() {

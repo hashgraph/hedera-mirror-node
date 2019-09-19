@@ -26,6 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.hedera.mirror.domain.ApplicationStatusCode;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.config.BalanceProperties;
 import com.hedera.mirror.config.DownloaderProperties;
 import lombok.extern.log4j.Log4j2;
@@ -45,11 +47,10 @@ public class AccountBalancesDownloader extends Downloader {
 
 	private final String validDir = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.BALANCE);
 	private final String tmpDir = ConfigLoader.getDefaultTmpDir(OPERATION_TYPE.BALANCE);
-
 	private final BalanceProperties balanceProperties;
 
-	public AccountBalancesDownloader(BalanceProperties balanceProperties, DownloaderProperties downloaderProperties) {
-		super(balanceProperties.getDownloader(), downloaderProperties);
+	public AccountBalancesDownloader(ApplicationStatusRepository applicationStatusRepository, BalanceProperties balanceProperties, DownloaderProperties downloaderProperties) {
+		super(applicationStatusRepository, balanceProperties.getDownloader(), downloaderProperties);
 		this.balanceProperties = balanceProperties;
 		Utility.ensureDirectory(validDir);
 		Utility.ensureDirectory(tmpDir);
@@ -89,7 +90,7 @@ public class AccountBalancesDownloader extends Downloader {
 	 * @throws Exception 
 	 */
 	private void verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) throws Exception {
-		String lastValidBalanceFileName = applicationStatus.getLastValidDownloadedBalanceFileName();
+		String lastValidBalanceFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
 		String newLastValidBalanceFileName = lastValidBalanceFileName;
 
 		// reload address book and keys
@@ -147,7 +148,7 @@ public class AccountBalancesDownloader extends Downloader {
 			}
 		}
 		if (!newLastValidBalanceFileName.equals(lastValidBalanceFileName)) {
-			applicationStatus.updateLastValidDownloadedBalanceFileName(newLastValidBalanceFileName);
+			applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, newLastValidBalanceFileName);
 		}
 	}
 }
