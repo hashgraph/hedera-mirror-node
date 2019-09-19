@@ -35,18 +35,10 @@ workflows:
               only: /.*/
             tags:
               only: /.*/
-      - build: # required since `release_artifacts` has tag filters AND requires `this`
+      - release_artifacts:
           requires:
             - build_mirror_node
             - build_rest_api
-          filters:
-            branches:
-              only: /.*/
-            tags:
-              only: /.*/
-      - release_artifacts:
-          requires:
-            - build
           filters:
             branches:
               ignore: /.*/
@@ -70,6 +62,8 @@ jobs:
           key: maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
           paths:
           - ~/.m2
+      - store_test_results:
+          path: target/surefire-reports
       - run:
           name: Upload Code Coverage
           command: bash <(curl -s https://codecov.io/bash)
@@ -120,13 +114,6 @@ jobs:
           root: *workspace_root
           paths:
             - rest-api.tgz
-
-  build:
-    <<: *defaults
-    steps:
-      - run:
-          name: Success
-          command: echo "Build successful"
 
   release_artifacts:
     <<: *defaults
