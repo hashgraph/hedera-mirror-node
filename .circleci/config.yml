@@ -35,18 +35,10 @@ workflows:
               only: /.*/
             tags:
               only: /.*/
-      - build: # required since `release_artifacts` has tag filters AND requires `this`
+      - release_artifacts:
           requires:
             - build_mirror_node
             - build_rest_api
-          filters:
-            branches:
-              only: /.*/
-            tags:
-              only: /.*/
-      - release_artifacts:
-          requires:
-            - build
           filters:
             branches:
               ignore: /.*/
@@ -128,16 +120,6 @@ jobs:
           paths:
             - rest-api.tgz
             - test-results/rest-api
-
-  build:
-    <<: *defaults
-    steps:
-      - *attach_workspace
-      - store_test_results:
-          path: /tmp/workspace/test-results/
-      - run:
-          name: Success
-          command: echo "Build successful"
 
   release_artifacts:
     <<: *defaults
