@@ -63,7 +63,8 @@ public class CryptoRecordParserTestIT {
     private RecordFileParser recordFileParser;
     private ApplicationStatus applicationStatus = new ApplicationStatus();
     private RecordProperties recordProperties = new RecordProperties();
-
+    private String type = "account";
+    
     // test setup
 	private static File[] files;
     @BeforeEach
@@ -107,6 +108,7 @@ public class CryptoRecordParserTestIT {
                 ,() -> assertEquals(0, DBHelper.countContractResult())
                 ,() -> assertEquals(68, DBHelper.countCryptoTransferLists())
                 ,() -> assertEquals(0, DBHelper.countLiveHashes())
+                ,() -> assertEquals(0, DBHelper.countFileData())
         );    	
     }
         
@@ -133,7 +135,9 @@ public class CryptoRecordParserTestIT {
     	String recordFile = files[0].getName();
     	long validStartNS = 1568033813854179000L;
     	long consensusNs = 1568033824458639000L;
-    			
+    	String key = "1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
+    	String ed25519Key = "019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
+
     	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNs);
 
     	DBEntity createdAccount = new DBEntity();
@@ -146,12 +150,12 @@ public class CryptoRecordParserTestIT {
     	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 7896581))
     	    	,() -> assertEquals(2592000, createdAccount.autoRenewPeriod)
     	    	,() -> assertEquals(0, createdAccount.proxyAccountNum)
-    	    	,() -> assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.key)
-    	    	,() -> assertEquals("019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.ed25519KeyHex)
-    	    	,() -> assertEquals(1001, createdAccount.entityNum)
+    	    	,() -> assertEquals(key, createdAccount.key)
+    	    	,() -> assertEquals(ed25519Key, createdAccount.ed25519KeyHex)
+    	    	,() -> assertEquals(newAccount, createdAccount.entityNum)
     	    	,() -> assertEquals(0, createdAccount.entityShard)
     	    	,() -> assertEquals(0, createdAccount.entityRealm)
-    	    	,() -> assertEquals("account", createdAccount.entityType)
+    	    	,() -> assertEquals(type, createdAccount.entityType)
     	    	,() -> assertFalse(createdAccount.deleted)
         );    	
 
@@ -177,6 +181,8 @@ public class CryptoRecordParserTestIT {
     	String recordFile = files[1].getName();
     	long validStartNS = 1568033815528678000L;
     	long consensusNs = 1568033825587673001L;
+    	String key = "1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
+    	String ed25519Key = "019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
     			
     	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNs);
     	DBEntity createdAccount = new DBEntity();
@@ -189,12 +195,12 @@ public class CryptoRecordParserTestIT {
     	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 13251976))
     	    	,() -> assertEquals(10368000, createdAccount.autoRenewPeriod)
     	    	,() -> assertEquals(3, createdAccount.proxyAccountNum)
-    	    	,() -> assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.key)
-    	    	,() -> assertEquals("019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", createdAccount.ed25519KeyHex)
-    	    	,() -> assertEquals(1002, createdAccount.entityNum)
+    	    	,() -> assertEquals(key, createdAccount.key)
+    	    	,() -> assertEquals(ed25519Key, createdAccount.ed25519KeyHex)
+    	    	,() -> assertEquals(newAccount, createdAccount.entityNum)
     	    	,() -> assertEquals(0, createdAccount.entityShard)
     	    	,() -> assertEquals(0, createdAccount.entityRealm)
-    	    	,() -> assertEquals("account", createdAccount.entityType)
+    	    	,() -> assertEquals(type, createdAccount.entityType)
     	    	,() -> assertFalse(createdAccount.deleted)
         );    	
     	
@@ -277,6 +283,8 @@ public class CryptoRecordParserTestIT {
     	String recordFile = files[1].getName();
     	long validStartNS = 1568033819609412000L;
     	long consensusNs = 1568033829664529000L;
+    	String key = "1220481d7771e05d9b4099f19c24d4fe361e01584d48979a8f02ff286cf36d61485e";
+    	String ed25519Key = "481d7771e05d9b4099f19c24d4fe361e01584d48979a8f02ff286cf36d61485e";
     			
     	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, updAccount, recordFile, consensusNs);
     	DBEntity updatedAccount = new DBEntity();
@@ -292,12 +300,12 @@ public class CryptoRecordParserTestIT {
     			,() -> assertEquals(599705000, updatedAccount.expiryTimeNanos)
     			,() -> assertEquals(1568552229599705000L, updatedAccount.expiryTimeNs)
     			,() -> assertEquals(5, updatedAccount.proxyAccountNum)
-    			,() -> assertEquals("1220481d7771e05d9b4099f19c24d4fe361e01584d48979a8f02ff286cf36d61485e", updatedAccount.key)
-    			,() -> assertEquals("481d7771e05d9b4099f19c24d4fe361e01584d48979a8f02ff286cf36d61485e", updatedAccount.ed25519KeyHex)
-    			,() -> assertEquals(1003, updatedAccount.entityNum)
+    			,() -> assertEquals(key, updatedAccount.key)
+    			,() -> assertEquals(ed25519Key, updatedAccount.ed25519KeyHex)
+    			,() -> assertEquals(updAccount, updatedAccount.entityNum)
     			,() -> assertEquals(0, updatedAccount.entityShard)
     			,() -> assertEquals(0, updatedAccount.entityRealm)
-    			,() -> assertEquals("account", updatedAccount.entityType)
+    			,() -> assertEquals(type, updatedAccount.entityType)
     			,() -> assertFalse(updatedAccount.deleted)
 		);
 
@@ -323,6 +331,8 @@ public class CryptoRecordParserTestIT {
     	String recordFile = files[2].getName();
     	long validStartNS = 1568033821644081000L;
     	long consensusNs = 1568033831679017000L;
+    	String key = "1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
+    	String ed25519Key = "019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
     			
     	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, updAccount, recordFile, consensusNs);
     	DBEntity updatedAccount = new DBEntity();
@@ -336,12 +346,12 @@ public class CryptoRecordParserTestIT {
     			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, 2000))
     			,() -> assertEquals(0, updatedAccount.expiryTimeNs)
     			,() -> assertEquals(0, updatedAccount.proxyAccountNum)
-    			,() -> assertEquals("1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", updatedAccount.key)
-    			,() -> assertEquals("019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a", updatedAccount.ed25519KeyHex)
-    			,() -> assertEquals(1004, updatedAccount.entityNum)
+    			,() -> assertEquals(key, updatedAccount.key)
+    			,() -> assertEquals(ed25519Key, updatedAccount.ed25519KeyHex)
+    			,() -> assertEquals(updAccount, updatedAccount.entityNum)
     			,() -> assertEquals(0, updatedAccount.entityShard)
     			,() -> assertEquals(0, updatedAccount.entityRealm)
-    			,() -> assertEquals("account", updatedAccount.entityType)
+    			,() -> assertEquals(type, updatedAccount.entityType)
     			,() -> assertTrue(updatedAccount.deleted)
 		);
     	//TODO: assertEquals(10000, updatedAccount.receiveRecordThreshold);
