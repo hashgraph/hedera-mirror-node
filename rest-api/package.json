@@ -20,7 +20,7 @@
     "node-cache": "^4.2.1",
     "pg": "^7.11.0"
   },
-  "bundledDependencies": ["body-parser", "compression", "cores", "dotenv", "express", "log4js", "mathjs", "node-cache",
+  "bundledDependencies": ["body-parser", "compression", "cors", "dotenv", "express", "log4js", "mathjs", "node-cache",
     "pg"],
   "devDependencies": {
     "jest": "^24.8.0",
