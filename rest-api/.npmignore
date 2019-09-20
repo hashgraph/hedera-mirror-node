@@ -1,0 +1,7 @@
+/Dockerfile
+/.dockerignore
+/.env
+/.gitignore
+/monitoring/
+/target/
+/__tests__/

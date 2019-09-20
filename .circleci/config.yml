@@ -10,7 +10,7 @@ references:
   attach_workspace: &attach_workspace
     attach_workspace:
       at: *workspace_root
-  package_deliverable: &package_deliverable
+  package_mirror_node: &package_mirror_node
     run:
       name: Generating mirror-node.tgz
       working_directory: /tmp/workspace/
@@ -23,15 +23,22 @@ workflows:
   version: 2
   main:
     jobs:
-      - build:
-          filters:  # required since `release_artifacts` has tag filters AND requires `build`
+      - build_mirror_node:
+          filters: # required since `release_artifacts` has tag filters AND requires `this`
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
+      - build_rest_api:
+          filters: # required since `release_artifacts` has tag filters AND requires `this`
             branches:
               only: /.*/
             tags:
               only: /.*/
       - release_artifacts:
           requires:
-            - build
+            - build_mirror_node
+            - build_rest_api
           filters:
             branches:
               ignore: /.*/
@@ -39,7 +46,7 @@ workflows:
               only: /^v.*/
 
 jobs:
-  build:
+  build_mirror_node:
     <<: *defaults
     steps:
       - checkout
@@ -49,19 +56,17 @@ jobs:
             - maven-v1-{{ .Branch }}
             - maven-v1-
       - run:
-          name: Running maven
+          name: Running maven (validate, compile, test, package)
           command: ./mvnw package
-      - store_test_results:
-          path: target/surefire-reports
-      - store_artifacts:
-          path: target/site/jacoco/index.html
       - save_cache:
           key: maven-v1-{{ .Branch }}-{{ checksum "pom.xml" }}
           paths:
           - ~/.m2
+      - store_test_results:
+          path: target/surefire-reports
       - run:
-          name: Upload Code Coverage to Coveralls
-          command: ./mvnw coveralls:report -DrepoToken=$COVERALLS_REPO_TOKEN
+          name: Upload Code Coverage
+          command: bash <(curl -s https://codecov.io/bash)
       - run:
           name: Collecting mirror-node assets
           command: |
@@ -69,16 +74,53 @@ jobs:
             mv target/mirror-node-*.jar /tmp/workspace/mirror-node/mirror-node.jar
             mv config /tmp/workspace/mirror-node/
             mv scripts /tmp/workspace/mirror-node/
-            mv rest-api /tmp/workspace/mirror-node/
       - persist_to_workspace:
           root: *workspace_root
           paths:
             - mirror-node
 
+  build_rest_api:
+    docker:
+      - image: node:12.10.0
+    steps:
+      - checkout:
+      - restore_cache:
+          keys:
+            - npm-v1-{{ .Branch }}-{{ checksum "rest-api/package-lock.json" }}
+            - npm-v1-{{ .Branch }}
+            - npm-v1-
+      - run:
+          working_directory: 'rest-api'
+          name: Run npm ci (ensure node_modules is based on package-lock.json).
+          command: npm ci
+      - save_cache:
+          key: npm-v1-{{ .Branch }}-{{ checksum "rest-api/package-lock.json" }}
+          paths:
+            - ~/.npm
+      - run:
+          working_directory: 'rest-api'
+          name: Run npm test
+          command: npm test
+      - store_test_results:
+          path: rest-api/target/jest-junit
+      - run:
+          working_directory: 'rest-api'
+          name: Collecting rest-api assets
+          command: |
+            npm pack
+            mkdir -p /tmp/workspace/
+            mv rest-api*.tgz /tmp/workspace/rest-api.tgz
+      - persist_to_workspace:
+          root: *workspace_root
+          paths:
+            - rest-api.tgz
+
   release_artifacts:
     <<: *defaults
     steps:
       - *attach_workspace
-      - *package_deliverable
+      - *package_mirror_node
       - store_artifacts:
           path: /tmp/workspace/mirror-node.tgz
+      - store_artifacts:
+          path: /tmp/workspace/rest-api.tgz

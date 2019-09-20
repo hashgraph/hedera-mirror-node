@@ -1,10 +1,10 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
+  "name": "rest-api",
+  "version": "0.3.0-SNAPSHOT",
   "description": "REST API for Hedera mirror node",
   "main": "server.js",
   "scripts": {
-    "test": "jest --watchAll",
+    "test": "jest",
     "dev": "nodemon app.js"
   },
   "author": "Atul Mahamuni",
@@ -20,15 +20,34 @@
     "node-cache": "^4.2.1",
     "pg": "^7.11.0"
   },
+  "bundledDependencies": [
+    "body-parser",
+    "compression",
+    "cors",
+    "dotenv",
+    "express",
+    "log4js",
+    "mathjs",
+    "node-cache",
+    "pg"
+  ],
   "devDependencies": {
     "jest": "^24.8.0",
+    "jest-junit": "^8.0.0",
     "nodemon": "^1.19.1",
     "supertest": "^4.0.2"
   },
   "jest": {
+    "reporters": [
+      "default",
+      "jest-junit"
+    ],
     "testPathIgnorePatterns": [
       "__tests__/testutils.js",
       "__tests__/mockpool.js"
     ]
+  },
+  "jest-junit": {
+    "outputDirectory": "target/jest-junit"
   }
 }

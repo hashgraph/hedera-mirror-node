@@ -20,13 +20,13 @@ package com.hedera.downloader;
  * ‍
  */
 
-import com.amazonaws.ClientConfiguration;
+import com.amazonaws.*;
 import com.amazonaws.auth.*;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.client.builder.ExecutorFactory;
+import com.amazonaws.handlers.RequestHandler2;
 import com.amazonaws.retry.PredefinedRetryPolicies;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.*;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
@@ -46,6 +46,7 @@ import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,7 +79,6 @@ public abstract class Downloader {
 	protected static String bucketName;
 
 	protected static TransferManager xfer_mgr;
-	protected static DownloaderProperties downloaderProperties;
 
 	protected static AmazonS3 s3Client;
 
@@ -90,8 +90,6 @@ public abstract class Downloader {
 
 	protected List<String> nodeAccountIds;
 
-	protected static ClientConfiguration clientConfiguration;
-	
 	protected final ApplicationStatusRepository applicationStatusRepository;
 
 	private final CommonDownloaderProperties commonProps;
@@ -373,74 +371,46 @@ public abstract class Downloader {
 		}
 	}
 
-	protected static synchronized void setupCloudConnection(DownloaderProperties dlProps) {
+	protected static synchronized void setupCloudConnection(DownloaderProperties downloaderProperties) {
 		if (xfer_mgr != null) {
 			return;
 		}
 
-		downloaderProperties = dlProps;
 		bucketName = ConfigLoader.getBucketName();
 
 		// Define retryPolicy
-		clientConfiguration = new ClientConfiguration();
+		ClientConfiguration clientConfiguration = new ClientConfiguration();
 		clientConfiguration.setRetryPolicy(
 				PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(5));
 		clientConfiguration.setMaxConnections(downloaderProperties.getMaxConnections());
 
-		if (ConfigLoader.getCloudProvider() == CLOUD_PROVIDER.S3) {
-			if (ConfigLoader.getAccessKey().contentEquals("")) {
-				s3Client = AmazonS3ClientBuilder.standard()
-						.withRegion(ConfigLoader.getClientRegion())
-						.withClientConfiguration(clientConfiguration)
-						.withCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()))
-						.build();
-			} else {
-				s3Client = AmazonS3ClientBuilder.standard()
-						.withCredentials(new AWSStaticCredentialsProvider(
-								new BasicAWSCredentials(ConfigLoader.getAccessKey(),
-										ConfigLoader.getSecretKey())))
-						.withRegion(ConfigLoader.getClientRegion())
-						.withClientConfiguration(clientConfiguration)
-						.build();
+		RequestHandler2 errorHandler = new RequestHandler2() {
+			private Logger logger = LogManager.getLogger(AmazonS3Client.class);
+
+			@Override
+			public void afterError(Request<?> request, Response<?> response, Exception e) {
+				logger.error("Error calling {} {}", request.getHttpMethod(), request.getEndpoint(), e);
 			}
-		} else if (ConfigLoader.getCloudProvider() == CLOUD_PROVIDER.GCP) {
-			if (ConfigLoader.getAccessKey().contentEquals("")) {
-				s3Client = AmazonS3ClientBuilder.standard()
-						.withEndpointConfiguration(
-								new AwsClientBuilder.EndpointConfiguration(
-										"https://storage.googleapis.com", ConfigLoader.getClientRegion()))
-						.withClientConfiguration(clientConfiguration)
-						.withCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()))
-						.build();
-			} else {
-				s3Client = AmazonS3ClientBuilder.standard()
-						.withEndpointConfiguration(
-								new AwsClientBuilder.EndpointConfiguration(
-										"https://storage.googleapis.com", ConfigLoader.getClientRegion()))
-						.withCredentials(new AWSStaticCredentialsProvider(
-								new BasicAWSCredentials(ConfigLoader.getAccessKey(),
-										ConfigLoader.getSecretKey())))
-						.withClientConfiguration(clientConfiguration)
-						.build();
-			}
-		} else {
-			s3Client = AmazonS3ClientBuilder.standard()
-					.withPathStyleAccessEnabled(true)
-					.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("http://localhost:8001", ConfigLoader.getClientRegion()))
-					.withClientConfiguration(clientConfiguration)
-					.withCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()))
-					.build();
+		};
+
+		AWSCredentials awsCredentials = new AnonymousAWSCredentials();
+		if (StringUtils.isNotBlank(ConfigLoader.getAccessKey()) && StringUtils.isNotBlank(ConfigLoader.getSecretKey())) {
+			awsCredentials = new BasicAWSCredentials(ConfigLoader.getAccessKey(), ConfigLoader.getSecretKey());
 		}
+
+		s3Client = AmazonS3ClientBuilder.standard()
+				.withClientConfiguration(clientConfiguration)
+				.withCredentials(new AWSStaticCredentialsProvider(awsCredentials))
+				.withEndpointConfiguration(
+						new AwsClientBuilder.EndpointConfiguration(ConfigLoader.getCloudProvider().getEndpoint(), ConfigLoader.getClientRegion()))
+				.withRequestHandlers(errorHandler)
+				.build();
+
 		xfer_mgr = TransferManagerBuilder.standard()
-				.withExecutorFactory(new ExecutorFactory() {
-					@Override
-					public ExecutorService newExecutor() {
-						return new ThreadPoolExecutor(downloaderProperties.getCoreThreads(), downloaderProperties.getMaxThreads(),
-								120, TimeUnit.SECONDS,
-								new ArrayBlockingQueue<Runnable>(downloaderProperties.getTaskQueueSize()));
-					}
-				})
-				.withS3Client(s3Client).build();
+				.withExecutorFactory(() -> new ThreadPoolExecutor(downloaderProperties.getCoreThreads(), downloaderProperties.getMaxThreads(),
+						120, TimeUnit.SECONDS, new ArrayBlockingQueue<>(downloaderProperties.getTaskQueueSize())))
+				.withS3Client(s3Client)
+				.build();
 	}
 
 	/**
