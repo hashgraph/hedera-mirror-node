@@ -32,9 +32,12 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-@Log4j2
-public class DBHelper {
+import javax.annotation.Resource;
 
+@Log4j2
+public class DBHelper extends IntegrationTest {
+
+	@Resource
 	private static TransactionsRepository transactionsRepository;
 	
     private static long countTableRows(String table_name) throws Exception {
@@ -78,6 +81,8 @@ public class DBHelper {
     	return countTableRows("t_entities");
     }
     public static void deleteDatabaseData() throws SQLException {
+    	transactionsRepository.deleteAll();
+    	
         Connection connect = null;
         try {
         	connect = DatabaseUtilities.openDatabase(connect);
