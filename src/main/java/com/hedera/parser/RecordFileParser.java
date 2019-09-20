@@ -24,6 +24,7 @@ package com.hedera.parser;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -56,14 +57,14 @@ import javax.inject.Named;
 @Named
 public class RecordFileParser implements FileParser {
 
-	private final String pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
 	private final ApplicationStatusRepository applicationStatusRepository;
 	private final RecordProperties recordProperties;
 
 	public RecordFileParser(ApplicationStatusRepository applicationStatusRepository, RecordProperties recordProperties) {
 		this.applicationStatusRepository = applicationStatusRepository;
 		this.recordProperties = recordProperties;
-		Utility.ensureDirectory(pathName);
+		Utility.ensureDirectory(ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS));
+		Utility.ensureDirectory(Paths.get(ConfigLoader.getDownloadToDir(), "parsedRecordFiles").toString());
 	}
 
 	/**
@@ -228,6 +229,7 @@ public class RecordFileParser implements FileParser {
 				return;
 			}
 
+			String pathName = ConfigLoader.getDefaultParseDir(OPERATION_TYPE.RECORDS);
 			log.debug("Parsing record files from {}", pathName);
 			if (RecordFileLogger.start()) {
 

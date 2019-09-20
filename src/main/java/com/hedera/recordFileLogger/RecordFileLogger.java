@@ -205,12 +205,12 @@ public class RecordFileLogger {
 		try {
 			fileId = 0;
 
-			CallableStatement fileCreate = connect.prepareCall("{? = call f_file_create( ? ) }");
-			fileCreate.registerOutParameter(1, Types.BIGINT);
-			fileCreate.setString(2, fileName);
-			fileCreate.execute();
-			fileId = fileCreate.getLong(1);
-			fileCreate.close();
+			try (CallableStatement fileCreate = connect.prepareCall("{? = call f_file_create( ? ) }")) {
+				fileCreate.registerOutParameter(1, Types.BIGINT);
+				fileCreate.setString(2, fileName);
+				fileCreate.execute();
+				fileId = fileCreate.getLong(1);
+			}
 			
 			if (fileId == 0) {
 				log.trace("File {} already exists in the database.", fileName);

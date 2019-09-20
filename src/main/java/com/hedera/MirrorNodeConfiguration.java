@@ -20,13 +20,20 @@ package com.hedera;
  * ‍
  */
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
-public class MirrorNodeApplication {
+@Configuration
+@EnableAsync
+@EnableCaching
+public class MirrorNodeConfiguration {
 
-    public static void main(String[] args) {
-        SpringApplication.run(MirrorNodeApplication.class, args);
+    @Configuration
+    @ConditionalOnProperty(prefix = "spring.task.scheduling", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @EnableScheduling
+    protected static class SchedulingConfiguration {
     }
 }

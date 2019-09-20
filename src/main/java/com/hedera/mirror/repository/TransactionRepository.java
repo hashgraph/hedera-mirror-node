@@ -1,4 +1,4 @@
-package com.hedera;
+package com.hedera.mirror.repository;
 
 /*-
  * ‌
@@ -20,13 +20,8 @@ package com.hedera;
  * ‍
  */
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.hedera.mirror.domain.Transaction;
+import org.springframework.data.repository.CrudRepository;
 
-@SpringBootApplication
-public class MirrorNodeApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(MirrorNodeApplication.class, args);
-    }
+public interface TransactionRepository extends CrudRepository<Transaction, Long> {
 }
