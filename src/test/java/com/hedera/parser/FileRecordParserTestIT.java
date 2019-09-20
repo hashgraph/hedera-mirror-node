@@ -55,6 +55,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.nio.file.*;
 import javax.annotation.Resource;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -73,14 +74,17 @@ public class FileRecordParserTestIT extends IntegrationTest {
 
     @Resource
     private TransactionsRepository transactionsRepository;
-    private RecordFileLogger recordFileLogger;
 
     @BeforeEach
     void before() throws Exception {
-    }
+    	DBHelper.transactionsRepository = transactionsRepository;
+		DBHelper.deleteDatabaseData();
+		assertTrue(RecordFileLogger.start());
+	}
 
     @AfterEach
     void after() {
+    	RecordFileLogger.finish();    	
     }
 
     @Test
@@ -110,7 +114,7 @@ public class FileRecordParserTestIT extends IntegrationTest {
     	Transaction transaction = fileCreateTransaction(memo, transactionId);
     	TransactionRecord record = transactionRecord(newFileId, memo, transactionId);
     	
-    	recordFileLogger.storeRecord(transaction, record);
+    	RecordFileLogger.storeRecord(transaction, record);
         
         System.out.println(transactionsRepository.count());
     	assertAll(

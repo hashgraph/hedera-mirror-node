@@ -35,10 +35,9 @@ import java.sql.SQLException;
 import javax.annotation.Resource;
 
 @Log4j2
-public class DBHelper extends IntegrationTest {
+public class DBHelper {
 
-	@Resource
-	private static TransactionsRepository transactionsRepository;
+	public static TransactionsRepository transactionsRepository;
 	
     private static long countTableRows(String table_name) throws Exception {
         Connection connect = null;
