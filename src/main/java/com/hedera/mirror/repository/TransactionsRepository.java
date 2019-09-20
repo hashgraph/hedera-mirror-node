@@ -23,8 +23,6 @@ package com.hedera.mirror.repository;
 import com.hedera.mirror.CacheConfiguration;
 import com.hedera.mirror.domain.Transactions;
 import org.springframework.cache.annotation.*;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import javax.transaction.Transactional;
@@ -32,5 +30,4 @@ import javax.transaction.Transactional;
 @Transactional
 @CacheConfig(cacheNames = "application_status", cacheManager = CacheConfiguration.EXPIRE_AFTER_5M)
 public interface TransactionsRepository extends CrudRepository<Transactions, Long> {
-
 }

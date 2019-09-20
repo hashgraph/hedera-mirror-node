@@ -35,19 +35,15 @@ import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.repository.TransactionsRepository;
 import com.hedera.utilities.Utility;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.nio.file.*;
 import java.util.Arrays;
-
-import javax.transaction.Transactional;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,9 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestMethodOrder(OrderAnnotation.class)
-@ExtendWith(MockitoExtension.class)
-@Transactional
-public class FileRecordParserTestIT extends IntegrationTest {
+public class FileRecordParserTestIT {
 
     @TempDir
     Path dataPath;
@@ -88,7 +82,7 @@ public class FileRecordParserTestIT extends IntegrationTest {
     @DisplayName("Parse record files")
     void parseRecordFiles() throws Exception {
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
-
+        
         DBHelper.deleteDatabaseData();
         
         recordFileParser = new RecordFileParser(applicationStatusRepository, recordProperties);
@@ -109,6 +103,7 @@ public class FileRecordParserTestIT extends IntegrationTest {
     @Order(2)
     @DisplayName("Parse record files - check counts")
     void parseRecordFilesCheckCounts() throws Exception {
+    	System.out.println( transactionsRepository.count());
     	assertAll(
                 () -> assertEquals(5, DBHelper.countRecordFiles())
                 ,() -> assertEquals(14, transactionsRepository.count()) //DBHelper.countTransactions())

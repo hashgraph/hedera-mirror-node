@@ -22,6 +22,8 @@ package com.hedera;
 
 import lombok.extern.log4j.Log4j2;
 import com.hedera.databaseUtilities.DatabaseUtilities;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
+import com.hedera.mirror.repository.TransactionsRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -33,6 +35,8 @@ import java.sql.SQLException;
 @Log4j2
 public class DBHelper {
 
+	private static TransactionsRepository transactionsRepository;
+	
     private static long countTableRows(String table_name) throws Exception {
         Connection connect = null;
         long count = 0;
