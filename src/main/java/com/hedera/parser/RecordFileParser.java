@@ -112,13 +112,11 @@ public class RecordFileParser implements FileParser {
 								if (Utility.hashIsEmpty(previousFileHash)) {
 									log.error("Previous file hash not available");
 									previousFileHash = Hex.encodeHexString(readFileHash);
-								} else {
-									log.trace("Previous file Hash = {}", previousFileHash);
 								}
 
 								newFileHash = Hex.encodeHexString(readFileHash);
 
-								log.trace("New file Hash = {}", newFileHash);
+								log.trace("New file hash = {}, old hash = {}", newFileHash, previousFileHash);
 
 								if (!newFileHash.contentEquals(previousFileHash)) {
 
@@ -180,7 +178,7 @@ public class RecordFileParser implements FileParser {
 			}
 
 			log.info("Finished parsing {} transactions from record file {} in {}", counter, file.getName(), stopwatch);
-			if (StringUtils.isNotBlank(thisFileHash) && !thisFileHash.equals(EMPTY_HASH)) {
+			if (!Utility.hashIsEmpty(thisFileHash)) {
 				applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, thisFileHash);
 			}
 			return true;
@@ -199,7 +197,7 @@ public class RecordFileParser implements FileParser {
 	private void loadRecordFiles(List<String> fileNames) throws Exception {
 		String prevFileHash = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
 		Collections.sort(fileNames);
-		
+
 		for (String name : fileNames) {
 			String thisFileHash = "";
 			if (Utility.checkStopFile()) {

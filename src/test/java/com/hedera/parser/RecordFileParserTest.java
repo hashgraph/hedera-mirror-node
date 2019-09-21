@@ -30,6 +30,7 @@ import com.hedera.mirror.domain.Transaction;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.repository.TransactionRepository;
 import com.hedera.utilities.Utility;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +38,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.annotation.Resource;
+import java.io.File;
 import java.nio.file.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -85,7 +87,6 @@ public class RecordFileParserTest extends IntegrationTest {
         assertThat(Files.walk(parsedPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
                 .extracting(Path::getFileName)
                 .contains(Paths.get("2019-08-30T18_10_05.249678Z.rcd"))
                 .contains(Paths.get("2019-08-30T18_10_00.419072Z.rcd"));
@@ -113,11 +114,37 @@ public class RecordFileParserTest extends IntegrationTest {
     }
 
     @Test
+    void invalidFile() throws Exception {
+        File recordFile = dataPath.resolve("recordstreams").resolve("valid").resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
+        FileUtils.writeStringToFile(recordFile, "corrupt", "UTF-8");
+        recordFileParser.parse();
+        assertThat(Files.walk(parsedPath)).filteredOn(p -> !p.toFile().isDirectory()).hasSize(0);
+        assertThat(transactionRepository.count()).isEqualTo(0L);
+    }
+
+    @Test
     void hashMismatch() throws Exception {
-        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH, "123");
+        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "123");
         fileCopier.copy();
         recordFileParser.parse();
         assertThat(Files.walk(parsedPath)).filteredOn(p -> !p.toFile().isDirectory()).hasSize(0);
         assertThat(transactionRepository.count()).isEqualTo(0L);
+    }
+
+    @Test
+    void bypassHashMismatch() throws Exception {
+        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "123");
+        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, "2019-09-01T00:00:00.000000Z.rcd");
+        fileCopier.copy();
+        recordFileParser.parse();
+
+        assertThat(Files.walk(parsedPath))
+                .filteredOn(p -> !p.toFile().isDirectory())
+                .hasSize(2)
+                .extracting(Path::getFileName)
+                .contains(Paths.get("2019-08-30T18_10_05.249678Z.rcd"))
+                .contains(Paths.get("2019-08-30T18_10_00.419072Z.rcd"));
+
+        assertThat(transactionRepository.findAll()).hasSize(19 + 15);
     }
 }
