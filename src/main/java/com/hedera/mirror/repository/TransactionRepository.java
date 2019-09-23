@@ -1,4 +1,4 @@
-package com.hedera.parser;
+package com.hedera.mirror.repository;
 
 /*-
  * ‌
@@ -20,8 +20,8 @@ package com.hedera.parser;
  * ‍
  */
 
-public interface FileParser {
+import com.hedera.mirror.domain.Transaction;
+import org.springframework.data.repository.CrudRepository;
 
-    void parse();
-
+public interface TransactionRepository extends CrudRepository<Transaction, Long> {
 }

@@ -226,7 +226,7 @@ public class ConfigLoader {
 		}
 	}
 
-	public static String getDownloadToDir(OPERATION_TYPE operation) {
+	public static String getDownloadToDir() {
 		if (!downloadToDir.endsWith("/")) {
 			downloadToDir += "/";
 		}

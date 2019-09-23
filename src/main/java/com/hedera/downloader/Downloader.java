@@ -99,8 +99,6 @@ public abstract class Downloader {
 	 */
 	ExecutorService signatureDownloadThreadPool;
 
-	String saveFilePath = "";
-
 	public enum DownloadType {RCD, BALANCE, EVENT};
 
 	public Downloader(ApplicationStatusRepository applicationStatusRepository, CommonDownloaderProperties props, DownloaderProperties dlProps) {
@@ -207,19 +205,16 @@ public abstract class Downloader {
 			case RCD:
 				s3Prefix = ConfigLoader.getRecordFilesS3Location();
 				lastValidFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
-				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.RECORDS);
 				break;
 
 			case BALANCE:
 				s3Prefix = "accountBalances/balance";
 				lastValidFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
-				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.BALANCE);
 				break;
 
 			case EVENT:
 				s3Prefix = ConfigLoader.getEventFilesS3Location();
 				lastValidFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE);
-				saveFilePath = ConfigLoader.getDownloadToDir(OPERATION_TYPE.EVENTS);
 				break;
 
 			default:
@@ -271,7 +266,7 @@ public abstract class Downloader {
 
 							if (isNeededSigFile(s3ObjectKey, type) &&
 									(s3KeyComparator.compare(s3ObjectKey, prefix + finalLastValidFileName) > 0 || finalLastValidFileName.isEmpty())) {
-								String saveTarget = saveFilePath + s3ObjectKey;
+								String saveTarget = ConfigLoader.getDownloadToDir() + s3ObjectKey;
 								try {
 									pendingDownloads.add(saveToLocalAsync(bucketName, s3ObjectKey, saveTarget));
 									if (downloadMax != 0) {

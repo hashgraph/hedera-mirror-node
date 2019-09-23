@@ -21,22 +21,27 @@ package com.hedera;
  */
 
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.*;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.*;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+@AutoConfigureDataJpa
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@AutoConfigureTestEntityManager
+@ContextConfiguration(initializers = IntegrationTest.Initializer.class)
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@ContextConfiguration(initializers = IntegrationTest.Initializer.class)
+@TestPropertySource(properties = "spring.task.scheduling.enabled=false")
 public abstract class IntegrationTest {
 
     @Container
-    private static final PostgreSQLContainer postgres = new PostgreSQLContainer<>("postgres:11.5-alpine");
+    private static final PostgreSQLContainer postgres = new PostgreSQLContainer<>("postgres:9.6-alpine");
 
     static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 

@@ -1,4 +1,4 @@
-package com.hedera.parser;
+package com.hedera.mirror;
 
 /*-
  * ‌
@@ -20,8 +20,18 @@ package com.hedera.parser;
  * ‍
  */
 
-public interface FileParser {
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-    void parse();
+@Configuration
+@EnableAsync
+public class MirrorNodeConfiguration {
 
+    @Configuration
+    @ConditionalOnProperty(prefix = "spring.task.scheduling", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @EnableScheduling
+    protected static class SchedulingConfiguration {
+    }
 }

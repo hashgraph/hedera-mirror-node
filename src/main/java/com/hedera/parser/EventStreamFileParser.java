@@ -196,7 +196,7 @@ public class EventStreamFileParser implements FileParser {
 			md.update(contentHash);
 		}
 		String thisFileHash = Utility.bytesToHex(md.digest());
-		if (StringUtils.isNotBlank(thisFileHash) && !thisFileHash.equals(EMPTY_HASH)) {
+		if (!Utility.hashIsEmpty(thisFileHash)) {
 			applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH, thisFileHash);
 		}
 		return LoadResult.OK;

@@ -110,12 +110,6 @@
 			<groupId>com.hedera.hashgraph</groupId>
 			<artifactId>hedera-protobuf-java-api</artifactId>
 			<version>${hedera-protobuf.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>junit</groupId>
-					<artifactId>junit</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.hedera.hashgraph</groupId>
@@ -202,10 +196,6 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 			<exclusions>
-				<exclusion>
-					<groupId>junit</groupId>
-					<artifactId>junit</artifactId>
-				</exclusion>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>
 					<artifactId>spring-boot-starter-logging</artifactId>

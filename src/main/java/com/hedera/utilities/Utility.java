@@ -66,7 +66,8 @@ import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 @Log4j2
 public class Utility {
 
-  private static final Long SCALAR = 1_000_000_000L;
+    private static final Long SCALAR = 1_000_000_000L;
+    private static final String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
 
 	public static boolean checkStopFile() {
 		File stopFile = new File("./stop");
@@ -658,7 +659,7 @@ public class Utility {
 	}
 
 	public static boolean hashIsEmpty(String hash) {
-		return (hash.isEmpty() || hash.contentEquals("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"));
+		return StringUtils.isBlank(hash) || hash.equals(EMPTY_HASH);
 	}
 
 	public static void moveFileToParsedDir(String fileName, String subDir) {
