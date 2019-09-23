@@ -1,4 +1,4 @@
-package com.hedera.parser;
+package com.hedera.logger;
 
 import com.hedera.DBCryptoTransfers;
 import com.hedera.DBEntity;
@@ -31,6 +31,7 @@ import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirror.config.RecordProperties;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
+import com.hedera.parser.RecordFileParser;
 import com.hedera.utilities.Utility;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
@@ -49,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestMethodOrder(OrderAnnotation.class)
-public class CryptoRecordParserTestIT extends IntegrationTest {
+public class CryptoLoggerTestIT extends IntegrationTest {
 
     @TempDir
     Path dataPath;

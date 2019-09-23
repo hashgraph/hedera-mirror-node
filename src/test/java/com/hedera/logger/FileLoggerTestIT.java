@@ -1,4 +1,4 @@
-package com.hedera.parser;
+package com.hedera.logger;
 
 import com.google.protobuf.ByteString;
 import com.hedera.DBHelper;
@@ -61,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Testcontainers(disabledWithoutDocker = true)
 @TestMethodOrder(OrderAnnotation.class)
-public class FileRecordParserTestIT extends IntegrationTest {
+public class FileLoggerTestIT extends IntegrationTest {
 
     // transaction
     private long nodeNum = 3;
