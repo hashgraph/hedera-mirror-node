@@ -188,9 +188,9 @@ Flyway (https://flywaydb.org/getstarted/) is used to manage the database schema.
 
 All database scripts reside in `src/main/resources/postgres`.
 
-`postgresInit.sql` should be used to initialise the database and owner.
+`init.sql` should be used to initialise the database and owner.
 - Edit the file with usernames, passwords, etc... you wish to use.
-- Run the script as a DB admin user: `psql postgres -f src/main/resources/postgres/postgresInit.sql`
+- Run the script as a DB admin user: `psql postgres -f src/main/resources/db/scripts/init.sql`
 
 Then flyway should be used to build the initial set of tables, and apply any changes. Those are determined by files names `Vx.x__`.
 Note: The `Vx.x` scripts use variables which you should set prior to running the scripts.
