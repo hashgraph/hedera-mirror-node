@@ -236,7 +236,8 @@ To start it, `cd rest-api` then `npm install`.
 
 Create a `.env` file as per below and run with `npm start`.
 
-You can also unittest using jest by using `npm test`.
+Unit tests: You can also unittest using jest by using `npm test`.
+Acceptance tests: To test against a live instance, you can use `npm run acceptancetest`. You need to specify the instance ip:port as `TARGET` environment variable for this.
 
 example `.env` file (note: there is a env.sample file in this directory):
 

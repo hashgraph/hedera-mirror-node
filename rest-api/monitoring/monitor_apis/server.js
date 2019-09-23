@@ -52,9 +52,16 @@ app.use(cors());
 let apiPrefix = '/api/v1';
 
 // routes 
-app.get(apiPrefix + '/status', (req, res) => {res.json(common.getStatus())});
-app.get(apiPrefix + '/status/:id', (req, res) => {res.json(common.getStatusWithId(req, res))});
-
+app.get(apiPrefix + '/status', (req, res) => {
+    let status = common.getStatus();
+    res.status(status.httpCode)
+        .send(status.results);
+});
+app.get(apiPrefix + '/status/:id', (req, res) => {
+    let status = common.getStatusWithId(req.params.id);
+    res.status(status.httpCode)
+        .send(status);
+});
 
 if (process.env.NODE_ENV !== 'test') {
     app.listen(port, () => {
@@ -62,12 +69,22 @@ if (process.env.NODE_ENV !== 'test') {
     });
 }
 
-let interval = common.getServerList().interval;
+// Read the serverlist configuration file, and quit with an error message if the file is invalid.
+const serverlist = common.getServerList();
+if (!(serverlist.hasOwnProperty('interval') && serverlist.hasOwnProperty('servers') &&
+        serverlist.servers.length > 0)) {
+    console.log("Error in reading serverlist.json file. Please check the server list and try again.");
+    process.exit(1);
+}
+
+let interval = serverlist.interval;
+common.initResults();
 
 // Run all the tests periodically
+monitor.runEverything();
 setInterval(() => {
-	console.log ("Running the tests at: " + new Date());
-	monitor.runEverything();
+    console.log("Running the tests at: " + new Date());
+    monitor.runEverything();
 }, interval * 1000);
 
 module.exports = app;

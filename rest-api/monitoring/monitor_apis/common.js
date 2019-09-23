@@ -23,61 +23,38 @@
 const fs = require('fs');
 
 let currentResults = {}; // Results of current tests are stored here
-let testResultsSnapshot = {}; // A snapshot of the last results - used for returning values in the API
+let pids = {}; // PIDs for the monitoring test processes
 
 /**
- * Copies the current results to the results snapshot, and initializes 
- * the current results object to get ready for next iteration of testing
+ * Initializer for results
+ * @return {} None. Updates currentResults
+ */
+const initResults = () => {
+    const restservers = getServerList().servers;
+
+    for (const server of restservers) {
+        currentResults[server.name] = {
+            ip: server.ip,
+            port: server.port,
+            results: []
+        }
+    }
+}
+
+/**
+ * Saves the results from the current test run
  * @param {Object} server The server under test
+ * @param {Object} results The results of the current test run
  * @return {} None. Updates currentResults
  */
-const initResults = (server) => {
-    testResultsSnapshot[server.name] = 
-        currentResults[server.name] === undefined ? {} :
-        JSON.parse(JSON.stringify(currentResults[server.name]));
-    currentResults[server.name] = {
-		ip: server.ip,
-		port: server.port,
-		results: []
-	};
-}
-
-/**
- * Log results of a single test to the current results
- * @param {Object} server The server to run the test against
- * @param {String} url The URL of the test
- * @param {String} funcName Name of the test function that produced this result
- * @param {Object} result Result of the test (pass/fail + message)
- * @return {} None. Updates currentResults
- */
-const logResult = (server, url, funcName, result) => {
-	console.log ((result.result ? 'PASSED' : 'FAILED') +
-		' (' + JSON.stringify(server) + ')' + 
-		': ' + url + ":: " + result.msg);
-
-	currentResults[server.name].results.push({
-		at: (new Date().getTime() / 1000).toFixed(3),
-		result: result.result,
-		url: url,
-		message: funcName + ': ' + result.msg
-	});
-}
-
-/**
- * Prints the results 
- * @param {} None
- * @return {} None
- */
-const printResults = async function () {
-	console.log ("Results:");
-
-	for (let servername in currentResults) {
-		console.log ("Server: " + servername);
-		await currentResults[servername].results.forEach ((result) => {
-			console.log (JSON.stringify(result));
-			});
-		console.log ("--------------");
-	}
+const saveResults = (server, results) => {
+    if (server.name != undefined && server.name != null) {
+        currentResults[server.name] = {
+            ip: server.ip,
+            port: server.port,
+            results: results
+        }
+    }
 }
 
 /**
@@ -86,7 +63,14 @@ const printResults = async function () {
  * @return {Object} Snapshot of results from the latest completed round of tests
  */
 const getStatus = () => {
-    return (testResultsSnapshot);
+    let results = Object.keys(currentResults).map((net) => {
+        currentResults[net].name = net;
+        return (currentResults[net]);
+    })
+    return ({
+        results: results,
+        httpCode: 200
+    })
 }
 
 /**
@@ -96,48 +80,36 @@ const getStatus = () => {
  * @return {Object} Snapshot of results from the latest completed round of tests for 
  *      the specified server
  */
-const getStatusWithId = (req, res) => {
-    const net = req.params.id;
+const getStatusWithId = (net) => {
+    let ret = {
+        numPassedTests: 0,
+        numFailedTests: 0,
+        success: false,
+        testResults: [],
+        message: 'Failed',
+        httpCode: 400
+    };
 
-    if ((net == undefined) ||
-        (net == null)) {
-        res.status(404)
-            .send(`Not found. Net: ${net}`);
-        return;
-    }
-
-    if (!(testResultsSnapshot.hasOwnProperty(net)) ||
-        (testResultsSnapshot.hasOwnProperty(net) == undefined)) {
-        res.status(404)
-            .send(`Test results unavailable for Net: ${net}`);
-        return;
-    }
-
-    if (! (testResultsSnapshot[net].hasOwnProperty('results'))) {
-        res.status(404)
-            .send(`Test results unavailable for Net: ${net}`);
-        return;
+    // Return 404 (Not found) for illegal name of the serer
+    if ((net == undefined) || (net == null)) {
+        ret.httpCode = 404;
+        ret.message = `Not found. Net: ${net}`;
+        return (ret);
     }
 
-    let cntPass = 0;
-    let cntFail = 0;
-    let cntTotal = 0;
-    
-    for (let row of testResultsSnapshot[net].results) {
-        if (row.result) {
-            cntPass ++;
-        } else {
-            cntFail ++;
-        }
+    // Return 404 (Not found) for if the server doesn't appear in our results table
+    if (!(currentResults.hasOwnProperty(net)) ||
+        (currentResults.hasOwnProperty(net) == undefined) ||
+        (!currentResults[net].hasOwnProperty('results'))) {
+        ret.httpCode = 404;
+        ret.message = `Test results unavailable for Net: ${net}`;
+        return (ret);
     }
-    cntTotal = cntPass + cntFail;
- 
-    if (cntFail > 0) {
-        res.status(409)
-        .send(`{pass: ${cntPass}, fail: ${cntFail}, total: ${cntTotal}}`);
-        return;
-    }
-    return (testResultsSnapshot[net]);
+
+    // Return the results saved in the currentResults object
+    ret = currentResults[net];
+    ret.httpCode = currentResults[net].results.success ? 200 : 409;
+    return (ret);
 }
 
 
@@ -154,22 +126,47 @@ const getServerList = () => {
         const config = JSON.parse(configtext);
         return (config);
     } catch (err) {
-        return ({
-            "api": {
-                "ip": "localhost", 
-                "port": 80
-            },
-            "servers": [],
-            "interval": 30
-        });
+        return ({});
     }
+}
+
+/**
+ * Get the process pid for a given server
+ * @param {Object} server the server for which the pid is requested
+ * @return {Number} PID of the test process running for the given server
+ */
+const getProcess = function (server) {
+    const key = `${server.ip}_${server.port}`;
+    return (pids[key]);
+}
+
+/**
+ * Stores the process pid for a given server
+ * @param {Object} server the server for which the pid needs to be stored
+ * @return {} None
+ */
+const saveProcess = function (server, pid) {
+    const key = `${server.ip}_${server.port}`;
+    pids[key] = pid;
+}
+
+/**
+ * Deletes the process pid for a given server (when the test process returns)
+ * @param {Object} server the server for which the pid needs to be deleted
+ * @return {} None
+ */
+const deleteProcess = function (server) {
+    const key = `${server.ip}_${server.port}`;
+    delete pids[key];
 }
 
 module.exports = {
     initResults: initResults,
-    logResult: logResult,
-    printResults: printResults,
+    saveResults: saveResults,
     getStatus: getStatus,
     getStatusWithId: getStatusWithId,
-    getServerList: getServerList
+    getServerList: getServerList,
+    getProcess: getProcess,
+    saveProcess: saveProcess,
+    deleteProcess: deleteProcess
 }
