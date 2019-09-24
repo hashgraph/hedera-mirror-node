@@ -99,7 +99,7 @@ const validateFields = function (accounts) {
 
     // Assert that all mandatory fields are present in the response
     ['balance', 'account', 'expiry_timestamp', 'auto_renew_period',
-        'key', 'deleted', 'entity_type'].forEach ( (field) =>{
+        'key', 'deleted'].forEach ( (field) =>{
         ret = ret && accounts.accounts[0].hasOwnProperty(field);
     })
 
