@@ -237,6 +237,13 @@ afterAll(() => {
         global.pool = global.old_pool;
         global.old_pool = null;
     }
+    if (process.env.CI) {
+        let logPath = path.join(__dirname, '..', '..', 'logs', 'hedera_mirrornode_api_3000.log');
+        console.log(logPath);
+        if (fs.existsSync(logPath)) {
+            console.log(fs.readFileSync(logPath, 'utf8'));
+        }
+    }
 });
 
 /**
@@ -254,7 +261,7 @@ function mapTransactionResults(rows) {
 // TESTS
 //
 
-test('DB integration test - transactions - no query string - 3 txn 9 xfer', async () => {
+test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfer', async () => {
     let sql = transactions.reqToSql({query: {}});
     let res = await sqlConnection.query(sql.query, sql.params);
     expect(res.rowCount).toEqual(9);
@@ -272,7 +279,7 @@ test('DB integration test - transactions - no query string - 3 txn 9 xfer', asyn
     );
 });
 
-test('DB integration test - transactions - single valid account - 1 txn 3 xfer', async () => {
+test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfer', async () => {
     let sql = transactions.reqToSql({query: {'account.id': `${shard}.${realm}.48`}});
     let res = await sqlConnection.query(sql.query, sql.params);
     expect(res.rowCount).toEqual(3);
@@ -284,7 +291,7 @@ test('DB integration test - transactions - single valid account - 1 txn 3 xfer',
     );
 });
 
-test('DB integration test - transactions - invalid account', async () => {
+test('DB integration test - transactions.reqToSql - invalid account', async () => {
     let sql = transactions.reqToSql({query: {'account.id': '0.17.666'}});
     let res = await sqlConnection.query(sql.query, sql.params);
     expect(res.rowCount).toEqual(0);
@@ -295,7 +302,7 @@ fs.readdirSync(specPath).forEach(function(file) {
     let p = path.join(specPath, file);
     let specText = fs.readFileSync(p, 'utf8');
     var spec = JSON.parse(specText);
-    test(`Db integration test - ${file} - ${spec.url}`, async () => {
+    test(`DB integration test - ${file} - ${spec.url}`, async () => {
         let response = await request(server).get(spec.url);
         expect(response.status).toEqual(spec.responseStatus);
         expect(JSON.parse(response.text)).toEqual(spec.responseJson);
