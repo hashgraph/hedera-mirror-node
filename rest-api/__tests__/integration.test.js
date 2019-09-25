@@ -39,6 +39,9 @@ const request = require('supertest');
 const server = require('../server');
 const  fs = require('fs');
 
+let oldPool;
+let oldShardNum;
+
 let dockerDb;
 let SqlConnectionPool = require('pg').Pool;
 let sqlConnection;
@@ -95,8 +98,10 @@ const instantiateDatabase = async function() {
         port: dbPort
     });
     // Until "server", "pool" and everything else is made non-static...
-    global.old_pool = global.pool;
+    oldPool = global.pool;
     global.pool = sqlConnection;
+    oldShardNum = process.env.SHARD_NUM;
+    process.env.SHARD_NUM = 0;
 
     await flywayMigrate();
     await setupData();
@@ -233,9 +238,13 @@ afterAll(() => {
         });
         dockerDb = null;
     }
-    if (global.old_pool) {
-        global.pool = global.old_pool;
-        global.old_pool = null;
+    if (oldPool !== null) {
+        global.pool = oldPool;
+        oldPool = null;
+    }
+    if (oldShardNum !== null) {
+        process.env.SHARD_NUM = oldShardNum;
+        oldShardNum = null;
     }
     if (process.env.CI) {
         let logPath = path.join(__dirname, '..', '..', 'logs', 'hedera_mirrornode_api_3000.log');
