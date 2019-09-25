@@ -1,7 +1,7 @@
 package com.hedera.logger;
 
 import com.google.protobuf.ByteString;
-import com.hedera.DBHelper;
+//import com.hedera.DBHelper;
 
 /*-
  * ‌
@@ -24,13 +24,28 @@ import com.hedera.DBHelper;
  */
 
 import com.hedera.IntegrationTest;
-import com.hedera.mirror.repository.TransactionsRepository;
+import com.hedera.mirror.domain.Entities;
+import com.hedera.mirror.domain.FileData;
+import com.hedera.mirror.domain.TransactionResult;
+import com.hedera.mirror.repository.ContractResultRepository;
+import com.hedera.mirror.repository.CryptoTransferListRepository;
+import com.hedera.mirror.repository.EntityRepository;
+import com.hedera.mirror.repository.EntityTypeRepository;
+import com.hedera.mirror.repository.FileDataRepository;
+import com.hedera.mirror.repository.LiveHashRepository;
+import com.hedera.mirror.repository.RecordFileRepository;
+import com.hedera.mirror.repository.TransactionRepository;
+import com.hedera.mirror.repository.TransactionResultRepository;
 import com.hedera.recordFileLogger.RecordFileLogger;
+import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.RealmID;
@@ -45,22 +60,29 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.io.TempDir;
+import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import java.nio.file.*;
+import java.time.Instant;
+import java.util.Optional;
+
 import javax.annotation.Resource;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @Testcontainers(disabledWithoutDocker = true)
 @TestMethodOrder(OrderAnnotation.class)
+@Sql("classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
 public class FileLoggerTestIT extends IntegrationTest {
 
     // transaction
@@ -73,18 +95,32 @@ public class FileLoggerTestIT extends IntegrationTest {
 	ResponseCodeEnum responseCode = ResponseCodeEnum.SUCCESS;
 
     @Resource
-    private TransactionsRepository transactionsRepository;
+    private TransactionRepository transactionRepository;
+    @Resource
+    private EntityRepository entityRepository;
+    @Resource
+    private ContractResultRepository contractResultRepository;
+    @Resource
+    private RecordFileRepository recordFileRepository;
+    @Resource
+    private CryptoTransferListRepository cryptoTransferListRepository;
+    @Resource
+    private LiveHashRepository liveHashRepository;
+    @Resource
+    private FileDataRepository fileDataRepository;
+    @Resource
+    private TransactionResultRepository transactionResultRepository;
+    @Resource
+    private EntityTypeRepository entityTypeRepository;
 
     @BeforeEach
     void before() throws Exception {
-    	DBHelper.transactionsRepository = transactionsRepository;
-		DBHelper.deleteDatabaseData();
 		assertTrue(RecordFileLogger.start());
 	}
 
     @AfterEach
     void after() {
-    	RecordFileLogger.finish();    	
+    	RecordFileLogger.finish();
     }
 
     @Test
@@ -92,15 +128,12 @@ public class FileLoggerTestIT extends IntegrationTest {
     @DisplayName("File Create test")
     void FileCreateTest() throws Exception {
 
-        DBHelper.deleteDatabaseData();
-
         // transaction
         // transaction.id
      	long payerAccount = 2;
      	AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(payerAccount).build();
      	long validStartSeconds = 1568895847L;
      	int validStartNanos = 190976000;
-     	long validStartNs = secondsAndNanos(validStartSeconds, validStartNanos);
      	Timestamp validStart = Timestamp.newBuilder().setSeconds(validStartSeconds).setNanos(validStartNanos).build();
      	TransactionID transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
         
@@ -113,271 +146,674 @@ public class FileLoggerTestIT extends IntegrationTest {
     	
     	Transaction transaction = fileCreateTransaction(memo, transactionId);
     	TransactionRecord record = transactionRecord(newFileId, memo, transactionId);
+    	TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();
+    	
+		RecordFileLogger.initFile("FileCreateTest");
+    	RecordFileLogger.storeRecord(transaction, record);
+    	RecordFileLogger.completeFile("", "");
+    	
+    	final Optional<com.hedera.mirror.domain.Transaction> dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp()));
+    	final Optional<Entities> dbFileEntity = entityRepository.findById(dbTransaction.get().getEntityId());
+    	final Optional<Entities> dbNodeEntity = entityRepository.findById(dbTransaction.get().getNodeAccountId());
+    	final Optional<Entities> dbPayerEntity = entityRepository.findById(dbTransaction.get().getPayerAccountId());
+    	final Optional<FileData> dbfileData = fileDataRepository.findById(dbTransaction.get().getConsensusNs());
+    	final Optional<TransactionResult> dbResult = transactionResultRepository.findById(dbTransaction.get().getResultId());
+    	final Long accountIdFor98 = entityRepository.findEntityByShardRealmNum(0L, 0L, 98L);
+    	final Long accountIdFor2002 = entityRepository.findEntityByShardRealmNum(0L, 0L, 2002L);
+    	final Long accountIdFor3 = entityRepository.findEntityByShardRealmNum(0L, 0L, 3L);
+        
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferListRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(1, fileDataRepository.count())
+                // record inputs
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), dbTransaction.get().getConsensusNs())
+                ,() -> assertEquals(record.getTransactionFee(), dbTransaction.get().getChargedTxFee())
+                // payer
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getShardNum(), dbPayerEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getRealmNum(), dbPayerEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getAccountNum(), dbPayerEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbPayerEntity.get().getEntityTypeId()).get().getName())
+                // transaction id
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()), dbTransaction.get().getValidStartNs())
+                // receipt
+                ,() -> assertEquals(record.getReceipt().getStatusValue(), dbResult.get().getProtobufId())
+                ,() -> assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.get().getResult())
+                ,() -> assertEquals(record.getReceipt().getFileID().getShardNum(), dbFileEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getReceipt().getFileID().getRealmNum(), dbFileEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getReceipt().getFileID().getFileNum(), dbFileEntity.get().getEntityNum())
+                ,() -> assertEquals("file", entityTypeRepository.findById(dbFileEntity.get().getEntityTypeId()).get().getName())
+                // record transfer list
+                ,() -> assertEquals(1000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor98).orElse(0L))
+                ,() -> assertEquals(-2000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor2002).orElse(0L))
+                ,() -> assertEquals(20, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor3).orElse(0L))
+                // transaction body inputs
+                ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
+                // node
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getShardNum(), dbNodeEntity.get().getEntityShard())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getRealmNum(), dbNodeEntity.get().getEntityRealm())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getAccountNum(), dbNodeEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbNodeEntity.get().getEntityTypeId()).get().getName())
+                //TODO transactionBody.getTransactionFee()
+                //TODO transactionBody.getTransactionValidDuration()
+                // transaction specifics
+                ,() -> assertEquals(fileCreateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity.get().getExpiryTimeSeconds())
+                ,() -> assertEquals(fileCreateTransactionBody.getExpirationTime().getNanos(), dbFileEntity.get().getExpiryTimeNanos())
+                ,() -> assertEquals(Utility.timeStampInNanos(fileCreateTransactionBody.getExpirationTime()), dbFileEntity.get().getExpiryTimeNs())
+                ,() -> assertArrayEquals(fileCreateTransactionBody.getKeys().toByteArray(), dbFileEntity.get().getKey())
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.get().getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.get().getProxyAccountId())
+                ,() -> assertFalse(dbFileEntity.get().isDeleted())
+                // file data
+                ,() -> assertArrayEquals(fileCreateTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
+                
+                //TODO transaction.getSigMap()
+                
+         );    	
+    }
+        
+    @Test
+    @Order(2)
+    @DisplayName("File Append to existing test")
+    void FileAppendToExistingTest() throws Exception {
+
+        // transaction
+        // transaction.id
+     	long payerAccount = 2;
+     	AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(payerAccount).build();
+     	Timestamp validStart = Utility.instantToTimestamp(Instant.now());
+     	TransactionID transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+        
+    	// record and transaction
+        String memo = "File append memo";
+
+    	// record result
+    	long newFile = 1001;
+    	FileID appendFileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(newFile).build();
+
+		RecordFileLogger.initFile("FileAppendTest");
+
+		// first create the file
+    	Transaction transaction = fileCreateTransaction(memo, transactionId);
+    	TransactionRecord recordCreate = transactionRecord(appendFileId, memo, transactionId);
+
+    	RecordFileLogger.storeRecord(transaction, recordCreate);
+    	
+    	// now append
+     	validStart = Utility.instantToTimestamp(Instant.now());
+     	transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+    	transaction = fileAppendTransaction(memo, transactionId, appendFileId);
+    	TransactionRecord record = transactionRecord(appendFileId, memo, transactionId);
+    	TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
     	
     	RecordFileLogger.storeRecord(transaction, record);
-        
-        System.out.println(transactionsRepository.count());
-    	assertAll(
-                () -> assertEquals(5, DBHelper.countRecordFiles())
-                ,() -> assertEquals(14, transactionsRepository.count()) //DBHelper.countTransactions())
-                ,() -> assertEquals(7, DBHelper.countEntities())
-                ,() -> assertEquals(0, DBHelper.countContractResult())
-                ,() -> assertEquals(54, DBHelper.countCryptoTransferLists())
-                ,() -> assertEquals(0, DBHelper.countLiveHashes())
-                ,() -> assertEquals(7, DBHelper.countFileData())
-        );    	
-    }
-        
-//    @Test
-//    @Order(2)
-//    @DisplayName("Parse record files - check simple file create")
-//    void parseRecordFilesCheckFileCreateSimple() throws Exception {
-//    	// connect to database, read data, assert values
-//    	long nodeAccount = 3;
-//    	String memo = "File create memo";
-//    	String transactionType = "FILECREATE";
-//    	String result = "SUCCESS";
-//    	String fileData = "Hedera hashgraph is great!";
-//    	long payerAccount = 2;
-//    	long txFee = 53968962;
-//    	long initialBalance = 0;
-//    	long newFile = 1001;
-//    	String recordFile = files[0].getName();
-//    	long validStartNS = 1568895847190976000L;
-//    	long consensusNs = 1568895858019452000L;
-//    	long expiryTimeSeconds = 1571487857L;
-//    	long expiryTimeNanos = 181579000L;
-//    	long expiryTimeNs = 1571487857181579000L;
-//    	String key = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
-//    			
-//    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newFile, recordFile, consensusNs);
-//
-//    	DBEntity entity = new DBEntity();
-//    	entity.getEntityDetails(transaction.cudEntity);
-//    	
-//    	String dbFileData = DBFile.getFileData(consensusNs);
-//
-//    	assertAll(
-//    	    	() -> assertEquals(3, DBCryptoTransfers.checkCount(transaction.consensusNs))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -53968962))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 2111740))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 51857222))
-//    	    	,() -> assertEquals(0, entity.autoRenewPeriod)
-//    	    	,() -> assertEquals(0, entity.proxyAccountNum)
-//    	    	,() -> assertEquals(key, entity.key)
-//    	    	,() -> assertNull(entity.ed25519KeyHex)
-//    	    	,() -> assertEquals(newFile, entity.entityNum)
-//    	    	,() -> assertEquals(0, entity.entityShard)
-//    	    	,() -> assertEquals(0, entity.entityRealm)
-//    	    	,() -> assertEquals(type, entity.entityType)
-//    	    	,() -> assertFalse(entity.deleted)
-//    	    	,() -> assertEquals(fileData, dbFileData)
-//    	    	,() -> assertEquals(expiryTimeSeconds, entity.expiryTimeSeconds)
-//    	    	,() -> assertEquals(expiryTimeNanos, entity.expiryTimeNanos)
-//    	    	,() -> assertEquals(expiryTimeNs, entity.expiryTimeNs)
-//        );    	
-//    }
-//
-//    @Test
-//    @Order(2)
-//    @DisplayName("Parse record files - check file append 1")
-//    void parseRecordFilesCheckFirstFileAppend() throws Exception {
-//    	// connect to database, read data, assert values
-//    	long nodeAccount = 3;
-//    	long payerAccount = 2;
-//    	String memo = "File append memo 1";
-//    	String transactionType = "FILEAPPEND";
-//    	String result = "SUCCESS";
-//    	String fileData = "... but it gets better !";
-//    	long txFee = 33028498;
-//    	long newFile = 1002;
-//    	long validStartNS = 1568895850066517000L;
-//    	long consensusNs = 1568895860135324000L;
-//    	long initialBalance = 0;
-//    	String recordFile = files[1].getName();
-//    	long expiryTimeSeconds = 1571487859L;
-//    	long expiryTimeNanos = 51103000L;
-//    	long expiryTimeNs = 1571487859051103000L;
-//    	String key = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
-//
-//    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newFile, recordFile, consensusNs);
-//    	DBEntity entity = new DBEntity();
-//    	entity.getEntityDetails(transaction.cudEntity);
-//
-//    	String dbFileData = DBFile.getFileData(consensusNs);
-//
-//    	assertAll(
-//    	    	() -> assertEquals(3, DBCryptoTransfers.checkCount(transaction.consensusNs))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -33028498))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 2012025))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 31016473))
-//    	    	,() -> assertEquals(0, entity.autoRenewPeriod)
-//    	    	,() -> assertEquals(0, entity.proxyAccountNum)
-//    	    	,() -> assertEquals(key, entity.key)
-//    	    	,() -> assertEquals(newFile, entity.entityNum)
-//    	    	,() -> assertEquals(0, entity.entityShard)
-//    	    	,() -> assertEquals(0, entity.entityRealm)
-//    	    	,() -> assertEquals(type, entity.entityType)
-//    	    	,() -> assertFalse(entity.deleted)
-//    	    	,() -> assertEquals(fileData, dbFileData)
-//    	    	,() -> assertEquals(expiryTimeNanos, entity.expiryTimeNanos)
-//    	    	,() -> assertEquals(expiryTimeSeconds, entity.expiryTimeSeconds)
-//    	    	,() -> assertEquals(expiryTimeNs, entity.expiryTimeNs)
-//        );    	
-//    }
-//
-//    @Test
-//    @Order(2)
-//    @DisplayName("Parse record files - check file append 2")
-//    void parseRecordFilesCheckSecondFileAppend() throws Exception {
-//    	// connect to database, read data, assert values
-//    	long nodeAccount = 3;
-//    	long payerAccount = 2;
-//    	String memo = "File append memo 2";
-//    	String transactionType = "FILEAPPEND";
-//    	String result = "SUCCESS";
-//    	String fileData = "... and better !";
-//    	long txFee = 32958971;
-//    	long newFile = 1002;
-//    	long validStartNS = 1568895851104674000L;
-//    	long consensusNs = 1568895861175848000L;
-//    	long initialBalance = 0;
-//    	String recordFile = files[1].getName();
-//    	long expiryTimeSeconds = 1571487859L;
-//    	long expiryTimeNanos = 51103000L;
-//    	long expiryTimeNs = 1571487859051103000L;
-//    	String key = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
-//    			
-//    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newFile, recordFile, consensusNs);
-//    	DBEntity entity = new DBEntity();
-//    	entity.getEntityDetails(transaction.cudEntity);
-//
-//    	String dbFileData = DBFile.getFileData(consensusNs);
-//
-//    	assertAll(
-//    	    	() -> assertEquals(3, DBCryptoTransfers.checkCount(transaction.consensusNs))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -32958971))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 2007219))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 30951752))
-//    	    	,() -> assertEquals(0, entity.autoRenewPeriod)
-//    	    	,() -> assertEquals(0, entity.proxyAccountNum)
-//    	    	,() -> assertEquals(key, entity.key)
-//    	    	,() -> assertEquals(newFile, entity.entityNum)
-//    	    	,() -> assertEquals(0, entity.entityShard)
-//    	    	,() -> assertEquals(0, entity.entityRealm)
-//    	    	,() -> assertEquals(type, entity.entityType)
-//    	    	,() -> assertFalse(entity.deleted)
-//    	    	,() -> assertEquals(fileData, dbFileData)
-//    	    	,() -> assertEquals(expiryTimeNanos, entity.expiryTimeNanos)
-//    	    	,() -> assertEquals(expiryTimeSeconds, entity.expiryTimeSeconds)
-//    	    	,() -> assertEquals(expiryTimeNs, entity.expiryTimeNs)
-//        );    	
-//    }
-//    @Test
-//    @Order(2)
-//    @DisplayName("Parse record files - check file update")
-//    void parseRecordFilesCheckFileUpdate() throws Exception {
-//    	// connect to database, read data, assert values
-//    	long nodeAccount = 3;
-//    	long payerAccount = 2;
-//    	String memo = "File update memo";
-//    	String transactionType = "FILEUPDATE";
-//    	String result = "SUCCESS";
-//    	String fileData = "So good";
-//    	long txFee = 539219;
-//    	long newFile = 1003;
-//    	long validStartNS = 1568895853150434000L;
-//    	long consensusNs = 1568895863199520000L;
-//    	long initialBalance = 0;
-//    	String recordFile = files[1].getName();
-//    	long expiryTimeSeconds = 1569414263L;
-//    	long expiryTimeNanos = 148731000L;
-//    	long expiryTimeNs = 1569414263148731000L;
-//    	String key = "0a221220aba6af46b144798057f9e9db7e07f1fd6b02a593afa8bf2bb6bf59e3c85b3377";
-//
-//    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newFile, recordFile, consensusNs);
-//    	DBEntity entity = new DBEntity();
-//    	entity.getEntityDetails(transaction.cudEntity);
-//
-//    	String dbFileData = DBFile.getFileData(consensusNs);
-//    	assertAll(
-//    	    	() -> assertEquals(3, DBCryptoTransfers.checkCount(transaction.consensusNs))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -539219))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 21054))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 518165))
-//    	    	,() -> assertEquals(0, entity.autoRenewPeriod)
-//    	    	,() -> assertEquals(0, entity.proxyAccountNum)
-//    	    	,() -> assertEquals(key, entity.key)
-//    	    	,() -> assertEquals(newFile, entity.entityNum)
-//    	    	,() -> assertEquals(0, entity.entityShard)
-//    	    	,() -> assertEquals(0, entity.entityRealm)
-//    	    	,() -> assertEquals(type, entity.entityType)
-//    	    	,() -> assertFalse(entity.deleted)
-//    	    	,() -> assertEquals(fileData, dbFileData)
-//    	    	,() -> assertEquals(expiryTimeNanos, entity.expiryTimeNanos)
-//    	    	,() -> assertEquals(expiryTimeSeconds, entity.expiryTimeSeconds)
-//    	    	,() -> assertEquals(expiryTimeNs, entity.expiryTimeNs)
-//        );    	
-//    }
-//    @Test
-//    @Order(2)
-//    @DisplayName("Parse record files - check file delete")
-//    void parseRecordFilesCheckFileDelete() throws Exception {
-//    	// connect to database, read data, assert values
-//    	long nodeAccount = 3;
-//    	long payerAccount = 2;
-//    	String memo = "File delete memo";
-//    	String transactionType = "FILEDELETE";
-//    	String result = "SUCCESS";
-//    	String fileData = "";
-//    	long txFee = 5908607;
-//    	long newFile = 1004;
-//    	long validStartNS = 1568895855194216000L;
-//    	long consensusNs = 1568895865213269001L;
-//    	long initialBalance = 0;
-//    	String recordFile = files[2].getName();
-//    	long expiryTimeSeconds = 1571487864L;
-//    	long expiryTimeNanos = 175326000L;
-//    	long expiryTimeNs = 1571487864175326000L;
-//    	String key = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
-//
-//    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newFile, recordFile, consensusNs);
-//    	DBEntity entity = new DBEntity();
-//    	entity.getEntityDetails(transaction.cudEntity);
-//
-//    	String dbFileData = DBFile.getFileData(consensusNs);
-//    	assertAll(
-//    	    	() -> assertEquals(3, DBCryptoTransfers.checkCount(transaction.consensusNs))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -5908607))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 359981))
-//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 5548626))
-//    	    	,() -> assertEquals(0, entity.autoRenewPeriod)
-//    	    	,() -> assertEquals(0, entity.proxyAccountNum)
-//    	    	,() -> assertEquals(key, entity.key)
-//    	    	,() -> assertEquals(newFile, entity.entityNum)
-//    	    	,() -> assertEquals(0, entity.entityShard)
-//    	    	,() -> assertEquals(0, entity.entityRealm)
-//    	    	,() -> assertEquals(type, entity.entityType)
-//    	    	,() -> assertTrue(entity.deleted)
-//    	    	,() -> assertEquals(fileData, dbFileData)
-//    	    	,() -> assertEquals(expiryTimeNanos, entity.expiryTimeNanos)
-//    	    	,() -> assertEquals(expiryTimeSeconds, entity.expiryTimeSeconds)
-//    	    	,() -> assertEquals(expiryTimeNs, entity.expiryTimeNs)
-//        );    	
-//    }
 
-    private Long secondsAndNanos(long seconds, int nanos) {
-	  Long SCALAR = 1_000_000_000L;
-	  return seconds * SCALAR + nanos;
+    	RecordFileLogger.completeFile("", "");
+    	
+    	final Optional<com.hedera.mirror.domain.Transaction> dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp()));
+    	final Optional<Entities> dbFileEntity = entityRepository.findById(dbTransaction.get().getEntityId());
+    	final Optional<Entities> dbNodeEntity = entityRepository.findById(dbTransaction.get().getNodeAccountId());
+    	final Optional<Entities> dbPayerEntity = entityRepository.findById(dbTransaction.get().getPayerAccountId());
+    	final Optional<FileData> dbfileData = fileDataRepository.findById(dbTransaction.get().getConsensusNs());
+    	final Optional<TransactionResult> dbResult = transactionResultRepository.findById(dbTransaction.get().getResultId());
+    	final Long accountIdFor98 = entityRepository.findEntityByShardRealmNum(0L, 0L, 98L);
+    	final Long accountIdFor2002 = entityRepository.findEntityByShardRealmNum(0L, 0L, 2002L);
+    	final Long accountIdFor3 = entityRepository.findEntityByShardRealmNum(0L, 0L, 3L);
+        
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(2, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(6, cryptoTransferListRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(2, fileDataRepository.count())
+                // record inputs
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), dbTransaction.get().getConsensusNs())
+                ,() -> assertEquals(record.getTransactionFee(), dbTransaction.get().getChargedTxFee())
+                // payer
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getShardNum(), dbPayerEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getRealmNum(), dbPayerEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getAccountNum(), dbPayerEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbPayerEntity.get().getEntityTypeId()).get().getName())
+                // transaction id
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()), dbTransaction.get().getValidStartNs())
+                // receipt
+                ,() -> assertEquals(record.getReceipt().getStatusValue(), dbResult.get().getProtobufId())
+                ,() -> assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.get().getResult())
+                ,() -> assertEquals(record.getReceipt().getFileID().getShardNum(), dbFileEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getReceipt().getFileID().getRealmNum(), dbFileEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getReceipt().getFileID().getFileNum(), dbFileEntity.get().getEntityNum())
+                ,() -> assertEquals("file", entityTypeRepository.findById(dbFileEntity.get().getEntityTypeId()).get().getName())
+                // record transfer list
+                ,() -> assertEquals(1000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor98).orElse(0L))
+                ,() -> assertEquals(-2000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor2002).orElse(0L))
+                ,() -> assertEquals(20, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor3).orElse(0L))
+                // transaction body inputs
+                ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
+                // node
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getShardNum(), dbNodeEntity.get().getEntityShard())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getRealmNum(), dbNodeEntity.get().getEntityRealm())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getAccountNum(), dbNodeEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbNodeEntity.get().getEntityTypeId()).get().getName())
+                //TODO transactionBody.getTransactionFee()
+                //TODO transactionBody.getTransactionValidDuration()
+                // Additional entity checks
+                ,() -> assertNotNull(dbFileEntity.get().getExpiryTimeSeconds())
+                ,() -> assertNotNull(dbFileEntity.get().getExpiryTimeNanos())
+                ,() -> assertNotNull(dbFileEntity.get().getExpiryTimeNs())
+                ,() -> assertNull(dbFileEntity.get().getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.get().getProxyAccountId())
+                ,() -> assertFalse(dbFileEntity.get().isDeleted())
+                // file data
+                ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
+                
+                //TODO transaction.getSigMap()
+                
+         );    	
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("File Append to new test")
+    void FileAppendToNewTest() throws Exception {
+
+        // transaction
+        // transaction.id
+     	long payerAccount = 2;
+     	AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(payerAccount).build();
+     	Timestamp validStart = Utility.instantToTimestamp(Instant.now());
+     	TransactionID transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+        
+    	// record and transaction
+        String memo = "File append memo";
+
+    	// record result
+    	long newFile = 1001;
+    	FileID appendFileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(newFile).build();
+
+		RecordFileLogger.initFile("FileAppendTest");
+
+     	Transaction transaction = fileAppendTransaction(memo, transactionId, appendFileId);
+    	TransactionRecord record = transactionRecord(appendFileId, memo, transactionId);
+    	TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
+    	
+    	RecordFileLogger.storeRecord(transaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+    	
+    	final Optional<com.hedera.mirror.domain.Transaction> dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp()));
+    	final Optional<Entities> dbFileEntity = entityRepository.findById(dbTransaction.get().getEntityId());
+    	final Optional<Entities> dbNodeEntity = entityRepository.findById(dbTransaction.get().getNodeAccountId());
+    	final Optional<Entities> dbPayerEntity = entityRepository.findById(dbTransaction.get().getPayerAccountId());
+    	final Optional<FileData> dbfileData = fileDataRepository.findById(dbTransaction.get().getConsensusNs());
+    	final Optional<TransactionResult> dbResult = transactionResultRepository.findById(dbTransaction.get().getResultId());
+    	final Long accountIdFor98 = entityRepository.findEntityByShardRealmNum(0L, 0L, 98L);
+    	final Long accountIdFor2002 = entityRepository.findEntityByShardRealmNum(0L, 0L, 2002L);
+    	final Long accountIdFor3 = entityRepository.findEntityByShardRealmNum(0L, 0L, 3L);
+        
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferListRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(1, fileDataRepository.count())
+                // record inputs
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), dbTransaction.get().getConsensusNs())
+                ,() -> assertEquals(record.getTransactionFee(), dbTransaction.get().getChargedTxFee())
+                // payer
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getShardNum(), dbPayerEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getRealmNum(), dbPayerEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getAccountNum(), dbPayerEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbPayerEntity.get().getEntityTypeId()).get().getName())
+                // transaction id
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()), dbTransaction.get().getValidStartNs())
+                // receipt
+                ,() -> assertEquals(record.getReceipt().getStatusValue(), dbResult.get().getProtobufId())
+                ,() -> assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.get().getResult())
+                ,() -> assertEquals(record.getReceipt().getFileID().getShardNum(), dbFileEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getReceipt().getFileID().getRealmNum(), dbFileEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getReceipt().getFileID().getFileNum(), dbFileEntity.get().getEntityNum())
+                ,() -> assertEquals("file", entityTypeRepository.findById(dbFileEntity.get().getEntityTypeId()).get().getName())
+                // record transfer list
+                ,() -> assertEquals(1000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor98).orElse(0L))
+                ,() -> assertEquals(-2000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor2002).orElse(0L))
+                ,() -> assertEquals(20, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor3).orElse(0L))
+                // transaction body inputs
+                ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
+                // node
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getShardNum(), dbNodeEntity.get().getEntityShard())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getRealmNum(), dbNodeEntity.get().getEntityRealm())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getAccountNum(), dbNodeEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbNodeEntity.get().getEntityTypeId()).get().getName())
+                //TODO transactionBody.getTransactionFee()
+                //TODO transactionBody.getTransactionValidDuration()
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.get().getExpiryTimeSeconds())
+                ,() -> assertNull(dbFileEntity.get().getExpiryTimeNanos())
+                ,() -> assertNull(dbFileEntity.get().getExpiryTimeNs())
+                ,() -> assertNull(dbFileEntity.get().getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.get().getProxyAccountId())
+                ,() -> assertFalse(dbFileEntity.get().isDeleted())
+                // file data
+                ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
+                
+                //TODO transaction.getSigMap()
+                
+         );    	
+    }
+
+    @Test
+    @Order(4)
+    @DisplayName("File Update to existing test")
+    void FileUpdateToExistingTest() throws Exception {
+
+        // transaction
+        // transaction.id
+     	long payerAccount = 2;
+     	AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(payerAccount).build();
+     	Timestamp validStart = Utility.instantToTimestamp(Instant.now());
+     	TransactionID transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+        
+    	// record and transaction
+        String memo = "File update memo";
+
+    	// record result
+    	long newFile = 1001;
+    	FileID updateFileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(newFile).build();
+
+		RecordFileLogger.initFile("FileUpdateTest");
+
+		// first create the file
+    	Transaction transaction = fileCreateTransaction(memo, transactionId);
+    	TransactionRecord recordCreate = transactionRecord(updateFileId, memo, transactionId);
+
+    	RecordFileLogger.storeRecord(transaction, recordCreate);
+    	
+    	// now update
+     	validStart = Utility.instantToTimestamp(Instant.now());
+     	transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+    	transaction = fileUpdateTransaction(memo, transactionId, updateFileId);
+    	TransactionRecord record = transactionRecord(updateFileId, memo, transactionId);
+    	TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
+    	
+    	RecordFileLogger.storeRecord(transaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+    	
+    	final Optional<com.hedera.mirror.domain.Transaction> dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp()));
+    	final Optional<Entities> dbFileEntity = entityRepository.findById(dbTransaction.get().getEntityId());
+    	final Optional<Entities> dbNodeEntity = entityRepository.findById(dbTransaction.get().getNodeAccountId());
+    	final Optional<Entities> dbPayerEntity = entityRepository.findById(dbTransaction.get().getPayerAccountId());
+    	final Optional<FileData> dbfileData = fileDataRepository.findById(dbTransaction.get().getConsensusNs());
+    	final Optional<TransactionResult> dbResult = transactionResultRepository.findById(dbTransaction.get().getResultId());
+    	final Long accountIdFor98 = entityRepository.findEntityByShardRealmNum(0L, 0L, 98L);
+    	final Long accountIdFor2002 = entityRepository.findEntityByShardRealmNum(0L, 0L, 2002L);
+    	final Long accountIdFor3 = entityRepository.findEntityByShardRealmNum(0L, 0L, 3L);
+        
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(2, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(6, cryptoTransferListRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(2, fileDataRepository.count())
+                // record inputs
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), dbTransaction.get().getConsensusNs())
+                ,() -> assertEquals(record.getTransactionFee(), dbTransaction.get().getChargedTxFee())
+                // payer
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getShardNum(), dbPayerEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getRealmNum(), dbPayerEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getAccountNum(), dbPayerEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbPayerEntity.get().getEntityTypeId()).get().getName())
+                // transaction id
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()), dbTransaction.get().getValidStartNs())
+                // receipt
+                ,() -> assertEquals(record.getReceipt().getStatusValue(), dbResult.get().getProtobufId())
+                ,() -> assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.get().getResult())
+                ,() -> assertEquals(record.getReceipt().getFileID().getShardNum(), dbFileEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getReceipt().getFileID().getRealmNum(), dbFileEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getReceipt().getFileID().getFileNum(), dbFileEntity.get().getEntityNum())
+                ,() -> assertEquals("file", entityTypeRepository.findById(dbFileEntity.get().getEntityTypeId()).get().getName())
+                // record transfer list
+                ,() -> assertEquals(1000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor98).orElse(0L))
+                ,() -> assertEquals(-2000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor2002).orElse(0L))
+                ,() -> assertEquals(20, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor3).orElse(0L))
+                // transaction body inputs
+                ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
+                // node
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getShardNum(), dbNodeEntity.get().getEntityShard())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getRealmNum(), dbNodeEntity.get().getEntityRealm())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getAccountNum(), dbNodeEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbNodeEntity.get().getEntityTypeId()).get().getName())
+                //TODO transactionBody.getTransactionFee()
+                //TODO transactionBody.getTransactionValidDuration()
+                ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity.get().getExpiryTimeSeconds())
+                ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity.get().getExpiryTimeNanos())
+                ,() -> assertEquals(Utility.timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity.get().getExpiryTimeNs())
+                ,() -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.get().getKey())
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.get().getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.get().getProxyAccountId())
+                ,() -> assertFalse(dbFileEntity.get().isDeleted())
+                // file data
+                ,() -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
+                
+                //TODO transaction.getSigMap()
+                
+         );    	
     }
     
+    @Test
+    @Order(5)
+    @DisplayName("File Update to new test")
+    void FileUpdateToNewTest() throws Exception {
+
+        // transaction
+        // transaction.id
+     	long payerAccount = 2;
+     	AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(payerAccount).build();
+     	Timestamp validStart = Utility.instantToTimestamp(Instant.now());
+     	TransactionID transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+        
+    	// record and transaction
+        String memo = "File update memo";
+
+    	// record result
+    	long newFile = 1001;
+    	FileID updateFileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(newFile).build();
+
+		RecordFileLogger.initFile("FileUpdateTest");
+
+    	validStart = Utility.instantToTimestamp(Instant.now());
+     	transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+     	Transaction transaction = fileUpdateTransaction(memo, transactionId, updateFileId);
+    	TransactionRecord record = transactionRecord(updateFileId, memo, transactionId);
+    	TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
+    	
+    	RecordFileLogger.storeRecord(transaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+    	
+    	final Optional<com.hedera.mirror.domain.Transaction> dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp()));
+    	final Optional<Entities> dbFileEntity = entityRepository.findById(dbTransaction.get().getEntityId());
+    	final Optional<Entities> dbNodeEntity = entityRepository.findById(dbTransaction.get().getNodeAccountId());
+    	final Optional<Entities> dbPayerEntity = entityRepository.findById(dbTransaction.get().getPayerAccountId());
+    	final Optional<FileData> dbfileData = fileDataRepository.findById(dbTransaction.get().getConsensusNs());
+    	final Optional<TransactionResult> dbResult = transactionResultRepository.findById(dbTransaction.get().getResultId());
+    	final Long accountIdFor98 = entityRepository.findEntityByShardRealmNum(0L, 0L, 98L);
+    	final Long accountIdFor2002 = entityRepository.findEntityByShardRealmNum(0L, 0L, 2002L);
+    	final Long accountIdFor3 = entityRepository.findEntityByShardRealmNum(0L, 0L, 3L);
+        
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferListRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(1, fileDataRepository.count())
+                // record inputs
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), dbTransaction.get().getConsensusNs())
+                ,() -> assertEquals(record.getTransactionFee(), dbTransaction.get().getChargedTxFee())
+                // payer
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getShardNum(), dbPayerEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getRealmNum(), dbPayerEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getAccountNum(), dbPayerEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbPayerEntity.get().getEntityTypeId()).get().getName())
+                // transaction id
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()), dbTransaction.get().getValidStartNs())
+                // receipt
+                ,() -> assertEquals(record.getReceipt().getStatusValue(), dbResult.get().getProtobufId())
+                ,() -> assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.get().getResult())
+                ,() -> assertEquals(record.getReceipt().getFileID().getShardNum(), dbFileEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getReceipt().getFileID().getRealmNum(), dbFileEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getReceipt().getFileID().getFileNum(), dbFileEntity.get().getEntityNum())
+                ,() -> assertEquals("file", entityTypeRepository.findById(dbFileEntity.get().getEntityTypeId()).get().getName())
+                // record transfer list
+                ,() -> assertEquals(1000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor98).orElse(0L))
+                ,() -> assertEquals(-2000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor2002).orElse(0L))
+                ,() -> assertEquals(20, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor3).orElse(0L))
+                // transaction body inputs
+                ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
+                // node
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getShardNum(), dbNodeEntity.get().getEntityShard())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getRealmNum(), dbNodeEntity.get().getEntityRealm())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getAccountNum(), dbNodeEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbNodeEntity.get().getEntityTypeId()).get().getName())
+                //TODO transactionBody.getTransactionFee()
+                //TODO transactionBody.getTransactionValidDuration()
+                ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity.get().getExpiryTimeSeconds())
+                ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity.get().getExpiryTimeNanos())
+                ,() -> assertEquals(Utility.timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity.get().getExpiryTimeNs())
+                ,() -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.get().getKey())
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.get().getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.get().getProxyAccountId())
+                ,() -> assertFalse(dbFileEntity.get().isDeleted())
+                // file data
+                ,() -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
+                
+                //TODO transaction.getSigMap()
+                
+         );    	
+    }    
+
+    @Test
+    @Order(6)
+    @DisplayName("File Delete to existing test")
+    void FileDeleteToExistingTest() throws Exception {
+
+        // transaction
+        // transaction.id
+     	long payerAccount = 2;
+     	AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(payerAccount).build();
+     	Timestamp validStart = Utility.instantToTimestamp(Instant.now());
+     	TransactionID transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+        
+    	// record and transaction
+        String memo = "File delete memo";
+
+    	// record result
+    	long deleteFile = 1001;
+    	FileID deleteFileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(deleteFile).build();
+
+		RecordFileLogger.initFile("FileDeleteTest");
+
+		// first create the file
+    	Transaction transaction = fileCreateTransaction(memo, transactionId);
+    	TransactionRecord recordCreate = transactionRecord(deleteFileId, memo, transactionId);
+
+    	RecordFileLogger.storeRecord(transaction, recordCreate);
+    	
+    	// now update
+     	validStart = Utility.instantToTimestamp(Instant.now());
+     	transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+    	transaction = fileDeleteTransaction(memo, transactionId, deleteFileId);
+    	TransactionRecord record = transactionRecord(deleteFileId, memo, transactionId);
+    	TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	
+    	RecordFileLogger.storeRecord(transaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+    	
+    	final Optional<com.hedera.mirror.domain.Transaction> dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp()));
+    	final Optional<Entities> dbFileEntity = entityRepository.findById(dbTransaction.get().getEntityId());
+    	final Optional<Entities> dbNodeEntity = entityRepository.findById(dbTransaction.get().getNodeAccountId());
+    	final Optional<Entities> dbPayerEntity = entityRepository.findById(dbTransaction.get().getPayerAccountId());
+    	final Optional<TransactionResult> dbResult = transactionResultRepository.findById(dbTransaction.get().getResultId());
+    	final Long accountIdFor98 = entityRepository.findEntityByShardRealmNum(0L, 0L, 98L);
+    	final Long accountIdFor2002 = entityRepository.findEntityByShardRealmNum(0L, 0L, 2002L);
+    	final Long accountIdFor3 = entityRepository.findEntityByShardRealmNum(0L, 0L, 3L);
+        
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(2, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(6, cryptoTransferListRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(1, fileDataRepository.count())
+                // record inputs
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), dbTransaction.get().getConsensusNs())
+                ,() -> assertEquals(record.getTransactionFee(), dbTransaction.get().getChargedTxFee())
+                // payer
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getShardNum(), dbPayerEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getRealmNum(), dbPayerEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getAccountNum(), dbPayerEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbPayerEntity.get().getEntityTypeId()).get().getName())
+                // transaction id
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()), dbTransaction.get().getValidStartNs())
+                // receipt
+                ,() -> assertEquals(record.getReceipt().getStatusValue(), dbResult.get().getProtobufId())
+                ,() -> assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.get().getResult())
+                ,() -> assertEquals(record.getReceipt().getFileID().getShardNum(), dbFileEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getReceipt().getFileID().getRealmNum(), dbFileEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getReceipt().getFileID().getFileNum(), dbFileEntity.get().getEntityNum())
+                ,() -> assertEquals("file", entityTypeRepository.findById(dbFileEntity.get().getEntityTypeId()).get().getName())
+                // record transfer list
+                ,() -> assertEquals(1000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor98).orElse(0L))
+                ,() -> assertEquals(-2000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor2002).orElse(0L))
+                ,() -> assertEquals(20, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor3).orElse(0L))
+                // transaction body inputs
+                ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
+                // node
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getShardNum(), dbNodeEntity.get().getEntityShard())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getRealmNum(), dbNodeEntity.get().getEntityRealm())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getAccountNum(), dbNodeEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbNodeEntity.get().getEntityTypeId()).get().getName())
+                //TODO transactionBody.getTransactionFee()
+                //TODO transactionBody.getTransactionValidDuration()
+                ,() -> assertTrue(dbFileEntity.get().isDeleted())
+                // Additional entity checks
+                ,() -> assertNotNull(dbFileEntity.get().getKey())
+                ,() -> assertNotNull(dbFileEntity.get().getExpiryTimeSeconds())
+                ,() -> assertNotNull(dbFileEntity.get().getExpiryTimeNanos())
+                ,() -> assertNotNull(dbFileEntity.get().getExpiryTimeNs())
+                ,() -> assertNull(dbFileEntity.get().getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.get().getProxyAccountId())
+                
+                //TODO transaction.getSigMap()
+                
+         );    	
+    }
+    @Test
+    @Order(7)
+    @DisplayName("File Delete to new test")
+    void FileDeleteToNewTest() throws Exception {
+
+        // transaction
+        // transaction.id
+     	long payerAccount = 2;
+     	AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(payerAccount).build();
+     	Timestamp validStart = Utility.instantToTimestamp(Instant.now());
+     	TransactionID transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+        
+    	// record and transaction
+        String memo = "File delete memo";
+
+    	// record result
+    	long deleteFile = 1001;
+    	FileID deleteFileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(deleteFile).build();
+
+		RecordFileLogger.initFile("FileDeleteTest");
+
+     	validStart = Utility.instantToTimestamp(Instant.now());
+     	transactionId = TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+    	Transaction transaction = fileDeleteTransaction(memo, transactionId, deleteFileId);
+    	TransactionRecord record = transactionRecord(deleteFileId, memo, transactionId);
+    	TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	
+    	RecordFileLogger.storeRecord(transaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+    	
+    	final Optional<com.hedera.mirror.domain.Transaction> dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp()));
+    	final Optional<Entities> dbFileEntity = entityRepository.findById(dbTransaction.get().getEntityId());
+    	final Optional<Entities> dbNodeEntity = entityRepository.findById(dbTransaction.get().getNodeAccountId());
+    	final Optional<Entities> dbPayerEntity = entityRepository.findById(dbTransaction.get().getPayerAccountId());
+    	final Optional<TransactionResult> dbResult = transactionResultRepository.findById(dbTransaction.get().getResultId());
+    	final Long accountIdFor98 = entityRepository.findEntityByShardRealmNum(0L, 0L, 98L);
+    	final Long accountIdFor2002 = entityRepository.findEntityByShardRealmNum(0L, 0L, 2002L);
+    	final Long accountIdFor3 = entityRepository.findEntityByShardRealmNum(0L, 0L, 3L);
+        
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferListRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(0, fileDataRepository.count())
+                // record inputs
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), dbTransaction.get().getConsensusNs())
+                ,() -> assertEquals(record.getTransactionFee(), dbTransaction.get().getChargedTxFee())
+                // payer
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getShardNum(), dbPayerEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getRealmNum(), dbPayerEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getTransactionID().getAccountID().getAccountNum(), dbPayerEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbPayerEntity.get().getEntityTypeId()).get().getName())
+                // transaction id
+                ,() -> assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()), dbTransaction.get().getValidStartNs())
+                // receipt
+                ,() -> assertEquals(record.getReceipt().getStatusValue(), dbResult.get().getProtobufId())
+                ,() -> assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.get().getResult())
+                ,() -> assertEquals(record.getReceipt().getFileID().getShardNum(), dbFileEntity.get().getEntityShard())
+                ,() -> assertEquals(record.getReceipt().getFileID().getRealmNum(), dbFileEntity.get().getEntityRealm())
+                ,() -> assertEquals(record.getReceipt().getFileID().getFileNum(), dbFileEntity.get().getEntityNum())
+                ,() -> assertEquals("file", entityTypeRepository.findById(dbFileEntity.get().getEntityTypeId()).get().getName())
+                // record transfer list
+                ,() -> assertEquals(1000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor98).orElse(0L))
+                ,() -> assertEquals(-2000, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor2002).orElse(0L))
+                ,() -> assertEquals(20, cryptoTransferListRepository.amountByTransactionAndAccount(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountIdFor3).orElse(0L))
+                // transaction body inputs
+                ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
+                // node
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getShardNum(), dbNodeEntity.get().getEntityShard())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getRealmNum(), dbNodeEntity.get().getEntityRealm())
+                ,() -> assertEquals(transactionBody.getNodeAccountID().getAccountNum(), dbNodeEntity.get().getEntityNum())
+                ,() -> assertEquals("account", entityTypeRepository.findById(dbNodeEntity.get().getEntityTypeId()).get().getName())
+                //TODO transactionBody.getTransactionFee()
+                //TODO transactionBody.getTransactionValidDuration()
+                ,() -> assertTrue(dbFileEntity.get().isDeleted())
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.get().getKey())
+                ,() -> assertNull(dbFileEntity.get().getExpiryTimeSeconds())
+                ,() -> assertNull(dbFileEntity.get().getExpiryTimeNanos())
+                ,() -> assertNull(dbFileEntity.get().getExpiryTimeNs())
+                ,() -> assertNull(dbFileEntity.get().getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.get().getProxyAccountId())
+                
+                //TODO transaction.getSigMap()
+                
+         );    	
+    }
+
     private TransactionRecord transactionRecord(FileID fileId, String memo, TransactionID transactionId) {
     	TransactionRecord.Builder record = TransactionRecord.newBuilder();
 
     	// record
-    	long consensusSeconds = 1568895858L;
-    	int consensusNanos = 19452000;
-    	Timestamp consensusTimeStamp = Timestamp.newBuilder().setSeconds(consensusSeconds).setNanos(consensusNanos).build();
+    	Timestamp consensusTimeStamp = Utility.instantToTimestamp(Instant.now());
     	long[] transferAccounts = {98, 2002, 3};
     	long[] transferAmounts = {1000, -2000, 20};
 
@@ -438,6 +874,96 @@ public class FileLoggerTestIT extends IntegrationTest {
     	body.setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration).build());
     	// body transaction
     	body.setFileCreate(fileCreate.build());
+
+    	transaction.setBodyBytes(body.build().toByteString());
+    	//TODO-body.setSigMap(value);
+
+    	return transaction.build();
+    }
+    private Transaction fileAppendTransaction(String memo, TransactionID transactionId, FileID fileId) {
+    	
+    	Transaction.Builder transaction = Transaction.newBuilder();
+    	TransactionBody.Builder body = TransactionBody.newBuilder();
+    	FileAppendTransactionBody.Builder fileAppend = FileAppendTransactionBody.newBuilder();
+    	
+    	// file append
+     	long validDuration = 120;
+    	String fileData = "Hedera hashgraph is even better!";
+
+    	// Build a transaction
+    	fileAppend.setContents(ByteString.copyFromUtf8(fileData));
+    	//TODO - transactionBody.setNewRealmAdminKey(value);
+    	fileAppend.setFileID(fileId);
+
+    	// Transaction body
+    	body.setTransactionFee(txFee);
+    	body.setMemo(memo);
+    	body.setNodeAccountID(nodeAccount);
+    	body.setTransactionID(transactionId);
+    	body.setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration).build());
+    	// body transaction
+    	body.setFileAppend(fileAppend.build());
+
+    	transaction.setBodyBytes(body.build().toByteString());
+    	//TODO-body.setSigMap(value);
+
+    	return transaction.build();
+    }
+    private Transaction fileUpdateTransaction(String memo, TransactionID transactionId, FileID fileId) {
+    	
+    	Transaction.Builder transaction = Transaction.newBuilder();
+    	TransactionBody.Builder body = TransactionBody.newBuilder();
+    	FileUpdateTransactionBody.Builder fileUpdate = FileUpdateTransactionBody.newBuilder();
+    	String key = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
+    	
+    	// file update
+     	long validDuration = 120;
+    	String fileData = "Hedera hashgraph is even better!";
+
+    	// Build a transaction
+    	fileUpdate.setContents(ByteString.copyFromUtf8(fileData));
+    	//TODO - transactionBody.setNewRealmAdminKey(value);
+    	fileUpdate.setFileID(fileId);
+    	fileUpdate.setExpirationTime(Utility.instantToTimestamp(Instant.now()));
+
+    	KeyList.Builder keyList = KeyList.newBuilder();
+    	keyList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build());
+    	fileUpdate.setKeys(keyList);
+    	
+    	// Transaction body
+    	body.setTransactionFee(txFee);
+    	body.setMemo(memo);
+    	body.setNodeAccountID(nodeAccount);
+    	body.setTransactionID(transactionId);
+    	body.setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration).build());
+    	// body transaction
+    	body.setFileUpdate(fileUpdate.build());
+
+    	transaction.setBodyBytes(body.build().toByteString());
+    	//TODO-body.setSigMap(value);
+
+    	return transaction.build();
+    }
+    private Transaction fileDeleteTransaction(String memo, TransactionID transactionId, FileID fileId) {
+    	
+    	Transaction.Builder transaction = Transaction.newBuilder();
+    	TransactionBody.Builder body = TransactionBody.newBuilder();
+    	FileDeleteTransactionBody.Builder fileDelete = FileDeleteTransactionBody.newBuilder();
+    	
+    	// file delete
+     	long validDuration = 120;
+
+    	// Build a transaction
+     	fileDelete.setFileID(fileId);
+
+    	// Transaction body
+    	body.setTransactionFee(txFee);
+    	body.setMemo(memo);
+    	body.setNodeAccountID(nodeAccount);
+    	body.setTransactionID(transactionId);
+    	body.setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration).build());
+    	// body transaction
+    	body.setFileDelete(fileDelete.build());
 
     	transaction.setBodyBytes(body.build().toByteString());
     	//TODO-body.setSigMap(value);
