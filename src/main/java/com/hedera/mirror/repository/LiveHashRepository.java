@@ -1,4 +1,4 @@
-package com.hedera.mirror.domain;
+package com.hedera.mirror.repository;
 
 /*-
  * ‌
@@ -20,27 +20,8 @@ package com.hedera.mirror.domain;
  * ‍
  */
 
-import lombok.Data;
+import com.hedera.mirror.domain.LiveHash;
+import org.springframework.data.repository.CrudRepository;
 
-import javax.persistence.*;
-
-@Data
-@Entity
-@Table(name = "t_transactions")
-public class Transactions {
-
-    @Id
-    private long consensusNs;
-    
-    private long fkNodeAccId;
-    private byte[] memo;
-    private long fkTransTypeId;
-    private int fkResultId;
-    private long fkPayerAccId;
-    private long chargedTxFee;
-    private long initialBalance;
-    private long fkCudEntityId;
-    private long fkRecFileId;
-    private long validStartNs;
-    
+public interface LiveHashRepository extends CrudRepository<LiveHash, Long> {
 }
