@@ -367,6 +367,9 @@ public class Utility {
 		return b.array();
 	}
 
+	public static Timestamp instantToTimestamp(Instant instant) {
+		return Timestamp.newBuilder().setSeconds(instant.getEpochSecond()).setNanos(instant.getNano()).build();
+	}
 	/**
 	 * return a string which represents an AccountID
 	 * @param accountID
@@ -643,6 +646,27 @@ public class Utility {
 		}
 		return instant.getEpochSecond() * SCALAR + instant.getNano();
 	}
+	
+	/** 
+	 * Convert seconds and nanos to a Long type timeStampInNanos
+	 * @param seconds
+	 * @param nanos
+	 * @return
+	 */
+    public static Long timeStampInNanos(long seconds, int nanos) {
+	  Long SCALAR = 1_000_000_000L;
+	  return seconds * SCALAR + nanos;
+    }
+    
+	/** 
+	 * Convert Timestamp to a Long type timeStampInNanos
+	 * @param TimeStamp
+	 * @return
+	 */
+    public static Long timeStampInNanos(Timestamp timestamp) {
+	  Long SCALAR = 1_000_000_000L;
+	  return timestamp.getSeconds() * SCALAR + timestamp.getNanos();
+    }
 
 	/**
 	 * Convert a Long type timestampInNanos to an Instant
