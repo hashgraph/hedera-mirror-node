@@ -1,7 +1,6 @@
 package com.hedera.logger;
 
 import com.google.protobuf.ByteString;
-//import com.hedera.DBHelper;
 
 /*-
  * ‌
