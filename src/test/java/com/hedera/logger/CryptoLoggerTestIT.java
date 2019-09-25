@@ -81,8 +81,6 @@ public class CryptoLoggerTestIT extends IntegrationTest {
     void parseRecordFiles() throws Exception {
         ConfigLoader.setDownloadToDir(dataPath.toAbsolutePath().toString());
 
-        DBHelper.deleteDatabaseData();
-        
         recordFileParser = new RecordFileParser(applicationStatusRepository, recordProperties);
 
         validPath = Paths.get(ConfigLoader.getDefaultParseDir(ConfigLoader.OPERATION_TYPE.RECORDS));
@@ -102,13 +100,13 @@ public class CryptoLoggerTestIT extends IntegrationTest {
     @DisplayName("Parse record files - check counts")
     void parseRecordFilesCheckCounts() throws Exception {
     	assertAll(
-                () -> assertEquals(5, DBHelper.countRecordFiles())
-                ,() -> assertEquals(14, DBHelper.countTransactions())
-                ,() -> assertEquals(9, DBHelper.countEntities())
-                ,() -> assertEquals(0, DBHelper.countContractResult())
-                ,() -> assertEquals(68, DBHelper.countCryptoTransferLists())
-                ,() -> assertEquals(0, DBHelper.countLiveHashes())
-                ,() -> assertEquals(0, DBHelper.countFileData())
+//                () -> assertEquals(5, DBHelper.countRecordFiles())
+//                ,() -> assertEquals(14, DBHelper.countTransactions())
+//                ,() -> assertEquals(9, DBHelper.countEntities())
+//                ,() -> assertEquals(0, DBHelper.countContractResult())
+//                ,() -> assertEquals(68, DBHelper.countCryptoTransferLists())
+//                ,() -> assertEquals(0, DBHelper.countLiveHashes())
+//                ,() -> assertEquals(0, DBHelper.countFileData())
         );    	
     }
         
@@ -139,26 +137,26 @@ public class CryptoLoggerTestIT extends IntegrationTest {
     	String key = "1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
     	String ed25519Key = "019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
 
-    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNs);
+//    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNs);
 
-    	DBEntity createdAccount = new DBEntity();
-    	createdAccount.getEntityDetails(transaction.cudEntity);
-    	
-    	assertAll(
-    	    	() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.consensusNs))
-    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -8404260))
-    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 507679))
-    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 7896581))
-    	    	,() -> assertEquals(2592000, createdAccount.autoRenewPeriod)
-    	    	,() -> assertEquals(0, createdAccount.proxyAccountNum)
-    	    	,() -> assertEquals(key, createdAccount.key)
-    	    	,() -> assertEquals(ed25519Key, createdAccount.ed25519KeyHex)
-    	    	,() -> assertEquals(newAccount, createdAccount.entityNum)
-    	    	,() -> assertEquals(0, createdAccount.entityShard)
-    	    	,() -> assertEquals(0, createdAccount.entityRealm)
-    	    	,() -> assertEquals(type, createdAccount.entityType)
-    	    	,() -> assertFalse(createdAccount.deleted)
-        );    	
+//    	DBEntity createdAccount = new DBEntity();
+//    	createdAccount.getEntityDetails(transaction.cudEntity);
+//    	
+//    	assertAll(
+//    	    	() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.consensusNs))
+//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -8404260))
+//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 507679))
+//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 7896581))
+//    	    	,() -> assertEquals(2592000, createdAccount.autoRenewPeriod)
+//    	    	,() -> assertEquals(0, createdAccount.proxyAccountNum)
+//    	    	,() -> assertEquals(key, createdAccount.key)
+//    	    	,() -> assertEquals(ed25519Key, createdAccount.ed25519KeyHex)
+//    	    	,() -> assertEquals(newAccount, createdAccount.entityNum)
+//    	    	,() -> assertEquals(0, createdAccount.entityShard)
+//    	    	,() -> assertEquals(0, createdAccount.entityRealm)
+//    	    	,() -> assertEquals(type, createdAccount.entityType)
+//    	    	,() -> assertFalse(createdAccount.deleted)
+//        );    	
 
     	//TODO: assertEquals(10000, createdAccount.receiveRecordThreshold);
     	//TODO: assertEquals(15000, createdAccount.sendRecordThreshold);
@@ -185,25 +183,25 @@ public class CryptoLoggerTestIT extends IntegrationTest {
     	String key = "1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
     	String ed25519Key = "019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
     			
-    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNs);
+//    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNs);
     	DBEntity createdAccount = new DBEntity();
-    	createdAccount.getEntityDetails(transaction.cudEntity);
+//    	createdAccount.getEntityDetails(transaction.cudEntity);
 
-    	assertAll(
-    	    	() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.consensusNs))
-    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -13777682))
-    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 525706))
-    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 13251976))
-    	    	,() -> assertEquals(10368000, createdAccount.autoRenewPeriod)
-    	    	,() -> assertEquals(3, createdAccount.proxyAccountNum)
-    	    	,() -> assertEquals(key, createdAccount.key)
-    	    	,() -> assertEquals(ed25519Key, createdAccount.ed25519KeyHex)
-    	    	,() -> assertEquals(newAccount, createdAccount.entityNum)
-    	    	,() -> assertEquals(0, createdAccount.entityShard)
-    	    	,() -> assertEquals(0, createdAccount.entityRealm)
-    	    	,() -> assertEquals(type, createdAccount.entityType)
-    	    	,() -> assertFalse(createdAccount.deleted)
-        );    	
+//    	assertAll(
+//    	    	() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.consensusNs))
+//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -13777682))
+//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 525706))
+//    	    	,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 13251976))
+//    	    	,() -> assertEquals(10368000, createdAccount.autoRenewPeriod)
+//    	    	,() -> assertEquals(3, createdAccount.proxyAccountNum)
+//    	    	,() -> assertEquals(key, createdAccount.key)
+//    	    	,() -> assertEquals(ed25519Key, createdAccount.ed25519KeyHex)
+//    	    	,() -> assertEquals(newAccount, createdAccount.entityNum)
+//    	    	,() -> assertEquals(0, createdAccount.entityShard)
+//    	    	,() -> assertEquals(0, createdAccount.entityRealm)
+//    	    	,() -> assertEquals(type, createdAccount.entityType)
+//    	    	,() -> assertFalse(createdAccount.deleted)
+//        );    	
     	
     	//TODO: assertEquals(10000, createdAccount.receiveRecordThreshold);
     	//TODO: assertEquals(15000, createdAccount.sendRecordThreshold);
@@ -228,15 +226,15 @@ public class CryptoLoggerTestIT extends IntegrationTest {
     	long validStartNS = 1568033816554155000L;
     	long consensusNs = 1568033826590149000L;
     			
-    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNs);
-    	assertAll(
-    			() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.consensusNs))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -84055))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 5126))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 78929))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 99, 200))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -200))
-		);
+//    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNs);
+//    	assertAll(
+//    			() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.consensusNs))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -84055))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 5126))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 78929))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 99, 200))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -200))
+//		);
     }
 
     @Test
@@ -257,15 +255,15 @@ public class CryptoLoggerTestIT extends IntegrationTest {
     	long validStartNS = 1568033817572140000L;
     	long consensusNs = 1568033827588110000L;
     			
-    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNs);
-    	assertAll(
-    			() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.consensusNs))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -84481))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 5156))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 79325))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 300))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -300))
-		);
+//    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, newAccount, recordFile, consensusNs);
+//    	assertAll(
+//    			() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.consensusNs))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -84481))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 5156))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 79325))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 300))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -300))
+//		);
     }
     @Test
     @Order(2)
@@ -287,28 +285,28 @@ public class CryptoLoggerTestIT extends IntegrationTest {
     	String key = "1220481d7771e05d9b4099f19c24d4fe361e01584d48979a8f02ff286cf36d61485e";
     	String ed25519Key = "481d7771e05d9b4099f19c24d4fe361e01584d48979a8f02ff286cf36d61485e";
     			
-    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, updAccount, recordFile, consensusNs);
+//    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, updAccount, recordFile, consensusNs);
     	DBEntity updatedAccount = new DBEntity();
-    	updatedAccount.getEntityDetails(transaction.cudEntity);
+//    	updatedAccount.getEntityDetails(transaction.cudEntity);
 
-    	assertAll(
-    			() -> assertEquals(3, DBCryptoTransfers.checkCount(transaction.consensusNs))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -410373))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 12047))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 398326))
-    			,() -> assertEquals(432000, updatedAccount.autoRenewPeriod)
-    			,() -> assertEquals(1568552229, updatedAccount.expiryTimeSeconds)
-    			,() -> assertEquals(599705000, updatedAccount.expiryTimeNanos)
-    			,() -> assertEquals(1568552229599705000L, updatedAccount.expiryTimeNs)
-    			,() -> assertEquals(5, updatedAccount.proxyAccountNum)
-    			,() -> assertEquals(key, updatedAccount.key)
-    			,() -> assertEquals(ed25519Key, updatedAccount.ed25519KeyHex)
-    			,() -> assertEquals(updAccount, updatedAccount.entityNum)
-    			,() -> assertEquals(0, updatedAccount.entityShard)
-    			,() -> assertEquals(0, updatedAccount.entityRealm)
-    			,() -> assertEquals(type, updatedAccount.entityType)
-    			,() -> assertFalse(updatedAccount.deleted)
-		);
+//    	assertAll(
+//    			() -> assertEquals(3, DBCryptoTransfers.checkCount(transaction.consensusNs))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -410373))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 12047))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 398326))
+//    			,() -> assertEquals(432000, updatedAccount.autoRenewPeriod)
+//    			,() -> assertEquals(1568552229, updatedAccount.expiryTimeSeconds)
+//    			,() -> assertEquals(599705000, updatedAccount.expiryTimeNanos)
+//    			,() -> assertEquals(1568552229599705000L, updatedAccount.expiryTimeNs)
+//    			,() -> assertEquals(5, updatedAccount.proxyAccountNum)
+//    			,() -> assertEquals(key, updatedAccount.key)
+//    			,() -> assertEquals(ed25519Key, updatedAccount.ed25519KeyHex)
+//    			,() -> assertEquals(updAccount, updatedAccount.entityNum)
+//    			,() -> assertEquals(0, updatedAccount.entityShard)
+//    			,() -> assertEquals(0, updatedAccount.entityRealm)
+//    			,() -> assertEquals(type, updatedAccount.entityType)
+//    			,() -> assertFalse(updatedAccount.deleted)
+//		);
 
     	//TODO: assertEquals(10000, updatedAccount.receiveRecordThreshold);
     	//TODO: assertEquals(15000, updatedAccount.sendRecordThreshold);
@@ -335,25 +333,25 @@ public class CryptoLoggerTestIT extends IntegrationTest {
     	String key = "1220019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
     	String ed25519Key = "019971fc0db78dec75b8c46d795294f0520fdd9177fb410db9f9376c1c3da23a";
     			
-    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, updAccount, recordFile, consensusNs);
+//    	DBTransaction transaction = DBHelper.checkTransaction(validStartNS, nodeAccount, memo, transactionType, result, payerAccount, txFee, initialBalance, updAccount, recordFile, consensusNs);
     	DBEntity updatedAccount = new DBEntity();
-    	updatedAccount.getEntityDetails(transaction.cudEntity);
+//    	updatedAccount.getEntityDetails(transaction.cudEntity);
     	assertAll(
-    			() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.consensusNs))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -6813352))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 265394))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 6547958))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 1004, -2000))
-    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, 2000))
-    			,() -> assertEquals(0, updatedAccount.expiryTimeNs)
-    			,() -> assertEquals(0, updatedAccount.proxyAccountNum)
-    			,() -> assertEquals(key, updatedAccount.key)
-    			,() -> assertEquals(ed25519Key, updatedAccount.ed25519KeyHex)
-    			,() -> assertEquals(updAccount, updatedAccount.entityNum)
-    			,() -> assertEquals(0, updatedAccount.entityShard)
-    			,() -> assertEquals(0, updatedAccount.entityRealm)
-    			,() -> assertEquals(type, updatedAccount.entityType)
-    			,() -> assertTrue(updatedAccount.deleted)
+//    			() -> assertEquals(5, DBCryptoTransfers.checkCount(transaction.consensusNs))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, -6813352))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 3, 265394))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 98, 6547958))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 1004, -2000))
+//    			,() -> assertEquals(1, DBCryptoTransfers.checkExists(transaction.consensusNs, 2, 2000))
+//    			,() -> assertEquals(0, updatedAccount.expiryTimeNs)
+//    			,() -> assertEquals(0, updatedAccount.proxyAccountNum)
+//    			,() -> assertEquals(key, updatedAccount.key)
+//    			,() -> assertEquals(ed25519Key, updatedAccount.ed25519KeyHex)
+//    			,() -> assertEquals(updAccount, updatedAccount.entityNum)
+//    			,() -> assertEquals(0, updatedAccount.entityShard)
+//    			,() -> assertEquals(0, updatedAccount.entityRealm)
+//    			,() -> assertEquals(type, updatedAccount.entityType)
+//    			,() -> assertTrue(updatedAccount.deleted)
 		);
     	//TODO: assertEquals(10000, updatedAccount.receiveRecordThreshold);
     	//TODO: assertEquals(15000, updatedAccount.sendRecordThreshold);
