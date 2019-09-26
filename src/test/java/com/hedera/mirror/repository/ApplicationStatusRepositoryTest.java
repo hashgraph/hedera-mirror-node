@@ -23,14 +23,11 @@ package com.hedera.mirror.repository;
 import com.hedera.IntegrationTest;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.annotation.Resource;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 
-@Testcontainers(disabledWithoutDocker = true)
 public class ApplicationStatusRepositoryTest extends IntegrationTest {
 
     @Resource

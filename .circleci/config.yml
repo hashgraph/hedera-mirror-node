@@ -1,9 +1,5 @@
 version: 2
 
-defaults: &defaults
-  docker:
-    - image: adoptopenjdk:11-jdk-hotspot
-
 references:
   workspace_root: &workspace_root
     /tmp/workspace
@@ -47,7 +43,13 @@ workflows:
 
 jobs:
   build_mirror_node:
-    <<: *defaults
+    docker:
+      - image: adoptopenjdk:11-jdk-hotspot
+      - image: postgres:9.6-alpine
+        environment:
+          POSTGRES_DB: mirror_node
+          POSTGRES_PASSWORD: mirror_node_pass
+          POSTGRES_USER: mirror_node
     steps:
       - checkout
       - restore_cache:
@@ -116,7 +118,8 @@ jobs:
             - rest-api.tgz
 
   release_artifacts:
-    <<: *defaults
+    docker:
+      - image: adoptopenjdk:11-jdk-hotspot
     steps:
       - *attach_workspace
       - *package_mirror_node
