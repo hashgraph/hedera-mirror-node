@@ -60,7 +60,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 
 import org.junit.jupiter.api.*;
 import org.springframework.test.context.jdbc.Sql;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.Optional;
@@ -75,7 +74,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-@Testcontainers(disabledWithoutDocker = true)
 @Sql("classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
 public class RecordLoggerFile extends IntegrationTest {
 
