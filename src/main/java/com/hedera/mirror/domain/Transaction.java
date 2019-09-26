@@ -21,8 +21,6 @@ package com.hedera.mirror.domain;
  */
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import javax.persistence.*;
 
@@ -32,37 +30,32 @@ import javax.persistence.*;
 public class Transaction {
 
     @Id
-    @Column(name = "consensus_ns")
-    @Getter @Setter private Long consensusNs;
+    private Long consensusNs;
 
     @Column(name = "fk_node_acc_id")
-    @Getter @Setter private Long nodeAccountId;
+    private Long nodeAccountId;
 
-    @Column(nullable=true, name="memo")
-    @Getter @Setter private byte[] memo;
+    private byte[] memo;
 
     @Column(name = "fk_trans_type_id")
-    @Getter @Setter  private Long transactionTypeId;
+     private Long transactionTypeId;
 
     @Column(name = "fk_result_id")
-    @Getter @Setter private Integer resultId;
+    private Integer resultId;
 
     @Column(name = "fk_payer_acc_id")
-    @Getter @Setter private Long payerAccountId;
+    private Long payerAccountId;
 
-    @Column(name = "charged_tx_fee")
-    @Getter @Setter private Long chargedTxFee;
+    private Long chargedTxFee;
 
-    @Column(name = "initial_balance")
-    @Getter @Setter private Long initialBalance;
+    private Long initialBalance;
 
-    @Column(nullable=true, name = "fk_cud_entity_id")
-    @Getter @Setter private Long entityId;
+    @Column(name = "fk_cud_entity_id")
+    private Long entityId;
 
     @Column(name = "fk_rec_file_id")
-    @Getter @Setter private Long recordFileId;
+    private Long recordFileId;
 
-    @Column(name = "valid_start_ns")
-    @Getter @Setter private Long validStartNs;
+    private Long validStartNs;
 
 }

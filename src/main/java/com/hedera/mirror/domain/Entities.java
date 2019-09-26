@@ -21,8 +21,6 @@ package com.hedera.mirror.domain;
  */
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import javax.persistence.*;
 
 @Data
@@ -31,41 +29,35 @@ import javax.persistence.*;
 public class Entities {
 
     @Id
-    @Getter @Setter private Long id;
+    private Long id;
 
-    @Column(name = "entity_num")
-    @Getter @Setter private Long entityNum;
+    private Long entityNum;
 
-    @Column(name = "entity_realm")
-    @Getter @Setter private Long entityRealm;
+    private Long entityRealm;
 
-    @Column(name = "entity_shard")
-    @Getter @Setter private Long entityShard;
+    private Long entityShard;
 
     @Column(name = "fk_entity_type_id")
-    @Getter @Setter private Integer entityTypeId;
+    private Integer entityTypeId;
     
-    @Column(nullable=true, name = "exp_time_seconds")
-    @Getter @Setter private Long expiryTimeSeconds;
+    @Column(name = "exp_time_seconds")
+    private Long expiryTimeSeconds;
     
-    @Column(nullable=true, name = "exp_time_nanos")
-    @Getter @Setter private Long expiryTimeNanos;
+    @Column(name = "exp_time_nanos")
+    private Long expiryTimeNanos;
 
-    @Column(nullable=true, name = "auto_renew_period")
-    @Getter @Setter private Long autoRenewPeriod;
+    private Long autoRenewPeriod;
 
-    @Column(nullable=true, name = "key")
-    @Getter @Setter private byte[] key;
+    private byte[] key;
 
-    @Column(nullable=true, name = "fk_prox_acc_id")
-    @Getter @Setter private Long proxyAccountId;
+    @Column(name = "fk_prox_acc_id")
+    private Long proxyAccountId;
     
-    @Column(name = "deleted")
-    @Getter @Setter private boolean deleted;
+    private boolean deleted;
 
-    @Column(nullable=true, name = "exp_time_ns")
-    @Getter @Setter private Long expiryTimeNs;
+    @Column(name = "exp_time_ns")
+    private Long expiryTimeNs;
 
-    @Column(nullable=true, name = "ed25519_public_key_hex")
-    @Getter @Setter private String ed25519PublicKeyHex;
+    @Column(name = "ed25519_public_key_hex")
+    private String ed25519PublicKeyHex;
 }

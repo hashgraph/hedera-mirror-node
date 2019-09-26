@@ -32,6 +32,5 @@ public class LiveHash {
     @Id
     private Long consensus_timestamp;
 
-    @Column(name = "livehash")
     private byte[] liveHash;
 }

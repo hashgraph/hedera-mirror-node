@@ -21,8 +21,6 @@ package com.hedera.mirror.domain;
  */
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import javax.persistence.*;
 
 @Data
@@ -31,12 +29,11 @@ import javax.persistence.*;
 public class TransactionResult {
 
     @Id
-    @Getter @Setter private Integer id;
+    private Integer id;
 
     @Column(name = "proto_id")
-    @Getter @Setter private Long protobufId;
+    private Long protobufId;
 
-    @Column(name = "result")
-    @Getter @Setter private String result;
+    private String result;
 
 }

@@ -21,8 +21,6 @@ package com.hedera.mirror.domain;
  */
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import javax.persistence.*;
 
@@ -32,8 +30,7 @@ import javax.persistence.*;
 public class FileData {
 
     @Id
-    @Getter @Setter private Long consensus_timestamp;
+    private Long consensus_timestamp;
 
-    @Column(name = "file_data")
-    @Getter @Setter private byte[] fileData;
+    private byte[] fileData;
 }

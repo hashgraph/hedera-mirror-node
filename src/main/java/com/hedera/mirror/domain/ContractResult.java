@@ -30,18 +30,16 @@ import javax.persistence.*;
 public class ContractResult {
 
     @Id
-    private Long fk_trans_id;
+    @Column(name="fk_trans_id")
+    private Long transactionId;
 
-    @Column(nullable=true, name = "function_params")
+    @Column(name = "function_params")
     private byte[] functionParameters;
 
-    @Column(name = "gas_supplied")
     private Long gasSupplied;
 
-    @Column(nullable=true, name = "call_result")
     private byte[] callResult;
 
-    @Column(name = "gas_used")
     private Long gasUsed;
 
 }

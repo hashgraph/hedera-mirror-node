@@ -21,8 +21,6 @@ package com.hedera.mirror.domain;
  */
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import javax.persistence.*;
 
 @Data
@@ -31,8 +29,7 @@ import javax.persistence.*;
 public class EntityType {
 
     @Id
-    @Getter @Setter private Integer id;
+    private Integer id;
 
-    @Column(name = "name")
-    @Getter @Setter private String name;
+    private String name;
 }

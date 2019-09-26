@@ -32,19 +32,15 @@ public class RecordFile {
     @Id
     private Long id;
 
-    @Column(name = "name")
-    private String fileName;
+    private String name;
 
-    @Column(name = "load_start")
     private Long loadStart;
 
-    @Column(nullable=true, name = "load_end")
     private Long loadEnd;
     
-    @Column(nullable=true, name = "file_hash")
     private String fileHash;
 
-    @Column(nullable=true, name = "prev_hash")
+    @Column(name = "prev_hash")
     private String previousHash;
 
 }
