@@ -35,7 +35,6 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.jdbc.Sql;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.annotation.Resource;
 import java.io.File;
@@ -44,7 +43,6 @@ import java.nio.file.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Sql("classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
-@Testcontainers(disabledWithoutDocker = true)
 public class RecordFileParserTest extends IntegrationTest {
 
     @Resource
