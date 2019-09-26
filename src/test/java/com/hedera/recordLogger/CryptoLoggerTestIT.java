@@ -1,8 +1,7 @@
-package com.hedera.logger;
+package com.hedera.recordLogger;
 
 import com.hedera.DBCryptoTransfers;
 import com.hedera.DBEntity;
-import com.hedera.DBHelper;
 import com.hedera.DBTransaction;
 
 /*-
