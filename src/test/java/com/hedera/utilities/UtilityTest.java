@@ -23,7 +23,7 @@ package com.hedera.utilities;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
-
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 
 import org.apache.commons.lang3.tuple.Triple;
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -182,10 +183,15 @@ public class UtilityTest {
 	public void getTransactionID()  {
 		final AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build();
 		final TransactionID transactionId = Utility.getTransactionId(payerAccountId);
-
-		assertEquals(0L,transactionId.getAccountID().getShardNum());
-		assertEquals(0L,transactionId.getAccountID().getRealmNum());
-		assertEquals(0L,transactionId.getAccountID().getAccountNum());
-		assertNotEquals(0L, transactionId.getTransactionValidStart().getSeconds());
+        assertThat(transactionId)
+        	.isNotEqualTo(TransactionID.getDefaultInstance());
+        
+        final AccountID testAccountId = transactionId.getAccountID();
+    	assertAll(
+    			// row counts
+                () -> assertEquals(payerAccountId.getShardNum(), testAccountId.getShardNum())
+                ,() -> assertEquals(payerAccountId.getRealmNum(), testAccountId.getRealmNum())
+                ,() -> assertEquals(payerAccountId.getAccountNum(), testAccountId.getAccountNum())
+        );
 	}
 }
