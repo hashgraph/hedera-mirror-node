@@ -20,15 +20,11 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.domain.CryptoTransferList;
+import com.hedera.mirror.domain.CryptoTransfer;
 
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.query.Param;
 
-public interface CryptoTransferListRepository extends CrudRepository<CryptoTransferList, Long> {
-	@Query(value= "SELECT amount FROM t_cryptotransferlists WHERE consensus_timestamp = :consensus_timestamp AND account_id = :accountId", nativeQuery = true)
-    Optional<Long> amountByTransactionAndAccount(@Param("consensus_timestamp") Long consensus_timestamp, @Param("accountId")  Long accountId);
-}
+public interface CryptoTransferRepository extends CrudRepository<CryptoTransfer, Long> {
+	Optional<CryptoTransfer> findByConsensusTimestampAndAccountId(Long consensusTimestamp, Long accountId);}

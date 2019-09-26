@@ -21,22 +21,19 @@ package com.hedera.mirror.domain;
  */
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import javax.persistence.*;
 
 @Data
 @Entity
 @Table(name = "t_cryptotransferlists")
-public class CryptoTransferList {
+public class CryptoTransfer {
 
     @Id
-    @Getter @Setter private Long consensus_timestamp;
+    private Long consensusTimestamp;
 
     @Column(name = "account_id")
-    @Getter @Setter private Long accountId;
+    private Long accountId;
 
-    @Column(name = "amount")
-    @Getter @Setter private Integer amount;
+    private Long amount;
 }
