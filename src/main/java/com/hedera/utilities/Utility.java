@@ -36,6 +36,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -654,7 +656,6 @@ public class Utility {
 	 * @return
 	 */
     public static Long timeStampInNanos(long seconds, int nanos) {
-	  Long SCALAR = 1_000_000_000L;
 	  return seconds * SCALAR + nanos;
     }
     
@@ -664,7 +665,6 @@ public class Utility {
 	 * @return
 	 */
     public static Long timeStampInNanos(Timestamp timestamp) {
-	  Long SCALAR = 1_000_000_000L;
 	  return timestamp.getSeconds() * SCALAR + timestamp.getNanos();
     }
 
@@ -774,5 +774,15 @@ public class Utility {
 		if (ED25519 != parsedKey.getKeyCase()) return null;
 
 		return Hex.encodeHexString(parsedKey.getEd25519().toByteArray(), true);
+	}
+	
+	/**
+	 * Generates a TransactionID object
+	 * @param payerAccountId the AccountID of the transaction payer account
+	 * @return
+	 */
+	public static TransactionID getTransactionId(AccountID payerAccountId) {
+	 	Timestamp validStart = Utility.instantToTimestamp(Instant.now());
+	 	return TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
 	}
 }

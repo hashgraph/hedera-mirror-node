@@ -27,8 +27,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hederahashgraph.api.proto.java.TransactionID;
+
 import org.apache.commons.lang3.tuple.Triple;
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
@@ -171,5 +175,17 @@ public class UtilityTest {
 		final var result = getCut().protobufKeyToHexIfEd25519OrNull(input.toByteArray());
 
 		assertThat(result).isNull();
+	}
+	
+	@Test
+	@DisplayName("get TransactionId")
+	public void getTransactionID()  {
+		final AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build();
+		final TransactionID transactionId = Utility.getTransactionId(payerAccountId);
+
+		assertEquals(0L,transactionId.getAccountID().getShardNum());
+		assertEquals(0L,transactionId.getAccountID().getRealmNum());
+		assertEquals(0L,transactionId.getAccountID().getAccountNum());
+		assertNotEquals(0L, transactionId.getTransactionValidStart().getSeconds());
 	}
 }
