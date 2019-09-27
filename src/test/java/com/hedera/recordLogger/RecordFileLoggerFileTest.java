@@ -1,8 +1,5 @@
 package com.hedera.recordLogger;
 
-import com.google.protobuf.ByteString;
-import com.hedera.configLoader.ConfigLoader;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -22,6 +19,8 @@ import com.hedera.configLoader.ConfigLoader;
  * limitations under the License.
  * ‍
  */
+
+import com.google.protobuf.ByteString;
 
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.FileData;
@@ -50,6 +49,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.*;
 import org.springframework.test.context.jdbc.Sql;
 import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -78,8 +78,9 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     void before() throws Exception {
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-		ConfigLoader.setPersistFiles("ALL");
-		ConfigLoader.setPersistCryptoTransferAmounts(true);
+		parserProperties.setPersistFiles(true);
+		parserProperties.setPersistSystemFiles(true);
+		parserProperties.setPersistCryptoTransferAmounts(true);
 	}
 
     @AfterEach
@@ -142,8 +143,8 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileCreateDoNotPersist() throws Exception {
-
-    	ConfigLoader.setPersistFiles("NONE");
+		parserProperties.setPersistFiles(false);
+		parserProperties.setPersistSystemFiles(false);
     	final Transaction transaction = fileCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final TransactionRecord record = transactionRecord(transactionBody);
@@ -180,8 +181,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileCreatePersistSystemPositive() throws Exception {
-
-    	ConfigLoader.setPersistFiles("SYSTEM");
+		parserProperties.setPersistFiles(false);
     	final Transaction transaction = fileCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();
@@ -234,8 +234,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileCreatePersistSystemNegative() throws Exception {
-
-    	ConfigLoader.setPersistFiles("SYSTEM");
+		parserProperties.setPersistFiles(false);
     	final Transaction transaction = fileCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();

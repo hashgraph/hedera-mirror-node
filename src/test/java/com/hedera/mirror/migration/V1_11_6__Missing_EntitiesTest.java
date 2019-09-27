@@ -22,10 +22,9 @@ package com.hedera.mirror.migration;
 
 import com.google.protobuf.ByteString;
 import com.hedera.IntegrationTest;
-import com.hedera.configLoader.ConfigLoader;
+import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.*;
 import com.hedera.mirror.domain.Transaction;
-import com.hedera.mirror.migration.V1_11_6__Missing_Entities;
 import com.hedera.mirror.repository.*;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.*;
@@ -75,12 +74,15 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
     @Resource
     private TransactionTypeRepository transactionTypeRepository;
 
+    @Resource
+    private MirrorProperties mirrorProperties;
+
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void before() {
-        ConfigLoader.setDownloadToDir(tempDir.toString());
+        mirrorProperties.setDataPath(tempDir);
     }
 
     @Test

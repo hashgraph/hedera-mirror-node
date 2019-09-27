@@ -1,0 +1,114 @@
+package com.hedera.mirror.addressbook;
+
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.Collection;
+
+import com.google.common.collect.ImmutableList;
+
+import com.hedera.mirror.MirrorProperties;
+import com.hedera.mirror.domain.HederaNetwork;
+import com.hedera.mirror.domain.NodeAddress;
+import com.hedera.utilities.Utility;
+
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+
+import javax.inject.Named;
+
+@Log4j2
+@Named
+public class NetworkAddressBook {
+
+    private static MirrorProperties mirrorProperties;
+    static byte[] addressBookBytes = new byte[0];
+
+    public NetworkAddressBook(MirrorProperties mirrorProperties) {
+        this.mirrorProperties = mirrorProperties;
+        init();
+    }
+
+    private void init() {
+        Path path = mirrorProperties.getAddressBookPath();
+        try {
+            File addressBookFile = mirrorProperties.getAddressBookPath().toFile();
+            if (!addressBookFile.exists() || !addressBookFile.canRead()) {
+                HederaNetwork hederaNetwork  = mirrorProperties.getNetwork();
+                Resource resource = new ClassPathResource(String.format("addressbook/%s", hederaNetwork.name().toLowerCase()));
+                Path defaultAddressBook = resource.getFile().toPath();
+                Utility.ensureDirectory(path.getParent());
+                Files.copy(defaultAddressBook, path, StandardCopyOption.REPLACE_EXISTING);
+                log.info("Copied default address book {} to {}", resource, path);
+            }
+        } catch (Exception e) {
+            log.error("Unable to copy {} address book to {}", mirrorProperties.getNetwork(), path, e);
+        }
+    }
+
+    public static void update(byte[] newContents) throws IOException {
+    	addressBookBytes = newContents;
+		saveToDisk();
+    }
+
+    public static void append(byte[] extraContents) throws IOException {
+    	byte[] newAddressBook = Arrays.copyOf(addressBookBytes, addressBookBytes.length + extraContents.length);
+    	System.arraycopy(extraContents, 0, newAddressBook, addressBookBytes.length, extraContents.length);
+    	addressBookBytes = newAddressBook;
+		saveToDisk();
+    }
+
+    private static void saveToDisk() throws IOException {
+        Path path = mirrorProperties.getAddressBookPath();
+        Files.write(path, addressBookBytes);
+		log.info("New address book successfully saved to {}", path);
+    }
+
+    public Collection<NodeAddress> load() {
+        ImmutableList.Builder<NodeAddress> builder = ImmutableList.builder();
+        Path path = mirrorProperties.getAddressBookPath();
+
+        try {
+            byte[] addressBookBytes = Files.readAllBytes(path);
+            NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
+
+            for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
+                NodeAddress nodeAddress = new NodeAddress();
+                nodeAddress.setId(nodeAddressProto.getMemo().toStringUtf8());
+                nodeAddress.setIp(nodeAddressProto.getIpAddress().toStringUtf8());
+                nodeAddress.setPort(nodeAddressProto.getPortno());
+                nodeAddress.setPublicKey(nodeAddressProto.getRSAPubKey());
+                builder.add(nodeAddress);
+            }
+        } catch (Exception ex) {
+            log.error("Failed to parse NodeAddressBook from {}", path, ex);
+        }
+
+        return builder.build();
+    }
+}

@@ -26,29 +26,39 @@ if [ -f "${usrlib}/mirror-node.jar" ]; then
     echo "Backing up binary"
     mv "${usrlib}/mirror-node.jar" "${usrlib}/mirror-node.jar.${ts}.old"
 
-    # Handle the upgrade from config.json database params to application.yml database params
-    appyml="${usretc}/application.yml"
-    if [ -f "${usretc}/config.json" ] && [ ! -f  "${appyml}" ]; then
-        echo -e "hedera:\n  mirror:\n    db:" > "${appyml}"
-        cat "${usretc}/config.json" | awk -F: '{gsub(/ |\"/, "", $0); gsub(/,$/, "", $0); print}' | grep -E "^(api|db)" | \
-          sed -e "s/apiUsername:/api-username: /" -e "s/apiPassword:/api-password: /" -e "s/dbName:/name: /" \
-            -e "s/dbUsername:/username: /" -e "s/dbPassword:/password: /" | grep -v dbUrl | \
-            sed -e "s/^/      /" >> "${appyml}"
-        dbUrl=$(grep "dbUrl" "${usretc}/config.json" | sed -e "s#.*//##" -e "s#/.*##")
-        dbhost=$(echo ${dbUrl} | sed -e "s#:.*##")
-        dbport=$(echo ${dbUrl} | grep ':' | sed -e "s#.*:##")
-        if [ -n "${dbhost}" ]; then
-            echo "      host: ${dbhost}" >> "${appyml}"
-        fi
-        if [ -n "${dbport}" ]; then
-            echo "      port: ${dbport}" >> "${appyml}"
-        fi
-        sed -ie '/apiPassword/d;/apiUsername/d;/dbName/d;/dbUsername/d;/dbPassword/d;/dbUrl/d' "${usretc}/config.json"
+    # Handle the migration from config.json to application.yml
+    if [ -f "${usretc}/config.json" ] && [ ! -f  "${usretc}/application.yml" ]; then
+        apiPassword=$(grep -oP '"apiPassword": "\K[^"]+' "${usretc}/config.json")
+        bucketName=$(grep -oP '"bucketName": "\K[^"]+' "${usretc}/config.json")
+        dbHost=$(grep -oP '"dbUrl": "jdbc:postgresql://\K[^:]+' "${usretc}/config.json")
+        dbPassword=$(grep -oP '"dbPassword": "\K[^"]+' "${usretc}/config.json")
+        downloadToDir=$(grep -oP '"downloadToDir": "\K[^"]+' "${usretc}/config.json")
+        cat > "${usretc}/application.yml" <EOF
+hedera:
+  mirror:
+    dataPath: ${downloadToDir}
+    db:
+      apiPassword: ${apiPassword}
+      host: ${dbHost}
+      password: ${dbPassword}
+    downloader:
+      bucketName: ${bucketName}
+EOF
     fi
 else
     echo "Fresh install of ${version}"
-    echo "Copying config (will need to be edited)"
-    cp -n config/* "${usretc}"
+    echo "Creating empty config (will need to be edited)"
+    cat > "${usretc}/application.yml" <EOF
+hedera:
+  mirror:
+    dataPath: /var/lib/mirror-node
+    db:
+      apiPassword:
+      host:
+      password:
+    downloader:
+      bucketName:
+EOF
 fi
 
 echo "Copying new binary"

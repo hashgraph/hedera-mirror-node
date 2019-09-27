@@ -54,23 +54,23 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     @Resource
     protected TransactionTypeRepository transactionTypeRepository;
     @Resource
-    protected EntityTypeRepository entityTypeRepository;	
+    protected EntityTypeRepository entityTypeRepository;
 
     private enum EntityType {
     	account
     	,file
     	,contract
     }
-    
-    protected final RecordFile insertRecordFile() { 
+
+    protected final RecordFile insertRecordFile() {
 		final String fileName = "testfile";
 		RecordFile recordFile = new RecordFile();
 		recordFile.setName(fileName);
 		recordFile = recordFileRepository.save(recordFile);
-		
+
 		return recordFile;
     }
-    
+
     private Entities insertEntity(EntityType entityType) {
 		Random rand = new Random();
 
@@ -78,13 +78,13 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     	entity.setEntityShard((long)rand.nextInt(10000));
     	entity.setEntityRealm((long)rand.nextInt(10000));
     	entity.setEntityNum((long)rand.nextInt(10000));
-    	
+
     	entity.setEntityTypeId(entityTypeRepository.findByName(entityType.name()).get().getId());
     	entity = entityRepository.save(entity);
-    	
+
     	return entity;
     }
-    
+
     protected final Entities insertAccountEntity() {
     	return insertEntity(EntityType.account);
     }
@@ -96,7 +96,7 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     protected final Entities insertContractEntity() {
     	return insertEntity(EntityType.account);
     }
-    
+
     protected final Transaction insertTransaction(long recordFileId, long entityId, String type) {
     	final long chargedTxFee = 100;
     	final long consensusNs = 10;
@@ -116,7 +116,7 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     	transaction.setValidStartNs(validStartNs);
 
     	transaction = transactionRepository.save(transaction);
-    	
+
     	return transaction;
     }
 }
