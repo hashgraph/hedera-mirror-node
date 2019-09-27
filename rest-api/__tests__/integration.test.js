@@ -50,7 +50,7 @@ const defaultPostgresqlPort = 5432;
 const defaultDbName = 'mirror_node_integration';
 const dbUser = 'mirror_node';
 const dbPassword = 'mirror_node_pass';
-const dockerPostgresTag = '9.6-alpine';
+const dockerPostgresTag = '9.6.14-alpine';
 let dbPort = defaultPostgresqlPort;
 let dbHost = '127.0.0.1';
 let dbName = defaultDbName;
@@ -149,7 +149,7 @@ const flywayMigrate = function() {
 // TEST DATA
 // shard 0, realm 15, accounts 1-50
 // 3 balances per account
-// 1 transaction
+// several transactions
 //
 const shard = 0;
 const realm = 15;
@@ -202,7 +202,7 @@ const setupData = async function() {
     let fileId = res.rows[0]['id'];
     console.log(`Record file id is ${fileId}`);
 
-    const accountCount = 50;
+    const accountCount = 10;
     const balancePerAccountCount = 3;
     console.log(`Adding ${accountCount} accounts with ${balancePerAccountCount} balances per account`);
     for (var i = 1; i <= accountCount; ++i) {
@@ -215,9 +215,9 @@ const setupData = async function() {
     }
 
     console.log('Adding crypto transfer transactions');
-    await addCryptoTransferTransaction(1050, fileId, 50, 49, 10);
-    await addCryptoTransferTransaction(1051, fileId, 50, 49, 20);
-    await addCryptoTransferTransaction(1052, fileId, 48, 49, 30);
+    await addCryptoTransferTransaction(1050, fileId, 10, 9, 10);
+    await addCryptoTransferTransaction(1051, fileId, 10, 9, 20);
+    await addCryptoTransferTransaction(1052, fileId, 8, 9, 30);
 
     console.log('Finished initializing DB data');
 };
@@ -275,27 +275,27 @@ test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xf
     let res = await sqlConnection.query(sql.query, sql.params);
     expect(res.rowCount).toEqual(9);
     expect(mapTransactionResults(res.rows).sort()).toEqual(
-        ['@1050: account 2 \u01271'
-            ,'@1050: account 49 \u012710'
-            ,'@1050: account 50 \u0127-11'
+        ['@1050: account 10 \u0127-11'
+            ,'@1050: account 2 \u01271'
+            ,'@1050: account 9 \u012710'
+            ,'@1051: account 10 \u0127-21'
             ,'@1051: account 2 \u01271'
-            ,'@1051: account 49 \u012720'
-            ,'@1051: account 50 \u0127-21'
+            ,'@1051: account 9 \u012720'
             ,'@1052: account 2 \u01271'
-            ,'@1052: account 48 \u0127-31'
-            ,'@1052: account 49 \u012730'
+            ,'@1052: account 8 \u0127-31'
+            ,'@1052: account 9 \u012730'
         ]
     );
 });
 
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfer', async () => {
-    let sql = transactions.reqToSql({query: {'account.id': `${shard}.${realm}.48`}});
+    let sql = transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
     let res = await sqlConnection.query(sql.query, sql.params);
     expect(res.rowCount).toEqual(3);
     expect(mapTransactionResults(res.rows).sort()).toEqual(
         ['@1052: account 2 \u01271'
-            ,'@1052: account 48 \u0127-31'
-            ,'@1052: account 49 \u012730'
+            ,'@1052: account 8 \u0127-31'
+            ,'@1052: account 9 \u012730'
         ]
     );
 });
