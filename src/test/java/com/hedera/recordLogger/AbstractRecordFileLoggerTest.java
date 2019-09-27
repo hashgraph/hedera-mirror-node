@@ -47,20 +47,20 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     @Resource
     protected EntityTypeRepository entityTypeRepository;	
 	
-    protected final void assertAccount(AccountID accountId, Optional<Entities> dbEntity) {
+    protected final void assertAccount(AccountID accountId, Entities dbEntity) {
         assertThat(accountId)
             .isNotEqualTo(AccountID.getDefaultInstance())
             .extracting(AccountID::getShardNum, AccountID::getRealmNum, AccountID::getAccountNum)
-            .containsExactly(dbEntity.get().getEntityShard(), dbEntity.get().getEntityRealm(), dbEntity.get().getEntityNum());
-        assertThat(dbEntity.get().getEntityTypeId())
+            .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
+        assertThat(dbEntity.getEntityTypeId())
         	.isEqualTo(entityTypeRepository.findByName("account").get().getId());
     }    
-    protected final void assertFile(FileID fileId, Optional<Entities> dbEntity) {
+    protected final void assertFile(FileID fileId, Entities dbEntity) {
         assertThat(fileId)
             .isNotEqualTo(FileID.getDefaultInstance())
             .extracting(FileID::getShardNum, FileID::getRealmNum, FileID::getFileNum)
-            .containsExactly(dbEntity.get().getEntityShard(), dbEntity.get().getEntityRealm(), dbEntity.get().getEntityNum());
-        assertThat(dbEntity.get().getEntityTypeId())
+            .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
+        assertThat(dbEntity.getEntityTypeId())
         	.isEqualTo(entityTypeRepository.findByName("file").get().getId());
     }    
     protected final void assertTransfers(TransactionRecord record) {
@@ -71,19 +71,19 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     		assertEquals(accountAmount.getAmount(), cryptoTransferRepository.findByConsensusTimestampAndAccountId(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountId.get().getId()).get().getAmount());
     	}
     }
-    protected final void assertRecord(TransactionRecord record, Optional<com.hedera.mirror.domain.Transaction> dbTransaction) {
-    	final Optional<Entities> dbPayerEntity = entityRepository.findById(dbTransaction.get().getPayerAccountId());
-    	final Optional<TransactionResult> dbResult = transactionResultRepository.findById(dbTransaction.get().getResultId());
+    protected final void assertRecord(TransactionRecord record, com.hedera.mirror.domain.Transaction dbTransaction) {
+    	final Entities dbPayerEntity = entityRepository.findById(dbTransaction.getPayerAccountId()).get();
+    	final TransactionResult dbResult = transactionResultRepository.findById(dbTransaction.getResultId()).get();
         // record inputs
-        assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), dbTransaction.get().getConsensusNs());
-        assertEquals(record.getTransactionFee(), dbTransaction.get().getChargedTxFee());
+        assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), dbTransaction.getConsensusNs());
+        assertEquals(record.getTransactionFee(), dbTransaction.getChargedTxFee());
         // payer
         assertAccount(record.getTransactionID().getAccountID(), dbPayerEntity);
         // transaction id
-        assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()), dbTransaction.get().getValidStartNs());
+        assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()), dbTransaction.getValidStartNs());
         // receipt
-        assertEquals(record.getReceipt().getStatusValue(), dbResult.get().getProtobufId());
-        assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.get().getResult());
+        assertEquals(record.getReceipt().getStatusValue(), dbResult.getProtobufId());
+        assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.getResult());
     	
     }
 }
