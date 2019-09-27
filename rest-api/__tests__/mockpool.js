@@ -20,6 +20,8 @@
 'use strict';
 
 const testutils = require('./testutils.js');
+const config = require('../config.js');
+const math = require('mathjs');
 
 /**
  * This is a mock database for unit testing.
@@ -28,9 +30,28 @@ const testutils = require('./testutils.js');
  */
 class Pool {
     /**
-     * Dummy constructor
+     * Constructor for the mock DB pool
+     * @param {Object} dbParams Unused - db parameters
+     * @return {} None
      */
     constructor(dbParams) {
+        // Some defaults for generating test/dummy data
+        this.TEST_DATA_MAX_ACCOUNTS = 1000000;
+        this.TEST_DATA_MAX_HISTORY = (60 * 60) // seconds
+        this.TEST_DATA_MAX_BALANCE = 1000000;
+        this.NUM_NODES = 39;
+
+        this.timeNow = parseInt(new Date().getTime() / 1000);
+        this.timeNowNs = this.timeNow + '000000000';
+    }
+
+    /**
+     * Utility routine to convert seconds to nanoseconds string
+     * @param {Number} sec seconds
+     * @return {String} String representing nanosecond string
+     */
+    toNs(sec) {
+        return (sec + '000000000');
     }
 
     /**
@@ -67,21 +88,17 @@ class Pool {
                 orderprefix = 'coalesce\\(ab.account_num, e.entity_num\\)'
                 break;
             default:
-                    break;
+                break;
         }
 
         // Parse the SQL query
         let parsedparams = testutils.parseSqlQueryAndParams(sqlquery, sqlparams, orderprefix);
 
-        // console.log (`IN QUERY: sqlquery: ${sqlquery}, parsed: `);
-        // for (const item of parsedparams) {
-        //     console.log (JSON.stringify(item));
-        // }
-        // console.log ("----- done parsed ----")
+        let rows = this.createMockData(callerFile, parsedparams);
 
-        let promise = new Promise(function(resolve, reject) {
-            resolve ({
-                rows: [],
+        let promise = new Promise(function (resolve, reject) {
+            resolve({
+                rows: rows,
                 sqlQuery: {
                     query: sqlquery,
                     params: sqlparams,
@@ -91,6 +108,289 @@ class Pool {
         })
 
         return (promise);
+    }
+
+    /**
+     * Create mock data
+     * @param {String} callerFile Which file invoked this Pool query
+     * @param {Object} parsedparams Parsed parameters that were present in the SQL query
+     * @return {Array} rows array filled with mock data
+     */
+    createMockData(callerFile, parsedparams) {
+        let rows = [];
+        if (callerFile === 'transactions') {
+            rows = this.createMockTransactions(parsedparams);
+        } else if (callerFile === 'balances') {
+            rows = this.createMockBalances(parsedparams);
+        } else if (callerFile === 'accounts') {
+            rows = this.createMockAccounts(parsedparams);
+        }
+        return (rows);
+    }
+
+    /**
+     * Create mock data for /transactions query
+     * @param {Object} parsedparams Parsed parameters that were present in the SQL query
+     * @return {Array} rows array filled with mock data
+     */
+    createMockTransactions(parsedparams) {
+        let accountNum = {
+            low: 1,
+            high: this.TEST_DATA_MAX_ACCOUNTS
+        }
+        let timestamp = {
+            low: this.toNs(this.timeNow - this.TEST_DATA_MAX_HISTORY),
+            high: this.toNs(this.timeNow)
+        }
+        let limit = {
+            low: config.limits.RESPONSE_ROWS,
+            high: config.limits.RESPONSE_ROWS
+        }
+        let order = 'desc';
+
+        // Adjust the low/high values based on the SQL query parameters
+        for (const param of parsedparams) {
+            switch (param.field) {
+                case 'entity_num':
+                    accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
+                    break;
+                case 'consensus_ns':
+                    timestamp = this.adjustRangeBasedOnConstraints(param, timestamp);
+                    break;
+                case 'limit':
+                    limit = this.adjustRangeBasedOnConstraints(param, limit);
+                    break;
+                case 'order':
+                    order = param.value;
+                    break;
+            }
+        }
+
+        // Sanity check on the numbers
+        [accountNum, timestamp, limit].forEach(pVar => {
+            pVar = this.sanityCheck(pVar)
+        });
+
+        // Create a mock response based on the sql query parameters
+        let rows = [];
+        for (let i = 0; i < limit.high; i++) {
+            let row = {};
+            row.entity_shard = 0;
+            row.entity_realm = 0;
+            row.entity_num = i;
+            row.memo = Buffer.from(`Test memo ${i}`);
+            row.consensus_ns = this.toNs(this.timeNow - i);
+            row.valid_start_ns = this.toNs(this.timeNow - i - 1);
+            row.result = 'SUCCESS';
+            row.fk_trans_type_id = 1;
+            row.name = 'CRYPTOTRANSFER';
+            row.node_shard = 0;
+            row.node_realm = 0;
+            row.node_num = i % this.NUM_NODES;
+            row.account_shard = 0;
+            row.account_realm = 0;
+            row.account_num = Number(accountNum.low) + ((accountNum.high == accountNum.low) ?
+                0 : (i % (accountNum.high - accountNum.low)));
+            row.amount = i * 1000;
+            row.charged_tx_fee = 100 + i;
+            rows.push(row);
+        }
+        if (['asc', 'ASC'].includes(order)) {
+            rows = rows.reverse();
+        }
+
+        return (rows);
+    }
+
+    /**
+     * Create mock data for /balances query
+     * @param {Object} parsedparams Parsed parameters that were present in the SQL query
+     * @return {Array} rows array filled with mock data
+     */
+    createMockBalances(parsedparams) {
+        let accountNum = {
+            low: 1,
+            high: this.TEST_DATA_MAX_ACCOUNTS
+        }
+        let timestamp = {
+            low: (this.timeNow - this.TEST_DATA_MAX_HISTORY),
+            high: this.timeNow
+        }
+        let balance = {
+            low: 0,
+            high: this.TEST_DATA_MAX_BALANCE
+        }
+        let limit = {
+            low: config.limits.RESPONSE_ROWS,
+            high: config.limits.RESPONSE_ROWS
+        }
+        let order = 'desc';
+
+        // Adjust the low/high values based on the SQL query parameters
+        for (const param of parsedparams) {
+            switch (param.field) {
+                case 'account_num':
+                    accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
+                    break;
+                case 'consensus_timestamp':
+                    // Convert the nanoseconds into seconds
+                    let paramSeconds = JSON.parse(JSON.stringify(param)); // deep copy
+                    paramSeconds.value = math.number(
+                        math.divide(math.bignumber(paramSeconds.value),
+                            math.bignumber(1e9)));
+
+                    timestamp = this.adjustRangeBasedOnConstraints(paramSeconds, timestamp);
+                    break;
+                case 'balance':
+                    balance = this.adjustRangeBasedOnConstraints(param, balance);
+                    break;
+                case 'limit':
+                    limit = this.adjustRangeBasedOnConstraints(param, limit);
+                    break;
+                case 'order':
+                    order = param.value;
+                    break;
+            }
+        }
+
+        // Sanity check on the numbers
+        [accountNum, timestamp, balance, limit].forEach(pVar => {
+            pVar = this.sanityCheck(pVar)
+        });
+
+        // Create a mock response based on the sql query parameters
+        let rows = [];
+        for (let i = 0; i < limit.high; i++) {
+            let row = {};
+            row.consensus_timestamp =
+                this.toNs(Math.floor((timestamp.low + timestamp.high) / 2));
+            row.realm_num = 0;
+            row.entity_num = Number(accountNum.high) - ((accountNum.high == accountNum.low) ?
+                0 : (i % (accountNum.high - accountNum.low)));
+            row.balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
+
+            rows.push(row);
+        }
+
+        if (['asc', 'ASC'].includes(order)) {
+            rows = rows.reverse();
+        }
+
+        return (rows);
+    }
+
+    /**
+     * Create mock data for /accounts query
+     * @param {Object} parsedparams Parsed parameters that were present in the SQL query
+     * @return {Array} rows array filled with mock data
+     */
+    createMockAccounts(parsedparams) {
+        let accountNum = {
+            low: 1,
+            high: this.TEST_DATA_MAX_ACCOUNTS
+        }
+        let balance = {
+            low: 0,
+            high: this.TEST_DATA_MAX_BALANCE
+        }
+        let limit = {
+            low: config.limits.RESPONSE_ROWS,
+            high: config.limits.RESPONSE_ROWS
+        }
+        let order = 'desc';
+
+        // Adjust the low/high values based on the SQL query parameters
+        for (const param of parsedparams) {
+            switch (param.field) {
+                case 'account_num':
+                    accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
+                    break;
+                case 'balance':
+                    balance = this.adjustRangeBasedOnConstraints(param, balance);
+                    break;
+                case 'limit':
+                    limit = this.adjustRangeBasedOnConstraints(param, limit);
+                    break;
+                case 'order':
+                    order = param.value;
+                    break;
+            }
+        }
+
+        // Sanity check on the numbers
+        [accountNum, balance, limit].forEach(pVar => {
+            pVar = this.sanityCheck(pVar)
+        });
+
+        // Create a mock response based on the sql query parameters
+        let rows = [];
+        for (let i = 0; i < limit.high; i++) {
+            let row = {};
+
+            row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
+            row.consensus_timestamp = this.toNs(this.timeNow);
+            row.entity_shard = 0;
+            row.entity_realm = 0;
+            row.entity_num = Number(accountNum.high) - ((accountNum.high == accountNum.low) ?
+                0 : (i % (accountNum.high - accountNum.low)));
+            row.exp_time_ns = this.toNs(this.timeNow + 1000);
+            row.auto_renew_period = i * 1000;
+            row.key = Buffer.from(`Key for row ${i}`);
+            row.deleted = false;
+            row.entity_type = 'Account';
+
+            rows.push(row);
+        }
+
+        if (['asc', 'ASC'].includes(order)) {
+            rows = rows.reverse();
+        }
+
+        return (rows);
+    }
+
+    /**
+     * Utility function to adjust the low and high constraints of a given object based on 
+     * the values present in the SQL query
+     * @param {Object} parm A query parameters that was present in the SQL query
+     * @param {Object} pVar The object whose low/high values need to be adjusted
+     * @return {Object} pVar the adjusted object
+     */
+    adjustRangeBasedOnConstraints(param, pVar) {
+        switch (param.operator) {
+            case "<":
+            case "<=":
+                pVar.high = param.value - 1;
+                break;
+            case ">":
+            case ">=":
+                pVar.low = param.value + 1;
+                break;
+            case "=":
+                pVar.low = param.value;
+                pVar.high = param.value;
+                break;
+        }
+        if (param.field === 'limit') {
+            if (param.high > config.limits.RESPONSE_ROWS) {
+                param.low = config.limits.RESPONSE_ROWS;
+                param.high = config.limits.RESPONSE_ROWS;
+            }
+        }
+        return (pVar);
+    }
+
+    /**
+     * Utility function to ensure low value is lower than high value to prevent 
+     * in advertent infinite loops if the query has low/high values inverted
+     * @param {Object} pVar The object whose low/high values need to be tested
+     * @return {Object} pVar the adjusted object
+     */
+    sanityCheck(pVar) {
+        if (pVar.low > pVar.high) {
+            pVar.low = pVar.high - 1;
+        }
+        return (pVar);
     }
 }
 
