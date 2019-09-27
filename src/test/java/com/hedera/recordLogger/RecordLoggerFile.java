@@ -22,7 +22,6 @@ import com.google.protobuf.ByteString;
  * ‍
  */
 
-import com.hedera.IntegrationTest;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.FileData;
 import com.hedera.mirror.repository.ContractResultRepository;
@@ -75,37 +74,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @Sql("classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
-public class RecordLoggerFile extends IntegrationTest {
+public class RecordLoggerFile extends AbstractRecordFileLoggerTest {
 
 	private static final FileID fileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1001).build();
-
-    @Resource
-    private TransactionRepository transactionRepository;
-    @Resource
-    private EntityRepository entityRepository;
-    @Resource
-    private ContractResultRepository contractResultRepository;
-    @Resource
-    private RecordFileRepository recordFileRepository;
-    @Resource
-    private CryptoTransferRepository cryptoTransferRepository;
-    @Resource
-    private LiveHashRepository liveHashRepository;
-    @Resource
-    private FileDataRepository fileDataRepository;
-    @Resource
-    private TransactionResultRepository transactionResultRepository;
-    @Resource
-    private EntityTypeRepository entityTypeRepository;
 
     @BeforeEach
     void before() throws Exception {
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-		RecordLoggerUtils.entityTypeRepository = entityTypeRepository;
-		RecordLoggerUtils.entityRepository = entityRepository;
-		RecordLoggerUtils.cryptoTransferRepository = cryptoTransferRepository;
-		RecordLoggerUtils.transactionResultRepository = transactionResultRepository;
 	}
 
     @AfterEach
@@ -140,13 +116,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(1, fileDataRepository.count())
                 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -158,7 +134,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 //TODO transactionBody.getTransactionValidDuration()
 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
                 
                 // file data
                 ,() -> assertArrayEquals(fileCreateTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
@@ -208,13 +184,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(2, fileDataRepository.count())
 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -222,7 +198,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 //TODO transactionBody.getTransactionValidDuration()
                 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
 
                 // file data
                 ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
@@ -267,13 +243,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(1, fileDataRepository.count())
                 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -281,7 +257,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 //TODO transactionBody.getTransactionValidDuration()
 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
 
                 // file data
                 ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
@@ -334,13 +310,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(2, fileDataRepository.count())
                 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -352,7 +328,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.get().getKey())
                 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
 
                 // file data
                 ,() -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
@@ -394,13 +370,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(1, fileDataRepository.count())
 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -412,7 +388,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 //TODO transactionBody.getTransactionValidDuration()
 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
 
                 // file data
                 ,() -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
@@ -462,13 +438,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(2, fileDataRepository.count())
                 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -480,7 +456,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertNotNull(dbFileEntity.get().getKey())
                 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
 
                 // file data
                 ,() -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
@@ -522,13 +498,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(1, fileDataRepository.count())
 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -540,7 +516,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 //TODO transactionBody.getTransactionValidDuration()
 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
 
                 // file data
                 ,() -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(), dbfileData.get().getFileData())
@@ -590,13 +566,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(2, fileDataRepository.count())
                 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -608,7 +584,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertNotNull(dbFileEntity.get().getKey())
                 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
 
                 // Additional entity checks
                 ,() -> assertNull(dbFileEntity.get().getAutoRenewPeriod())
@@ -647,13 +623,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(1, fileDataRepository.count())
 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -665,7 +641,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 //TODO transactionBody.getTransactionValidDuration()
 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
 
                 // Additional entity checks
                 ,() -> assertNull(dbFileEntity.get().getAutoRenewPeriod())
@@ -713,13 +689,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(2, fileDataRepository.count())
                 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -731,7 +707,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.get().getKey())
                 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
 
                 // Additional entity checks
                 ,() -> assertNull(dbFileEntity.get().getAutoRenewPeriod())
@@ -771,13 +747,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(1, fileDataRepository.count())
 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -789,7 +765,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 //TODO transactionBody.getTransactionValidDuration()
 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
 
                 // Additional entity checks
                 ,() -> assertNull(dbFileEntity.get().getAutoRenewPeriod())
@@ -835,13 +811,13 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(1, fileDataRepository.count())
 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
@@ -850,7 +826,7 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertTrue(dbFileEntity.get().isDeleted())
 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
 
                 // Additional entity checks
                 ,() -> assertNotNull(dbFileEntity.get().getKey())
@@ -889,19 +865,19 @@ public class RecordLoggerFile extends IntegrationTest {
                 ,() -> assertEquals(0, fileDataRepository.count())
 
                 // record inputs
-                ,() -> RecordLoggerUtils.assertRecord(record, dbTransaction) 
+                ,() -> assertRecord(record, dbTransaction) 
 
                 // receipt
-                ,() -> RecordLoggerUtils.assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
                 
                 // record transfer list
-                ,() -> RecordLoggerUtils.assertTransfers(record)
+                ,() -> assertTransfers(record)
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.get().getMemo())
                 
                 // node
-                ,() -> RecordLoggerUtils.assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
                 ,() -> assertTrue(dbFileEntity.get().isDeleted())
                 //TODO transactionBody.getTransactionFee()
                 //TODO transactionBody.getTransactionValidDuration()

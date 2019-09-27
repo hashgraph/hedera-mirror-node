@@ -30,7 +30,7 @@ import javax.persistence.*;
 public class LiveHash {
 
     @Id
-    private Long consensus_timestamp;
+    private Long consensusTimestamp;
 
     private byte[] liveHash;
 }

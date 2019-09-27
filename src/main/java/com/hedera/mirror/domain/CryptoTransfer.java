@@ -32,7 +32,6 @@ public class CryptoTransfer {
     @Id
     private Long consensusTimestamp;
 
-    @Column(name = "account_id")
     private Long accountId;
 
     private Long amount;
