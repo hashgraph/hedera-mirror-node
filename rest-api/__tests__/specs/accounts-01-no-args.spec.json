@@ -1,0 +1,121 @@
+{
+    "url": "/api/v1/accounts",
+    "responseStatus": 200,
+    "responseJson": {
+        "accounts": [
+            {
+                "balance": {
+                    "timestamp": "0.000002000",
+                    "balance": 10
+                },
+                "account": "0.15.1",
+                "expiry_timestamp": null,
+                "auto_renew_period": null,
+                "key": null,
+                "deleted": false
+            },
+            {
+                "balance": {
+                    "timestamp": "0.000002000",
+                    "balance": 20
+                },
+                "account": "0.15.2",
+                "expiry_timestamp": null,
+                "auto_renew_period": null,
+                "key": null,
+                "deleted": false
+            },
+            {
+                "balance": {
+                    "timestamp": "0.000002000",
+                    "balance": 30
+                },
+                "account": "0.15.3",
+                "expiry_timestamp": null,
+                "auto_renew_period": null,
+                "key": null,
+                "deleted": false
+            },
+            {
+                "balance": {
+                    "timestamp": "0.000002000",
+                    "balance": 40
+                },
+                "account": "0.15.4",
+                "expiry_timestamp": null,
+                "auto_renew_period": null,
+                "key": null,
+                "deleted": false
+            },
+            {
+                "balance": {
+                    "timestamp": "0.000002000",
+                    "balance": 50
+                },
+                "account": "0.15.5",
+                "expiry_timestamp": null,
+                "auto_renew_period": null,
+                "key": null,
+                "deleted": false
+            },
+            {
+                "balance": {
+                    "timestamp": "0.000002000",
+                    "balance": 60
+                },
+                "account": "0.15.6",
+                "expiry_timestamp": null,
+                "auto_renew_period": null,
+                "key": null,
+                "deleted": false
+            },
+            {
+                "balance": {
+                    "timestamp": "0.000002000",
+                    "balance": 70
+                },
+                "account": "0.15.7",
+                "expiry_timestamp": null,
+                "auto_renew_period": null,
+                "key": null,
+                "deleted": false
+            },
+            {
+                "balance": {
+                    "timestamp": "0.000002000",
+                    "balance": 80
+                },
+                "account": "0.15.8",
+                "expiry_timestamp": null,
+                "auto_renew_period": null,
+                "key": null,
+                "deleted": false
+            },
+            {
+                "balance": {
+                    "timestamp": "0.000002000",
+                    "balance": 90
+                },
+                "account": "0.15.9",
+                "expiry_timestamp": null,
+                "auto_renew_period": null,
+                "key": null,
+                "deleted": false
+            },
+            {
+                "balance": {
+                    "timestamp": "0.000002000",
+                    "balance": 100
+                },
+                "account": "0.15.10",
+                "expiry_timestamp": null,
+                "auto_renew_period": null,
+                "key": null,
+                "deleted": false
+            }
+        ],
+        "links": {
+            "next": null
+        }
+    }
+}

@@ -1,4 +1,9 @@
-node_modules
+/jars/
+/node/
+/.node-flywaydb/
+/node_modules/
+.node-version
 .env
+/.idea/
 /*.tgz
 /target/
