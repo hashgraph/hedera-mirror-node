@@ -62,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @Sql("classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
-public class RecordLoggerFile extends AbstractRecordFileLoggerTest {
+public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
 	private static final FileID fileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1001).build();
 

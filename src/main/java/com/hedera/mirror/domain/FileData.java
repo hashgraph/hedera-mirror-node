@@ -30,7 +30,7 @@ import javax.persistence.*;
 public class FileData {
 
     @Id
-    private Long consensus_timestamp;
+    private Long consensusTimestamp;
 
     private byte[] fileData;
 }

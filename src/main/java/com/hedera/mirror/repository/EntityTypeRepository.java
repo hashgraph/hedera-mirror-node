@@ -1,6 +1,5 @@
 package com.hedera.mirror.repository;
 
-import com.hedera.mirror.domain.Entities;
 
 /*-
  * ‌
@@ -26,11 +25,7 @@ import com.hedera.mirror.domain.EntityType;
 
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.query.Param;
-
 public interface EntityTypeRepository extends CrudRepository<EntityType, Integer> {
-	@Query("from EntityType where name = :name")
-	Optional<EntityType> findByName(@Param("name") String name);
+	Optional<EntityType> findByName(String name);
 }
