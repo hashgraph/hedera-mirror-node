@@ -10,6 +10,7 @@
   "author": "Atul Mahamuni",
   "license": "Apache-2.0",
   "dependencies": {
+    "asn1js": "^2.0.26",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -21,6 +22,7 @@
     "pg": "^7.11.0"
   },
   "bundledDependencies": [
+    "asn1js",
     "body-parser",
     "compression",
     "cors",

@@ -98,7 +98,7 @@ const getAccounts = function (req) {
         ['ab.balance'], 'balance');
 
     let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'account.publickey',
-        ['e.ed25519_public_key_hex'], null, (s) => {return s.toLowerCase();});
+        ['e.ed25519_public_key_hex'], 'publickey', (s) => {return s.toLowerCase();});
 
     const { limitQuery, limitParams, order, limit } =
         utils.parseLimitAndOrderParams(req, 'asc');
