@@ -32,8 +32,12 @@ const derToEd25519 = function (der) {
         let asn1Result = asn.result.toJSON(); 
 
         // Check if it is a ED25519 key
+        if (asn1Result.valueBlock.value.length < 1 || 
+            asn1Result.valueBlock.value[0].valueBlock.value.length < 1) {
+            return (null);
+        }
         const valueBlock = asn1Result.valueBlock.value[0].valueBlock.value[0].valueBlock;
-        if (valueBlock.blockName = 'ObjectIdentifierValueBlock' &&
+        if (valueBlock.blockName == 'ObjectIdentifierValueBlock' &&
             valueBlock.value == ID_Ed25519) {
             const ed25519Key = asn1Result.valueBlock.value[1].valueBlock.valueHex;
             return (ed25519Key);
