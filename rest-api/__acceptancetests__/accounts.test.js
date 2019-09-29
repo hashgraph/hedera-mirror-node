@@ -17,241 +17,265 @@
  * limitations under the License.
  * ‍
  */
-const request = require('supertest');
-const math = require('mathjs');
-const server = process.env.TARGET;
-const testutils = require('./tutils.js');
-const config = require('../config.js');
 
-beforeAll(async () => {
-    debuglog('Jest starting!');
-    jest.setTimeout(20000);
+var acceptanceTestsAccounts = (function () {
+    const request = require('supertest');
+    const math = require('mathjs');
+    const server = process.env.TARGET;
+    const acctestutils = require('./acceptancetest_utils.js');
+    const config = require('../config.js');
 
-    if (process.env.verbose != undefined && process.env.verbose == 1) {
-        globals.verbose = true;
-    }
+    beforeAll(async () => {
+        moduleVars.verbose && console.log('Jest starting!');
+        jest.setTimeout(20000);
 
-    await setGlobals();
-});
+        if (process.env.verbose != undefined && process.env.verbose == 1) {
+            moduleVars.verbose = true;
+        }
 
-afterAll(() => {});
+        const result = await setModuleVars();
+        if (!result) {
+            return(new Promise(function(resolve, reject) {
+                reject('Failed to successfully initialize test with /accounts API\n' +
+                    'All other tests in this test suit will fail as a result');
+            }));
+        }
+    });
 
-let globals = {
-    apiPrefix: '/api/v1',
-    verbose: false
-};
+    afterAll(() => {});
 
-const setGlobals = async function () {
-    const response = await request(server).get(globals.apiPrefix + '/accounts');
-    expect(response.status).toEqual(200);
-    let accounts = JSON.parse(response.text).accounts;
-
-    globals.testAccounts = {
-        num: testutils.toAccNum(accounts[0].account),
-        highest: 0,
-        nonZeroBalance: null
+    let moduleVars = {
+        apiPrefix: '/api/v1',
+        verbose: false
     };
 
-    for (let acc of accounts) {
-        if (Number(testutils.toAccNum(acc.account)) > globals.testAccounts.highest) {
-            globals.testAccounts.highest = Number(testutils.toAccNum(acc.account));
-        }
-        if (acc.balance.balance > 0) {
-            globals.testAccounts.nonZeroBalance = acc;
-        }
-    }
-    globals.testAcc = accounts;
-    globals.testTimestamp = accounts[0].balance.timestamp;
-
-    expect(accounts.length).toBe(config.limits.RESPONSE_ROWS);
-    expect(globals.testAccounts.num).toBeDefined();
-    expect(globals.testTimestamp).toBeDefined();
-}
-
-const checkMandatoryParams = function (entry) {
-    let check = true;
-    ['balance', 'account', 'expiry_timestamp', 'auto_renew_period',
-        'key', 'deleted'
-    ].forEach((field) => {
-        check = check && entry.hasOwnProperty(field);
-    });
-
-    ['timestamp', 'balance'].forEach((field) => {
-        check = check && entry.hasOwnProperty('balance') && entry.balance.hasOwnProperty(field);
-    });
-
-    return (check);
-}
-
-const debuglog = (msg) => globals.verbose && console.log(msg);
-
-describe('Monitoring tests - accounts', () => {
-    test('Get accounts with no parameters', async () => {
-        const response = await request(server).get(globals.apiPrefix + '/accounts');
+    // Make a preliminary query to /accounts and get the list of accounts. The values 
+    // returned by this query are used to populate the subsequent queries for other tests in 
+    // this file. For example, an account number returned by this query is used to 
+    // make a subsequent query for a specific account (/accounts?account.id=xxx).
+    // This allows the acceptance tests to run against any network (testnet, mainnet) by
+    // dynamically discovering account numbers, balances, transactions, etc to avoid 
+    // hardcoding.
+    const setModuleVars = async function () {
+        const response = await request(server).get(moduleVars.apiPrefix + '/accounts?order=desc');
         expect(response.status).toEqual(200);
         let accounts = JSON.parse(response.text).accounts;
+
         expect(accounts.length).toBe(config.limits.RESPONSE_ROWS);
 
-        // Assert that all mandatory fields are present in the response
-        let check = checkMandatoryParams(accounts[0]);
-        expect(check).toBeTruthy();
-    });
+        if (accounts.length !== config.limits.RESPONSE_ROWS) {
+            return (false);
+        }
+        moduleVars.testAccounts = {
+            num: acctestutils.toAccNum(accounts[0].account),
+            highest: 0,
+            nonZeroBalance: null,
+            publicKey: null
+        };
 
-    test('Get accounts with timestamp & limit parameters', async () => {
-        let plusOne = math.add(math.bignumber(globals.testTimestamp), math.bignumber(1));
-        let minusOne = math.subtract(math.bignumber(globals.testTimestamp), math.bignumber(1));
-        const url = `${globals.apiPrefix}/accounts` +
-            `?timestamp=gt:${minusOne.toString()}` +
-            `&timestamp=lt:${plusOne.toString()}&limit=1`;
-        debuglog(url);
-        const response = await request(server).get(url);
-        expect(response.status).toEqual(200);
-        let accounts = JSON.parse(response.text).accounts;
-        expect(accounts.length).toEqual(1);
-    });
-
-    test('Get accounts for a single account', async () => {
-        const url = `${globals.apiPrefix}/accounts` +
-            `/0.0.${globals.testAccounts.highest}`;
-        debuglog(url);
-        const response = await request(server).get(url);
-        expect(response.status).toEqual(200);
-        let accounts = JSON.parse(response.text);
-        expect(accounts.account).toEqual('0.0.' + globals.testAccounts.highest);
-
-        // Assert that all mandatory fields are present in the response
-        let check = checkMandatoryParams(accounts);
-        expect(check).toBeTruthy();
-    });
-});
-
-describe('Acceptance tests - accounts', () => {
-    test('Get accounts with limit parameters', async () => {
-        const response = await request(server).get(globals.apiPrefix + '/accounts?limit=10');
-        expect(response.status).toEqual(200);
-        let accounts = JSON.parse(response.text).accounts;
-        expect(accounts.length).toEqual(10);
-    });
-
-    test('Get accounts with account id parameters', async () => {
-        const url = `${globals.apiPrefix}/accounts` +
-            `?account.id=0.0.${globals.testAccounts.highest}&limit=1`;
-        debuglog(url);
-        const response = await request(server).get(url);
-        expect(response.status).toEqual(200);
-        let accounts = JSON.parse(response.text).accounts;
-        expect(accounts.length).toEqual(1);
-        expect(globals.testAccounts.highest).toBe(Number(testutils.toAccNum(accounts[0].account)));
-    });
-
-    test('Get accounts with account id range parameters', async () => {
-        let accLow = Math.max(0, Number(globals.testAccounts.highest) - 100);
-        let accHigh = Number(globals.testAccounts.highest);
-        const url = `${globals.apiPrefix}/accounts` +
-            `?account.id=gt:0.0.${accLow}&account.id=lt:0.0.${accHigh}`;
-        debuglog(url);
-        const response = await request(server).get(url);
-        expect(response.status).toEqual(200);
-        let accounts = JSON.parse(response.text).accounts;
-        expect(accounts.length).toBeGreaterThanOrEqual(1);
-        let check = true;
         for (let acc of accounts) {
-            if (acc < accLow || acc > accHigh) {
-                check = false;
+            if (acctestutils.toAccNum(acc.account) > moduleVars.testAccounts.highest) {
+                moduleVars.testAccounts.highest = acctestutils.toAccNum(acc.account);
+            }
+            if (acc.balance.balance > 0) {
+                moduleVars.testAccounts.nonZeroBalance = acc;
+            }
+            if (acc.key != null && 
+                acc.key._type == 'ED25519' &&
+                acc.key.key != null) {
+                moduleVars.publicKey = acc.key.key;
             }
         }
-        expect(check).toBeTruthy();
-    });
+        moduleVars.testAcc = accounts;
+        moduleVars.testTimestamp = accounts[0].balance.timestamp;
 
-    test('Get accounts with account balance range parameters', async () => {
-        let balLow = Number(globals.testAccounts.nonZeroBalance.balance.balance) - 1;
-        let balHigh = Number(globals.testAccounts.nonZeroBalance.balance.balance) + 1;
-        const url = `${globals.apiPrefix}/accounts` +
-            `?account.balance=gt:${balLow}&account.balance=lt:${balHigh}`;
-        debuglog(url);
-        const response = await request(server).get(url);
-        expect(response.status).toEqual(200);
-        let accounts = JSON.parse(response.text).accounts;
-        expect(accounts.length).toBeGreaterThanOrEqual(1);
-    });
-
-    test('Get accounts with account key parameters', async () => {
-        const url = `${globals.apiPrefix}/accounts` +
-            `?account.publickey=1234567890123456789012345678901234567890123456789012345678901234`;
-        debuglog(url);
-        const response = await request(server).get(url);
-        expect(response.status).toEqual(200);
-        let accounts = JSON.parse(response.text).accounts;
-        expect(accounts.length).toBe(0);
-    });
-
-    test('Get accounts with order parameters', async () => {
-        const url = `${globals.apiPrefix}/accounts` +
-            `?order=desc`;
-        debuglog(url);
-        const response = await request(server).get(url);
-        expect(response.status).toEqual(200);
-        let accounts = JSON.parse(response.text).accounts;
-        expect(accounts.length).toEqual(config.limits.RESPONSE_ROWS);
-        let check = true;
-        let prevAcc = Number.MAX_SAFE_INTEGER;
-        for (let acc of accounts) {
-            if (Number(testutils.toAccNum(acc.account)) >= prevAcc) {
-                check = false;
-            }
-            prevAcc = testutils.toAccNum(acc.account);
+        expect(moduleVars.testAccounts.num).toBeDefined();
+        expect(moduleVars.testTimestamp).toBeDefined();
+        if (moduleVars.testAccounts.num == undefined ||
+            moduleVars.testTimestamp == undefined) {
+            return (false);
         }
-        expect(check).toBeTruthy();
-    });
 
-    test('Get accounts with all parameters', async () => {
-        let accLow = Math.max(0, Number(globals.testAccounts.highest) - 100);
-        let accHigh = Number(globals.testAccounts.highest);
-        let plusOne = math.add(math.bignumber(globals.testTimestamp), math.bignumber(1));
-        let minusOne = math.subtract(math.bignumber(globals.testTimestamp), math.bignumber(1));
-        let balLow = Number(globals.testAccounts.nonZeroBalance.balance.balance) - 1;
-        let balHigh = Number(globals.testAccounts.nonZeroBalance.balance.balance) + 1;
-        const url = `${globals.apiPrefix}/accounts` +
-            `?timestamp=gte:${minusOne}&timestamp=lte:${plusOne}` +
-            `&account.id=gt:${accLow}&account.id=lt:${accHigh}` +
-            `&account.balance=gt:${balLow}&account.balance=lt:${balHigh}` +
-            `&account.publickey=1234567890123456789012345678901234567890123456789012345678901234` +
-            `&order=desc&limit=${config.limits.RESPONSE_ROWS}`;
-        debuglog(url);
-        const response = await request(server).get(url);
-        expect(response.status).toEqual(200);
-    });
+        return (true);
+    }
 
-    test('Get accounts with pagination', async () => {
-        // Validate that pagination works and that it doesn't have any gaps
-        let paginatedEntries = [];
-        const numPages = 5;
-        const pageSize = config.limits.RESPONSE_ROWS / numPages;
-        let next = null;
-        for (let index = 0; index < numPages; index++) {
-            const nextUrl = paginatedEntries.length === 0 ?
-                `${globals.apiPrefix}/accounts?timestamp=lte:${globals.testTimestamp}&limit=${pageSize}` :
-                next;
-            debuglog("Nexturl: " + nextUrl);
-            response = await request(server).get(nextUrl);
+    const checkMandatoryParams = function (entry) {
+        let check = true;
+        ['balance', 'account', 'expiry_timestamp', 'auto_renew_period',
+            'key', 'deleted'
+        ].forEach((field) => {
+            check = check && entry.hasOwnProperty(field);
+        });
+
+        ['timestamp', 'balance'].forEach((field) => {
+            check = check && entry.hasOwnProperty('balance') && entry.balance.hasOwnProperty(field);
+        });
+
+        return (check);
+    }
+
+    describe('Monitoring tests - accounts', () => {
+        test('Get accounts with no parameters', async () => {
+            const response = await request(server).get(moduleVars.apiPrefix + '/accounts');
             expect(response.status).toEqual(200);
-            let chunk = JSON.parse(response.text).accounts;
-            expect(chunk.length).toEqual(pageSize);
-            paginatedEntries = paginatedEntries.concat(chunk);
+            let accounts = JSON.parse(response.text).accounts;
+            expect(accounts.length).toBe(config.limits.RESPONSE_ROWS);
 
-            next = JSON.parse(response.text).links.next;
-            expect(next).not.toBe(null);
-        }
+            // Assert that all mandatory fields are present in the response
+            let check = checkMandatoryParams(accounts[0]);
+            expect(check).toBeTruthy();
+        });
 
-        check = (paginatedEntries.length === globals.testAcc.length);
-        expect(check).toBeTruthy();
+        test('Get accounts with timestamp & limit parameters', async () => {
+            let plusOne = math.add(math.bignumber(moduleVars.testTimestamp), math.bignumber(1));
+            let minusOne = math.subtract(math.bignumber(moduleVars.testTimestamp), math.bignumber(1));
+            const url = `${moduleVars.apiPrefix}/accounts` +
+                `?timestamp=gt:${minusOne.toString()}` +
+                `&timestamp=lt:${plusOne.toString()}&limit=1`;
+            moduleVars.verbose && console.log(url);
+            const response = await request(server).get(url);
+            expect(response.status).toEqual(200);
+            let accounts = JSON.parse(response.text).accounts;
+            expect(accounts.length).toEqual(1);
+        });
 
-        check = true;
-        for (i = 0; i < config.limits.RESPONSE_ROWS; i++) {
-            if (globals.testAcc[i].account !== paginatedEntries[i].account) {
-                check = false;
-            }
-        }
-        expect(check).toBeTruthy();
+        test('Get accounts for a single account', async () => {
+            const url = `${moduleVars.apiPrefix}/accounts` +
+                `/${acctestutils.fromAccNum(moduleVars.testAccounts.highest)}`;
+            moduleVars.verbose && console.log(url);
+            const response = await request(server).get(url);
+            expect(response.status).toEqual(200);
+            let accounts = JSON.parse(response.text);
+            expect(accounts.account).toEqual(acctestutils.fromAccNum(moduleVars.testAccounts.highest));
+
+            // Assert that all mandatory fields are present in the response
+            let check = checkMandatoryParams(accounts);
+            expect(check).toBeTruthy();
+        });
     });
-});
+
+    describe('Acceptance tests - accounts', () => {
+        test('Get accounts with limit parameters', async () => {
+            const response = await request(server).get(moduleVars.apiPrefix + '/accounts?limit=10');
+            expect(response.status).toEqual(200);
+            let accounts = JSON.parse(response.text).accounts;
+            expect(accounts.length).toEqual(10);
+        });
+
+        test('Get accounts with account id parameters', async () => {
+            const url = `${moduleVars.apiPrefix}/accounts` +
+                `?account.id=${acctestutils.fromAccNum(moduleVars.testAccounts.highest)}` +
+                `&limit=1`;
+            moduleVars.verbose && console.log(url);
+            const response = await request(server).get(url);
+            expect(response.status).toEqual(200);
+            let accounts = JSON.parse(response.text).accounts;
+            expect(accounts.length).toEqual(1);
+            expect(moduleVars.testAccounts.highest).toBe(acctestutils.toAccNum(accounts[0].account));
+        });
+
+        test('Get accounts with account id range parameters', async () => {
+            let accLow = Math.max(0, Number(moduleVars.testAccounts.highest) - 100);
+            let accHigh = Number(moduleVars.testAccounts.highest);
+            const url = `${moduleVars.apiPrefix}/accounts` +
+                `?account.id=gt:${acctestutils.fromAccNum(accLow)}` +
+                `&account.id=lt:${acctestutils.fromAccNum(accHigh)}`;
+            moduleVars.verbose && console.log(url);
+            const response = await request(server).get(url);
+            expect(response.status).toEqual(200);
+            let accounts = JSON.parse(response.text).accounts;
+            expect(accounts.length).toBeGreaterThanOrEqual(1);
+            let check = true;
+            for (let acc of accounts) {
+                if (acc < accLow || acc > accHigh) {
+                    check = false;
+                }
+            }
+            expect(check).toBeTruthy();
+        });
+
+        test('Get accounts with account balance range parameters', async () => {
+            let balLow = Number(moduleVars.testAccounts.nonZeroBalance.balance.balance) - 1;
+            let balHigh = Number(moduleVars.testAccounts.nonZeroBalance.balance.balance) + 1;
+            const url = `${moduleVars.apiPrefix}/accounts` +
+                `?account.balance=gt:${balLow}&account.balance=lt:${balHigh}`;
+            moduleVars.verbose && console.log(url);
+            const response = await request(server).get(url);
+            expect(response.status).toEqual(200);
+            let accounts = JSON.parse(response.text).accounts;
+            expect(accounts.length).toBeGreaterThanOrEqual(1);
+        });
+
+        test('Get accounts with account key parameters', async () => {
+            if (moduleVars.publicKey != null) {
+                const url = `${moduleVars.apiPrefix}/accounts` +
+                    `?account.publickey=${moduleVars.publicKey}`;
+                moduleVars.verbose && console.log(url);
+                const response = await request(server).get(url);
+                expect(response.status).toEqual(200);
+                let accounts = JSON.parse(response.text).accounts;
+                expect(accounts.length).toBeGreaterThanOrEqual(1);
+            }
+        });
+
+        test('Get accounts with order parameters', async () => {
+            const url = `${moduleVars.apiPrefix}/accounts` +
+                `?order=desc`;
+            moduleVars.verbose && console.log(url);
+            const response = await request(server).get(url);
+            expect(response.status).toEqual(200);
+            let accounts = JSON.parse(response.text).accounts;
+            expect(accounts.length).toEqual(config.limits.RESPONSE_ROWS);
+            let check = true;
+            let prevAcc = Number.MAX_SAFE_INTEGER;
+            for (let acc of accounts) {
+                if (acctestutils.toAccNum(acc.account) >= prevAcc) {
+                    check = false;
+                }
+                prevAcc = acctestutils.toAccNum(acc.account);
+            }
+            expect(check).toBeTruthy();
+        });
+
+        test('Get accounts with pagination', async () => {
+            // Validate that pagination works and that it doesn't have any gaps
+            // In setModuleVars function, we did an /accounts query and stored the results of that query in the 
+            // moduleVars.testAcc variable. This is expected to be RESPONSE_ROWS (currently 1000) long.
+            // We will now try to fetch the same entries using five 200-entry pages using the 'next' links
+            // After that, we will concatenate these 5 pages and compare the entries with the original response
+            // of 1000 entries to see if there is any overlap or gaps in the returned responses.           
+            let paginatedEntries = [];
+            const numPages = 5;
+            const pageSize = config.limits.RESPONSE_ROWS / numPages;
+            let next = null;
+            for (let index = 0; index < numPages; index++) {
+                const nextUrl = paginatedEntries.length === 0 ?
+                    `${moduleVars.apiPrefix}/accounts?timestamp=lte:${moduleVars.testTimestamp}&order=desc&limit=${pageSize}` :
+                    next;
+                moduleVars.verbose && console.log(`Nexturl: ${nextUrl}`);
+                response = await request(server).get(nextUrl);
+                expect(response.status).toEqual(200);
+                let chunk = JSON.parse(response.text).accounts;
+                expect(chunk.length).toEqual(pageSize);
+                paginatedEntries = paginatedEntries.concat(chunk);
+
+                next = JSON.parse(response.text).links.next;
+                expect(next).not.toBe(null);
+            }
+
+            // We have concatenated set of pages obtained using the 'next' links
+            // Check if the length matches the original response 
+            check = (paginatedEntries.length === moduleVars.testAcc.length);
+            expect(check).toBeTruthy();
+
+            // Check if the accounts numbers match for each entry
+            check = true;
+            for (i = 0; i < config.limits.RESPONSE_ROWS; i++) {
+                if (moduleVars.testAcc[i].account !== paginatedEntries[i].account) {
+                    check = false;
+                }
+            }
+            expect(check).toBeTruthy();
+        });
+    });
+})();
