@@ -9,6 +9,8 @@ import javax.annotation.Resource;
 
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import com.google.protobuf.ByteString;
 import com.hedera.IntegrationTest;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.TransactionResult;
@@ -24,7 +26,12 @@ import com.hedera.mirror.repository.TransactionResultRepository;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class AbstractRecordFileLoggerTest extends IntegrationTest {
 	
@@ -85,5 +92,45 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
         assertEquals(record.getReceipt().getStatusValue(), dbResult.getProtobufId());
         assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.getResult());
     	
+    }
+    protected final SignatureMap getSigMap() {
+    	final String key1 = "11111111111111111111c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";    	
+    	final String signature1 = "Signature 1 here";    	
+    	final String key2 = "22222222222222222222c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";    	
+    	final String signature2 = "Signature 2 here";    	
+
+    	SignatureMap.Builder sigMap = SignatureMap.newBuilder();
+    	SignaturePair.Builder sigPair = SignaturePair.newBuilder();
+    	sigPair.setEd25519(ByteString.copyFromUtf8(signature1));
+    	sigPair.setPubKeyPrefix(ByteString.copyFromUtf8(key1));
+    	
+    	sigMap.addSigPair(sigPair);
+    	
+    	sigPair = SignaturePair.newBuilder();
+    	sigPair.setEd25519(ByteString.copyFromUtf8(signature2));
+    	sigPair.setPubKeyPrefix(ByteString.copyFromUtf8(key2));    	
+
+    	sigMap.addSigPair(sigPair);
+
+    	return sigMap.build();
+    }
+    
+    protected final Key keyFromString(String key) {
+    	return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();    
+    }
+    protected final Builder defaultTransactionBodyBuilder(String memo) {
+
+        final long validDuration = 120;
+        final AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build();
+        final long txFee = 53968962L;
+        final AccountID nodeAccount = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build();
+        
+     	final TransactionBody.Builder body = TransactionBody.newBuilder();
+    	body.setTransactionFee(txFee);
+    	body.setMemo(memo);
+    	body.setNodeAccountID(nodeAccount);
+    	body.setTransactionID(Utility.getTransactionId(payerAccountId));
+    	body.setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration).build());
+    	return body;
     }
 }

@@ -29,7 +29,6 @@ import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
@@ -43,7 +42,6 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -64,7 +62,16 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @Sql("classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
 public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
+	//TODO: The following are not yet saved to the mirror node database
+    // transactionBody.getTransactionFee()
+    // transactionBody.getTransactionValidDuration()
+    // transaction.getSigMap()
+	// transactionBody.getNewRealmAdminKey();
+	// record.getTransactionHash();
+
 	private static final FileID fileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1001).build();
+	private static final String realmAdminKey = "112212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
+ 	private static final String memo = "File test memo";
 
     @BeforeEach
     void before() throws Exception {
@@ -118,8 +125,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertEquals(fileCreateTransactionBody.getExpirationTime().getNanos(), dbFileEntity.getExpiryTimeNanos())
                 ,() -> assertEquals(Utility.timeStampInNanos(fileCreateTransactionBody.getExpirationTime()), dbFileEntity.getExpiryTimeNs())
                 ,() -> assertArrayEquals(fileCreateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
 
                 // node
                 ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
@@ -131,8 +136,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
                 ,() -> assertFalse(dbFileEntity.isDeleted())
-                
-                //TODO transaction.getSigMap()
          );    	
     }
         
@@ -182,8 +185,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.getMemo())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
                 
                 // node
                 ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
@@ -198,8 +199,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
                 ,() -> assertFalse(dbFileEntity.isDeleted())
-
-                //TODO transaction.getSigMap()
          );    	
     }
 
@@ -241,8 +240,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.getMemo())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
 
                 // node
                 ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
@@ -257,8 +254,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
                 ,() -> assertFalse(dbFileEntity.isDeleted())
-
-                //TODO transaction.getSigMap()
          );    	
     }
 
@@ -308,8 +303,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.getMemo())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
+                
                 ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity.getExpiryTimeSeconds())
                 ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity.getExpiryTimeNanos())
                 ,() -> assertEquals(Utility.timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity.getExpiryTimeNs())
@@ -325,8 +319,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
                 ,() -> assertFalse(dbFileEntity.isDeleted())
-                
-                //TODO transaction.getSigMap()
          );    	
     }
     
@@ -372,8 +364,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity.getExpiryTimeNanos())
                 ,() -> assertEquals(Utility.timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity.getExpiryTimeNs())
                 ,() -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
 
                 // node
                 ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
@@ -385,8 +375,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
                 ,() -> assertFalse(dbFileEntity.isDeleted())
-                
-                //TODO transaction.getSigMap()
          );    	
     }    
 
@@ -436,8 +424,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.getMemo())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
                 ,() -> assertNotNull(dbFileEntity.getExpiryTimeSeconds())
                 ,() -> assertNotNull(dbFileEntity.getExpiryTimeNanos())
                 ,() -> assertNotNull(dbFileEntity.getExpiryTimeNs())
@@ -453,8 +439,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
                 ,() -> assertFalse(dbFileEntity.isDeleted())
-                
-                //TODO transaction.getSigMap()
          );    	
     }
     
@@ -500,8 +484,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getExpiryTimeNanos())
                 ,() -> assertNull(dbFileEntity.getExpiryTimeNs())
                 ,() -> assertNull(dbFileEntity.getKey())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
 
                 // node
                 ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
@@ -513,8 +495,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
                 ,() -> assertFalse(dbFileEntity.isDeleted())
-                
-                //TODO transaction.getSigMap()
          );    	
     }    
 
@@ -564,8 +544,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.getMemo())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
                 ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity.getExpiryTimeSeconds())
                 ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity.getExpiryTimeNanos())
                 ,() -> assertEquals(Utility.timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity.getExpiryTimeNs())
@@ -578,8 +556,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
                 ,() -> assertFalse(dbFileEntity.isDeleted())
-                
-                //TODO transaction.getSigMap()
          );    	
     }
     
@@ -625,8 +601,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity.getExpiryTimeNanos())
                 ,() -> assertEquals(Utility.timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity.getExpiryTimeNs())
                 ,() -> assertNull(dbFileEntity.getKey())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
 
                 // node
                 ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
@@ -635,8 +609,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
                 ,() -> assertFalse(dbFileEntity.isDeleted())
-                
-                //TODO transaction.getSigMap()
          );    	
     }    
     
@@ -686,8 +658,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.getMemo())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
                 ,() -> assertNotNull(dbFileEntity.getExpiryTimeSeconds())
                 ,() -> assertNotNull(dbFileEntity.getExpiryTimeNanos())
                 ,() -> assertNotNull(dbFileEntity.getExpiryTimeNs())
@@ -700,8 +670,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
                 ,() -> assertFalse(dbFileEntity.isDeleted())
-                
-                //TODO transaction.getSigMap()
          );    	
     }
 
@@ -747,8 +715,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getExpiryTimeNanos())
                 ,() -> assertNull(dbFileEntity.getExpiryTimeNs())
                 ,() -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
 
                 // node
                 ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
@@ -757,8 +723,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
                 ,() -> assertFalse(dbFileEntity.isDeleted())
-                
-                //TODO transaction.getSigMap()
          );    	
     }    
     
@@ -807,8 +771,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 
                 // transaction body inputs
                 ,() -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.getMemo())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
                 ,() -> assertTrue(dbFileEntity.isDeleted())
 
                 // node
@@ -821,8 +783,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNotNull(dbFileEntity.getExpiryTimeNs())
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
-                
-                //TODO transaction.getSigMap()
          );    	
     }
     @Test
@@ -865,8 +825,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 // node
                 ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
                 ,() -> assertTrue(dbFileEntity.isDeleted())
-                //TODO transactionBody.getTransactionFee()
-                //TODO transactionBody.getTransactionValidDuration()
 
                 // Additional entity checks
                 ,() -> assertNull(dbFileEntity.getKey())
@@ -875,8 +833,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertNull(dbFileEntity.getExpiryTimeNs())
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 ,() -> assertNull(dbFileEntity.getProxyAccountId())
-                
-                //TODO transaction.getSigMap()
          );    	
     }
 
@@ -898,7 +854,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     	record.setReceipt(receipt.build());
     	record.setTransactionFee(transactionBody.getTransactionFee());
-    	//TODO - record.setTransactionHash("");
+    	record.setTransactionHash(ByteString.copyFromUtf8("TransactionHash"));
     	record.setTransactionID(transactionBody.getTransactionID());
     	
     	final TransferList.Builder transferList = TransferList.newBuilder();
@@ -930,19 +886,19 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	fileCreate.setContents(ByteString.copyFromUtf8(fileData));
     	fileCreate.setExpirationTime(Timestamp.newBuilder().setSeconds(expiryTimeSeconds).setNanos(expiryTimeNanos).build());
     	final KeyList.Builder keyList = KeyList.newBuilder();
-    	keyList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build());
+    	keyList.addKeys(keyFromString(key));
     	fileCreate.setKeys(keyList);
-    	//TODO - transactionBody.setNewRealmAdminKey(value);
+    	fileCreate.setNewRealmAdminKey(keyFromString(realmAdminKey));
     	fileCreate.setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build());
     	fileCreate.setShardID(ShardID.newBuilder().setShardNum(0));
 
     	// Transaction body
-    	final TransactionBody.Builder body = defaultTransactionBodyBuilder();
+    	final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+
     	// body transaction
     	body.setFileCreate(fileCreate.build());
-
     	transaction.setBodyBytes(body.build().toByteString());
-    	//TODO-body.setSigMap(value);
+    	transaction.setSigMap(getSigMap());
 
     	return transaction.build();
     }
@@ -956,16 +912,15 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     	// Build a transaction
     	fileAppend.setContents(ByteString.copyFromUtf8(fileData));
-    	//TODO - transactionBody.setNewRealmAdminKey(value);
     	fileAppend.setFileID(fileId);
 
     	// Transaction body
-    	final TransactionBody.Builder body = defaultTransactionBodyBuilder();
+    	final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
     	// body transaction
     	body.setFileAppend(fileAppend.build());
 
     	transaction.setBodyBytes(body.build().toByteString());
-    	//TODO-body.setSigMap(value);
+    	transaction.setSigMap(getSigMap());
 
     	return transaction.build();
     }
@@ -980,7 +935,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     	// Build a transaction
     	fileUpdate.setContents(ByteString.copyFromUtf8(fileData));
-    	//TODO - transactionBody.setNewRealmAdminKey(value);
     	fileUpdate.setFileID(fileId);
     	fileUpdate.setExpirationTime(Utility.instantToTimestamp(Instant.now()));
 
@@ -989,12 +943,12 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	fileUpdate.setKeys(keyList);
     	
     	// Transaction body
-    	final TransactionBody.Builder body = defaultTransactionBodyBuilder();
+    	final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
     	// body transaction
     	body.setFileUpdate(fileUpdate.build());
 
     	transaction.setBodyBytes(body.build().toByteString());
-    	//TODO-body.setSigMap(value);
+    	transaction.setSigMap(getSigMap());
 
     	return transaction.build();
     }
@@ -1009,16 +963,15 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     	// Build a transaction
     	fileUpdate.setContents(ByteString.copyFromUtf8(fileData));
-    	//TODO - transactionBody.setNewRealmAdminKey(value);
     	fileUpdate.setFileID(fileId);
 
     	// Transaction body
-    	final TransactionBody.Builder body = defaultTransactionBodyBuilder();
+    	final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
     	// body transaction
     	body.setFileUpdate(fileUpdate.build());
 
     	transaction.setBodyBytes(body.build().toByteString());
-    	//TODO-body.setSigMap(value);
+    	transaction.setSigMap(getSigMap());
 
     	return transaction.build();
     }
@@ -1029,17 +982,16 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	final FileUpdateTransactionBody.Builder fileUpdate = FileUpdateTransactionBody.newBuilder();
     	
     	// Build a transaction
-    	//TODO - transactionBody.setNewRealmAdminKey(value);
     	fileUpdate.setFileID(fileId);
     	fileUpdate.setExpirationTime(Utility.instantToTimestamp(Instant.now()));
 
     	// Transaction body
-    	final TransactionBody.Builder body = defaultTransactionBodyBuilder();
+    	final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
     	// body transaction
     	body.setFileUpdate(fileUpdate.build());
 
     	transaction.setBodyBytes(body.build().toByteString());
-    	//TODO-body.setSigMap(value);
+    	transaction.setSigMap(getSigMap());
 
     	return transaction.build();
     }
@@ -1051,7 +1003,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	final String key = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
     	
     	// Build a transaction
-    	//TODO - transactionBody.setNewRealmAdminKey(value);
     	fileUpdate.setFileID(fileId);
 
     	final KeyList.Builder keyList = KeyList.newBuilder();
@@ -1059,12 +1010,12 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	fileUpdate.setKeys(keyList);
     	
     	// Transaction body
-    	final TransactionBody.Builder body = defaultTransactionBodyBuilder();
+    	final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
     	// body transaction
     	body.setFileUpdate(fileUpdate.build());
 
     	transaction.setBodyBytes(body.build().toByteString());
-    	//TODO-body.setSigMap(value);
+    	transaction.setSigMap(getSigMap());
 
     	return transaction.build();
     }
@@ -1079,30 +1030,13 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
      	fileDelete.setFileID(fileId);
 
     	// Transaction body
-     	final TransactionBody.Builder body = defaultTransactionBodyBuilder();
+     	final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
     	// body transaction
     	body.setFileDelete(fileDelete.build());
 
     	transaction.setBodyBytes(body.build().toByteString());
-    	//TODO-body.setSigMap(value);
+    	transaction.setSigMap(getSigMap());
 
     	return transaction.build();
-    }
-    
-    private Builder defaultTransactionBodyBuilder() {
-
-        final long validDuration = 120;
-        final AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build();
-        final long txFee = 53968962L;
-     	final String memo = "File test memo";
-        final AccountID nodeAccount = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build();
-        
-     	final TransactionBody.Builder body = TransactionBody.newBuilder();
-    	body.setTransactionFee(txFee);
-    	body.setMemo(memo);
-    	body.setNodeAccountID(nodeAccount);
-    	body.setTransactionID(Utility.getTransactionId(payerAccountId));
-    	body.setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration).build());
-    	return body;
     }
 }
