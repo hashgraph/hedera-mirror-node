@@ -19,6 +19,7 @@
  */
 'use strict';
 const utils = require('./utils.js');
+const billion = 1000000000;
 
 /**
  * Create transferlists from the output of SQL queries. The SQL table has different 
@@ -34,16 +35,17 @@ const createTransferLists = function (rows, arr) {
     // a given consensus_ns (Note that there could be two records for the same
     // transaction-id where one would pass and others could fail as duplicates)
     let transactions = {};
-    const epochSecondsDigits = 10; // ('' + (Math.round)(new Date().getTime() / 1000)).length
 
     for (let row of rows) {
         if (!(row.consensus_ns in transactions)) {
+            var validStartTimestamp = row.valid_start_ns;
             transactions[row.consensus_ns] = {};
             transactions[row.consensus_ns]['consensus_timestamp'] = utils.nsToSecNs(row['consensus_ns']);
-            transactions[row.consensus_ns]['valid_start_timestamp'] = utils.nsToSecNs(row['valid_start_ns']);
+            transactions[row.consensus_ns]['valid_start_timestamp'] = utils.nsToSecNs(validStartTimestamp);
             transactions[row.consensus_ns]['charged_tx_fee'] = Number(row['charged_tx_fee']);
             transactions[row.consensus_ns]['id'] = row['id'];
             transactions[row.consensus_ns]['memo_base64'] = utils.encodeBase64(row['memo']);
+            transactions[row.consensus_ns]['result'] = row['result'];
             transactions[row.consensus_ns]['result'] = row['result'];
             transactions[row.consensus_ns]['name'] = row['name'];
             transactions[row.consensus_ns]['node'] =
@@ -54,8 +56,8 @@ const createTransferLists = function (rows, arr) {
                 row.entity_shard + '.' +
                 row.entity_realm + '.' +
                 row.entity_num + '-' +
-                row.valid_start_ns.slice(0, epochSecondsDigits) + '-' +
-                row.valid_start_ns.slice(epochSecondsDigits);
+                Math.floor(validStartTimestamp / billion) + '-' +
+                String(validStartTimestamp % billion).padStart(9, '0');
 
             transactions[row.consensus_ns].transfers = []
         }

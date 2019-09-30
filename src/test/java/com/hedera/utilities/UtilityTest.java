@@ -9,9 +9,9 @@ package com.hedera.utilities;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -176,7 +176,7 @@ public class UtilityTest {
 
 		assertThat(result).isNull();
 	}
-	
+
 	@Test
 	@DisplayName("get TransactionId")
 	public void getTransactionID()  {
@@ -184,7 +184,7 @@ public class UtilityTest {
 		final TransactionID transactionId = Utility.getTransactionId(payerAccountId);
         assertThat(transactionId)
         	.isNotEqualTo(TransactionID.getDefaultInstance());
-        
+
         final AccountID testAccountId = transactionId.getAccountID();
     	assertAll(
     			// row counts
@@ -193,10 +193,10 @@ public class UtilityTest {
                 ,() -> assertEquals(payerAccountId.getAccountNum(), testAccountId.getAccountNum())
         );
 	}
-	
+
 	@Test
 	public void instantToTimestamp()  {
-		Random rand = new Random(); 
+		Random rand = new Random();
 		int nanos = rand.nextInt();
 		Instant instant = Instant.now().plusNanos(nanos);
 		Timestamp test = Utility.instantToTimestamp(instant);
@@ -205,16 +205,16 @@ public class UtilityTest {
                 ,() -> assertEquals(instant.getNano(), test.getNanos())
         );
 	}
-	
+
 	@Test
 	public void timeStampInNanosSecondNano()  {
-		Random rand = new Random(); 
+		Random rand = new Random();
 		int nanos = rand.nextInt();
 		Instant now = Instant.now().plusNanos(nanos);
 
 		Long timeStamp = Utility.timeStampInNanos(now.getEpochSecond(), now.getNano());
 		Instant fromTimeStamp = Utility.convertNanosToInstant(timeStamp);
-		
+
 		assertAll(
                 () -> assertEquals(now.getEpochSecond(), fromTimeStamp.getEpochSecond())
                 ,() -> assertEquals(now.getNano(), fromTimeStamp.getNano())
@@ -223,14 +223,14 @@ public class UtilityTest {
 
 	@Test
 	public void timeStampInNanosTimeStamp()  {
-		Random rand = new Random(); 
+		Random rand = new Random();
 		int nanos = rand.nextInt();
 		long seconds = rand.nextLong();
 		Timestamp timestamp = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 
 		long timeStampInNanos = Utility.timeStampInNanos(timestamp);
 		Instant fromTimeStamp = Utility.convertNanosToInstant(timeStampInNanos);
-		
+
 		assertAll(
                 () -> assertEquals(timestamp.getSeconds(), fromTimeStamp.getEpochSecond())
                 ,() -> assertEquals(timestamp.getNanos(), fromTimeStamp.getNano())

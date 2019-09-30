@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 
 public class AbstractRecordFileLoggerTest extends IntegrationTest {
-	
+
     @Resource
     protected TransactionRepository transactionRepository;
     @Resource
@@ -45,8 +45,8 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     @Resource
     protected TransactionResultRepository transactionResultRepository;
     @Resource
-    protected EntityTypeRepository entityTypeRepository;	
-	
+    protected EntityTypeRepository entityTypeRepository;
+
     protected final void assertAccount(AccountID accountId, Entities dbEntity) {
         assertThat(accountId)
             .isNotEqualTo(AccountID.getDefaultInstance())
@@ -54,7 +54,7 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
             .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
         assertThat(dbEntity.getEntityTypeId())
         	.isEqualTo(entityTypeRepository.findByName("account").get().getId());
-    }    
+    }
     protected final void assertFile(FileID fileId, Entities dbEntity) {
         assertThat(fileId)
             .isNotEqualTo(FileID.getDefaultInstance())
@@ -62,7 +62,7 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
             .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
         assertThat(dbEntity.getEntityTypeId())
         	.isEqualTo(entityTypeRepository.findByName("file").get().getId());
-    }    
+    }
     protected final void assertTransfers(TransactionRecord record) {
     	final TransferList transferList = record.getTransferList();
     	for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
@@ -84,6 +84,6 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
         // receipt
         assertEquals(record.getReceipt().getStatusValue(), dbResult.getProtobufId());
         assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.getResult());
-    	
+
     }
 }

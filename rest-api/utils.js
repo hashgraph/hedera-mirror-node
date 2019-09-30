@@ -20,6 +20,7 @@
 'use strict';
 const math = require('mathjs');
 const config = require('./config.js');
+const ed25519 = require('./ed25519.js');
 
 const ENTITY_TYPE_FILE = 3;
 
@@ -84,8 +85,8 @@ const paramValidityChecks = function (param, opAndVal) {
             ret =  (/^\d{1,19}$/.test(val));
             break;
         case 'account.publickey':
-            // Acceptable forms: exactly 64 characters
-            ret =  (/^[0-9a-fA-F]{64}$/.test(val));
+            // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
+            ret =  (/^[0-9a-fA-F]{64}$/.test(val) ||  /^[0-9a-fA-F]{88}$/.test(val));
             break;
         case 'limit':
             // Acceptable forms: upto 4 digits
@@ -263,6 +264,14 @@ const parseComparatorSymbol = function (fields, valArr, type = null, valueTransl
                         } else {
                             fquery += '(1=1)';
                         }
+                    } else if (type === 'publickey') {
+                        // If the supplied key is DER encoded, decode it
+                        const decodedKey = ed25519.derToEd25519(val);
+                        if (decodedKey != null) {
+                            val = decodedKey;
+                        }
+                        fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
+                        vals.push(val.toLowerCase());
                     } else {
                         fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
                         vals.push(val);
@@ -581,7 +590,7 @@ const encodeKey = function (key) {
 * @return {String} base64 encoded string
 */
 const encodeBase64 = function (buffer) {
-    return (buffer.toString('base64'));
+    return ((null === buffer) ? null : buffer.toString('base64'));
 }
 
 module.exports = {

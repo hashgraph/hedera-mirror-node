@@ -369,6 +369,9 @@ public class Utility {
 		return b.array();
 	}
 
+	public static Timestamp instantToTimestamp(Instant instant) {
+		return Timestamp.newBuilder().setSeconds(instant.getEpochSecond()).setNanos(instant.getNano()).build();
+	}
 	/**
 	 * return a Timestamp from an instant
 	 * @param instant

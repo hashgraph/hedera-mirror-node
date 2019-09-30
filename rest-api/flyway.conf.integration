@@ -1,0 +1,4 @@
+flyway.placeholders.db-name=mirror_node_integration
+flyway.placeholders.db-user=mirror_node
+flyway.placeholders.api-user=mirror_api
+flyway.placeholders.api-password=mirror_api_pass
