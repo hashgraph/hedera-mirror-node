@@ -57,15 +57,24 @@ const makeTable = (data, server) => {
             <tr>
                 <th>Result</th>
                 <th>At</th>
-                <th>Message and URL link</th>
+                <th>Message</th>
         </tr>`;
-    data[server].results.forEach ((result) => {
+    data.results.testResults.forEach((result) => {
+        // Skip the 'Skipped tests' that are marked as pending in jest json output
+        if (result.result === 'pending') {
+            return;
+        }
+        const failureMsg = result.failureMessages == undefined ? '' :
+            result.failureMessages.join('<br>').replace('\n', '<br>');
+
         h +=
+            '<tr>' +
         '<tr>' + 
-            '<td>' + '<span class="dot" style="background-color:' + (result.result ? "green" : "red") +'"></span>' + '</td>' +
+            '<tr>' +
+            '<td>' + '<span class="dot" style="background-color:' + (result.result === 'passed' ? "green" : "red") + '"></span>' + '</td>' +
             '<td>' + new Date(Number(result.at) * 1000).toLocaleString() + '</td>' +
-            '<td>' + '<a href=' + result.url + '>' + result.message + '</a>' + '</td>' +
-        '</tr>\n';
+            '<td>' + result.message + failureMsg + '</td>' +
+            '</tr>\n';
     });
     h += '</table>\n';
     return (h);
@@ -81,18 +90,12 @@ const makeCard = (data, server) => {
     let cntPassed = 0;
     let cntFailed = 0;
 
-    if (!('results' in data[server])) {
+    if (!('results' in data)) {
         return ('No data received yet for at least one of the servers in your list ...');
     }
-    data[server].results.forEach((row) => {
-        if (row.result) {
-            cntPassed ++;
-        } else {
-            cntFailed ++;
-        }
-    });
-    const cntTotal = cntPassed + cntFailed;
-    const dotcolor = (cntTotal > 0 && cntFailed === 0) ? 'green' : 'red';
+
+    const cntTotal = data.results.numPassedTests + data.results.numFailedTests;
+    const dotcolor = data.results.success ? 'green' : 'red';
 
     let h = '';
     // Create a summary card
@@ -101,12 +104,12 @@ const makeCard = (data, server) => {
           <div class="card-body" data-toggle="modal" data-target="#modal-${server}">
             <div class="card-title">Network: ${server}
             </div>
-            <div class="ip-addr"> (${data[server].ip}:${data[server].port})</div>
+            <div class="ip-addr"> (${data.ip}:${data.port})</div>
             <div class="card-text">
                <div style="display: inline-block; verticle-align: bottom">
             <span class="dot" style="background-color: ${dotcolor}"></span>
-               ${cntPassed} / ${cntTotal} Passed,
-               ${cntFailed} / ${cntTotal} Failed.&nbsp;&nbsp;&nbsp;
+               ${data.results.numPassedTests} / ${cntTotal} Passed,
+               ${data.results.numFailedTests} / ${cntTotal} Failed.&nbsp;&nbsp;&nbsp;
                </div>
                <div class="card-arrow">&#x25B6</div>
             </div>
@@ -143,30 +146,38 @@ const makeCard = (data, server) => {
 const fetchAndDisplay = () => {
     const container = document.getElementById('rootcontainer');
     if (container === null) {
-        console.log ("No container found!");
+        console.log("No container found!");
         return;
     }
 
     fetch(`http://${config.server}/api/v1/status`)
-    .then(function (response) {
-        return response.json();
-    })
-    .then(function (data) {
-        console.log(data);
-        let html;
-        if (Object.keys(data).length === 0) {
-            html = `No data received.
+        .then(function (response) {
+            return response.json();
+        })
+        .then(function (data) {
+            console.log(data);
+            let html;
+            if (data.length === 0) {
+                html = `No data received.
             <p />
             If you have started the backend server recently, 
             please wait for a couple of minutes and refresh this page
             <p />`;
-        } else {
-            html = `
+            } else {
+                html = `
                 <h2 style="text-align:center">Hedera mirror node status</h2>
                 ${Object.keys(data).map(server => 
                     `<div class="card-deck">${makeCard(data, server)}</div>`).join('')}
             `;
-        }
-        container.innerHTML = html;
-    })   
+
+                html = `
+                <h2 style="text-align:center">Hedera mirror node status</h2>
+                ${data.map(result => 
+                    `<div class="card-deck">${makeCard(result, result.name)}</div>`).join('')}
+            `;
+
+            }
+            container.innerHTML = html;
+        })
 }
+

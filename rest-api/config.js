@@ -29,7 +29,18 @@ const config = {
         balances: 60,
         accounts: 60,
         events: 10
-    }
+    },
+
+    // Refresh times for each type of files (in seconds)
+    fileUpdateRefreshTimes: {
+        records: 5,         // Record files are updated this often
+        balances: 15 * 60,  // Balance files are updated this often
+        events: 5 * 60      // Event files are updated this often
+    },
+
+    resultUpdateTimeout: 60, // Raise error if no results in this much time,
+
+    TEST_REALM: 0            // Realm for acceptane tests
 }
 
 module.exports = config;

@@ -4,7 +4,8 @@
   "description": "REST API for Hedera mirror node",
   "main": "server.js",
   "scripts": {
-    "test": "jest",
+    "test": "jest --testPathPattern='__tests__/*'",
+    "acceptancetest": "__acceptancetests__/acceptancetests",
     "dev": "nodemon app.js"
   },
   "author": "Atul Mahamuni",
