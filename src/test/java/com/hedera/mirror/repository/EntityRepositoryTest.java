@@ -20,76 +20,71 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.IntegrationTest;
-import com.hedera.mirror.domain.ContractResult;
 import com.hedera.mirror.domain.Entities;
-import com.hedera.mirror.domain.EntityType;
-import com.hedera.mirror.domain.RecordFile;
-import com.hedera.mirror.domain.Transaction;
-import com.hedera.mirror.domain.TransactionResult;
-import com.hedera.mirror.domain.TransactionType;
-
 import org.junit.jupiter.api.Test;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
-import javax.annotation.Resource;
-
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.Optional;
-
-public class EntityRepositoryTest extends IntegrationTest {
-
-    @Resource
-    private EntityRepository entityRepository;
-    @Resource
-    private EntityTypeRepository entityTypeRepository;
-    @Resource
+public class EntityRepositoryTest extends AbstractRepositoryTest {
 
     @Test
-    void updateStatusValue() {
+    void findByIdAndPrimaryKey() {
     	
-    	final long shard = 3;
-    	final long realm = 2;
-    	final long num = 1;
+    	final long entityShard = 3;
+    	final long entityRealm = 2;
+    	final long entityNum = 1;
+    	final long entityId = 1;
+    	final long autoRenewPeriod = 100;
+    	final boolean deleted = false;
+    	final String publicKeyHex = "ed25519publickeyhex";
+    	final long expiryTimeNanos = 200;
+    	final long expiryTimeSeconds = 300;
+    	final long expiryTimeNs = 400;
+    	final byte[] key = "key".getBytes();
+    	
     	final int entityTypeId = entityTypeRepository.findByName("account").get().getId();
     			
     	Entities entity = new Entities();
-    	entity.setId(1L);
-    	entity.setAutoRenewPeriod(100L);
-    	entity.setDeleted(false);
-    	entity.setEd25519PublicKeyHex("ed25519PublicKeyHex");
-    	entity.setEntityNum(num);
-    	entity.setEntityRealm(realm);
-    	entity.setEntityShard(shard);
+    	entity.setId(entityId);
+    	entity.setAutoRenewPeriod(autoRenewPeriod);
+    	entity.setDeleted(deleted);
+    	entity.setEd25519PublicKeyHex(publicKeyHex);
+    	entity.setEntityNum(entityNum);
+    	entity.setEntityRealm(entityRealm);
+    	entity.setEntityShard(entityShard);
     	entity.setEntityTypeId(entityTypeId);
-    	entity.setExpiryTimeNanos(200L);
-    	entity.setExpiryTimeNs(300L);
-    	entity.setExpiryTimeSeconds(400L);
-    	entity.setKey("key".getBytes());
-    	entity.setProxyAccountId(null);
+    	entity.setExpiryTimeNanos(expiryTimeNanos);
+    	entity.setExpiryTimeNs(expiryTimeNs);
+    	entity.setExpiryTimeSeconds(expiryTimeSeconds);
+    	entity.setKey(key);
+    	entity.setProxyAccountId(entityId);
     	entity = entityRepository.save(entity);
     	
     	final Entities newEntity = entityRepository.findById(entity.getId()).get();
     	
     	assertAll(
-                () -> assertEquals(shard, newEntity.getEntityShard())
-                ,() -> assertEquals(realm, newEntity.getEntityRealm())
-                ,() -> assertEquals(num, newEntity.getEntityNum())
+                () -> assertEquals(entityShard, newEntity.getEntityShard())
+                ,() -> assertEquals(entityRealm, newEntity.getEntityRealm())
+                ,() -> assertEquals(entityNum, newEntity.getEntityNum())
                 ,() -> assertEquals(entityTypeId, newEntity.getEntityTypeId())
         );
     	
-    	final Entities entityByPrimaryKey = entityRepository.findByPrimaryKey(shard, realm, num).get();
+    	final Entities entityByPrimaryKey = entityRepository.findByPrimaryKey(entityShard, entityRealm, entityNum).get();
     	
     	assertAll(
-                () -> assertEquals(shard, entityByPrimaryKey.getEntityShard())
-                ,() -> assertEquals(realm, entityByPrimaryKey.getEntityRealm())
-                ,() -> assertEquals(num, entityByPrimaryKey.getEntityNum())
-        );
-    	
-
+            () -> assertEquals(entityShard, entityByPrimaryKey.getEntityShard())
+            ,() -> assertEquals(entityRealm, entityByPrimaryKey.getEntityRealm())
+            ,() -> assertEquals(entityNum, entityByPrimaryKey.getEntityNum())
+            ,() -> assertEquals(autoRenewPeriod, entityByPrimaryKey.getAutoRenewPeriod())
+            ,() -> assertEquals(deleted, entityByPrimaryKey.isDeleted())
+            ,() -> assertEquals(publicKeyHex, entityByPrimaryKey.getEd25519PublicKeyHex())
+            ,() -> assertEquals(entityTypeId, entityByPrimaryKey.getEntityTypeId())
+            ,() -> assertEquals(expiryTimeNanos, entityByPrimaryKey.getExpiryTimeNanos())
+            ,() -> assertEquals(expiryTimeSeconds, entityByPrimaryKey.getExpiryTimeSeconds())
+            ,() -> assertEquals(expiryTimeNs, entityByPrimaryKey.getExpiryTimeNs())
+            ,() -> assertArrayEquals(key, entityByPrimaryKey.getKey())
+            ,() -> assertEquals(entityId, entityByPrimaryKey.getProxyAccountId())
+		);
     }
 }

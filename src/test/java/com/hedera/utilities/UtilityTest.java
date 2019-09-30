@@ -23,18 +23,16 @@ package com.hedera.utilities;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import org.apache.commons.lang3.tuple.Triple;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +42,7 @@ import java.io.File;
 import java.nio.file.*;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.Random;
 
 public class UtilityTest {
 
@@ -192,6 +191,49 @@ public class UtilityTest {
                 () -> assertEquals(payerAccountId.getShardNum(), testAccountId.getShardNum())
                 ,() -> assertEquals(payerAccountId.getRealmNum(), testAccountId.getRealmNum())
                 ,() -> assertEquals(payerAccountId.getAccountNum(), testAccountId.getAccountNum())
+        );
+	}
+	
+	@Test
+	public void instantToTimestamp()  {
+		Random rand = new Random(); 
+		int nanos = rand.nextInt();
+		Instant instant = Instant.now().plusNanos(nanos);
+		Timestamp test = Utility.instantToTimestamp(instant);
+		assertAll(
+                () -> assertEquals(instant.getEpochSecond(), test.getSeconds())
+                ,() -> assertEquals(instant.getNano(), test.getNanos())
+        );
+	}
+	
+	@Test
+	public void timeStampInNanosSecondNano()  {
+		Random rand = new Random(); 
+		int nanos = rand.nextInt();
+		Instant now = Instant.now().plusNanos(nanos);
+
+		Long timeStamp = Utility.timeStampInNanos(now.getEpochSecond(), now.getNano());
+		Instant fromTimeStamp = Utility.convertNanosToInstant(timeStamp);
+		
+		assertAll(
+                () -> assertEquals(now.getEpochSecond(), fromTimeStamp.getEpochSecond())
+                ,() -> assertEquals(now.getNano(), fromTimeStamp.getNano())
+        );
+	}
+
+	@Test
+	public void timeStampInNanosTimeStamp()  {
+		Random rand = new Random(); 
+		int nanos = rand.nextInt();
+		long seconds = rand.nextLong();
+		Timestamp timestamp = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
+
+		long timeStampInNanos = Utility.timeStampInNanos(timestamp);
+		Instant fromTimeStamp = Utility.convertNanosToInstant(timeStampInNanos);
+		
+		assertAll(
+                () -> assertEquals(timestamp.getSeconds(), fromTimeStamp.getEpochSecond())
+                ,() -> assertEquals(timestamp.getNanos(), fromTimeStamp.getNano())
         );
 	}
 }

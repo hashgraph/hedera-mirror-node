@@ -20,75 +20,31 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.IntegrationTest;
 import com.hedera.mirror.domain.ContractResult;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
-import com.hedera.mirror.domain.TransactionResult;
-import com.hedera.mirror.domain.TransactionType;
-
 import org.junit.jupiter.api.Test;
-
-import javax.annotation.Resource;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ContractResultRepositoryTest extends IntegrationTest {
-
-    @Resource
-    private RecordFileRepository recordFileRepository;
-    @Resource
-    private EntityRepository entityRepository;
-    @Resource
-    private EntityTypeRepository entityTypeRepository;
-    @Resource
-    private TransactionResultRepository transactionResultRepository;
-    @Resource
-    private TransactionTypeRepository transactionTypeRepository;
-    @Resource
-    private TransactionRepository transactionRepository;
-    @Resource
-    private ContractResultRepository contractResultRepository;
+public class ContractResultRepositoryTest extends AbstractRepositoryTest {
 
     @Test
-    void insertContractTest() {
+    void insert() {
     	
-    	RecordFile recordFile = new RecordFile();
-    	recordFile.setId(1L);
-    	recordFile.setName("testfile");
-    	recordFile = recordFileRepository.save(recordFile);
-
-    	Entities entity = new Entities();
-    	entity.setId(1L);
-    	entity.setEntityShard(0L);
-    	entity.setEntityRealm(0L);
-    	entity.setEntityNum(1L);
-    	entity.setEntityTypeId(entityTypeRepository.findByName("account").get().getId());
-    	entity = entityRepository.save(entity);
-    	
-    	Transaction transaction = new Transaction();
-    	transaction.setRecordFileId(recordFile.getId());
-    	transaction.setChargedTxFee(100L);
-    	transaction.setConsensusNs(10L);
-    	transaction.setEntityId(entity.getId());
-    	transaction.setNodeAccountId(entity.getId());
-    	transaction.setPayerAccountId(entity.getId());
-    	TransactionResult result = transactionResultRepository.findByResult("SUCCESS").get();
-    	transaction.setResultId(result.getId());
-    	TransactionType transactionType = transactionTypeRepository.findByName("CRYPTOTRANSFER").get();
-    	transaction.setTransactionTypeId(transactionType.getId());
-    	transaction.setValidStartNs(10L);
-
-    	transactionRepository.save(transaction);
-
-    	ContractResult contractResult = new ContractResult();
     	final byte[] callResult = "CallResult".getBytes();
     	final byte[] functionParameters = "functionParameters".getBytes();
     	final long gasSupplied = 200;
     	final long gasUsed = 100;
+
+    	RecordFile recordfile = insertRecordFile();
+    	Entities entity = insertAccountEntity(1, 0, 0, 1);
+    	Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CONTRACTCALL");
+
+    	ContractResult contractResult = new ContractResult();
     	contractResult.setCallResult(callResult);
     	contractResult.setFunctionParameters(functionParameters);
     	contractResult.setGasSupplied(gasSupplied);

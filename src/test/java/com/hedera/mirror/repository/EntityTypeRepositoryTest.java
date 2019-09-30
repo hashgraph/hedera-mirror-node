@@ -1,4 +1,4 @@
-package com.hedera.mirror.domain;
+package com.hedera.mirror.repository;
 
 /*-
  * ‌
@@ -20,17 +20,15 @@ package com.hedera.mirror.domain;
  * ‍
  */
 
-import lombok.Data;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import javax.persistence.*;
+public class EntityTypeRepositoryTest extends AbstractRepositoryTest {
 
-@Data
-@Entity
-@Table(name = "t_livehashes")
-public class LiveHash {
-
-    @Id
-    private Long consensusTimestamp;
-
-    private byte[] livehash;
+    @Test
+    void findByName() {
+    	
+    	final int entityTypeId = entityTypeRepository.findByName("account").get().getId();
+    	assertNotEquals(0, entityTypeId);
+    }
 }
