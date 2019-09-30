@@ -26,36 +26,21 @@ import javax.persistence.*;
 
 @Data
 @Entity
-@Table(name = "t_transactions")
-public class Transaction {
+@Table(name = "t_record_files")
+public class RecordFile {
 
     @Id
-    private Long consensusNs;
+    private Long id;
 
-    @Column(name = "fk_node_acc_id")
-    private Long nodeAccountId;
+    private String name;
 
-    private byte[] memo;
+    private Long loadStart;
 
-    @Column(name = "fk_trans_type_id")
-     private Long transactionTypeId;
+    private Long loadEnd;
+    
+    private String fileHash;
 
-    @Column(name = "fk_result_id")
-    private Integer resultId;
-
-    @Column(name = "fk_payer_acc_id")
-    private Long payerAccountId;
-
-    private Long chargedTxFee;
-
-    private Long initialBalance;
-
-    @Column(name = "fk_cud_entity_id")
-    private Long entityId;
-
-    @Column(name = "fk_rec_file_id")
-    private Long recordFileId;
-
-    private Long validStartNs;
+    @Column(name = "prev_hash")
+    private String previousHash;
 
 }

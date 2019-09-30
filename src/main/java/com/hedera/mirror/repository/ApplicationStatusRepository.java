@@ -27,6 +27,7 @@ import org.springframework.cache.annotation.*;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 import javax.transaction.Transactional;
 
@@ -41,7 +42,7 @@ public interface ApplicationStatusRepository extends CrudRepository<ApplicationS
 
 	@Modifying
 	@CacheEvict(key = "#statusCode")
-	@Query("update ApplicationStatus set statusValue = ?2 where statusCode = ?1")
-	void updateStatusValue(ApplicationStatusCode statusCode, String statusValue);
+	@Query("update ApplicationStatus set statusValue = :value where statusCode = :code")
+	void updateStatusValue(@Param("code") ApplicationStatusCode statusCode, @Param("value") String statusValue);
 
 }

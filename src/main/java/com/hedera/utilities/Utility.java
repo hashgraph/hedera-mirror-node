@@ -36,6 +36,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -367,6 +369,9 @@ public class Utility {
 		return b.array();
 	}
 
+	public static Timestamp instantToTimestamp(Instant instant) {
+		return Timestamp.newBuilder().setSeconds(instant.getEpochSecond()).setNanos(instant.getNano()).build();
+	}
 	/**
 	 * return a string which represents an AccountID
 	 * @param accountID
@@ -643,6 +648,25 @@ public class Utility {
 		}
 		return instant.getEpochSecond() * SCALAR + instant.getNano();
 	}
+	
+	/** 
+	 * Convert seconds and nanos to a Long type timeStampInNanos
+	 * @param seconds
+	 * @param nanos
+	 * @return
+	 */
+    public static Long timeStampInNanos(long seconds, int nanos) {
+	  return seconds * SCALAR + nanos;
+    }
+    
+	/** 
+	 * Convert Timestamp to a Long type timeStampInNanos
+	 * @param TimeStamp
+	 * @return
+	 */
+    public static Long timeStampInNanos(Timestamp timestamp) {
+	  return timestamp.getSeconds() * SCALAR + timestamp.getNanos();
+    }
 
 	/**
 	 * Convert a Long type timestampInNanos to an Instant
@@ -750,5 +774,15 @@ public class Utility {
 		if (ED25519 != parsedKey.getKeyCase()) return null;
 
 		return Hex.encodeHexString(parsedKey.getEd25519().toByteArray(), true);
+	}
+	
+	/**
+	 * Generates a TransactionID object
+	 * @param payerAccountId the AccountID of the transaction payer account
+	 * @return
+	 */
+	public static TransactionID getTransactionId(AccountID payerAccountId) {
+	 	Timestamp validStart = Utility.instantToTimestamp(Instant.now());
+	 	return TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
 	}
 }

@@ -26,36 +26,20 @@ import javax.persistence.*;
 
 @Data
 @Entity
-@Table(name = "t_transactions")
-public class Transaction {
+@Table(name = "t_contract_result")
+public class ContractResult {
 
     @Id
-    private Long consensusNs;
+    @Column(name="fk_trans_id")
+    private Long transactionId;
 
-    @Column(name = "fk_node_acc_id")
-    private Long nodeAccountId;
+    @Column(name = "function_params")
+    private byte[] functionParameters;
 
-    private byte[] memo;
+    private Long gasSupplied;
 
-    @Column(name = "fk_trans_type_id")
-     private Long transactionTypeId;
+    private byte[] callResult;
 
-    @Column(name = "fk_result_id")
-    private Integer resultId;
-
-    @Column(name = "fk_payer_acc_id")
-    private Long payerAccountId;
-
-    private Long chargedTxFee;
-
-    private Long initialBalance;
-
-    @Column(name = "fk_cud_entity_id")
-    private Long entityId;
-
-    @Column(name = "fk_rec_file_id")
-    private Long recordFileId;
-
-    private Long validStartNs;
+    private Long gasUsed;
 
 }

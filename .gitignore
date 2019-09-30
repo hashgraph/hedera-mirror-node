@@ -32,7 +32,6 @@ config/config.json
 .classpath
 config/config.json.gcp
 config/config.json.s3
-recordstreams/
 output/
 config/loggerStatus.json
 .env

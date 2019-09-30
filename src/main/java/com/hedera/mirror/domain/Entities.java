@@ -21,41 +21,43 @@ package com.hedera.mirror.domain;
  */
 
 import lombok.Data;
-
 import javax.persistence.*;
 
 @Data
 @Entity
-@Table(name = "t_transactions")
-public class Transaction {
+@Table(name = "t_entities")
+public class Entities {
 
     @Id
-    private Long consensusNs;
+    private Long id;
 
-    @Column(name = "fk_node_acc_id")
-    private Long nodeAccountId;
+    private Long entityNum;
 
-    private byte[] memo;
+    private Long entityRealm;
 
-    @Column(name = "fk_trans_type_id")
-     private Long transactionTypeId;
+    private Long entityShard;
 
-    @Column(name = "fk_result_id")
-    private Integer resultId;
+    @Column(name = "fk_entity_type_id")
+    private Integer entityTypeId;
+    
+    @Column(name = "exp_time_seconds")
+    private Long expiryTimeSeconds;
+    
+    @Column(name = "exp_time_nanos")
+    private Long expiryTimeNanos;
 
-    @Column(name = "fk_payer_acc_id")
-    private Long payerAccountId;
+    private Long autoRenewPeriod;
 
-    private Long chargedTxFee;
+    private byte[] key;
 
-    private Long initialBalance;
+    @Column(name = "fk_prox_acc_id")
+    private Long proxyAccountId;
+    
+    private boolean deleted;
 
-    @Column(name = "fk_cud_entity_id")
-    private Long entityId;
+    @Column(name = "exp_time_ns")
+    private Long expiryTimeNs;
 
-    @Column(name = "fk_rec_file_id")
-    private Long recordFileId;
-
-    private Long validStartNs;
-
+    @Column(name = "ed25519_public_key_hex")
+    private String ed25519PublicKeyHex;
 }

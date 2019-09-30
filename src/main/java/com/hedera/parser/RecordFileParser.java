@@ -10,9 +10,9 @@ package com.hedera.parser;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -77,13 +77,13 @@ public class RecordFileParser implements FileParser {
 	 * @param thisFileHash
 	 * 		the hash of this file
 	 * @return return boolean indicating method success
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private boolean loadRecordFile(String fileName, String previousFileHash, String thisFileHash) throws Exception {
 
 		File file = new File(fileName);
 		String newFileHash = "";
-		
+
 		if (file.exists() == false) {
 			log.warn("File does not exist {}", fileName);
 			return false;
@@ -192,7 +192,7 @@ public class RecordFileParser implements FileParser {
 
 	/**
 	 * read and parse a list of record files
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private void loadRecordFiles(List<String> fileNames) throws Exception {
 		String prevFileHash = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
