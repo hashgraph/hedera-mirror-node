@@ -224,9 +224,9 @@ public class UtilityTest {
 	@Test
 	public void timeStampInNanosTimeStamp()  {
 		Random rand = new Random();
-		int nanos = rand.nextInt();
-		Instant instant = Instant.now().plusNanos(nanos);
-		long seconds = instant.getEpochSecond();
+		int nanos = rand.nextInt(999999);
+		long seconds = Instant.now().getEpochSecond();
+		
 		Timestamp timestamp = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 
 		long timeStampInNanos = Utility.timeStampInNanos(timestamp);
