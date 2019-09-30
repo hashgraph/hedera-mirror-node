@@ -36,9 +36,9 @@ public class TransactionRepositoryTest extends AbstractRepositoryTest {
     	final long consensusNs = 10;
     	final long validStartNs = 20;
     	final Long recordFileId = insertRecordFile().getId();
-    	final Long txEntityId = insertAccountEntity(100000, 0, 0, 1).getId();
-    	final Long nodeAccountId = insertAccountEntity(200000, 0, 0, 3).getId();
-    	final Long payerAccountId = insertAccountEntity(300000, 0, 0, 4).getId();
+    	final Long txEntityId = insertAccountEntity(100000, 0, 0, 100000).getId();
+    	final Long nodeAccountId = insertAccountEntity(200000, 0, 0, 300000).getId();
+    	final Long payerAccountId = insertAccountEntity(300000, 0, 0, 400000).getId();
     	final Integer transactionTypeId = transactionTypeRepository.findByName("CRYPTOCREATEACCOUNT").get().getId();
     	final long initialBalance = 1000;
     	final byte[] memo = "transaction memo".getBytes();
