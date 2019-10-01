@@ -29,6 +29,7 @@ import javax.persistence.*;
 public class Entities {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long entityNum;

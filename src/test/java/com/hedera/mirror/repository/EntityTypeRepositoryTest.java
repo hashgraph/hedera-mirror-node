@@ -20,12 +20,19 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.domain.TransactionResult;
+import org.junit.jupiter.api.Test;
+import com.hedera.mirror.domain.EntityType;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Optional;
+public class EntityTypeRepositoryTest extends AbstractRepositoryTest {
 
-import org.springframework.data.repository.CrudRepository;
-
-public interface TransactionResultRepository extends CrudRepository<TransactionResult, Integer> {
-	Optional<TransactionResult> findByResult(String result);
+    @Test
+    void entityTypeFindByName() {
+    	
+    	assertThat(entityTypeRepository.findByName("account"))
+    		.isPresent()
+    		.get()
+    		.extracting(EntityType::getId)
+    		.isNotEqualTo(0L);    	
+    }
 }

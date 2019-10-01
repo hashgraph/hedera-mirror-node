@@ -41,7 +41,7 @@ public interface ApplicationStatusRepository extends CrudRepository<ApplicationS
 	}
 
 	@Modifying
-	@CacheEvict(key = "#statusCode")
+	@CacheEvict(key = "#p0")
 	@Query("update ApplicationStatus set statusValue = :value where statusCode = :code")
 	void updateStatusValue(@Param("code") ApplicationStatusCode statusCode, @Param("value") String statusValue);
 

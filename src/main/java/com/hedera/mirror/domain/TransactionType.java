@@ -1,4 +1,4 @@
-package com.hedera.mirror.repository;
+package com.hedera.mirror.domain;
 
 /*-
  * ‌
@@ -20,12 +20,21 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.domain.TransactionResult;
+import lombok.Data;
+import javax.persistence.*;
 
-import java.util.Optional;
+@Data
+@Entity
+@Table(name = "t_transaction_types")
+public class TransactionType {
 
-import org.springframework.data.repository.CrudRepository;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-public interface TransactionResultRepository extends CrudRepository<TransactionResult, Integer> {
-	Optional<TransactionResult> findByResult(String result);
+    @Column(name = "proto_id")
+    private Integer protobufId;
+
+    private String name;
+
 }

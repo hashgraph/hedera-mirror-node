@@ -9,7 +9,9 @@ import javax.annotation.Resource;
 
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
+
 import com.google.protobuf.ByteString;
 import com.hedera.IntegrationTest;
 import com.hedera.mirror.domain.Entities;
@@ -29,12 +31,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 
 public class AbstractRecordFileLoggerTest extends IntegrationTest {
-	
+
     @Resource
     protected TransactionRepository transactionRepository;
     @Resource
@@ -52,8 +53,8 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     @Resource
     protected TransactionResultRepository transactionResultRepository;
     @Resource
-    protected EntityTypeRepository entityTypeRepository;	
-	
+    protected EntityTypeRepository entityTypeRepository;
+
     protected final void assertAccount(AccountID accountId, Entities dbEntity) {
         assertThat(accountId)
             .isNotEqualTo(AccountID.getDefaultInstance())
@@ -61,7 +62,7 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
             .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
         assertThat(dbEntity.getEntityTypeId())
         	.isEqualTo(entityTypeRepository.findByName("account").get().getId());
-    }    
+    }
     protected final void assertFile(FileID fileId, Entities dbEntity) {
         assertThat(fileId)
             .isNotEqualTo(FileID.getDefaultInstance())
@@ -69,7 +70,7 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
             .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
         assertThat(dbEntity.getEntityTypeId())
         	.isEqualTo(entityTypeRepository.findByName("file").get().getId());
-    }    
+    }
     protected final void assertTransfers(TransactionRecord record) {
     	final TransferList transferList = record.getTransferList();
     	for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
@@ -91,7 +92,7 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
         // receipt
         assertEquals(record.getReceipt().getStatusValue(), dbResult.getProtobufId());
         assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.getResult());
-    	
+
     }
     protected final SignatureMap getSigMap() {
     	final String key1 = "11111111111111111111c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";    	

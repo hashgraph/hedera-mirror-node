@@ -9,9 +9,9 @@ package com.hedera.utilities;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,27 +23,28 @@ package com.hedera.utilities;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import org.apache.commons.lang3.tuple.Triple;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.File;
 import java.nio.file.*;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.Random;
 
 public class UtilityTest {
 
@@ -177,7 +178,7 @@ public class UtilityTest {
 
 		assertThat(result).isNull();
 	}
-	
+
 	@Test
 	@DisplayName("get TransactionId")
 	public void getTransactionID()  {
@@ -185,13 +186,66 @@ public class UtilityTest {
 		final TransactionID transactionId = Utility.getTransactionId(payerAccountId);
         assertThat(transactionId)
         	.isNotEqualTo(TransactionID.getDefaultInstance());
-        
+
         final AccountID testAccountId = transactionId.getAccountID();
     	assertAll(
     			// row counts
                 () -> assertEquals(payerAccountId.getShardNum(), testAccountId.getShardNum())
                 ,() -> assertEquals(payerAccountId.getRealmNum(), testAccountId.getRealmNum())
                 ,() -> assertEquals(payerAccountId.getAccountNum(), testAccountId.getAccountNum())
+        );
+	}
+
+    @ParameterizedTest(name = "with seconds {0} and nanos {1}")
+    @CsvSource({
+            "1569936354, 901",
+            "0, 901",
+            "1569936354, 0",
+            "0,0"
+    })
+	public void instantToTimestamp(long seconds, int nanos)  {
+		Instant instant = Instant.ofEpochSecond(seconds).plusNanos(nanos);
+		Timestamp test = Utility.instantToTimestamp(instant);
+		assertAll(
+                () -> assertEquals(instant.getEpochSecond(), test.getSeconds())
+                ,() -> assertEquals(instant.getNano(), test.getNanos())
+        );
+	}
+
+    @ParameterizedTest(name = "with seconds {0} and nanos {1}")
+    @CsvSource({
+            "1569936354, 901",
+            "0, 901",
+            "1569936354, 0",
+            "0,0"
+    })
+	public void timeStampInNanosSecondNano(long seconds, int nanos)  {
+    	Long timeStamp = Utility.timeStampInNanos(seconds, nanos);
+		Instant fromTimeStamp = Utility.convertNanosToInstant(timeStamp);
+
+		assertAll(
+                () -> assertEquals(seconds, fromTimeStamp.getEpochSecond())
+                ,() -> assertEquals(nanos, fromTimeStamp.getNano())
+        );
+	}
+
+    @ParameterizedTest(name = "with seconds {0} and nanos {1}")
+    @CsvSource({
+            "1569936354, 901",
+            "0, 901",
+            "1569936354, 0",
+            "0,0"
+    })
+	public void timeStampInNanosTimeStamp(long seconds, int nanos)  {
+		
+		Timestamp timestamp = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
+
+		long timeStampInNanos = Utility.timeStampInNanos(timestamp);
+		Instant fromTimeStamp = Utility.convertNanosToInstant(timeStampInNanos);
+
+		assertAll(
+                () -> assertEquals(timestamp.getSeconds(), fromTimeStamp.getEpochSecond())
+                ,() -> assertEquals(timestamp.getNanos(), fromTimeStamp.getNano())
         );
 	}
 }

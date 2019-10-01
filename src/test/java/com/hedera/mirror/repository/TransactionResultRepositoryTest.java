@@ -20,12 +20,21 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
+import org.junit.jupiter.api.Test;
+
 import com.hedera.mirror.domain.TransactionResult;
 
-import java.util.Optional;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.springframework.data.repository.CrudRepository;
+public class TransactionResultRepositoryTest extends AbstractRepositoryTest {
 
-public interface TransactionResultRepository extends CrudRepository<TransactionResult, Integer> {
-	Optional<TransactionResult> findByResult(String result);
+    @Test
+    void transactionResultFindByResult() {
+    	
+    	assertThat(transactionResultRepository.findByResult("INVALID_TRANSACTION"))
+    		.isPresent()
+    		.get()
+    		.extracting(TransactionResult::getId)
+    		.isNotEqualTo(0L);    	
+    }
 }

@@ -20,12 +20,19 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.domain.TransactionResult;
+import org.junit.jupiter.api.Test;
+import com.hedera.mirror.domain.TransactionType;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Optional;
+public class TransactionTypeTest extends AbstractRepositoryTest {
 
-import org.springframework.data.repository.CrudRepository;
-
-public interface TransactionResultRepository extends CrudRepository<TransactionResult, Integer> {
-	Optional<TransactionResult> findByResult(String result);
+    @Test
+    void transactionTypeFindByName() {
+    	
+    	assertThat(transactionTypeRepository.findByName("CRYPTOADDCLAIM"))
+    		.isPresent()
+    		.get()
+    		.extracting(TransactionType::getId)
+    		.isNotEqualTo(0L);    	
+    }
 }

@@ -32,5 +32,5 @@ public class LiveHash {
     @Id
     private Long consensusTimestamp;
 
-    private byte[] liveHash;
+    private byte[] livehash;
 }

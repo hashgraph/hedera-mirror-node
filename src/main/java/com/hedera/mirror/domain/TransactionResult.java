@@ -29,10 +29,11 @@ import javax.persistence.*;
 public class TransactionResult {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(name = "proto_id")
-    private Long protobufId;
+    private Integer protobufId;
 
     private String result;
 

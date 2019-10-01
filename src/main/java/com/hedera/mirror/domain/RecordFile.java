@@ -30,6 +30,7 @@ import javax.persistence.*;
 public class RecordFile {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String name;
