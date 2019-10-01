@@ -25,14 +25,11 @@ import java.time.Instant;
 import java.util.HashMap;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.mirror.domain.Entity;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.RowMapper;
 
 import static java.sql.Types.VARBINARY;
 import static java.sql.Types.VARCHAR;
@@ -45,7 +42,6 @@ public class Entities {
 	HashMap<String, Long> entities = new HashMap<String, Long>();
 
 	private static Connection connect = null;
-	private	RowMapper<Entity> rowMapper = new BeanPropertyRowMapper<>(Entity.class);
 
 	public Entities(Connection connect) throws SQLException {
 		Entities.connect = connect;
@@ -404,24 +400,4 @@ public class Entities {
     		return -1;
     	}
     }
-
-    public Entity getEntity(AccountID accountID) throws SQLException {
-		String query = "SELECT id, entity_num, entity_realm, entity_shard, fk_entity_type_id AS entityTypeId, exp_time_seconds, exp_time_nanos, "
-				+ "auto_renew_period, key, fk_prox_acc_id AS proxyAccountId, deleted, exp_time_ns, ed25519_public_key_hex "
-				+ "FROM t_entities WHERE entity_shard = ? AND entity_realm = ? AND entity_num = ?";
-		try (PreparedStatement statement = connect.prepareStatement(query)) {
-			statement.setLong(1, accountID.getShardNum());
-			statement.setLong(2, accountID.getRealmNum());
-			statement.setLong(3, accountID.getAccountNum());
-			statement.execute();
-
-			try (ResultSet resultSet = statement.getResultSet()) {
-				if (resultSet == null || !resultSet.next()) {
-					return null;
-				}
-
-				return rowMapper.mapRow(resultSet, 0);
-			}
-		}
-	}
 }

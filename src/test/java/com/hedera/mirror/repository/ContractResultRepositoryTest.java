@@ -28,21 +28,16 @@ import com.hedera.mirror.domain.Transaction;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.annotation.Transactional;
 
-@Transactional
 public class ContractResultRepositoryTest extends AbstractRepositoryTest {
 
-	ContractResult contractResult;
-
     @Test
-    void contractResultInsert() {
-    	
+    void insert() {
     	RecordFile recordfile = insertRecordFile();
     	Entities entity = insertAccountEntity();
     	Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CONTRACTCALL");
 
-    	contractResult = new ContractResult();
+    	ContractResult contractResult = new ContractResult();
     	contractResult.setCallResult("CallResult".getBytes());
     	contractResult.setFunctionParameters("functionParameters".getBytes());
     	contractResult.setGasSupplied(200L);

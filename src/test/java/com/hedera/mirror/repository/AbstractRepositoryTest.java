@@ -1,5 +1,25 @@
 package com.hedera.mirror.repository;
 
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import java.util.Random;
 
 import javax.annotation.Resource;
@@ -10,17 +30,10 @@ import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
 import com.hedera.mirror.domain.TransactionResult;
 import com.hedera.mirror.domain.TransactionType;
-import com.hedera.mirror.repository.ContractResultRepository;
-import com.hedera.mirror.repository.CryptoTransferRepository;
-import com.hedera.mirror.repository.EntityRepository;
-import com.hedera.mirror.repository.EntityTypeRepository;
-import com.hedera.mirror.repository.FileDataRepository;
-import com.hedera.mirror.repository.LiveHashRepository;
-import com.hedera.mirror.repository.RecordFileRepository;
-import com.hedera.mirror.repository.TransactionRepository;
-import com.hedera.mirror.repository.TransactionResultRepository;
+import org.springframework.transaction.annotation.Transactional;
 
-public class AbstractRepositoryTest extends IntegrationTest {
+@Transactional
+public abstract class AbstractRepositoryTest extends IntegrationTest {
 	
     @Resource
     protected TransactionRepository transactionRepository;
