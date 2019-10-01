@@ -21,14 +21,18 @@ package com.hedera.mirror.repository;
  */
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import com.hedera.mirror.domain.EntityType;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class EntityTypeRepositoryTest extends AbstractRepositoryTest {
 
     @Test
-    void findByName() {
+    void entityTypeFindByName() {
     	
-    	final int entityTypeId = entityTypeRepository.findByName("account").get().getId();
-    	assertNotEquals(0, entityTypeId);
+    	assertThat(entityTypeRepository.findByName("account"))
+    		.isPresent()
+    		.get()
+    		.extracting(EntityType::getId)
+    		.isNotEqualTo(0L);    	
     }
 }

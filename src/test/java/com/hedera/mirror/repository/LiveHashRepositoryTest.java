@@ -25,30 +25,30 @@ import com.hedera.mirror.domain.LiveHash;
 import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.annotation.Transactional;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LiveHashRepositoryTest extends AbstractRepositoryTest {
 
+	LiveHash liveHash;
+
     @Test
-    void insert() {
-    	
-    	final byte[] someLiveHash = "some live hash".getBytes();
+    @Transactional
+    void liveHashInsert() {
     	
     	RecordFile recordfile = insertRecordFile();
-    	Entities entity = insertAccountEntity(1, 0, 0, 1);
+    	Entities entity = insertAccountEntity();
     	Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CRYPTOADDCLAIM");
 
-    	LiveHash liveHash = new LiveHash();
+    	liveHash = new LiveHash();
     	liveHash.setConsensusTimestamp(transaction.getConsensusNs());
-    	liveHash.setLivehash(someLiveHash);
-    	liveHashRepository.save(liveHash);
+    	liveHash.setLivehash("some live hash".getBytes());
+    	liveHash = liveHashRepository.save(liveHash);
     	
-    	LiveHash newFileData = liveHashRepository.findById(transaction.getConsensusNs()).get(); 
+    	assertThat(liveHashRepository.findById(transaction.getConsensusNs()).get())
+			.isNotNull()
+			.isEqualTo(liveHash);
     	
-    	assertAll(
-            () -> assertArrayEquals(someLiveHash, newFileData.getLivehash())
-        );
     }
 }

@@ -37,6 +37,8 @@ import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.File;
 import java.nio.file.*;
@@ -194,11 +196,15 @@ public class UtilityTest {
         );
 	}
 
-	@Test
-	public void instantToTimestamp()  {
-		Random rand = new Random();
-		int nanos = rand.nextInt();
-		Instant instant = Instant.now().plusNanos(nanos);
+    @ParameterizedTest(name = "with seconds {0} and nanos {1}")
+    @CsvSource({
+            "1569936354, 901",
+            "0, 901",
+            "1569936354, 0",
+            "0,0"
+    })
+	public void instantToTimestamp(long seconds, int nanos)  {
+		Instant instant = Instant.ofEpochSecond(seconds).plusNanos(nanos);
 		Timestamp test = Utility.instantToTimestamp(instant);
 		assertAll(
                 () -> assertEquals(instant.getEpochSecond(), test.getSeconds())
@@ -206,26 +212,31 @@ public class UtilityTest {
         );
 	}
 
-	@Test
-	public void timeStampInNanosSecondNano()  {
-		Random rand = new Random();
-		int nanos = rand.nextInt();
-		Instant now = Instant.now().plusNanos(nanos);
-
-		Long timeStamp = Utility.timeStampInNanos(now.getEpochSecond(), now.getNano());
+    @ParameterizedTest(name = "with seconds {0} and nanos {1}")
+    @CsvSource({
+            "1569936354, 901",
+            "0, 901",
+            "1569936354, 0",
+            "0,0"
+    })
+	public void timeStampInNanosSecondNano(long seconds, int nanos)  {
+    	Long timeStamp = Utility.timeStampInNanos(seconds, nanos);
 		Instant fromTimeStamp = Utility.convertNanosToInstant(timeStamp);
 
 		assertAll(
-                () -> assertEquals(now.getEpochSecond(), fromTimeStamp.getEpochSecond())
-                ,() -> assertEquals(now.getNano(), fromTimeStamp.getNano())
+                () -> assertEquals(seconds, fromTimeStamp.getEpochSecond())
+                ,() -> assertEquals(nanos, fromTimeStamp.getNano())
         );
 	}
 
-	@Test
-	public void timeStampInNanosTimeStamp()  {
-		Random rand = new Random();
-		int nanos = rand.nextInt(999999);
-		long seconds = Instant.now().getEpochSecond();
+    @ParameterizedTest(name = "with seconds {0} and nanos {1}")
+    @CsvSource({
+            "1569936354, 901",
+            "0, 901",
+            "1569936354, 0",
+            "0,0"
+    })
+	public void timeStampInNanosTimeStamp(long seconds, int nanos)  {
 		
 		Timestamp timestamp = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 

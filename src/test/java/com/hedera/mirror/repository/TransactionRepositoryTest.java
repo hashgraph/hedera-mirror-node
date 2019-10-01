@@ -22,58 +22,41 @@ package com.hedera.mirror.repository;
 
 import com.hedera.mirror.domain.Transaction;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.springframework.transaction.annotation.Transactional;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TransactionRepositoryTest extends AbstractRepositoryTest {
 
+	Transaction transaction;
+
     @Test
-    void insert() {
+    @Transactional
+    void transactionInsert() {
     	
-    	final long chargedTxFee = 100;
-    	final long consensusNs = 10;
-    	final long validStartNs = 20;
     	final Long recordFileId = insertRecordFile().getId();
-    	final Long txEntityId = insertAccountEntity(100000, 0, 0, 100000).getId();
-    	final Long nodeAccountId = insertAccountEntity(200000, 0, 0, 300000).getId();
-    	final Long payerAccountId = insertAccountEntity(300000, 0, 0, 400000).getId();
+    	final Long txEntityId = insertAccountEntity().getId();
+    	final Long nodeAccountId = insertAccountEntity().getId();
+    	final Long payerAccountId = insertAccountEntity().getId();
     	final Integer transactionTypeId = transactionTypeRepository.findByName("CRYPTOCREATEACCOUNT").get().getId();
-    	final long initialBalance = 1000;
-    	final byte[] memo = "transaction memo".getBytes();
     	final Integer resultId = transactionResultRepository.findByResult("SUCCESS").get().getId();
     	
-    	Transaction transaction = new Transaction();
-    	transaction.setChargedTxFee(chargedTxFee);
-    	transaction.setConsensusNs(consensusNs);
+    	transaction = new Transaction();
+    	transaction.setChargedTxFee(100L);
+    	transaction.setConsensusNs(10L);
     	transaction.setEntityId(txEntityId);
-    	transaction.setInitialBalance(initialBalance);
-    	transaction.setMemo(memo);
+    	transaction.setInitialBalance(1000L);
+    	transaction.setMemo("transaction memo".getBytes());
     	transaction.setNodeAccountId(nodeAccountId);
     	transaction.setPayerAccountId(payerAccountId);
     	transaction.setRecordFileId(recordFileId);
     	transaction.setResultId(resultId);
     	transaction.setTransactionTypeId(transactionTypeId);
-    	transaction.setValidStartNs(validStartNs);
+    	transaction.setValidStartNs(20L);
     	
-    	transactionRepository.save(transaction);
+    	transaction = transactionRepository.save(transaction);
     	
-    	Transaction newTransaction = transactionRepository.findById(consensusNs).get(); 
-    	
-    	assertAll(
-            () -> assertEquals(chargedTxFee, newTransaction.getChargedTxFee())
-            ,() -> assertEquals(consensusNs, newTransaction.getConsensusNs())
-            ,() -> assertEquals(validStartNs, newTransaction.getValidStartNs())
-            ,() -> assertEquals(recordFileId, newTransaction.getRecordFileId())
-            ,() -> assertEquals(txEntityId, newTransaction.getEntityId())
-            ,() -> assertEquals(nodeAccountId, newTransaction.getNodeAccountId())
-
-            ,() -> assertEquals(payerAccountId, newTransaction.getPayerAccountId())
-            ,() -> assertEquals(transactionTypeId, newTransaction.getTransactionTypeId())
-            ,() -> assertEquals(initialBalance, newTransaction.getInitialBalance())
-            ,() -> assertArrayEquals(memo, newTransaction.getMemo())
-            ,() -> assertEquals(resultId, newTransaction.getResultId())
-        );
+    	assertThat(transactionRepository.findById(10L).get())
+    		.isNotNull()
+    		.isEqualTo(transaction);
     }
 }

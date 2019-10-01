@@ -1,5 +1,7 @@
 package com.hedera.mirror.repository;
 
+import java.util.Random;
+
 import javax.annotation.Resource;
 
 import com.hedera.IntegrationTest;
@@ -40,55 +42,46 @@ public class AbstractRepositoryTest extends IntegrationTest {
     protected TransactionTypeRepository transactionTypeRepository;
     @Resource
     protected EntityTypeRepository entityTypeRepository;	
-	
+
+    private enum EntityType {
+    	account
+    	,file
+    	,contract
+    }
+    
     protected final RecordFile insertRecordFile() { 
-		final long fileId = 1;
 		final String fileName = "testfile";
 		RecordFile recordFile = new RecordFile();
-		recordFile.setId(fileId);
 		recordFile.setName(fileName);
 		recordFile = recordFileRepository.save(recordFile);
 		
 		return recordFile;
     }
     
-    protected final Entities insertAccountEntity(long id, long shard, long realm, long num) {
-    	Entities entity = new Entities();
-    	entity.setId(id);
-    	entity.setEntityShard(shard);
-    	entity.setEntityRealm(realm);
-    	entity.setEntityNum(num);
+    private Entities insertEntity(EntityType entityType) {
+		Random rand = new Random();
+
+		Entities entity = new Entities();
+    	entity.setEntityShard((long)rand.nextInt(10000));
+    	entity.setEntityRealm((long)rand.nextInt(10000));
+    	entity.setEntityNum((long)rand.nextInt(10000));
     	
-    	entity.setEntityTypeId(entityTypeRepository.findByName("account").get().getId());
+    	entity.setEntityTypeId(entityTypeRepository.findByName(entityType.name()).get().getId());
     	entity = entityRepository.save(entity);
     	
     	return entity;
     }
-
-    protected final Entities insertFileEntity(long id, long shard, long realm, long num) {
-    	Entities entity = new Entities();
-    	entity.setId(id);
-    	entity.setEntityShard(shard);
-    	entity.setEntityRealm(realm);
-    	entity.setEntityNum(num);
-    	
-    	entity.setEntityTypeId(entityTypeRepository.findByName("file").get().getId());
-    	entity = entityRepository.save(entity);
-    	
-    	return entity;
+    
+    protected final Entities insertAccountEntity() {
+    	return insertEntity(EntityType.account);
     }
 
-    protected final Entities insertContractEntity(long id, long shard, long realm, long num) {
-    	Entities entity = new Entities();
-    	entity.setId(id);
-    	entity.setEntityShard(shard);
-    	entity.setEntityRealm(realm);
-    	entity.setEntityNum(num);
-    	
-    	entity.setEntityTypeId(entityTypeRepository.findByName("contract").get().getId());
-    	entity = entityRepository.save(entity);
-    	
-    	return entity;
+    protected final Entities insertFileEntity() {
+    	return insertEntity(EntityType.account);
+    }
+
+    protected final Entities insertContractEntity() {
+    	return insertEntity(EntityType.account);
     }
     
     protected final Transaction insertTransaction(long recordFileId, long entityId, String type) {
@@ -109,7 +102,7 @@ public class AbstractRepositoryTest extends IntegrationTest {
     	transaction.setTransactionTypeId(transactionType.getId());
     	transaction.setValidStartNs(validStartNs);
 
-    	transactionRepository.save(transaction);
+    	transaction = transactionRepository.save(transaction);
     	
     	return transaction;
     }

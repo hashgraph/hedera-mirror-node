@@ -21,14 +21,18 @@ package com.hedera.mirror.repository;
  */
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import com.hedera.mirror.domain.TransactionType;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TransactionTypeTest extends AbstractRepositoryTest {
 
     @Test
-    void findByResult() {
+    void transactionTypeFindByName() {
     	
-    	final int typeId = transactionTypeRepository.findByName("CRYPTOADDCLAIM").get().getId();
-    	assertNotEquals(0, typeId);
+    	assertThat(transactionTypeRepository.findByName("CRYPTOADDCLAIM"))
+    		.isPresent()
+    		.get()
+    		.extracting(TransactionType::getId)
+    		.isNotEqualTo(0L);    	
     }
 }

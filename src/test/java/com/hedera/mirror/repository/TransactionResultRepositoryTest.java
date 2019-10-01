@@ -21,14 +21,20 @@ package com.hedera.mirror.repository;
  */
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
+import com.hedera.mirror.domain.TransactionResult;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TransactionResultRepositoryTest extends AbstractRepositoryTest {
 
     @Test
-    void findByResult() {
+    void transactionResultFindByResult() {
     	
-    	final int resultId = transactionResultRepository.findByResult("INVALID_TRANSACTION").get().getId();
-    	assertNotEquals(0, resultId);
+    	assertThat(transactionResultRepository.findByResult("INVALID_TRANSACTION"))
+    		.isPresent()
+    		.get()
+    		.extracting(TransactionResult::getId)
+    		.isNotEqualTo(0L);    	
     }
 }

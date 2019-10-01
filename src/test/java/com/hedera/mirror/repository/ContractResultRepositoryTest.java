@@ -24,41 +24,34 @@ import com.hedera.mirror.domain.ContractResult;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
-import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.transaction.annotation.Transactional;
 
 public class ContractResultRepositoryTest extends AbstractRepositoryTest {
 
-    @Test
-    void insert() {
-    	
-    	final byte[] callResult = "CallResult".getBytes();
-    	final byte[] functionParameters = "functionParameters".getBytes();
-    	final long gasSupplied = 200;
-    	final long gasUsed = 100;
+	ContractResult contractResult;
 
+    @Test
+    @Transactional
+    void contractResultInsert() {
+    	
     	RecordFile recordfile = insertRecordFile();
-    	Entities entity = insertAccountEntity(1, 0, 0, 1);
+    	Entities entity = insertAccountEntity();
     	Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CONTRACTCALL");
 
-    	ContractResult contractResult = new ContractResult();
-    	contractResult.setCallResult(callResult);
-    	contractResult.setFunctionParameters(functionParameters);
-    	contractResult.setGasSupplied(gasSupplied);
-    	contractResult.setGasUsed(gasUsed);
+    	contractResult = new ContractResult();
+    	contractResult.setCallResult("CallResult".getBytes());
+    	contractResult.setFunctionParameters("functionParameters".getBytes());
+    	contractResult.setGasSupplied(200L);
+    	contractResult.setGasUsed(100L);
     	contractResult.setConsensusTimestamp(transaction.getConsensusNs());
-    	contractResultRepository.save(contractResult);
+    	contractResult = contractResultRepository.save(contractResult);
     	
-    	ContractResult newContractResult = contractResultRepository.findById(transaction.getConsensusNs()).get();
-    	
-    	assertAll(
-                () -> assertArrayEquals(callResult, newContractResult.getCallResult())
-                ,() -> assertArrayEquals(functionParameters, newContractResult.getFunctionParameters())
-                ,() -> assertEquals(gasSupplied, newContractResult.getGasSupplied())
-                ,() -> assertEquals(gasUsed, newContractResult.getGasUsed())
-        );
+    	assertThat(contractResultRepository.findById(transaction.getConsensusNs()).get())
+        	.isNotNull()
+        	.isEqualTo(contractResult);
     }
 }

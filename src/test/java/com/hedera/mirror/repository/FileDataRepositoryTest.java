@@ -25,30 +25,29 @@ import com.hedera.mirror.domain.FileData;
 import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.annotation.Transactional;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FileDataRepositoryTest extends AbstractRepositoryTest {
 
+	FileData fileData;
+
     @Test
-    void insert() {
-    	
-    	final byte[] someFileData = "some file data".getBytes();
+    @Transactional
+    void fileDataInsert() {
     	
     	RecordFile recordfile = insertRecordFile();
-    	Entities entity = insertAccountEntity(1, 0, 0, 1);
+    	Entities entity = insertAccountEntity();
     	Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "FILECREATE");
 
     	FileData fileData = new FileData();
     	fileData.setConsensusTimestamp(transaction.getConsensusNs());
-    	fileData.setFileData(someFileData);
-    	fileDataRepository.save(fileData);
+    	fileData.setFileData("some file data".getBytes());
+    	fileData = fileDataRepository.save(fileData);
     	
-    	FileData newFileData = fileDataRepository.findById(transaction.getConsensusNs()).get(); 
-    	
-    	assertAll(
-            () -> assertArrayEquals(someFileData, newFileData.getFileData())
-        );
+    	assertThat(fileDataRepository.findById(transaction.getConsensusNs()).get())
+			.isNotNull()
+			.isEqualTo(fileData);    
     }
 }
