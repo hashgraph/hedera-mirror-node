@@ -30,12 +30,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 public class ContractResultRepositoryTest extends AbstractRepositoryTest {
 
 	ContractResult contractResult;
 
     @Test
-    @Transactional
     void contractResultInsert() {
     	
     	RecordFile recordfile = insertRecordFile();

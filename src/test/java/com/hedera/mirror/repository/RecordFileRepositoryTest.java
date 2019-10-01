@@ -26,11 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Transactional
 public class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
 	RecordFile recordFile;
     @Test
-    @Transactional
     void recordFileInsert() {
     	
 		recordFile = new RecordFile();

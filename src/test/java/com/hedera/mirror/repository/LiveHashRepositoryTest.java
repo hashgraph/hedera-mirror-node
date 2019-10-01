@@ -29,12 +29,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Transactional
 public class LiveHashRepositoryTest extends AbstractRepositoryTest {
 
 	LiveHash liveHash;
 
     @Test
-    @Transactional
     void liveHashInsert() {
     	
     	RecordFile recordfile = insertRecordFile();

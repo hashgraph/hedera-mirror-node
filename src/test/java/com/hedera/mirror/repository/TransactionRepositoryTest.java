@@ -25,12 +25,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Transactional
 public class TransactionRepositoryTest extends AbstractRepositoryTest {
 
 	Transaction transaction;
 
     @Test
-    @Transactional
     void transactionInsert() {
     	
     	final Long recordFileId = insertRecordFile().getId();

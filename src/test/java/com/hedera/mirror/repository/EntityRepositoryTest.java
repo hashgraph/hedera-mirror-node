@@ -26,11 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Transactional
 public class EntityRepositoryTest extends AbstractRepositoryTest {
 	Entities entity;
 
     @Test
-    @Transactional
     void entityFindByPrimaryKey() {
     	
     	final int entityTypeId = entityTypeRepository.findByName("account").get().getId();
