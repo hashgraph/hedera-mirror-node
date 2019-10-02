@@ -1,7 +1,11 @@
 package com.hedera.recordLogger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Optional;
 
@@ -23,14 +27,18 @@ import com.hedera.mirror.repository.LiveHashRepository;
 import com.hedera.mirror.repository.RecordFileRepository;
 import com.hedera.mirror.repository.TransactionRepository;
 import com.hedera.mirror.repository.TransactionResultRepository;
+import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class AbstractRecordFileLoggerTest extends IntegrationTest {
@@ -70,7 +78,7 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
         assertThat(dbEntity.getEntityTypeId())
         	.isEqualTo(entityTypeRepository.findByName("file").get().getId());
     }    
-    protected final void assertTransfers(TransactionRecord record) {
+    protected final void assertRecordTransfers(TransactionRecord record) {
     	final TransferList transferList = record.getTransferList();
     	for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
     		AccountID xferAccountId = accountAmount.getAccountID();
@@ -78,6 +86,17 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     		assertEquals(accountAmount.getAmount(), cryptoTransferRepository.findByConsensusTimestampAndAccountId(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountId.get().getId()).get().getAmount());
     	}
     }
+    
+    
+    protected final void assertTransactionTransfers(CryptoTransferTransactionBody transaction, TransactionRecord record) {
+    	final TransferList transferList = transaction.getTransfers();
+    	for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
+    		AccountID xferAccountId = accountAmount.getAccountID();
+    		Optional<Entities> accountId = entityRepository.findByPrimaryKey(xferAccountId.getShardNum(), xferAccountId.getRealmNum(), xferAccountId.getAccountNum());
+    		assertEquals(accountAmount.getAmount(), cryptoTransferRepository.findByConsensusTimestampAndAccountId(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountId.get().getId()).get().getAmount());
+    	}
+    }
+    
     protected final void assertRecord(TransactionRecord record, com.hedera.mirror.domain.Transaction dbTransaction) {
     	final Entities dbPayerEntity = entityRepository.findById(dbTransaction.getPayerAccountId()).get();
     	final TransactionResult dbResult = transactionResultRepository.findById(dbTransaction.getResultId()).get();
@@ -92,6 +111,18 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
         assertEquals(record.getReceipt().getStatusValue(), dbResult.getProtobufId());
         assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.getResult());
     	
+    }
+    protected final void assertTransaction(TransactionBody transactionBody, com.hedera.mirror.domain.Transaction dbTransaction) {
+
+    	final Entities dbNodeEntity = entityRepository.findById(dbTransaction.getNodeAccountId()).get();
+    	final Entities dbPayerEntity = entityRepository.findById(dbTransaction.getPayerAccountId()).get();
+        
+    	assertAll(
+            () -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.getMemo())
+                ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
+                ,() -> assertAccount(transactionBody.getTransactionID().getAccountID(), dbPayerEntity)
+                ,() -> assertEquals(Utility.timeStampInNanos(transactionBody.getTransactionID().getTransactionValidStart()), dbTransaction.getValidStartNs())
+         );    	
     }
     protected final SignatureMap getSigMap() {
     	final String key1 = "11111111111111111111c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";    	
