@@ -702,7 +702,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
       // now update
       final Transaction transaction = cryptoUpdateTransaction(UpdateType.RECEIVE_RECORD_THRESHOLD);
       final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-      final CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
       final TransactionRecord record = transactionRecord(transactionBody);
       
       RecordFileLogger.storeRecord(transaction, record);
@@ -750,9 +749,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
     void cryptoUpdateReceiveRecordThresholdNewTest() throws Exception {
 
       // update
-        final Transaction transaction = cryptoUpdateTransaction(UpdateType.RECEIVE_RECORD_THRESHOLD);
+      final Transaction transaction = cryptoUpdateTransaction(UpdateType.RECEIVE_RECORD_THRESHOLD);
       final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-      final CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
       final TransactionRecord record = transactionRecord(transactionBody);
       
       RecordFileLogger.storeRecord(transaction, record);
@@ -808,7 +806,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
       // now update
       final Transaction transaction = cryptoUpdateTransaction(UpdateType.RECEIVER_SIG_REQUIRED);
       final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-      final CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
       final TransactionRecord record = transactionRecord(transactionBody);
       
       RecordFileLogger.storeRecord(transaction, record);
@@ -856,9 +853,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
     void cryptoUpdateReceiverSigRequiredToNewTest() throws Exception {
 
       // update
-        final Transaction transaction = cryptoUpdateTransaction(UpdateType.RECEIVER_SIG_REQUIRED);
+      final Transaction transaction = cryptoUpdateTransaction(UpdateType.RECEIVER_SIG_REQUIRED);
       final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-      final CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
       final TransactionRecord record = transactionRecord(transactionBody);
       
       RecordFileLogger.storeRecord(transaction, record);
@@ -914,7 +910,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
       // now update
       final Transaction transaction = cryptoUpdateTransaction(UpdateType.SEND_RECORD_THRESHOLD);
       final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-      final CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
       final TransactionRecord record = transactionRecord(transactionBody);
       
       RecordFileLogger.storeRecord(transaction, record);
@@ -1307,14 +1302,13 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void cryptoTransferWithPersitence() throws Exception {
+    void cryptoTransferWithPersistence() throws Exception {
 
     	ConfigLoader.setPersistCryptoTransferAmounts(true);
     	
       // make the transfers
       final Transaction transaction = cryptoTransferTransaction();
       final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-      final CryptoTransferTransactionBody cryptoTransferTransactionBody = transactionBody.getCryptoTransfer();
       final TransactionRecord record = transactionRecord(transactionBody);
       
       RecordFileLogger.storeRecord(transaction, record);
@@ -1340,9 +1334,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 
                 // record transfer list
                 ,() -> assertRecordTransfers(record)
-                
-                // transaction body inputs
-                ,() -> assertTransactionTransfers(cryptoTransferTransactionBody, record)
          );    	
     }
 
@@ -1354,7 +1345,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
       // make the transfers
       final Transaction transaction = cryptoTransferTransaction();
       final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-      final CryptoTransferTransactionBody cryptoTransferTransactionBody = transactionBody.getCryptoTransfer();
       final TransactionRecord record = transactionRecord(transactionBody);
       
       RecordFileLogger.storeRecord(transaction, record);

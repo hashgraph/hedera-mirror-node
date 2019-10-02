@@ -44,7 +44,6 @@ import java.io.File;
 import java.nio.file.*;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.util.Random;
 
 public class UtilityTest {
 

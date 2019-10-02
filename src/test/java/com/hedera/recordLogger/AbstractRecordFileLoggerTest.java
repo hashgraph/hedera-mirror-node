@@ -4,9 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.util.Optional;
 
 import javax.annotation.Resource;
@@ -29,18 +26,12 @@ import com.hedera.mirror.repository.LiveHashRepository;
 import com.hedera.mirror.repository.RecordFileRepository;
 import com.hedera.mirror.repository.TransactionRepository;
 import com.hedera.mirror.repository.TransactionResultRepository;
-import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 
@@ -89,17 +80,6 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     		assertEquals(accountAmount.getAmount(), cryptoTransferRepository.findByConsensusTimestampAndAccountId(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountId.get().getId()).get().getAmount());
     	}
     }
-
-
-    protected final void assertTransactionTransfers(CryptoTransferTransactionBody transaction, TransactionRecord record) {
-    	final TransferList transferList = transaction.getTransfers();
-    	for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
-    		AccountID xferAccountId = accountAmount.getAccountID();
-    		Optional<Entities> accountId = entityRepository.findByPrimaryKey(xferAccountId.getShardNum(), xferAccountId.getRealmNum(), xferAccountId.getAccountNum());
-    		assertEquals(accountAmount.getAmount(), cryptoTransferRepository.findByConsensusTimestampAndAccountId(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountId.get().getId()).get().getAmount());
-    	}
-    }
-
     protected final void assertRecord(TransactionRecord record, com.hedera.mirror.domain.Transaction dbTransaction) {
     	final Entities dbPayerEntity = entityRepository.findById(dbTransaction.getPayerAccountId()).get();
     	final TransactionResult dbResult = transactionResultRepository.findById(dbTransaction.getResultId()).get();
