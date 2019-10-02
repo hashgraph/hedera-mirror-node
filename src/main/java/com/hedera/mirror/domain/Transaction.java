@@ -38,7 +38,7 @@ public class Transaction {
     private byte[] memo;
 
     @Column(name = "fk_trans_type_id")
-     private Long transactionTypeId;
+     private Integer transactionTypeId;
 
     @Column(name = "fk_result_id")
     private Integer resultId;

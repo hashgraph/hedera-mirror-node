@@ -30,8 +30,7 @@ import javax.persistence.*;
 public class ContractResult {
 
     @Id
-    @Column(name="fk_trans_id")
-    private Long transactionId;
+    private Long consensusTimestamp;
 
     @Column(name = "function_params")
     private byte[] functionParameters;
