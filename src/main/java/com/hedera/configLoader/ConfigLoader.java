@@ -305,14 +305,26 @@ public class ConfigLoader {
 	public static boolean getPersistClaims() {
 		return persistClaims;
 	}
+	public static void setPersistClaims(boolean persist) {
+		persistClaims = true;
+	}
 	public static String getPersistFiles() {
 		return persistFiles;
+	}
+	public static void setPersistFiles(String persist) {
+		persistFiles = persist;
 	}
 	public static boolean getPersistContracts() {
 		return persistContracts;
 	}
+	public static void setPersistContracts(boolean persist) {
+		persistContracts = persist;
+	}
 	public static boolean getPersistCryptoTransferAmounts() {
 		return persistCryptoTransferAmounts;
+	}
+	public static void setPersistCryptoTransferAmounts(boolean persist) {
+		persistCryptoTransferAmounts = persist;
 	}
 
 	/***
