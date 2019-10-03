@@ -306,7 +306,7 @@ public class ConfigLoader {
 		return persistClaims;
 	}
 	public static void setPersistClaims(boolean persist) {
-		persistClaims = true;
+		persistClaims = persist;
 	}
 	public static String getPersistFiles() {
 		return persistFiles;
