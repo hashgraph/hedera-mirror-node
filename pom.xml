@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.hedera</groupId>
 	<artifactId>mirror-node</artifactId>
-	<version>0.2.0-rc3</version>
+	<version>0.2.1</version>
 	<name>Hedera Mirror Node</name>
 	<description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
 	<ciManagement>
@@ -45,7 +45,7 @@
 		<commons-io.version>2.6</commons-io.version>
 		<coveralls.version>4.3.0</coveralls.version>
 		<disruptor.version>3.4.2</disruptor.version>
-		<hedera-protobuf.version>0.3.4</hedera-protobuf.version>
+		<hedera-protobuf.version>0.3.5</hedera-protobuf.version>
 		<hedera-sdk.version>0.5.0</hedera-sdk.version>
 		<jacoco.version>0.8.4</jacoco.version>
 		<java.version>11</java.version>
