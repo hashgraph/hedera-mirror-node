@@ -9,9 +9,9 @@ package com.hedera.configLoader;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -73,9 +73,6 @@ public class ConfigLoader {
 	private static final int DEFAULT_ACCOUNT_BALANCES_FILE_BUFFER_SIZE = 200_000;
 	private static int accountBalancesFileBufferSize = DEFAULT_ACCOUNT_BALANCES_FILE_BUFFER_SIZE;
 
-	private static final boolean DEFAULT_ACCOUNT_BALANCES_USE_TRANSACTION = false;
-	private static boolean accountBalancesUseTransaction = DEFAULT_ACCOUNT_BALANCES_USE_TRANSACTION;
-
 	// location of account balances on S3
 	private static String accountBalanceS3Location = "accountBalances/balance";
 
@@ -99,9 +96,9 @@ public class ConfigLoader {
     private static Dotenv dotEnv = Dotenv.configure().ignoreIfMissing().load();
 
 	private static String configSavePath = "./config/config.json";
-	
+
 	private static JsonObject configJsonObject;
-	
+
 	public static enum OPERATION_TYPE {
                BALANCE
                ,RECORDS
@@ -166,9 +163,6 @@ public class ConfigLoader {
 				if (i > 0) {
 					accountBalancesFileBufferSize = i;
 				}
-			}
-			if (configJsonObject.has("accountBalancesUseTransaction")) {
-				accountBalancesUseTransaction = configJsonObject.get("accountBalancesUseTransaction").getAsBoolean();
 			}
 			if (configJsonObject.has("systemShardNum")) {
 				systemShardNum = configJsonObject.get("systemShardNum").getAsLong();
@@ -280,10 +274,6 @@ public class ConfigLoader {
 
 	public static int getAccountBalancesFileBufferSize() {
 		return accountBalancesFileBufferSize;
-	}
-
-	public static boolean getAccountBalancesUseTransaction() {
-		return accountBalancesUseTransaction;
 	}
 
 	public static String getAccountBalanceS3Location() {

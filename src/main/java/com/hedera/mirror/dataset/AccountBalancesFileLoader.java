@@ -9,9 +9,9 @@ package com.hedera.mirror.dataset;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,10 +46,7 @@ public final class AccountBalancesFileLoader implements AutoCloseable {
 	private final Instant filenameTimestamp;
 	private final AccountBalancesDataset dataset;
 	private final TimestampConverter timestampConverter = new TimestampConverter();
-	private final boolean useDatabaseTransaction;
 	private final int insertBatchSize;
-	@Getter
-	private boolean insertErrors;
 	@Getter
 	private int validRowCount;
 	private boolean loaded;
@@ -70,29 +67,26 @@ public final class AccountBalancesFileLoader implements AutoCloseable {
 		filenameTimestamp = info.getFilenameTimestamp();
 		dataset = new AccountBalancesDatasetV2(filePath.getFileName().toString(),
                 new FileInputStream(filePath.toFile()));
-		useDatabaseTransaction = ConfigLoader.getAccountBalancesUseTransaction();
 		insertBatchSize = ConfigLoader.getAccountBalancesInsertBatchSize();
 	}
 
 	/**
 	 * Process a line (CSV account balance line) and insert it into the DB (or skip it if empty).
-	 * @param ps
-	 * @param line
 	 */
 	private void processLine(final PreparedStatement ps, final long consensusTimestamp, final NumberedLine line)
 			throws InvalidDatasetException, SQLException {
 		final String[] cols = line.getValue().split(",");
 		if (4 != cols.length) {
 			throw new InvalidDatasetException(String.format(
-					"Invalid line in account balances file %s:line(%d).",
-					filePath, line.getLineNumber()));
+					"Invalid line in account balances file %s:line(%d):%s",
+					filePath, line.getLineNumber(), line.getValue()));
 		}
 
 		final var shardNum = Long.valueOf(cols[0]);
 		if (shardNum != systemShardNum) {
 			throw new InvalidDatasetException(String.format(
-					"Invalid shardNum %d in account balances file %s:line(%d).",
-					shardNum, filePath, line.getLineNumber()));
+					"Invalid shardNum %d in account balances file %s:line(%d):%s",
+					shardNum, filePath, line.getLineNumber(), line.getValue()));
 		}
 
 		try {
@@ -102,17 +96,19 @@ public final class AccountBalancesFileLoader implements AutoCloseable {
 			ps.setLong(4, Long.valueOf(cols[3])); // balance (hbar_tinybars);
 			ps.addBatch();
 		} catch (NumberFormatException e) {
-			throw new InvalidDatasetException(String.format("Invalid line in account balances file %s:line(%d).",
-					filePath, line.getLineNumber()));
+			throw new InvalidDatasetException(String.format("Invalid line in account balances file %s:line(%d):%s",
+					filePath, line.getLineNumber(), line.getValue()));
 		}
 	}
 
-	private void processRecordStreamWithoutDatabaseTransaction(final PreparedStatement ps,
-															   final long consensusTimestamp,
-															   final Stream<NumberedLine> stream)
-			throws SQLException {
+	/**
+	 * @return true if all lines in the stream were successfully inserted; false, if any errors were seen.
+	 */
+	private boolean processRecordStream(final PreparedStatement ps, final long consensusTimestamp,
+									 final Stream<NumberedLine> stream) {
 		var state = new Object() {
 			int recordsInCurrentBatch = 0;
+			boolean insertSuccess = true;
 		};
 		stream.forEachOrdered((line) -> {
 			try {
@@ -126,35 +122,19 @@ public final class AccountBalancesFileLoader implements AutoCloseable {
 				}
 			} catch (InvalidDatasetException | SQLException e) {
 				log.error(e);
-				insertErrors = true;
+				state.insertSuccess = false;
 			}
 		});
 		// Process any remaining insert batches.
 		if (state.recordsInCurrentBatch > 0) {
-			ps.executeBatch();
-		}
-	}
-
-	private void processRecordStreamWithDatabaseTransaction(final PreparedStatement ps, final long consensusTimestamp,
-													   		final Stream<NumberedLine> stream)
-			throws SQLException, InvalidDatasetException {
-		int recordsInCurrentBatch = 0;
-		Iterable<NumberedLine> iterable = stream::iterator;
-		for (NumberedLine line : iterable) {
-			if (line.getValue().isEmpty()) continue;
-
-			processLine(ps, consensusTimestamp, line);
-			++validRowCount;
-			++recordsInCurrentBatch;
-			if (recordsInCurrentBatch >= insertBatchSize) {
-				recordsInCurrentBatch = 0;
+			try {
 				ps.executeBatch();
+			} catch (SQLException e) {
+				log.error(e);
+				state.insertSuccess = false;
 			}
 		}
-		// Process any remaining insert batches.
-		if (recordsInCurrentBatch > 0) {
-			ps.executeBatch();
-		}
+		return state.insertSuccess;
 	}
 
 	/**
@@ -187,53 +167,29 @@ public final class AccountBalancesFileLoader implements AutoCloseable {
 		log.info("Starting processing account balances file {}", filePath);
 		var stopwatch = Stopwatch.createStarted();
 		try (Connection conn = DatabaseUtilities.getConnection()) {
-			try {
-				final Stream<NumberedLine> stream = dataset.getRecordStream();
+			final Stream<NumberedLine> stream = dataset.getRecordStream();
 
-				if (useDatabaseTransaction) {
-					conn.setAutoCommit(false);
-				}
+			final var insertSet = conn.prepareStatement(
+					"insert into account_balance_sets (consensus_timestamp) values (?) on conflict do nothing returning is_complete, processing_start_timestamp;");
+			final var insertBalance = conn.prepareStatement(
+					"insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values (?, ?, ?, ?) on conflict do nothing;");
+			final var updateSet = conn.prepareStatement(
+					"update account_balance_sets set is_complete = true, processing_end_timestamp = now() at time zone 'utc' where consensus_timestamp = ? and is_complete = false;");
 
-				final var insertSet = conn.prepareStatement(
-						"insert into account_balance_sets (consensus_timestamp) values (?) on conflict do nothing returning is_complete, processing_start_timestamp;");
-				final var insertBalance = conn.prepareStatement(
-						"insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values (?, ?, ?, ?) on conflict do nothing;");
-				final var updateSet = conn.prepareStatement(
-						"update account_balance_sets set is_complete = true, processing_end_timestamp = now() at time zone 'utc' where consensus_timestamp = ? and is_complete = false;");
+			insertSet.setLong(1, longConsensusTimestamp);
+			insertSet.execute();
 
-				insertSet.setLong(1, longConsensusTimestamp);
-				insertSet.execute();
-
-				if (useDatabaseTransaction) {
-					processRecordStreamWithoutDatabaseTransaction(insertBalance, longConsensusTimestamp, stream);
-				} else {
-					processRecordStreamWithDatabaseTransaction(insertBalance, longConsensusTimestamp, stream);
-				}
-
-				if (!insertErrors) {
-					updateSet.setLong(1, longConsensusTimestamp);
-					updateSet.execute();
-				}
-
-				if (useDatabaseTransaction) {
-					conn.commit();
-				}
-				if (!insertErrors) {
-					log.info("Successfully processed account balances file {} with {} records in {}", filePath,
-							validRowCount, stopwatch);
-				} else {
-					log.error("ERRORS processing account balances file {} with {} records in {}", filePath,
-							validRowCount, stopwatch);
-				}
-				return !insertErrors;
-			} catch (SQLException | InvalidDatasetException e) {
-				insertErrors = true;
-				log.error("Exception processing account balances file {}", filePath, e);
-				if (useDatabaseTransaction) {
-					conn.rollback();
-				}
+			if (processRecordStream(insertBalance, longConsensusTimestamp, stream)) {
+				updateSet.setLong(1, longConsensusTimestamp);
+				updateSet.execute();
+				log.info("Successfully processed account balances file {} with {} records in {}", filePath,
+						validRowCount, stopwatch);
+				return true;
+			} else {
+				log.error("ERRORS processing account balances file {} with {} records in {}", filePath,
+						validRowCount, stopwatch);
 			}
-		} catch (SQLException e) {
+		} catch (SQLException | InvalidDatasetException e) {
 			log.error("Exception processing account balances file {}", filePath, e);
 		}
 		return false;
