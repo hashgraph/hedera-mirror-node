@@ -24,34 +24,23 @@ require("dotenv").config({
 
 const express = require('express');
 const bodyParser = require('body-parser');
-let Pool;
-if (process.env.NODE_ENV !== 'test') {
-    Pool = require('pg').Pool;
-} else {
-    Pool = require('./__tests__/mockpool.js'); // Use a mocked up DB for jest unit tests
-}
+let Pool = require('pg').Pool;
 const app = express();
 const cors = require('cors');
 const log4js = require('log4js');
 const logger = log4js.getLogger();
 
 const config = require('./config.js');
+const utils = require('./utils.js');
 const transactions = require('./transactions.js');
 const balances = require('./balances.js');
-const events = require('./events.js');
 const accounts = require('./accounts.js');
-const eventAnalytics = require('./eventAnalytics.js');
-const utils = require('./utils.js');
 const Cacher = require('./cacher.js');
 
 var compression = require('compression');
 
-let port;
-if (process.env.NODE_ENV !== 'test') {
-    port = process.env.PORT;
-} else {
-    port = 3000; // Use a dummy port for jest unit tests
-}
+let port = process.env.PORT;
+
 if (port === undefined || isNaN(Number(port))) {
     logger.error('Server started with unknown port');
     console.log('Please specify the port');
@@ -99,9 +88,10 @@ app.use(cors());
 let caches = {};
 for (const api of [
     { name: 'transactions', ttl: config.ttls.transactions },
+    { name: 'oneTransaction', ttl: config.ttls.oneTransaction },
     { name: 'balances', ttl: config.ttls.balances },
     { name: 'accounts', ttl: config.ttls.accounts },
-    { name: 'events', ttl: config.ttls.events }
+    { name: 'oneAccount', ttl: config.ttls.oneAccount },
 ]) {
     caches[api.name] = new Cacher(api.ttl);
 }
@@ -110,10 +100,10 @@ let apiPrefix = '/api/v1';
 
 // routes 
 app.get(apiPrefix + '/transactions', (req, res) => caches['transactions'].getResponse(req, res, transactions.getTransactions));
-app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
+app.get(apiPrefix + '/transactions/:id', (req, res) => caches['oneTransaction'].getResponse(req, res, transactions.getOneTransaction));
 app.get(apiPrefix + '/balances', (req, res) => caches['balances'].getResponse(req, res, balances.getBalances));
 app.get(apiPrefix + '/accounts', (req, res) => caches['accounts'].getResponse(req, res, accounts.getAccounts));
-app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
+app.get(apiPrefix + '/accounts/:id', (req, res) => caches['oneAccount'].getResponse(req, res, accounts.getOneAccount));
 
 if (process.env.NODE_ENV !== 'test') {
     app.listen(port, () => {

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,285 +17,291 @@
  * limitations under the License.
  * ‍
  */
-'use strict';
-const utils = require('./utils.js');
-const transactions = require('./transactions.js');
+"use strict";
+const Parser = require("./Parser.js");
+const utils = require("./utils.js");
+const config = require("./config.js");
+const transactions = require("./transactions.js");
+var knex = require("knex")({
+    client: "pg"
+});
+
+// ------------------------------ API: /accounts ------------------------------
+
+/**
+ * Handler function for /accounts API.
+ * @param {Request} req HTTP request object
+ * @return {Promise} Promise for the api return value
+ */
+const getAccounts = function(req) {
+    const query = reqToSql(req);
+
+    if (!query.isValid) {
+        return new Promise((resolve, reject) => {
+            resolve({
+                code: utils.httpStatusCodes.BAD_REQUEST,
+                contents: {
+                    _status: {
+                        messages: query.badParams
+                    }
+                }
+            });
+        });
+    }
+    logger.debug("getAccounts query: " + query.query);
+
+    // Execute query
+    return pool.query(query.query).then(results => {
+        return processDbQueryResponse(req, query, results);
+    });
+};
+
+/**
+ * Converts the accounts query to SQL
+ * @param {Request} req HTTP request object
+ * @return {Object} Valid flag, SQL query, and the parser object
+ */
+const reqToSql = function(req) {
+    const parser = new Parser(req, "accounts");
+    const parsedReq = parser.getParsedReq();
+
+    if (!parsedReq.isValid) {
+        return parsedReq;
+    }
+
+    const order = parsedReq.queryIntents.hasOwnProperty("order") ? parsedReq.queryIntents["order"][0].val : "desc";
+    const limit = parsedReq.queryIntents.hasOwnProperty("limit")
+        ? parsedReq.queryIntents["limit"][0].val
+        : config.limits.RESPONSE_ROWS;
+
+    let sqlQuery = getAccountsQuery(parsedReq.queryIntents, order, limit);
+
+    return {
+        isValid: true,
+        query: sqlQuery.toString(),
+        parser: parser
+    };
+};
+
+/**
+ * Constructs the SQL query
+ * @param {Object} intents Intents (filters) from the query
+ * @param {String} order Sorting order
+ * @param {Number} limit Limit
+ * @return {String} SQL query
+ */
+const getAccountsQuery = function(intents, order, limit) {
+    let accountsQuery = knex({
+        ab: "account_balances"
+    })
+        .select(
+            { account_balance: "ab.balance" },
+            { consensus_timestamp: " ab.consensus_timestamp" },
+            { entity_shard: knex.raw("?", [process.env.SHARD_NUM]) },
+            { entity_realm: knex.raw("coalesce(ab.account_realm_num, e.entity_realm)") },
+            { entity_num: knex.raw("coalesce(ab.account_num, e.entity_num)") },
+            "e.exp_time_ns",
+            "e.auto_renew_period",
+            "e.key",
+            "e.deleted"
+        )
+        .fullOuterJoin({ e: "t_entities" }, function() {
+            this.on(knex.raw("?", [process.env.SHARD_NUM]), "=", "e.entity_shard")
+                .andOn(" ab.account_realm_num", "=", "e.entity_realm")
+                .andOn("ab.account_num", "=", "e.entity_num")
+                .andOn("e.fk_entity_type_id", "<", utils.ENTITY_TYPE_FILE);
+        })
+        .where("ab.consensus_timestamp", "=", knex("account_balances").max("consensus_timestamp"));
+
+    for (const intent of intents["account.id"] || []) {
+        accountsQuery = accountsQuery.where(function() {
+            this.where(function() {
+                this.where("ab.account_realm_num", "=", intent.val.realm).where(
+                    "ab.account_num",
+                    utils.opsMap[intent.op],
+                    intent.val.num
+                );
+            }).orWhere(function() {
+                this.where("e.entity_realm", "=", intent.val.realm).where(
+                    "e.entity_num",
+                    utils.opsMap[intent.op],
+                    intent.val.num
+                );
+            });
+        });
+    }
+
+    for (const intent of intents["account.balance"] || []) {
+        accountsQuery = accountsQuery.where("ab.balance", utils.opsMap[intent.op], intent.val);
+    }
+
+    for (const intent of intents["account.publickey"] || []) {
+        accountsQuery = accountsQuery.where("e.ed25519_public_key_hex", utils.opsMap[intent.op], intent.val);
+    }
+
+    accountsQuery = accountsQuery.orderBy(knex.raw("coalesce(ab.account_num, e.entity_num)"), order).limit(limit);
+
+    return accountsQuery.toString();
+};
+
+/**
+ * Process the database query response
+ * @param {Request} req HTTP request object
+ * @param {Object} query Parsed query
+ * @param {Object} results Results from the database query
+ * @return {Object} Processed response to be returned as the api response
+ */
+const processDbQueryResponse = function(req, query, results) {
+    let ret = {
+        accounts: [],
+        links: {
+            next: null
+        }
+    };
+
+    for (let row of results.rows) {
+        ret.accounts.push(processRow(row));
+    }
+
+    const anchorAccountId = ret.accounts.length > 0 ? ret.accounts[ret.accounts.length - 1].account : "0.0.0";
+    ret.links = {
+        next: utils.getPaginationLink(
+            req.path,
+            query.parser,
+            ret.accounts.length !== query.parser.limit,
+            "account.id",
+            anchorAccountId,
+            query.parser.order
+        )
+    };
+
+    logger.debug(`getAccounts returning ${ret.accounts.length} entries`);
+
+    return {
+        code: utils.httpStatusCodes.OK,
+        contents: ret
+    };
+};
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
  * @param {Object} row One row of the SQL query result
  * @return {Object} accRecord Processed account record
  */
-const processRow = function (row) {
+const processRow = function(row) {
     let accRecord = {};
     accRecord.balance = {};
-    accRecord.account = row.entity_shard + '.' + row.entity_realm + '.' + row.entity_num;
-    accRecord.balance.timestamp = (row.consensus_timestamp === null) ? null : utils.nsToSecNs(row.consensus_timestamp);
-    accRecord.balance.balance = (row.account_balance === null) ? null : Number(row.account_balance);
-    accRecord.expiry_timestamp = (row.exp_time_ns === null) ? null : utils.nsToSecNs(row.exp_time_ns);
-    accRecord.auto_renew_period = (row.auto_renew_period=== null) ? null : Number(row.auto_renew_period);
-    accRecord.key = (row.key === null) ? null : utils.encodeKey(row.key);
+    accRecord.account = row.entity_shard + "." + row.entity_realm + "." + row.entity_num;
+    accRecord.balance.timestamp = row.consensus_timestamp === null ? null : utils.nsToSecNs(row.consensus_timestamp);
+    accRecord.balance.balance = row.account_balance === null ? null : Number(row.account_balance);
+    accRecord.expiry_timestamp = row.exp_time_ns === null ? null : utils.nsToSecNs(row.exp_time_ns);
+    accRecord.auto_renew_period = row.auto_renew_period === null ? null : Number(row.auto_renew_period);
+    accRecord.key = row.key === null ? null : utils.encodeKey(row.key);
     accRecord.deleted = row.deleted;
 
-    return (accRecord);
-}
+    return accRecord;
+};
 
-const getAccountQueryPrefix = function() {
-    const prefix = 
-        "select ab.balance as account_balance\n" +
-        "    , ab.consensus_timestamp as consensus_timestamp\n" +
-        "    , " + process.env.SHARD_NUM + " as entity_shard\n" +
-        "    , coalesce(ab.account_realm_num, e.entity_realm) as entity_realm\n" +
-        "    , coalesce(ab.account_num, e.entity_num) as entity_num\n" +
-        "    , e.exp_time_ns\n" +
-        "    , e.auto_renew_period\n" +
-        "    , e.key\n" +
-        "    , e.deleted\n" +
-        "from account_balances ab\n" +
-        "full outer join t_entities e\n" +
-        "    on (" + process.env.SHARD_NUM + " = e.entity_shard\n" +
-        "        and ab.account_realm_num = e.entity_realm\n" +
-        "        and ab.account_num =  e.entity_num\n" +
-        "        and e.fk_entity_type_id < " + utils.ENTITY_TYPE_FILE + ")\n" +
-        "where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balances)\n";
-        
-    return (prefix);
-}
-
-/**
- * Handler function for /accounts API.
- * @param {Request} req HTTP request object
- * @return {Promise} Promise for PostgreSQL query
- */
-const getAccounts = function (req) {
-    // Validate query parameters first
-    const valid = utils.validateReq(req);
-    if (!valid.isValid) {
-        return (new Promise ((resolve, reject) => {
-            resolve (valid);
-        }));
-    }
-
-    // Parse the filter parameters for account-numbers, balances, publicKey and pagination
-
-    // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we 
-    // need to look  for the given account.id in both account_balances and t_entities table and combine with an 'or'
-    const [accountQueryForAccountBalances, accountParamsForAccountBalances] =
-        utils.parseParams(req, 'account.id',
-            [{ shard: process.env.SHARD_NUM, realm: 'ab.account_realm_num', num: 'ab.account_num' }],
-            'entityId');
-    const [accountQueryForEntity, accountParamsForEntity] =
-        utils.parseParams(req, 'account.id',
-            [{ shard: process.env.SHARD_NUM, realm: 'e.entity_realm', num: ' e.entity_num' }],
-            'entityId');
-    const accountQuery = accountQueryForAccountBalances === '' ? '' :
-        "(\n" + 
-        "    " + accountQueryForAccountBalances + "\n" +
-        "    or (" + accountQueryForEntity + " and e.fk_entity_type_id < " + utils.ENTITY_TYPE_FILE + ")\n" +
-        ")\n";
-
-    const [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance',
-        ['ab.balance'], 'balance');
-
-    let [pubKeyQuery, pubKeyParams] = utils.parseParams(req, 'account.publickey',
-        ['e.ed25519_public_key_hex'], 'publickey', (s) => {return s.toLowerCase();});
-
-    const { limitQuery, limitParams, order, limit } =
-        utils.parseLimitAndOrderParams(req, 'asc');
-
-    const entitySql = getAccountQueryPrefix() +
-        "    and \n" +
-        [accountQuery, balanceQuery, pubKeyQuery].map(q => q === '' ? '1=1' : q).join(' and ') +
-        " order by coalesce(ab.account_num, e.entity_num) " + order + "\n" +
-        limitQuery;
-
-    const entityParams = accountParamsForAccountBalances
-        .concat(accountParamsForEntity)
-        .concat(balanceParams)
-        .concat(pubKeyParams)
-        .concat(limitParams);
-
-    const pgEntityQuery = utils.convertMySqlStyleQueryToPostgress(
-        entitySql, entityParams);
-
-    logger.debug("getAccounts query: " +
-        pgEntityQuery + JSON.stringify(entityParams));
-
-    // Execute query
-    return (pool
-        .query(pgEntityQuery, entityParams)
-        .then(results => {
-            let ret = {
-                accounts: [],
-                links: {
-                    next: null
-                }
-            };
-
-            for (let row of results.rows) {
-                ret.accounts.push(processRow(row));
-            }
-
-            let anchorAcc = '0.0.0';
-            if (ret.accounts.length > 0) {
-                anchorAcc = ret.accounts[ret.accounts.length - 1].account;
-            }
-
-            ret.links = {
-                next: utils.getPaginationLink(req,
-                    (ret.accounts.length !== limit),
-                    'account.id', anchorAcc, order)
-            }
-
-            if (process.env.NODE_ENV === 'test') {
-                ret.sqlQuery = results.sqlQuery;
-            }
-
-            logger.debug("getAccounts returning " +
-                ret.accounts.length + " entries");
-
-            return ({
-                code: utils.httpStatusCodes.OK,
-                contents: ret
-            });
-        })
-    )
-}
-
+// ------------------------------ API: /accounts/:id ------------------------------
 
 /**
  * Handler function for /account/:id API.
  * @param {Request} req HTTP request object
- * @param {Response} res HTTP response object
- * @return {} None.
+ * @return {Promise} Promise for the api return value
  */
-const getOneAccount = function (req, res) {
-    logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
-
-    // Parse the filter parameters for account-numbers, balance, and pagination
-
-    const acc = utils.parseEntityId(req.params.id);
-
-    if (acc.num === 0) {
-        res.status(400)
-            .send('Invalid account number');
-        return;
+const getOneAccount = function(req) {
+    const query = reqToSqlOneAccount(req);
+    if (!query.isValid) {
+        return new Promise((resolve, reject) => {
+            resolve({
+                code: utils.httpStatusCodes.BAD_REQUEST,
+                contents: {
+                    _status: {
+                        messages: query.badParams
+                    }
+                }
+            });
+        });
     }
 
-    const [tsQuery, tsParams] =
-        utils.parseParams(req, 'timestamp', ['t.consensus_ns'], 'timestamp_ns');
+    logger.debug("getOneAccount query: " + query.query);
 
-    const resultTypeQuery = utils.parseResultParams(req);
-    const { limitQuery, limitParams, order, limit } =
-        utils.parseLimitAndOrderParams(req);
+    // Execute query
+    const entityPromise = pool.query(query.query).then(results => {
+        return processDbQueryResponse(req, query, results);
+    });
 
+    // Transactions for this account
+    const transactionsPromise = transactions.getTransactions(req);
+
+    // After the promises for all of the above queries have been resolved...
+    return Promise.all([entityPromise, transactionsPromise]).then(function(values) {
+        return processEntityAndTransactionsDbQueryResponse(values);
+    });
+};
+
+/**
+ * Converts the /accounts/:id query to SQL
+ * @param {Request} req HTTP request object
+ * @return {Object} Valid flag, SQL query, the parser object, and bad params, if any
+ */
+const reqToSqlOneAccount = function(req) {
+    const parser = new Parser(req, "oneAccount");
+    const parsedReq = parser.getParsedReq();
+
+    if (!parsedReq.isValid) {
+        return parsedReq;
+    }
+
+    parser.limit = 1;
+    parser.order = "asc";
+    let sqlQuery = getAccountsQuery(parsedReq.queryIntents, parser.order, parser.limit);
+
+    return {
+        isValid: true,
+        query: sqlQuery.toString(),
+        parser: parser,
+        badParams: []
+    };
+};
+
+/**
+ * Process the database query response for /accounts/:id query
+ * @param {Array} promiseValues An Array of promises for accounts and transactions queries
+ * @return {Object} Processed response to be returned as the api response
+ */
+const processEntityAndTransactionsDbQueryResponse = function(promiseValues) {
     let ret = {
-        transactions: []
+        code: null,
+        contents: {}
     };
 
-    // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we 
-    // need to look  for the given account.id in both account_balances and t_entities table and combine with an 'or'
-    const entitySql = getAccountQueryPrefix() +
-        "and (\n" +
-        "    (ab.account_realm_num  =  ? and ab.account_num  =  ?)\n" +
-        "    or (e.entity_shard = ? and e.entity_realm = ? and e.entity_num = ?\n" +
-        "        and e.fk_entity_type_id < " + utils.ENTITY_TYPE_FILE + ")\n" +
-        ")\n";
+    const entityResults = promiseValues[0];
+    const transactionsResults = promiseValues[1];
 
-    const entityParams = [acc.realm, acc.num, process.env.SHARD_NUM, acc.realm, acc.num];
-    const pgEntityQuery = utils.convertMySqlStyleQueryToPostgress(
-        entitySql, entityParams);
+    if (entityResults.contents.accounts.length !== 1) {
+        ret.code = utils.httpStatusCodes.NOT_FOUND;
+    } else {
+        if (entityResults.code === utils.httpStatusCodes.OK) {
+            ret.code = transactionsResults.code;
+        } else {
+            ret.code = entityResults.code;
+        }
 
-    logger.debug("getOneAccount entity query: " +
-        pgEntityQuery + JSON.stringify(entityParams));
-    // Execute query & get a promise
-    const entityPromise = pool.query(pgEntityQuery, entityParams);
+        ret.contents = entityResults.contents.accounts[0];
+        ret.contents.transactions = transactionsResults.contents.transactions;
+        ret.contents.links = transactionsResults.contents.links;
 
-     // Now, query the transactions for this entity
+        logger.debug("getOneAccount returning " + ret.contents.transactions.length + " transactions entries");
+    }
 
-    const creditDebit = utils.parseCreditDebitParams(req);
-
-    const accountQuery = 'entity_shard = ?\n' +
-        '    and entity_realm = ?\n' +
-        '    and entity_num = ?' +
-        (creditDebit === 'credit' ? ' and ctl.amount > 0 ' :
-            creditDebit === 'debit' ? ' and ctl.amount < 0 ' : '');
-    const accountParams = [acc.shard, acc.realm, acc.num];
-
-    let innerQuery = transactions.getTransactionsInnerQuery(accountQuery, tsQuery, resultTypeQuery, 
-        limitQuery, creditDebit, order);
-
-    const innerParams = accountParams
-            .concat(tsParams)
-            .concat(limitParams);
-
-    let transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
-
-    const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgress(
-        transactionsQuery, innerParams);
-
-    logger.debug("getOneAccount transactions query: " +
-        pgTransactionsQuery + JSON.stringify(innerParams));
-
-    // Execute query & get a promise
-    const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);
-
-
-    // After all promises (for all of the above queries) have been resolved...
-    Promise.all([entityPromise, transactionsPromise])
-        .then(function (values) {
-            const entityResults = values[0];
-            const transactionsResults = values[1];
-
-            // Process the results of entities query
-            if (entityResults.rows.length !== 1) {
-                res.status(500)
-                    .send('Error: Could not get entity information');
-                return;
-            }
-
-            for (let row of entityResults.rows) {
-                const r = processRow(row);
-                for (let key in r) {
-                    ret[key] = r[key];
-                }
-            }
-
-            if (process.env.NODE_ENV === 'test') {
-                ret.entitySqlQuery = entityResults.sqlQuery;
-            }
-
-            // Process the results of t_transactions query
-            const tl = transactions.createTransferLists(
-                transactionsResults.rows, ret);
-            ret = tl.ret;
-            let anchorSecNs = tl.anchorSecNs;
-
-            if (process.env.NODE_ENV === 'test') {
-                ret.transactionsSqlQuery = transactionsResults.sqlQuery;
-            }
-
-            // Pagination links
-            ret.links = {
-                next: utils.getPaginationLink(req,
-                    (ret.transactions.length !== limit),
-                    'timestamp', anchorSecNs, order)
-            }
-
-            logger.debug("getOneAccount returning " +
-                ret.transactions.length + " transactions entries");
-            res.json(ret);
-        })
-        .catch(err => {
-            logger.error("getOneAccount error: " +
-                JSON.stringify(err.stack));
-            res.status(500)
-                .send('Internal error');
-        });
-}
-
+    return ret;
+};
 
 module.exports = {
     getAccounts: getAccounts,
-    getOneAccount: getOneAccount
-}
+    getOneAccount: getOneAccount,
+    reqToSql: reqToSql,
+    reqToSqlOneAccount: reqToSqlOneAccount,
+    processDbQueryResponse: processDbQueryResponse
+};

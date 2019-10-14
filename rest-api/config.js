@@ -26,8 +26,10 @@ const config = {
     // Time to Live for cache entries for each type of API
     ttls: {
         transactions: 10,
+        oneTransaction: 60,
         balances: 60,
         accounts: 60,
+        oneAccount: 60,
         events: 10
     },
 

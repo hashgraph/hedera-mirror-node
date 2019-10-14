@@ -17,6 +17,7 @@
     "cors": "^2.8.5",
     "dotenv": "^8.0.0",
     "express": "^4.17.1",
+    "knex": "^0.19.4",
     "log4js": "^4.3.1",
     "mathjs": "^6.0.4",
     "node-cache": "^4.2.1",
@@ -29,6 +30,7 @@
     "cors",
     "dotenv",
     "express",
+    "knex",
     "log4js",
     "mathjs",
     "node-cache",
@@ -47,10 +49,7 @@
       "default",
       "jest-junit"
     ],
-    "testPathIgnorePatterns": [
-      "__tests__/testutils.js",
-      "__tests__/mockpool.js"
-    ]
+    "testPathIgnorePatterns": []
   },
   "jest-junit": {
     "outputDirectory": "target/jest-junit"
