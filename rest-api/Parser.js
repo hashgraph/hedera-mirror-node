@@ -72,8 +72,6 @@ class Parser {
                             results.queryIntents[key] = [];
                         }
                         results.queryIntents[key].push(validResult.queryIntents[key]);
-
-                        // results.queryIntents = Object.assign({}, results.queryIntents, validResult.queryIntents);
                     } else {
                         results.isValid = false;
                         results.badParams.push({ message: `Invalid parameter: ${key}` });
