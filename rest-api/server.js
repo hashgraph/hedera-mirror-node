@@ -38,8 +38,12 @@ const accounts = require('./accounts.js');
 const Cacher = require('./cacher.js');
 
 var compression = require('compression');
-
-let port = process.env.PORT;
+let port;
+if (process.env.NODE_ENV !== 'test') {
+    port = process.env.PORT;
+} else {
+    port = 3000;
+}
 
 if (port === undefined || isNaN(Number(port))) {
     logger.error('Server started with unknown port');
