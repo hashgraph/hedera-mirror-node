@@ -40,12 +40,16 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ShardID;
+import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.sun.jna.platform.FileUtils;
 
 import org.junit.jupiter.api.*;
 import org.springframework.test.context.jdbc.Sql;
@@ -393,6 +397,59 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
+    void fileAppendToSystemFileTest() throws Exception {
+
+    	final Transaction transaction = fileAppendTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
+    	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	final FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
+    	final TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
+
+		ConfigLoader.setPersistFiles("SYSTEM");
+
+    	RecordFileLogger.storeRecord(transaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+
+    	final com.hedera.mirror.domain.Transaction dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+    	final Entities dbFileEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
+    	final FileData dbfileData = fileDataRepository.findById(dbTransaction.getConsensusNs()).get();
+
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(1, fileDataRepository.count())
+
+                // transaction
+                ,() -> assertTransaction(transactionBody, dbTransaction)
+
+                // record inputs
+                ,() -> assertRecord(record, dbTransaction)
+
+                // receipt
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
+
+                // record transfer list
+                ,() -> assertRecordTransfers(record)
+
+                // file data
+                ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData.getFileData())
+
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.getExpiryTimeSeconds())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeNanos())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeNs())
+                ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.getProxyAccountId())
+                ,() -> assertFalse(dbFileEntity.isDeleted())
+         );
+    }
+    
+    @Test
     void fileUpdateAllToExistingTest() throws Exception {
 
 		// first create the file
@@ -454,6 +511,121 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
          );
     }
 
+    @Test
+    void fileUpdateAllToExistingFailedTransactionTest() throws Exception {
+        
+		// first create the file
+    	final Transaction fileCreateTransaction = fileCreateTransaction();
+    	final TransactionBody createTransactionBody = TransactionBody.parseFrom(fileCreateTransaction.getBodyBytes());
+    	final TransactionRecord recordCreate = transactionRecord(createTransactionBody);
+    	final FileCreateTransactionBody fileCreateTransactionBody = createTransactionBody.getFileCreate();
+
+    	RecordFileLogger.storeRecord(fileCreateTransaction, recordCreate);
+
+    	// now update
+    	final Transaction transaction = fileUpdateAllTransaction();
+    	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	final TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+
+    	RecordFileLogger.storeRecord(transaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+
+    	final com.hedera.mirror.domain.Transaction dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+    	final Entities dbFileEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
+
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(2, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(6, cryptoTransferRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(1, fileDataRepository.count())
+
+                // transaction
+                ,() -> assertTransaction(transactionBody, dbTransaction)
+
+                // record inputs
+                ,() -> assertRecord(record, dbTransaction)
+
+                // receipt
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
+
+                // record transfer list
+                ,() -> assertRecordTransfers(record)
+
+                // transaction body inputs
+                ,() -> assertEquals(fileCreateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity.getExpiryTimeSeconds())
+                ,() -> assertEquals(fileCreateTransactionBody.getExpirationTime().getNanos(), dbFileEntity.getExpiryTimeNanos())
+                ,() -> assertEquals(Utility.timeStampInNanos(fileCreateTransactionBody.getExpirationTime()), dbFileEntity.getExpiryTimeNs())
+                ,() -> assertArrayEquals(fileCreateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
+
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.getProxyAccountId())
+                ,() -> assertFalse(dbFileEntity.isDeleted())
+         );
+    }
+
+    @Test
+    void fileAppendToAddressBookTest() throws Exception {
+		ConfigLoader.setAddressBookFile(Utility.getResource("addressbook-recordlogger-test").getAbsolutePath());
+
+		final Transaction transaction = fileAppendTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
+    	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	final FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
+    	final TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
+
+    	RecordFileLogger.storeRecord(transaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+
+    	final com.hedera.mirror.domain.Transaction dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+    	final Entities dbFileEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
+    	final FileData dbfileData = fileDataRepository.findById(dbTransaction.getConsensusNs()).get();
+
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(1, fileDataRepository.count())
+
+                // transaction
+                ,() -> assertTransaction(transactionBody, dbTransaction)
+
+                // record inputs
+                ,() -> assertRecord(record, dbTransaction)
+
+                // receipt
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
+
+                // record transfer list
+                ,() -> assertRecordTransfers(record)
+
+                // file data
+                ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData.getFileData())
+
+                // address book file checks
+                ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(),
+                		org.apache.commons.io.FileUtils.readFileToByteArray(Utility.getResource("addressbook-recordlogger-test"))
+                )
+                
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.getExpiryTimeSeconds())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeNanos())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeNs())
+                ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.getProxyAccountId())
+                ,() -> assertFalse(dbFileEntity.isDeleted())
+         );
+    }
+    
     @Test
     void fileUpdateAllToNewTest() throws Exception {
 
@@ -844,6 +1016,123 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
          );
     }
 
+    @Test
+    void fileUpdateAllToNewSystemTest() throws Exception {
+
+    	final Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
+    	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	final FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
+    	final TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
+
+		ConfigLoader.setPersistFiles("SYSTEM");
+
+    	RecordFileLogger.storeRecord(transaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+
+    	final com.hedera.mirror.domain.Transaction dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+    	final Entities dbFileEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
+    	final FileData dbfileData = fileDataRepository.findById(dbTransaction.getConsensusNs()).get();
+
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(1, fileDataRepository.count())
+
+                // transaction
+                ,() -> assertTransaction(transactionBody, dbTransaction)
+
+                // record inputs
+                ,() -> assertRecord(record, dbTransaction)
+
+                // receipt
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
+
+                // record transfer list
+                ,() -> assertRecordTransfers(record)
+
+                // transaction body inputs
+                ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity.getExpiryTimeSeconds())
+                ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity.getExpiryTimeNanos())
+                ,() -> assertEquals(Utility.timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity.getExpiryTimeNs())
+                ,() -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
+
+                // file data
+                ,() -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(), dbfileData.getFileData())
+
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.getProxyAccountId())
+                ,() -> assertFalse(dbFileEntity.isDeleted())
+         );
+    }
+
+    @Test
+    void fileUpdateAddressBookTest() throws Exception {
+
+    	ConfigLoader.setAddressBookFile(Utility.getResource("addressbook-recordlogger-test").getAbsolutePath());
+    	
+    	final Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
+    	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+    	final FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
+    	final TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
+
+		ConfigLoader.setPersistFiles("SYSTEM");
+
+    	RecordFileLogger.storeRecord(transaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+
+    	final com.hedera.mirror.domain.Transaction dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+    	final Entities dbFileEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
+    	final FileData dbfileData = fileDataRepository.findById(dbTransaction.getConsensusNs()).get();
+
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(1, fileDataRepository.count())
+
+                // transaction
+                ,() -> assertTransaction(transactionBody, dbTransaction)
+
+                // record inputs
+                ,() -> assertRecord(record, dbTransaction)
+
+                // receipt
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
+
+                // record transfer list
+                ,() -> assertRecordTransfers(record)
+
+                // transaction body inputs
+                ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity.getExpiryTimeSeconds())
+                ,() -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity.getExpiryTimeNanos())
+                ,() -> assertEquals(Utility.timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity.getExpiryTimeNs())
+                ,() -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
+
+                // file data
+                ,() -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(), dbfileData.getFileData())
+
+                // address book file checks
+                ,() -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(),
+                		org.apache.commons.io.FileUtils.readFileToByteArray(Utility.getResource("addressbook-recordlogger-test"))
+                )
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.getProxyAccountId())
+                ,() -> assertFalse(dbFileEntity.isDeleted())
+         );
+    }
 
     @Test
     void fileDeleteToExistingTest() throws Exception {
@@ -950,18 +1239,238 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
          );
     }
 
+    @Test
+    void fileDeleteFailedTransactionTest() throws Exception {
+
+    	final Transaction fileDeleteTransaction = fileDeleteTransaction();
+    	final TransactionBody transactionBody = TransactionBody.parseFrom(fileDeleteTransaction.getBodyBytes());
+    	final TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+
+    	RecordFileLogger.storeRecord(fileDeleteTransaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+
+    	final com.hedera.mirror.domain.Transaction dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+    	final Entities dbFileEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
+
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(0, fileDataRepository.count())
+
+                // transaction
+                ,() -> assertTransaction(transactionBody, dbTransaction)
+
+                // record inputs
+                ,() -> assertRecord(record, dbTransaction)
+
+                // receipt
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
+
+                // record transfer list
+                ,() -> assertRecordTransfers(record)
+
+                // transaction body inputs
+                ,() -> assertFalse(dbFileEntity.isDeleted())
+
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.getKey())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeSeconds())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeNanos())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeNs())
+                ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.getProxyAccountId())
+         );
+    }
+
+    @Test
+    void fileSystemDeleteTransactionTest() throws Exception {
+
+    	final Transaction systemDeleteTransaction = systemDeleteTransaction();
+    	final TransactionBody transactionBody = TransactionBody.parseFrom(systemDeleteTransaction.getBodyBytes());
+    	final TransactionRecord record = transactionRecord(transactionBody);
+
+    	RecordFileLogger.storeRecord(systemDeleteTransaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+
+    	final com.hedera.mirror.domain.Transaction dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+    	final Entities dbFileEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
+
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(0, fileDataRepository.count())
+
+                // transaction
+                ,() -> assertTransaction(transactionBody, dbTransaction)
+
+                // record inputs
+                ,() -> assertRecord(record, dbTransaction)
+
+                // receipt
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
+
+                // record transfer list
+                ,() -> assertRecordTransfers(record)
+
+                // transaction body inputs
+                ,() -> assertTrue(dbFileEntity.isDeleted())
+
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.getKey())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeSeconds())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeNanos())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeNs())
+                ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.getProxyAccountId())
+         );
+    }
+
+    @Test
+    void fileSystemUnDeleteTransactionTest() throws Exception {
+
+    	final Transaction systemUndeleteTransaction = systemUnDeleteTransaction();
+    	final TransactionBody transactionBody = TransactionBody.parseFrom(systemUndeleteTransaction.getBodyBytes());
+    	final TransactionRecord record = transactionRecord(transactionBody);
+
+    	RecordFileLogger.storeRecord(systemUndeleteTransaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+
+    	final com.hedera.mirror.domain.Transaction dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+    	final Entities dbFileEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
+
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(0, fileDataRepository.count())
+
+                // transaction
+                ,() -> assertTransaction(transactionBody, dbTransaction)
+
+                // record inputs
+                ,() -> assertRecord(record, dbTransaction)
+
+                // receipt
+                ,() -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
+
+                // record transfer list
+                ,() -> assertRecordTransfers(record)
+
+                // transaction body inputs
+                ,() -> assertFalse(dbFileEntity.isDeleted())
+
+                // Additional entity checks
+                ,() -> assertNull(dbFileEntity.getKey())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeSeconds())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeNanos())
+                ,() -> assertNull(dbFileEntity.getExpiryTimeNs())
+                ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
+                ,() -> assertNull(dbFileEntity.getProxyAccountId())
+         );
+    }
+
+    @Test
+    void fileSystemDeleteInvalidTransactionTest() throws Exception {
+
+    	final Transaction systemDeleteTransaction = systemDeleteTransaction();
+    	final TransactionBody transactionBody = TransactionBody.parseFrom(systemDeleteTransaction.getBodyBytes());
+    	final TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
+
+    	RecordFileLogger.storeRecord(systemDeleteTransaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+
+    	final com.hedera.mirror.domain.Transaction dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(0, fileDataRepository.count())
+
+                // transaction
+                ,() -> assertTransaction(transactionBody, dbTransaction)
+
+                // record inputs
+                ,() -> assertRecord(record, dbTransaction)
+
+                // record transfer list
+                ,() -> assertRecordTransfers(record)
+         );
+    }
+
+    @Test
+    void fileSystemUnDeleteFailedTransactionTest() throws Exception {
+
+    	final Transaction systemUndeleteTransaction = systemUnDeleteTransaction();
+    	final TransactionBody transactionBody = TransactionBody.parseFrom(systemUndeleteTransaction.getBodyBytes());
+    	final TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
+
+    	RecordFileLogger.storeRecord(systemUndeleteTransaction, record);
+
+    	RecordFileLogger.completeFile("", "");
+
+    	final com.hedera.mirror.domain.Transaction dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+
+    	assertAll(
+    			// row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                ,() -> assertEquals(1, transactionRepository.count())
+                ,() -> assertEquals(5, entityRepository.count())
+                ,() -> assertEquals(0, contractResultRepository.count())
+                ,() -> assertEquals(3, cryptoTransferRepository.count())
+                ,() -> assertEquals(0, liveHashRepository.count())
+                ,() -> assertEquals(0, fileDataRepository.count())
+
+                // transaction
+                ,() -> assertTransaction(transactionBody, dbTransaction)
+
+                // record inputs
+                ,() -> assertRecord(record, dbTransaction)
+
+                // record transfer list
+                ,() -> assertRecordTransfers(record)
+         );
+    }
+
     private TransactionRecord transactionRecord(TransactionBody transactionBody) {
     	return transactionRecord(transactionBody, fileId);
     }
-
+	private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum responseCode) {
+    	return transactionRecord(transactionBody, responseCode, fileId);
+	}
     private TransactionRecord transactionRecord(TransactionBody transactionBody, FileID newFile) {
+    	return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS, newFile);
+    }    	
+	private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum responseCode, FileID newFile) {
+    	
     	final TransactionRecord.Builder record = TransactionRecord.newBuilder();
 
     	// record
     	final Timestamp consensusTimeStamp = Utility.instantToTimestamp(Instant.now());
     	final long[] transferAccounts = {98, 2002, 3};
     	final long[] transferAmounts = {1000, -2000, 20};
-    	final ResponseCodeEnum responseCode = ResponseCodeEnum.SUCCESS;
     	final TransactionReceipt.Builder receipt = TransactionReceipt.newBuilder();
 
     	// Build the record
@@ -1021,7 +1530,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	return transaction.build();
     }
     private Transaction fileAppendTransaction() {
+    	return fileAppendTransaction(fileId);
+    }
 
+    private Transaction fileAppendTransaction(FileID fileToAppendTo) {
     	final Transaction.Builder transaction = Transaction.newBuilder();
     	final FileAppendTransactionBody.Builder fileAppend = FileAppendTransactionBody.newBuilder();
 
@@ -1030,7 +1542,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     	// Build a transaction
     	fileAppend.setContents(ByteString.copyFromUtf8(fileData));
-    	fileAppend.setFileID(fileId);
+    	fileAppend.setFileID(fileToAppendTo);
 
     	// Transaction body
     	final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
@@ -1043,7 +1555,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	return transaction.build();
     }
     private Transaction fileUpdateAllTransaction() {
-
+    	return fileUpdateAllTransaction(fileId);
+    }
+    private Transaction fileUpdateAllTransaction(FileID fileToUpdate) {
+    	
     	final Transaction.Builder transaction = Transaction.newBuilder();
     	final FileUpdateTransactionBody.Builder fileUpdate = FileUpdateTransactionBody.newBuilder();
     	final String key = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
@@ -1053,7 +1568,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     	// Build a transaction
     	fileUpdate.setContents(ByteString.copyFromUtf8(fileData));
-    	fileUpdate.setFileID(fileId);
+    	fileUpdate.setFileID(fileToUpdate);
     	fileUpdate.setExpirationTime(Utility.instantToTimestamp(Instant.now()));
 
     	final KeyList.Builder keyList = KeyList.newBuilder();
@@ -1113,7 +1628,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     	return transaction.build();
     }
-
+    
     private Transaction fileUpdateKeysTransaction() {
 
     	final Transaction.Builder transaction = Transaction.newBuilder();
@@ -1151,6 +1666,45 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
      	final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
     	// body transaction
     	body.setFileDelete(fileDelete.build());
+
+    	transaction.setBodyBytes(body.build().toByteString());
+    	transaction.setSigMap(getSigMap());
+
+    	return transaction.build();
+    }
+    private Transaction systemDeleteTransaction() {
+
+     	// transaction id
+    	final Transaction.Builder transaction = Transaction.newBuilder();
+    	final SystemDeleteTransactionBody.Builder systemDelete = SystemDeleteTransactionBody.newBuilder();
+
+    	// Build a transaction
+    	systemDelete.setFileID(fileId);
+    	systemDelete.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(100000).build());
+
+    	// Transaction body
+     	final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+    	// body transaction
+    	body.setSystemDelete(systemDelete.build());
+
+    	transaction.setBodyBytes(body.build().toByteString());
+    	transaction.setSigMap(getSigMap());
+
+    	return transaction.build();
+    }
+    private Transaction systemUnDeleteTransaction() {
+
+     	// transaction id
+    	final Transaction.Builder transaction = Transaction.newBuilder();
+    	final SystemUndeleteTransactionBody.Builder systemUnDelete = SystemUndeleteTransactionBody.newBuilder();
+
+    	// Build a transaction
+    	systemUnDelete.setFileID(fileId);
+
+    	// Transaction body
+     	final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+    	// body transaction
+    	body.setSystemUndelete(systemUnDelete.build());
 
     	transaction.setBodyBytes(body.build().toByteString());
     	transaction.setSigMap(getSigMap());

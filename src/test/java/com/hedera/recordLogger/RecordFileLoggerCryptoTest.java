@@ -147,6 +147,29 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
+	void cryptoCreateBatchTest() throws Exception {
+
+		long testBatchSize = 10;
+		RecordFileLogger.setBatchSize(testBatchSize);
+		
+		for (int i=0; i < testBatchSize + 1; i++ ) {
+			final Transaction transaction = cryptoCreateTransaction();
+			final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+			final TransactionRecord record = transactionRecordSuccess(transactionBody);
+
+			RecordFileLogger.storeRecord(transaction, record);
+		}
+		RecordFileLogger.completeFile("", "");
+
+		final long txCount = transactionRepository.count();
+
+		assertAll(
+				// row counts
+				() -> assertEquals(testBatchSize + 1, txCount)
+		);    	
+	}
+	
+	@Test
 	void cryptoCreateTransactionWithBodyTest() throws Exception {
 
 		final Transaction transaction = cryptoCreateTransactionWithBody();

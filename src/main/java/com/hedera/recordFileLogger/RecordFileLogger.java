@@ -104,7 +104,15 @@ public class RecordFileLogger {
         ,CONSENSUS_TIMESTAMP
     	,LIVEHASH
     }
+    
+    public static long getFileId() {
+    	return fileId;
+    }
 
+    public static void setBatchSize(long batchSize) {
+    	BATCH_SIZE = batchSize;
+    }
+    
 	public static boolean start() {
 		batch_count = 0;
 		
