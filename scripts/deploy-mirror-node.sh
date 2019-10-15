@@ -19,20 +19,11 @@ if [ -f "${usrlib}/mirror-node.jar" ]; then
     upgrade=1
     echo "Upgrading to ${version}"
 
-    echo "Stopping services"
-    touch "${usrlib}/stop"
-    sleep 5
-
-    # Optionally stop these since some of these might not exist
-    systemctl stop mirror-balance-downloader.service || true
-    systemctl stop mirror-balance-parser.service || true
-    systemctl stop mirror-record-downloader.service || true
-    systemctl stop mirror-record-parser.service || true
+    # Stop the service
+    echo "Stopping mirror-node service"
     systemctl stop mirror-node.service || true
-    rm -f /etc/systemd/systemd/mirror-*.service
 
-    echo "Backing up binaries"
-    rm -rf "${usrlib}/lib"* "${usrlib}/logs" "${usrlib}/mirror-node.jar."*
+    echo "Backing up binary"
     mv "${usrlib}/mirror-node.jar" "${usrlib}/mirror-node.jar.${ts}.old"
 
     # Handle the upgrade from config.json database params to application.yml database params
@@ -60,13 +51,13 @@ else
     cp -n config/* "${usretc}"
 fi
 
-echo "Copying binaries"
+echo "Copying new binary"
 cp mirror-node.jar "${usrlib}"
 
-echo "Setting up systemd services"
-cp scripts/*mirror*.service /etc/systemd/system
+echo "Setting up mirror-node systemd service"
+cp scripts/mirror-node.service /etc/systemd/system
 systemctl daemon-reload
 systemctl enable mirror-node.service
 
-echo "Starting services"
+echo "Starting mirror-node service"
 systemctl start mirror-node.service
