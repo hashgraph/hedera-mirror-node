@@ -4,7 +4,7 @@ Description=Hedera Mirror Node
 
 [Service]
 Environment=HEDERA_MIRROR_CONFIG_PATH=/usr/etc/mirror-node/config.json
-ExecStart=/usr/bin/java -jar mirror-node.jar -Djavax.net.ssl.trustStorePassword=changeit -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
+ExecStart=/usr/bin/java -jar mirror-node.jar -Djavax.net.ssl.trustStorePassword=changeit -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector --spring.config.additional-location=file:/usr/etc/mirror-node/application.yml
 LimitNOFILE=65536
 Restart=on-failure
 RestartSec=1
