@@ -29,6 +29,7 @@ import com.hedera.mirror.repository.TransactionResultRepository;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -71,6 +72,14 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
             .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
         assertThat(dbEntity.getEntityTypeId())
         	.isEqualTo(entityTypeRepository.findByName("file").get().getId());
+    }
+    protected final void assertContract(ContractID contractId, Entities dbEntity) {
+        assertThat(contractId)
+            .isNotEqualTo(ContractID.getDefaultInstance())
+            .extracting(ContractID::getShardNum, ContractID::getRealmNum, ContractID::getContractNum)
+            .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
+        assertThat(dbEntity.getEntityTypeId())
+        	.isEqualTo(entityTypeRepository.findByName("contract").get().getId());
     }
     protected final void assertRecordTransfers(TransactionRecord record) {
     	final TransferList transferList = record.getTransferList();
