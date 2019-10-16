@@ -49,7 +49,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.sun.jna.platform.FileUtils;
 
 import org.junit.jupiter.api.*;
 import org.springframework.test.context.jdbc.Sql;
