@@ -22,9 +22,12 @@ package com.hedera.mirror.repository;
 
 import com.hedera.mirror.domain.Entities;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.jdbc.Sql;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+
+@Sql(executionPhase= Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
 public class EntityRepositoryTest extends AbstractRepositoryTest {
 
     @Test
@@ -42,9 +45,9 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
     	entity.setAutoRenewPeriod(100L);
     	entity.setDeleted(true);
     	entity.setEd25519PublicKeyHex("ed25519publickeyhex");
-    	entity.setEntityNum(3L);
-    	entity.setEntityRealm(2L);
-    	entity.setEntityShard(1L);
+        entity.setEntityNum(5L);
+        entity.setEntityRealm(4L);
+        entity.setEntityShard(3L);
     	entity.setEntityTypeId(entityTypeId);
     	entity.setExpiryTimeNanos(200L);
     	entity.setExpiryTimeNs(300L);
@@ -52,7 +55,7 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
     	entity.setKey("key".getBytes());
     	entity.setProxyAccountId(proxyEntity.getId());
     	entity = entityRepository.save(entity);
-    	
+
     	assertThat(entityRepository.findByPrimaryKey(entity.getEntityShard(), entity.getEntityRealm(), entity.getEntityNum()).get())
 			.isNotNull()
 			.isEqualTo(entity);
