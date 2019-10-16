@@ -20,8 +20,11 @@ package com.hedera.mirror.domain;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.utilities.Utility;
 import lombok.Data;
 import javax.persistence.*;
+import java.time.Instant;
 
 @Data
 @Entity
@@ -61,4 +64,22 @@ public class Entities {
 
     @Column(name = "ed25519_public_key_hex")
     private String ed25519PublicKeyHex;
+
+    public void setKey(byte[] key) {
+        try {
+            this.key = key;
+            this.ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
+        } catch (InvalidProtocolBufferException e) {
+            this.ed25519PublicKeyHex = null;
+        }
+    }
+
+    public void setExpiryTimeNs(Long expiryTimeNs) {
+        this.expiryTimeNs = expiryTimeNs;
+        Instant instant = Utility.convertNanosToInstant(expiryTimeNs);
+        if (instant != null) {
+            setExpiryTimeSeconds(instant.getEpochSecond());
+            setExpiryTimeNanos((long)instant.getNano());
+        }
+    }
 }

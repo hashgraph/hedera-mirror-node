@@ -22,17 +22,13 @@ package com.hedera.mirror.repository;
 
 import com.hedera.mirror.domain.Entities;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Transactional
 public class EntityRepositoryTest extends AbstractRepositoryTest {
-	Entities entity;
 
     @Test
-    void entityFindByPrimaryKey() {
-    	
+    void findByPrimaryKey() {
     	final int entityTypeId = entityTypeRepository.findByName("account").get().getId();
 
     	Entities proxyEntity = new Entities();
@@ -41,8 +37,8 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
     	proxyEntity.setEntityRealm(0L);
     	proxyEntity.setEntityNum(100L);
     	proxyEntity = entityRepository.save(proxyEntity);
-    			
-    	entity = new Entities();
+
+		Entities entity = new Entities();
     	entity.setAutoRenewPeriod(100L);
     	entity.setDeleted(true);
     	entity.setEd25519PublicKeyHex("ed25519publickeyhex");

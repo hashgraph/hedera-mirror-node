@@ -25,23 +25,18 @@ import com.hedera.mirror.domain.LiveHash;
 import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Transactional
 public class LiveHashRepositoryTest extends AbstractRepositoryTest {
 
-	LiveHash liveHash;
-
     @Test
-    void liveHashInsert() {
-    	
+    void insert() {
     	RecordFile recordfile = insertRecordFile();
     	Entities entity = insertAccountEntity();
     	Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CRYPTOADDCLAIM");
 
-    	liveHash = new LiveHash();
+		LiveHash liveHash = new LiveHash();
     	liveHash.setConsensusTimestamp(transaction.getConsensusNs());
     	liveHash.setLivehash("some live hash".getBytes());
     	liveHash = liveHashRepository.save(liveHash);

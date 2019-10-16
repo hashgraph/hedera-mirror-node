@@ -24,11 +24,10 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.domain.TransactionType;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TransactionTypeTest extends AbstractRepositoryTest {
+public class TransactionTypeRepositoryTest extends AbstractRepositoryTest {
 
     @Test
-    void transactionTypeFindByName() {
-    	
+    void findByName() {
     	assertThat(transactionTypeRepository.findByName("CRYPTOADDCLAIM"))
     		.isPresent()
     		.get()

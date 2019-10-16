@@ -27,8 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class EntityTypeRepositoryTest extends AbstractRepositoryTest {
 
     @Test
-    void entityTypeFindByName() {
-    	
+    void findByName() {
     	assertThat(entityTypeRepository.findByName("account"))
     		.isPresent()
     		.get()

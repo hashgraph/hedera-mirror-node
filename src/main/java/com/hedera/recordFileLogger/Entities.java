@@ -20,12 +20,7 @@ package com.hedera.recordFileLogger;
  * ‍
  */
 
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.time.Instant;
 import java.util.HashMap;
 
@@ -45,21 +40,6 @@ public class Entities {
 	private static int FK_CONTRACT = 0;
 	private static int FK_FILE = 0;
 	HashMap<String, Long> entities = new HashMap<String, Long>();
-	
-    enum F_ENTITIES {
-    	ZERO
-    	,SHARD
-    	,REALM
-    	,NUM
-    	,FK_ENTITY_TYPE_ID
-    	,EXP_TIME_SECONDS
-    	,EXP_TIME_NANOS
-    	,EXP_TIME_NS
-    	,AUTO_RENEW
-    	,ED25519_PUBLIC_KEY_HEX
-    	,KEY
-    	,FK_PROXY_ACCOUNT_ID
-    }
 
 	private static Connection connect = null;
 
@@ -67,18 +47,19 @@ public class Entities {
 		Entities.connect = connect;
 		if (Entities.connect != null) {
 	        if (FK_ACCOUNT + FK_CONTRACT + FK_FILE == 0) {
-	            ResultSet resultSet;
-				resultSet = Entities.connect.createStatement().executeQuery("SELECT id, name FROM t_entity_types ORDER BY id");
-	            while (resultSet.next()) {
-	            	if (resultSet.getString("name").contentEquals("account")) {
-	            		FK_ACCOUNT = resultSet.getInt("id");
-	            	} else if (resultSet.getString("name").contentEquals("contract")) {
-	            		FK_CONTRACT = resultSet.getInt("id");
-	            	} else if (resultSet.getString("name").contentEquals("file")) {
-	            		FK_FILE = resultSet.getInt("id");
-	            	}
-	            }       
-	            resultSet.close();      
+				try (Statement statement = Entities.connect.createStatement()) {
+					try (ResultSet resultSet = statement.executeQuery("SELECT id, name FROM t_entity_types ORDER BY id")) {
+						while (resultSet.next()) {
+							if (resultSet.getString("name").contentEquals("account")) {
+								FK_ACCOUNT = resultSet.getInt("id");
+							} else if (resultSet.getString("name").contentEquals("contract")) {
+								FK_CONTRACT = resultSet.getInt("id");
+							} else if (resultSet.getString("name").contentEquals("file")) {
+								FK_FILE = resultSet.getInt("id");
+							}
+						}
+					}
+				}
 			}
 		}
     }
@@ -138,64 +119,62 @@ public class Entities {
 	    sqlUpdate += " RETURNING id";
 	    
 	    // inserts or returns an existing entity
-        PreparedStatement updateEntity = Entities.connect.prepareStatement(sqlUpdate);
+        try (PreparedStatement updateEntity = Entities.connect.prepareStatement(sqlUpdate)) {
 
-	    if ((exp_time_seconds != 0) || (exp_time_nanos != 0)) {
-        	updateEntity.setLong(1, exp_time_seconds);        	
-        	updateEntity.setLong(2, exp_time_nanos);
-        	Instant expiryTime = Instant.ofEpochSecond(exp_time_seconds, exp_time_nanos);
-        	updateEntity.setLong(3, Utility.convertInstantToNanos(expiryTime));
-        	fieldCount = 3;
-	    }
-	    
-	    if (auto_renew_period != 0) {
-	    	fieldCount += 1;
-	    	updateEntity.setLong(fieldCount, auto_renew_period);
-	    }
+			if ((exp_time_seconds != 0) || (exp_time_nanos != 0)) {
+				updateEntity.setLong(1, exp_time_seconds);
+				updateEntity.setLong(2, exp_time_nanos);
+				Instant expiryTime = Instant.ofEpochSecond(exp_time_seconds, exp_time_nanos);
+				updateEntity.setLong(3, Utility.convertInstantToNanos(expiryTime));
+				fieldCount = 3;
+			}
 
-	    if (key != null) {
+			if (auto_renew_period != 0) {
+				fieldCount += 1;
+				updateEntity.setLong(fieldCount, auto_renew_period);
+			}
+
+			if (key != null) {
+				fieldCount += 1;
+				String ed25519PublicKeyHex = null;
+				try {
+					ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
+				} catch (InvalidProtocolBufferException e) {
+					log.error("Invalid ED25519 key could not be translated to hex text for entity {}.{}.{}. Column will be nulled. {}",
+							shard, realm, num, e);
+				}
+				if (null != ed25519PublicKeyHex) {
+					updateEntity.setString(fieldCount, ed25519PublicKeyHex);
+				} else {
+					updateEntity.setNull(fieldCount, VARCHAR);
+				}
+
+				fieldCount += 1;
+				updateEntity.setBytes(fieldCount, key);
+			}
+
+			if (fk_proxy_account_id != 0) {
+				fieldCount += 1;
+				updateEntity.setLong(fieldCount, fk_proxy_account_id);
+			}
+
 			fieldCount += 1;
-			String ed25519PublicKeyHex = null;
-			try {
-				ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
-			} catch (InvalidProtocolBufferException e) {
-				log.error("Invalid ED25519 key could not be translated to hex text for entity {}.{}.{}. Column will be nulled. {}",
-						shard, realm, num, e);
+			updateEntity.setLong(fieldCount, shard);
+			fieldCount += 1;
+			updateEntity.setLong(fieldCount, realm);
+			fieldCount += 1;
+			updateEntity.setLong(fieldCount, num);
+
+			updateEntity.execute();
+
+			try (ResultSet newId = updateEntity.getResultSet()) {
+				if (newId.next()) {
+					entityId = newId.getLong(1);
+				} else {
+					throw new IllegalStateException("Expected entity not found, shard " + shard + ", realm " + realm + ", num " + num);
+				}
 			}
-			if (null != ed25519PublicKeyHex) {
-				updateEntity.setString(fieldCount, ed25519PublicKeyHex);
-			} else {
-				updateEntity.setNull(fieldCount, VARCHAR);
-			}
-
-	    	fieldCount += 1;
-    		updateEntity.setBytes(fieldCount, key);
-	    }
-
-	    if (fk_proxy_account_id != 0) {
-	    	fieldCount += 1;
-	    	updateEntity.setLong(fieldCount, fk_proxy_account_id);
-	    }
-	    
-    	fieldCount += 1;
-	    updateEntity.setLong(fieldCount, shard);
-    	fieldCount += 1;
-        updateEntity.setLong(fieldCount, realm);
-    	fieldCount += 1;
-        updateEntity.setLong(fieldCount, num);
-
-        updateEntity.execute();
-        
-        ResultSet newId = updateEntity.getResultSet();
-        if (newId.next()) {
-        	entityId = newId.getLong(1);
-        	newId.close();
-        	updateEntity.close();
-        } else {
-        	// expected entity not found
-        	updateEntity.close();
-        	throw new IllegalStateException("Expected entity not found, shard " + shard + ", realm " + realm + ", num " + num);
-        }
+		}
         
         return entityId;
 	    
@@ -229,24 +208,22 @@ public class Entities {
 	    sqlDelete += " RETURNING id";
 
 	    // inserts or returns an existing entity
-        PreparedStatement deleteEntity = Entities.connect.prepareStatement(sqlDelete);
+        try (PreparedStatement deleteEntity = Entities.connect.prepareStatement(sqlDelete)) {
 
-	    deleteEntity.setLong(1, shard);
-        deleteEntity.setLong(2, realm);
-        deleteEntity.setLong(3, num);
+			deleteEntity.setLong(1, shard);
+			deleteEntity.setLong(2, realm);
+			deleteEntity.setLong(3, num);
 
-        deleteEntity.execute();
-        
-        ResultSet newId = deleteEntity.getResultSet();
-        if (newId.next()) {
-            entityId = newId.getLong(1);
-            newId.close();
-            deleteEntity.close();
-        } else {
-        	// expected entity not found
-            deleteEntity.close();
-        	throw new IllegalStateException("Expected entity not found, shard " + shard + ", realm " + realm + ", num " + num);
-        }
+			deleteEntity.execute();
+
+			try (ResultSet newId = deleteEntity.getResultSet()) {
+				if (newId.next()) {
+					entityId = newId.getLong(1);
+				} else {
+					throw new IllegalStateException("Expected entity not found, shard " + shard + ", realm " + realm + ", num " + num);
+				}
+			}
+		}
         
         return entityId;
 	    
@@ -280,24 +257,22 @@ public class Entities {
 	    sqlDelete += " RETURNING id";
 
 	    // inserts or returns an existing entity
-        PreparedStatement deleteEntity = Entities.connect.prepareStatement(sqlDelete);
+        try (PreparedStatement deleteEntity = Entities.connect.prepareStatement(sqlDelete)) {
 
-	    deleteEntity.setLong(1, shard);
-        deleteEntity.setLong(2, realm);
-        deleteEntity.setLong(3, num);
+			deleteEntity.setLong(1, shard);
+			deleteEntity.setLong(2, realm);
+			deleteEntity.setLong(3, num);
 
-        deleteEntity.execute();
-        
-        ResultSet newId = deleteEntity.getResultSet();
-        if (newId.next()) {
-            entityId = newId.getLong(1);
-            newId.close();
-            deleteEntity.close();
-        } else {
-        	// expected entity not found
-            deleteEntity.close();
-        	throw new IllegalStateException("Expected entity not found, shard " + shard + ", realm " + realm + ", num " + num);
-        }
+			deleteEntity.execute();
+
+			try (ResultSet newId = deleteEntity.getResultSet()) {
+				if (newId.next()) {
+					entityId = newId.getLong(1);
+				} else {
+					throw new IllegalStateException("Expected entity not found, shard " + shard + ", realm " + realm + ", num " + num);
+				}
+			}
+		}
         
         return entityId;
 	}
@@ -321,45 +296,45 @@ public class Entities {
 			return entityId;
 		}
 	    
-		CallableStatement entityCreate = connect.prepareCall("{? = call f_entity_create ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ) }");
-		entityCreate.registerOutParameter(1, Types.BIGINT);
-		entityCreate.setLong(2, shard);
-		entityCreate.setLong(3, realm);
-		entityCreate.setLong(4, num);
-		entityCreate.setInt(5, fk_entity_type);
-		entityCreate.setLong(6, exp_time_seconds);
-		entityCreate.setLong(7, exp_time_nanos);
+		try (CallableStatement entityCreate = connect.prepareCall("{? = call f_entity_create ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ) }")) {
+			entityCreate.registerOutParameter(1, Types.BIGINT);
+			entityCreate.setLong(2, shard);
+			entityCreate.setLong(3, realm);
+			entityCreate.setLong(4, num);
+			entityCreate.setInt(5, fk_entity_type);
+			entityCreate.setLong(6, exp_time_seconds);
+			entityCreate.setLong(7, exp_time_nanos);
 
-    	Instant expiryTime = Instant.ofEpochSecond(exp_time_seconds, exp_time_nanos);
+			Instant expiryTime = Instant.ofEpochSecond(exp_time_seconds, exp_time_nanos);
 
-    	entityCreate.setLong(8, Utility.convertInstantToNanos(expiryTime));
-		entityCreate.setLong(9, auto_renew_period);
+			entityCreate.setLong(8, Utility.convertInstantToNanos(expiryTime));
+			entityCreate.setLong(9, auto_renew_period);
 
-    	if (key == null) {
-			entityCreate.setNull(10, VARCHAR);
-			entityCreate.setNull(11, VARBINARY);
-    	} else {
-			String ed25519PublicKeyHex = null;
-			try {
-				ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
-			} catch (InvalidProtocolBufferException e) {
-				log.error("Invalid ED25519 key could not be translated to hex text for entity {}.{}.{}. Column will be nulled. {}",
-						shard, realm, num, e);
-			}
-			if (null != ed25519PublicKeyHex) {
-				entityCreate.setString(10, ed25519PublicKeyHex);
-			} else {
+			if (key == null) {
 				entityCreate.setNull(10, VARCHAR);
+				entityCreate.setNull(11, VARBINARY);
+			} else {
+				String ed25519PublicKeyHex = null;
+				try {
+					ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
+				} catch (InvalidProtocolBufferException e) {
+					log.error("Invalid ED25519 key could not be translated to hex text for entity {}.{}.{}. Column will be nulled. {}",
+							shard, realm, num, e);
+				}
+				if (null != ed25519PublicKeyHex) {
+					entityCreate.setString(10, ed25519PublicKeyHex);
+				} else {
+					entityCreate.setNull(10, VARCHAR);
+				}
+				entityCreate.setBytes(11, key);
 			}
-    		entityCreate.setBytes(11, key);
-    	}
 
-		entityCreate.setLong(12, fk_proxy_account_id);
+			entityCreate.setLong(12, fk_proxy_account_id);
 
-		
-		entityCreate.execute();
-		entityId = entityCreate.getLong(1);
-		entityCreate.close();
+
+			entityCreate.execute();
+			entityId = entityCreate.getLong(1);
+		}
 
         return entityId;
 	    
@@ -381,23 +356,23 @@ public class Entities {
 			return entityId;
 		}
 
-		CallableStatement entityCreate = connect.prepareCall("{? = call f_entity_create ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ) }");
-		entityCreate.registerOutParameter(1, Types.BIGINT);
-		entityCreate.setLong(2, shard);
-		entityCreate.setLong(3, realm);
-		entityCreate.setLong(4, num);
-		entityCreate.setInt(5, fk_entity_type);
-		entityCreate.setLong(6, 0);
-		entityCreate.setLong(7, 0);
-    	entityCreate.setLong(8, 0);
-		entityCreate.setLong(9, 0);
-		entityCreate.setNull(10, VARCHAR);
-		entityCreate.setNull(11, VARBINARY);
-		entityCreate.setLong(12, 0);
-		
-		entityCreate.execute();
-		entityId = entityCreate.getLong(1);
-		entityCreate.close();
+		try (CallableStatement entityCreate = connect.prepareCall("{? = call f_entity_create ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ) }")) {
+			entityCreate.registerOutParameter(1, Types.BIGINT);
+			entityCreate.setLong(2, shard);
+			entityCreate.setLong(3, realm);
+			entityCreate.setLong(4, num);
+			entityCreate.setInt(5, fk_entity_type);
+			entityCreate.setLong(6, 0);
+			entityCreate.setLong(7, 0);
+			entityCreate.setLong(8, 0);
+			entityCreate.setLong(9, 0);
+			entityCreate.setNull(10, VARCHAR);
+			entityCreate.setNull(11, VARBINARY);
+			entityCreate.setLong(12, 0);
+
+			entityCreate.execute();
+			entityId = entityCreate.getLong(1);
+		}
 
         String entity = shard + "-" + realm + "-" + num;
         entities.put(entity, entityId);

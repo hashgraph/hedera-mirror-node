@@ -21,8 +21,6 @@ package com.hedera;
  */
 
 import lombok.extern.log4j.Log4j2;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.*;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.util.TestPropertyValues;
@@ -33,9 +31,6 @@ import org.testcontainers.containers.PostgreSQLContainer;
 
 import javax.annotation.*;
 
-@AutoConfigureDataJpa
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@AutoConfigureTestEntityManager
 @ContextConfiguration(initializers = IntegrationTest.TestDatabaseConfiguration.class)
 @SpringBootTest
 @TestPropertySource(properties = "spring.task.scheduling.enabled=false")

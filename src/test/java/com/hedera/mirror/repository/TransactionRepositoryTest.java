@@ -22,41 +22,47 @@ package com.hedera.mirror.repository;
 
 import com.hedera.mirror.domain.Transaction;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.annotation.Transactional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Transactional
 public class TransactionRepositoryTest extends AbstractRepositoryTest {
 
-	Transaction transaction;
-
     @Test
-    void transactionInsert() {
-    	
-    	final Long recordFileId = insertRecordFile().getId();
-    	final Long txEntityId = insertAccountEntity().getId();
-    	final Long nodeAccountId = insertAccountEntity().getId();
-    	final Long payerAccountId = insertAccountEntity().getId();
-    	final Integer transactionTypeId = transactionTypeRepository.findByName("CRYPTOCREATEACCOUNT").get().getId();
-    	final Integer resultId = transactionResultRepository.findByResult("SUCCESS").get().getId();
-    	
-    	transaction = new Transaction();
-    	transaction.setChargedTxFee(100L);
-    	transaction.setConsensusNs(10L);
-    	transaction.setEntityId(txEntityId);
-    	transaction.setInitialBalance(1000L);
-    	transaction.setMemo("transaction memo".getBytes());
-    	transaction.setNodeAccountId(nodeAccountId);
-    	transaction.setPayerAccountId(payerAccountId);
-    	transaction.setRecordFileId(recordFileId);
-    	transaction.setResultId(resultId);
-    	transaction.setTransactionTypeId(transactionTypeId);
-    	transaction.setValidStartNs(20L);
-    	
-    	transaction = transactionRepository.save(transaction);
-    	
-    	assertThat(transactionRepository.findById(10L).get())
+    void insert() {
+		Transaction transaction = transactionRepository.save(transaction());
+		assertThat(transactionRepository.findById(transaction.getConsensusNs()).get())
     		.isNotNull()
     		.isEqualTo(transaction);
     }
+
+    @Test
+	void existsByEntityAndType() {
+		Transaction transaction = transactionRepository.save(transaction());
+		assertThat(transactionRepository.existsByEntityAndType(transaction.getEntityId(), "CRYPTOCREATEACCOUNT", "FILECREATE")).isEqualTo(true);
+		assertThat(transactionRepository.existsByEntityAndType(transaction.getEntityId(), "CONTRACTCREATEINSTANCE")).isEqualTo(false);
+		assertThat(transactionRepository.existsByEntityAndType(-1L, "CRYPTOCREATEACCOUNT")).isEqualTo(false);
+	}
+
+	private Transaction transaction() {
+		Long recordFileId = insertRecordFile().getId();
+		Long txEntityId = insertAccountEntity().getId();
+		Long nodeAccountId = insertAccountEntity().getId();
+		Long payerAccountId = insertAccountEntity().getId();
+		Integer transactionTypeId = transactionTypeRepository.findByName("CRYPTOCREATEACCOUNT").get().getId();
+		Integer resultId = transactionResultRepository.findByResult("SUCCESS").get().getId();
+
+		Transaction transaction = new Transaction();
+		transaction.setChargedTxFee(100L);
+		transaction.setConsensusNs(10L);
+		transaction.setEntityId(txEntityId);
+		transaction.setInitialBalance(1000L);
+		transaction.setMemo("transaction memo".getBytes());
+		transaction.setNodeAccountId(nodeAccountId);
+		transaction.setPayerAccountId(payerAccountId);
+		transaction.setRecordFileId(recordFileId);
+		transaction.setResultId(resultId);
+		transaction.setTransactionTypeId(transactionTypeId);
+		transaction.setValidStartNs(20L);
+		return transaction;
+	}
 }
