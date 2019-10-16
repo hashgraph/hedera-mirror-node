@@ -22,18 +22,14 @@ package com.hedera.mirror.repository;
 
 import com.hedera.mirror.domain.RecordFile;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Transactional
 public class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
-	RecordFile recordFile;
     @Test
-    void recordFileInsert() {
-    	
-		recordFile = new RecordFile();
+    void insert() {
+		RecordFile recordFile = new RecordFile();
 		recordFile.setName("testfile");
 		recordFile.setFileHash("fileHash");
 		recordFile.setLoadEnd(20L);

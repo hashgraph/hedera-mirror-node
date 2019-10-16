@@ -25,18 +25,13 @@ import com.hedera.mirror.domain.FileData;
 import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Transactional
 public class FileDataRepositoryTest extends AbstractRepositoryTest {
 
-	FileData fileData;
-
     @Test
-    void fileDataInsert() {
-    	
+    void insert() {
     	RecordFile recordfile = insertRecordFile();
     	Entities entity = insertAccountEntity();
     	Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "FILECREATE");

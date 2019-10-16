@@ -29,8 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TransactionResultRepositoryTest extends AbstractRepositoryTest {
 
     @Test
-    void transactionResultFindByResult() {
-    	
+    void findByResult() {
     	assertThat(transactionResultRepository.findByResult("INVALID_TRANSACTION"))
     		.isPresent()
     		.get()

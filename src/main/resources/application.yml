@@ -36,3 +36,6 @@ spring:
     scheduling:
       pool:
         size: 6
+  test:
+    database:
+      replace: NONE
