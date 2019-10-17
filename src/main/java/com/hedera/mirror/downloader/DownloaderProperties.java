@@ -27,7 +27,6 @@ import javax.annotation.PostConstruct;
 import java.nio.file.Path;
 
 public interface DownloaderProperties {
-
     int getBatchSize();
 
     CommonDownloaderProperties getCommon();

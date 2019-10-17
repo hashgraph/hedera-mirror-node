@@ -74,10 +74,9 @@ public class Utility {
 	 * Verify if a file's hash is equal to the hash contained in sig file
 	 * @return
 	 */
-	public static boolean hashMatch(File sigFile, File rcdFile) {
+	public static boolean hashMatch(byte[] hash, File rcdFile) {
 		byte[] fileHash = Utility.getFileHash(rcdFile.getPath());
-		Pair<byte[], byte[]> sigPair = extractHashAndSigFromFile(sigFile);
-		return sigPair == null ? false : Arrays.equals(fileHash, sigPair.getLeft());
+		return Arrays.equals(fileHash, hash);
 	}
 	/**
 	 * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this signature

@@ -24,9 +24,11 @@ import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.domain.NodeAddress;
 import com.hedera.utilities.Utility;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.persistence.Tuple;
 import java.io.File;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -50,55 +52,47 @@ public class NodeSignatureVerifier {
                 .collect(Collectors.toMap(NodeAddress::getId, NodeAddress::getPublicKeyAsObject));
 	}
 
-	private boolean verifySignatureFile(File sigFile) {
-		Pair<byte[], byte[]> hashAndSig = Utility.extractHashAndSigFromFile(sigFile);
-		if (hashAndSig == null) {
-			return false;
-		}
+    /**
+     * Input: a list of a sig files which has the same timestamp
+     * Output: a list of valid sig files - being valid means the signature is valid and the Hash is agreed by super-majority nodes.
+     * 1. Verify that the signature files are signed by corresponding node's PublicKey;
+     * For invalid signature files, we will log them;
+     * 2. For valid signature files, we compare their Hashes to see if more than 2/3 Hashes matches. If more than 2/3 Hashes matches, we return a List of Files which contains this Hash
+     * @param sigFiles
+     * @return
+     */
+    public Pair<byte[], List<File>> verifySignatureFiles(List<File> sigFiles) {
+        // If a signature is valid, we put the Hash in its content and its File to the map, to see if more than 2/3 valid signatures have the same Hash
+        Map<String, Set<File>> hashToSigFiles = new HashMap<>();
+        for (File sigFile : sigFiles) {
+            Pair<byte[], byte[]> hashAndSig = Utility.extractHashAndSigFromFile(sigFile);
+            if (hashAndSig == null) {
+                continue;
+            }
+            String nodeAccountID = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
+            if (verifySignature(hashAndSig.getLeft(), hashAndSig.getRight(), nodeAccountID, sigFile.getPath())) {
+                String hashString = Hex.encodeHexString(hashAndSig.getLeft());
+                hashToSigFiles.putIfAbsent(hashString, new HashSet<>());  // only one key present in common case, no efficiency issues.
+                hashToSigFiles.get(hashString).add(sigFile);
+            } else {
+                log.error("Invalid signature in file {}", sigFile.getPath());
+            }
+        }
 
-		//Signed Data is the Hash of unsigned File
-		byte[] signedData = hashAndSig.getLeft();
-
-		String nodeAccountID = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
-		byte[] signature = hashAndSig.getRight();
-
-		boolean isValid = verifySignature(signedData, signature, nodeAccountID, sigFile.getPath());
-		if (!isValid) {
-			log.error("Invalid signature in file {}", sigFile.getPath());
-		}
-		return isValid;
-	}
-
-	/**
-	 * Input: a list of a sig files which has the same timestamp
-	 * Output: a list of valid sig files - being valid means the signature is valid and the Hash is agreed by super-majority nodes.
-	 * 1. Verify that the signature files are signed by corresponding node's PublicKey;
-	 * For invalid signature files, we will log them;
-	 * 2. For valid signature files, we compare their Hashes to see if more than 2/3 Hashes matches. If more than 2/3 Hashes matches, we return a List of Files which contains this Hash
-	 * @param sigFiles
-	 * @return
-	 */
-	public List<File> verifySignatureFiles(List<File> sigFiles) {
-		// If a signature is valid, we put the Hash in its content and its File to the map, to see if more than 2/3 valid signatures have the same Hash
-		Map<String, Set<File>> hashToSigFiles = new HashMap<>();
-		for (File sigFile : sigFiles) {
-			if (verifySignatureFile(sigFile)) {
-				byte[] hash = Utility.extractHashAndSigFromFile(sigFile).getLeft();
-				String hashString = Hex.encodeHexString(hash);
-				Set<File> files = hashToSigFiles.getOrDefault(hashString, new HashSet<>());
-				files.add(sigFile);
-				hashToSigFiles.put(hashString, files);
-			}
-		}
-
-		for (String key : hashToSigFiles.keySet()) {
-			if (Utility.greaterThanSuperMajorityNum(hashToSigFiles.get(key).size(),
-					nodeIDPubKeyMap.size())){
-				return new ArrayList<>(hashToSigFiles.get(key));
-			}
-		}
-		return new ArrayList<>();
-	}
+        for (String key : hashToSigFiles.keySet()) {
+            if (Utility.greaterThanSuperMajorityNum(hashToSigFiles.get(key).size(),
+                    nodeIDPubKeyMap.size())){
+                byte[] hash = null;
+                try {
+                    hash = Hex.decodeHex(key);
+                } catch (DecoderException e) {
+                    log.error("Error decoding hex string {}", key);
+                }
+                return Pair.of(hash, new ArrayList<>(hashToSigFiles.get(key)));
+            }
+        }
+        return Pair.of(null, new ArrayList<>());
+    }
 
 	/**
 	 * check whether the given signature is valid

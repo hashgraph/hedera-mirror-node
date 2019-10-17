@@ -68,7 +68,7 @@ public class EventStreamFileDownloader extends Downloader {
 				return;
 			}
 
-			final var sigFilesMap = downloadSigFiles(DownloadType.EVENT);
+			final var sigFilesMap = downloadSigFiles();
 
 			// Verify signature files and download .evts files of valid signature files
 			verifySigsAndDownloadEventStreamFiles(sigFilesMap);
@@ -85,11 +85,10 @@ public class EventStreamFileDownloader extends Downloader {
 	 *
 	 * @throws Exception
 	 */
-	private void verifyValidFiles() throws Exception {
+	private void verifyValidFiles() {
 		String lastValidEventFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE);
 		String lastValidEventFileHash = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE_HASH);
         Path validDir = downloaderProperties.getValidPath();
-
 		try (Stream<Path> pathStream = Files.walk(validDir)) {
 			List<String> fileNames = pathStream.filter(p -> Utility.isEventStreamFile(p.toString()))
 					.filter(p -> lastValidEventFileName.isEmpty() ||
@@ -141,7 +140,6 @@ public class EventStreamFileDownloader extends Downloader {
 	 */
 	private void verifySigsAndDownloadEventStreamFiles(Map<String, List<File>> sigFilesMap) {
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier(networkAddressBook);
-        Path tmpDir = downloaderProperties.getTempPath();
         Path validDir = downloaderProperties.getValidPath();
 
 		for (String fileName : sigFilesMap.keySet()) {
@@ -155,12 +153,12 @@ public class EventStreamFileDownloader extends Downloader {
 			}
 
 			// validSigFiles are signed by node key and contains the same hash which has been agreed by more than 2/3
-			List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
-
-			for (File validSigFile : validSigFiles) {
-				Pair<Boolean, File> fileResult = downloadFile(DownloadType.EVENT, validSigFile, tmpDir);
+            final var hashAndvalidSigFiles  = verifier.verifySignatureFiles(sigFiles);
+            final byte[] validHash = hashAndvalidSigFiles.getLeft();
+			for (File validSigFile : hashAndvalidSigFiles.getRight()) {
+				Pair<Boolean, File> fileResult = downloadFile(validSigFile);
 				File file = fileResult.getRight();
-				if (file != null &&	Utility.hashMatch(validSigFile, file)) {
+				if (file != null &&	Utility.hashMatch(validHash, file)) {
 					log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
 					// move the file to the valid directory
 					File destination = validDir.resolve(file.getName()).toFile();
@@ -180,4 +178,20 @@ public class EventStreamFileDownloader extends Downloader {
 			}
 		}
 	}
+
+    protected DownloadType getType() {
+        return DownloadType.EVENT;
+    }
+
+    protected ApplicationStatusCode getLastValidDownloadedFileKey() {
+        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE;
+    }
+
+    protected String getDataFileName(String sigFileName) {
+        return sigFileName.replace(".evts_sig", ".evts");
+    }
+
+    protected boolean isNeededSigFile(String s3ObjectKey) {
+        return Utility.isEventStreamSigFile(s3ObjectKey);
+    }
 }
