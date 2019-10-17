@@ -108,7 +108,6 @@ public class RecordFileLogger {
     public static long getFileId() {
     	return fileId;
     }
-
     public static void setBatchSize(long batchSize) {
     	BATCH_SIZE = batchSize;
     }
