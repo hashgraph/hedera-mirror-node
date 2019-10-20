@@ -20,14 +20,20 @@ package com.hedera.mirror.downloader;
  * ‍
  */
 
-import lombok.*;
+import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 import javax.inject.Named;
-import javax.validation.constraints.*;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 @Data
 @Named
+@Validated
 @ConfigurationProperties("hedera.mirror.downloader")
 public class CommonDownloaderProperties {
 

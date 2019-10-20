@@ -26,12 +26,14 @@ import com.hedera.mirror.parser.ParserProperties;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 import javax.inject.Named;
 import javax.validation.constraints.Min;
 import java.nio.file.Path;
 
 @Data
 @Named
+@Validated
 @ConfigurationProperties("hedera.mirror.parser.balance")
 public class BalanceParserProperties implements ParserProperties {
 

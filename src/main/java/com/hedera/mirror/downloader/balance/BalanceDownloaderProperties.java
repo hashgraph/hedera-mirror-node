@@ -34,9 +34,11 @@ import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 @Data
 @Named
+@Validated
 @ConfigurationProperties("hedera.mirror.downloader.balance")
 public class BalanceDownloaderProperties implements DownloaderProperties {
 

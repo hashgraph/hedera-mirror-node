@@ -24,6 +24,7 @@ import com.hedera.mirror.domain.HederaNetwork;
 import com.hedera.utilities.Utility;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 import javax.inject.Named;
 import javax.validation.constraints.Min;
@@ -33,6 +34,7 @@ import java.nio.file.Paths;
 
 @Data
 @Named
+@Validated
 @ConfigurationProperties("hedera.mirror")
 public class MirrorProperties {
 

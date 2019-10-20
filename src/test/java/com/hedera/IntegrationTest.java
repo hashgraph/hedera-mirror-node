@@ -26,14 +26,12 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.*;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import javax.annotation.*;
 
 @ContextConfiguration(initializers = IntegrationTest.TestDatabaseConfiguration.class)
 @SpringBootTest
-@TestPropertySource(properties = "spring.task.scheduling.enabled=false")
 public abstract class IntegrationTest {
 
     /**
