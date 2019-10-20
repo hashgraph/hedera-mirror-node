@@ -56,4 +56,9 @@ public class MirrorProperties {
     public Path getAddressBookPath() {
         return addressBookPath != null ? addressBookPath : dataPath.resolve(ADDRESS_BOOK_FILE);
     }
+
+    public void setDataPath(Path dataPath) {
+        Utility.ensureDirectory(dataPath);
+        this.dataPath = dataPath;
+    }
 }

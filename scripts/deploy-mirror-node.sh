@@ -33,7 +33,7 @@ if [ -f "${usrlib}/mirror-node.jar" ]; then
         dbHost=$(grep -oP '"dbUrl": "jdbc:postgresql://\K[^:]+' "${usretc}/config.json")
         dbPassword=$(grep -oP '"dbPassword": "\K[^"]+' "${usretc}/config.json")
         downloadToDir=$(grep -oP '"downloadToDir": "\K[^"]+' "${usretc}/config.json")
-        cat > "${usretc}/application.yml" <EOF
+        cat > "${usretc}/application.yml" <<EOF
 hedera:
   mirror:
     dataPath: ${downloadToDir}
@@ -48,7 +48,7 @@ EOF
 else
     echo "Fresh install of ${version}"
     echo "Creating empty config (will need to be edited)"
-    cat > "${usretc}/application.yml" <EOF
+    cat > "${usretc}/application.yml" <<EOF
 hedera:
   mirror:
     dataPath: /var/lib/mirror-node

@@ -24,6 +24,7 @@ import com.google.common.collect.Sets;
 import com.hedera.FileCopier;
 import com.hedera.IntegrationTest;
 import com.hedera.mirror.domain.ApplicationStatusCode;
+import com.hedera.mirror.domain.StreamType;
 import com.hedera.mirror.domain.Transaction;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.repository.TransactionRepository;
@@ -39,7 +40,9 @@ import java.nio.file.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Sql(executionPhase= Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
+// Class manually commits so have to manually cleanup tables
+@Sql(executionPhase= Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql")
+@Sql(executionPhase= Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql")
 public class RecordFileParserTest extends IntegrationTest {
 
     @Resource
@@ -61,15 +64,17 @@ public class RecordFileParserTest extends IntegrationTest {
     Path testPath;
 
     private FileCopier fileCopier;
+    private StreamType streamType;
 
     @BeforeEach
     void before() {
+        streamType = parserProperties.getStreamType();
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
         fileCopier = FileCopier.create(testPath, dataPath)
-                .from("recordstreams", "v2", "record0.0.3")
+                .from(streamType.getPath(), "v2", "record0.0.3")
                 .filterFiles("*.rcd")
-                .to("recordstreams", "valid");
+                .to(streamType.getPath(), streamType.getValid());
     }
 
     @Test
@@ -108,7 +113,7 @@ public class RecordFileParserTest extends IntegrationTest {
 
     @Test
     void invalidFile() throws Exception {
-        File recordFile = dataPath.resolve("recordstreams").resolve("valid").resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
+        File recordFile = dataPath.resolve(streamType.getPath()).resolve(streamType.getValid()).resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
         FileUtils.writeStringToFile(recordFile, "corrupt", "UTF-8");
         recordFileParser.parse();
         assertThat(Files.walk(parserProperties.getParsedPath())).filteredOn(p -> !p.toFile().isDirectory()).hasSize(0);

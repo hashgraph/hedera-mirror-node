@@ -37,6 +37,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import scala.annotation.migration;
 
 import javax.annotation.Resource;
 import javax.sql.DataSource;
@@ -47,6 +48,8 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 
+@Disabled("This refreshes the ApplicationContext halfway through tests, causing multiple DataSource objects to be in " +
+        "use due the DatabaseUtilities hack. Can be re-enabled when DatabaseUtilities is deleted")
 @TestPropertySource(properties = "spring.flyway.target=1.11.5")
 @Transactional
 public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {

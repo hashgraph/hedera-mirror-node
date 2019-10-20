@@ -32,8 +32,8 @@ public enum StreamType {
     EVENT("eventsStreams", "parsedEventStreamFiles"),
     RECORD("recordstreams", "parsedRecordFiles");
 
-    public static final String TEMP = "tmp";
-    public static final String VALID = "valid";
+    private static final String TEMP = "tmp";
+    private static final String VALID = "valid";
 
     private final String path;
     private final String parsed;

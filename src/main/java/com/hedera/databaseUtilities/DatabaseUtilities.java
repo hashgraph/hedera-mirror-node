@@ -31,7 +31,7 @@ import java.sql.SQLException;
 /**
  * @deprecated Use Spring Data repositories with domain objects
  */
-@Deprecated(forRemoval = true, since = "v0.4.0")
+@Deprecated(forRemoval = true, since = "v0.3.0")
 @Log4j2
 @Named
 public class DatabaseUtilities {
