@@ -22,10 +22,9 @@ package com.hedera.mirror.migration;
 
 import com.google.protobuf.ByteString;
 import com.hedera.IntegrationTest;
-import com.hedera.configLoader.ConfigLoader;
+import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.*;
 import com.hedera.mirror.domain.Transaction;
-import com.hedera.mirror.migration.V1_11_6__Missing_Entities;
 import com.hedera.mirror.repository.*;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.*;
@@ -38,6 +37,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import scala.annotation.migration;
 
 import javax.annotation.Resource;
 import javax.sql.DataSource;
@@ -48,6 +48,8 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 
+@Disabled("This refreshes the ApplicationContext halfway through tests, causing multiple DataSource objects to be in " +
+        "use due the DatabaseUtilities hack. Can be re-enabled when DatabaseUtilities is deleted")
 @TestPropertySource(properties = "spring.flyway.target=1.11.5")
 @Transactional
 public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
@@ -75,12 +77,15 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
     @Resource
     private TransactionTypeRepository transactionTypeRepository;
 
+    @Resource
+    private MirrorProperties mirrorProperties;
+
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void before() {
-        ConfigLoader.setDownloadToDir(tempDir.toString());
+        mirrorProperties.setDataPath(tempDir);
     }
 
     @Test

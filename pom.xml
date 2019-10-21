@@ -97,11 +97,6 @@
 			<artifactId>flyway-core</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>io.github.cdimascio</groupId>
-			<artifactId>java-dotenv</artifactId>
-			<version>5.0.1</version>
-		</dependency>
-		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<scope>compile</scope>
@@ -139,10 +134,6 @@
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-s3</artifactId>
 			<version>${aws.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.code.gson</groupId>
-			<artifactId>gson</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>javax.inject</groupId>

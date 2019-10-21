@@ -11,9 +11,9 @@ package com.hedera.utilities;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,14 +22,10 @@ package com.hedera.utilities;
  * ‍
  */
 
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
-import com.hedera.downloader.Downloader;
+import com.hedera.mirror.downloader.Downloader;
 import com.hedera.filedelimiters.FileDelimiter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -50,7 +46,6 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -145,17 +140,17 @@ public class Utility {
 		} else {
 			try {
 				md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
-	
+
 				byte[] array = Files.readAllBytes(Paths.get(fileName));
 				return md.digest(array);
-	
+
 			} catch (NoSuchAlgorithmException | IOException e) {
 				log.error("Exception {}", e);
 				return null;
 			}
 		}
 	}
-	
+
 	/**
 	 * Calculate SHA384 hash of an event file
 	 *
@@ -239,7 +234,7 @@ public class Utility {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Calculate SHA384 hash of a record file
 	 *
@@ -249,7 +244,7 @@ public class Utility {
 	 */
 	private static byte[] getRecordFileHash(String filename) {
 		byte[] readFileHash = new byte[48];
-		
+
 		try (DataInputStream dis = new DataInputStream(new FileInputStream(filename))) {
 			MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
 			MessageDigest mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
@@ -285,8 +280,8 @@ public class Utility {
 							md.update(typeDelimiter);
 							md.update(Utility.integerToBytes(byteLength));
 							md.update(rawBytes);
-						} 
-						
+						}
+
 						byteLength = dis.readInt();
 						rawBytes = new byte[byteLength];
 						dis.readFully(rawBytes);
@@ -297,7 +292,7 @@ public class Utility {
 						} else {
 							md.update(Utility.integerToBytes(byteLength));
 							md.update(rawBytes);
-						} 
+						}
 						break;
 					case FileDelimiter.RECORD_TYPE_SIGNATURE:
 						int sigLength = dis.readInt();
@@ -339,12 +334,6 @@ public class Utility {
 				.setRealmNum(Integer.valueOf(strs[1]))
 				.setAccountNum(Integer.valueOf(strs[2]));
 		return idBuilder.build();
-	}
-
-	public static JsonObject getJsonInput(String location) throws JsonIOException, JsonSyntaxException, FileNotFoundException {
-		JsonParser parser = new JsonParser();
-		FileReader file = new FileReader(location);
-		return (JsonObject)parser.parse(file);
 	}
 
 	public static byte[] integerToBytes(int number) {
@@ -448,36 +437,6 @@ public class Utility {
 		} else {
 			return TransactionBody.parseFrom(transaction.getBodyBytes());
 		}
-	}
-
-	/***
-	 *
-	 * Build a byte array from data stored in a file
-	 *
-	 * @param location of the stored bytes
-	 * @return a Byte array
-	 */
-	public static byte[] getBytes(String location){
-		byte[] bytes = null;
-		try (final FileInputStream fis = new FileInputStream(new File(location))) {
-			bytes = fis.readAllBytes();
-		} catch (FileNotFoundException ex) {
-            log.error("getBytes() failed - file {} not found", location);
-		} catch (IOException ex) {
-            log.error("getBytes() failed, Exception: {}", ex);
-		}
-		return bytes;
-	}
-
-	/**
-	 * Convert hex string to bytes.
-	 *
-	 * @param data to be converted
-	 * @return converted bytes
-	 */
-	public static byte[] hexToBytes(String data) throws DecoderException {
-		byte[] rv = Hex.decodeHex(data);
-		return rv;
 	}
 
 	/**
@@ -653,8 +612,8 @@ public class Utility {
 		}
 		return instant.getEpochSecond() * SCALAR + instant.getNano();
 	}
-	
-	/** 
+
+	/**
 	 * Convert seconds and nanos to a Long type timeStampInNanos
 	 * @param seconds
 	 * @param nanos
@@ -663,8 +622,8 @@ public class Utility {
     public static Long timeStampInNanos(long seconds, int nanos) {
 	  return seconds * SCALAR + nanos;
     }
-    
-	/** 
+
+	/**
 	 * Convert Timestamp to a Long type timeStampInNanos
 	 * @param TimeStamp
 	 * @return
@@ -709,25 +668,25 @@ public class Utility {
 		}
 	}
 
-	public static void purgeDirectory(String dir) {
-		purgeDirectory(new File(dir));
-
-	}
-	public static void purgeDirectory(File dir) {
-		if ( ! dir.exists()) { return; };
+	public static void purgeDirectory(Path path) {
+	    File dir = path.toFile();
+		if (!dir.exists()) {
+		    return;
+		};
 
 	    for (File file: dir.listFiles()) {
 	        if (file.isDirectory())
-	            purgeDirectory(file);
+	            purgeDirectory(file.toPath());
 	        file.delete();
 	    }
 	}
-	public static void ensureDirectory(String path) {
-		if (StringUtils.isBlank(path)) {
+
+    public static void ensureDirectory(Path path) {
+		if (path == null) {
 			throw new IllegalArgumentException("Empty path");
 		}
 
-		File directory = new File(path);
+		File directory = path.toFile();
 		directory.mkdirs();
 
 		if (!directory.exists()) {
@@ -780,7 +739,7 @@ public class Utility {
 
 		return Hex.encodeHexString(parsedKey.getEd25519().toByteArray(), true);
 	}
-	
+
 	/**
 	 * Generates a TransactionID object
 	 * @param payerAccountId the AccountID of the transaction payer account
