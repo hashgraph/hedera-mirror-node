@@ -105,10 +105,10 @@ public class RecordFileLogger {
     	,LIVEHASH
     }
     
-    public static long getFileId() {
+    static long getFileId() {
     	return fileId;
     }
-    public static void setBatchSize(long batchSize) {
+    static void setBatchSize(long batchSize) {
     	BATCH_SIZE = batchSize;
     }
     

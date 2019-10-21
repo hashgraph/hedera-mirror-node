@@ -1,4 +1,4 @@
-package com.hedera.recordLogger;
+package com.hedera.recordFileLogger;
 
 
 
@@ -41,13 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @Sql(executionPhase= Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
 public class RecordFileLoggerTest extends AbstractRecordFileLoggerTest {
 
-	//TODO: The following are not yet saved to the mirror node database
-    // transactionBody.getTransactionFee()
-    // transactionBody.getTransactionValidDuration()
-    // transaction.getSigMap()
-	// transactionBody.getNewRealmAdminKey();
-	// record.getTransactionHash();
-
     @BeforeEach
     void before() throws Exception {
 		assertTrue(RecordFileLogger.start());
@@ -59,7 +52,7 @@ public class RecordFileLoggerTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void recordFileInitTest() throws Exception {
+    void initFile() throws Exception {
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
 		RecordFileLogger.completeFile("", "");
     	final RecordFile recordFile = recordFileRepository.findById(RecordFileLogger.getFileId()).get();
@@ -67,13 +60,13 @@ public class RecordFileLoggerTest extends AbstractRecordFileLoggerTest {
     }
     
     @Test
-    void recordFileDuplicateInitTest() throws Exception {
+    void initFileDuplicate() throws Exception {
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
 		assertEquals(INIT_RESULT.SKIP, RecordFileLogger.initFile("TestFile"));
     }
 
     @Test
-    void recordFileCompleteNoHashesTest() throws Exception {
+    void completeFileNoHashes() throws Exception {
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
 		RecordFileLogger.completeFile("", "");
     	final RecordFile recordFile = recordFileRepository.findById(RecordFileLogger.getFileId()).get();
@@ -82,7 +75,7 @@ public class RecordFileLoggerTest extends AbstractRecordFileLoggerTest {
     }
     
     @Test
-    void recordFileCompleteWithHashesTest() throws Exception {
+    void ompleteFileWithHashes() throws Exception {
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
 		RecordFileLogger.completeFile("123", "456");
     	final RecordFile recordFile = recordFileRepository.findById(RecordFileLogger.getFileId()).get();
@@ -90,11 +83,10 @@ public class RecordFileLoggerTest extends AbstractRecordFileLoggerTest {
     	assertEquals("456", recordFile.getPreviousHash());
     }
     @Test
-    void recordFileRollbackTest() throws Exception {
+    void rollback() throws Exception {
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
 		RecordFileLogger.rollback();
     	final Optional<RecordFile> recordFile = recordFileRepository.findById(RecordFileLogger.getFileId());
     	assertFalse(recordFile.isPresent());
-    	
     }
 }
