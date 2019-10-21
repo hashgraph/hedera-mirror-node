@@ -20,18 +20,25 @@ package com.hedera.mirror.domain;
  * ‍
  */
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Value;
 import org.apache.commons.codec.binary.Hex;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
-@Data
+@Builder
+@Value
 public class NodeAddress {
+
     private String id;
+
     private String ip;
+
+    @Builder.Default
     private int port = 50211;
+
     private String publicKey;
 
     public PublicKey getPublicKeyAsObject() {

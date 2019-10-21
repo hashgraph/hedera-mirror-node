@@ -32,6 +32,9 @@ public interface DownloaderProperties {
 
     CommonDownloaderProperties getCommon();
 
+    /**
+     * The number of current mainnet nodes used to download signatures in parallel. Should be adjusted when nodes change
+     */
     int getThreads();
 
     String getPrefix();

@@ -57,7 +57,7 @@ public class NetworkAddressBook {
     private void init() {
         Path path = mirrorProperties.getAddressBookPath();
         try {
-            File addressBookFile = mirrorProperties.getAddressBookPath().toFile();
+            File addressBookFile = path.toFile();
             if (!addressBookFile.exists() || !addressBookFile.canRead()) {
                 HederaNetwork hederaNetwork  = mirrorProperties.getNetwork();
                 Resource resource = new ClassPathResource(String.format("addressbook/%s", hederaNetwork.name().toLowerCase()));
@@ -98,11 +98,12 @@ public class NetworkAddressBook {
             NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
 
             for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
-                NodeAddress nodeAddress = new NodeAddress();
-                nodeAddress.setId(nodeAddressProto.getMemo().toStringUtf8());
-                nodeAddress.setIp(nodeAddressProto.getIpAddress().toStringUtf8());
-                nodeAddress.setPort(nodeAddressProto.getPortno());
-                nodeAddress.setPublicKey(nodeAddressProto.getRSAPubKey());
+                NodeAddress nodeAddress = NodeAddress.builder()
+                        .id(nodeAddressProto.getMemo().toStringUtf8())
+                        .ip(nodeAddressProto.getIpAddress().toStringUtf8())
+                        .port(nodeAddressProto.getPortno())
+                        .publicKey(nodeAddressProto.getRSAPubKey())
+                        .build();
                 builder.add(nodeAddress);
             }
         } catch (Exception ex) {
