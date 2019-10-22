@@ -3,5 +3,7 @@
 --
 
 alter table t_transactions
-    add column valid_duration bigint null,
-        column max_fee bigint null;
+    add column valid_duration bigint null;
+
+alter table t_transactions
+    add column max_fee bigint null;
