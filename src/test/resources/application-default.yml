@@ -1,0 +1,10 @@
+hedera:
+  mirror:
+    downloader:
+      bucketName: test
+      cloudProvider: LOCAL
+    network: TESTNET
+spring:
+  task:
+    scheduling:
+      enabled: false
