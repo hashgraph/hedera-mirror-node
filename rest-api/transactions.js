@@ -108,6 +108,8 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
         "   , eaccount.entity_num as account_num\n" +
         "   , amount\n" +
         "   , t.charged_tx_fee\n" +
+        "   , t.valid_duration\n" +
+        "   , t.max_fee\n" +
         " from (" + innerQuery + ") as tlist\n" +
         "   join t_transactions t on tlist.consensus_timestamp = t.consensus_ns\n" +
         "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +
