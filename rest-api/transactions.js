@@ -48,6 +48,8 @@ const createTransferLists = function (rows, arr) {
             transactions[row.consensus_ns]['result'] = row['result'];
             transactions[row.consensus_ns]['result'] = row['result'];
             transactions[row.consensus_ns]['name'] = row['name'];
+            transactions[row.consensus_ns]['max_fee'] = Number(row['max_fee']);
+            transactions[row.consensus_ns]['valid_duration'] = Number(row['valid_duration']);
             transactions[row.consensus_ns]['node'] =
                 row.node_shard + '.' + row.node_realm + '.' + row.node_num;
 
@@ -108,6 +110,8 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
         "   , eaccount.entity_num as account_num\n" +
         "   , amount\n" +
         "   , t.charged_tx_fee\n" +
+        "   , t.valid_duration\n" +
+        "   , t.max_fee\n" +
         " from (" + innerQuery + ") as tlist\n" +
         "   join t_transactions t on tlist.consensus_timestamp = t.consensus_ns\n" +
         "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +

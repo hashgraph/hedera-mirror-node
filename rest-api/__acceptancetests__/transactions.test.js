@@ -91,7 +91,7 @@ var acceptanceTestsTransactions = (function () {
     const checkMandatoryParams = function (entry) {
         let check = true;
         ['consensus_timestamp', 'valid_start_timestamp', 'charged_tx_fee', 'transaction_id',
-            'memo_base64', 'result', 'name', 'node', 'transfers'
+            'memo_base64', 'result', 'name', 'node', 'transfers', 'valid_duration', 'max_fee'
         ].forEach((field) => {
             check = check && entry.hasOwnProperty(field);
         });

@@ -12,6 +12,8 @@
                 "name": "CRYPTOTRANSFER",
                 "node": "0.15.2",
                 "transaction_id": "0.15.10-0-000001049",
+                "valid_duration": 11,
+                "max_fee": 33,
                 "transfers": [
                     {
                         "account": "0.15.10",
@@ -36,6 +38,8 @@
                 "name": "CRYPTOTRANSFER",
                 "node": "0.15.2",
                 "transaction_id": "0.15.10-0-000001050",
+                "valid_duration": 11,
+                "max_fee": 33,
                 "transfers": [
                     {
                         "account": "0.15.9",
@@ -60,6 +64,8 @@
                 "name": "CRYPTOTRANSFER",
                 "node": "0.15.2",
                 "transaction_id": "0.15.8-0-000001051",
+                "valid_duration": 11,
+                "max_fee": 33,
                 "transfers": [
                     {
                         "account": "0.15.2",

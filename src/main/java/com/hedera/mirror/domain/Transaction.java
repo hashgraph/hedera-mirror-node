@@ -1,5 +1,10 @@
 package com.hedera.mirror.domain;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -21,8 +26,6 @@ package com.hedera.mirror.domain;
  */
 
 import lombok.Data;
-
-import javax.persistence.*;
 
 @Data
 @Entity
@@ -58,4 +61,7 @@ public class Transaction {
 
     private Long validStartNs;
 
+    private Long validDuration;
+
+    private Long maxFee;
 }

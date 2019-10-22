@@ -169,8 +169,8 @@ const addAccount = async function(accountId) {
 
 const addTransaction = async function(consensusTimestamp, fileId, payerAccountId, transfers) {
     await sqlConnection.query(
-        'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, fk_result_id, fk_trans_type_id) values ($1, $2, $3, $4, $5, $6, $7);',
-        [consensusTimestamp, consensusTimestamp - 1, fileId, accountEntityIds[payerAccountId], accountEntityIds[2], 24, 2]);
+        'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, fk_result_id, fk_trans_type_id, valid_duration, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
+         [consensusTimestamp, consensusTimestamp - 1, fileId, accountEntityIds[payerAccountId], accountEntityIds[2], 24, 2, 11, 33]);
     for (var i = 0; i < transfers.length; ++i) {
         let xfer = transfers[i];
         await sqlConnection.query(

@@ -101,7 +101,7 @@ const validateFields = function (transactions) {
 
     // Assert that all mandatory fields are present in the response
     ['consensus_timestamp', 'valid_start_timestamp', 'charged_tx_fee', 'transaction_id',
-     'memo_base64', 'result', 'name', 'node', 'transfers'].forEach ( (field) =>{
+     'memo_base64', 'result', 'name', 'node', 'transfers', 'valid_duration', 'max_fee'].forEach ( (field) =>{
         ret = ret && transactions[0].hasOwnProperty(field);
     })
     
