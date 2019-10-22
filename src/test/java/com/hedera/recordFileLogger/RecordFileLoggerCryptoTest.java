@@ -9,9 +9,9 @@ package com.hedera.recordFileLogger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,6 @@ package com.hedera.recordFileLogger;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.configLoader.ConfigLoader;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.LiveHash;
 import com.hedera.recordFileLogger.RecordFileLogger;
@@ -48,10 +47,10 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 
-import org.iq80.leveldb.impl.SeekingIteratorAdapter.DbEntry;
 import org.junit.jupiter.api.*;
 import org.springframework.test.context.jdbc.Sql;
 import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -62,8 +61,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-@Sql(executionPhase= Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
-@Sql(executionPhase= Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
+// Class manually commits so have to manually cleanup tables
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
 	//TODO: These transaction data items are not saved to the database
@@ -88,8 +88,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	void before() throws Exception {
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-		ConfigLoader.setPersistClaims(true);
-		ConfigLoader.setPersistCryptoTransferAmounts(true);
+		parserProperties.setPersistClaims(true);
+		parserProperties.setPersistCryptoTransferAmounts(true);
 	}
 
 	@AfterEach
@@ -123,9 +123,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbNewAccountEntity)
 
@@ -144,7 +144,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeNanos())
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
-				);    	
+				);
 	}
 
 	@Test
@@ -152,7 +152,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
 		long testBatchSize = 10;
 		RecordFileLogger.setBatchSize(testBatchSize);
-		
+
 		for (int i=0; i < testBatchSize + 1; i++ ) {
 			final Transaction transaction = cryptoCreateTransaction();
 			final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -167,9 +167,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 		assertAll(
 				// row counts
 				() -> assertEquals(testBatchSize + 1, txCount)
-		);    	
+		);
 	}
-	
+
 	@Test
 	void cryptoCreateTransactionWithBodyTest() throws Exception {
 
@@ -196,9 +196,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbNewAccountEntity)
 
@@ -217,7 +217,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeNanos())
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
-				);    	
+				);
 	}
 
 	@Test
@@ -246,9 +246,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbNewAccountEntity)
 
@@ -267,7 +267,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeNanos())
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
-				);    	
+				);
 	}
 
 	@Test
@@ -280,12 +280,12 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
 		// add initial balance to transfer list
 		long initialBalance = cryptoCreateTransactionBody.getInitialBalance();
-		
+
 		TransferList.Builder transferList = tempRecord.getTransferList().toBuilder();
 		transferList.addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId).setAmount(initialBalance));
 		transferList.addAccountAmounts(AccountAmount.newBuilder().setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(202)).setAmount(-initialBalance));
 		final TransactionRecord record = tempRecord.toBuilder().setTransferList(transferList).build();
-		
+
 		RecordFileLogger.storeRecord(transaction, record);
 		RecordFileLogger.completeFile("", "");
 
@@ -304,9 +304,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbNewAccountEntity)
 
@@ -325,7 +325,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeNanos())
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
-				);    	
+				);
 	}
 
 	@Test
@@ -336,7 +336,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 		final TransactionRecord firstRecord = transactionRecordSuccess(firstTransactionBody);
 
 		RecordFileLogger.storeRecord(firstTransaction, firstRecord);
-		
+
 		final Transaction transaction = cryptoCreateTransaction();
 		final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
 		final CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
@@ -360,9 +360,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbNewAccountEntity)
 
@@ -381,9 +381,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeNanos())
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
 				,() -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
-				);    	
+				);
 	}
-	
+
 	@Test
 	void cryptoUpdateSuccessfulTransactionTest() throws Exception {
 
@@ -418,9 +418,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
 
@@ -438,7 +438,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
 				// Additional entity checks
 				,() -> assertFalse(dbAccountEntity.isDeleted())
-				);    	
+				);
 	}
 
 	@Test
@@ -476,9 +476,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
 				// record transfer list
@@ -486,7 +486,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				// no changes to entity
 				,() -> assertEquals(dbAccountEntityBefore, dbAccountEntity)
 
-			);    	
+			);
 	}
 
 	@Test
@@ -522,9 +522,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
 
@@ -542,7 +542,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertNull(dbAccountEntity.getExpiryTimeNs())
 				,() -> assertNull(dbAccountEntity.getExpiryTimeSeconds())
 				,() -> assertNull(dbAccountEntity.getExpiryTimeNanos())
-				);    	
+				);
 	}
 
 	@Test
@@ -578,9 +578,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
 
@@ -598,9 +598,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertNull(dbAccountEntity.getExpiryTimeNs())
 				,() -> assertNull(dbAccountEntity.getExpiryTimeSeconds())
 				,() -> assertNull(dbAccountEntity.getExpiryTimeNanos())
-				);    	
+				);
 	}
-	
+
 	@Test
 	void cryptoAddClaimPersistTest() throws Exception {
 
@@ -635,9 +635,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
 
@@ -648,13 +648,12 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertAccount(cryptoAddClaimTransactionBody.getClaim().getAccountID(), dbAccountEntity)
 				// TODO (issue #303) cryptoAddClaimTransactionBody.getClaim().getClaimDuration()
 				,() -> assertArrayEquals(cryptoAddClaimTransactionBody.getClaim().getHash().toByteArray(), dbLiveHash.getLivehash())
-				);    	
+				);
 	}
 
 	@Test
 	void cryptoAddClaimDoNotPersistTest() throws Exception {
-
-		ConfigLoader.setPersistClaims(false);
+		parserProperties.setPersistClaims(false);
 		// first create the account
 		final Transaction createTransaction = cryptoCreateTransaction();
 		final TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
@@ -685,9 +684,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
 
@@ -696,7 +695,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
 				// transaction body inputs
 				,() -> assertAccount(cryptoAddClaimTransactionBody.getClaim().getAccountID(), dbAccountEntity)
-				);    	
+				);
 	}
 
 	@Test
@@ -739,9 +738,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 				// receipt
 				,() -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
 
@@ -751,14 +750,12 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				// transaction body inputs
 				,() -> assertAccount(deleteClaimTransactionBody.getAccountIDToDeleteFrom(), dbAccountEntity)
 				// TODO (issue #303) check deleted
-				);    	
+				);
 	}
 
 	@Test
 	void cryptoTransferWithPersistenceTest() throws Exception {
-
-		ConfigLoader.setPersistCryptoTransferAmounts(true);
-
+		parserProperties.setPersistCryptoTransferAmounts(true);
 		// make the transfers
 		final Transaction transaction = cryptoTransferTransaction();
 		final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -781,20 +778,18 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
+				,() -> assertRecord(record, dbTransaction)
 
 				// record transfer list
 				,() -> assertRecordTransfers(record)
-				);    	
+				);
 	}
 
 	@Test
 	void cryptoTransferWithoutPersistenceTest() throws Exception {
-
-		ConfigLoader.setPersistCryptoTransferAmounts(false);
-
+		parserProperties.setPersistCryptoTransferAmounts(false);
 		// make the transfers
 		final Transaction transaction = cryptoTransferTransaction();
 		final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -817,10 +812,10 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 				,() -> assertEquals(0, fileDataRepository.count())
 
 				// transaction
-				,() -> assertTransaction(transactionBody, dbTransaction)    
+				,() -> assertTransaction(transactionBody, dbTransaction)
 				// record inputs
-				,() -> assertRecord(record, dbTransaction) 
-				);    	
+				,() -> assertRecord(record, dbTransaction)
+				);
 	}
 	private TransactionRecord transactionRecordSuccess(TransactionBody transactionBody) {
 		return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS);

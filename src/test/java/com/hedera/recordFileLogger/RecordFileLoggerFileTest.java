@@ -1,8 +1,5 @@
 package com.hedera.recordFileLogger;
 
-import com.google.protobuf.ByteString;
-import com.hedera.configLoader.ConfigLoader;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -22,6 +19,8 @@ import com.hedera.configLoader.ConfigLoader;
  * limitations under the License.
  * ‍
  */
+
+import com.google.protobuf.ByteString;
 
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.FileData;
@@ -66,10 +65,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import org.apache.commons.io.FileUtils;
-
-@Sql(executionPhase= Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
-@Sql(executionPhase= Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
+// Class manually commits so have to manually cleanup tables
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
 	//TODO: The following are not yet saved to the mirror node database
@@ -92,8 +90,9 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     void before() throws Exception {
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-		ConfigLoader.setPersistFiles("ALL");
-		ConfigLoader.setPersistCryptoTransferAmounts(true);
+		parserProperties.setPersistFiles(true);
+		parserProperties.setPersistSystemFiles(true);
+		parserProperties.setPersistCryptoTransferAmounts(true);
 	}
 
     @AfterEach
@@ -156,8 +155,8 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileCreateDoNotPersist() throws Exception {
-
-    	ConfigLoader.setPersistFiles("NONE");
+		parserProperties.setPersistFiles(false);
+		parserProperties.setPersistSystemFiles(false);
     	final Transaction transaction = fileCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final TransactionRecord record = transactionRecord(transactionBody);
@@ -194,8 +193,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileCreatePersistSystemPositive() throws Exception {
-
-    	ConfigLoader.setPersistFiles("SYSTEM");
+		parserProperties.setPersistFiles(false);
     	final Transaction transaction = fileCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();
@@ -248,8 +246,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileCreatePersistSystemNegative() throws Exception {
-
-    	ConfigLoader.setPersistFiles("SYSTEM");
+		parserProperties.setPersistFiles(false);
     	final Transaction transaction = fileCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();
@@ -458,7 +455,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertFalse(dbFileEntity.isDeleted())
          );
     }
-    
+
     @Test
     void fileUpdateAllToExisting() throws Exception {
 
@@ -523,7 +520,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileUpdateAllToExistingFailedTransaction() throws Exception {
-        
+
 		// first create the file
     	final Transaction fileCreateTransaction = fileCreateTransaction();
     	final TransactionBody createTransactionBody = TransactionBody.parseFrom(fileCreateTransaction.getBodyBytes());
@@ -581,14 +578,14 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileAppendToAddressBook() throws Exception {
-        
+
         Path addressBookPath = tempDirAppend.resolve("addressbook-test-append");
         FileUtils.touch(addressBookPath.toFile());
 		ConfigLoader.setAddressBookFile(addressBookPath.toString());
 		System.out.println(addressBookPath.toString());
 
         ConfigLoader.setPersistFiles("SYSTEM");
-		
+
 		final Transaction transaction = fileAppendTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
@@ -631,7 +628,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(),
                 		FileUtils.readFileToByteArray(addressBookPath.toFile())
                 )
-                
+
                 // Additional entity checks
                 ,() -> assertNull(dbFileEntity.getExpiryTimeSeconds())
                 ,() -> assertNull(dbFileEntity.getExpiryTimeNanos())
@@ -641,7 +638,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertFalse(dbFileEntity.isDeleted())
          );
     }
-    
+
     @Test
     void fileUpdateAllToNew() throws Exception {
 
@@ -1095,7 +1092,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         FileUtils.touch(addressBookPath.toFile());
         ConfigLoader.setAddressBookFile(addressBookPath.toString());
         System.out.println("Update " + addressBookPath.toString());
-    	
+
     	final Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
@@ -1481,9 +1478,9 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 	}
     private TransactionRecord transactionRecord(TransactionBody transactionBody, FileID newFile) {
     	return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS, newFile);
-    }    	
+    }
 	private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum responseCode, FileID newFile) {
-    	
+
     	final TransactionRecord.Builder record = TransactionRecord.newBuilder();
 
     	// record
@@ -1577,7 +1574,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	return fileUpdateAllTransaction(fileId);
     }
     private Transaction fileUpdateAllTransaction(FileID fileToUpdate) {
-    	
+
     	final Transaction.Builder transaction = Transaction.newBuilder();
     	final FileUpdateTransactionBody.Builder fileUpdate = FileUpdateTransactionBody.newBuilder();
     	final String key = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
@@ -1647,7 +1644,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     	return transaction.build();
     }
-    
+
     private Transaction fileUpdateKeysTransaction() {
 
     	final Transaction.Builder transaction = Transaction.newBuilder();

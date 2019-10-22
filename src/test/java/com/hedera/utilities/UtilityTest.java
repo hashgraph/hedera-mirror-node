@@ -124,16 +124,15 @@ public class UtilityTest {
 
 	@Test
 	void ensureDirectory() throws Exception {
-		File directory = tempDir.resolve("created").toFile();
-		File file = tempDir.resolve("file").toFile();
+		Path directory = tempDir.resolve("created");
+		Path file = tempDir.resolve("file");
 
-		Utility.ensureDirectory(directory.getAbsolutePath()); // Creates successfully
-		Utility.ensureDirectory(directory.getAbsolutePath()); // Already exists
+		Utility.ensureDirectory(directory); // Creates successfully
+		Utility.ensureDirectory(directory); // Already exists
 
-		file.createNewFile();
-		assertThatThrownBy(() -> Utility.ensureDirectory(file.getAbsolutePath())).isInstanceOf(IllegalStateException.class);
-		assertThatThrownBy(() -> Utility.ensureDirectory((String)null)).isInstanceOf(IllegalArgumentException.class);
-		assertThatThrownBy(() -> Utility.ensureDirectory(" ")).isInstanceOf(IllegalArgumentException.class);
+		file.toFile().createNewFile();
+		assertThatThrownBy(() -> Utility.ensureDirectory(file)).isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> Utility.ensureDirectory(null)).isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -236,7 +235,7 @@ public class UtilityTest {
             "0,0"
     })
 	public void timeStampInNanosTimeStamp(long seconds, int nanos)  {
-		
+
 		Timestamp timestamp = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 
 		long timeStampInNanos = Utility.timeStampInNanos(timestamp);

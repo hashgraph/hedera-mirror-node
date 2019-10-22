@@ -1,8 +1,8 @@
 hedera:
   mirror:
     db:
-      api-password: mirror_api_pass
-      api-username: mirror_api
+      apiPassword: mirror_api_pass
+      apiUsername: mirror_api
       host: 127.0.0.1
       name: mirror_node
       password: mirror_node_pass
@@ -12,6 +12,7 @@ logging:
   level:
     root: warn
     com.hedera: info
+    org.flywaydb.core.internal.command.DbMigrate: info
     #org.hibernate.SQL: debug
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 spring:
