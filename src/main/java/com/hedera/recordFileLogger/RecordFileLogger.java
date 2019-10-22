@@ -30,11 +30,11 @@ import java.sql.Types;
 import java.time.Instant;
 import java.util.HashMap;
 
+import com.hedera.mirror.parser.record.RecordParserProperties;
 import com.hederahashgraph.api.proto.java.*;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.addressBook.NetworkAddressBook;
-import com.hedera.configLoader.ConfigLoader;
+import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.utilities.Utility;
 
@@ -42,6 +42,7 @@ import com.hedera.utilities.Utility;
 public class RecordFileLogger {
     public static Connection connect = null;
 	private static Entities entities = null;
+	public static RecordParserProperties parserProperties = null;
 
 	private static HashMap<String, Integer> transactionResults = null;
 	private static HashMap<String, Integer> transactionTypes = null;
@@ -544,7 +545,7 @@ public class RecordFileLogger {
 		sqlInsertTransaction.setLong(F_TRANSACTION.INITIAL_BALANCE.ordinal(), initialBalance);
 		sqlInsertTransaction.addBatch();
 
-		if ((txRecord.hasTransferList()) && (ConfigLoader.getPersistCryptoTransferAmounts())) {
+		if ((txRecord.hasTransferList()) && parserProperties.isPersistCryptoTransferAmounts()) {
 			if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
 				insertCryptoCreateTransferList(consensusNs, txRecord, body, createdAccountId, fkPayerAccountId);
 			} else {
@@ -582,9 +583,8 @@ public class RecordFileLogger {
 
 	private static void insertFileCreate(final long consensusTimestamp, final FileCreateTransactionBody transactionBody,
 										 final TransactionRecord transactionRecord) throws SQLException {
-		if (ConfigLoader.getPersistFiles().contentEquals("ALL") ||
-				(ConfigLoader.getPersistFiles().contentEquals("SYSTEM") &&
-						transactionRecord.getReceipt().getFileID().getFileNum() < 1000)) {
+		if (parserProperties.isPersistFiles() ||
+				(parserProperties.isPersistSystemFiles() && transactionRecord.getReceipt().getFileID().getFileNum() < 1000)) {
 			byte[] contents = transactionBody.getContents().toByteArray();
 			sqlInsertFileData.setLong(F_FILE_DATA.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
 			sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
@@ -594,9 +594,8 @@ public class RecordFileLogger {
 
 	private static void insertFileAppend(final long consensusTimestamp, final FileAppendTransactionBody transactionBody)
 			throws SQLException, IOException {
-		if (ConfigLoader.getPersistFiles().contentEquals("ALL") ||
-				(ConfigLoader.getPersistFiles().contentEquals("SYSTEM") &&
-						transactionBody.getFileID().getFileNum() < 1000)) {
+		if (parserProperties.isPersistFiles() ||
+				(parserProperties.isPersistSystemFiles() && transactionBody.getFileID().getFileNum() < 1000)) {
 			byte[] contents = transactionBody.getContents().toByteArray();
 			sqlInsertFileData.setLong(F_FILE_DATA.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
 			sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
@@ -612,7 +611,7 @@ public class RecordFileLogger {
 
 	private static void insertCryptoAddClaim(final long consensusTimestamp,
 											 final CryptoAddClaimTransactionBody transactionBody) throws SQLException {
-		if (ConfigLoader.getPersistClaims()) {
+		if (parserProperties.isPersistClaims()) {
 			byte[] claim = transactionBody.getClaim().getHash().toByteArray();
 
 			sqlInsertClaimData.setLong(F_LIVEHASH_DATA.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
@@ -624,7 +623,7 @@ public class RecordFileLogger {
 	private static void insertContractCall(final long consensusTimestamp,
 										   final ContractCallTransactionBody transactionBody,
 										   final TransactionRecord transactionRecord) throws SQLException {
-		if (ConfigLoader.getPersistContracts()) {
+		if (parserProperties.isPersistContracts()) {
 			byte[] functionParams = transactionBody.getFunctionParameters().toByteArray();
 			long gasSupplied = transactionBody.getGas();
 			byte[] callResult = new byte[0];
@@ -642,7 +641,7 @@ public class RecordFileLogger {
 	private static void insertContractCreateInstance(final long consensusTimestamp,
 													 final ContractCreateTransactionBody transactionBody,
 													 final TransactionRecord transactionRecord) throws SQLException {
-		if (ConfigLoader.getPersistContracts()) {
+		if (parserProperties.isPersistContracts()) {
 			byte[] functionParams = transactionBody.getConstructorParameters().toByteArray();
 			long gasSupplied = transactionBody.getGas();
 			byte[] callResult = new byte[0];
@@ -724,8 +723,8 @@ public class RecordFileLogger {
 	private static void insertFileUpdate(final long consensusTimestamp, final FileUpdateTransactionBody transactionBody)
 			throws SQLException, IOException {
 		FileID fileId = transactionBody.getFileID();
-		if (ConfigLoader.getPersistFiles().contentEquals("ALL") ||
-				(ConfigLoader.getPersistFiles().contentEquals("SYSTEM") && fileId.getFileNum() < 1000)) {
+		if (parserProperties.isPersistFiles() ||
+				(parserProperties.isPersistSystemFiles() && fileId.getFileNum() < 1000)) {
 			byte[] contents = transactionBody.getContents().toByteArray();
 			sqlInsertFileData.setLong(F_FILE_DATA.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
 			sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
