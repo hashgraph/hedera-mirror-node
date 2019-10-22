@@ -30,7 +30,7 @@ const boilerplatePrefix =
     ttr.result , t.fk_trans_type_id , ttt.name, t.fk_node_acc_id , enode.entity_shard as node_shard , 
     enode.entity_realm as node_realm , enode.entity_num as node_num, account_id , 
     eaccount.entity_shard as account_shard , eaccount.entity_realm as account_realm , 
-    eaccount.entity_num as account_num, amount , t.charged_tx_fee 
+    eaccount.entity_num as account_num, amount , t.charged_tx_fee, t.valid_duration, t.max_fee 
 from ( select distinct ctl.consensus_timestamp
     from t_cryptotransferlists ctl
     join t_transactions t on t.consensus_ns = ctl.consensus_timestamp
