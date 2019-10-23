@@ -1,7 +1,4 @@
-package com.hedera.recordLogger;
-
-import com.google.protobuf.ByteString;
-import com.hedera.configLoader.ConfigLoader;
+package com.hedera.recordFileLogger;
 
 /*-
  * ‌
@@ -23,6 +20,10 @@ import com.hedera.configLoader.ConfigLoader;
  * ‍
  */
 
+
+import com.google.protobuf.ByteString;
+import com.hedera.mirror.MirrorProperties;
+import com.hedera.mirror.parser.record.RecordParserProperties;
 import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
 import com.hedera.utilities.Utility;
@@ -46,24 +47,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Sql("classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
+@Sql("classpath:db/scripts/cleanup.sql") 
 public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
-
-	//TODO: The following are not yet saved to the mirror node database
-    // transactionBody.getTransactionFee()
-    // transactionBody.getTransactionValidDuration()
-    // transaction.getSigMap()
-	// transactionBody.getNewRealmAdminKey();
-	// record.getTransactionHash();
 
  	private static final String memo = "File test memo";
 
     @BeforeEach
     void before() throws Exception {
+        RecordFileLogger.parserProperties = new RecordParserProperties(new MirrorProperties());
+        
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-		ConfigLoader.setPersistFiles("ALL");
-		ConfigLoader.setPersistCryptoTransferAmounts(true);
+		RecordFileLogger.parserProperties.setPersistFiles(true);
+		RecordFileLogger.parserProperties.setPersistSystemFiles(true);
+		RecordFileLogger.parserProperties.setPersistCryptoTransferAmounts(true);
 	}
 
     @AfterEach
