@@ -21,7 +21,7 @@ package com.hedera.recordFileLogger;
  */
 
 import com.google.protobuf.ByteString;
-
+import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.FileData;
 import com.hedera.mirror.parser.balance.BalanceParserProperties;
@@ -590,6 +590,8 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         FileUtils.touch(addressBookPath.toFile());
         parserProperties.getMirrorProperties().setAddressBookPath(addressBookPath);
 
+        NetworkAddressBook.update(new byte[0]);
+        
         parserProperties.setPersistFiles(true);
         parserProperties.setPersistSystemFiles(true);
 
@@ -631,12 +633,9 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 // file data
                 ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData.getFileData())
 
-                //TODO: NetworkAddress book addressBookBytes is a static and results in incorrect array size comparisons due to prior address book update
-                // See issue #58 
-                // address book file checks
-//                ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(),
-//                		FileUtils.readFileToByteArray(addressBookPath.toFile())
-//                )
+                ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(),
+                		FileUtils.readFileToByteArray(addressBookPath.toFile())
+                )
 
                 // Additional entity checks
                 ,() -> assertNull(dbFileEntity.getExpiryTimeSeconds())
