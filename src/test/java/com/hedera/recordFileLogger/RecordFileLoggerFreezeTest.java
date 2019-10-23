@@ -47,7 +47,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Sql("classpath:db/scripts/cleanup.sql") 
+//Class manually commits so have to manually cleanup tables
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
 
  	private static final String memo = "File test memo";
@@ -69,7 +71,7 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void freezeTest() throws Exception {
+    void freeze() throws Exception {
 
     	final Transaction transaction = freezeTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -102,7 +104,7 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void freezeInvalidTransactionTest() throws Exception {
+    void freezeInvalidTransaction() throws Exception {
 
     	final Transaction transaction = freezeTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
