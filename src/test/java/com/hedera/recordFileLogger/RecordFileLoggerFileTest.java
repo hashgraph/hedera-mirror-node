@@ -593,11 +593,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     @Test
     void fileAppendToAddressBook() throws Exception {
 
-//        Path addressBookPath = Path.of(dataPath.toString(), "addressbook-append.test");
-//        FileUtils.touch(addressBookPath.toFile());
-//        parserProperties.getMirrorProperties().setAddressBookPath(addressBookPath);
-        FileUtils.touch(mirrorProperties.getAddressBookPath().toFile());
-
         NetworkAddressBook.update(new byte[0]);
         
         parserProperties.setPersistFiles(true);
@@ -1104,11 +1099,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileUpdateAddressBook() throws Exception {
-
-//        Path addressBookPath = Path.of(dataPath.toString(), "addressbook-update.test");
-//        FileUtils.touch(addressBookPath.toFile());
-//        parserProperties.getMirrorProperties().setAddressBookPath(addressBookPath);
-        FileUtils.touch(mirrorProperties.getAddressBookPath().toFile());
 
         final Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());

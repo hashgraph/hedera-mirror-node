@@ -1,9 +1,5 @@
 package com.hedera.recordFileLogger;
 
-
-
-import com.hedera.mirror.domain.RecordFile;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -24,6 +20,7 @@ import com.hedera.mirror.domain.RecordFile;
  * ‍
  */
 
+import com.hedera.mirror.domain.RecordFile;
 import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
 import org.junit.jupiter.api.*;
@@ -75,7 +72,7 @@ public class RecordFileLoggerTest extends AbstractRecordFileLoggerTest {
     }
     
     @Test
-    void ompleteFileWithHashes() throws Exception {
+    void completeFileWithHashes() throws Exception {
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
 		RecordFileLogger.completeFile("123", "456");
     	final RecordFile recordFile = recordFileRepository.findById(RecordFileLogger.getFileId()).get();
