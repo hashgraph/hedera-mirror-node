@@ -1,9 +1,0 @@
-# From ../ - run "flyway -c config/flyway.conf.sample migrate"
-flyway.url=jdbc:postgresql://localhost:5432/mirror_node
-flyway.schemas=public
-flyway.placeholders.db-name=mirror_node
-flyway.placeholders.db-user=mirror_node
-flyway.placeholders.api-user=mirror_api
-flyway.placeholders.api-password=mirror_api_pass
-flyway.ignoreMissingMigrations=true
-flyway.locations=filesystem:src/main/resources/db/migration/

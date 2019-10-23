@@ -74,7 +74,6 @@ jobs:
           command: |
             mkdir -p /tmp/workspace/mirror-node/
             mv target/mirror-node-*.jar /tmp/workspace/mirror-node/mirror-node.jar
-            mv config /tmp/workspace/mirror-node/
             mv scripts /tmp/workspace/mirror-node/
       - persist_to_workspace:
           root: *workspace_root

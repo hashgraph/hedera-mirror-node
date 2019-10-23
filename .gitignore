@@ -32,6 +32,7 @@ config/config.json
 .classpath
 config/config.json.gcp
 config/config.json.s3
+data/
 output/
 config/loggerStatus.json
 .env
