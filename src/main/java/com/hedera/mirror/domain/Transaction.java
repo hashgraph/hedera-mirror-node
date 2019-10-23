@@ -1,10 +1,5 @@
 package com.hedera.mirror.domain;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -26,6 +21,11 @@ import javax.persistence.Table;
  */
 
 import lombok.Data;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Data
 @Entity
