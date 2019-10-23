@@ -21,7 +21,8 @@ package com.hedera.mirror.migration;
  */
 
 import com.google.common.base.Stopwatch;
-import com.hedera.configLoader.ConfigLoader;
+
+import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.EntityType;
 import com.hedera.mirror.repository.*;
@@ -34,6 +35,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
+import org.hibernate.boot.cfgxml.internal.ConfigLoader;
 
 import javax.inject.Named;
 import java.io.*;
@@ -46,6 +48,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class V1_11_6__Missing_Entities extends BaseJavaMigration {
 
+    private final MirrorProperties mirrorProperties;
     private final EntityRepository entityRepository;
     private final EntityTypeRepository entityTypeRepository;
     private final TransactionRepository transactionRepository;
@@ -82,7 +85,7 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
     }
 
     Path getAccountInfoPath() {
-        return Paths.get(ConfigLoader.getDownloadToDir(), "accountInfo.txt");
+        return mirrorProperties.getDataPath().resolve("accountInfo.txt");
     }
 
     private void updateAccount(String line) throws Exception {

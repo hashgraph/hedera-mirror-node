@@ -21,7 +21,7 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.CacheConfiguration;
+import com.hedera.mirror.config.CacheConfiguration;
 import com.hedera.mirror.domain.EntityType;
 
 import java.util.Optional;

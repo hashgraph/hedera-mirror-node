@@ -22,9 +22,11 @@ package com.hedera.mirror.repository;
 
 import com.hedera.mirror.domain.Transaction;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.jdbc.Sql;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Sql(executionPhase= Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
 public class TransactionRepositoryTest extends AbstractRepositoryTest {
 
     @Test
