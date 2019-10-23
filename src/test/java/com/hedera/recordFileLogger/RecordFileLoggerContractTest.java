@@ -1,8 +1,4 @@
-package com.hedera.recordLogger;
-
-import com.google.protobuf.ByteString;
-import com.hedera.configLoader.ConfigLoader;
-import com.hedera.mirror.domain.ContractResult;
+package com.hedera.recordFileLogger;
 
 /*-
  * ‌
@@ -24,7 +20,11 @@ import com.hedera.mirror.domain.ContractResult;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.mirror.MirrorProperties;
+import com.hedera.mirror.domain.ContractResult;
 import com.hedera.mirror.domain.Entities;
+import com.hedera.mirror.parser.record.RecordParserProperties;
 import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
 import com.hedera.utilities.Utility;
@@ -63,32 +63,27 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-@Sql("classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
+//Class manually commits so have to manually cleanup tables
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
-
-	//TODO: The following are not yet saved to the mirror node database
-	
-	// contract transaction file ID
-	// contractCreate.setMemo("Contract Memo");
-	
-    // transactionBody.getTransactionFee()
-    // transactionBody.getTransactionValidDuration()
-    // transaction.getSigMap()
-	// transactionBody.getNewRealmAdminKey();
-	// record.getTransactionHash();
 
 	private static final ContractID contractId = ContractID.newBuilder().setShardNum(0).setRealmNum(0).setContractNum(1001).build();
 	private static final FileID fileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1002).build();
 	private static final String realmAdminKey = "112212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
  	private static final String memo = "Contract test memo";
+ 	
+ 	private MirrorProperties mirrorProperties = new MirrorProperties();
 
     @BeforeEach
     void before() throws Exception {
+        RecordFileLogger.parserProperties = new RecordParserProperties(mirrorProperties);
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-		ConfigLoader.setPersistFiles("ALL");
-		ConfigLoader.setPersistContracts(true);
-		ConfigLoader.setPersistCryptoTransferAmounts(true);
+        RecordFileLogger.parserProperties.setPersistFiles(true);
+        RecordFileLogger.parserProperties.setPersistSystemFiles(true);
+		RecordFileLogger.parserProperties.setPersistContracts(true);
+		RecordFileLogger.parserProperties.setPersistCryptoTransferAmounts(true);
 	}
 
     @AfterEach
@@ -97,7 +92,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void contractCreateTest() throws Exception {
+    void contractCreate() throws Exception {
 
     	final Transaction transaction = contractCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -150,7 +145,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void contractCreateInvalidTransactionTest() throws Exception {
+    void contractCreateInvalidTransaction() throws Exception {
 
     	final Transaction transaction = contractCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -198,9 +193,9 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void contractCreateDoNotPersistTest() throws Exception {
+    void contractCreateDoNotPersist() throws Exception {
 
-    	ConfigLoader.setPersistContracts(false);
+        RecordFileLogger.parserProperties.setPersistContracts(false);
         
     	final Transaction transaction = contractCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -251,7 +246,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void contractUpdateAllToExistingTest() throws Exception {
+    void contractUpdateAllToExisting() throws Exception {
 
 		// first create the contract
     	final Transaction contractCreateTransaction = contractCreateTransaction();
@@ -310,7 +305,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void contractUpdateAllToNewTest() throws Exception {
+    void contractUpdateAllToNew() throws Exception {
 
     	// now update
     	final Transaction transaction = contractUpdateAllTransaction();
@@ -363,7 +358,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void contractUpdateAllToExistingInvalidTransactionTest() throws Exception {
+    void contractUpdateAllToExistingInvalidTransaction() throws Exception {
 
 		// first create the contract
     	final Transaction contractCreateTransaction = contractCreateTransaction();
@@ -422,7 +417,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
     
     @Test
-    void contractDeleteToExistingTest() throws Exception {
+    void contractDeleteToExisting() throws Exception {
 
 		// first create the contract
     	final Transaction contractCreateTransaction = contractCreateTransaction();
@@ -479,7 +474,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
     
     @Test
-    void contractDeleteToNewTest() throws Exception {
+    void contractDeleteToNew() throws Exception {
 
     	// now update
     	final Transaction transaction = contractDeleteTransaction();
@@ -529,7 +524,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void contractDeleteToNewInvalidTransactionTest() throws Exception {
+    void contractDeleteToNewInvalidTransaction() throws Exception {
 
     	// now update
     	final Transaction transaction = contractDeleteTransaction();
@@ -579,7 +574,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void contractCallToExistingTest() throws Exception {
+    void contractCallToExisting() throws Exception {
 
 		// first create the contract
     	final Transaction contractCreateTransaction = contractCreateTransaction();
@@ -635,7 +630,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
          );
     }
     @Test
-    void contractCallToNewTest() throws Exception {
+    void contractCallToNew() throws Exception {
 
     	// now call
     	final Transaction transaction = contractCallTransaction();
@@ -685,7 +680,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void contractCallToNewInvalidTransactionTest() throws Exception {
+    void contractCallToNewInvalidTransaction() throws Exception {
 
     	// now call
     	final Transaction transaction = contractCallTransaction();
@@ -727,9 +722,9 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void contractCallDoNotPersistTest() throws Exception {
+    void contractCallDoNotPersist() throws Exception {
 
-		ConfigLoader.setPersistContracts(false);
+        RecordFileLogger.parserProperties.setPersistContracts(false);
 
     	// now call
     	final Transaction transaction = contractCallTransaction();
