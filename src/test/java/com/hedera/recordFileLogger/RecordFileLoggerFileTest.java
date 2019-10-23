@@ -21,10 +21,11 @@ package com.hedera.recordFileLogger;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.FileData;
-import com.hedera.mirror.parser.balance.BalanceParserProperties;
+import com.hedera.mirror.domain.HederaNetwork;
 import com.hedera.mirror.parser.record.RecordParserProperties;
 import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
@@ -60,8 +61,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 import java.time.Instant;
 
-import javax.annotation.Resource;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -87,18 +86,26 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
  	private static final String memo = "File test memo";
 
     @TempDir
-    static Path tempDir;
+    static Path dataPath;
 
-    @Resource
     private RecordParserProperties parserProperties;
+    private MirrorProperties mirrorProperties;
+    private NetworkAddressBook networkAddressBook;
 
     @BeforeEach
     void before() throws Exception {
+        mirrorProperties = new MirrorProperties();
+        mirrorProperties.setDataPath(dataPath);
+        mirrorProperties.setNetwork(HederaNetwork.TESTNET);
+        networkAddressBook = new NetworkAddressBook(mirrorProperties);
+        
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
+		parserProperties = new RecordParserProperties(mirrorProperties);
 		parserProperties.setPersistFiles(true);
 		parserProperties.setPersistSystemFiles(true);
 		parserProperties.setPersistCryptoTransferAmounts(true);
+		RecordFileLogger.parserProperties = parserProperties;
 	}
 
     @AfterEach
@@ -586,9 +593,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     @Test
     void fileAppendToAddressBook() throws Exception {
 
-        Path addressBookPath = Path.of(tempDir.toString(), "addressbook-append.test");
-        FileUtils.touch(addressBookPath.toFile());
-        parserProperties.getMirrorProperties().setAddressBookPath(addressBookPath);
+//        Path addressBookPath = Path.of(dataPath.toString(), "addressbook-append.test");
+//        FileUtils.touch(addressBookPath.toFile());
+//        parserProperties.getMirrorProperties().setAddressBookPath(addressBookPath);
+        FileUtils.touch(mirrorProperties.getAddressBookPath().toFile());
 
         NetworkAddressBook.update(new byte[0]);
         
@@ -634,7 +642,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData.getFileData())
 
                 ,() -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(),
-                		FileUtils.readFileToByteArray(addressBookPath.toFile())
+                		FileUtils.readFileToByteArray(mirrorProperties.getAddressBookPath().toFile())
                 )
 
                 // Additional entity checks
@@ -1097,9 +1105,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     @Test
     void fileUpdateAddressBook() throws Exception {
 
-        Path addressBookPath = Path.of(tempDir.toString(), "addressbook-update.test");
-        FileUtils.touch(addressBookPath.toFile());
-        parserProperties.getMirrorProperties().setAddressBookPath(addressBookPath);
+//        Path addressBookPath = Path.of(dataPath.toString(), "addressbook-update.test");
+//        FileUtils.touch(addressBookPath.toFile());
+//        parserProperties.getMirrorProperties().setAddressBookPath(addressBookPath);
+        FileUtils.touch(mirrorProperties.getAddressBookPath().toFile());
 
         final Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -1150,7 +1159,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
                 // address book file checks
                 ,() -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(),
-                		FileUtils.readFileToByteArray(addressBookPath.toFile())
+                		FileUtils.readFileToByteArray(mirrorProperties.getAddressBookPath().toFile())
                 )
                 // Additional entity checks
                 ,() -> assertNull(dbFileEntity.getAutoRenewPeriod())
