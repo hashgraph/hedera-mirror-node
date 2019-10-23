@@ -168,8 +168,8 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileCreateDoNotPersist() throws Exception {
-		parserProperties.setPersistFiles(false);
-		parserProperties.setPersistSystemFiles(false);
+        RecordFileLogger.parserProperties.setPersistFiles(false);
+        RecordFileLogger.parserProperties.setPersistSystemFiles(false);
     	final Transaction transaction = fileCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final TransactionRecord record = transactionRecord(transactionBody);
@@ -206,7 +206,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileCreatePersistSystemPositive() throws Exception {
-		parserProperties.setPersistFiles(false);
+        RecordFileLogger.parserProperties.setPersistFiles(false);
     	final Transaction transaction = fileCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();
@@ -259,7 +259,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileCreatePersistSystemNegative() throws Exception {
-		parserProperties.setPersistFiles(false);
+        RecordFileLogger.parserProperties.setPersistFiles(false);
     	final Transaction transaction = fileCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();
@@ -424,8 +424,8 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	final FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
     	final TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
 
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
+    	RecordFileLogger.parserProperties.setPersistFiles(true);
+    	RecordFileLogger.parserProperties.setPersistSystemFiles(true);
 
     	RecordFileLogger.storeRecord(transaction, record);
 
@@ -595,8 +595,8 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
         NetworkAddressBook.update(new byte[0]);
         
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
+        RecordFileLogger.parserProperties.setPersistFiles(true);
+        RecordFileLogger.parserProperties.setPersistSystemFiles(true);
 
 		final Transaction transaction = fileAppendTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -1048,8 +1048,8 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	final FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
     	final TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
 
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
+    	RecordFileLogger.parserProperties.setPersistFiles(true);
+    	RecordFileLogger.parserProperties.setPersistSystemFiles(true);
 
     	RecordFileLogger.storeRecord(transaction, record);
 
@@ -1105,8 +1105,8 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	final FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
     	final TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
 
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
+        RecordFileLogger.parserProperties.setPersistFiles(true);
+        RecordFileLogger.parserProperties.setPersistSystemFiles(true);
 
     	RecordFileLogger.storeRecord(transaction, record);
 
