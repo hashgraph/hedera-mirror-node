@@ -54,12 +54,7 @@ const createTransferLists = function (rows, arr) {
                 row.node_shard + '.' + row.node_realm + '.' + row.node_num;
 
             // Construct a transaction id using format: shard.realm.num-sssssssssss-nnnnnnnnn
-            transactions[row.consensus_ns]['transaction_id'] =
-                row.entity_shard + '.' +
-                row.entity_realm + '.' +
-                row.entity_num + '-' +
-                Math.floor(validStartTimestamp / billion) + '-' +
-                String(validStartTimestamp % billion).padStart(9, '0');
+            transactions[row.consensus_ns]['transaction_id'] = utils.createTransactionId(row.entity_shard,row.entity_realm,row.entity_num,validStartTimestamp);
 
             transactions[row.consensus_ns].transfers = []
         }
@@ -314,7 +309,7 @@ const getOneTransaction = function (req, res) {
     const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(
         sqlQuery, sqlParams);
 
-    logger.debug("getTransactions query: " +
+    logger.debug("getOneTransaction query: " +
         pgSqlQuery + JSON.stringify(sqlParams));
 
     // Execute query
@@ -331,14 +326,16 @@ const getOneTransaction = function (req, res) {
             return;
         }
 
+        logger.debug("# rows returned: " +
+            results.rows.length);
         const tl = createTransferLists(results.rows, ret);
         ret = tl.ret;
 
-        if (ret.transactions.length === 0) {
-            res.status(404)
-                .send('Not found');
-            return;
-        }
+        // if (ret.transactions.length === 0) {
+        //     res.status(404)
+        //         .send('Not found');
+        //     return;
+        // }
 
         if (process.env.NODE_ENV === 'test') {
             ret.sqlQuery = results.sqlQuery;

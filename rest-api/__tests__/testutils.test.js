@@ -22,7 +22,7 @@
 const request = require('supertest');
 const utils = require('../utils.js');
 
-describe('Utils tests', () => {
+describe('Utils getNullableNumber tests', () => {
     
     test('Verify getNullableNumber returns correct result for 0', () => {
         var val = utils.getNullableNumber(0);
@@ -43,5 +43,59 @@ describe('Utils tests', () => {
         var validNumber = 10;
         var val = utils.getNullableNumber(validNumber);
         expect(val).toBe(validNumber);
+    });
+});
+
+describe('Utils nsToSecNs tests', () => {
+    var validStartNs = 1568411656265684000;
+    test('Verify nsToSecNs returns correct result for valid validStartNs', () => {
+        var val = utils.nsToSecNs(validStartNs);
+        expect(val).toBe('1568411656.265684000');
+    });
+
+    test('Verify nsToSecNs returns correct result for 0 validStartNs', () => {
+        var val = utils.nsToSecNs(0);
+        expect(val).toBe('0.000000000');
+    });
+
+    test('Verify nsToSecNs returns correct result for null validStartNs', () => {
+        var val = utils.nsToSecNs(null);
+        expect(val).toBe('0.000000000');
+    });
+
+    test('Verify nsToSecNsWithHyphen returns correct result for valid validStartNs', () => {
+        var val = utils.nsToSecNsWithHyphen(validStartNs);
+        expect(val).toBe('1568411656-265684000');
+    });
+
+    test('Verify nsToSecNsWithHyphen returns correct result for 0 validStartNs', () => {
+        var val = utils.nsToSecNsWithHyphen(0);
+        expect(val).toBe('0-000000000');
+    });
+
+    test('Verify nsToSecNsWithHyphen returns correct result for null validStartNs', () => {
+        var val = utils.nsToSecNsWithHyphen(null);
+        expect(val).toBe('0-000000000');
+    });
+});
+
+describe('Utils createTransactionId tests', () => {
+    var validStartNs = 1568411656265684000;
+    var shard = 1;
+    var realm = 2;
+    var num = 995;
+    test('Verify createTransactionId returns correct result for valid inputs', () => {
+        var val = utils.createTransactionId(shard, realm, num, validStartNs);
+        expect(val).toBe(`${shard}.${realm}.${num}-` + '1568411656-265684000');
+    });
+
+    test('Verify nsToSecNs returns correct result for 0 inputs', () => {
+        var val = utils.createTransactionId(0, 0, 0, 0);
+        expect(val).toBe('0.0.0-0-000000000');
+    });
+
+    test('Verify nsToSecNs returns correct result for null inputs', () => {
+        var val = utils.createTransactionId(0, 0, 0, null);
+        expect(val).toBe('0.0.0-0-000000000');
     });
 });
