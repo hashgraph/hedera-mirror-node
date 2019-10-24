@@ -595,11 +595,11 @@ const encodeBase64 = function (buffer) {
 
 /**
  * 
- * @param {Number} num Nullable number
- * @returns {Any} value of paramter or null if null 
+ * @param {Any} num Nullable number
+ * @returns {Any} Number value of parameter or null if null 
  */
 const getNullableNumber = function(num) {
-    return num ? Number(num) : null;
+    return num == null ? null : Number(num);
 }
 
 module.exports = {
