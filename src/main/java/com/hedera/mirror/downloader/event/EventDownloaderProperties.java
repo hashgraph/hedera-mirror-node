@@ -23,7 +23,6 @@ package com.hedera.mirror.downloader.event;
 import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.StreamType;
 import com.hedera.mirror.downloader.CommonDownloaderProperties;
-import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.downloader.DownloaderProperties;
 
 import java.nio.file.Path;

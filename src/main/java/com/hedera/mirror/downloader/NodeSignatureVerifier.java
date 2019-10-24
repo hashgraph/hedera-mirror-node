@@ -53,16 +53,18 @@ public class NodeSignatureVerifier {
 	}
 
     /**
-     * Input: a list of a sig files which has the same timestamp
-     * Output: a list of valid sig files - being valid means the signature is valid and the Hash is agreed by super-majority nodes.
-     * 1. Verify that the signature files are signed by corresponding node's PublicKey;
-     * For invalid signature files, we will log them;
-     * 2. For valid signature files, we compare their Hashes to see if more than 2/3 Hashes matches. If more than 2/3 Hashes matches, we return a List of Files which contains this Hash
-     * @param sigFiles
-     * @return
+     * Verifies that the signature files are signed by corresponding node's PublicKey. For valid signature files, we
+     * compare their Hashes to see if more than 2/3 Hashes match. If more than 2/3 Hashes match, we return a List of
+     * Files which contains this Hash.
+     * @param sigFiles a list of a sig files which have the same timestamp
+     * @return Pair of
+     *     <hash of valid data file, list of valid sig files>. Valid means the signature is valid and the Hash is
+     *     agreed by super-majority nodes.
+     *     If validity of signatures can not be established, then returns <null, empty list>.
      */
     public Pair<byte[], List<File>> verifySignatureFiles(List<File> sigFiles) {
-        // If a signature is valid, we put the Hash in its content and its File to the map, to see if more than 2/3 valid signatures have the same Hash
+        // If a signature is valid, we put the Hash in its content and its File to the map, to see if more than 2/3
+        // valid signatures have the same Hash
         Map<String, Set<File>> hashToSigFiles = new HashMap<>();
         for (File sigFile : sigFiles) {
             Pair<byte[], byte[]> hashAndSig = Utility.extractHashAndSigFromFile(sigFile);

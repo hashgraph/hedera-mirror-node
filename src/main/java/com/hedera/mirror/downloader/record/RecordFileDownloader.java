@@ -67,10 +67,6 @@ public class RecordFileDownloader extends Downloader {
 		}
 	}
 
-    protected DownloadType getType() {
-        return DownloadType.RCD;
-    }
-
     protected ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE;
     }
@@ -81,14 +77,6 @@ public class RecordFileDownloader extends Downloader {
 
     protected ApplicationStatusCode getBypassHashKey() {
         return ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER;
-    }
-
-    protected String getDataFileName(String sigFileName) {
-        return sigFileName.replace(".rcd_sig", ".rcd");
-    }
-
-    protected boolean isNeededSigFile(String s3ObjectKey) {
-        return Utility.isRecordSigFile(s3ObjectKey);
     }
 
     protected boolean shouldVerifyHashChain() {

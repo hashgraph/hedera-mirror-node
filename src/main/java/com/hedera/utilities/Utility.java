@@ -518,20 +518,10 @@ public class Utility {
 	}
 
 	public static String getAccountIDStringFromFilePath(String path) {
-		if (isRecordFile(path) || isRecordSigFile(path)) {
-			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.RCD);
-		} else if (isEventStreamFile(path) || isEventStreamSigFile(path)) {
-			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.EVENT);
-		} else {
-			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.BALANCE);
-		}
-	}
-
-	public static String getAccountIDStringFromFilePath(String path, Downloader.DownloadType type) {
 		String regex;
-		if (type == Downloader.DownloadType.RCD) {
+        if (isRecordFile(path) || isRecordSigFile(path)) {
 			regex = "record([\\d]+[.][\\d]+[.][\\d]+)";
-		} else if (type == Downloader.DownloadType.EVENT) {
+        } else if (isEventStreamFile(path) || isEventStreamSigFile(path)) {
 			regex = "events_([\\d]+[.][\\d]+[.][\\d]+)";
 		} else {
 			//account balance
