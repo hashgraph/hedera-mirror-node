@@ -1,4 +1,4 @@
-package com.hedera.recordLogger;
+package com.hedera.recordFileLogger;
 
 /*-
  * ‌
