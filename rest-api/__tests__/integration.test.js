@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -100,8 +100,6 @@ const instantiateDatabase = async function() {
     // Until "server", "pool" and everything else is made non-static...
     oldPool = global.pool;
     global.pool = sqlConnection;
-    oldShardNum = process.env.SHARD_NUM;
-    process.env.SHARD_NUM = 0;
 
     await flywayMigrate();
     await setupData();
@@ -114,7 +112,7 @@ const instantiateDatabase = async function() {
 const flywayMigrate = function() {
     console.log('Using flyway CLI to construct schema');
     let exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
-    let configPath = '.node-flywaydb.integration.conf';
+    let configPath = 'config/.node-flywaydb.integration.conf';
     let flywayEnv = {env: Object.assign({}, {
         'FLYWAY_URL': `jdbc:postgresql://${dbHost}:${dbPort}/${dbName}`
         ,'FLYWAY_USER': dbUser
@@ -241,10 +239,6 @@ afterAll(() => {
     if (oldPool !== null) {
         global.pool = oldPool;
         oldPool = null;
-    }
-    if (oldShardNum !== null) {
-        process.env.SHARD_NUM = oldShardNum;
-        oldShardNum = null;
     }
     if (process.env.CI) {
         let logPath = path.join(__dirname, '..', '..', 'logs', 'hedera_mirrornode_api_3000.log');

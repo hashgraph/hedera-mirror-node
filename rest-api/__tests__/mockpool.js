@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,16 +57,16 @@ class Pool {
     /**
      * This Pool.query method gets called when the code tries to query the database.
      * This method mocks the real database. It parses the SQL query and extracts the
-     * filter clauses of the query, and returns those as part of the query response. 
-     * This code can be enhanced to return dummy data for transactions, balances, or 
+     * filter clauses of the query, and returns those as part of the query response.
+     * This code can be enhanced to return dummy data for transactions, balances, or
      * queries. Right now, we return a blank arrays
      * @param {String} sqlquery The SQL query string for postgreSQL
-     * @param {Array} sqlparams The array of values for positional parameters  
+     * @param {Array} sqlparams The array of values for positional parameters
      * @return {Promise} promise Javascript promise that gets resolved with the response
      *                          with parsed query parameters.
      */
     query(sqlquery, sqlparams) {
-        // Since this is a generic mock DB, first find out if this is a query 
+        // Since this is a generic mock DB, first find out if this is a query
         // for transactions, balances, or accounts
         let callerFile;
         try {
@@ -143,8 +143,8 @@ class Pool {
             high: this.toNs(this.timeNow)
         }
         let limit = {
-            low: config.limits.RESPONSE_ROWS,
-            high: config.limits.RESPONSE_ROWS
+            low: config.api.limits.responseRows,
+            high: config.api.limits.responseRows
         }
         let order = 'desc';
 
@@ -221,8 +221,8 @@ class Pool {
             high: this.TEST_DATA_MAX_BALANCE
         }
         let limit = {
-            low: config.limits.RESPONSE_ROWS,
-            high: config.limits.RESPONSE_ROWS
+            low: config.api.limits.responseRows,
+            high: config.api.limits.responseRows
         }
         let order = 'desc';
 
@@ -294,8 +294,8 @@ class Pool {
             high: this.TEST_DATA_MAX_BALANCE
         }
         let limit = {
-            low: config.limits.RESPONSE_ROWS,
-            high: config.limits.RESPONSE_ROWS
+            low: config.api.limits.responseRows,
+            high: config.api.limits.responseRows
         }
         let order = 'desc';
 
@@ -350,7 +350,7 @@ class Pool {
     }
 
     /**
-     * Utility function to adjust the low and high constraints of a given object based on 
+     * Utility function to adjust the low and high constraints of a given object based on
      * the values present in the SQL query
      * @param {Object} parm A query parameters that was present in the SQL query
      * @param {Object} pVar The object whose low/high values need to be adjusted
@@ -372,16 +372,16 @@ class Pool {
                 break;
         }
         if (param.field === 'limit') {
-            if (param.high > config.limits.RESPONSE_ROWS) {
-                param.low = config.limits.RESPONSE_ROWS;
-                param.high = config.limits.RESPONSE_ROWS;
+            if (param.high > config.api.limits.responseRows) {
+                param.low = config.api.limits.responseRows;
+                param.high = config.api.limits.responseRows;
             }
         }
         return (pVar);
     }
 
     /**
-     * Utility function to ensure low value is lower than high value to prevent 
+     * Utility function to ensure low value is lower than high value to prevent
      * in advertent infinite loops if the query has low/high values inverted
      * @param {Object} pVar The object whose low/high values need to be tested
      * @return {Object} pVar the adjusted object

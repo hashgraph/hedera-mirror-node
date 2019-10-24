@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,30 +17,41 @@
  * limitations under the License.
  * ‍
  */
-const config = {
-    limits: {
-        RESPONSE_ROWS: 1000,
-        MAX_BIGINT: 9223372036854775807
-    },
 
-    // Time to Live for cache entries for each type of API
-    ttls: {
-        transactions: 10,
-        balances: 60,
-        accounts: 60,
-        events: 10
-    },
+const extend = require('extend');
+const fs = require('fs');
+const yaml = require('js-yaml');
+const log4js = require('log4js');
+const path = require('path');
 
-    // Refresh times for each type of files (in seconds)
-    fileUpdateRefreshTimes: {
-        records: 5,         // Record files are updated this often
-        balances: 15 * 60,  // Balance files are updated this often
-        events: 5 * 60      // Event files are updated this often
-    },
+const logger = log4js.getLogger('config');
+let config = {};
+let loaded = false;
 
-    resultUpdateTimeout: 60, // Raise error if no results in this much time,
+function load(configPath) {
+  if (!configPath) {
+    return;
+  }
 
-    TEST_REALM: 0            // Realm for acceptane tests
+  let configFile = path.join(configPath, 'application.yml');
+  if (!fs.existsSync(configFile)) {
+    return;
+  }
+
+  try {
+    let doc = yaml.safeLoad(fs.readFileSync(configFile, 'utf8'));
+    console.log(`Loaded configuration source: ${configFile}`);
+    extend(true, config, doc);
+  } catch (err) {
+    console.log(`Skipping configuration ${configFile}: ${err}`);
+  }
 }
 
-module.exports = config;
+if (!loaded) {
+  load(path.join(__dirname, 'config'));
+  load(__dirname);
+  load(process.env.CONFIG_PATH);
+  loaded = true;
+}
+
+module.exports = config.hedera ? config.hedera.mirror : config;

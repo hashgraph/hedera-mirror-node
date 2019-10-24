@@ -201,7 +201,7 @@ const singletests = {
         ],
         checkFunctions: [
             {func: validateTsRange, args: [
-                timeOneHourAgo - config.limits.RESPONSE_ROWS, timeOneHourAgo]},
+                timeOneHourAgo - config.api.limits.responseRows, timeOneHourAgo]},
             {func: validateFields, args: []}
         ]
     },
@@ -352,7 +352,7 @@ describe('Balances tests', () => {
             }
         }
         const comburl = combtest.urls.join('&');
-        test(`Balances combinationn test: ${combtest.names} - URL: ${comburl}`, async () => {
+        test(`Balances combination test: ${combtest.names} - URL: ${comburl}`, async () => {
             let response = await request(server).get([api, comburl].join('?'));
             expect(response.status).toEqual(200);
             const balances = JSON.parse(response.text);

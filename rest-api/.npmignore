@@ -1,6 +1,5 @@
 /Dockerfile
 /.dockerignore
-/.env
 /.gitignore
 /monitoring/
 /target/

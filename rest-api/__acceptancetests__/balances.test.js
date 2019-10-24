@@ -61,8 +61,8 @@ var acceptanceTestsBalances = (function () {
         expect(response.status).toEqual(200);
         let balances = JSON.parse(response.text).balances;
 
-        expect(balances.length).toBe(config.limits.RESPONSE_ROWS);
-        if (balances.length !== config.limits.RESPONSE_ROWS) {
+        expect(balances.length).toBe(config.api.limits.responseRows);
+        if (balances.length !== config.api.limits.responseRows) {
             return (false);
         }
 
@@ -102,7 +102,7 @@ var acceptanceTestsBalances = (function () {
             const response = await request(server).get(moduleVars.apiPrefix + '/balances');
             expect(response.status).toEqual(200);
             let balances = JSON.parse(response.text).balances;
-            expect(balances.length).toBe(config.limits.RESPONSE_ROWS);
+            expect(balances.length).toBe(config.api.limits.responseRows);
 
             // Assert that all mandatory fields are present in the response
             let check = checkMandatoryParams(balances[0]);
@@ -112,7 +112,7 @@ var acceptanceTestsBalances = (function () {
             const balancesSec = JSON.parse(response.text).timestamp.split('.')[0];
             const currSec = Math.floor(new Date().getTime() / 1000);
             const delta = currSec - balancesSec;
-            check = delta < (2 * config.fileUpdateRefreshTimes.balances)
+            check = delta < (2 * config.api.fileUpdateRefreshTimes.balances)
             expect(check).toBeTruthy();
         });
 
@@ -200,7 +200,7 @@ var acceptanceTestsBalances = (function () {
             const response = await request(server).get(url);
             expect(response.status).toEqual(200);
             let balances = JSON.parse(response.text).balances;
-            expect(balances.length).toEqual(config.limits.RESPONSE_ROWS);
+            expect(balances.length).toEqual(config.api.limits.responseRows);
             let check = true;
             let prevAcc = 0;
             for (let bal of balances) {
@@ -224,7 +224,7 @@ var acceptanceTestsBalances = (function () {
                 `&account.id=gt:${accLow}&account.id=lt:${accHigh}` +
                 `&account.balance=gt:${balLow}&account.balance=lt:${balHigh}` +
                 `&account.publickey=1234567890123456789012345678901234567890123456789012345678901234` +
-                `&order=desc&limit=${config.limits.RESPONSE_ROWS}`;
+                `&order=desc&limit=${config.api.limits.responseRows}`;
             moduleVars.verbose && console.log(url);
             const response = await request(server).get(url);
             expect(response.status).toEqual(200);
@@ -239,7 +239,7 @@ var acceptanceTestsBalances = (function () {
             // of 1000 entries to see if there is any overlap or gaps in the returned responses.   
             let paginatedEntries = [];
             const numPages = 5;
-            const pageSize = config.limits.RESPONSE_ROWS / numPages;
+            const pageSize = config.api.limits.responseRows / numPages;
             let next = null;
             // Fetch pages using 'next' links and concatenate the results
             for (let index = 0; index < numPages; index++) {
@@ -264,7 +264,7 @@ var acceptanceTestsBalances = (function () {
 
             // Check if the accounts numbers match for each entry
             check = true;
-            for (i = 0; i < config.limits.RESPONSE_ROWS; i++) {
+            for (i = 0; i < config.api.limits.responseRows; i++) {
                 if (moduleVars.testBalances[i].account !== paginatedEntries[i].account) {
                     check = false;
                 }

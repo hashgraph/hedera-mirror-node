@@ -383,8 +383,8 @@ const parseLimitAndOrderParams = function (req, defaultOrder = 'desc') {
     // Parse the limit parameter
     let limitQuery = '';
     let limitParams = [];
-    let lVal = getIntegerParam(req.query['limit'], config.limits.RESPONSE_ROWS);
-    let limitValue = lVal === '' ? config.limits.RESPONSE_ROWS : lVal;
+    let lVal = getIntegerParam(req.query['limit'], config.api.limits.responseRows);
+    let limitValue = lVal === '' ? config.api.limits.responseRows : lVal;
     limitQuery = 'limit ? ';
     limitParams.push(limitValue);
 
@@ -431,8 +431,8 @@ const convertMySqlStyleQueryToPostgress = function (sqlQuery, sqlParams) {
  */
 const getPaginationLink = function (req, isEnd, field, lastValue, order) {
     let urlPrefix;
-    if (process.env.PORT != undefined && process.env.INCLUDE_PATH_IN_NEXT_LINKS == 1) {
-        urlPrefix = req.protocol + '://' + req.hostname + ':' + process.env.PORT;
+    if (config.api.port != undefined && config.api.includeHostInLink == 1) {
+        urlPrefix = req.protocol + '://' + req.hostname + ':' + config.api.port;
     } else {
         urlPrefix = '';
     }
@@ -540,7 +540,7 @@ const secNsToSeconds = function (secNs) {
 * @return {Number} limit Max # entries to be returned.
 */
 const returnEntriesLimit = function (type) {
-    return (config.limits.RESPONSE_ROWS);
+    return (config.api.limits.responseRows);
 }
 
 /**
