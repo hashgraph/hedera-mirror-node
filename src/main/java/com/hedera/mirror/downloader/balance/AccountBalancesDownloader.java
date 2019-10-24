@@ -66,86 +66,29 @@ public class AccountBalancesDownloader extends Downloader {
 			final var sigFilesMap = downloadSigFiles();
 
 			// Verify signature files and download corresponding files of valid signature files
-			verifySigsAndDownloadBalanceFiles(sigFilesMap);
+			verifySigsAndDownloadDataFiles(sigFilesMap);
 		} catch (Exception e) {
 			log.error("Error downloading balance files", e);
 		}
 	}
 
-	/**
-	 *  For each group of signature Files with the same file name:
-	 *  (1) verify that the signature files are signed by corresponding node's PublicKey;
-	 *  (2) For valid signature files, we compare their Hashes to see if more than 2/3 Hashes matches.
-	 *  If more than 2/3 Hashes matches, we download the corresponding _Balances.csv file from a node folder which has valid signature file.
-	 *  (3) compare the Hash of _Balances.csv file with Hash which has been agreed on by valid signatures, if match, move the _Balances.csv file into `valid` directory; else download _Balances.csv file from other valid node folder, and compare the Hash until find a match one
-	 *  return the name of directory which contains valid _Balances.csv files
-	 * @param sigFilesMap
-	 * @throws Exception
-	 */
-	private void verifySigsAndDownloadBalanceFiles(Map<String, List<File>> sigFilesMap) throws Exception {
-		String lastValidBalanceFileName = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
-		String newLastValidBalanceFileName = lastValidBalanceFileName;
-
-		// reload address book and keys
-		NodeSignatureVerifier verifier = new NodeSignatureVerifier(networkAddressBook);
-        Path tmpDir = downloaderProperties.getTempPath();
-        Path validDir = downloaderProperties.getValidPath();
-
-		List<String> fileNames = new ArrayList<String>(sigFilesMap.keySet());
-		Collections.sort(fileNames);
-
-		for (String fileName : fileNames) {
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found, stopping");
-				break;
-			}
-
-			List<File> sigFiles = sigFilesMap.get(fileName);
-			boolean valid = false;
-
-			// If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
-			if (sigFiles == null || !Utility.greaterThanSuperMajorityNum(sigFiles.size(), nodeAccountIds.size())) {
-				log.warn("Signature file count does not exceed 2/3 of nodes");
-				continue;
-			}
-
-			// validSigFiles are signed by node'key and contains the same Hash which has been agreed by more than 2/3 nodes
-			final var hashAndvalidSigFiles = verifier.verifySignatureFiles(sigFiles);
-            final byte[] validHash = hashAndvalidSigFiles.getLeft();
-			for (File validSigFile : hashAndvalidSigFiles.getRight()) {
-				if (Utility.checkStopFile()) {
-					log.info("Stop file found, stopping");
-					break;
-				}
-
-				Pair<Boolean, File> fileResult = downloadFile(validSigFile);
-				File file = fileResult.getRight();
-				if (file != null && Utility.hashMatch(validHash, file)) {
-				    File destination = validDir.resolve(file.getName()).toFile();
-					if (moveFile(file, destination)) {
-						if (newLastValidBalanceFileName.isEmpty() ||
-								fileNameComparator.compare(newLastValidBalanceFileName, file.getName()) < 0) {
-							newLastValidBalanceFileName = file.getName();
-							log.debug("Verified signature file matches at least 2/3 of nodes: {}", fileName);
-						}
-						valid = true;
-						break;
-					}
-				} else if (file != null) {
-					log.warn("Hash doesn't match the hash contained in valid signature file. Will try to download a balance file with same timestamp from other nodes and check the Hash: {}", file);
-				}
-			}
-
-			if (!valid) {
-				log.error("File could not be verified by at least 2/3 of nodes: {}", fileName);
-			}
-		}
-		if (!newLastValidBalanceFileName.equals(lastValidBalanceFileName)) {
-			applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, newLastValidBalanceFileName);
-		}
-	}
-
     protected ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE;
+    }
+
+    protected ApplicationStatusCode getLastValidDownloadedFileHashKey() {
+        return null; // Not used since shouldVerifyHashChain returns false;
+    }
+
+    protected ApplicationStatusCode getBypassHashKey() {
+        return null; // Not used since shouldVerifyHashChain returns false;
+    }
+
+    protected boolean shouldVerifyHashChain() {
+        return false;
+    }
+
+    protected String getPrevFileHash(String filePath) {
+        return null;  // Only used if verifyHashChain() return true
     }
 }
