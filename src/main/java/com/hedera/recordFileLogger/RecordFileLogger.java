@@ -91,7 +91,7 @@ public class RecordFileLogger {
         ,CHARGED_TX_FEE
         ,INITIAL_BALANCE
         ,FK_REC_FILE_ID
-		,VALID_DURATION
+		,VALID_DURATION_SECONDS
 		,MAX_FEE
     }
 
@@ -179,7 +179,7 @@ public class RecordFileLogger {
 			sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
 					+ " (fk_node_acc_id, memo, valid_start_ns, fk_trans_type_id, fk_payer_acc_id"
 					+ ", fk_result_id, consensus_ns, fk_cud_entity_id, charged_tx_fee"
-					+ ", initial_balance, fk_rec_file_id, valid_duration, max_fee)"
+					+ ", initial_balance, fk_rec_file_id, valid_duration_seconds, max_fee)"
  					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
 					+ " (consensus_timestamp, account_id, amount)"
@@ -295,7 +295,7 @@ public class RecordFileLogger {
 		}
 		long fkNodeAccountId = entities.createOrGetEntity(body.getNodeAccountID());
 		TransactionID transactionID = body.getTransactionID();
-		Duration validDuration = body.getTransactionValidDuration();
+		long validDurationSeconds = body.hasTransactionValidDuration() ? body.getTransactionValidDuration().getSeconds() : null;
 
 		final var vs = transactionID.getTransactionValidStart();
 		final long validStartNs = Utility.convertInstantToNanos(Instant.ofEpochSecond(vs.getSeconds(), vs.getNanos()));
@@ -307,7 +307,7 @@ public class RecordFileLogger {
 		sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), validStartNs);
 		sqlInsertTransaction.setInt(F_TRANSACTION.FK_TRANS_TYPE_ID.ordinal(), getTransactionTypeId(body));
 		sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), fileId);
-		sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION.ordinal(), validDuration.getSeconds());
+		sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION_SECONDS.ordinal(), validDurationSeconds);
 
 		long fkPayerAccountId = entities.createOrGetEntity(transactionID.getAccountID());
 

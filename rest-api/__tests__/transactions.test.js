@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -101,10 +101,10 @@ const validateFields = function (transactions) {
 
     // Assert that all mandatory fields are present in the response
     ['consensus_timestamp', 'valid_start_timestamp', 'charged_tx_fee', 'transaction_id',
-     'memo_base64', 'result', 'name', 'node', 'transfers', 'valid_duration', 'max_fee'].forEach ( (field) =>{
+     'memo_base64', 'result', 'name', 'node', 'transfers', 'valid_duration_seconds', 'max_fee'].forEach ( (field) =>{
         ret = ret && transactions[0].hasOwnProperty(field);
     })
-    
+
     // Assert that the transfers is an array
     ret = ret && Array.isArray(transactions[0].transfers);
 
@@ -150,7 +150,7 @@ const validateOrder = function (transactions, order) {
  * This is the list of individual tests. Each test validates one query parameter
  * such as timestamp=1234 or account.id=gt:5678.
  * Definition of each test consists of the url string that is used in the query, and an
- * array of checks to be performed on the resultant SQL query. 
+ * array of checks to be performed on the resultant SQL query.
  * These individual tests can be combined to form complex combinations as shown in the
  * definition of combinedtests below.
  * NOTE: To add more tests, just give it a unique name, specifiy the url query string, and
@@ -215,7 +215,7 @@ const singletests = {
             {func: validateLen, args: [99]},
             {func: validateFields, args: []}
         ]
-    },    
+    },
     order_asc: {
         urlparam: 'order=asc',
         checks: [
@@ -250,16 +250,16 @@ const singletests = {
 
 /**
  * This list allows creation of combinations of individual tests to exercise presence
- * of mulitple query parameters. The combined query string is created by adding the query 
+ * of mulitple query parameters. The combined query string is created by adding the query
  * strings of each of the individual tests, and all checks from all of the individual tests
  * are performed on the resultant SQL query
- * NOTE: To add more combined tests, just add an entry to following array using the 
+ * NOTE: To add more combined tests, just add an entry to following array using the
  * individual (single) tests in the object above.
  */
 const combinedtests = [
     ['timestamp_lowerlimit', 'timestamp_higherlimit'],
     ['accountid_lowerlimit', 'accountid_higherlimit'],
-    ['timestamp_lowerlimit', 'timestamp_higherlimit', 
+    ['timestamp_lowerlimit', 'timestamp_higherlimit',
         'accountid-lowerlimit', 'accountid_higherlimit'],
     ['timestamp_lowerlimit', 'accountid_higherlimit', 'limit'],
     ['timestamp_higherlimit', 'accountid_lowerlimit', 'result_fail'],
@@ -308,7 +308,7 @@ describe('Transaction tests', () => {
                 combtest.urls.push(singletests[testname].urlparam);
                 combtest.checks = combtest.checks.concat(singletests[testname].checks);
                 combtest.checkFunctions = combtest.checkFunctions.concat(
-                    singletests[testname].hasOwnProperty('checkFunctions') ? 
+                    singletests[testname].hasOwnProperty('checkFunctions') ?
                         singletests[testname].checkFunctions : []
                 )
             }
@@ -344,5 +344,5 @@ describe('Transaction tests', () => {
     testutils.testBadParams(request, server, api, 'account.id', testutils.badParamsList());
     testutils.testBadParams(request, server, api, 'limit', testutils.badParamsList());
     testutils.testBadParams(request, server, api, 'order', testutils.badParamsList());
-    
+
 });

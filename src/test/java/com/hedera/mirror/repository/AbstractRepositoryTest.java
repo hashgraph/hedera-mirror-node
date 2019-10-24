@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 public abstract class AbstractRepositoryTest extends IntegrationTest {
-	
+
     @Resource
     protected TransactionRepository transactionRepository;
     @Resource
@@ -115,7 +115,7 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     	TransactionType transactionType = transactionTypeRepository.findByName(type).get();
     	transaction.setTransactionTypeId(transactionType.getId());
 		transaction.setValidStartNs(validStartNs);
-		transaction.setValidDuration(11L);
+		transaction.setValidDurationSeconds(11L);
 		transaction.setMaxFee(33L);
 
     	transaction = transactionRepository.save(transaction);

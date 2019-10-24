@@ -593,6 +593,15 @@ const encodeBase64 = function (buffer) {
     return ((null === buffer) ? null : buffer.toString('base64'));
 }
 
+/**
+ * 
+ * @param {Number} num Nullable number
+ * @returns {Any} value of paramter or null if null 
+ */
+const getNullableNumber = function(num) {
+    return num ? Number(num) : null;
+}
+
 module.exports = {
     parseParams: parseParams,
     parseCreditDebitParams: parseCreditDebitParams,
@@ -610,5 +619,6 @@ module.exports = {
     encodeBase64: encodeBase64,
     validateReq: validateReq,
     httpStatusCodes: httpStatusCodes,
-    ENTITY_TYPE_FILE: ENTITY_TYPE_FILE
+    ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
+    getNullableNumber: getNullableNumber
 }

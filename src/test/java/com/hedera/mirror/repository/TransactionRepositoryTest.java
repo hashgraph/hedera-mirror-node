@@ -66,7 +66,7 @@ public class TransactionRepositoryTest extends AbstractRepositoryTest {
 		transaction.setResultId(resultId);
 		transaction.setTransactionTypeId(transactionTypeId);
 		transaction.setValidStartNs(20L);
-		transaction.setValidDuration(11L);
+		transaction.setValidDurationSeconds(11L);
 		transaction.setMaxFee(33L);
 		return transaction;
 	}

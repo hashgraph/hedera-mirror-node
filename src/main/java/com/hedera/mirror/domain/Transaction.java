@@ -61,7 +61,7 @@ public class Transaction {
 
     private Long validStartNs;
 
-    private Long validDuration;
+    private Long validDurationSeconds;
 
     private Long maxFee;
 }
