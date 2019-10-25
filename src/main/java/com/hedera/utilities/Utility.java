@@ -74,10 +74,9 @@ public class Utility {
 	 * Verify if a file's hash is equal to the hash contained in sig file
 	 * @return
 	 */
-	public static boolean hashMatch(File sigFile, File rcdFile) {
+	public static boolean hashMatch(byte[] hash, File rcdFile) {
 		byte[] fileHash = Utility.getFileHash(rcdFile.getPath());
-		Pair<byte[], byte[]> sigPair = extractHashAndSigFromFile(sigFile);
-		return sigPair == null ? false : Arrays.equals(fileHash, sigPair.getLeft());
+		return Arrays.equals(fileHash, hash);
 	}
 	/**
 	 * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this signature
@@ -519,20 +518,10 @@ public class Utility {
 	}
 
 	public static String getAccountIDStringFromFilePath(String path) {
-		if (isRecordFile(path) || isRecordSigFile(path)) {
-			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.RCD);
-		} else if (isEventStreamFile(path) || isEventStreamSigFile(path)) {
-			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.EVENT);
-		} else {
-			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.BALANCE);
-		}
-	}
-
-	public static String getAccountIDStringFromFilePath(String path, Downloader.DownloadType type) {
 		String regex;
-		if (type == Downloader.DownloadType.RCD) {
+        if (isRecordFile(path) || isRecordSigFile(path)) {
 			regex = "record([\\d]+[.][\\d]+[.][\\d]+)";
-		} else if (type == Downloader.DownloadType.EVENT) {
+		} else if (isEventStreamFile(path) || isEventStreamSigFile(path)) {
 			regex = "events_([\\d]+[.][\\d]+[.][\\d]+)";
 		} else {
 			//account balance
