@@ -139,7 +139,7 @@ public abstract class Downloader {
 		 */
 		for (String nodeAccountId : nodeAccountIds) {
 			tasks.add(Executors.callable(() -> {
-				log.debug("Downloading {} signature files for node {} created after file {}", getType(), nodeAccountId, lastValidFileName);
+				log.debug("Downloading signature files for node {} created after file {}", nodeAccountId, lastValidFileName);
 				// Get a list of objects in the bucket, 100 at a time
 				String prefix = s3Prefix + nodeAccountId + "/";
 				int downloadCount = 0;
@@ -169,7 +169,7 @@ public abstract class Downloader {
 
 							String s3ObjectKey = summary.getKey();
 
-							if (isNeededSigFile(s3ObjectKey) &&
+							if (s3ObjectKey.endsWith("_sig") &&
 									(s3KeyComparator.compare(s3ObjectKey, prefix + lastValidFileName) > 0 || lastValidFileName.isEmpty())) {
 								Path saveTarget = downloaderProperties.getStreamPath().getParent().resolve(s3ObjectKey);
 								try {
@@ -213,10 +213,10 @@ public abstract class Downloader {
 						}
 					});
 					if (ref.count > 0) {
-						log.info("Downloaded {} {} signatures for node {} in {}", ref.count, getType(), nodeAccountId, stopwatch);
+						log.info("Downloaded {} signatures for node {} in {}", ref.count, nodeAccountId, stopwatch);
 					}
 				} catch (Exception e) {
-					log.error("Error downloading {} signature files for node {} after {}", getType(), nodeAccountId, stopwatch, e);
+					log.error("Error downloading signature files for node {} after {}", nodeAccountId, stopwatch, e);
 				}
 			}));
 		}
@@ -271,7 +271,7 @@ public abstract class Downloader {
 	}
 
 	protected Pair<Boolean, File> downloadFile(File sigFile) {
-		String fileName = getDataFileName(sigFile.getName());
+		String fileName = sigFile.getName().replace("_sig", "");
         String s3Prefix = downloaderProperties.getPrefix();
 
 		String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
@@ -288,8 +288,5 @@ public abstract class Downloader {
 		}
 	}
 
-    protected abstract DownloadType getType();
     protected abstract ApplicationStatusCode getLastValidDownloadedFileKey();
-    protected abstract String getDataFileName(String sigFileName);
-    protected abstract boolean isNeededSigFile(String s3ObjectKey);
 }

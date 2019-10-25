@@ -145,19 +145,7 @@ public class AccountBalancesDownloader extends Downloader {
 		}
 	}
 
-    protected DownloadType getType() {
-        return DownloadType.BALANCE;
-    }
-
     protected ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE;
-    }
-
-    protected String getDataFileName(String sigFileName) {
-        return sigFileName.replace("_Balances.csv_sig", "_Balances.csv");
-    }
-
-    protected boolean isNeededSigFile(String s3ObjectKey) {
-        return Utility.isBalanceSigFile(s3ObjectKey);
     }
 }

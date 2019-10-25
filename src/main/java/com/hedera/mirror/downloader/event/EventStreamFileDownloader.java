@@ -179,19 +179,7 @@ public class EventStreamFileDownloader extends Downloader {
 		}
 	}
 
-    protected DownloadType getType() {
-        return DownloadType.EVENT;
-    }
-
     protected ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE;
-    }
-
-    protected String getDataFileName(String sigFileName) {
-        return sigFileName.replace(".evts_sig", ".evts");
-    }
-
-    protected boolean isNeededSigFile(String s3ObjectKey) {
-        return Utility.isEventStreamSigFile(s3ObjectKey);
     }
 }

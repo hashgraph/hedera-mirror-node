@@ -21,7 +21,6 @@ package com.hedera.mirror.downloader.record;
  */
 
 import com.hedera.mirror.domain.StreamType;
-import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.downloader.DownloaderProperties;
 import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.downloader.CommonDownloaderProperties;
