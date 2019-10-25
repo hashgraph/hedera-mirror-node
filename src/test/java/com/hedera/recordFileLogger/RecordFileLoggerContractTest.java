@@ -21,10 +21,8 @@ package com.hedera.recordFileLogger;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.ContractResult;
 import com.hedera.mirror.domain.Entities;
-import com.hedera.mirror.parser.record.RecordParserProperties;
 import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
 import com.hedera.utilities.Utility;
@@ -73,17 +71,14 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
 	private static final String realmAdminKey = "112212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
  	private static final String memo = "Contract test memo";
  	
- 	private MirrorProperties mirrorProperties = new MirrorProperties();
-
     @BeforeEach
     void before() throws Exception {
-        RecordFileLogger.parserProperties = new RecordParserProperties(mirrorProperties);
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-        RecordFileLogger.parserProperties.setPersistFiles(true);
-        RecordFileLogger.parserProperties.setPersistSystemFiles(true);
-		RecordFileLogger.parserProperties.setPersistContracts(true);
-		RecordFileLogger.parserProperties.setPersistCryptoTransferAmounts(true);
+        parserProperties.setPersistFiles(true);
+        parserProperties.setPersistSystemFiles(true);
+		parserProperties.setPersistContracts(true);
+		parserProperties.setPersistCryptoTransferAmounts(true);
 	}
 
     @AfterEach
@@ -195,7 +190,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     @Test
     void contractCreateDoNotPersist() throws Exception {
 
-        RecordFileLogger.parserProperties.setPersistContracts(false);
+        parserProperties.setPersistContracts(false);
         
     	final Transaction transaction = contractCreateTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -724,7 +719,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     @Test
     void contractCallDoNotPersist() throws Exception {
 
-        RecordFileLogger.parserProperties.setPersistContracts(false);
+        parserProperties.setPersistContracts(false);
 
     	// now call
     	final Transaction transaction = contractCallTransaction();
