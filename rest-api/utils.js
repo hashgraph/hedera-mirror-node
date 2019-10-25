@@ -604,7 +604,7 @@ const encodeBase64 = function (buffer) {
 
 /**
  * 
- * @param {Math.bignumber} num Nullable number
+ * @param {String} num Nullable number
  * @returns {Any} representation of math.bignumber value of parameter or null if null 
  */
 const getNullableNumber = function(num) {

@@ -292,6 +292,8 @@ const getOneTransaction = function (req, res) {
         "   , eaccount.entity_num as account_num\n" +
         "   , amount\n" +
         "   , charged_tx_fee\n" +
+        "   , valid_duration_seconds\n" +
+        "   , max_fee\n" +
         " from t_transactions t\n" +
         "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +
         "   join t_entities enode on enode.id = t.fk_node_acc_id\n" +
