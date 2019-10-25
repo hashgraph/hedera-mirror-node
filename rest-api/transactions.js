@@ -19,7 +19,6 @@
  */
 'use strict';
 const utils = require('./utils.js');
-const billion = 1000000000;
 
 /**
  * Create transferlists from the output of SQL queries. The SQL table has different
@@ -256,7 +255,7 @@ const getTransactions = function (req) {
  * @return {} None.
  */
 const getOneTransaction = function (req, res) {
-    logger.debug("--------------------  getTransactions --------------------");
+    logger.debug("--------------------  getOneTransaction --------------------");
     logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
 
     // The transaction id is in the format of 'shard.realm.num-ssssssssss-nnnnnnnnn'
@@ -331,11 +330,11 @@ const getOneTransaction = function (req, res) {
         const tl = createTransferLists(results.rows, ret);
         ret = tl.ret;
 
-        // if (ret.transactions.length === 0) {
-        //     res.status(404)
-        //         .send('Not found');
-        //     return;
-        // }
+        if (ret.transactions.length === 0) {
+            res.status(404)
+                .send('Not found');
+            return;
+        }
 
         if (process.env.NODE_ENV === 'test') {
             ret.sqlQuery = results.sqlQuery;

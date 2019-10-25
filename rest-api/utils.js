@@ -604,11 +604,11 @@ const encodeBase64 = function (buffer) {
 
 /**
  * 
- * @param {Any} num Nullable number
- * @returns {Any} Number value of parameter or null if null 
+ * @param {Math.bignumber} num Nullable number
+ * @returns {Any} representation of math.bignumber value of parameter or null if null 
  */
 const getNullableNumber = function(num) {
-    return num == null ? null : Number(num);
+    return num == null ? null : math.bignumber(num).toString();
 }
 
 /**
