@@ -27,21 +27,12 @@ import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.parser.event.EventStreamFileParser;
-import com.hedera.mirror.downloader.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
 
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.inject.Named;
-import java.io.File;
-import java.nio.file.*;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Log4j2
 @Named

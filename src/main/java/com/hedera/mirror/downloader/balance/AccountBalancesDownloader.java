@@ -20,13 +20,6 @@ package com.hedera.mirror.downloader.balance;
  * ‍
  */
 
-import java.io.File;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import com.amazonaws.services.s3.transfer.TransferManager;
 
 import com.hedera.mirror.addressbook.NetworkAddressBook;
@@ -34,9 +27,7 @@ import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.tuple.Pair;
 
-import com.hedera.mirror.downloader.NodeSignatureVerifier;
 import com.hedera.utilities.Utility;
 import org.springframework.scheduling.annotation.Scheduled;
 
