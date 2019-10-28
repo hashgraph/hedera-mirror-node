@@ -112,7 +112,7 @@ const instantiateDatabase = async function() {
 const flywayMigrate = function() {
     console.log('Using flyway CLI to construct schema');
     let exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
-    let configPath = 'config/.node-flywaydb.integration.conf';
+    let configPath = path.join('config', '.node-flywaydb.integration.conf');
     let flywayEnv = {env: Object.assign({}, {
         'FLYWAY_URL': `jdbc:postgresql://${dbHost}:${dbPort}/${dbName}`
         ,'FLYWAY_USER': dbUser
