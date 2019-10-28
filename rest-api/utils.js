@@ -522,6 +522,15 @@ const nsToSecNs = function (ns) {
 }
 
 /**
+* Converts nanoseconds since epoch to seconds-nnnnnnnnn format
+* @param {String} ns Nanoseconds since epoch
+* @return {String} Seconds since epoch (seconds-nnnnnnnnn format) 
+*/
+const nsToSecNsWithHyphen = function (ns) {
+    return nsToSecNs(ns).replace(".", "-");
+}
+
+/**
 * Converts seconds since epoch (seconds.nnnnnnnnn format) to  nanoseconds
 * @param {String} Seconds since epoch (seconds.nnnnnnnnn format) 
 * @return {String} ns Nanoseconds since epoch
@@ -593,6 +602,27 @@ const encodeBase64 = function (buffer) {
     return ((null === buffer) ? null : buffer.toString('base64'));
 }
 
+/**
+ * 
+ * @param {String} num Nullable number
+ * @returns {Any} representation of math.bignumber value of parameter or null if null 
+ */
+const getNullableNumber = function(num) {
+    return num == null ? null : math.bignumber(num).toString();
+}
+
+/**
+ * Construct a transaction id using format: shard.realm.num-sssssssssss-nnnnnnnnn
+ * @param {String} shard shard number
+ * @param {String} realm realm number
+ * @param {String} num entity number
+ * @param {String} validStartTimestamp valid start time 
+ * @returns {String} transactionId of format format: shard.realm.num-sssssssssss-nnnnnnnnn
+ */
+const createTransactionId = function (shard, realm, num, validStartTimestamp) {
+    return shard + '.' + realm + '.' + num + '-' + nsToSecNsWithHyphen(validStartTimestamp);
+}
+
 module.exports = {
     parseParams: parseParams,
     parseCreditDebitParams: parseCreditDebitParams,
@@ -610,5 +640,8 @@ module.exports = {
     encodeBase64: encodeBase64,
     validateReq: validateReq,
     httpStatusCodes: httpStatusCodes,
-    ENTITY_TYPE_FILE: ENTITY_TYPE_FILE
+    ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
+    getNullableNumber: getNullableNumber,
+    nsToSecNsWithHyphen: nsToSecNsWithHyphen,
+    createTransactionId: createTransactionId
 }

@@ -30,11 +30,12 @@ import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
 import com.hedera.mirror.domain.TransactionResult;
 import com.hedera.mirror.domain.TransactionType;
+
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 public abstract class AbstractRepositoryTest extends IntegrationTest {
-	
+
     @Resource
     protected TransactionRepository transactionRepository;
     @Resource
@@ -113,7 +114,9 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     	transaction.setResultId(result.getId());
     	TransactionType transactionType = transactionTypeRepository.findByName(type).get();
     	transaction.setTransactionTypeId(transactionType.getId());
-    	transaction.setValidStartNs(validStartNs);
+		transaction.setValidStartNs(validStartNs);
+		transaction.setValidDurationSeconds(11L);
+		transaction.setMaxFee(33L);
 
     	transaction = transactionRepository.save(transaction);
 

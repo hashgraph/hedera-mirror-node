@@ -138,6 +138,8 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
                 ,() -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
                 ,() -> assertAccount(transactionBody.getTransactionID().getAccountID(), dbPayerEntity)
                 ,() -> assertEquals(Utility.timeStampInNanos(transactionBody.getTransactionID().getTransactionValidStart()), dbTransaction.getValidStartNs())
+                ,() -> assertEquals(transactionBody.getTransactionValidDuration().getSeconds(), dbTransaction.getValidDurationSeconds())
+                ,() -> assertEquals(transactionBody.getTransactionFee(), dbTransaction.getMaxFee())
          );
     }
     protected final SignatureMap getSigMap() {

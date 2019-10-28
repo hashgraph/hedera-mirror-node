@@ -21,6 +21,7 @@ package com.hedera.mirror.repository;
  */
 
 import com.hedera.mirror.domain.Transaction;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -65,6 +66,8 @@ public class TransactionRepositoryTest extends AbstractRepositoryTest {
 		transaction.setResultId(resultId);
 		transaction.setTransactionTypeId(transactionTypeId);
 		transaction.setValidStartNs(20L);
+		transaction.setValidDurationSeconds(11L);
+		transaction.setMaxFee(33L);
 		return transaction;
 	}
 }
