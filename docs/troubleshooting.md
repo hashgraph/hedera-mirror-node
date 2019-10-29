@@ -64,6 +64,7 @@ Some of these messages may indicate an integration issue between Hedera services
 - `Account balance dataset timestamp mismatch!`
 - `ERRORS processing account balances file`
 - `Application status code .* does not exist in the database`
+- `Long overflow when converting Instant to nanos timestamp : *`
 
 ## Messages that may not require escalation
 

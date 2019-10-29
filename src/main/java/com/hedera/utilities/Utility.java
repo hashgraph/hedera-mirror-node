@@ -590,26 +590,26 @@ public class Utility {
 		return n > N * 2 / 3.0;
 	}
 
-	/**
-	 * Convert an Instant to a Long type timestampInNanos
-	 * @param instant
-	 * @return
-	 */
-	public static Long convertInstantToNanos(Instant instant) {
-		if (instant == null) {
-			return null;
-		}
-		return instant.getEpochSecond() * SCALAR + instant.getNano();
-	}
+    /**
+     * Convert an Instant to a Long type timestampInNanos
+     */
+    public static Long convertInstantToNanos(Instant instant) {
+        if (instant == null) {
+            return null;
+        }
+        try {
+            return Math.addExact(Math.multiplyExact(instant.getEpochSecond(), SCALAR), instant.getNano());
+        } catch (ArithmeticException e) {
+            log.error("Long overflow when converting Instant to nanos timestamp : {}", instant, e);
+            throw e;
+        }
+    }
 
-	/**
-	 * Convert seconds and nanos to a Long type timeStampInNanos
-	 * @param seconds
-	 * @param nanos
-	 * @return
-	 */
-    public static Long timeStampInNanos(long seconds, int nanos) {
-	  return seconds * SCALAR + nanos;
+    /**
+     * Converts time in (second, nanos) to time in only nanos.
+     */
+    public static Long convertToNanos(long second, long nanos) {
+        return convertInstantToNanos(Instant.ofEpochSecond(second, nanos));
     }
 
 	/**

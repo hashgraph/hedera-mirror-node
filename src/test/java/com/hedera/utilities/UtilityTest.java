@@ -218,7 +218,7 @@ public class UtilityTest {
             "0,0"
     })
 	public void timeStampInNanosSecondNano(long seconds, int nanos)  {
-    	Long timeStamp = Utility.timeStampInNanos(seconds, nanos);
+    	Long timeStamp = Utility.convertToNanos(seconds, nanos);
 		Instant fromTimeStamp = Utility.convertNanosToInstant(timeStamp);
 
 		assertAll(

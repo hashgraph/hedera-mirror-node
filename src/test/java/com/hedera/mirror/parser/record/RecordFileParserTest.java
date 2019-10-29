@@ -145,4 +145,15 @@ public class RecordFileParserTest extends IntegrationTest {
 
         assertThat(transactionRepository.findAll()).hasSize(19 + 15);
     }
+
+    // Bad record with invalid timestamp should fail the file parsing and rollback the transaction.
+    @Test
+    void badTimestampLongOverflowTest() throws Exception {
+        FileCopier.create(testPath, dataPath)
+                .from("badTimestampLongOverflowTest")
+                .to(streamType.getPath(), streamType.getValid()).copy();
+        recordFileParser.parse();
+        assertThat(Files.walk(parserProperties.getParsedPath())).filteredOn(p -> !p.toFile().isDirectory()).hasSize(0);
+        assertThat(transactionRepository.count()).isEqualTo(0L);
+    }
 }
