@@ -63,7 +63,7 @@ public class AccountBalancesDownloader extends Downloader {
 			}
 
 			// balance files with sig verification
-			final var sigFilesMap = downloadSigFiles(DownloadType.BALANCE);
+			final var sigFilesMap = downloadSigFiles();
 
 			// Verify signature files and download corresponding files of valid signature files
 			verifySigsAndDownloadBalanceFiles(sigFilesMap);
@@ -110,16 +110,17 @@ public class AccountBalancesDownloader extends Downloader {
 			}
 
 			// validSigFiles are signed by node'key and contains the same Hash which has been agreed by more than 2/3 nodes
-			List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
-			for (File validSigFile : validSigFiles) {
+			final var hashAndvalidSigFiles = verifier.verifySignatureFiles(sigFiles);
+            final byte[] validHash = hashAndvalidSigFiles.getLeft();
+			for (File validSigFile : hashAndvalidSigFiles.getRight()) {
 				if (Utility.checkStopFile()) {
 					log.info("Stop file found, stopping");
 					break;
 				}
 
-				Pair<Boolean, File> fileResult = downloadFile(DownloadType.BALANCE, validSigFile, tmpDir);
+				Pair<Boolean, File> fileResult = downloadFile(validSigFile);
 				File file = fileResult.getRight();
-				if (file != null && Utility.hashMatch(validSigFile, file)) {
+				if (file != null && Utility.hashMatch(validHash, file)) {
 				    File destination = validDir.resolve(file.getName()).toFile();
 					if (moveFile(file, destination)) {
 						if (newLastValidBalanceFileName.isEmpty() ||
@@ -143,4 +144,8 @@ public class AccountBalancesDownloader extends Downloader {
 			applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, newLastValidBalanceFileName);
 		}
 	}
+
+    protected ApplicationStatusCode getLastValidDownloadedFileKey() {
+        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE;
+    }
 }

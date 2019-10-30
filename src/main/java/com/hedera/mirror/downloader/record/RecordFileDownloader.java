@@ -60,7 +60,7 @@ public class RecordFileDownloader extends Downloader {
 				return;
 			}
 
-			final var sigFilesMap = downloadSigFiles(DownloadType.RCD);
+			final var sigFilesMap = downloadSigFiles();
 			verifySigsAndDownloadRecordFiles(sigFilesMap);
 		} catch (Exception e) {
 			log.error("Error downloading and verifying new record files", e);
@@ -103,7 +103,6 @@ public class RecordFileDownloader extends Downloader {
 	private void verifySigsAndDownloadRecordFiles(Map<String, List<File>> sigFilesMap) {
 		// reload address book and keys
 		NodeSignatureVerifier verifier = new NodeSignatureVerifier(networkAddressBook);
-		Path tmpDir = downloaderProperties.getTempPath();
         Path validDir = downloaderProperties.getValidPath();
 
 		List<String> fileNames = new ArrayList<String>(sigFilesMap.keySet());
@@ -125,17 +124,18 @@ public class RecordFileDownloader extends Downloader {
 			}
 
 			// validSigFiles are signed by node key and contains the same hash which has been agreed by more than 2/3 nodes
-			List<File> validSigFiles = verifier.verifySignatureFiles(sigFiles);
-			for (File validSigFile : validSigFiles) {
+            final var hashAndvalidSigFiles = verifier.verifySignatureFiles(sigFiles);
+			final byte[] validHash = hashAndvalidSigFiles.getLeft();
+			for (File validSigFile : hashAndvalidSigFiles.getRight()) {
 				if (Utility.checkStopFile()) {
 					log.info("Stop file found, stopping");
 					break;
 				}
 
 				try {
-					Pair<Boolean, File> rcdFileResult = downloadFile(DownloadType.RCD, validSigFile, tmpDir);
+					Pair<Boolean, File> rcdFileResult = downloadFile(validSigFile);
 					File rcdFile = rcdFileResult.getRight();
-					if (rcdFile != null && Utility.hashMatch(validSigFile, rcdFile)) {
+					if (rcdFile != null && Utility.hashMatch(validHash, rcdFile)) {
 						if (verifyHashChain(rcdFile)) {
 							// move the file to the valid directory
 							String name = rcdFile.getName();
@@ -164,4 +164,7 @@ public class RecordFileDownloader extends Downloader {
 		}
 	}
 
+    protected ApplicationStatusCode getLastValidDownloadedFileKey() {
+        return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE;
+    }
 }

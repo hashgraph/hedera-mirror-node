@@ -99,7 +99,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoCreateTest() throws Exception {
+	void cryptoCreate() throws Exception {
 
 		final Transaction transaction = cryptoCreateTransaction();
 		final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -149,7 +149,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoCreateBatchTest() throws Exception {
+	void cryptoCreateBatch() throws Exception {
 
 		long testBatchSize = 10;
 		RecordFileLogger.setBatchSize(testBatchSize);
@@ -172,9 +172,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoCreateTransactionWithBodyTest() throws Exception {
+	void cryptoCreateTransactionWithBody() throws Exception {
 
-		final Transaction transaction = cryptoCreateTransactionWithBody();
+		final Transaction transaction = createTransactionWithBody();
 		final TransactionBody transactionBody = transaction.getBody();
 		final CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
 		final TransactionRecord record = transactionRecordSuccess(transactionBody);
@@ -222,7 +222,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoCreateFailedTransactionTest() throws Exception {
+	void cryptoCreateFailedTransaction() throws Exception {
 
 		final Transaction transaction = cryptoCreateTransaction();
 		final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -272,7 +272,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoCreateInitialBalanceInTransferListTest() throws Exception {
+	void cryptoCreateInitialBalanceInTransferList() throws Exception {
 
 		final Transaction transaction = cryptoCreateTransaction();
 		final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -330,7 +330,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoCreateTwiceTest() throws Exception {
+	void cryptoCreateTwice() throws Exception {
 
 		final Transaction firstTransaction = cryptoCreateTransaction();
 		final TransactionBody firstTransactionBody = TransactionBody.parseFrom(firstTransaction.getBodyBytes());
@@ -386,7 +386,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoUpdateSuccessfulTransactionTest() throws Exception {
+	void cryptoUpdateSuccessfulTransaction() throws Exception {
 
 		// first create the account
 		final Transaction createTransaction = cryptoCreateTransaction();
@@ -443,7 +443,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoUpdateFailedTransactionTest() throws Exception {
+	void cryptoUpdateFailedTransaction() throws Exception {
 
 		// first create the account
 		final Transaction createTransaction = cryptoCreateTransaction();
@@ -491,7 +491,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoDeleteSuccessfulTransactionTest() throws Exception {
+	void cryptoDeleteSuccessfulTransaction() throws Exception {
 
 		// first create the account
 		final Transaction createTransaction = cryptoCreateTransaction();
@@ -547,7 +547,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoDeleteFailedTransactionTest() throws Exception {
+	void cryptoDeleteFailedTransaction() throws Exception {
 
 		// first create the account
 		final Transaction createTransaction = cryptoCreateTransaction();
@@ -603,7 +603,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoAddClaimPersistTest() throws Exception {
+	void cryptoAddClaimPersist() throws Exception {
 
 		// first create the account
 		final Transaction createTransaction = cryptoCreateTransaction();
@@ -653,7 +653,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoAddClaimDoNotPersistTest() throws Exception {
+	void cryptoAddClaimDoNotPersist() throws Exception {
 	    RecordFileLogger.parserProperties.setPersistClaims(false);
 		// first create the account
 		final Transaction createTransaction = cryptoCreateTransaction();
@@ -700,7 +700,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoDeleteClaimTest() throws Exception {
+	void cryptoDeleteClaim() throws Exception {
 
 		// first create the account
 		final Transaction createTransaction = cryptoCreateTransaction();
@@ -755,7 +755,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoTransferWithPersistenceTest() throws Exception {
+	void cryptoTransferWithPersistence() throws Exception {
 	    RecordFileLogger.parserProperties.setPersistCryptoTransferAmounts(true);
 		// make the transfers
 		final Transaction transaction = cryptoTransferTransaction();
@@ -789,7 +789,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 	}
 
 	@Test
-	void cryptoTransferWithoutPersistenceTest() throws Exception {
+	void cryptoTransferWithoutPersistence() throws Exception {
 	    RecordFileLogger.parserProperties.setPersistCryptoTransferAmounts(false);
 		// make the transfers
 		final Transaction transaction = cryptoTransferTransaction();
@@ -881,7 +881,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 		return transaction.build();
 	}
 
-	private Transaction cryptoCreateTransactionWithBody() {
+	private Transaction createTransactionWithBody() {
 
 		final Transaction.Builder transaction = Transaction.newBuilder();
 		final CryptoCreateTransactionBody.Builder cryptoCreate = CryptoCreateTransactionBody.newBuilder();

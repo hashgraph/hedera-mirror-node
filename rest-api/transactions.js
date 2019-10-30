@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,18 +19,17 @@
  */
 'use strict';
 const utils = require('./utils.js');
-const billion = 1000000000;
 
 /**
- * Create transferlists from the output of SQL queries. The SQL table has different 
+ * Create transferlists from the output of SQL queries. The SQL table has different
  * rows for each of the transfers in a single transaction. This function collates all
- * transfers into a single list. 
+ * transfers into a single list.
  * @param {Array of objects} rows Array of rows returned as a result of an SQL query
- * @param {Array} arr REST API return array  
+ * @param {Array} arr REST API return array
  * @return {Array} arr Updated REST API return array
  */
 const createTransferLists = function (rows, arr) {
-    // If the transaction has a transferlist (i.e. list of individual trasnfers, it 
+    // If the transaction has a transferlist (i.e. list of individual trasnfers, it
     // will show up as separate rows. Combine those into a single transferlist for
     // a given consensus_ns (Note that there could be two records for the same
     // transaction-id where one would pass and others could fail as duplicates)
@@ -48,16 +47,13 @@ const createTransferLists = function (rows, arr) {
             transactions[row.consensus_ns]['result'] = row['result'];
             transactions[row.consensus_ns]['result'] = row['result'];
             transactions[row.consensus_ns]['name'] = row['name'];
+            transactions[row.consensus_ns]['max_fee'] = utils.getNullableNumber(row['max_fee']);
+            transactions[row.consensus_ns]['valid_duration_seconds'] = utils.getNullableNumber(row['valid_duration_seconds']);
             transactions[row.consensus_ns]['node'] =
                 row.node_shard + '.' + row.node_realm + '.' + row.node_num;
 
             // Construct a transaction id using format: shard.realm.num-sssssssssss-nnnnnnnnn
-            transactions[row.consensus_ns]['transaction_id'] =
-                row.entity_shard + '.' +
-                row.entity_realm + '.' +
-                row.entity_num + '-' +
-                Math.floor(validStartTimestamp / billion) + '-' +
-                String(validStartTimestamp % billion).padStart(9, '0');
+            transactions[row.consensus_ns]['transaction_id'] = utils.createTransactionId(row.entity_shard,row.entity_realm,row.entity_num,validStartTimestamp);
 
             transactions[row.consensus_ns].transfers = []
         }
@@ -80,17 +76,17 @@ const createTransferLists = function (rows, arr) {
 }
 
 /**
- * Cryptotransfer transactions queries are orgnaized as follows: First there's an inner query that selects the 
- * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to 
- * extract all relevant information for those transactions. 
+ * Cryptotransfer transactions queries are orgnaized as follows: First there's an inner query that selects the
+ * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
+ * extract all relevant information for those transactions.
  * This function returns the outer query base on the consensus_timestamps list returned by the inner query.
  * Also see: getTransactionsInnerQuery function
  * @param {String} innerQuery SQL query that provides a list of unique transactions that match the query criteria
- * @param {String} order Sorting order  
+ * @param {String} order Sorting order
  * @return {String} outerQuery Fully formed SQL query
  */
 const getTransactionsOuterQuery = function (innerQuery, order) {
-    let outerQuery = 
+    let outerQuery =
         "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
         "   , t.memo\n" +
         '	, t.consensus_ns\n' +
@@ -108,6 +104,8 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
         "   , eaccount.entity_num as account_num\n" +
         "   , amount\n" +
         "   , t.charged_tx_fee\n" +
+        "   , t.valid_duration_seconds\n" +
+        "   , t.max_fee\n" +
         " from (" + innerQuery + ") as tlist\n" +
         "   join t_transactions t on tlist.consensus_timestamp = t.consensus_ns\n" +
         "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +
@@ -121,9 +119,9 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
 }
 
 /**
- * Cryptotransfer transactions queries are orgnaized as follows: First there's an inner query that selects the 
- * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to 
- * extract all relevant information for those transactions. 
+ * Cryptotransfer transactions queries are orgnaized as follows: First there's an inner query that selects the
+ * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
+ * extract all relevant information for those transactions.
  * This function forms the inner query base based on all the query criteria specified in the REST URL
  * It selects a list of unique transactions (consensus_timestamps).
  * Also see: getTransactionsOuterQuery function
@@ -132,7 +130,7 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
  * @param {String} resultTypeQuery SQL query that filters based on the result types
  * @param {String} limitQuery SQL query that limits the number of unique transactions returned
  * @param {String} creditDebit Either 'credit', 'debit' to filter based on credit or debit transactions
- * @param {String} order Sorting order  
+ * @param {String} order Sorting order
  * @return {String} innerQuery SQL query that filters transactions based on various types of queries
  */
 const getTransactionsInnerQuery = function (accountQuery, tsQuery, resultTypeQuery, limitQuery, creditDebit, order) {
@@ -257,7 +255,7 @@ const getTransactions = function (req) {
  * @return {} None.
  */
 const getOneTransaction = function (req, res) {
-    logger.debug("--------------------  getTransactions --------------------");
+    logger.debug("--------------------  getOneTransaction --------------------");
     logger.debug("Client: [" + req.ip + "] URL: " + req.originalUrl);
 
     // The transaction id is in the format of 'shard.realm.num-ssssssssss-nnnnnnnnn'
@@ -271,7 +269,7 @@ const getOneTransaction = function (req, res) {
         return;
     }
     const sqlParams = [
-        txIdMatches[1], txIdMatches[2], txIdMatches[3], 
+        txIdMatches[1], txIdMatches[2], txIdMatches[3],
         txIdMatches[4] + '' + txIdMatches[5]
     ];
 
@@ -294,6 +292,8 @@ const getOneTransaction = function (req, res) {
         "   , eaccount.entity_num as account_num\n" +
         "   , amount\n" +
         "   , charged_tx_fee\n" +
+        "   , valid_duration_seconds\n" +
+        "   , max_fee\n" +
         " from t_transactions t\n" +
         "   join t_transaction_results ttr on ttr.id = t.fk_result_id\n" +
         "   join t_entities enode on enode.id = t.fk_node_acc_id\n" +
@@ -310,7 +310,7 @@ const getOneTransaction = function (req, res) {
     const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(
         sqlQuery, sqlParams);
 
-    logger.debug("getTransactions query: " +
+    logger.debug("getOneTransaction query: " +
         pgSqlQuery + JSON.stringify(sqlParams));
 
     // Execute query
@@ -327,6 +327,8 @@ const getOneTransaction = function (req, res) {
             return;
         }
 
+        logger.debug("# rows returned: " +
+            results.rows.length);
         const tl = createTransferLists(results.rows, ret);
         ret = tl.ret;
 
