@@ -24,7 +24,7 @@ var acceptanceTestsAccounts = (function () {
     const server = process.env.TARGET;
     const acctestutils = require('./acceptancetest_utils.js');
     const config = require('../config.js');
-    const responseRows = config.api.limits.responseRows;
+    const maxLimit = config.api.maxLimit;
 
     beforeAll(async () => {
         moduleVars.verbose && console.log('Jest starting!');
@@ -62,9 +62,9 @@ var acceptanceTestsAccounts = (function () {
         expect(response.status).toEqual(200);
         let accounts = JSON.parse(response.text).accounts;
 
-        expect(accounts.length).toBe(responseRows);
+        expect(accounts.length).toBe(maxLimit);
 
-        if (accounts.length !== responseRows) {
+        if (accounts.length !== maxLimit) {
             return (false);
         }
         moduleVars.testAccounts = {
@@ -120,7 +120,7 @@ var acceptanceTestsAccounts = (function () {
             const response = await request(server).get(moduleVars.apiPrefix + '/accounts');
             expect(response.status).toEqual(200);
             let accounts = JSON.parse(response.text).accounts;
-            expect(accounts.length).toBe(responseRows);
+            expect(accounts.length).toBe(maxLimit);
 
             // Assert that all mandatory fields are present in the response
             let check = checkMandatoryParams(accounts[0]);
@@ -226,7 +226,7 @@ var acceptanceTestsAccounts = (function () {
             const response = await request(server).get(url);
             expect(response.status).toEqual(200);
             let accounts = JSON.parse(response.text).accounts;
-            expect(accounts.length).toEqual(responseRows);
+            expect(accounts.length).toEqual(maxLimit);
             let check = true;
             let prevAcc = Number.MAX_SAFE_INTEGER;
             for (let acc of accounts) {
@@ -247,7 +247,7 @@ var acceptanceTestsAccounts = (function () {
             // of 1000 entries to see if there is any overlap or gaps in the returned responses.
             let paginatedEntries = [];
             const numPages = 5;
-            const pageSize = responseRows / numPages;
+            const pageSize = maxLimit / numPages;
             let next = null;
             for (let index = 0; index < numPages; index++) {
                 const nextUrl = paginatedEntries.length === 0 ?
@@ -271,7 +271,7 @@ var acceptanceTestsAccounts = (function () {
 
             // Check if the accounts numbers match for each entry
             check = true;
-            for (i = 0; i < responseRows; i++) {
+            for (i = 0; i < maxLimit; i++) {
                 if (moduleVars.testAcc[i].account !== paginatedEntries[i].account) {
                     check = false;
                 }

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -167,7 +167,7 @@ const validateOrder = function (balances, order) {
  * This is the list of individual tests. Each test validates one query parameter
  * such as timestamp=1234 or account.id=gt:5678.
  * Definition of each test consists of the url string that is used in the query, and an
- * array of checks to be performed on the resultant SQL query. 
+ * array of checks to be performed on the resultant SQL query.
  * These individual tests can be combined to form complex combinations as shown in the
  * definition of combinedtests below.
  * NOTE: To add more tests, just give it a unique name, specifiy the url query string, and
@@ -201,7 +201,7 @@ const singletests = {
         ],
         checkFunctions: [
             {func: validateTsRange, args: [
-                timeOneHourAgo - config.api.limits.responseRows, timeOneHourAgo]},
+                timeOneHourAgo - config.api.maxLimit, timeOneHourAgo]},
             {func: validateFields, args: []}
         ]
     },
@@ -270,7 +270,7 @@ const singletests = {
             {func: validateLen, args: [99]},
             {func: validateFields, args: []}
         ]
-    },    
+    },
     order_asc: {
         urlparam: 'order=asc',
         checks: [
@@ -293,16 +293,16 @@ const singletests = {
 
 /**
  * This list allows creation of combinations of individual tests to exercise presence
- * of mulitple query parameters. The combined query string is created by adding the query 
+ * of mulitple query parameters. The combined query string is created by adding the query
  * strings of each of the individual tests, and all checks from all of the individual tests
  * are performed on the resultant SQL query
- * NOTE: To add more combined tests, just add an entry to following array using the 
+ * NOTE: To add more combined tests, just add an entry to following array using the
  * individual (single) tests in the object above.
  */
 const combinedtests = [
     ['timestamp_lowerlimit', 'timestamp_higherlimit'],
     ['accountid_lowerlimit', 'accountid_higherlimit'],
-    ['timestamp_lowerlimit', 'timestamp_higherlimit', 
+    ['timestamp_lowerlimit', 'timestamp_higherlimit',
         'accountid_lowerlimit', 'accountbalance_higherlimit'],
     ['timestamp_lowerlimit', 'accountid_equal', 'accountbalance_lowerlimit', 'limit'],
     ['timestamp_higherlimit', 'accountid_lowerlimit'],

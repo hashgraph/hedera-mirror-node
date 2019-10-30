@@ -40,10 +40,10 @@ function load(configPath) {
 
   try {
     let doc = yaml.safeLoad(fs.readFileSync(configFile, 'utf8'));
-    console.log(`Loaded configuration source: ${configFile}`);
+    logger.info(`Loaded configuration source: ${configFile}`);
     extend(true, config, doc);
   } catch (err) {
-    console.log(`Skipping configuration ${configFile}: ${err}`);
+    logger.error(`Skipping configuration ${configFile}: ${err}`);
   }
 }
 

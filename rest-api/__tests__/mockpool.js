@@ -22,6 +22,7 @@
 const testutils = require('./testutils.js');
 const config = require('../config.js');
 const math = require('mathjs');
+const maxLimit = config.api.maxLimit;
 
 /**
  * This is a mock database for unit testing.
@@ -143,8 +144,8 @@ class Pool {
             high: this.toNs(this.timeNow)
         }
         let limit = {
-            low: config.api.limits.responseRows,
-            high: config.api.limits.responseRows
+            low: maxLimit,
+            high: maxLimit
         }
         let order = 'desc';
 
@@ -221,8 +222,8 @@ class Pool {
             high: this.TEST_DATA_MAX_BALANCE
         }
         let limit = {
-            low: config.api.limits.responseRows,
-            high: config.api.limits.responseRows
+            low: maxLimit,
+            high: maxLimit
         }
         let order = 'desc';
 
@@ -294,8 +295,8 @@ class Pool {
             high: this.TEST_DATA_MAX_BALANCE
         }
         let limit = {
-            low: config.api.limits.responseRows,
-            high: config.api.limits.responseRows
+            low: maxLimit,
+            high: maxLimit
         }
         let order = 'desc';
 
@@ -372,9 +373,9 @@ class Pool {
                 break;
         }
         if (param.field === 'limit') {
-            if (param.high > config.api.limits.responseRows) {
-                param.low = config.api.limits.responseRows;
-                param.high = config.api.limits.responseRows;
+            if (param.high > maxLimit) {
+                param.low = maxLimit;
+                param.high = maxLimit;
             }
         }
         return (pVar);
