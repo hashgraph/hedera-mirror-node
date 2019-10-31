@@ -1,8 +1,5 @@
 const math = require('mathjs');
 const config = require('../config.js');
-require("dotenv").config({
-    path: './.env'
-});
 
 /**
  * Converts nanoseconds since epoch to seconds.nnnnnnnnn format
@@ -43,7 +40,7 @@ const toAccNum = (accId => Number(accId.split('.')[2]))
  * @param {Number} accountNumber
  * @return {String} shard.realm.accountNumber
  */
-const fromAccNum = (accNum => `${process.env.SHARD_NUM}.${config.TEST_REALM}.${accNum}`)
+const fromAccNum = (accNum => `${config.shard}.0.${accNum}`)
 
 module.exports = {
     nsToSecNs: nsToSecNs,

@@ -1,0 +1,24 @@
+hedera:
+  mirror:
+    api:
+      fileUpdateRefreshTimes:
+        balances: 900
+        events: 300
+        records: 5
+      includeHostInLink: false
+      maxLimit: 1000
+      log:
+        level: debug
+      port: 5551
+      ttl:
+        accounts: 60
+        balances: 60
+        events: 10
+        transactions: 10
+    db:
+      apiPassword: mirror_api_pass
+      apiUsername: mirror_api
+      host: 127.0.0.1
+      name: mirror_node
+      port: 5432
+    shard: 0

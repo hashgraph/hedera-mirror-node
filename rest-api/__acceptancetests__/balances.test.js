@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ var acceptanceTestsBalances = (function () {
     const server = process.env.TARGET;
     const acctestutils = require('./acceptancetest_utils.js');
     const config = require('../config.js');
+    const maxLimit = config.api.maxLimit;
 
     beforeAll(async () => {
         moduleVars.verbose && console.log('Jest starting!');
@@ -49,20 +50,20 @@ var acceptanceTestsBalances = (function () {
         verbose: false
     };
 
-    // Make a preliminary query to /balances and get the list of accounts. The values 
-    // returned by this query are used to populate the subsequent queries for other tests in 
-    // this file. For example, an account number returned by this query is used to 
+    // Make a preliminary query to /balances and get the list of accounts. The values
+    // returned by this query are used to populate the subsequent queries for other tests in
+    // this file. For example, an account number returned by this query is used to
     // make a subsequent query for a specific account (/balances?account.id=xxx).
     // This allows the acceptance tests to run against any network (testnet, mainnet) by
-    // dynamically discovering account numbers, balances, transactions, etc to avoid 
+    // dynamically discovering account numbers, balances, transactions, etc to avoid
     // hardcoding.
     const setModuleVars = async function () {
         const response = await request(server).get(moduleVars.apiPrefix + '/balances');
         expect(response.status).toEqual(200);
         let balances = JSON.parse(response.text).balances;
 
-        expect(balances.length).toBe(config.limits.RESPONSE_ROWS);
-        if (balances.length !== config.limits.RESPONSE_ROWS) {
+        expect(balances.length).toBe(maxLimit);
+        if (balances.length !== maxLimit) {
             return (false);
         }
 
@@ -102,7 +103,7 @@ var acceptanceTestsBalances = (function () {
             const response = await request(server).get(moduleVars.apiPrefix + '/balances');
             expect(response.status).toEqual(200);
             let balances = JSON.parse(response.text).balances;
-            expect(balances.length).toBe(config.limits.RESPONSE_ROWS);
+            expect(balances.length).toBe(maxLimit);
 
             // Assert that all mandatory fields are present in the response
             let check = checkMandatoryParams(balances[0]);
@@ -112,7 +113,7 @@ var acceptanceTestsBalances = (function () {
             const balancesSec = JSON.parse(response.text).timestamp.split('.')[0];
             const currSec = Math.floor(new Date().getTime() / 1000);
             const delta = currSec - balancesSec;
-            check = delta < (2 * config.fileUpdateRefreshTimes.balances)
+            check = delta < (2 * config.api.fileUpdateRefreshTimes.balances)
             expect(check).toBeTruthy();
         });
 
@@ -200,7 +201,7 @@ var acceptanceTestsBalances = (function () {
             const response = await request(server).get(url);
             expect(response.status).toEqual(200);
             let balances = JSON.parse(response.text).balances;
-            expect(balances.length).toEqual(config.limits.RESPONSE_ROWS);
+            expect(balances.length).toEqual(maxLimit);
             let check = true;
             let prevAcc = 0;
             for (let bal of balances) {
@@ -224,7 +225,7 @@ var acceptanceTestsBalances = (function () {
                 `&account.id=gt:${accLow}&account.id=lt:${accHigh}` +
                 `&account.balance=gt:${balLow}&account.balance=lt:${balHigh}` +
                 `&account.publickey=1234567890123456789012345678901234567890123456789012345678901234` +
-                `&order=desc&limit=${config.limits.RESPONSE_ROWS}`;
+                `&order=desc&limit=${maxLimit}`;
             moduleVars.verbose && console.log(url);
             const response = await request(server).get(url);
             expect(response.status).toEqual(200);
@@ -232,14 +233,14 @@ var acceptanceTestsBalances = (function () {
 
         test('Get balances with pagination', async () => {
             // Validate that pagination works and that it doesn't have any gaps
-            // In setModuleVars function, we did a /balances query and stored the results of that query in the 
+            // In setModuleVars function, we did a /balances query and stored the results of that query in the
             // moduleVars.testBalances variable. This is expected to be RESPONSE_ROWS (currently 1000) long.
             // We will now try to fetch the same entries using five 200-entry pages using the 'next' links
             // After that, we will concatenate these 5 pages and compare the entries with the original response
-            // of 1000 entries to see if there is any overlap or gaps in the returned responses.   
+            // of 1000 entries to see if there is any overlap or gaps in the returned responses.
             let paginatedEntries = [];
             const numPages = 5;
-            const pageSize = config.limits.RESPONSE_ROWS / numPages;
+            const pageSize = maxLimit / numPages;
             let next = null;
             // Fetch pages using 'next' links and concatenate the results
             for (let index = 0; index < numPages; index++) {
@@ -258,13 +259,13 @@ var acceptanceTestsBalances = (function () {
             }
 
             // We have concatenated set of pages obtained using the 'next' links
-            // Check if the length matches the original response 
+            // Check if the length matches the original response
             check = (paginatedEntries.length === moduleVars.testBalances.length);
             expect(check).toBeTruthy();
 
             // Check if the accounts numbers match for each entry
             check = true;
-            for (i = 0; i < config.limits.RESPONSE_ROWS; i++) {
+            for (i = 0; i < maxLimit; i++) {
                 if (moduleVars.testBalances[i].account !== paginatedEntries[i].account) {
                     check = false;
                 }

@@ -25,6 +25,7 @@ var acceptanceTestsTransactions = (function () {
     const server = process.env.TARGET;
     const acctestutils = require('./acceptancetest_utils.js');
     const config = require('../config.js');
+    const maxLimit = config.api.maxLimit;
 
     beforeAll(async () => {
         moduleVars.verbose && console.log('Jest starting!');
@@ -62,8 +63,8 @@ var acceptanceTestsTransactions = (function () {
         expect(response.status).toEqual(200);
         let transactions = JSON.parse(response.text).transactions;
 
-        expect(transactions.length).toBe(config.limits.RESPONSE_ROWS);
-        if (transactions.length !== config.limits.RESPONSE_ROWS) {
+        expect(transactions.length).toBe(maxLimit);
+        if (transactions.length !== maxLimit) {
             return (false);
         }
 
@@ -103,7 +104,7 @@ var acceptanceTestsTransactions = (function () {
             const response = await request(server).get(moduleVars.apiPrefix + '/transactions');
             expect(response.status).toEqual(200);
             let transactions = JSON.parse(response.text).transactions;
-            expect(transactions.length).toBe(config.limits.RESPONSE_ROWS);
+            expect(transactions.length).toBe(maxLimit);
 
             // Assert that all mandatory fields are present in the response
             let check = checkMandatoryParams(transactions[0]);
@@ -113,7 +114,7 @@ var acceptanceTestsTransactions = (function () {
             const txSec = transactions[0].consensus_timestamp.split('.')[0];
             const currSec = Math.floor(new Date().getTime() / 1000);
             const delta = currSec - txSec
-            check = delta < (10 * config.fileUpdateRefreshTimes.records)
+            check = delta < (10 * config.api.fileUpdateRefreshTimes.records)
             expect(check).toBeTruthy();
         });
 
@@ -181,7 +182,7 @@ var acceptanceTestsTransactions = (function () {
             const response = await request(server).get(url);
             expect(response.status).toEqual(200);
             let transactions = JSON.parse(response.text).transactions;
-            expect(transactions.length).toEqual(config.limits.RESPONSE_ROWS);
+            expect(transactions.length).toEqual(maxLimit);
             let check = false;
             for (let xfer of transactions[0].transfers) {
                 let acc = acctestutils.toAccNum(xfer.account);
@@ -202,7 +203,7 @@ var acceptanceTestsTransactions = (function () {
             const response = await request(server).get(url);
             expect(response.status).toEqual(200);
             let transactions = JSON.parse(response.text).transactions;
-            expect(transactions.length).toEqual(config.limits.RESPONSE_ROWS);
+            expect(transactions.length).toEqual(maxLimit);
             let check = true;
             let prevSeconds = 0;
             for (let txn of transactions) {
@@ -239,7 +240,7 @@ var acceptanceTestsTransactions = (function () {
             const url = `${moduleVars.apiPrefix}/transactions` +
                 `?timestamp=gte:${tsLow}&timestamp=lte:${tsHigh}` +
                 `&account.id=gt:${accLow}&account.id=lt:${accHigh}` +
-                `&result=success&type=credit&order=desc&limit=${config.limits.RESPONSE_ROWS}`;
+                `&result=success&type=credit&order=desc&limit=${maxLimit}`;
             moduleVars.verbose && console.log(url);
             const response = await request(server).get(url);
             expect(response.status).toEqual(200);
@@ -254,7 +255,7 @@ var acceptanceTestsTransactions = (function () {
             // of 1000 entries to see if there is any overlap or gaps in the returned responses.
             let paginatedEntries = [];
             const numPages = 5;
-            const pageSize = config.limits.RESPONSE_ROWS / numPages;
+            const pageSize = maxLimit / numPages;
             const firstTs = moduleVars.testTx[0].consensus_timestamp;
 
             let next = null;
@@ -280,7 +281,7 @@ var acceptanceTestsTransactions = (function () {
 
             // Check if the transaction-ids and conesnsus-timestamps match for each entry
             check = true;
-            for (i = 0; i < config.limits.RESPONSE_ROWS; i++) {
+            for (i = 0; i < maxLimit; i++) {
                 if (moduleVars.testTx[i].transaction_id !== paginatedEntries[i].transaction_id ||
                     moduleVars.testTx[i].consensus_timestamp !== paginatedEntries[i].consensus_timestamp) {
                     check = false;

@@ -18,9 +18,6 @@
  * ‍
  */
 'uses strict';
-require("dotenv").config({
-    path: './.env'
-});
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -46,10 +43,8 @@ const Cacher = require('./cacher.js');
 
 var compression = require('compression');
 
-let port;
-if (process.env.NODE_ENV !== 'test') {
-    port = process.env.PORT;
-} else {
+let port = config.api.port;
+if (process.env.NODE_ENV == 'test') {
     port = 3000; // Use a dummy port for jest unit tests
 }
 if (port === undefined || isNaN(Number(port))) {
@@ -69,7 +64,7 @@ log4js.configure({
     categories: {
         default: {
             appenders: ['everything'],
-            level: 'debug'
+            level: config.api.log.level
         }
     }
 });
@@ -78,11 +73,11 @@ global.logger = log4js.getLogger();
 
 // Postgres pool
 const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASS,
-    port: 5432
+    user: config.db.apiUsername,
+    host: config.db.host,
+    database: config.db.name,
+    password: config.db.apiPassword,
+    port: config.db.port
 })
 global.pool = pool;
 
@@ -98,10 +93,10 @@ app.use(cors());
 
 let caches = {};
 for (const api of [
-    { name: 'transactions', ttl: config.ttls.transactions },
-    { name: 'balances', ttl: config.ttls.balances },
-    { name: 'accounts', ttl: config.ttls.accounts },
-    { name: 'events', ttl: config.ttls.events }
+    { name: 'transactions', ttl: config.api.ttl.transactions },
+    { name: 'balances', ttl: config.api.ttl.balances },
+    { name: 'accounts', ttl: config.api.ttl.accounts },
+    { name: 'events', ttl: config.api.ttl.events }
 ]) {
     caches[api.name] = new Cacher(api.ttl);
 }

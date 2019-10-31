@@ -15,7 +15,7 @@ trim_trailing_whitespace = true
 ij_continuation_indent_size = 8
 ij_visual_guides = 120,120
 
-[*.{json,yaml,yml}]
+[*.{js,json,yaml,yml}]
 indent_size = 2
 
 [*.java]
