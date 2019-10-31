@@ -75,10 +75,6 @@ public class EventStreamFileDownloader extends Downloader {
         return ApplicationStatusCode.EVENT_HASH_MISMATCH_BYPASS_UNTIL_AFTER;
     }
 
-    protected boolean shouldVerifyHashChain() {
-        return true;
-    }
-
     protected String getPrevFileHash(String filePath) {
         return EventStreamFileParser.readPrevFileHash(filePath);
     }

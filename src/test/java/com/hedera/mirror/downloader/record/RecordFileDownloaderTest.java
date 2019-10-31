@@ -32,13 +32,10 @@ import com.hedera.mirror.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.utilities.Utility;
 import io.findify.s3mock.S3Mock;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
-import org.junit.Rule;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.rules.TestName;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.ResourceUtils;
@@ -60,9 +57,6 @@ public class RecordFileDownloaderTest {
 
     @TempDir
     Path s3Path;
-
-    @Rule
-    public TestName name = new TestName();
 
     private S3Mock s3;
     private FileCopier fileCopier;

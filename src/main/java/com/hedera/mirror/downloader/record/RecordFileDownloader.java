@@ -73,10 +73,6 @@ public class RecordFileDownloader extends Downloader {
         return ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER;
     }
 
-   protected boolean shouldVerifyHashChain() {
-        return true;
-    }
-
     protected String getPrevFileHash(String filePath) {
         return RecordFileParser.readPrevFileHash(filePath);
     }

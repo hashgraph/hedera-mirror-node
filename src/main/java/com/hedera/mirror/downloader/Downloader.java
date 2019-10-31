@@ -45,7 +45,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -73,8 +72,6 @@ public abstract class Downloader {
     protected final NetworkAddressBook networkAddressBook;
 	protected final DownloaderProperties downloaderProperties;
 	private final ExecutorService signatureDownloadThreadPool; // Thread pool used one per node during the download process for signatures.
-
-	public enum DownloadType {RCD, BALANCE, EVENT};
 
 	public Downloader(TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository, NetworkAddressBook networkAddressBook, DownloaderProperties downloaderProperties) {
 	    this.transferManager = transferManager;
@@ -284,13 +281,14 @@ public abstract class Downloader {
      * @param sigFilesMap
      */
     protected void verifySigsAndDownloadDataFiles(Map<String, List<File>> sigFilesMap) {
-        String lastValidFileName =
-                applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
-
-        // reload address book and keys
+        // reload address book and keys in case it has been updated by RecordFileLogger
         NodeSignatureVerifier verifier = new NodeSignatureVerifier(networkAddressBook);
+        Path validPath = downloaderProperties.getValidPath();
 
         List<String> sigFileNames = new ArrayList<>(sigFilesMap.keySet());
+        // sort in increasing order of timestamp, so that we process files in the order they are written.
+        // It's very important for record and event files because they form immutable linked list by include one file's
+        // hash into next file.
         Collections.sort(sigFileNames);
 
         for (String sigFileName : sigFileNames) {
@@ -309,40 +307,37 @@ public abstract class Downloader {
             }
 
             // validSigFiles are signed by node'key and contains the same Hash which has been agreed by more than 2/3 nodes
-            Pair<byte[], List<File>> hashAndvalidSigFiles = verifier.verifySignatureFiles(sigFiles);
-            final byte[] validHash = hashAndvalidSigFiles.getLeft();
-            for (File validSigFile : hashAndvalidSigFiles.getRight()) {
+            Pair<byte[], List<File>> hashAndValidSigFiles = verifier.verifySignatureFiles(sigFiles);
+            final byte[] validHash = hashAndValidSigFiles.getLeft();
+            for (File validSigFileName : hashAndValidSigFiles.getRight()) {
                 if (Utility.checkStopFile()) {
                     log.info("Stop file found, stopping");
                     return;
                 }
+                log.debug("Verified signature file matches at least 2/3 of nodes: {}", sigFileName);
 
-                Pair<Boolean, File> fileResult = downloadFile(validSigFile);
-                File file = fileResult.getRight();
-                if (file != null && Utility.hashMatch(validHash, file)) {
-                    log.debug("Verified signature file matches at least 2/3 of nodes: {}", sigFileName);
+                File signedDataFile = downloadSignedDataFile(validSigFileName);
+                if (signedDataFile != null && Utility.hashMatch(validHash, signedDataFile)) {
+                    log.debug("Downloaded data file {} corresponding to verified hash", signedDataFile.getName());
                     // Check that file is newer than last valid downloaded file.
                     // Additionally, if the file type uses prevFileHash based linking, verify that new file is next in
                     // the sequence.
-                    // TODO(reviewers): Requesting extra careful look at this condition. Thanks
-                    if ((lastValidFileName.isEmpty()
-                            || fileNameComparator.compare(lastValidFileName, file.getName()) < 0)
-                            && (!shouldVerifyHashChain() || verifyHashChain(file))) {
+                    if (verifyHashChain(signedDataFile)) {
                         // move the file to the valid directory
-                        File destination = downloaderProperties.getValidPath().resolve(file.getName()).toFile();
-                        if (moveFile(file, destination)) {
-                            log.debug("Successfully moved file from {} to {}", file, destination);
-                            if (shouldVerifyHashChain()) {
-                                String hash = Utility.bytesToHex(Utility.getFileHash(destination.getAbsolutePath()));
-                                applicationStatusRepository.updateStatusValue(getLastValidDownloadedFileHashKey(), hash);
+                        File destination = validPath.resolve(signedDataFile.getName()).toFile();
+                        if (moveFile(signedDataFile, destination)) {
+                            log.debug("Successfully moved file from {} to {}", signedDataFile, destination);
+                            if (getLastValidDownloadedFileHashKey() != null) {
+                                applicationStatusRepository.updateStatusValue(getLastValidDownloadedFileHashKey(),
+                                        Utility.bytesToHex(validHash));
                             }
                             applicationStatusRepository.updateStatusValue(getLastValidDownloadedFileKey(), destination.getName());
                             valid = true;
                             break;
                         }
                     }
-                } else if (file != null) {
-                    log.warn("Hash doesn't match the hash contained in valid signature file. Will try to download a file with same timestamp from other nodes and check the Hash: {}", file);
+                } else if (signedDataFile != null) {
+                    log.warn("Hash doesn't match the hash contained in valid signature file. Will try to download a file with same timestamp from other nodes and check the Hash: {}", signedDataFile);
                 }
             }
 
@@ -357,9 +352,9 @@ public abstract class Downloader {
      * Verifies that prevFileHash in given {@code file} matches that in application repository.
      * @throws Exception
      */
-    private boolean verifyHashChain(File file) {
+    protected boolean verifyHashChain(File file) {
         String filePath = file.getAbsolutePath();
-        String lastValidFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey()); // todo
+        String lastValidFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
         String bypassMismatch = applicationStatusRepository.findByStatusCode(getBypassHashKey());
         String prevFileHash = getPrevFileHash(filePath);
 
@@ -377,7 +372,7 @@ public abstract class Downloader {
         return false;
     }
 
-    protected Pair<Boolean, File> downloadFile(File sigFile) {
+    private File downloadSignedDataFile(File sigFile) {
         String fileName = sigFile.getName().replace("_sig", "");
         String s3Prefix = downloaderProperties.getPrefix();
 
@@ -388,18 +383,19 @@ public abstract class Downloader {
 		try {
 			var pendingDownload = saveToLocalAsync(s3ObjectKey, localFile);
 			pendingDownload.waitForCompletion();
-			return Pair.of(pendingDownload.isDownloadSuccessful(), pendingDownload.getFile());
+			if (pendingDownload.isDownloadSuccessful()) {
+			    return pendingDownload.getFile();
+            } else {
+                log.error("Failed downloading {}", s3ObjectKey);
+            }
 		} catch (Exception ex) {
-			log.error("Failed downloading {}", s3ObjectKey, ex);
-			return Pair.of(false, null);
+            log.error("Failed downloading {}", s3ObjectKey, ex);
 		}
-	}
+        return null;
+    }
 
     protected abstract ApplicationStatusCode getLastValidDownloadedFileKey();
-    // Only used if shouldVerifyHashChain() return true
     protected abstract ApplicationStatusCode getLastValidDownloadedFileHashKey();
-    // Only used if shouldVerifyHashChain() return true
     protected abstract ApplicationStatusCode getBypassHashKey();
-    protected abstract boolean shouldVerifyHashChain();
     protected abstract String getPrevFileHash(String filePath);
 }

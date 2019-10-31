@@ -32,6 +32,7 @@ import com.hedera.utilities.Utility;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.inject.Named;
+import java.io.File;
 
 @Log4j2
 @Named
@@ -63,6 +64,11 @@ public class AccountBalancesDownloader extends Downloader {
 		}
 	}
 
+    @Override
+    protected boolean verifyHashChain(File file) {
+        return true;
+    }
+
     protected ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE;
     }
@@ -73,10 +79,6 @@ public class AccountBalancesDownloader extends Downloader {
 
     protected ApplicationStatusCode getBypassHashKey() {
         return null; // Not used since shouldVerifyHashChain returns false;
-    }
-
-    protected boolean shouldVerifyHashChain() {
-        return false;
     }
 
     protected String getPrevFileHash(String filePath) {
