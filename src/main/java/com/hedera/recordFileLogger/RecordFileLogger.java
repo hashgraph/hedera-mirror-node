@@ -123,14 +123,14 @@ public class RecordFileLogger {
         ,CONSENSUS_TIMESTAMP
     	,LIVEHASH
     }
-    
+
     static long getFileId() {
     	return fileId;
     }
     static void setBatchSize(long batchSize) {
     	BATCH_SIZE = batchSize;
     }
-    
+
 	public static boolean start() {
 		batch_count = 0;
 
@@ -305,9 +305,9 @@ public class RecordFileLogger {
 		long validDurationSeconds = body.hasTransactionValidDuration() ? body.getTransactionValidDuration().getSeconds() : null;
 
 		final var vs = transactionID.getTransactionValidStart();
-		final long validStartNs = Utility.convertInstantToNanos(Instant.ofEpochSecond(vs.getSeconds(), vs.getNanos()));
+		final long validStartNs = Utility.convertToNanos(vs.getSeconds(), vs.getNanos());
 		final var c = txRecord.getConsensusTimestamp();
-		final long consensusNs = Utility.convertInstantToNanos(Instant.ofEpochSecond(c.getSeconds(), c.getNanos()));
+		final long consensusNs = Utility.convertToNanos(c.getSeconds(), c.getNanos());
 
 		sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), fkNodeAccountId);
 		sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), body.getMemo().getBytes());

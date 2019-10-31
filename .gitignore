@@ -26,8 +26,8 @@
 hs_err_pid*
 /target/
 .project
+/data/
 .classpath
-data/
 output/
 db/
 
