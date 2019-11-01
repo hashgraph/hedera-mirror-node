@@ -65,19 +65,13 @@ public abstract class Downloader {
 
 	private final TransferManager transferManager;
 	private List<String> nodeAccountIds;
-	protected final ApplicationStatusRepository applicationStatusRepository;
+	private final ApplicationStatusRepository applicationStatusRepository;
     private final NetworkAddressBook networkAddressBook;
 	private final DownloaderProperties downloaderProperties;
     // Thread pool used one per node during the download process for signatures.
 	private final ExecutorService signatureDownloadThreadPool;
 
-    private final Comparator<String> s3KeyComparator = (String o1, String o2) -> {
-        Instant o1TimeStamp = Utility.parseToInstant(Utility.parseS3SummaryKey(o1).getMiddle());
-        Instant o2TimeStamp = Utility.parseToInstant(Utility.parseS3SummaryKey(o2).getMiddle());
-        if (o1TimeStamp == null) return -1;
-        if (o2TimeStamp == null) return 1;
-        return o1TimeStamp.compareTo(o2TimeStamp);
-    };
+    private final Comparator<String> s3KeyComparator;
 
     public Downloader(TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository,
                       NetworkAddressBook networkAddressBook, DownloaderProperties downloaderProperties) {
@@ -88,6 +82,14 @@ public abstract class Downloader {
 		signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
 		nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toList());
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
+
+        s3KeyComparator = (String o1, String o2) -> {
+            Instant o1TimeStamp = Utility.parseToInstant(Utility.parseS3SummaryKey(o1).getMiddle());
+            Instant o2TimeStamp = Utility.parseToInstant(Utility.parseS3SummaryKey(o2).getMiddle());
+            if (o1TimeStamp == null) return -1;
+            if (o2TimeStamp == null) return 1;
+            return o1TimeStamp.compareTo(o2TimeStamp);
+        };
 	}
 
 	protected void downloadNextBatch() {
@@ -118,7 +120,7 @@ public abstract class Downloader {
      *      value: a list of sig files with the same name and from different nodes folder;
      * @throws Exception
      */
-	protected Map<String, List<File>> downloadSigFiles() throws InterruptedException {
+	private Map<String, List<File>> downloadSigFiles() throws InterruptedException {
 		String s3Prefix = downloaderProperties.getPrefix();
 		String lastValidFileName = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
 
@@ -251,7 +253,7 @@ public abstract class Downloader {
 	 * @param destinationFile
 	 * @return boolean
 	 */
-	protected boolean moveFile(File sourceFile, File destinationFile) {
+	private boolean moveFile(File sourceFile, File destinationFile) {
 		try {
 			// not checking if file exists to help with performance
 			// assumption is caller has created the destination file folder
@@ -275,7 +277,7 @@ public abstract class Downloader {
      *  Hash until find a match one
      * @param sigFilesMap
      */
-    protected void verifySigsAndDownloadDataFiles(Map<String, List<File>> sigFilesMap) {
+    private void verifySigsAndDownloadDataFiles(Map<String, List<File>> sigFilesMap) {
         // reload address book and keys in case it has been updated by RecordFileLogger
         NodeSignatureVerifier verifier = new NodeSignatureVerifier(networkAddressBook);
         Path validPath = downloaderProperties.getValidPath();
