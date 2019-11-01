@@ -27,7 +27,6 @@ import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.parser.record.RecordFileParser;
-import com.hedera.utilities.Utility;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,28 +37,16 @@ import javax.inject.Named;
 @Named
 public class RecordFileDownloader extends Downloader {
 
-	public RecordFileDownloader(TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository, NetworkAddressBook networkAddressBook, RecordDownloaderProperties downloaderProperties) {
-		super(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
-	}
+    public RecordFileDownloader(
+            TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository,
+            NetworkAddressBook networkAddressBook, RecordDownloaderProperties downloaderProperties) {
+        super(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
+    }
 
-	@Scheduled(fixedRateString = "${hedera.mirror.downloader.record.frequency:500}")
-	public void download() {
-		try {
-			if (!downloaderProperties.isEnabled()) {
-				return;
-			}
-
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found");
-				return;
-			}
-
-			final var sigFilesMap = downloadSigFiles();
-			verifySigsAndDownloadDataFiles(sigFilesMap);
-		} catch (Exception e) {
-			log.error("Error downloading and verifying new record files", e);
-		}
-	}
+    @Scheduled(fixedRateString = "${hedera.mirror.downloader.record.frequency:500}")
+    public void download() {
+        downloadNextBatch();
+    }
 
     protected ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE;

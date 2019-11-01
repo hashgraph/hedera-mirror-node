@@ -27,7 +27,6 @@ import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.parser.event.EventStreamFileParser;
-import com.hedera.utilities.Utility;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,30 +37,16 @@ import javax.inject.Named;
 @Named
 public class EventStreamFileDownloader extends Downloader {
 
-	public EventStreamFileDownloader(TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository, NetworkAddressBook networkAddressBook, EventDownloaderProperties downloaderProperties) {
-		super(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
-	}
+    public EventStreamFileDownloader(
+            TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository,
+            NetworkAddressBook networkAddressBook, EventDownloaderProperties downloaderProperties) {
+        super(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
+    }
 
-	@Scheduled(fixedRateString = "${hedera.mirror.downloader.event.frequency:60000}")
-	public void download() {
-		if (!downloaderProperties.isEnabled()) {
-			return;
-		}
-
-		if (Utility.checkStopFile()) {
-			log.info("Stop file found");
-			return;
-		}
-
-		try {
-			final var sigFilesMap = downloadSigFiles();
-
-			// Verify signature files and download .evts files of valid signature files
-			verifySigsAndDownloadDataFiles(sigFilesMap);
-		} catch (Exception e) {
-			log.error("Error downloading and verifying new event files", e);
-		}
-	}
+    @Scheduled(fixedRateString = "${hedera.mirror.downloader.event.frequency:60000}")
+    public void download() {
+        downloadNextBatch();
+    }
 
     protected ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE;

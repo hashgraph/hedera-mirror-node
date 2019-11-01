@@ -28,7 +28,6 @@ import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.utilities.Utility;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.inject.Named;
@@ -38,31 +37,16 @@ import java.io.File;
 @Named
 public class AccountBalancesDownloader extends Downloader {
 
-	public AccountBalancesDownloader(TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository, NetworkAddressBook networkAddressBook, BalanceDownloaderProperties downloaderProperties) {
-		super(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
-	}
+    public AccountBalancesDownloader(
+            TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository,
+            NetworkAddressBook networkAddressBook, BalanceDownloaderProperties downloaderProperties) {
+        super(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
+    }
 
-	@Scheduled(fixedRateString = "${hedera.mirror.downloader.balance.frequency:500}")
-	public void download() {
-		try {
-			if (!downloaderProperties.isEnabled()) {
-                return;
-            }
-
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found");
-				return;
-			}
-
-			// balance files with sig verification
-			final var sigFilesMap = downloadSigFiles();
-
-			// Verify signature files and download corresponding files of valid signature files
-			verifySigsAndDownloadDataFiles(sigFilesMap);
-		} catch (Exception e) {
-			log.error("Error downloading balance files", e);
-		}
-	}
+    @Scheduled(fixedRateString = "${hedera.mirror.downloader.balance.frequency:500}")
+    public void download() {
+        downloadNextBatch();
+    }
 
     @Override
     protected boolean verifyHashChain(File file) {
@@ -74,14 +58,14 @@ public class AccountBalancesDownloader extends Downloader {
     }
 
     protected ApplicationStatusCode getLastValidDownloadedFileHashKey() {
-        return null; // Not used since shouldVerifyHashChain returns false;
+        return null;
     }
 
     protected ApplicationStatusCode getBypassHashKey() {
-        return null; // Not used since shouldVerifyHashChain returns false;
+        return null;
     }
 
     protected String getPrevFileHash(String filePath) {
-        return null;  // Only used if verifyHashChain() return true
+        return null;
     }
 }
