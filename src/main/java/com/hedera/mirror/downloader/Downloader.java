@@ -64,52 +64,48 @@ public abstract class Downloader {
 	protected final Logger log = LogManager.getLogger(getClass());
 
 	private final TransferManager transferManager;
-	private final Comparator<String> s3KeyComparator;
-	protected final Comparator<String> fileNameComparator;
-	protected final Comparator<Path> pathComparator;
-	protected List<String> nodeAccountIds;
+	private List<String> nodeAccountIds;
 	protected final ApplicationStatusRepository applicationStatusRepository;
-    protected final NetworkAddressBook networkAddressBook;
-	protected final DownloaderProperties downloaderProperties;
-	private final ExecutorService signatureDownloadThreadPool; // Thread pool used one per node during the download process for signatures.
+    private final NetworkAddressBook networkAddressBook;
+	private final DownloaderProperties downloaderProperties;
+    // Thread pool used one per node during the download process for signatures.
+	private final ExecutorService signatureDownloadThreadPool;
 
-	public Downloader(TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository, NetworkAddressBook networkAddressBook, DownloaderProperties downloaderProperties) {
+    private final Comparator<String> s3KeyComparator = (String o1, String o2) -> {
+        Instant o1TimeStamp = Utility.parseToInstant(Utility.parseS3SummaryKey(o1).getMiddle());
+        Instant o2TimeStamp = Utility.parseToInstant(Utility.parseS3SummaryKey(o2).getMiddle());
+        if (o1TimeStamp == null) return -1;
+        if (o2TimeStamp == null) return 1;
+        return o1TimeStamp.compareTo(o2TimeStamp);
+    };
+
+    public Downloader(TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository,
+                      NetworkAddressBook networkAddressBook, DownloaderProperties downloaderProperties) {
 	    this.transferManager = transferManager;
 		this.applicationStatusRepository = applicationStatusRepository;
 		this.networkAddressBook = networkAddressBook;
 		this.downloaderProperties = downloaderProperties;
 		signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
 		nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toList());
-
-		s3KeyComparator = new Comparator<String>() {
-			@Override
-			public int compare(String o1, String o2) {
-				Instant o1TimeStamp = Utility.parseToInstant(Utility.parseS3SummaryKey(o1).getMiddle());
-				Instant o2TimeStamp = Utility.parseToInstant(Utility.parseS3SummaryKey(o2).getMiddle());
-				if (o1TimeStamp == null) return -1;
-				if (o2TimeStamp == null) return 1;
-				return o1TimeStamp.compareTo(o2TimeStamp);
-			}
-		};
-
-		fileNameComparator = new Comparator<String>() {
-			@Override
-			public int compare(String o1, String o2) {
-				Instant o1TimeStamp = Utility.getInstantFromFileName(o1);
-				Instant o2TimeStamp = Utility.getInstantFromFileName(o2);
-				return o1TimeStamp.compareTo(o2TimeStamp);
-			}
-		};
-
-		pathComparator = new Comparator<Path>() {
-			@Override
-			public int compare(Path p1, Path p2) {
-				return p1.toString().compareTo(p2.toString());
-			}
-		};
-
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
 	}
+
+	protected void downloadNextBatch() {
+        try {
+            if (!downloaderProperties.isEnabled()) {
+                return;
+            }
+            if (Utility.checkStopFile()) {
+                log.info("Stop file found");
+                return;
+            }
+            final var sigFilesMap = downloadSigFiles();
+            // Verify signature files and download corresponding files of valid signature files
+            verifySigsAndDownloadDataFiles(sigFilesMap);
+        } catch (Exception e) {
+            log.error("Error downloading files", e);
+        }
+    }
 
     /**
      * 	Download all sig files (*.rcd_sig for records, *_Balances.csv_sig for balances) with timestamp later than
@@ -240,8 +236,7 @@ public abstract class Downloader {
 	 * @param localFile
 	 * @return
 	 */
-	private PendingDownload saveToLocalAsync(String s3ObjectKey, Path localFile)
-			throws Exception {
+	private PendingDownload saveToLocalAsync(String s3ObjectKey, Path localFile) {
         File file = localFile.toFile();
 		Download download = transferManager.download(downloaderProperties.getCommon().getBucketName(), s3ObjectKey, file);
 		return new PendingDownload(download, file, s3ObjectKey);
@@ -352,7 +347,6 @@ public abstract class Downloader {
             }
         }
     }
-
 
     /**
      * Verifies that prevFileHash in given {@code file} matches that in application repository.
