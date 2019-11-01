@@ -49,7 +49,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class RecordFileDownloaderTest {
 
-    @Mock
+    @Mock(answer = Answers.RETURNS_SMART_NULLS)
     private ApplicationStatusRepository applicationStatusRepository;
 
     @TempDir
@@ -106,7 +106,6 @@ public class RecordFileDownloaderTest {
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
         fileCopier.copy();
-        doReturn("").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
 
         downloader.download();
 
@@ -126,7 +125,6 @@ public class RecordFileDownloaderTest {
     @DisplayName("Download and verify V2 files")
     void downloadV2() throws Exception {
         fileCopier.copy();
-        doReturn("").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
         downloader.download();
         verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_00.419072Z.rcd");
         verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_05.249678Z.rcd");
@@ -145,7 +143,6 @@ public class RecordFileDownloaderTest {
     void missingAddressBook() throws Exception {
         Files.delete(mirrorProperties.getAddressBookPath());
         fileCopier.copy();
-        doReturn("").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
         downloader.download();
         assertThat(Files.walk(downloaderProperties.getValidPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
@@ -157,7 +154,6 @@ public class RecordFileDownloaderTest {
     void maxDownloadItemsReached() throws Exception {
         downloaderProperties.setBatchSize(1);
         fileCopier.copy();
-        doReturn("").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
         downloader.download();
         assertThat(Files.walk(downloaderProperties.getValidPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
@@ -214,7 +210,6 @@ public class RecordFileDownloaderTest {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
         doReturn("2019-07-01T14:12:00.000000Z.rcd").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
         doReturn("123").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
-        doReturn("").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertThat(Files.walk(downloaderProperties.getValidPath()))
@@ -244,7 +239,6 @@ public class RecordFileDownloaderTest {
     void invalidRecord() throws Exception {
         fileCopier.copy();
         Files.walk(s3Path).filter(p -> Utility.isRecordFile(p.toString())).forEach(RecordFileDownloaderTest::corruptFile);
-        doReturn("").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
         downloader.download();
         assertThat(Files.walk(downloaderProperties.getValidPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
@@ -255,7 +249,6 @@ public class RecordFileDownloaderTest {
     @DisplayName("Error moving record to valid folder")
     void errorMovingFile() throws Exception {
         fileCopier.copy();
-        doReturn("").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
         downloaderProperties.getValidPath().toFile().delete();
         downloader.download();
         assertThat(downloaderProperties.getValidPath()).doesNotExist();
