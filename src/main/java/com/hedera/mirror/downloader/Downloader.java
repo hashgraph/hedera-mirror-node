@@ -316,28 +316,34 @@ public abstract class Downloader {
                 }
                 log.debug("Verified signature file matches at least 2/3 of nodes: {}", sigFileName);
 
-                File signedDataFile = downloadSignedDataFile(validSigFileName);
-                if (signedDataFile != null && Utility.hashMatch(validHash, signedDataFile)) {
-                    log.debug("Downloaded data file {} corresponding to verified hash", signedDataFile.getName());
-                    // Check that file is newer than last valid downloaded file.
-                    // Additionally, if the file type uses prevFileHash based linking, verify that new file is next in
-                    // the sequence.
-                    if (verifyHashChain(signedDataFile)) {
-                        // move the file to the valid directory
-                        File destination = validPath.resolve(signedDataFile.getName()).toFile();
-                        if (moveFile(signedDataFile, destination)) {
-                            log.debug("Successfully moved file from {} to {}", signedDataFile, destination);
-                            if (getLastValidDownloadedFileHashKey() != null) {
-                                applicationStatusRepository.updateStatusValue(getLastValidDownloadedFileHashKey(),
-                                        Utility.bytesToHex(validHash));
+                try {
+                    File signedDataFile = downloadSignedDataFile(validSigFileName);
+                    if (signedDataFile != null && Utility.hashMatch(validHash, signedDataFile)) {
+                        log.debug("Downloaded data file {} corresponding to verified hash", signedDataFile.getName());
+                        // Check that file is newer than last valid downloaded file.
+                        // Additionally, if the file type uses prevFileHash based linking, verify that new file is next in
+                        // the sequence.
+                        if (verifyHashChain(signedDataFile)) {
+                            // move the file to the valid directory
+                            File destination = validPath.resolve(signedDataFile.getName()).toFile();
+                            if (moveFile(signedDataFile, destination)) {
+                                log.debug("Successfully moved file from {} to {}", signedDataFile, destination);
+                                if (getLastValidDownloadedFileHashKey() != null) {
+                                    applicationStatusRepository.updateStatusValue(getLastValidDownloadedFileHashKey(),
+                                            Utility.bytesToHex(validHash));
+                                }
+                                applicationStatusRepository
+                                        .updateStatusValue(getLastValidDownloadedFileKey(), destination.getName());
+                                valid = true;
+                                break;
                             }
-                            applicationStatusRepository.updateStatusValue(getLastValidDownloadedFileKey(), destination.getName());
-                            valid = true;
-                            break;
                         }
+                    } else if (signedDataFile != null) {
+                        log.warn("Hash doesn't match the hash contained in valid signature file. Will try to download" +
+                                " a file with same timestamp from other nodes and check the Hash: {}", signedDataFile);
                     }
-                } else if (signedDataFile != null) {
-                    log.warn("Hash doesn't match the hash contained in valid signature file. Will try to download a file with same timestamp from other nodes and check the Hash: {}", signedDataFile);
+                } catch (Exception e) {
+                    log.error("Error downloading data file corresponding to {}", sigFileName, e);
                 }
             }
 
@@ -386,10 +392,10 @@ public abstract class Downloader {
 			if (pendingDownload.isDownloadSuccessful()) {
 			    return pendingDownload.getFile();
             } else {
-                log.error("Failed downloading {}", s3ObjectKey);
+                log.error("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId);
             }
 		} catch (Exception ex) {
-            log.error("Failed downloading {}", s3ObjectKey, ex);
+            log.error("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId, ex);
 		}
         return null;
     }

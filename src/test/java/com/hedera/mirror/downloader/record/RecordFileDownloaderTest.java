@@ -91,10 +91,8 @@ public class RecordFileDownloaderTest {
     }
 
     @AfterEach
-    void after(TestInfo testInfo) {
+    void after() {
         s3.shutdown();
-        System.out.println("After test: " + testInfo.getTestMethod().get().getName());
-        System.out.println("##########################################\n");
     }
 
     @Test
