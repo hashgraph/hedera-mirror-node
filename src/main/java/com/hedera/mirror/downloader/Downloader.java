@@ -35,13 +35,9 @@ import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
-import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
-import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Publisher;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -49,11 +45,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -196,9 +189,7 @@ public abstract class Downloader {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		signatureDownloadThreadPool.invokeAll(tasks);
 		if (totalDownloads.get() > 0) {
-			double rate = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-			if (0 == rate) rate = 1;
-			rate = 1000.0 * totalDownloads.get() / rate;
+			var rate = (int)(1000000.0 * totalDownloads.get() / stopwatch.elapsed(TimeUnit.MICROSECONDS));
 			log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
 		}
 		return sigFilesMap;

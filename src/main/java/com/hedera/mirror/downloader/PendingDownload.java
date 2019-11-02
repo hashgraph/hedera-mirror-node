@@ -24,7 +24,6 @@ import com.google.common.base.Stopwatch;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
