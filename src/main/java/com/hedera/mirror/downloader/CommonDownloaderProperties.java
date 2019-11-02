@@ -39,6 +39,8 @@ public class CommonDownloaderProperties {
 
     private String accessKey;
 
+    private String secretKey;
+
     @NotBlank
     private String bucketName;
 
@@ -52,9 +54,6 @@ public class CommonDownloaderProperties {
     private int maxPendingAcquires = 10000; // aws sdk default = 10,000
 
     private String region = "us-east-1";
-
-    private String secretKey;
-
 
     @Getter
     @RequiredArgsConstructor

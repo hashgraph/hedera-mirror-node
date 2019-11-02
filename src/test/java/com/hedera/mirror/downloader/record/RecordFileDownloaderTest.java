@@ -20,8 +20,6 @@ package com.hedera.mirror.downloader.record;
  * ‍
  */
 
-import com.amazonaws.services.s3.transfer.TransferManager;
-
 import com.hedera.FileCopier;
 import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.MirrorProperties;
@@ -75,6 +73,8 @@ public class RecordFileDownloaderTest {
         commonDownloaderProperties = new CommonDownloaderProperties();
         commonDownloaderProperties.setBucketName("test");
         commonDownloaderProperties.setCloudProvider(CommonDownloaderProperties.CloudProvider.LOCAL);
+        commonDownloaderProperties.setAccessKey("x"); // https://github.com/findify/s3mock/issues/147
+        commonDownloaderProperties.setSecretKey("x");
         downloaderProperties = new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
         downloaderProperties.init();
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
