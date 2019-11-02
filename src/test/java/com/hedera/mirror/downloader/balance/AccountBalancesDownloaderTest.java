@@ -76,9 +76,9 @@ public class AccountBalancesDownloaderTest {
         downloaderProperties = new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
         downloaderProperties.init();
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
-        TransferManager transferManager = new MirrorNodeConfiguration().transferManager(commonDownloaderProperties);
+        var s3AsyncClient = (new MirrorNodeConfiguration()).s3AsyncClient(commonDownloaderProperties);
 
-        downloader = new AccountBalancesDownloader(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
+        downloader = new AccountBalancesDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook, downloaderProperties);
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath())

@@ -46,16 +46,10 @@ public class CommonDownloaderProperties {
     private CloudProvider cloudProvider = CloudProvider.S3;
 
     @Min(0)
-    private int maxConnections = 500;
-
-    @Min(1)
-    private int maxQueued = 500;
-
-    @Min(1)
-    private int maxThreads = 60;
+    private int maxConcurrency = 1000; // aws sdk default = 50
 
     @Min(0)
-    private int minThreads = 20;
+    private int maxPendingAcquires = 10000; // aws sdk default = 10,000
 
     private String region = "us-east-1";
 

@@ -20,15 +20,14 @@ package com.hedera.mirror.downloader;
  * ‍
  */
 
-import com.amazonaws.services.s3.transfer.Download;
 import com.google.common.base.Stopwatch;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.File;
-
-import static com.amazonaws.services.s3.transfer.Transfer.TransferState.Completed;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * The results of a pending download from the AWS TransferManager.
@@ -37,16 +36,16 @@ import static com.amazonaws.services.s3.transfer.Transfer.TransferState.Complete
  */
 @Log4j2
 @Value
-public class PendingDownload {
-	Download download;
+class PendingDownload {
+    CompletableFuture future;
 	Stopwatch stopwatch;
 	File file; // Destination file
 	String s3key; // Source S3 key
 	@NonFinal boolean alreadyWaited = false; // has waitForCompletion been called
 	@NonFinal boolean downloadSuccessful;
 
-	public PendingDownload(final Download download, final File file, final String s3key) {
-		this.download = download;
+	PendingDownload(final CompletableFuture future, final File file, final String s3key) {
+		this.future = future;
 		this.stopwatch = Stopwatch.createStarted();
 		this.file = file;
 		this.s3key = s3key;
@@ -54,22 +53,16 @@ public class PendingDownload {
 
 	/**
 	 * @return true if the download was successful.
-	 * @throws InterruptedException
 	 */
-	public boolean waitForCompletion() throws InterruptedException {
+	boolean waitForCompletion() throws InterruptedException {
 		if (alreadyWaited) {
 			return downloadSuccessful;
 		}
 		alreadyWaited = true;
 		try {
-			download.waitForCompletion();
-			if (download.isDone() && (Completed == download.getState())) {
-				log.debug("Finished downloading {} in {}", s3key, stopwatch);
-				downloadSuccessful = true;
-			} else {
-				log.error("Failed downloading {} after {}", s3key, stopwatch);
-				downloadSuccessful = false;
-			}
+            future.get();
+            log.debug("Finished downloading {} in {}", s3key, stopwatch);
+            downloadSuccessful = true;
 		} catch (InterruptedException e) {
 			log.error("Failed downloading {} after {}", s3key, stopwatch, e);
 			downloadSuccessful = false;

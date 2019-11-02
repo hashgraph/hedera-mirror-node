@@ -78,9 +78,9 @@ public class RecordFileDownloaderTest {
         downloaderProperties = new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
         downloaderProperties.init();
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
-        TransferManager transferManager = new MirrorNodeConfiguration().transferManager(commonDownloaderProperties);
+        var s3AsyncClient = (new MirrorNodeConfiguration()).s3AsyncClient(commonDownloaderProperties);
 
-        downloader = new RecordFileDownloader(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
+        downloader = new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook, downloaderProperties);
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath(), "v2")
