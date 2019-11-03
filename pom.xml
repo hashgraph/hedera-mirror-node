@@ -35,9 +35,10 @@
 	</organization>
 	<packaging>jar</packaging>
 	<scm>
-		<connection>https://github.com/hashgraph/hedera-mirror-node.git</connection>
+		<connection>https://github.com/steven-sheehy/hedera-mirror-node.git</connection>
+		<developerConnection>scm:git:https://github.com/steven-sheehy/hedera-mirror-node.git</developerConnection>
 		<tag>master</tag>
-		<url>https://github.com/hashgraph/hedera-mirror-node/tree/master</url>
+		<url>https://github.com/steven-sheehy/hedera-mirror-node/tree/master</url>
 	</scm>
 	<url>https://github.com/hashgraph/hedera-mirror-node</url>
 	<properties>
@@ -284,6 +285,38 @@
 					</execution>
 				</executions>
 			</plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.google.code.maven-replacer-plugin</groupId>
+                <artifactId>replacer</artifactId>
+                <version>1.5.3</version>
+                <configuration>
+                    <file>rest-api/package.json</file>
+                    <replacements>
+                        <replacement>
+                            <token>"version": "[\w.-]+"</token>
+                            <value>"version": "${project.version}"</value>
+                        </replacement>
+                    </replacements>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>replace</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                    </execution>
+                </executions>
+            </plugin>
 		</plugins>
 	</build>
 </project>
