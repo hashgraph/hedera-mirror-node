@@ -65,7 +65,7 @@ public class AccountBalancesDownloaderTest {
     private BalanceDownloaderProperties downloaderProperties;
 
     @BeforeEach
-    void before() throws Exception {
+    void before() {
         mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
         mirrorProperties.setNetwork(HederaNetwork.TESTNET);

@@ -35,8 +35,8 @@ import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -134,14 +134,15 @@ public abstract class Downloader {
                 try {
                     // batchSize (number of items we plan do download in a single batch) times 2 for file + sig
                     final var listSize = (downloaderProperties.getBatchSize() * 2);
-                    ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                    // Not using ListObjectsV2Request because it does not work with GCP.
+                    ListObjectsRequest listRequest = ListObjectsRequest.builder()
                             .bucket(downloaderProperties.getCommon().getBucketName())
                             .prefix(prefix)
                             .delimiter("/")
-                            .startAfter(prefix + lastValidSigFileName)
+                            .marker(prefix + lastValidSigFileName)
                             .maxKeys(listSize)
                             .build();
-                    CompletableFuture<ListObjectsV2Response> response = s3Client.listObjectsV2(listRequest);
+                    CompletableFuture<ListObjectsResponse> response = s3Client.listObjects(listRequest);
                     var pendingDownloads = new ArrayList<PendingDownload>(downloaderProperties.getBatchSize());
                     // Loop through the list of remote files beginning a download for each relevant sig file.
                     for (S3Object content : response.get().contents()) {
