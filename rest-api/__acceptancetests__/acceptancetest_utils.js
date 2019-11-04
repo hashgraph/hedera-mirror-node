@@ -47,7 +47,7 @@ const toAccNum = (accId => Number(accId.split('.')[2]))
  * @param {Number} accountNumber
  * @return {String} shard.realm.accountNumber
  */
-const fromAccNum = (accNum => `${process.env.SHARD_NUM}.${config.TEST_REALM}.${accNum}`)
+const fromAccNum = (accNum => `${config.shard}.0.${accNum}`)
 
 const cloneObject = function(obj) {
     return JSON.parse(JSON.stringify(obj));

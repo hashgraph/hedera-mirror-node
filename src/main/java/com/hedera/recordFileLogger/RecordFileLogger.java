@@ -30,13 +30,29 @@ import java.sql.Types;
 import java.time.Instant;
 import java.util.HashMap;
 
-import com.hedera.mirror.parser.record.RecordParserProperties;
-import com.hederahashgraph.api.proto.java.*;
-import lombok.extern.log4j.Log4j2;
-
-import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.databaseUtilities.DatabaseUtilities;
+import com.hedera.mirror.addressbook.NetworkAddressBook;
+import com.hedera.mirror.parser.record.RecordParserProperties;
 import com.hedera.utilities.Utility;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAddClaimTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
+import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransferList;
+
+import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class RecordFileLogger {
@@ -75,6 +91,8 @@ public class RecordFileLogger {
         ,CHARGED_TX_FEE
         ,INITIAL_BALANCE
         ,FK_REC_FILE_ID
+		,VALID_DURATION_SECONDS
+		,MAX_FEE
     }
 
     enum F_TRANSFERLIST {
@@ -105,14 +123,14 @@ public class RecordFileLogger {
         ,CONSENSUS_TIMESTAMP
     	,LIVEHASH
     }
-    
+
     static long getFileId() {
     	return fileId;
     }
     static void setBatchSize(long batchSize) {
     	BATCH_SIZE = batchSize;
     }
-    
+
 	public static boolean start() {
 		batch_count = 0;
 
@@ -168,8 +186,8 @@ public class RecordFileLogger {
 			sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
 					+ " (fk_node_acc_id, memo, valid_start_ns, fk_trans_type_id, fk_payer_acc_id"
 					+ ", fk_result_id, consensus_ns, fk_cud_entity_id, charged_tx_fee"
-					+ ", initial_balance, fk_rec_file_id)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+					+ ", initial_balance, fk_rec_file_id, valid_duration_seconds, max_fee)"
+ 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
 					+ " (consensus_timestamp, account_id, amount)"
 					+ " VALUES (?, ?, ?)");
@@ -284,17 +302,19 @@ public class RecordFileLogger {
 		}
 		long fkNodeAccountId = entities.createOrGetEntity(body.getNodeAccountID());
 		TransactionID transactionID = body.getTransactionID();
+		long validDurationSeconds = body.hasTransactionValidDuration() ? body.getTransactionValidDuration().getSeconds() : null;
 
 		final var vs = transactionID.getTransactionValidStart();
-		final long validStartNs = Utility.convertInstantToNanos(Instant.ofEpochSecond(vs.getSeconds(), vs.getNanos()));
+		final long validStartNs = Utility.convertToNanos(vs.getSeconds(), vs.getNanos());
 		final var c = txRecord.getConsensusTimestamp();
-		final long consensusNs = Utility.convertInstantToNanos(Instant.ofEpochSecond(c.getSeconds(), c.getNanos()));
+		final long consensusNs = Utility.convertToNanos(c.getSeconds(), c.getNanos());
 
 		sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), fkNodeAccountId);
 		sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), body.getMemo().getBytes());
 		sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), validStartNs);
 		sqlInsertTransaction.setInt(F_TRANSACTION.FK_TRANS_TYPE_ID.ordinal(), getTransactionTypeId(body));
 		sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), fileId);
+		sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION_SECONDS.ordinal(), validDurationSeconds);
 
 		long fkPayerAccountId = entities.createOrGetEntity(transactionID.getAccountID());
 
@@ -314,6 +334,7 @@ public class RecordFileLogger {
 		sqlInsertTransaction.setLong(F_TRANSACTION.FK_RESULT.ordinal(), fk_result_id);
 		sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), consensusNs);
 		sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), txRecord.getTransactionFee());
+		sqlInsertTransaction.setLong(F_TRANSACTION.MAX_FEE.ordinal(), body.getTransactionFee());
 
 		long entityId = 0;
 		long initialBalance = 0;

@@ -2,6 +2,13 @@
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
 
+### Addded `valid_duration_seconds` and `max_fee` columns on `t_transactions and REST-API transaction response`
+
+`valid_duration_seconds` represents the seconds for which a submitted transaction is to be deemed valid beyond the start time. The transaction is invalid if consensusTimestamp > transactionValidStart + `valid_duration_seconds`
+`max_fee`represents the maximum transaction fee the client is willing to pay, which is split between the network and the node
+Both values are set to null if a valid value is not received.
+Both `valid_duration_seconds` and `max_fee` are exposed in the REST-API transactions response. 
+
 ### New account_balances schema
 
   Added tables `account_balances` and `account_balance_sets`

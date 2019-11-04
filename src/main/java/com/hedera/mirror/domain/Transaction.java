@@ -22,7 +22,10 @@ package com.hedera.mirror.domain;
 
 import lombok.Data;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Data
 @Entity
@@ -58,4 +61,7 @@ public class Transaction {
 
     private Long validStartNs;
 
+    private Long validDurationSeconds;
+
+    private Long maxFee;
 }

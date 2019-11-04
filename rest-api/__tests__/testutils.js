@@ -21,7 +21,6 @@
 
 const request = require('supertest');
 const math = require('mathjs');
-const config = require('../config.js');
 const server = require('../server');
 const utils = require('../utils.js');
 

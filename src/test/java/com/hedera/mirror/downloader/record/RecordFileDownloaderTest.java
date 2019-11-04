@@ -49,7 +49,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class RecordFileDownloaderTest {
 
-    @Mock
+    @Mock(answer = Answers.RETURNS_SMART_NULLS)
     private ApplicationStatusRepository applicationStatusRepository;
 
     @TempDir
@@ -67,7 +67,8 @@ public class RecordFileDownloaderTest {
     private RecordDownloaderProperties downloaderProperties;
 
     @BeforeEach
-    void before() throws Exception {
+    void before(TestInfo testInfo) {
+        System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
         mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
         mirrorProperties.setNetwork(HederaNetwork.TESTNET);
@@ -106,7 +107,9 @@ public class RecordFileDownloaderTest {
 
         downloader.download();
 
+        verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-07-01T14:13:00.317763Z.rcd");
         verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-07-01T14:29:00.302068Z.rcd");
+        verify(applicationStatusRepository, times(2)).updateStatusValue(eq(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH), any());
         assertThat(Files.walk(downloaderProperties.getValidPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)
@@ -121,7 +124,9 @@ public class RecordFileDownloaderTest {
     void downloadV2() throws Exception {
         fileCopier.copy();
         downloader.download();
+        verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_00.419072Z.rcd");
         verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_05.249678Z.rcd");
+        verify(applicationStatusRepository, times(2)).updateStatusValue(eq(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH), any());
         assertThat(Files.walk(downloaderProperties.getValidPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(2)

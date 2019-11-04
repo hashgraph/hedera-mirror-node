@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,7 @@ const httpStatusCodes = {
 }
 
 /**
- * Check if the given number is numeric 
+ * Check if the given number is numeric
  * @param {String} n Number to test
  * @return {Boolean} true if n is numeric, false otherwise
  */
@@ -103,10 +103,10 @@ const paramValidityChecks = function (param, opAndVal) {
         case 'result':
             // Acceptable words: success or fail
             ret = ['success', 'fail'].includes(val);
-            break;   
-        default:  
+            break;
+        default:
             // Every parameter should be included here. Otherwise, it will not be accepted.
-            ret = false; 
+            ret = false;
     }
 
     return (ret);
@@ -155,7 +155,7 @@ const validateReq = function (req) {
 }
 
 /**
- * Split the account number into shard, realm and num fields. 
+ * Split the account number into shard, realm and num fields.
  * @param {String} acc Either 0.0.1234 or just 1234
  * @return {Object} {accShard, accRealm, accNum} Parsed account number
  */
@@ -187,7 +187,7 @@ const parseEntityId = function (acc) {
  * @param {Array} fields Array of fields in the query (e.g. 'account.id' or 'timestamp')
  * @param {Array} valArr Array of values (e.g. 20 or gt:10)
  * @param {String} type Type of the field such as:
- *      'entityId': Could be just a number like 1234 that gets converted to 0.0.1234, or a full 
+ *      'entityId': Could be just a number like 1234 that gets converted to 0.0.1234, or a full
  *          entity id in shard.realm.entityId form; or
  *      'timestamp': Could be just in seconds followed by optional decimal point and millis or nanos
  * @param {Function} valueTranslate Function(str)->str to apply to the query parameter's value (ie toLowerCase)
@@ -246,10 +246,10 @@ const parseComparatorSymbol = function (fields, valArr, type = null, valueTransl
                             ')';
                         vals = vals.concat([entity.shard, entity.realm, entity.num]);
                     } else if (type === 'timestamp_ns') {
-                        // Expect timestamp input as (a) just seconds, 
-                        // (b) seconds.mmm (3-digit milliseconds), 
+                        // Expect timestamp input as (a) just seconds,
+                        // (b) seconds.mmm (3-digit milliseconds),
                         // or (c) seconds.nnnnnnnnn (9-digit nanoseconds)
-                        // Convert all of these formats to (seconds * 10^9 + nanoseconds) format, 
+                        // Convert all of these formats to (seconds * 10^9 + nanoseconds) format,
                         // after validating that all characters are digits
                         let tsSplit = val.split('.');
                         let seconds = /^(\d)+$/.test(tsSplit[0]) ? tsSplit[0] : 0;
@@ -312,9 +312,9 @@ const getIntegerParam = function (param, limit = undefined) {
 /**
  * Parse the query filer parameter
  * @param {Request} req HTTP Query request object
- * @param {String} queryField Query filter parameter name (e.g. account.id or timestamp) 
+ * @param {String} queryField Query filter parameter name (e.g. account.id or timestamp)
  * @param {Array of Strings} SQL table field names to construct the query
- * @param {String} type One of 'entityId' or 'timestamp' for special interpretation as 
+ * @param {String} type One of 'entityId' or 'timestamp' for special interpretation as
  *          an entity (shard.realm.entity format), or timestamp (ssssssssss.nnnnnnnnn)
  * @param {Function} valueTranslate Function(str)->str to apply to the query parameter's value (ie toLowerCase)
  *          this happens to the value _after_ operators removed and doesn't affect the operator
@@ -383,8 +383,8 @@ const parseLimitAndOrderParams = function (req, defaultOrder = 'desc') {
     // Parse the limit parameter
     let limitQuery = '';
     let limitParams = [];
-    let lVal = getIntegerParam(req.query['limit'], config.limits.RESPONSE_ROWS);
-    let limitValue = lVal === '' ? config.limits.RESPONSE_ROWS : lVal;
+    let lVal = getIntegerParam(req.query['limit'], config.api.maxLimit);
+    let limitValue = lVal === '' ? config.api.maxLimit : lVal;
     limitQuery = 'limit ? ';
     limitParams.push(limitValue);
 
@@ -405,7 +405,7 @@ const parseLimitAndOrderParams = function (req, defaultOrder = 'desc') {
 
 
 /**
- * Convert the positional parameters from the MySql style query (?) to Postgres 
+ * Convert the positional parameters from the MySql style query (?) to Postgres
  * style positional parameters ($1, $2, etc)
  * @param {String} sqlQuery MySql style query
  * @param {Array of values} sqlParams Values of positional parameters
@@ -425,14 +425,14 @@ const convertMySqlStyleQueryToPostgress = function (sqlQuery, sqlParams) {
  * @param {HTTPRequest} req HTTP query request object
  * @param {Boolean} isEnd Is the next link valid or not
  * @param {String} field The query parameter field name
- * @param {Any} lastValue THe last val for the 'next' queries in the pagination. 
+ * @param {Any} lastValue THe last val for the 'next' queries in the pagination.
  * @param {String} order Order of sorting the results
  * @return {String} next Fully formed link to the next page
  */
 const getPaginationLink = function (req, isEnd, field, lastValue, order) {
     let urlPrefix;
-    if (process.env.PORT != undefined && process.env.INCLUDE_PATH_IN_NEXT_LINKS == 1) {
-        urlPrefix = req.protocol + '://' + req.hostname + ':' + process.env.PORT;
+    if (config.api.port != undefined && config.api.includeHostInLink == 1) {
+        urlPrefix = req.protocol + '://' + req.hostname + ':' + config.api.port;
     } else {
         urlPrefix = '';
     }
@@ -462,7 +462,7 @@ const getPaginationLink = function (req, isEnd, field, lastValue, order) {
             }
         }
 
-        // And add back the continuation value as 'field=gt:x' (asc order) or 
+        // And add back the continuation value as 'field=gt:x' (asc order) or
         // 'field=lt:x' (desc order)
         if (field in req.query) {
             req.query[field] = [].concat(req.query[field]).concat(insertedPattern + ':' + lastValue);
@@ -485,15 +485,15 @@ const getPaginationLink = function (req, isEnd, field, lastValue, order) {
 
 
 /**
- * Create an additional timestamp based query to ensure the integrity of 
- * paginated links results. The challege is that between consecutive paginated 
- * calls, the database could have received more recent entries, and a subsequent 
+ * Create an additional timestamp based query to ensure the integrity of
+ * paginated links results. The challege is that between consecutive paginated
+ * calls, the database could have received more recent entries, and a subsequent
  * call could receive inconsistent data as a result.
  * This is handled by anchoring the queries on the page anchor (consensus seconds)
  * parameter.
  * @param {Request} req HTTP query request object
  * @param {String} order Order ('asc' or 'desc')
- * @return {Integer} anchorSecNs consensus seconds of the query result of 
+ * @return {Integer} anchorSecNs consensus seconds of the query result of
  *          the call that started pagination
  * @return {Request} req Updated HTTP request object with inserted pageanchor parameter
  */
@@ -515,15 +515,24 @@ const getTimeQueryForPagination = function (req, order, anchorSecNs) {
 /**
 * Converts nanoseconds since epoch to seconds.nnnnnnnnn format
 * @param {String} ns Nanoseconds since epoch
-* @return {String} Seconds since epoch (seconds.nnnnnnnnn format) 
+* @return {String} Seconds since epoch (seconds.nnnnnnnnn format)
 */
 const nsToSecNs = function (ns) {
     return (math.divide(math.bignumber(ns), math.bignumber(1e9)).toFixed(9).toString());
 }
 
 /**
+* Converts nanoseconds since epoch to seconds-nnnnnnnnn format
+* @param {String} ns Nanoseconds since epoch
+* @return {String} Seconds since epoch (seconds-nnnnnnnnn format)
+*/
+const nsToSecNsWithHyphen = function (ns) {
+    return nsToSecNs(ns).replace(".", "-");
+}
+
+/**
 * Converts seconds since epoch (seconds.nnnnnnnnn format) to  nanoseconds
-* @param {String} Seconds since epoch (seconds.nnnnnnnnn format) 
+* @param {String} Seconds since epoch (seconds.nnnnnnnnn format)
 * @return {String} ns Nanoseconds since epoch
 */
 const secNsToNs = function (secNs) {
@@ -540,7 +549,7 @@ const secNsToSeconds = function (secNs) {
 * @return {Number} limit Max # entries to be returned.
 */
 const returnEntriesLimit = function (type) {
-    return (config.limits.RESPONSE_ROWS);
+    return (config.api.maxLimit);
 }
 
 /**
@@ -593,6 +602,27 @@ const encodeBase64 = function (buffer) {
     return ((null === buffer) ? null : buffer.toString('base64'));
 }
 
+/**
+ *
+ * @param {String} num Nullable number
+ * @returns {Any} representation of math.bignumber value of parameter or null if null
+ */
+const getNullableNumber = function(num) {
+    return num == null ? null : math.bignumber(num).toString();
+}
+
+/**
+ * Construct a transaction id using format: shard.realm.num-sssssssssss-nnnnnnnnn
+ * @param {String} shard shard number
+ * @param {String} realm realm number
+ * @param {String} num entity number
+ * @param {String} validStartTimestamp valid start time
+ * @returns {String} transactionId of format format: shard.realm.num-sssssssssss-nnnnnnnnn
+ */
+const createTransactionId = function (shard, realm, num, validStartTimestamp) {
+    return shard + '.' + realm + '.' + num + '-' + nsToSecNsWithHyphen(validStartTimestamp);
+}
+
 module.exports = {
     parseParams: parseParams,
     parseCreditDebitParams: parseCreditDebitParams,
@@ -610,5 +640,8 @@ module.exports = {
     encodeBase64: encodeBase64,
     validateReq: validateReq,
     httpStatusCodes: httpStatusCodes,
-    ENTITY_TYPE_FILE: ENTITY_TYPE_FILE
+    ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
+    getNullableNumber: getNullableNumber,
+    nsToSecNsWithHyphen: nsToSecNsWithHyphen,
+    createTransactionId: createTransactionId
 }

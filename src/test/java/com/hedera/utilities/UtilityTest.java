@@ -31,8 +31,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 
 import org.apache.commons.lang3.tuple.Triple;
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -217,15 +217,21 @@ public class UtilityTest {
             "1569936354, 0",
             "0,0"
     })
-	public void timeStampInNanosSecondNano(long seconds, int nanos)  {
-    	Long timeStamp = Utility.timeStampInNanos(seconds, nanos);
-		Instant fromTimeStamp = Utility.convertNanosToInstant(timeStamp);
+	void convertInstantToNanos(long seconds, int nanos)  {
+    	Long timeNanos = Utility.convertToNanos(seconds, nanos);
+		Instant fromTimeStamp = Instant.ofEpochSecond(0, timeNanos);
 
 		assertAll(
                 () -> assertEquals(seconds, fromTimeStamp.getEpochSecond())
                 ,() -> assertEquals(nanos, fromTimeStamp.getNano())
         );
 	}
+
+    @Test
+    @DisplayName("converting illegal instant to nanos")
+    void convertInstantToNanosIllegalInput()  {
+        assertThrows(ArithmeticException.class, () -> {Utility.convertToNanos(1568376750538L, 0L);});
+    }
 
     @ParameterizedTest(name = "with seconds {0} and nanos {1}")
     @CsvSource({
@@ -235,15 +241,22 @@ public class UtilityTest {
             "0,0"
     })
 	public void timeStampInNanosTimeStamp(long seconds, int nanos)  {
-
 		Timestamp timestamp = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 
 		long timeStampInNanos = Utility.timeStampInNanos(timestamp);
-		Instant fromTimeStamp = Utility.convertNanosToInstant(timeStampInNanos);
+        Instant fromTimeStamp = Instant.ofEpochSecond(0, timeStampInNanos);
 
 		assertAll(
                 () -> assertEquals(timestamp.getSeconds(), fromTimeStamp.getEpochSecond())
                 ,() -> assertEquals(timestamp.getNanos(), fromTimeStamp.getNano())
         );
 	}
+
+    @Test
+    @DisplayName("converting illegal timestamp to nanos")
+    void convertTimestampToNanosIllegalInput()  {
+        Timestamp timestamp = Timestamp.newBuilder().setSeconds(1568376750538L).setNanos(0).build();
+        assertThrows(ArithmeticException.class, () -> {Utility.timeStampInNanos(timestamp);});
+    }
+
 }

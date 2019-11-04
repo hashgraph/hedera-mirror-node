@@ -1,10 +1,8 @@
 *.log
 __tests__
 .dockerignore
-.env
 .gitignore
 Dockerfile
-env.sample
 /.node-flywaydb*
 /node_modules/
 .node-version
