@@ -25,6 +25,7 @@ import com.hedera.utilities.Utility;
 
 import javax.annotation.PostConstruct;
 import java.nio.file.Path;
+import java.time.Duration;
 
 public interface DownloaderProperties {
 
@@ -36,6 +37,8 @@ public interface DownloaderProperties {
      * The number of current mainnet nodes used to download signatures in parallel. Should be adjusted when nodes change
      */
     int getThreads();
+
+    Duration getSteadyStatePollDelay();
 
     String getPrefix();
 

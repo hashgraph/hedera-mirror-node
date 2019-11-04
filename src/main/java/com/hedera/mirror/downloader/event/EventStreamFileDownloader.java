@@ -42,11 +42,6 @@ public class EventStreamFileDownloader extends Downloader {
         super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties);
     }
 
-    @Scheduled(fixedRateString = "${hedera.mirror.downloader.event.frequency:60000}")
-    public void download() {
-        downloadNextBatch();
-    }
-
     protected ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_EVENT_FILE;
     }

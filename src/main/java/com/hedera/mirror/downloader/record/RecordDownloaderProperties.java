@@ -49,8 +49,9 @@ public class RecordDownloaderProperties implements DownloaderProperties {
 
     private boolean enabled = true;
 
+    // If no new file is found, check again in 3 sec. Record files are generated every 5 sec.
     @NotNull
-    private Duration frequency = Duration.ofMillis(500L);
+    private Duration steadyStatePollDelay = Duration.ofSeconds(3);
 
     @NotBlank
     private String prefix = "recordstreams/record";

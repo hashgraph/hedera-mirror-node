@@ -195,6 +195,15 @@ public class AccountBalancesDownloaderTest {
         assertThat(downloaderProperties.getValidPath()).doesNotExist();
     }
 
+    @Test
+    @DisplayName("no new files found")
+    void noNewFilesFound() {
+        fileCopier.copy();
+        doReturn("2019-08-30T18_30_00.010147001Z_Balances.csv").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
+        boolean newFilesFound = downloader.download();
+        assertThat(newFilesFound).isFalse();
+    }
+
     private static void corruptFile(Path p) {
         try {
             File file = p.toFile();

@@ -51,8 +51,9 @@ public class BalanceDownloaderProperties implements DownloaderProperties {
 
     private boolean enabled = true;
 
+    // If no new file is found, check again in 1 min. Balances files are generated every 15 min.
     @NotNull
-    private Duration frequency = Duration.ofMillis(500L);
+    private Duration steadyStatePollDelay = Duration.ofMinutes(1);
 
     @NotBlank
     private String prefix = "accountBalances/balance";

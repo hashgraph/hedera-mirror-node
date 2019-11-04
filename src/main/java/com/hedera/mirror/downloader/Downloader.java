@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.scheduling.annotation.Async;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -80,20 +81,43 @@ public abstract class Downloader {
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
 	}
 
-	protected void downloadNextBatch() {
-        try {
-            if (!downloaderProperties.isEnabled()) {
-                return;
+    @Async
+    public void run() {
+        while (true) {
+            boolean newFilesFound = false;
+            if (downloaderProperties.isEnabled()) {
+                newFilesFound = download();
+            }
+            // If no new files were found, do not sleep, keep processing. This is the usual case when mirror node is
+            // catching up.
+            if (!newFilesFound) {
+                try {
+                    log.debug("No new files found or downloaded is disabled, sleeping for {}",
+                            downloaderProperties.getSteadyStatePollDelay());
+                    Thread.sleep(downloaderProperties.getSteadyStatePollDelay().toMillis());
+                } catch(InterruptedException e) {
+                    log.info("Interrupted when downloader was sleeping", e);
+                }
             }
             if (Utility.checkStopFile()) {
                 log.info("Stop file found");
                 return;
             }
+        }
+    }
+
+    /**
+     * @return true if new files were found.
+     */
+    public boolean download() {
+        try {
             final var sigFilesMap = downloadSigFiles();
             // Verify signature files and download corresponding files of valid signature files
             verifySigsAndDownloadDataFiles(sigFilesMap);
+            return !sigFilesMap.isEmpty();
         } catch (Exception e) {
             log.error("Error downloading files", e);
+            return true; // retry immediately
         }
     }
 

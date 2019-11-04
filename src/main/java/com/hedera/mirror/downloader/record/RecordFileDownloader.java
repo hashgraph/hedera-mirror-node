@@ -42,11 +42,6 @@ public class RecordFileDownloader extends Downloader {
         super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties);
     }
 
-    @Scheduled(fixedRateString = "${hedera.mirror.downloader.record.frequency:500}")
-    public void download() {
-        downloadNextBatch();
-    }
-
     protected ApplicationStatusCode getLastValidDownloadedFileKey() {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE;
     }

@@ -42,11 +42,6 @@ public class AccountBalancesDownloader extends Downloader {
         super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties);
     }
 
-    @Scheduled(fixedRateString = "${hedera.mirror.downloader.balance.frequency:500}")
-    public void download() {
-        downloadNextBatch();
-    }
-
     @Override
     protected boolean verifyHashChain(File file) {
         return true;

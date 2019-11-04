@@ -252,6 +252,15 @@ public class RecordFileDownloaderTest {
         assertThat(downloaderProperties.getValidPath()).doesNotExist();
     }
 
+    @Test
+    @DisplayName("no new files found")
+    void noNewFilesFound() {
+        fileCopier.copy();
+        doReturn("2019-08-30T18_10_05.249678Z.rcd").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
+        boolean newFilesFound = downloader.download();
+        assertThat(newFilesFound).isFalse();
+    }
+
     private static void corruptFile(Path p) {
         try {
             File file = p.toFile();

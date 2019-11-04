@@ -51,8 +51,10 @@ public class EventDownloaderProperties implements DownloaderProperties {
 
     private boolean enabled = false;
 
+    // If no new file is found, check again in 1 min. Record files are generated every 5 sec, but there is no urgency
+    // to process them, hence the longer wait.
     @NotNull
-    private Duration frequency = Duration.ofMinutes(1L);
+    private Duration steadyStatePollDelay = Duration.ofMinutes(1);
 
     @NotBlank
     private String prefix = "eventsStreams/events_";
