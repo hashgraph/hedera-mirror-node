@@ -140,5 +140,4 @@ describe('Custom CONFIG_NAME:', () => {
 function cleanup() {
   fs.unlink(path.join('.', 'application.yml'), e => {});
   fs.unlink(path.join('.', 'application.yaml'), e => {});
-  fs.unlink(path.join('.', 'application.properties'), e => {});
 }

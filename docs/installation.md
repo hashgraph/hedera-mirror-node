@@ -1,6 +1,6 @@
 # Installation
 
-The Mirror Node can be ran either be ran [locally](#running-locally) or via [Docker containers](#running-via-docker-compose).
+The Mirror Node can be ran [locally](#running-locally) or via [Docker](#running-via-docker-compose).
 Either way, it will first need to be built using Java locally.
 
 ## Building
@@ -72,7 +72,7 @@ TARGET=127.0.0.1:5551 npm run acceptancetest
 Docker Compose scripts are provided and run all the mirror node components:
 
 - PostgreSQL database
-- Java backend
+- Parser
 - REST API
 
 Containers use the following persisted volumes:
@@ -89,7 +89,7 @@ access file obtained via the downloading containers
 
 To start, first ensure the Docker image is built locally by running Maven install then start via Docker Compose. The
 only required property to set is the `BUCKET_NAME`, but other values should be tweaked like database passwords, network, etc.
-See the [configuration] documentation for more details on available properties. These customized properties can be
+See the [configuration](configuration.md) documentation for more details on available properties. These customized properties can be
 passed to Docker Compose via an [environment file](https://docs.docker.com/compose/compose-file/#env_file).
 
 ```console
