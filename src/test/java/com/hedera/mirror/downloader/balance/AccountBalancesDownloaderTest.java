@@ -111,17 +111,6 @@ public class AccountBalancesDownloaderTest {
     }
 
     @Test
-    @DisplayName("Missing address book")
-    void missingAddressBook() throws Exception {
-        Files.delete(mirrorProperties.getAddressBookPath());
-        fileCopier.copy();
-        downloader.download();
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(0);
-    }
-
-    @Test
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {
         downloaderProperties.setBatchSize(1);

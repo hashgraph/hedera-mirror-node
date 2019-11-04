@@ -65,6 +65,7 @@ public class RecordFileDownloaderTest {
     private MirrorProperties mirrorProperties;
     private NetworkAddressBook networkAddressBook;
     private RecordDownloaderProperties downloaderProperties;
+    private TransferManager transferManager;
 
     @BeforeEach
     void before(TestInfo testInfo) {
@@ -78,7 +79,7 @@ public class RecordFileDownloaderTest {
         downloaderProperties = new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
         downloaderProperties.init();
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
-        TransferManager transferManager = new MirrorNodeConfiguration().transferManager(commonDownloaderProperties);
+        transferManager = new MirrorNodeConfiguration().transferManager(commonDownloaderProperties);
 
         downloader = new RecordFileDownloader(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
 
@@ -100,6 +101,8 @@ public class RecordFileDownloaderTest {
     void downloadV1() throws Exception {
         Path addressBook = ResourceUtils.getFile("classpath:addressbook/test-v1").toPath();
         mirrorProperties.setAddressBookPath(addressBook);
+        networkAddressBook = new NetworkAddressBook(mirrorProperties);
+        downloader = new RecordFileDownloader(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
@@ -134,17 +137,6 @@ public class RecordFileDownloaderTest {
                 .extracting(Path::getFileName)
                 .contains(Paths.get("2019-08-30T18_10_05.249678Z.rcd"))
                 .contains(Paths.get("2019-08-30T18_10_00.419072Z.rcd"));
-    }
-
-    @Test
-    @DisplayName("Missing address book")
-    void missingAddressBook() throws Exception {
-        Files.delete(mirrorProperties.getAddressBookPath());
-        fileCopier.copy();
-        downloader.download();
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(0);
     }
 
     @Test
