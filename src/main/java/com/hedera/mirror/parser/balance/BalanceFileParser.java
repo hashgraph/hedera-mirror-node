@@ -29,6 +29,7 @@ import java.util.List;
 import com.google.common.base.Stopwatch;
 
 import com.hedera.mirror.parser.FileWatcher;
+import com.hedera.utilities.ShutdownHelper;
 import com.hedera.utilities.Utility;
 
 import javax.inject.Named;
@@ -80,8 +81,8 @@ public class BalanceFileParser extends FileWatcher {
 			File[] balanceFiles = balanceFilePath.listFiles();
 
 	        for (final File balanceFile : balanceFiles) {
-				if (Utility.checkStopFile()) {
-					throw new RuntimeException("Stop file found, exiting");
+				if (ShutdownHelper.isStopping()) {
+					throw new RuntimeException("Process is shutting down");
 				}
 				if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath()).loadAccountBalances()) {
 					// move it

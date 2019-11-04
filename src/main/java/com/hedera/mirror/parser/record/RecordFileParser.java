@@ -37,6 +37,7 @@ import com.hedera.filedelimiters.FileDelimiter;
 import com.hedera.mirror.parser.FileParser;
 import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
+import com.hedera.utilities.ShutdownHelper;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -195,8 +196,7 @@ public class RecordFileParser implements FileParser {
 
 		for (String name : fileNames) {
 			String thisFileHash = "";
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found, stopping");
+			if (ShutdownHelper.isStopping()) {
 				return;
 			}
 			thisFileHash = Hex.encodeHexString(Utility.getFileHash(name));
@@ -217,8 +217,7 @@ public class RecordFileParser implements FileParser {
 				return;
 			}
 
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found");
+			if (ShutdownHelper.isStopping()) {
 				return;
 			}
 
