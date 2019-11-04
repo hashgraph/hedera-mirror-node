@@ -35,47 +35,23 @@ const runEverything = async function () {
         if (restservers.length === 0) {
             return;
         }
-
+        
         for (const server of restservers) {
             // Execute the tests using shell.exec
-            // Note: jest project team is working on a feature called runCLI, which will allow programatic
-            // execution of jest tests. Once that is available, this shell execution can be 
-            // replaced to run jest directly (instead of using the shell.exec(cmd))
-            const cmd = `(cd ../.. && TARGET=${server.ip}:${server.port} ./__acceptancetests__/acceptancetests --testNamePattern='monitoring' --json --silent)`;
+            const cmd = `(cd ../.. && TARGET=https://${server.ip}:${server.port} node ./__acceptancetests__/acceptanceFetchTests.js)`;
             if (common.getProcess(server) == undefined) {
                 // Execute the test and store the pid
                 const pid = shell.exec(cmd, {
                     async: true
                 }, (code, out, err) => {
-                    let outJson;
+                    let results;
                     try {
-                        outJson = JSON.parse(out);
+                        results = JSON.parse(out);
                     } catch (err) {
-                        outJson = {}
+                        console.log('Error parsing cmd output: ' + err);
+                        results = {}
                     }
-                    let results = {};
-                    if (outJson.hasOwnProperty('startTime') &&
-                        outJson.hasOwnProperty('testResults')) {
-                        ['numPassedTests', 'numFailedTests', 'success'].forEach((k) => {
-                            results[k] = outJson[k];
-                        });
-                        results.testResults = []
-                        for (const tr of outJson.testResults) {
-                            for (const ar of tr.assertionResults) {
-                                results.testResults.push({
-                                    at: (tr.endTime / 1000).toFixed(3),
-                                    result: ar.status,
-                                    message: `${ar.ancestorTitles}: ${ar.title}`,
-                                    failureMessages: ar.failureMessages
-                                })
-                            }
-                            results.message = `${results.numPassedTests} / ` +
-                                `${results.numPassedTests + results.numFailedTests} tests succeded`;
-                        }
-                    } else {
-                        results = createFailedResultJson(`Test result unavailable`,
-                            `Test results not available for: ${server.name}`);
-                    }
+                    
                     common.deleteProcess(server);
                     common.saveResults(server, results);
                 });
