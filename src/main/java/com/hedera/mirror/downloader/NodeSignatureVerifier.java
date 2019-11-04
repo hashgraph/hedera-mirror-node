@@ -21,14 +21,12 @@ package com.hedera.mirror.downloader;
  */
 
 import com.hedera.mirror.addressbook.NetworkAddressBook;
-import com.hedera.mirror.domain.NodeAddress;
 import com.hedera.utilities.Utility;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.persistence.Tuple;
 import java.io.File;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -38,19 +36,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Log4j2
-public class NodeSignatureVerifier {
+class NodeSignatureVerifier {
 
-	private final Map<String, PublicKey> nodeIDPubKeyMap;
+    private final Map<String, PublicKey> nodeIDPubKeyMap;
 
-	public NodeSignatureVerifier(NetworkAddressBook networkAddressBook) {
-		nodeIDPubKeyMap = networkAddressBook
-                .load()
-                .stream()
-                .collect(Collectors.toMap(NodeAddress::getId, NodeAddress::getPublicKeyAsObject));
-	}
+    NodeSignatureVerifier(NetworkAddressBook networkAddressBook) {
+        nodeIDPubKeyMap = networkAddressBook.getNodeIDPubKeyMap();
+    }
 
     /**
      * Verifies that the signature files are signed by corresponding node's PublicKey. For valid signature files, we
@@ -62,7 +56,7 @@ public class NodeSignatureVerifier {
      *     agreed by super-majority nodes.
      *     If validity of signatures can not be established, then returns <null, empty list>.
      */
-    public Pair<byte[], List<File>> verifySignatureFiles(List<File> sigFiles) {
+    Pair<byte[], List<File>> verifySignatureFiles(List<File> sigFiles) {
         // If a signature is valid, we put the Hash in its content and its File to the map, to see if more than 2/3
         // valid signatures have the same Hash
         Map<String, Set<File>> hashToSigFiles = new HashMap<>();

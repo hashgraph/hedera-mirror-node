@@ -25,10 +25,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.PublicKey;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.HederaNetwork;
@@ -46,57 +50,71 @@ import javax.inject.Named;
 @Named
 public class NetworkAddressBook {
 
-    private static MirrorProperties mirrorProperties;
-    static byte[] addressBookBytes = new byte[0];
+    final private Path addressBookPath;
+    private byte[] addressBookBytes;
+    private Map<String, PublicKey> nodeIDPubKeyMap;
 
     public NetworkAddressBook(MirrorProperties mirrorProperties) {
-        this.mirrorProperties = mirrorProperties;
-        init();
-    }
-
-    private void init() {
-        Path path = mirrorProperties.getAddressBookPath();
+        // Hot-loading changes to network type (mainnet to testnet or vice-versa) or address book path are not
+        // desirable, so reference to mirrorProperties is not kept around.
+        addressBookPath = mirrorProperties.getAddressBookPath();
+        loadDefaultIfNeeded(mirrorProperties.getNetwork());
         try {
-            File addressBookFile = path.toFile();
-            if (!addressBookFile.exists() || !addressBookFile.canRead()) {
-                HederaNetwork hederaNetwork  = mirrorProperties.getNetwork();
-                Resource resource = new ClassPathResource(String.format("addressbook/%s", hederaNetwork.name().toLowerCase()));
-                Path defaultAddressBook = resource.getFile().toPath();
-                Utility.ensureDirectory(path.getParent());
-                Files.copy(defaultAddressBook, path, StandardCopyOption.REPLACE_EXISTING);
-                log.info("Copied default address book {} to {}", resource, path);
-            }
-        } catch (Exception e) {
-            log.error("Unable to copy {} address book to {}", mirrorProperties.getNetwork(), path, e);
+            addressBookBytes = Files.readAllBytes(addressBookPath);
+            parseAddressBook(addressBookBytes);
+        } catch (IOException e) {
+            // when mirror node is starting and loading the address book fails, it is best to stop immediately.
+            throw new RuntimeException("Error initializing address book from " + addressBookPath, e);
         }
     }
 
-    public static void update(byte[] newContents) throws IOException {
-    	addressBookBytes = newContents;
-		saveToDisk();
-    }
-
-    public static void append(byte[] extraContents) throws IOException {
-    	byte[] newAddressBook = Arrays.copyOf(addressBookBytes, addressBookBytes.length + extraContents.length);
-    	System.arraycopy(extraContents, 0, newAddressBook, addressBookBytes.length, extraContents.length);
-    	addressBookBytes = newAddressBook;
-		saveToDisk();
-    }
-
-    private static void saveToDisk() throws IOException {
-        Path path = mirrorProperties.getAddressBookPath();
-        Files.write(path, addressBookBytes);
-		log.info("New address book successfully saved to {}", path);
-    }
-
-    public Collection<NodeAddress> load() {
-        ImmutableList.Builder<NodeAddress> builder = ImmutableList.builder();
-        Path path = mirrorProperties.getAddressBookPath();
-
+    private void loadDefaultIfNeeded(HederaNetwork hederaNetwork) {
         try {
-            byte[] addressBookBytes = Files.readAllBytes(path);
-            NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
+            File addressBookFile = addressBookPath.toFile();
+            if (!addressBookFile.exists() || !addressBookFile.canRead()) {
+                Resource resource = new ClassPathResource(String.format("addressbook/%s", hederaNetwork.name().toLowerCase()));
+                Path defaultAddressBook = resource.getFile().toPath();
+                Utility.ensureDirectory(addressBookPath.getParent());
+                Files.copy(defaultAddressBook, addressBookPath, StandardCopyOption.REPLACE_EXISTING);
+                log.info("Copied default address book {} to {}", resource, addressBookPath);
+            }
+        } catch (Exception e) {
+            log.error("Unable to copy {} address book to {}", hederaNetwork, addressBookPath, e);
+        }
+    }
 
+    public synchronized Map<String, PublicKey> getNodeIDPubKeyMap() {
+        return nodeIDPubKeyMap;
+    }
+
+    public synchronized void update(byte[] newAddressBookBytes) throws IOException {
+        log.info("Updating address book");
+        updateInternal(newAddressBookBytes);
+    }
+
+    public synchronized void append(byte[] extraContents) throws IOException {
+        log.info("Appending to address book");
+        byte[] newAddressBookBytes = Arrays.copyOf(addressBookBytes, addressBookBytes.length + extraContents.length);
+        System.arraycopy(extraContents, 0, newAddressBookBytes, addressBookBytes.length, extraContents.length);
+        updateInternal(newAddressBookBytes);
+    }
+
+    private void updateInternal(byte[] newAddressBookBytes) throws IOException {
+        try {
+            // first parse to validate new contents
+            parseAddressBook(newAddressBookBytes);
+            addressBookBytes = newAddressBookBytes;
+            Files.write(addressBookPath, addressBookBytes);
+            log.info("New address book successfully saved to {}", addressBookPath);
+        } catch(Exception e) {
+            throw new IOException("Failed updating address book", e);
+        }
+    }
+
+    private void parseAddressBook(byte[] contentBytes) throws IllegalArgumentException {
+        ImmutableList.Builder<NodeAddress> builder = ImmutableList.builder();
+        try {
+            NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(contentBytes);
             for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
                 NodeAddress nodeAddress = NodeAddress.builder()
                         .id(nodeAddressProto.getMemo().toStringUtf8())
@@ -104,12 +122,14 @@ public class NetworkAddressBook {
                         .port(nodeAddressProto.getPortno())
                         .publicKey(nodeAddressProto.getRSAPubKey())
                         .build();
+                log.info(nodeAddress);
                 builder.add(nodeAddress);
             }
-        } catch (Exception ex) {
-            log.error("Failed to parse NodeAddressBook from {}", path, ex);
+        } catch (InvalidProtocolBufferException e) {
+            log.error("Failed to parse address book", e);
+            throw new IllegalArgumentException("Failed to parse address book");
         }
-
-        return builder.build();
+        nodeIDPubKeyMap = builder.build().stream()
+                .collect(Collectors.toMap(NodeAddress::getId, NodeAddress::getPublicKeyAsObject));
     }
 }

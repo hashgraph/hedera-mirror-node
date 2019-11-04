@@ -27,7 +27,6 @@ import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.FileData;
 import com.hedera.mirror.domain.HederaNetwork;
 import com.hedera.mirror.parser.record.RecordParserProperties;
-import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -39,6 +38,8 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NodeAddress;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ShardID;
@@ -53,12 +54,14 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import org.apache.commons.io.FileUtils;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.*;
 import org.springframework.test.context.jdbc.Sql;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.security.PublicKey;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -98,7 +101,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         mirrorProperties.setDataPath(dataPath);
         mirrorProperties.setNetwork(HederaNetwork.TESTNET);
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
-        
+
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
 		parserProperties = new RecordParserProperties(mirrorProperties);
@@ -106,6 +109,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 		parserProperties.setPersistSystemFiles(true);
 		parserProperties.setPersistCryptoTransferAmounts(true);
 		RecordFileLogger.parserProperties = parserProperties;
+        RecordFileLogger.networkAddressBook = networkAddressBook;
 	}
 
     @AfterEach
@@ -419,7 +423,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     @Test
     void fileAppendToSystemFile() throws Exception {
 
-    	final Transaction transaction = fileAppendTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
+    	final Transaction transaction = fileAppendTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build(), null);
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
     	final TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
@@ -590,15 +594,30 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
          );
     }
 
+    /**
+     * Builds a new NodeAddressBook using data from given sourceAddressBook (fake data for pub key doesn't work),
+     * serializes it and returns the bytes.
+     */
+    private byte[] getTestAddressBook(NetworkAddressBook sourceAddressBook) {
+        PublicKey testKey = sourceAddressBook.getNodeIDPubKeyMap().get("0.0.3");
+        return NodeAddressBook.newBuilder()
+                .addNodeAddress(NodeAddress.newBuilder()
+                        .setMemo(ByteString.copyFromUtf8("0.0.3"))
+                        .setRSAPubKey(Hex.toHexString(testKey.getEncoded()))
+                        .build())
+                .build().toByteArray(); // = byte[2] {10, 0}
+    }
+
     @Test
     void fileAppendToAddressBook() throws Exception {
+        byte[] newAddressBookBytes = getTestAddressBook(networkAddressBook);
 
-        NetworkAddressBook.update(new byte[0]);
-        
+        networkAddressBook.update(new byte[0]); // byte[0] = NodeAddressBook.newBuilder().build().toByteArray();
+
         RecordFileLogger.parserProperties.setPersistFiles(true);
         RecordFileLogger.parserProperties.setPersistSystemFiles(true);
 
-		final Transaction transaction = fileAppendTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
+		final Transaction transaction = fileAppendTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build(), newAddressBookBytes);
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
     	final TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
@@ -1043,7 +1062,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     @Test
     void fileUpdateAllToNewSystem() throws Exception {
 
-    	final Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
+    	final Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build(), null);
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
     	final TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build());
@@ -1099,8 +1118,9 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void fileUpdateAddressBook() throws Exception {
+        byte[] newAddressBookBytes = getTestAddressBook(networkAddressBook);
 
-        final Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
+        final Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build(), newAddressBookBytes);
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
     	final TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
@@ -1554,10 +1574,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	return transaction.build();
     }
     private Transaction fileAppendTransaction() {
-    	return fileAppendTransaction(fileId);
+    	return fileAppendTransaction(fileId, null);
     }
 
-    private Transaction fileAppendTransaction(FileID fileToAppendTo) {
+    private Transaction fileAppendTransaction(FileID fileToAppendTo, byte[] contents) {
     	final Transaction.Builder transaction = Transaction.newBuilder();
     	final FileAppendTransactionBody.Builder fileAppend = FileAppendTransactionBody.newBuilder();
 
@@ -1565,7 +1585,11 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	final String fileData = "Hedera hashgraph is even better!";
 
     	// Build a transaction
-    	fileAppend.setContents(ByteString.copyFromUtf8(fileData));
+        if (contents != null) {
+            fileAppend.setContents(ByteString.copyFrom(contents));
+        } else {
+            fileAppend.setContents(ByteString.copyFromUtf8(fileData));
+        }
     	fileAppend.setFileID(fileToAppendTo);
 
     	// Transaction body
@@ -1579,9 +1603,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	return transaction.build();
     }
     private Transaction fileUpdateAllTransaction() {
-    	return fileUpdateAllTransaction(fileId);
+    	return fileUpdateAllTransaction(fileId, null);
     }
-    private Transaction fileUpdateAllTransaction(FileID fileToUpdate) {
+
+    private Transaction fileUpdateAllTransaction(FileID fileToUpdate, byte[] contents) {
 
     	final Transaction.Builder transaction = Transaction.newBuilder();
     	final FileUpdateTransactionBody.Builder fileUpdate = FileUpdateTransactionBody.newBuilder();
@@ -1591,7 +1616,11 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     	final String fileData = "Hedera hashgraph is even better!";
 
     	// Build a transaction
-    	fileUpdate.setContents(ByteString.copyFromUtf8(fileData));
+        if (contents == null) {
+            fileUpdate.setContents(ByteString.copyFromUtf8(fileData));
+        } else {
+            fileUpdate.setContents(ByteString.copyFrom(contents));
+        }
     	fileUpdate.setFileID(fileToUpdate);
     	fileUpdate.setExpirationTime(Utility.instantToTimestamp(Instant.now()));
 

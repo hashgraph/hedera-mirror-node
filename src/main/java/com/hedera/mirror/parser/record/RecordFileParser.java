@@ -31,6 +31,8 @@ import java.util.stream.Collectors;
 
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.TextFormat;
+
+import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.filedelimiters.FileDelimiter;
@@ -56,10 +58,12 @@ public class RecordFileParser implements FileParser {
 	private final ApplicationStatusRepository applicationStatusRepository;
 	private final RecordParserProperties parserProperties;
 
-	public RecordFileParser(ApplicationStatusRepository applicationStatusRepository, RecordParserProperties parserProperties) {
+	public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
+                            NetworkAddressBook networkAddressBook, RecordParserProperties parserProperties) {
 		this.applicationStatusRepository = applicationStatusRepository;
 		this.parserProperties = parserProperties;
 		RecordFileLogger.parserProperties = parserProperties;
+        RecordFileLogger.networkAddressBook = networkAddressBook;
 	}
 
 	/**

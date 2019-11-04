@@ -27,7 +27,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.time.Instant;
 import java.util.HashMap;
 
 import com.hedera.databaseUtilities.DatabaseUtilities;
@@ -40,7 +39,6 @@ import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddClaimTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -59,6 +57,7 @@ public class RecordFileLogger {
     public static Connection connect = null;
 	private static Entities entities = null;
 	public static RecordParserProperties parserProperties = null;
+    public static NetworkAddressBook networkAddressBook = null;
 
 	private static HashMap<String, Integer> transactionResults = null;
 	private static HashMap<String, Integer> transactionTypes = null;
@@ -627,7 +626,7 @@ public class RecordFileLogger {
 			// update the local address book
 			if (isFileAddressBook(transactionBody.getFileID())) {
 				// we have an address book update, refresh the local file
-				NetworkAddressBook.append(contents);
+				networkAddressBook.append(contents);
 			}
 		}
 	}
@@ -757,7 +756,7 @@ public class RecordFileLogger {
 		// update the local address book
 		if (isFileAddressBook(fileId)) {
 			// we have an address book update, refresh the local file
-			NetworkAddressBook.update(transactionBody.getContents().toByteArray());
+			networkAddressBook.update(transactionBody.getContents().toByteArray());
 		}
 	}
 

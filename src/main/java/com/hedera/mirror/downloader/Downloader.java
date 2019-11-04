@@ -30,7 +30,6 @@ import com.google.common.base.Stopwatch;
 
 import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.domain.ApplicationStatusCode;
-import com.hedera.mirror.domain.NodeAddress;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.utilities.Utility;
 
@@ -52,35 +51,34 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 public abstract class Downloader {
-	protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LogManager.getLogger(getClass());
 
-	private final TransferManager transferManager;
-	private List<String> nodeAccountIds;
-	private final ApplicationStatusRepository applicationStatusRepository;
+    private final TransferManager transferManager;
+    private Set<String> nodeAccountIds;
+    private final ApplicationStatusRepository applicationStatusRepository;
     private final NetworkAddressBook networkAddressBook;
-	private final DownloaderProperties downloaderProperties;
+    private final DownloaderProperties downloaderProperties;
     // Thread pool used one per node during the download process for signatures.
-	private final ExecutorService signatureDownloadThreadPool;
+    private final ExecutorService signatureDownloadThreadPool;
 
     private final Comparator<String> s3KeyComparator;
 
     public Downloader(TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository,
                       NetworkAddressBook networkAddressBook, DownloaderProperties downloaderProperties) {
-	    this.transferManager = transferManager;
-		this.applicationStatusRepository = applicationStatusRepository;
-		this.networkAddressBook = networkAddressBook;
-		this.downloaderProperties = downloaderProperties;
-		signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
-		nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toList());
+        this.transferManager = transferManager;
+        this.applicationStatusRepository = applicationStatusRepository;
+        this.networkAddressBook = networkAddressBook;
+        this.downloaderProperties = downloaderProperties;
+        signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
 
         s3KeyComparator = (String o1, String o2) -> {
@@ -127,8 +125,8 @@ public abstract class Downloader {
 		final var sigFilesMap = new ConcurrentHashMap<String, List<File>>();
 
 		// refresh node account ids
-		nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toList());
-		List<Callable<Object>> tasks = new ArrayList<Callable<Object>>(nodeAccountIds.size());
+		nodeAccountIds = networkAddressBook.getNodeIDPubKeyMap().keySet();
+		List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
 		final var totalDownloads = new AtomicInteger();
 		/**
 		 * For each node, create a thread that will make S3 ListObject requests as many times as necessary to
