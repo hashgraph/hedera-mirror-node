@@ -1,8 +1,5 @@
 const math = require('mathjs');
 const config = require('../config.js');
-require("dotenv").config({
-    path: './.env'
-});
 const fetch = require('node-fetch');
 
 const server = process.env.TARGET;
@@ -57,17 +54,16 @@ const getUrl = function(pathandquery) {
     var endpoint = server;
     if (server.includes('localhost') || server.includes('127.0.0.1')) {
         endpoint = server.replace('https', 'http')
-        // console.log(`*********for local runs use http not https`);
     }
 
     let url = `${endpoint}${apiPrefix}${pathandquery}`;
-    // console.log(`*********url formed was: ${url}`);
     return url;
 }
 
 const getAPIResponse = async function(pathandquery) {
     try {
-        const response = await fetch(getUrl(pathandquery));
+        const url = getUrl(pathandquery);
+        const response = await fetch(url);
         const json = await response.json();
         return json;
     } catch (error) {

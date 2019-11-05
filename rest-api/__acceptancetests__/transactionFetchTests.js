@@ -23,8 +23,8 @@
 const acctestutils = require('./acceptancetest_utils.js');
 const config = require('../config.js');
 const math = require('mathjs');
-// const server = process.env.TARGET;
 const transactionsPath= '/transactions';
+const maxLimit = config.api.maxLimit;
 
 let classResults = {
     startTime: null,
@@ -38,6 +38,7 @@ let classResults = {
 let testResult = {
     at: '',
     result: 'failed',
+    url: '',
     message: '',
     failureMessages: []
 }
@@ -52,7 +53,6 @@ const getTransactions = async function(pathandquery) {
 }
 
 const addTestResult = function(res, passed) {
-    // console.log(`*******adding a test result, passed : ${passed}`)
     classResults.testResults.push(res);
     passed ? classResults.numPassedTests++ : classResults.numFailedTests++;
 }
@@ -74,17 +74,19 @@ const getTransactionsWithAccountCheck = async function() {
     
     let transactions = await getTransactions(paq); 
 
-    if (transactions.length !== config.limits.RESPONSE_ROWS) {
-        var message = `transactions.length of ${transactions.length} is less than limit ${config.limits.RESPONSE_ROWS}`;
-        currentTestResult.failureMessages.push(message)
-        return currentTestResult;
+    if (transactions.length !== maxLimit) {
+        var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     let mandatoryParamCheck = checkMandatoryParams(transactions[0]);
     if (mandatoryParamCheck == false) {
         var message = `transaction object is missing some mandatory fields`;
-        currentTestResult.failureMessages.push(message)
-        return currentTestResult;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
     }
     
     var accNum = 0
@@ -92,8 +94,8 @@ const getTransactionsWithAccountCheck = async function() {
     for (let xfer of transactions[0].transfers) {
         if (xfer.amount > 0) {
             accNum = acctestutils.toAccNum(xfer.account);
-            if (acctestutils.toAccNum(xfer.account) > highestAcc) {
-                highestAcc = acctestutils.toAccNum(xfer.account);
+            if (accNum > highestAcc) {
+                highestAcc = accNum;
             }
         }
     }
@@ -101,13 +103,15 @@ const getTransactionsWithAccountCheck = async function() {
     if (accNum === 0) {
         var message = `accNum is 0`;
         currentTestResult.failureMessages.push(message);
-        return currentTestResult;
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     if (undefined === transactions[0].consensus_timestamp) {
         var message = `transactions[0].consensus_timestamp is undefined`;
         currentTestResult.failureMessages.push(message);
-        return currentTestResult;
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     let url = `${transactionsPath}?account.id=${highestAcc}&type=credit&limit=1`;
@@ -116,7 +120,8 @@ const getTransactionsWithAccountCheck = async function() {
     if (accTransactions.length !== 1) {
         var message = `accTransactions.length of ${transactions.length} is not 1`;
         currentTestResult.failureMessages.push(message);
-        return currentTestResult;
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     let check = false;
@@ -129,7 +134,8 @@ const getTransactionsWithAccountCheck = async function() {
     if (check == false) {
         var message = `Highest acc check was not found`;
         currentTestResult.failureMessages.push(message);
-        return currentTestResult;
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     currentTestResult.result = 'passed';
@@ -145,10 +151,11 @@ const getTransactionsWithOrderParam = async function() {
     
     let transactions = await getTransactions(paq); 
     
-    if (transactions.length !== config.limits.RESPONSE_ROWS) {
-        var message = `transactions.length of ${transactions.length} is less than limit ${config.limits.RESPONSE_ROWS}`;
+    if (transactions.length !== maxLimit) {
+        var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
         currentTestResult.failureMessages.push(message);
-        return currentTestResult;
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     let check = true;
@@ -176,7 +183,8 @@ const getTransactionsWithLimitParams = async function () {
     if (transactions.length !== 10) {
         var message = `transactions.length of ${transactions.length} was expected to be 10`;
         currentTestResult.failureMessages.push(message);
-        return currentTestResult;
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     currentTestResult.result = 'passed';
@@ -195,7 +203,8 @@ const getTransactionsWithTimeAndLimitParams = async function (json) {
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        return currentTestResult;
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     let plusOne = math.add(math.bignumber(transactions[0].consensus_timestamp), math.bignumber(1));
@@ -208,7 +217,8 @@ const getTransactionsWithTimeAndLimitParams = async function (json) {
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        return currentTestResult;
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     currentTestResult.result = 'passed';
@@ -227,14 +237,16 @@ const getSingleTransactionsById = async function() {
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        return currentTestResult;
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     let mandatoryParamCheck = checkMandatoryParams(transactions[0]);
     if (mandatoryParamCheck == false) {
         var message = `transaction object is missing some mandatory fields`;
-        currentTestResult.failureMessages.push(message)
-        return currentTestResult;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     let url = `${transactionsPath}/${transactions[0].transaction_id}`;
@@ -243,22 +255,23 @@ const getSingleTransactionsById = async function() {
     if (singleTransactions.length !== 1) {
         var message = `singleTransactions.length of ${transactions.length} is not 1`;
         currentTestResult.failureMessages.push(message);
-        return currentTestResult;
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     mandatoryParamCheck = checkMandatoryParams(transactions[0]);
     if (mandatoryParamCheck == false) {
         var message = `single transaction object is missing some mandatory fields`;
-        currentTestResult.failureMessages.push(message)
-        return currentTestResult;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
     }
 
     currentTestResult.result = 'passed';
-    currentTestResult.message = `Successfully called transactions and performed account check`
+    currentTestResult.message = `Successfully retrieved single transactions by id`
 
     addTestResult(currentTestResult, true);
 }
-
 
 async function runTests() {
     var tests = [];

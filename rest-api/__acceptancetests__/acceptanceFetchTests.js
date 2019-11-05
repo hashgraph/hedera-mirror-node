@@ -21,7 +21,10 @@
 'use strict';
 
 const transactionFetchTests = require('./transactionFetchTests');
+const accountFetchTests = require('./accountFetchTests');
+const balanceFetchTests = require('./balanceFetchTests');
 const server = process.env.TARGET;
+var results;
 
 // console.log(`*********** server is ${server}`)
 // console.log(`*********** process.argv[2] is ${process.argv}`)
@@ -31,15 +34,26 @@ const runFetchTests = async function() {
         console.log(`*********** server is undefined, skipping ....`)
         return
     }
+    
+    results = await transactionFetchTests.runTransactionTests();
 
-    // console.log(`*********** runFetchTests called for server is ${server}`)
-    var results = await transactionFetchTests.runTransactionTests();
-    // console.log(`*********** Return from getTransactionFetchResults is ${JSON.stringify(results)}`);
+    var accountResults = await accountFetchTests.runAccountTests();
+    combineResults(accountResults);
+
+    var balanceResults = await balanceFetchTests.runBalnceTests();
+    combineResults(balanceResults);
+
     results.message = `${results.numPassedTests} / ${results.numPassedTests + results.numFailedTests} tests succeeded`;
-    // console.log(`*********** passed : ${results.numPassedTests}, failed : ${results.numFailedTests}, results.message is ${results.message}`)
 
     console.log(JSON.stringify(results));
     return results;
+}
+
+const combineResults = function(newresults) {
+    results.numFailedTests += newresults.numFailedTests;
+    results.numPassedTests += newresults.numPassedTests;
+    results.testResults.push(newresults.testResults);
+    results.success = results.success && newresults.success;
 }
 
 runFetchTests()
