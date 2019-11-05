@@ -24,6 +24,7 @@ var acceptanceTestsBalances = (function () {
     const acctestutils = require('./acceptancetest_utils.js');
     const config = require('../config.js');
     const maxLimit = config.api.maxLimit;
+    const fileUpdateRefreshTime = 900;
 
     beforeAll(async () => {
         moduleVars.verbose && console.log('Jest starting!');
@@ -113,7 +114,7 @@ var acceptanceTestsBalances = (function () {
             const balancesSec = JSON.parse(response.text).timestamp.split('.')[0];
             const currSec = Math.floor(new Date().getTime() / 1000);
             const delta = currSec - balancesSec;
-            check = delta < (2 * config.api.fileUpdateRefreshTimes.balances)
+            check = delta < (2 * fileUpdateRefreshTime)
             expect(check).toBeTruthy();
         });
 

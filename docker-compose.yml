@@ -1,36 +1,35 @@
 version: '3.3'
 services:
   mirror-node-postgres:
-    image: postgres:11.4-alpine
+    image: postgres:9.6-alpine
     restart: unless-stopped
     stop_grace_period: 2m
     stop_signal: SIGTERM
     tty: true
-    env_file:
-      - config/.env
+    environment:
+      POSTGRES_DB: mirror_node
+      POSTGRES_PASSWORD: mirror_node_pass
+      POSTGRES_USER: mirror_node
     volumes:
-      - ./MirrorNodePostgresData:/var/lib/postgresql/data
+      - ./db:/var/lib/postgresql/data
     ports:
-      - 5433:5432
+      - 5432:5432
 
   mirror-node-backend:
     image: hederahashgraph/mirror-node
     restart: unless-stopped
     environment:
-      - HEDERA_MIRROR_CONFIG_PATH=/usr/etc/mirror-node/config.json
-      - HEDERA_MIRROR_DB_URL=jdbc:postgresql://mirror-node-postgres:5432/${POSTGRES_DB}
+      HEDERA_MIRROR_DATAPATH: /var/lib/mirror-node
+      HEDERA_MIRROR_DB_HOST: mirror-node-postgres
+      HEDERA_MIRROR_DOWNLOADER_BUCKETNAME: ${BUCKET_NAME}
     volumes:
-      - ./MirrorNodeData:/var/lib/mirror-node
-      - ./config:/usr/etc/mirror-node
+      - ./data:/var/lib/mirror-node
 
-  # this runs the REST API for mirror node
   mirror-node-api:
     image: hederahashgraph/mirror-node-api
-    restart: unless-stopped
     environment:
-      - DB_HOST=mirror-node-postgres
+      HEDERA_MIRROR_DB_HOST: mirror-node-postgres
+    restart: unless-stopped
     tty: true
-    env_file:
-      - config/.env
     ports:
       - 5551:5551

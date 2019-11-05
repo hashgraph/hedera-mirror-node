@@ -26,6 +26,7 @@ var acceptanceTestsTransactions = (function () {
     const acctestutils = require('./acceptancetest_utils.js');
     const config = require('../config.js');
     const maxLimit = config.api.maxLimit;
+    const fileUpdateRefreshTime = 5;
 
     beforeAll(async () => {
         moduleVars.verbose && console.log('Jest starting!');
@@ -113,8 +114,8 @@ var acceptanceTestsTransactions = (function () {
             // Check for freshness of data
             const txSec = transactions[0].consensus_timestamp.split('.')[0];
             const currSec = Math.floor(new Date().getTime() / 1000);
-            const delta = currSec - txSec
-            check = delta < (10 * config.api.fileUpdateRefreshTimes.records)
+            const delta = currSec - txSec;
+            check = delta < (10 * fileUpdateRefreshTime);
             expect(check).toBeTruthy();
         });
 
