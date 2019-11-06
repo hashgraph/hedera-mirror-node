@@ -20,8 +20,6 @@ package com.hedera.mirror.downloader.balance;
  * ‍
  */
 
-import com.amazonaws.services.s3.transfer.TransferManager;
-
 import com.hedera.FileCopier;
 import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.MirrorProperties;
@@ -36,6 +34,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -48,7 +47,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class AccountBalancesDownloaderTest {
 
-    @Mock
+    @Mock(answer = Answers.RETURNS_SMART_NULLS)
     private ApplicationStatusRepository applicationStatusRepository;
 
     @TempDir
@@ -66,19 +65,21 @@ public class AccountBalancesDownloaderTest {
     private BalanceDownloaderProperties downloaderProperties;
 
     @BeforeEach
-    void before() throws Exception {
+    void before() {
         mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
         mirrorProperties.setNetwork(HederaNetwork.TESTNET);
         commonDownloaderProperties = new CommonDownloaderProperties();
         commonDownloaderProperties.setBucketName("test");
         commonDownloaderProperties.setCloudProvider(CommonDownloaderProperties.CloudProvider.LOCAL);
+        commonDownloaderProperties.setAccessKey("x"); // https://github.com/findify/s3mock/issues/147
+        commonDownloaderProperties.setSecretKey("x");
         downloaderProperties = new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
         downloaderProperties.init();
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
-        TransferManager transferManager = new MirrorNodeConfiguration().transferManager(commonDownloaderProperties);
+        var s3AsyncClient = (new MirrorNodeConfiguration()).s3AsyncClient(commonDownloaderProperties);
 
-        downloader = new AccountBalancesDownloader(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
+        downloader = new AccountBalancesDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook, downloaderProperties);
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath())
@@ -86,8 +87,6 @@ public class AccountBalancesDownloaderTest {
 
         s3 = S3Mock.create(8001, s3Path.toString());
         s3.start();
-
-        when(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE)).thenReturn("");
     }
 
     @AfterEach
