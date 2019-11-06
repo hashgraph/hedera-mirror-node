@@ -44,12 +44,26 @@ const runEverything = async function () {
                 const pid = shell.exec(cmd, {
                     async: true
                 }, (code, out, err) => {
-                    let results;
+                    let outJson;
                     try {
-                        results = JSON.parse(out);
+                        outJson = JSON.parse(out);
                     } catch (err) {
                         console.log('Error parsing cmd output: ' + err);
-                        results = {}
+                        outJson = {}
+                    }
+
+                    let results = {};
+                    if (outJson.hasOwnProperty('startTime') &&
+                        outJson.hasOwnProperty('testResults')) {
+                        outJson.testResults;
+
+                        ['numPassedTests', 'numFailedTests', 'success','message'].forEach((k) => {
+                            results[k] = outJson[k];
+                        });
+                        results.testResults = outJson.testResults;
+                    } else {
+                        results = createFailedResultJson(`Test result unavailable`,
+                            `Test results not available for: ${server.name}`);
                     }
                     
                     common.deleteProcess(server);

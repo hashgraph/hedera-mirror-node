@@ -68,11 +68,12 @@ const checkMandatoryParams = function (entry) {
 }
 
 const getTransactionsWithAccountCheck = async function() {
-    const paq = `${transactionsPath}`;
     var currentTestResult = acctestutils.cloneObject(testResult);
     currentTestResult.at = Date.now();
     
-    let transactions = await getTransactions(paq); 
+    let url = acctestutils.getUrl(transactionsPath);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url); 
 
     if (transactions.length !== maxLimit) {
         var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
@@ -114,7 +115,8 @@ const getTransactionsWithAccountCheck = async function() {
         return;
     }
 
-    let url = `${transactionsPath}?account.id=${highestAcc}&type=credit&limit=1`;
+    url = acctestutils.getUrl(`${transactionsPath}?account.id=${highestAcc}&type=credit&limit=1`);
+    currentTestResult.url = url;
 
     let accTransactions = await getTransactions(url); 
     if (accTransactions.length !== 1) {
@@ -145,11 +147,12 @@ const getTransactionsWithAccountCheck = async function() {
 }
 
 const getTransactionsWithOrderParam = async function() {
-    const paq = `${transactionsPath}?order=asc`;
     var currentTestResult = acctestutils.cloneObject(testResult);
     currentTestResult.at = Date.now();
     
-    let transactions = await getTransactions(paq); 
+    let url = acctestutils.getUrl(`${transactionsPath}?order=asc`);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url); 
     
     if (transactions.length !== maxLimit) {
         var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
@@ -158,7 +161,6 @@ const getTransactionsWithOrderParam = async function() {
         return;
     }
 
-    let check = true;
     let prevSeconds = 0;
     for (let txn of transactions) {
         if (acctestutils.secNsToSeconds(txn.seconds) < prevSeconds) {
@@ -174,12 +176,13 @@ const getTransactionsWithOrderParam = async function() {
 }
 
 const getTransactionsWithLimitParams = async function () {
-    const paq = `${transactionsPath}?limit=10`;
     var currentTestResult = acctestutils.cloneObject(testResult);
     currentTestResult.at = Date.now();
 
-    let transactions = await getTransactions(paq);
-
+    let url = acctestutils.getUrl(`${transactionsPath}?limit=10`);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url); 
+    
     if (transactions.length !== 10) {
         var message = `transactions.length of ${transactions.length} was expected to be 10`;
         currentTestResult.failureMessages.push(message);
@@ -196,9 +199,10 @@ const getTransactionsWithLimitParams = async function () {
 const getTransactionsWithTimeAndLimitParams = async function (json) {
     var currentTestResult = acctestutils.cloneObject(testResult);
     currentTestResult.at = Date.now();
-    var paq = `${transactionsPath}?limit=1`;
 
-    let transactions = await getTransactions(paq);
+    let url = acctestutils.getUrl(`${transactionsPath}?limit=1`);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url);
 
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
@@ -209,10 +213,11 @@ const getTransactionsWithTimeAndLimitParams = async function (json) {
 
     let plusOne = math.add(math.bignumber(transactions[0].consensus_timestamp), math.bignumber(1));
     let minusOne = math.subtract(math.bignumber(transactions[0].consensus_timestamp), math.bignumber(1));
-    paq = `${transactionsPath}?timestamp=gt:${minusOne.toString()}` +
+    let paq = `${transactionsPath}?timestamp=gt:${minusOne.toString()}` +
                 `&timestamp=lt:${plusOne.toString()}&limit=1`;
 
-    transactions = await getTransactions(paq);
+    url = acctestutils.getUrl(paq);
+    transactions = await getTransactions(url);
 
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
@@ -228,11 +233,12 @@ const getTransactionsWithTimeAndLimitParams = async function (json) {
 }
 
 const getSingleTransactionsById = async function() {
-    var paq = `${transactionsPath}?limit=1`;
     var currentTestResult = acctestutils.cloneObject(testResult);
     currentTestResult.at = Date.now();
     
-    let transactions = await getTransactions(paq); 
+    let url = acctestutils.getUrl(`${transactionsPath}?limit=1`);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url);
 
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
@@ -249,7 +255,8 @@ const getSingleTransactionsById = async function() {
         return;
     }
 
-    let url = `${transactionsPath}/${transactions[0].transaction_id}`;
+    url = acctestutils.getUrl(`${transactionsPath}/${transactions[0].transaction_id}`);
+    currentTestResult.url = url;
 
     let singleTransactions = await getTransactions(url); 
     if (singleTransactions.length !== 1) {

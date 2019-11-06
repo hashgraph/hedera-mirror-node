@@ -67,11 +67,12 @@ const checkMandatoryParams = function (entry) {
 }
 
 const getBalancesWithAccountCheck = async function() {
-    const paq = `${balancesPath}`;
     var currentTestResult = acctestutils.cloneObject(testResult);
     currentTestResult.at = Date.now();
     
-    let balances = await getBalances(paq); 
+    let url = acctestutils.getUrl(balancesPath);
+    currentTestResult.url = url;
+    let balances = await getBalances(url); 
 
     if (balances.length !== maxLimit) {
         var message = `balances.length of ${balances.length} is less than limit ${maxLimit}`;
@@ -97,9 +98,10 @@ const getBalancesWithAccountCheck = async function() {
 const getBalancesWithTimeAndLimitParams = async function (json) {
     var currentTestResult = acctestutils.cloneObject(testResult);
     currentTestResult.at = Date.now();
-    var paq = `${balancesPath}?limit=1`;
 
-    let balancesResponse = await acctestutils.getAPIResponse(paq);
+    let url = acctestutils.getUrl(`${balancesPath}?limit=1`);
+    currentTestResult.url = url;
+    let balancesResponse = await acctestutils.getAPIResponse(url);
     let balances = balancesResponse.balances
 
     if (balances.length !== 1) {
@@ -111,10 +113,12 @@ const getBalancesWithTimeAndLimitParams = async function (json) {
 
     let plusOne = math.add(math.bignumber(balancesResponse.timestamp), math.bignumber(1));
     let minusOne = math.subtract(math.bignumber(balancesResponse.timestamp), math.bignumber(1));
-    paq = `${balancesPath}?timestamp=gt:${minusOne.toString()}` +
+    let paq = `${balancesPath}?timestamp=gt:${minusOne.toString()}` +
                 `&timestamp=lt:${plusOne.toString()}&limit=1`;
 
-    balances = await getBalances(paq);
+    url = acctestutils.getUrl(paq);
+    currentTestResult.url = url;
+    balances = await getBalances(url);
 
     if (balances.length !== 1) {
         var message = `balances.length of ${balances.length} was expected to be 1`;
@@ -130,11 +134,12 @@ const getBalancesWithTimeAndLimitParams = async function (json) {
 }
 
 const getSingleBalanceById = async function() {
-    const paq = `${balancesPath}?limit=10`;
     var currentTestResult = acctestutils.cloneObject(testResult);
     currentTestResult.at = Date.now();
     
-    let balances = await getBalances(paq); 
+    let url = acctestutils.getUrl(`${balancesPath}?limit=10`);
+    currentTestResult.url = url;
+    let balances = await getBalances(url); 
 
     if (balances.length !== 10) {
         var message = `balances.length of ${balances.length} is less than limit ${maxLimit}`;
@@ -159,8 +164,8 @@ const getSingleBalanceById = async function() {
         }
     }
 
-    let url = `${balancesPath}?account.id=${acctestutils.fromAccNum(highestAcc)}`;
-
+    url = acctestutils.getUrl(`${balancesPath}?account.id=${acctestutils.fromAccNum(highestAcc)}`);
+    currentTestResult.url = url;
     let singleBalance = await getBalances(url); 
 
     let check = false;

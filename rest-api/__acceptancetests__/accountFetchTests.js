@@ -73,11 +73,12 @@ const checkMandatoryParams = function (entry) {
 }
 
 const getAccountssWithAccountCheck = async function() {
-    const paq = `${accountsPath}`;
     var currentTestResult = acctestutils.cloneObject(testResult);
     currentTestResult.at = Date.now();
     
-    let accounts = await getAccounts(paq); 
+    let url = acctestutils.getUrl(accountsPath);
+    currentTestResult.url = url;
+    let accounts = await getAccounts(url); 
 
     if (accounts.length !== maxLimit) {
         var message = `accounts.length of ${accounts.length} is less than limit ${maxLimit}`;
@@ -101,7 +102,8 @@ const getAccountssWithAccountCheck = async function() {
         }
     }
 
-    let url = `${accountsPath}?account.id=${highestAcc}&type=credit&limit=1`;
+    url = acctestutils.getUrl(`${accountsPath}?account.id=${highestAcc}&type=credit&limit=1`);
+    currentTestResult.url = url;
 
     let singleAccount = await getAccounts(url); 
 
@@ -133,9 +135,10 @@ const getAccountssWithAccountCheck = async function() {
 const getAccountsWithTimeAndLimitParams = async function (json) {
     var currentTestResult = acctestutils.cloneObject(testResult);
     currentTestResult.at = Date.now();
-    var paq = `${accountsPath}?limit=1`;
 
-    let accounts = await getAccounts(paq);
+    let url = acctestutils.getUrl(`${accountsPath}?limit=1`);
+    currentTestResult.url = url;
+    let accounts = await getAccounts(url); 
 
     if (accounts.length !== 1) {
         var message = `accounts.length of ${accounts.length} was expected to be 1`;
@@ -146,10 +149,12 @@ const getAccountsWithTimeAndLimitParams = async function (json) {
 
     let plusOne = math.add(math.bignumber(accounts[0].balance.timestamp), math.bignumber(1));
     let minusOne = math.subtract(math.bignumber(accounts[0].balance.timestamp), math.bignumber(1));
-    paq = `${accountsPath}?timestamp=gt:${minusOne.toString()}` +
+    let paq = `${accountsPath}?timestamp=gt:${minusOne.toString()}` +
                 `&timestamp=lt:${plusOne.toString()}&limit=1`;
 
-    accounts = await getAccounts(paq);
+    url = acctestutils.getUrl(paq);
+    currentTestResult.url = url;
+    accounts = await getAccounts(url);
 
     if (accounts.length !== 1) {
         var message = `accounts.length of ${accounts.length} was expected to be 1`;
@@ -165,11 +170,12 @@ const getAccountsWithTimeAndLimitParams = async function (json) {
 }
 
 const getSingleAccount = async function() {
-    const paq = `${accountsPath}`;
     var currentTestResult = acctestutils.cloneObject(testResult);
     currentTestResult.at = Date.now();
     
-    let accounts = await getAccounts(paq); 
+    let url = acctestutils.getUrl(`${accountsPath}`);
+    currentTestResult.url = url;
+    let accounts = await getAccounts(url);  
 
     if (accounts.length !== maxLimit) {
         var message = `accounts.length of ${accounts.length} is less than limit ${maxLimit}`;
@@ -194,7 +200,8 @@ const getSingleAccount = async function() {
         }
     }
 
-    let url = `${accountsPath}/${acctestutils.fromAccNum(highestAcc)}`;
+    url = acctestutils.getUrl(`${accountsPath}/${acctestutils.fromAccNum(highestAcc)}`);
+    currentTestResult.url = url;
 
     let singleAccount = await acctestutils.getAPIResponse(url); 
 

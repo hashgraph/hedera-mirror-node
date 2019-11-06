@@ -60,9 +60,13 @@ const getUrl = function(pathandquery) {
     return url;
 }
 
-const getAPIResponse = async function(pathandquery) {
+const getAPIResponse = async function(url) {
     try {
-        const url = getUrl(pathandquery);
+        if (url.indexOf('/') === 0) {
+            // if url is path get full url including host
+            url = getUrl(url);
+        }
+
         const response = await fetch(url);
         const json = await response.json();
         return json;

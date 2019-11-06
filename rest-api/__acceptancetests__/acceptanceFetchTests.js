@@ -52,7 +52,10 @@ const runFetchTests = async function() {
 const combineResults = function(newresults) {
     results.numFailedTests += newresults.numFailedTests;
     results.numPassedTests += newresults.numPassedTests;
-    results.testResults.push(newresults.testResults);
+    for (const res of newresults.testResults) {
+        results.testResults.push(res);
+    }
+
     results.success = results.success && newresults.success;
 }
 
