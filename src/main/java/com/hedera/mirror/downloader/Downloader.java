@@ -46,6 +46,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -88,13 +89,13 @@ public abstract class Downloader {
             if (downloaderProperties.isEnabled()) {
                 newFilesFound = download();
             }
-            // If no new files were found, do not sleep, keep processing. This is the usual case when mirror node is
-            // catching up.
+            // If new files were found, do not sleep, keep processing.
+            // During catchup, newFilesFound=true will be the usual case.
             if (!newFilesFound) {
                 try {
-                    log.debug("No new files found or downloaded is disabled, sleeping for {}",
-                            downloaderProperties.getSteadyStatePollDelay());
-                    Thread.sleep(downloaderProperties.getSteadyStatePollDelay().toMillis());
+                    Duration delay = downloaderProperties.getSteadyStatePollDelay();
+                    log.debug("No new files found or downloaded is disabled, sleeping for {}", delay);
+                    Thread.sleep(delay.toMillis());
                 } catch(InterruptedException e) {
                     log.info("Interrupted when downloader was sleeping", e);
                 }
