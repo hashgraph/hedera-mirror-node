@@ -26,23 +26,13 @@ const math = require('mathjs');
 const balancesPath= '/balances';
 const maxLimit = config.api.maxLimit;
 
-let classResults = {
-    startTime: null,
-    testResults: [],
-    numPassedTests: 0,
-    numFailedTests: 0,
-    success: false,
-    message: ''
-}
+let classResults = null;
 
-let testResult = {
-    at: '',
-    result: 'failed',
-    url: '',
-    message: '',
-    failureMessages: []
-}
-
+/**
+ * Makes a call to the rest-api and returns the balances object from the response
+ * @param {String} pathandquery 
+ * @return {Object} Transactions object from response
+ */
 const getBalances = async function(pathandquery) {
     try {
         const json = await acctestutils.getAPIResponse(pathandquery);
@@ -52,11 +42,21 @@ const getBalances = async function(pathandquery) {
     }
 }
 
+/**
+ * Add provided result to list of class results
+ * Also increment passed and failed count based
+ * @param {Object} res Test result
+ * @param {Boolean} passed Test passed flag
+ */
 const addTestResult = function(res, passed) {
     classResults.testResults.push(res);
     passed ? classResults.numPassedTests++ : classResults.numFailedTests++;
 }
 
+/**
+ * Check the required fields exist in the response object
+ * @param {Object} entry Balance JSON object
+ */
 const checkMandatoryParams = function (entry) {
     let check = true;
     ['account', 'balance'].forEach((field) => {
@@ -66,9 +66,11 @@ const checkMandatoryParams = function (entry) {
     return (check);
 }
 
-const getBalancesWithAccountCheck = async function() {
-    var currentTestResult = acctestutils.cloneObject(testResult);
-    currentTestResult.at = Date.now();
+/**
+ * Verify base balances call
+ */
+const getBalancesCheck = async function() {
+    var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(balancesPath);
     currentTestResult.url = url;
@@ -95,9 +97,11 @@ const getBalancesWithAccountCheck = async function() {
     addTestResult(currentTestResult, true);
 }
 
+/**
+ * Verify balances call with time and limit query params provided
+ */
 const getBalancesWithTimeAndLimitParams = async function (json) {
-    var currentTestResult = acctestutils.cloneObject(testResult);
-    currentTestResult.at = Date.now();
+    var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(`${balancesPath}?limit=1`);
     currentTestResult.url = url;
@@ -133,9 +137,11 @@ const getBalancesWithTimeAndLimitParams = async function (json) {
     addTestResult(currentTestResult, true);
 }
 
+/**
+ * Verify single balance can be retrieved
+ */
 const getSingleBalanceById = async function() {
-    var currentTestResult = acctestutils.cloneObject(testResult);
-    currentTestResult.at = Date.now();
+    var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(`${balancesPath}?limit=10`);
     currentTestResult.url = url;
@@ -186,11 +192,44 @@ const getSingleBalanceById = async function() {
     addTestResult(currentTestResult, true);
 }
 
+/**
+ * Verfiy the freshness of balances returned by the api
+ */
+const checkBalanceFreshness = async function() {
+    var currentTestResult = acctestutils.getMonitorTestResult();
+    
+    let url = acctestutils.getUrl(`${balancesPath}?limit=1`);
+    currentTestResult.url = url;
+    let balancesResponse = await acctestutils.getAPIResponse(url);
+
+    // Check for freshness of data
+    const txSec = balancesResponse.timestamp.split('.')[0];
+    const currSec = Math.floor(new Date().getTime() / 1000);
+    const delta = currSec - txSec
+    const freshnessThreshold = config.api.fileUpdateRefreshTimes.balances * 2;
+    
+    if (delta > freshnessThreshold) {
+        var message = `balance was stale, ${delta} seconds old`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+        
+    currentTestResult.result = 'passed';
+    currentTestResult.message = `Successfully retrieved balance from with ${freshnessThreshold} seconds ago`
+
+    addTestResult(currentTestResult, true);
+}
+
+/**
+ * Run all tests in an asynchronous fashion waiting for all tests to complete before calculating class success
+ */
 async function runTests() {
     var tests = [];
-    tests.push(getBalancesWithAccountCheck());
+    tests.push(getBalancesCheck());
     tests.push(getBalancesWithTimeAndLimitParams());
     tests.push(getSingleBalanceById());
+    tests.push(checkBalanceFreshness());
 
     await Promise.all(tests);
 
@@ -199,8 +238,12 @@ async function runTests() {
     }
 }
 
+/**
+ * Coordinates tests run. 
+ * Creating and returning a new classresults object representings balance tests
+ */
 const runBalnceTests = function() {
-    classResults.startTime = Date.now();
+    classResults = acctestutils.getMonitorClassResult();
 
     return runTests().then(() => {
         return classResults;

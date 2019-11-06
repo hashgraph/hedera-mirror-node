@@ -26,37 +26,38 @@ const math = require('mathjs');
 const transactionsPath= '/transactions';
 const maxLimit = config.api.maxLimit;
 
-let classResults = {
-    startTime: null,
-    testResults: [],
-    numPassedTests: 0,
-    numFailedTests: 0,
-    success: false,
-    message: ''
-}
+let classResults = null;
 
-let testResult = {
-    at: '',
-    result: 'failed',
-    url: '',
-    message: '',
-    failureMessages: []
-}
-
+/**
+ * Makes a call to the rest-api and returns the transacations object from the response
+ * @param {String} pathandquery 
+ * @return {Object} Transactions object from response
+ */
 const getTransactions = async function(pathandquery) {
     try {
         const json = await acctestutils.getAPIResponse(pathandquery);
         return json.transactions;
     } catch (error) {
         console.log(error);
+        return {}
     }
 }
 
+/**
+ * Add provided result to list of class results
+ * Also increment passed and failed count based
+ * @param {Object} res Test result
+ * @param {Boolean} passed Test passed flag
+ */
 const addTestResult = function(res, passed) {
     classResults.testResults.push(res);
     passed ? classResults.numPassedTests++ : classResults.numFailedTests++;
 }
 
+/**
+ * Check the required fields exist in the response object
+ * @param {Object} entry Transaction JSON object
+ */
 const checkMandatoryParams = function (entry) {
     let check = true;
     ['consensus_timestamp', 'valid_start_timestamp', 'charged_tx_fee', 'transaction_id',
@@ -67,9 +68,12 @@ const checkMandatoryParams = function (entry) {
     return (check);
 }
 
+/**
+ * Verify base transactions call 
+ * Also ensure an account mentioned in the transaction can be connected with the said transaction
+ */
 const getTransactionsWithAccountCheck = async function() {
-    var currentTestResult = acctestutils.cloneObject(testResult);
-    currentTestResult.at = Date.now();
+    var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(transactionsPath);
     currentTestResult.url = url;
@@ -146,9 +150,11 @@ const getTransactionsWithAccountCheck = async function() {
     addTestResult(currentTestResult, true);
 }
 
+/**
+ * Verify transactions call with order query params provided
+ */
 const getTransactionsWithOrderParam = async function() {
-    var currentTestResult = acctestutils.cloneObject(testResult);
-    currentTestResult.at = Date.now();
+    var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(`${transactionsPath}?order=asc`);
     currentTestResult.url = url;
@@ -175,9 +181,11 @@ const getTransactionsWithOrderParam = async function() {
     addTestResult(currentTestResult, true);
 }
 
+/**
+ * Verify transactions call with limit query params provided
+ */
 const getTransactionsWithLimitParams = async function () {
-    var currentTestResult = acctestutils.cloneObject(testResult);
-    currentTestResult.at = Date.now();
+    var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(`${transactionsPath}?limit=10`);
     currentTestResult.url = url;
@@ -196,9 +204,11 @@ const getTransactionsWithLimitParams = async function () {
     addTestResult(currentTestResult, true);
 }
 
-const getTransactionsWithTimeAndLimitParams = async function (json) {
-    var currentTestResult = acctestutils.cloneObject(testResult);
-    currentTestResult.at = Date.now();
+/**
+ * Verify transactions call with time and limit query params provided
+ */
+const getTransactionsWithTimeAndLimitParams = async function () {
+    var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(`${transactionsPath}?limit=1`);
     currentTestResult.url = url;
@@ -232,9 +242,11 @@ const getTransactionsWithTimeAndLimitParams = async function (json) {
     addTestResult(currentTestResult, true);
 }
 
+/**
+ * Verify single transactions can be retrieved
+ */
 const getSingleTransactionsById = async function() {
-    var currentTestResult = acctestutils.cloneObject(testResult);
-    currentTestResult.at = Date.now();
+    var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(`${transactionsPath}?limit=1`);
     currentTestResult.url = url;
@@ -280,6 +292,45 @@ const getSingleTransactionsById = async function() {
     addTestResult(currentTestResult, true);
 }
 
+/**
+ * Verfiy the freshness of transactions returned by the api
+ */
+const checkTransactionFreshness = async function() {
+    var currentTestResult = acctestutils.getMonitorTestResult();
+    
+    let url = acctestutils.getUrl(`${transactionsPath}?limit=1`);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url);
+
+    if (transactions.length !== 1) {
+        var message = `transactions.length of ${transactions.length} was expected to be 1`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    // Check for freshness of data
+    const txSec = transactions[0].consensus_timestamp.split('.')[0];
+    const currSec = Math.floor(new Date().getTime() / 1000);
+    const delta = currSec - txSec
+    const freshnessThreshold = config.api.fileUpdateRefreshTimes.records * 10;
+    
+    if (delta > freshnessThreshold) {
+        var message = `transactions was stale, ${delta} seconds old`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+        
+    currentTestResult.result = 'passed';
+    currentTestResult.message = `Successfully retrieved transactions from with ${freshnessThreshold} seconds ago`
+
+    addTestResult(currentTestResult, true);
+}
+
+/**
+ * Run all tests in an asynchronous fashion waiting for all tests to complete before calculating class success
+ */
 async function runTests() {
     var tests = [];
     tests.push(getTransactionsWithAccountCheck());
@@ -287,6 +338,7 @@ async function runTests() {
     tests.push(getTransactionsWithLimitParams());
     tests.push(getTransactionsWithTimeAndLimitParams());
     tests.push(getSingleTransactionsById());
+    tests.push(checkTransactionFreshness());
 
     await Promise.all(tests);
 
@@ -295,8 +347,12 @@ async function runTests() {
     }
 }
 
+/**
+ * Coordinates tests run. 
+ * Creating and returning a new classresults object representings transaction tests
+ */
 const runTransactionTests = function() {
-    classResults.startTime = Date.now();
+    classResults = acctestutils.getMonitorClassResult();
 
     return runTests().then(() => {
         return classResults;

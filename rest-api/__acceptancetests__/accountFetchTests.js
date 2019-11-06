@@ -26,23 +26,14 @@ const math = require('mathjs');
 const accountsPath= '/accounts';
 const maxLimit = config.api.maxLimit;
 
-let classResults = {
-    startTime: null,
-    testResults: [],
-    numPassedTests: 0,
-    numFailedTests: 0,
-    success: false,
-    message: ''
-}
 
-let testResult = {
-    at: '',
-    result: 'failed',
-    url: '',
-    message: '',
-    failureMessages: []
-}
+let classResults = null;
 
+/**
+ * Makes a call to the rest-api and returns the accounts object from the response
+ * @param {String} pathandquery 
+ * @return {Object} Accounts object from response
+ */
 const getAccounts = async function(pathandquery) {
     try {
         const json = await acctestutils.getAPIResponse(pathandquery);
@@ -52,11 +43,21 @@ const getAccounts = async function(pathandquery) {
     }
 }
 
+/**
+ * Add provided result to list of class results
+ * Also increment passed and failed count based
+ * @param {Object} res Test result
+ * @param {Boolean} passed Test passed flag
+ */
 const addTestResult = function(res, passed) {
     classResults.testResults.push(res);
     passed ? classResults.numPassedTests++ : classResults.numFailedTests++;
 }
 
+/**
+ * Check the required fields exist in the response object
+ * @param {Object} entry Account JSON object
+ */
 const checkMandatoryParams = function (entry) {
     let check = true;
     ['balance', 'account', 'expiry_timestamp', 'auto_renew_period',
@@ -72,9 +73,12 @@ const checkMandatoryParams = function (entry) {
     return (check);
 }
 
+/**
+ * Verify base accounts call 
+ * Also ensure an account mentioned in the accounts can be confirmed as exisitng
+ */
 const getAccountssWithAccountCheck = async function() {
-    var currentTestResult = acctestutils.cloneObject(testResult);
-    currentTestResult.at = Date.now();
+    var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(accountsPath);
     currentTestResult.url = url;
@@ -132,9 +136,11 @@ const getAccountssWithAccountCheck = async function() {
     addTestResult(currentTestResult, true);
 }
 
+/**
+ * Verify accounts call with time and limit query params provided
+ */
 const getAccountsWithTimeAndLimitParams = async function (json) {
-    var currentTestResult = acctestutils.cloneObject(testResult);
-    currentTestResult.at = Date.now();
+    var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(`${accountsPath}?limit=1`);
     currentTestResult.url = url;
@@ -169,9 +175,11 @@ const getAccountsWithTimeAndLimitParams = async function (json) {
     addTestResult(currentTestResult, true);
 }
 
+/**
+ * Verify single account can be retrieved
+ */
 const getSingleAccount = async function() {
-    var currentTestResult = acctestutils.cloneObject(testResult);
-    currentTestResult.at = Date.now();
+    var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(`${accountsPath}`);
     currentTestResult.url = url;
@@ -223,7 +231,9 @@ const getSingleAccount = async function() {
     addTestResult(currentTestResult, true);
 }
 
-
+/**
+ * Run all tests in an asynchronous fashion waiting for all tests to complete before calculating class success
+ */
 async function runTests() {
     var tests = [];
     tests.push(getAccountssWithAccountCheck());
@@ -237,8 +247,12 @@ async function runTests() {
     }
 }
 
+/**
+ * Coordinates tests run. 
+ * Creating and returning a new classresults object representings accounts tests
+ */
 const runAccountTests = function() {
-    classResults.startTime = Date.now();
+    classResults = acctestutils.getMonitorClassResult();
 
     return runTests().then(() => {
         return classResults;

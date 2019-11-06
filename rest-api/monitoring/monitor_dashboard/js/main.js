@@ -57,7 +57,7 @@ const makeTable = (data, server) => {
             <tr>
                 <th>Result</th>
                 <th>At</th>
-                <th>Message</th>
+                <th>Message & Url</th>
         </tr>`;
     data.results.testResults.forEach((result) => {
         // Skip the 'Skipped tests' that are marked as pending in jest json output
@@ -72,8 +72,8 @@ const makeTable = (data, server) => {
         '<tr>' + 
             '<tr>' +
             '<td>' + '<span class="dot" style="background-color:' + (result.result === 'passed' ? "green" : "red") + '"></span>' + '</td>' +
-            '<td>' + new Date(Number(result.at) * 1000).toLocaleString() + '</td>' +
-            '<td>' + result.message + failureMsg + '</td>' +
+            '<td>' + new Date(Number(result.at)).toLocaleString() + '</td>' +
+            '<td>' + '<a = href="' + result.url + '">' + result.message + failureMsg + '<a/></td>' +
             '</tr>\n';
     });
     h += '</table>\n';

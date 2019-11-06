@@ -26,10 +26,12 @@ const balanceFetchTests = require('./balanceFetchTests');
 const server = process.env.TARGET;
 var results;
 
-// console.log(`*********** server is ${server}`)
-// console.log(`*********** process.argv[2] is ${process.argv}`)
+/**
+ * Run node fetch based tests against api endpoint
+ * Each class manages its tests and returns a class rsults object
+ * A single combined result object covering transaction, accounts and balances is returnred
+ */
 const runFetchTests = async function() {
-
     if (undefined === server) {
         console.log(`*********** server is undefined, skipping ....`)
         return
@@ -45,10 +47,17 @@ const runFetchTests = async function() {
 
     results.message = `${results.numPassedTests} / ${results.numPassedTests + results.numFailedTests} tests succeeded`;
 
+    // output results to terminal for processing
     console.log(JSON.stringify(results));
-    return results;
 }
 
+/**
+ * Combine the provided result opject with the overall class result object
+ * Tests passed and failed numbers are incrment
+ * Each test result is appended to class results
+ * Success is set based on current and new results being true
+ * @param {Object} newresults 
+ */
 const combineResults = function(newresults) {
     results.numFailedTests += newresults.numFailedTests;
     results.numPassedTests += newresults.numPassedTests;
@@ -59,4 +68,5 @@ const combineResults = function(newresults) {
     results.success = results.success && newresults.success;
 }
 
+// run tests on file load
 runFetchTests()

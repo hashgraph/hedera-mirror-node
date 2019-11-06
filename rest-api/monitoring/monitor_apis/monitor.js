@@ -55,12 +55,10 @@ const runEverything = async function () {
                     let results = {};
                     if (outJson.hasOwnProperty('startTime') &&
                         outJson.hasOwnProperty('testResults')) {
-                        outJson.testResults;
 
-                        ['numPassedTests', 'numFailedTests', 'success','message'].forEach((k) => {
+                        ['numPassedTests', 'numFailedTests', 'success','testResults','message'].forEach((k) => {
                             results[k] = outJson[k];
                         });
-                        results.testResults = outJson.testResults;
                     } else {
                         results = createFailedResultJson(`Test result unavailable`,
                             `Test results not available for: ${server.name}`);
