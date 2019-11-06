@@ -11,6 +11,8 @@ import com.hedera.utilities.Utility;
 
 import io.findify.s3mock.S3Mock;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -25,7 +27,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public abstract class DownloaderTestingBase {
+public abstract class AbstractDownloaderTest {
     @Mock(answer = Answers.RETURNS_SMART_NULLS)
     protected ApplicationStatusRepository applicationStatusRepository;
 
@@ -50,10 +52,14 @@ public abstract class DownloaderTestingBase {
     // Implementations can assume that s3AsyncClient, applicationStatusRepository, networkAddressBook and
     // downloaderProperties have been initialized.
     protected abstract Downloader getDownloader();
-    protected abstract boolean isSigFile(String file);
-    protected abstract boolean isDataFile(String file);
+    protected abstract Path getTestDataDir();
 
-    protected void beforeEach(TestInfo testInfo, String testDataDir) {
+    boolean isSigFile(Path path) {
+        return path.toString().endsWith("_sig");
+    }
+
+    @BeforeEach
+    void beforeEach(TestInfo testInfo) {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
@@ -62,13 +68,18 @@ public abstract class DownloaderTestingBase {
         downloader = getDownloader();
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
-                .from(testDataDir)
+                .from(getTestDataDir())
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
 
         validPath = downloaderProperties.getValidPath();
 
         s3 = S3Mock.create(8001, s3Path.toString());
         s3.start();
+    }
+
+    @AfterEach
+    void after() {
+        s3.shutdown();
     }
 
     private void initProperties() {
@@ -95,7 +106,7 @@ public abstract class DownloaderTestingBase {
         assertThat(Files.walk(validPath))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSize(filenames.size())
-                .allMatch(p -> isDataFile(p.toString()))
+                .allMatch(p -> !isSigFile(p))
                 .extracting(p -> p.getFileName().toString())
                 .containsAll(filenames);
     }
@@ -118,7 +129,7 @@ public abstract class DownloaderTestingBase {
     @Test
     @DisplayName("Missing signatures")
     void missingSignatures() throws Exception {
-        fileCopier.filterFiles(file -> isDataFile(file.getName())).copy();  // only copy data files
+        fileCopier.filterFiles(file -> !isSigFile(file.toPath())).copy();  // only copy data files
         downloader.download();
         assertNoFilesinValidPath();
     }
@@ -143,7 +154,7 @@ public abstract class DownloaderTestingBase {
     @DisplayName("Signature doesn't match file")
     void signatureMismatch() throws Exception {
         fileCopier.copy();
-        Files.walk(s3Path).filter(p -> isSigFile(p.toString())).forEach(DownloaderTestingBase::corruptFile);
+        Files.walk(s3Path).filter(this::isSigFile).forEach(AbstractDownloaderTest::corruptFile);
         downloader.download();
         assertNoFilesinValidPath();
     }
@@ -152,7 +163,7 @@ public abstract class DownloaderTestingBase {
     @DisplayName("Invalid or incomplete file")
     void invalidBalanceFile() throws Exception {
         fileCopier.copy();
-        Files.walk(s3Path).filter(p -> isDataFile(p.toString())).forEach(DownloaderTestingBase::corruptFile);
+        Files.walk(s3Path).filter(file -> !isSigFile(file)).forEach(AbstractDownloaderTest::corruptFile);
         downloader.download();
         assertNoFilesinValidPath();
     }

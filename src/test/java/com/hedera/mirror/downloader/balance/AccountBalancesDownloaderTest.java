@@ -23,18 +23,19 @@ package com.hedera.mirror.downloader.balance;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.downloader.DownloaderProperties;
-import com.hedera.mirror.downloader.DownloaderTestingBase;
+import com.hedera.mirror.downloader.AbstractDownloaderTest;
 import com.hedera.utilities.Utility;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class AccountBalancesDownloaderTest extends DownloaderTestingBase {
+public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
@@ -50,23 +51,8 @@ public class AccountBalancesDownloaderTest extends DownloaderTestingBase {
     }
 
     @Override
-    protected boolean isSigFile(String file) {
-        return Utility.isBalanceSigFile(file);
-    }
-
-    @Override
-    protected boolean isDataFile(String file) {
-        return Utility.isBalanceFile(file);
-    }
-
-    @BeforeEach
-    void before(TestInfo testInfo) {
-        super.beforeEach(testInfo, "accountBalances");
-    }
-
-    @AfterEach
-    void after() {
-        s3.shutdown();
+    protected Path getTestDataDir() {
+        return Path.of("accountBalances");
     }
 
     @Test

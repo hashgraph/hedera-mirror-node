@@ -24,7 +24,7 @@ import com.hedera.FileCopier;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.downloader.DownloaderProperties;
-import com.hedera.mirror.downloader.DownloaderTestingBase;
+import com.hedera.mirror.downloader.AbstractDownloaderTest;
 import com.hedera.utilities.Utility;
 
 import org.junit.jupiter.api.AfterEach;
@@ -37,6 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.ResourceUtils;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -44,7 +45,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RecordFileDownloaderTest extends DownloaderTestingBase {
+public class RecordFileDownloaderTest extends AbstractDownloaderTest {
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
@@ -60,23 +61,8 @@ public class RecordFileDownloaderTest extends DownloaderTestingBase {
     }
 
     @Override
-    protected boolean isSigFile(String file) {
-        return Utility.isRecordSigFile(file);
-    }
-
-    @Override
-    protected boolean isDataFile(String file) {
-        return Utility.isRecordFile(file);
-    }
-
-    @BeforeEach
-    void before(TestInfo testInfo) {
-        super.beforeEach(testInfo, "recordstreams/v2");
-    }
-
-    @AfterEach
-    void after() {
-        s3.shutdown();
+    protected Path getTestDataDir() {
+        return Paths.get("recordstreams", "v2");
     }
 
     @Test
