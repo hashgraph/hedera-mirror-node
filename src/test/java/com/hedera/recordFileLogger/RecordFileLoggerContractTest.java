@@ -46,7 +46,6 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 
-import org.junit.Ignore;
 import org.junit.jupiter.api.*;
 import org.springframework.test.context.jdbc.Sql;
 import org.junit.jupiter.api.Test;
@@ -188,7 +187,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     void contractCreateDoNotPersist() throws Exception {
 
         parserProperties.setPersistContracts(false);
@@ -718,7 +717,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     void contractCallDoNotPersist() throws Exception {
 
         parserProperties.setPersistContracts(false);
