@@ -21,78 +21,48 @@ package com.hedera.mirror.downloader.record;
  */
 
 import com.hedera.FileCopier;
-import com.hedera.mirror.addressbook.NetworkAddressBook;
-import com.hedera.mirror.MirrorProperties;
-import com.hedera.mirror.config.MirrorNodeConfiguration;
-import com.hedera.mirror.domain.HederaNetwork;
 import com.hedera.mirror.domain.ApplicationStatusCode;
-import com.hedera.mirror.downloader.CommonDownloaderProperties;
-import com.hedera.mirror.repository.ApplicationStatusRepository;
+import com.hedera.mirror.downloader.Downloader;
+import com.hedera.mirror.downloader.DownloaderProperties;
+import com.hedera.mirror.downloader.AbstractDownloaderTest;
 import com.hedera.utilities.Utility;
-import io.findify.s3mock.S3Mock;
-import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.*;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
-import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.ResourceUtils;
 
-import java.io.File;
-import java.nio.file.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RecordFileDownloaderTest {
+public class RecordFileDownloaderTest extends AbstractDownloaderTest {
 
-    @Mock(answer = Answers.RETURNS_SMART_NULLS)
-    private ApplicationStatusRepository applicationStatusRepository;
-
-    @TempDir
-    Path dataPath;
-
-    @TempDir
-    Path s3Path;
-
-    private S3Mock s3;
-    private FileCopier fileCopier;
-    private RecordFileDownloader downloader;
-    private CommonDownloaderProperties commonDownloaderProperties;
-    private MirrorProperties mirrorProperties;
-    private NetworkAddressBook networkAddressBook;
-    private RecordDownloaderProperties downloaderProperties;
-
-    @BeforeEach
-    void before(TestInfo testInfo) {
-        System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
-        mirrorProperties = new MirrorProperties();
-        mirrorProperties.setDataPath(dataPath);
-        mirrorProperties.setNetwork(HederaNetwork.TESTNET);
-        commonDownloaderProperties = new CommonDownloaderProperties();
-        commonDownloaderProperties.setBucketName("test");
-        commonDownloaderProperties.setCloudProvider(CommonDownloaderProperties.CloudProvider.LOCAL);
-        commonDownloaderProperties.setAccessKey("x"); // https://github.com/findify/s3mock/issues/147
-        commonDownloaderProperties.setSecretKey("x");
-        downloaderProperties = new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
-        downloaderProperties.init();
-        networkAddressBook = new NetworkAddressBook(mirrorProperties);
-        var s3AsyncClient = (new MirrorNodeConfiguration()).s3AsyncClient(commonDownloaderProperties);
-
-        downloader = new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook, downloaderProperties);
-
-        fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
-                .from(downloaderProperties.getStreamType().getPath(), "v2")
-                .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
-
-        s3 = S3Mock.create(8001, s3Path.toString());
-        s3.start();
+    @Override
+    protected DownloaderProperties getDownloaderProperties() {
+        DownloaderProperties properties = new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        properties.init();
+        return properties;
     }
 
-    @AfterEach
-    void after() {
-        s3.shutdown();
+    @Override
+    protected Downloader getDownloader() {
+        return new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook,
+                (RecordDownloaderProperties) downloaderProperties);
+    }
+
+    @Override
+    protected Path getTestDataDir() {
+        return Paths.get("recordstreams", "v2");
     }
 
     @Test
@@ -107,16 +77,13 @@ public class RecordFileDownloaderTest {
 
         downloader.download();
 
-        verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-07-01T14:13:00.317763Z.rcd");
-        verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-07-01T14:29:00.302068Z.rcd");
-        verify(applicationStatusRepository, times(2)).updateStatusValue(eq(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH), any());
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(2)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
-                .extracting(Path::getFileName)
-                .contains(Paths.get("2019-07-01T14:13:00.317763Z.rcd"))
-                .contains(Paths.get("2019-07-01T14:29:00.302068Z.rcd"));
+        verify(applicationStatusRepository).updateStatusValue(
+                ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-07-01T14:13:00.317763Z.rcd");
+        verify(applicationStatusRepository).updateStatusValue(
+                ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-07-01T14:29:00.302068Z.rcd");
+        verify(applicationStatusRepository, times(2)).updateStatusValue(
+                eq(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH), any());
+        assertValidFiles(List.of("2019-07-01T14:13:00.317763Z.rcd", "2019-07-01T14:29:00.302068Z.rcd"));
     }
 
     @Test
@@ -124,142 +91,47 @@ public class RecordFileDownloaderTest {
     void downloadV2() throws Exception {
         fileCopier.copy();
         downloader.download();
-        verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_00.419072Z.rcd");
-        verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_05.249678Z.rcd");
-        verify(applicationStatusRepository, times(2)).updateStatusValue(eq(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH), any());
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(2)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
-                .extracting(Path::getFileName)
-                .contains(Paths.get("2019-08-30T18_10_05.249678Z.rcd"))
-                .contains(Paths.get("2019-08-30T18_10_00.419072Z.rcd"));
-    }
-
-    @Test
-    @DisplayName("Missing address book")
-    void missingAddressBook() throws Exception {
-        Files.delete(mirrorProperties.getAddressBookPath());
-        fileCopier.copy();
-        downloader.download();
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(0);
+        verify(applicationStatusRepository).updateStatusValue(
+                ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_00.419072Z.rcd");
+        verify(applicationStatusRepository).updateStatusValue(
+                ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_05.249678Z.rcd");
+        verify(applicationStatusRepository, times(2)).updateStatusValue(
+                eq(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH), any());
+        assertValidFiles(List.of("2019-08-30T18_10_05.249678Z.rcd", "2019-08-30T18_10_00.419072Z.rcd"));
     }
 
     @Test
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {
-        downloaderProperties.setBatchSize(1);
-        fileCopier.copy();
-        downloader.download();
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(1)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
-                .extracting(Path::getFileName)
-                .contains(Paths.get("2019-08-30T18_10_00.419072Z.rcd"));
-    }
-
-    @Test
-    @DisplayName("Missing signatures")
-    void missingSignatures() throws Exception {
-        fileCopier.filterFiles("*.rcd").copy();
-        downloader.download();
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(0);
-    }
-
-    @Test
-    @DisplayName("Missing records")
-    void missingRecords() throws Exception {
-        fileCopier.filterFiles("*_sig").copy();
-        downloader.download();
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(0);
-    }
-
-    @Test
-    @DisplayName("Less than 2/3 signatures")
-    void lessThanTwoThirdSignatures() throws Exception {
-        fileCopier.filterDirectories("record0.0.3").filterDirectories("record0.0.4").copy();
-        downloader.download();
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(0);
-    }
-
-    @Test
-    @DisplayName("Signature doesn't match file")
-    void signatureMismatch() throws Exception {
-        fileCopier.copy();
-        Files.walk(s3Path).filter(p -> Utility.isRecordSigFile(p.toString())).forEach(RecordFileDownloaderTest::corruptFile);
-        downloader.download();
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(0);
+        ((RecordDownloaderProperties)downloaderProperties).setBatchSize(1);
+        testMaxDownloadItemsReached("2019-08-30T18_10_00.419072Z.rcd");
     }
 
     @Test
     @DisplayName("Doesn't match last valid hash")
     void hashMismatchWithPrevious() throws Exception {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
-        doReturn("2019-07-01T14:12:00.000000Z.rcd").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
-        doReturn("123").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
+        doReturn("2019-07-01T14:12:00.000000Z.rcd").when(applicationStatusRepository)
+                .findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
+        doReturn("123").when(applicationStatusRepository)
+                .findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(0);
+        assertNoFilesinValidPath();
     }
 
     @Test
     @DisplayName("Bypass previous hash mismatch")
     void hashMismatchWithBypass() throws Exception {
         final String filename = "2019-08-30T18_10_05.249678Z.rcd";
-        doReturn("2019-07-01T14:12:00.000000Z.rcd").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
-        doReturn("123").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
-        doReturn("2019-09-01T00:00:00.000000Z.rcd").when(applicationStatusRepository).findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
+        doReturn("2019-07-01T14:12:00.000000Z.rcd").when(applicationStatusRepository)
+                .findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
+        doReturn("123").when(applicationStatusRepository)
+                .findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
+        doReturn("2019-09-01T00:00:00.000000Z.rcd").when(applicationStatusRepository)
+                .findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(1)
-                .allMatch(p -> Utility.isRecordFile(p.toString()))
-                .extracting(Path::getFileName)
-                .contains(Paths.get(filename));
-    }
-
-    @Test
-    @DisplayName("Invalid or incomplete record file")
-    void invalidRecord() throws Exception {
-        fileCopier.copy();
-        Files.walk(s3Path).filter(p -> Utility.isRecordFile(p.toString())).forEach(RecordFileDownloaderTest::corruptFile);
-        downloader.download();
-        assertThat(Files.walk(downloaderProperties.getValidPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(0);
-    }
-
-    @Test
-    @DisplayName("Error moving record to valid folder")
-    void errorMovingFile() throws Exception {
-        fileCopier.copy();
-        downloaderProperties.getValidPath().toFile().delete();
-        downloader.download();
-        assertThat(downloaderProperties.getValidPath()).doesNotExist();
-    }
-
-    private static void corruptFile(Path p) {
-        try {
-            File file = p.toFile();
-            if (file.isFile()) {
-                FileUtils.writeStringToFile(file, "corrupt", "UTF-8", true);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        assertValidFiles(List.of(filename));
     }
 }

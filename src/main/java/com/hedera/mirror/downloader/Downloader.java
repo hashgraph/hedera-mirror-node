@@ -374,4 +374,5 @@ public abstract class Downloader {
     protected abstract ApplicationStatusCode getLastValidDownloadedFileHashKey();
     protected abstract ApplicationStatusCode getBypassHashKey();
     protected abstract String getPrevFileHash(String filePath);
+    public abstract void download();
 }
