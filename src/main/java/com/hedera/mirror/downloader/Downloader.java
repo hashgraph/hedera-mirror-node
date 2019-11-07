@@ -26,6 +26,7 @@ import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.domain.NodeAddress;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
+import com.hedera.utilities.ShutdownHelper;
 import com.hedera.utilities.Utility;
 
 import org.apache.commons.lang3.StringUtils;
@@ -85,8 +86,7 @@ public abstract class Downloader {
             if (!downloaderProperties.isEnabled()) {
                 return;
             }
-            if (Utility.checkStopFile()) {
-                log.info("Stop file found");
+            if (ShutdownHelper.isStopping()) {
                 return;
             }
             final var sigFilesMap = downloadSigFiles();
@@ -263,8 +263,7 @@ public abstract class Downloader {
         Collections.sort(sigFileNames);
 
         for (String sigFileName : sigFileNames) {
-            if (Utility.checkStopFile()) {
-                log.info("Stop file found, stopping");
+            if (ShutdownHelper.isStopping()) {
                 return;
             }
 
@@ -281,8 +280,7 @@ public abstract class Downloader {
             Pair<byte[], List<File>> hashAndValidSigFiles = verifier.verifySignatureFiles(sigFiles);
             final byte[] validHash = hashAndValidSigFiles.getLeft();
             for (File validSigFileName : hashAndValidSigFiles.getRight()) {
-                if (Utility.checkStopFile()) {
-                    log.info("Stop file found, stopping");
+                if (ShutdownHelper.isStopping()) {
                     return;
                 }
                 log.debug("Verified signature file matches at least 2/3 of nodes: {}", sigFileName);

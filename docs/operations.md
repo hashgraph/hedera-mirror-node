@@ -42,4 +42,4 @@ Normal output should include several frequent INFO level messages such as:
 
 ## State changes
 
-The mirror node service, if shutdown cleanly will log either `Stop file found, stopping` or `Shutting down` message
+The mirror node service, if shutdown cleanly will log `Shutting down.....` message

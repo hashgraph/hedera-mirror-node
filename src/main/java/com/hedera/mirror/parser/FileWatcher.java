@@ -20,7 +20,7 @@ package com.hedera.mirror.parser;
  * ‍
  */
 
-import com.hedera.utilities.Utility;
+import com.hedera.utilities.ShutdownHelper;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.*;
@@ -64,8 +64,7 @@ public abstract class FileWatcher {
                     continue;
                 }
 
-                if (Utility.checkStopFile()) {
-                    log.info("Stop file found, stopping.");
+                if (ShutdownHelper.isStopping()) {
                     return;
                 }
 

@@ -25,7 +25,6 @@ package com.hedera.utilities;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
-import com.hedera.mirror.downloader.Downloader;
 import com.hedera.filedelimiters.FileDelimiter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -35,7 +34,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -45,7 +43,6 @@ import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -66,10 +63,6 @@ public class Utility {
     private static final Long SCALAR = 1_000_000_000L;
     private static final String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
 
-	public static boolean checkStopFile() {
-		File stopFile = new File("./stop");
-		return stopFile.exists();
-	}
 	/**
 	 * Verify if a file's hash is equal to the hash contained in sig file
 	 * @return
