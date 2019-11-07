@@ -46,7 +46,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +110,7 @@ public abstract class Downloader {
      *      value: a list of sig files with the same name and from different nodes folder;
      */
 	private Map<String, List<File>> downloadSigFiles() throws InterruptedException {
-		String s3Prefix = downloaderProperties.getPrefix();
+		String prefix = downloaderProperties.getPrefix();
 		String lastValidFileName = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
         // foo.rcd < foo.rcd_sig. If we read foo.rcd from application stats, we have to start listing from
         // next to 'foo.rcd_sig'.
@@ -118,7 +120,7 @@ public abstract class Downloader {
 
 		// refresh node account ids
 		nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toList());
-		List<Callable<Object>> tasks = new ArrayList<Callable<Object>>(nodeAccountIds.size());
+		List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
 		final var totalDownloads = new AtomicInteger();
 		/**
 		 * For each node, create a thread that will make S3 ListObject requests as many times as necessary to
@@ -128,8 +130,17 @@ public abstract class Downloader {
 			tasks.add(Executors.callable(() -> {
 				log.debug("Downloading signature files for node {} created after file {}", nodeAccountId, lastValidSigFileName);
 				// Get a list of objects in the bucket, 100 at a time
-				String prefix = s3Prefix + nodeAccountId + "/";
+				String s3prefix = prefix + nodeAccountId + "/";
 				Stopwatch stopwatch = Stopwatch.createStarted();
+
+                // prefix is of format "X/Y" (e.g. "recordstreams/record"), so a replace here with use of Paths in rest
+                // of the code ensures platform compatibility. More involved way would splitting 'prefix' in all
+                // DownloaderProperties implementations to two values and then join then separately for S3 and for
+                // local filesystem.
+                final Path sigFilesDir = downloaderProperties.getStreamPath().getParent()
+                        .resolve(prefix.replace('/', File.separatorChar) + nodeAccountId);
+                // Ensure the directory for downloading sig files exists.
+                Utility.ensureDirectory(sigFilesDir);
 
                 try {
                     // batchSize (number of items we plan do download in a single batch) times 2 for file + sig
@@ -137,9 +148,9 @@ public abstract class Downloader {
                     // Not using ListObjectsV2Request because it does not work with GCP.
                     ListObjectsRequest listRequest = ListObjectsRequest.builder()
                             .bucket(downloaderProperties.getCommon().getBucketName())
-                            .prefix(prefix)
+                            .prefix(s3prefix)
                             .delimiter("/")
-                            .marker(prefix + lastValidSigFileName)
+                            .marker(s3prefix + lastValidSigFileName)
                             .maxKeys(listSize)
                             .build();
                     CompletableFuture<ListObjectsResponse> response = s3Client.listObjects(listRequest);
@@ -148,8 +159,8 @@ public abstract class Downloader {
                     for (S3Object content : response.get().contents()) {
                         String s3ObjectKey = content.key();
                         if (s3ObjectKey.endsWith("_sig")) {
-                            Path saveTarget = downloaderProperties.getStreamPath().getParent().resolve(s3ObjectKey);
-                            Utility.ensureDirectory(saveTarget.getParent());
+                            String fileName = s3ObjectKey.substring(s3ObjectKey.lastIndexOf("/") + 1);
+                            Path saveTarget = sigFilesDir.resolve(fileName);
                             pendingDownloads.add(saveToLocalAsync(s3ObjectKey, saveTarget));
                             totalDownloads.incrementAndGet();
                         }
@@ -207,10 +218,17 @@ public abstract class Downloader {
         File file = localFile.toFile();
         // If process stops abruptly and is restarted, it's possible we try to re-download some of the files which
         // already exist on disk because lastValidFileName wasn't updated. AsyncFileResponseTransformer throws
-        // exceptions if a file already exists, rather then silently overwrite it. So following check and short-circuit
-        // are to avoid log spam of java.nio.file.FileAlreadyExistsException, not for optimization purpose.
+        // exceptions if a file already exists, rather then silently overwrite it. So following check are to avoid
+        // log spam of java.nio.file.FileAlreadyExistsException, not for optimization purpose. We can't use old file
+        // because it may be half written or it maybe a data file from a node which doesn't match the hash.
+        // Overwriting is the only way forward.
+        // This is okay for now since we are moving away from storing downloaded S3 data in files.
         if (file.exists()) {
-            return new PendingDownload(CompletableFuture.completedFuture(null), file, s3ObjectKey);
+            boolean success = file.delete();
+            if (!success) {
+                log.error("Failed to delete the file {}. Expect long stack trace with FileAlreadyExistsException below",
+                        file);
+            }
         }
         var future = s3Client.getObject(
                 GetObjectRequest.builder().bucket(downloaderProperties.getCommon().getBucketName()).key(s3ObjectKey).build(),

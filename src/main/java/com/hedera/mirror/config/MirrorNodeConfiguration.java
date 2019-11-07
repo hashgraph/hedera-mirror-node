@@ -94,16 +94,15 @@ public class MirrorNodeConfiguration {
     public S3AsyncClient s3AsyncClient(CommonDownloaderProperties downloaderProperties) {
         SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder()
                 .maxConcurrency(downloaderProperties.getMaxConcurrency())
-                .maxPendingConnectionAcquires(downloaderProperties.getMaxPendingAcquires())
                 .connectionMaxIdleTime(Duration.ofSeconds(5))  // https://github.com/aws/aws-sdk-java-v2/issues/1122
                 .build();
 
         AwsCredentialsProvider awsCredentials = AnonymousCredentialsProvider.create();
 
-        if (StringUtils.isNotBlank(downloaderProperties.getAccessKey()) &&
-                StringUtils.isNotBlank(downloaderProperties.getSecretKey())) {
-            awsCredentials = StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create(downloaderProperties.getAccessKey(), downloaderProperties.getSecretKey()));
+        String accessKey = downloaderProperties.getAwsAccessKey();
+        String secretKey = downloaderProperties.getAwsSecretKey();
+        if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
+            awsCredentials = StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
         }
 
         return S3AsyncClient.builder()
