@@ -11,8 +11,8 @@ attempts to design a scalable solution to provide such functionality.
 
 - Ingest HCS related transactions from the mainnet and persist to the database
 - Provide a streaming GRPC API to subscribe to HCS topics
-- Provide a listener interface so third parties can add custom code to be notified of validated transactions
 - Persist a subset of entities or transaction types
+- Provide a listener interface so third parties can add custom code to be notified of validated transactions
 
 ## Non-Goals
 
@@ -29,7 +29,6 @@ These items are not currently in scope at this time, but can be revisited later 
 
 ![Architecture](hcs-architecture.png)
 
-Flow:
 1. Downloader retrieves transactions from S3 and validates them
 2. Parser persists to PostgreSQL
 3. Client queries GRPC API for messages from a specific topic
@@ -37,6 +36,15 @@ Flow:
 5. GRPC API is notified of new `ConsensusSubmitMessage` transactions via PostgreSQL Notify
 
 ## GRPC API
+
+### Setup
+
+- Create a new Maven sub-project `mirror-grpc`
+- Use `com.github.os72:protoc-jar-maven-plugin` for protoc
+- Use `net.devh:grpc-spring-boot-starter` to manage GRPC component lifecycle
+- Use `spring-boot-starter-data-r2dbc` and `io.r2dbc:r2dbc-postgresql` for reactive database access and asynchronous pg_notify support
+- Create a Systemd unit file `mirror-grpc.sevice`
+- Add to CircleCI and deployment script
 
 ### Protobuf
 
@@ -49,8 +57,8 @@ message ConsensusTopicQuery {
 }
 
 message ConsensusTopicResponse {
-    .proto.Timestamp consensusTimestamp = 1; // The time at which the transaction reach consensus
-    bytes message = 2; // The message body originally in the ConsensusSubmitMessageTransactionBody
+    .proto.Timestamp consensusTimestamp = 1; // The time at which the transaction reached consensus
+    bytes message = 2; // The message body originally in the ConsensusSubmitMessageTransactionBody. Message size will be less than 4K.
     uint64 sequenceNumber = 3; // Starts at 1 for first submitted message. Incremented on each submitted message.
 }
 
@@ -59,29 +67,37 @@ service ConsensusService {
 }
 ```
 
-### Consensus Service Flow
+### Consensus Service
 
 ![Sequence diagram](hcs-consensus-service.png)
 
-### Tasks
-
-- Create a new Maven sub-project `mirror-grpc`
-- Use `com.github.os72:protoc-jar-maven-plugin` for protoc
-- Use `net.devh:grpc-spring-boot-starter` to manage GRPC component lifecycle
-- Use `io.r2dbc:r2dbc-postgresql` for reactive database access and asynchronous pg_notify support
 - Implement `TopicMesage` domain class
-- Implement repository `interface TopicMessageRepository extends ReactiveCrudRepository`
-  - Implement a `Flux<TopicMessage> findByFilter(TopicMessageFilter)` custom
-method that uses R2DBC's Fluent Data Access API to build a dynamic query based upon the filter
-- Implement a `ConsensusService`
-  - Wrap `StreamObserver` in a `org.reactivestreams.Subscriber`
-  - Register with `TopicListener` to receive notifications of topic messages, filtering and buffering appropriately until
-current query finishes
+- Implement `TopicMessageRepository`:
+```java
+public interface TopicMessageRepository extends ReactiveCrudRepository<TopicMessage, Long>, TopicMessageRepositoryCustom {
+}
+```
+- Implement custom repository method that uses R2DBC's Fluent Data Access API to build a dynamic query based upon the filter:
+```java
+public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryCustom {
+  public Flux<TopicMessage> findByFilter(TopicMessageFilter filter) {
+    ...
+  }
+}
+```
+- Implement `TopicSubscriber` that wraps `StreamObserver` in a `org.reactivestreams.Subscriber`
+- Implement `ConsensusService`
   - Map `ConsensusTopicQuery` to `TopicMessageFilter`
   - Perform `topicMessageRepository.findByFilter(filter)`
+  - Create and subscribe a `TopicSubscriber` to the results from the repository
   - Map `TopicMessage` to `ConsensusTopicResponse`
-- Create a Systemd unit file
-- Add to CircleCI and deployment script
+
+### Topic Listener
+
+Provide the ability to stream new topic messages from the database and notify open GRPC streams of new data:
+- Implement a `TopicListener` that uses R2DBC's notify/listen support to stream topic messages from the database
+- Register `ConsensusService` with `TopicListener` to receive notifications of topic messages, filtering and buffering appropriately until
+current query finishes
 
 ## Parser
 
@@ -108,8 +124,7 @@ include:
 ### Notify
 
 Provide the ability to notify components of new transactions:
-- Provide a `TransactionListener.notify(Transaction, Record)` interface to be notified of incoming transactions (if
-more parameters are needed, wrap in an immutable event)
+- Provide a `TransactionListener.notify(new TransactionEvent(Transaction, Record))` interface to be notified of incoming transactions
 - Rework `RecordFileLogger` to implement `TransactionListener`
 - Decouple `RecordFileParser` and `RecordFileLogger` so that `RecordFileParser` invokes `TransactionListener`
 
@@ -136,7 +151,7 @@ more parameters are needed, wrap in an immutable event)
 - Add new table `topic_message`:
 ```postgres-sql
 create table if not exists topic_message (
-  consensus_timestamp bigint primary key not null,
+  consensus_timestamp nanos_timestamp primary key not null,
   entity_id bigint not null references t_entities (id) on delete cascade on update cascade,
   message bytea not null,
   running_hash bytea not null,
