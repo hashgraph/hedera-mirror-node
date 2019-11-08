@@ -11,12 +11,13 @@ attempts to design a scalable solution to provide such functionality.
 
 - Ingest HCS related transactions from the mainnet and persist to the database
 - Provide a streaming GRPC API to subscribe to HCS topics
-- Persist a subset of entities or transaction types
+- Persist a subset of entities or transaction types due to the potential increase in the volume of data caused by HCS
 - Provide a listener interface so third parties can add custom code to be notified of validated transactions
+- Make the Mirror Node easier for users to run to enable wider adoption by the community
 
 ## Non-Goals
 
-These items are not currently in scope at this time, but can be revisited later as the need arises:
+These items are not currently in scope at this time in order to deliver a MVP, but can be revisited later as the need arises:
 
 - Provide a HCS REST API
 - Provide a HCS WebSocket API
@@ -35,11 +36,16 @@ These items are not currently in scope at this time, but can be revisited later 
 4. GRPC API retrieves the current messages from PostgreSQL and returns to client
 5. GRPC API is notified of new `ConsensusSubmitMessage` transactions via PostgreSQL Notify
 
+### Alternatives
+
+- Replace step #5 above with the GRPC layer polling for new data
+- Replace step #5 above with a message broker that parser publishes to and GRPC API consumes
+
 ## GRPC API
 
 ### Setup
 
-- Create a new Maven sub-project `mirror-grpc`
+- Create a new Maven sub-project `mirror-api-grpc`
 - Use `com.github.os72:protoc-jar-maven-plugin` for protoc
 - Use `net.devh:grpc-spring-boot-starter` to manage GRPC component lifecycle
 - Use `spring-boot-starter-data-r2dbc` and `io.r2dbc:r2dbc-postgresql` for reactive database access and asynchronous pg_notify support
@@ -51,15 +57,16 @@ These items are not currently in scope at this time, but can be revisited later 
 ```proto
 message ConsensusTopicQuery {
     .proto.TopicID topicID = 1; // A required topic ID to retrieve messages for.
-    .proto.Timestamp startTime = 2; // Include messages which reached consensus on or after this time. Defaults to current time if not set.
-    .proto.Timestamp endTime = 3; // Include messages which reached consensus before this time. If not set it will receive indefinitely.
+    .proto.Timestamp consensusStartTime = 2; // Include messages which reached consensus on or after this time. Defaults to current time if not set.
+    .proto.Timestamp consensusEndTime = 3; // Include messages which reached consensus before this time. If not set it will receive indefinitely.
     uint32 limit = 4; // The maximum number of messages to receive before stopping. If not set or set to zero it will return messages indefinitely.
 }
 
 message ConsensusTopicResponse {
     .proto.Timestamp consensusTimestamp = 1; // The time at which the transaction reached consensus
     bytes message = 2; // The message body originally in the ConsensusSubmitMessageTransactionBody. Message size will be less than 4K.
-    uint64 sequenceNumber = 3; // Starts at 1 for first submitted message. Incremented on each submitted message.
+    bytes runningHash = 3; // The running hash (SHA384) of every message.
+    uint64 sequenceNumber = 4; // Starts at 1 for first submitted message. Incremented on each submitted message.
 }
 
 service ConsensusService {
@@ -77,7 +84,8 @@ service ConsensusService {
 public interface TopicMessageRepository extends ReactiveCrudRepository<TopicMessage, Long>, TopicMessageRepositoryCustom {
 }
 ```
-- Implement custom repository method that uses R2DBC's Fluent Data Access API to build a dynamic query based upon the filter:
+- Implement custom repository method that uses R2DBC's [Fluent Data Access API](https://docs.spring.io/spring-data/r2dbc/docs/1.0.x/reference/html/#r2dbc.datbaseclient.fluent-api)
+to build a dynamic query based upon the filter:
 ```java
 public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryCustom {
   public Flux<TopicMessage> findByFilter(TopicMessageFilter filter) {
@@ -85,17 +93,49 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
   }
 }
 ```
-- Implement `TopicSubscriber` that wraps `StreamObserver` in a `org.reactivestreams.Subscriber`
-- Implement `ConsensusService`
-  - Map `ConsensusTopicQuery` to `TopicMessageFilter`
-  - Perform `topicMessageRepository.findByFilter(filter)`
-  - Create and subscribe a `TopicSubscriber` to the results from the repository
-  - Map `TopicMessage` to `ConsensusTopicResponse`
+> _Note:_ A [Flux](https://projectreactor.io/docs/core/release/reference/#flux) is a reactive publisher that emits an
+asynchronous sequence of 0..N items.
+- Implement `TopicSubscriber` that wraps `StreamObserver` in a `org.reactivestreams.Subscriber`:
+```java
+public class TopicSubscriber implements Subscriber<TopicMessage> {
+  public void onSubscribe(Subscription subscription) {
+  }
+
+  public void onNext(TopicMessage topicMessage) {
+  }
+
+  public void onError(Throwable throwable) {
+  }
+
+  public void onComplete() {
+  }
+}
+```
+- Implement `ConsensusService`:
+```java
+@GrpcService
+public class ConsensusService extends ConsensusServiceGrpc.ConsensusServiceImplBase {
+    public void subscribeTopic(ConsensusTopicQuery consensusTopicQuery, StreamObserver<ConsensusTopicResponse> streamObserver) {
+      ...
+    }
+}
+```
+- Map `ConsensusTopicQuery` to `TopicMessageFilter`
+- Perform `topicMessageRepository.findByFilter(filter)`
+- Create and subscribe a `TopicSubscriber` to the results from the repository
+- Map `TopicMessage` to `ConsensusTopicResponse`
+- There can be multiple subscribers on the same topic for the same GRPC server and we should consider optimizations
+around that
 
 ### Topic Listener
 
 Provide the ability to stream new topic messages from the database and notify open GRPC streams of new data:
-- Implement a `TopicListener` that uses R2DBC's notify/listen support to stream topic messages from the database
+- Implement a `TopicListener` that uses R2DBC's notify/listen support:
+```java
+public interface TopicListener {
+    Flux<TopicMessage> listen(TopicMessageFilter filter);
+}
+```
 - Register `ConsensusService` with `TopicListener` to receive notifications of topic messages, filtering and buffering appropriately until
 current query finishes
 
@@ -163,3 +203,4 @@ on topic_message (entity_id, consensus_timestamp);
 ```
 - Create a trigger that calls a new function on every insert of topic_message, serializes it to JSON and calls pg_notify
 - Alternative would be dynamically create trigger for each GRPC call, but deleting trigger would be racy and duplicate traffic for same topic
+- TODO: Support a retention of X days for `topic_message`?
