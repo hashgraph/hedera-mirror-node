@@ -20,11 +20,7 @@ package com.hedera.recordFileLogger;
  * ‍
  */
 
-
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.MirrorProperties;
-import com.hedera.mirror.parser.record.RecordParserProperties;
-import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -56,13 +52,11 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
 
     @BeforeEach
     void before() throws Exception {
-        RecordFileLogger.parserProperties = new RecordParserProperties(new MirrorProperties());
-        
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-		RecordFileLogger.parserProperties.setPersistFiles(true);
-		RecordFileLogger.parserProperties.setPersistSystemFiles(true);
-		RecordFileLogger.parserProperties.setPersistCryptoTransferAmounts(true);
+		parserProperties.setPersistFiles(true);
+		parserProperties.setPersistSystemFiles(true);
+		parserProperties.setPersistCryptoTransferAmounts(true);
 	}
 
     @AfterEach
@@ -72,7 +66,6 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void freeze() throws Exception {
-
     	final Transaction transaction = freezeTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final TransactionRecord record = transactionRecord(transactionBody);
@@ -105,7 +98,6 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void freezeInvalidTransaction() throws Exception {
-
     	final Transaction transaction = freezeTransaction();
     	final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
     	final TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
@@ -135,7 +127,7 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
                 ,() -> assertRecordTransfers(record)
          );
     }
-    
+
     private TransactionRecord transactionRecord(TransactionBody transactionBody) {
     	return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS);
     }
@@ -159,7 +151,7 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
     	record.setTransactionFee(transactionBody.getTransactionFee());
     	record.setTransactionHash(ByteString.copyFromUtf8("TransactionHash"));
     	record.setTransactionID(transactionBody.getTransactionID());
-    	
+
     	final TransferList.Builder transferList = TransferList.newBuilder();
 
     	for (int i=0; i < transferAccounts.length; i++) {
@@ -175,7 +167,6 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
     }
 
     private Transaction freezeTransaction() {
-
     	final Transaction.Builder transaction = Transaction.newBuilder();
     	final FreezeTransactionBody.Builder freezeTransactionBody = FreezeTransactionBody.newBuilder();
 

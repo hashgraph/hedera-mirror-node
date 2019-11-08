@@ -25,9 +25,6 @@ import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.FileData;
-import com.hedera.mirror.domain.HederaNetwork;
-import com.hedera.mirror.parser.record.RecordParserProperties;
-import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -58,6 +55,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.annotation.Resource;
 import java.nio.file.Path;
 import java.time.Instant;
 
@@ -86,26 +84,20 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
  	private static final String memo = "File test memo";
 
     @TempDir
-    static Path dataPath;
+    Path dataPath;
 
-    private RecordParserProperties parserProperties;
+    @Resource
     private MirrorProperties mirrorProperties;
-    private NetworkAddressBook networkAddressBook;
 
     @BeforeEach
     void before() throws Exception {
-        mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
-        mirrorProperties.setNetwork(HederaNetwork.TESTNET);
-        networkAddressBook = new NetworkAddressBook(mirrorProperties);
-        
+        parserProperties.setPersistFiles(true);
+        parserProperties.setPersistSystemFiles(true);
+        parserProperties.setPersistCryptoTransferAmounts(true);
+
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-		parserProperties = new RecordParserProperties(mirrorProperties);
-		parserProperties.setPersistFiles(true);
-		parserProperties.setPersistSystemFiles(true);
-		parserProperties.setPersistCryptoTransferAmounts(true);
-		RecordFileLogger.parserProperties = parserProperties;
 	}
 
     @AfterEach
@@ -594,7 +586,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     void fileAppendToAddressBook() throws Exception {
 
         NetworkAddressBook.update(new byte[0]);
-        
+
         RecordFileLogger.parserProperties.setPersistFiles(true);
         RecordFileLogger.parserProperties.setPersistSystemFiles(true);
 
