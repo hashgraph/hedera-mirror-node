@@ -25,18 +25,20 @@ These items are not currently in scope at this time, but can be revisited later 
 - Provide higher level functionality like encryption, fragmentation or reassembly
 - Gossip based Mirror Node
 
-## Solution
+## Architecture
 
 ![Architecture](hcs-architecture.png)
 
-Overall flow:
+Flow:
 1. Downloader retrieves transactions from S3 and validates them
 2. Parser persists to PostgreSQL
 3. Client queries GRPC API for messages from a specific topic
 4. GRPC API retrieves the current messages from PostgreSQL and returns to client
 5. GRPC API is notified of new `ConsensusSubmitMessage` transactions via PostgreSQL Notify
 
-### GRPC API
+## GRPC API
+
+### Protobuf
 
 ```proto
 message ConsensusTopicQuery {
@@ -57,32 +59,61 @@ service ConsensusService {
 }
 ```
 
-![Architecture](hcs-consensus-service.png)
+### Consensus Service Flow
 
-Steps:
+![Sequence diagram](hcs-consensus-service.png)
+
+### Tasks
+
 - Create a new Maven sub-project `mirror-grpc`
 - Use `com.github.os72:protoc-jar-maven-plugin` for protoc
 - Use `net.devh:grpc-spring-boot-starter` to manage GRPC component lifecycle
 - Use `io.r2dbc:r2dbc-postgresql` for reactive database access and asynchronous pg_notify support
+- Implement `TopicMesage` domain class
+- Implement repository `interface TopicMessageRepository extends ReactiveCrudRepository`
+  - Implement a `Flux<TopicMessage> findByFilter(TopicMessageFilter)` custom
+method that uses R2DBC's Fluent Data Access API to build a dynamic query based upon the filter
 - Implement a `ConsensusService`
-- Register with `TopicListener` to receive notifications of topic messages, filtering and buffering appropriately until
+  - Wrap `StreamObserver` in a `org.reactivestreams.Subscriber`
+  - Register with `TopicListener` to receive notifications of topic messages, filtering and buffering appropriately until
 current query finishes
-- Map `ConsensusTopicQuery` to `TopicMessageFilter`
-- Implement a `interface TopicMessageRepository extends ReactiveCrudRepository`
-- Implement a `Flux<TopicMessage> TopicMessageRepository.findByFilter(TopicMessageFilter topicMessageFilter)` custom
-method that uses R2DBC's Fluent Data Access API to build a dynamic query based upon the filter.
-- Map `TopicMessage` to `ConsensusTopicResponse`
+  - Map `ConsensusTopicQuery` to `TopicMessageFilter`
+  - Perform `topicMessageRepository.findByFilter(filter)`
+  - Map `TopicMessage` to `ConsensusTopicResponse`
+- Create a Systemd unit file
+- Add to CircleCI and deployment script
 
-### Parser
+## Parser
 
-- Modify `RecordFileLogger` to handle consensus transactions
-- Add [configuration](#configuration) options to filter transaction
+### Persist
+
+Modify `RecordFileLogger` to handle HCS transactions
+- Insert HCS transaction into `t_transactions`
+- Insert `ConsensusSubmitMessage` transactions into `topic_message`
+
+### Filter
+
+Provide the ability to filter transactions before persisting via configuration:
+- Add a new option `hedera.mirror.parser.include`
+- Add a new option `hedera.mirror.parser.exclude` with higher priority than includes
+- The structure of both will be a list of transaction filters and get turned into a single Predicate
+at runtime:
+```yaml
+include:
+  - transaction: [ConsensusCreateTopic, ConsensusDeleteTopic, ConsensusUpdateTopic, ConsensusSubmitMessage]
+    entity: [0.0.1001]
+```
+- Remove options `hedera.mirror.parser.record.persist*` and convert defaults to newer format
+
+### Notify
+
+Provide the ability to notify components of new transactions:
 - Provide a `TransactionListener.notify(Transaction, Record)` interface to be notified of incoming transactions (if
-more parameters are need, wrap in an immutable event)
+more parameters are needed, wrap in an immutable event)
 - Rework `RecordFileLogger` to implement `TransactionListener`
 - Decouple `RecordFileParser` and `RecordFileLogger` so that `RecordFileParser` invokes `TransactionListener`
 
-### Database
+## Database
 
 - Add new `t_entity_types` row with name `topic`
 - Add new column `submit_key` to t_entities
@@ -102,31 +133,18 @@ more parameters are need, wrap in an immutable event)
   - `INVALID_TOPIC_SUBMIT_KEY = 157`
   - `UNAUTHORIZED = 158`
   - `INVALID_TOPIC_MESSAGE = 159`
-- Add new table consensus_topic
+- Add new table `topic_message`:
 ```postgres-sql
 create table if not exists topic_message (
   consensus_timestamp bigint primary key not null,
+  entity_id bigint not null references t_entities (id) on delete cascade on update cascade,
   message bytea not null,
   running_hash bytea not null,
-  sequence_number bigint not null,
-  topic_entity_id bigint not null references t_entities (id) on delete cascade on update cascade
+  sequence_number bigint not null
 );
 
 create index if not exists topic_message_entity_id_timestamp
-on topic_message (topic_entity_id, consensus_timestamp);
+on topic_message (entity_id, consensus_timestamp);
 ```
 - Create a trigger that calls a new function on every insert of topic_message, serializes it to JSON and calls pg_notify
-- Alternative would be dynamically create trigger for each GRPC call, but deleting trigger would be difficult and duplicate traffic for same topic
-
-### Configuration
-
-- Add a new option `hedera.mirror.parser.include`
-- Add a new option `hedera.mirror.parser.exclude` with higher priority than includes
-- The structure of both include and exclude would be a list of transaction filters and get turned into a single Predicate
-at runtime:
-```yaml
-include/exclude:
-  - transaction: [ConsensusCreateTopic, ConsensusDeleteTopic, ConsensusUpdateTopic, ConsensusSubmitMessage]
-    entity: [0.0.1001]
-```
-- Remove options `hedera.mirror.parser.record.persist*` and convert defaults to newer format
+- Alternative would be dynamically create trigger for each GRPC call, but deleting trigger would be racy and duplicate traffic for same topic
