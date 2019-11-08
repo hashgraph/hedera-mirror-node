@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,8 @@ var acceptanceTestsTransactions = (function () {
     const server = process.env.TARGET;
     const acctestutils = require('./acceptancetest_utils.js');
     const config = require('../config.js');
+    const maxLimit = config.api.maxLimit;
+    const fileUpdateRefreshTime = 5;
 
     beforeAll(async () => {
         moduleVars.verbose && console.log('Jest starting!');
@@ -50,20 +52,20 @@ var acceptanceTestsTransactions = (function () {
         verbose: false
     };
 
-    // Make a preliminary query to /transactions and get the list of accounts. The values 
-    // returned by this query are used to populate the subsequent queries for other tests in 
-    // this file. For example, an account number returned by this query is used to 
+    // Make a preliminary query to /transactions and get the list of accounts. The values
+    // returned by this query are used to populate the subsequent queries for other tests in
+    // this file. For example, an account number returned by this query is used to
     // make a subsequent query for a specific account (/transactions?account.id=xxx).
     // This allows the acceptance tests to run against any network (testnet, mainnet) by
-    // dynamically discovering account numbers, balances, transactions, etc to avoid 
+    // dynamically discovering account numbers, balances, transactions, etc to avoid
     // hardcoding.
     const setModuleVars = async function () {
         const response = await request(server).get(moduleVars.apiPrefix + '/transactions');
         expect(response.status).toEqual(200);
         let transactions = JSON.parse(response.text).transactions;
 
-        expect(transactions.length).toBe(config.limits.RESPONSE_ROWS);
-        if (transactions.length !== config.limits.RESPONSE_ROWS) {
+        expect(transactions.length).toBe(maxLimit);
+        if (transactions.length !== maxLimit) {
             return (false);
         }
 
@@ -91,7 +93,7 @@ var acceptanceTestsTransactions = (function () {
     const checkMandatoryParams = function (entry) {
         let check = true;
         ['consensus_timestamp', 'valid_start_timestamp', 'charged_tx_fee', 'transaction_id',
-            'memo_base64', 'result', 'name', 'node', 'transfers'
+            'memo_base64', 'result', 'name', 'node', 'transfers', 'valid_duration_seconds', 'max_fee'
         ].forEach((field) => {
             check = check && entry.hasOwnProperty(field);
         });
@@ -103,7 +105,7 @@ var acceptanceTestsTransactions = (function () {
             const response = await request(server).get(moduleVars.apiPrefix + '/transactions');
             expect(response.status).toEqual(200);
             let transactions = JSON.parse(response.text).transactions;
-            expect(transactions.length).toBe(config.limits.RESPONSE_ROWS);
+            expect(transactions.length).toBe(maxLimit);
 
             // Assert that all mandatory fields are present in the response
             let check = checkMandatoryParams(transactions[0]);
@@ -112,9 +114,9 @@ var acceptanceTestsTransactions = (function () {
             // Check for freshness of data
             const txSec = transactions[0].consensus_timestamp.split('.')[0];
             const currSec = Math.floor(new Date().getTime() / 1000);
-            const delta = currSec - txSec
-            check = delta < (10 * config.fileUpdateRefreshTimes.records)
-            expect(check).toBeTruthy(); 
+            const delta = currSec - txSec;
+            check = delta < (10 * fileUpdateRefreshTime);
+            expect(check).toBeTruthy();
         });
 
         test('Get transactions with timestamp & limit parameters', async () => {
@@ -181,7 +183,7 @@ var acceptanceTestsTransactions = (function () {
             const response = await request(server).get(url);
             expect(response.status).toEqual(200);
             let transactions = JSON.parse(response.text).transactions;
-            expect(transactions.length).toEqual(config.limits.RESPONSE_ROWS);
+            expect(transactions.length).toEqual(maxLimit);
             let check = false;
             for (let xfer of transactions[0].transfers) {
                 let acc = acctestutils.toAccNum(xfer.account);
@@ -202,7 +204,7 @@ var acceptanceTestsTransactions = (function () {
             const response = await request(server).get(url);
             expect(response.status).toEqual(200);
             let transactions = JSON.parse(response.text).transactions;
-            expect(transactions.length).toEqual(config.limits.RESPONSE_ROWS);
+            expect(transactions.length).toEqual(maxLimit);
             let check = true;
             let prevSeconds = 0;
             for (let txn of transactions) {
@@ -239,7 +241,7 @@ var acceptanceTestsTransactions = (function () {
             const url = `${moduleVars.apiPrefix}/transactions` +
                 `?timestamp=gte:${tsLow}&timestamp=lte:${tsHigh}` +
                 `&account.id=gt:${accLow}&account.id=lt:${accHigh}` +
-                `&result=success&type=credit&order=desc&limit=${config.limits.RESPONSE_ROWS}`;
+                `&result=success&type=credit&order=desc&limit=${maxLimit}`;
             moduleVars.verbose && console.log(url);
             const response = await request(server).get(url);
             expect(response.status).toEqual(200);
@@ -247,14 +249,14 @@ var acceptanceTestsTransactions = (function () {
 
         test('Get transactions with pagination', async () => {
             // Validate that pagination works and that it doesn't have any gaps
-            // In setModuleVars function, we did a /tranasctions query and stored the results of that query in the 
+            // In setModuleVars function, we did a /tranasctions query and stored the results of that query in the
             // moduleVars.testTx variable. This is expected to be RESPONSE_ROWS (currently 1000) long.
             // We will now try to fetch the same entries using five 200-entry pages using the 'next' links
             // After that, we will concatenate these 5 pages and compare the entries with the original response
-            // of 1000 entries to see if there is any overlap or gaps in the returned responses.   
+            // of 1000 entries to see if there is any overlap or gaps in the returned responses.
             let paginatedEntries = [];
             const numPages = 5;
-            const pageSize = config.limits.RESPONSE_ROWS / numPages;
+            const pageSize = maxLimit / numPages;
             const firstTs = moduleVars.testTx[0].consensus_timestamp;
 
             let next = null;
@@ -274,13 +276,13 @@ var acceptanceTestsTransactions = (function () {
             }
 
             // We have concatenated set of pages obtained using the 'next' links
-            // Check if the length matches the original response 
+            // Check if the length matches the original response
             check = (paginatedEntries.length === moduleVars.testTx.length);
             expect(check).toBeTruthy();
 
             // Check if the transaction-ids and conesnsus-timestamps match for each entry
             check = true;
-            for (i = 0; i < config.limits.RESPONSE_ROWS; i++) {
+            for (i = 0; i < maxLimit; i++) {
                 if (moduleVars.testTx[i].transaction_id !== paginatedEntries[i].transaction_id ||
                     moduleVars.testTx[i].consensus_timestamp !== paginatedEntries[i].consensus_timestamp) {
                     check = false;

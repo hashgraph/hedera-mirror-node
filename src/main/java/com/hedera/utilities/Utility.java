@@ -25,7 +25,6 @@ package com.hedera.utilities;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
-import com.hedera.mirror.downloader.Downloader;
 import com.hedera.filedelimiters.FileDelimiter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -35,7 +34,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -45,7 +43,6 @@ import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -66,18 +63,13 @@ public class Utility {
     private static final Long SCALAR = 1_000_000_000L;
     private static final String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
 
-	public static boolean checkStopFile() {
-		File stopFile = new File("./stop");
-		return stopFile.exists();
-	}
 	/**
 	 * Verify if a file's hash is equal to the hash contained in sig file
 	 * @return
 	 */
-	public static boolean hashMatch(File sigFile, File rcdFile) {
+	public static boolean hashMatch(byte[] hash, File rcdFile) {
 		byte[] fileHash = Utility.getFileHash(rcdFile.getPath());
-		Pair<byte[], byte[]> sigPair = extractHashAndSigFromFile(sigFile);
-		return sigPair == null ? false : Arrays.equals(fileHash, sigPair.getLeft());
+		return Arrays.equals(fileHash, hash);
 	}
 	/**
 	 * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this signature
@@ -519,20 +511,10 @@ public class Utility {
 	}
 
 	public static String getAccountIDStringFromFilePath(String path) {
-		if (isRecordFile(path) || isRecordSigFile(path)) {
-			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.RCD);
-		} else if (isEventStreamFile(path) || isEventStreamSigFile(path)) {
-			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.EVENT);
-		} else {
-			return getAccountIDStringFromFilePath(path, Downloader.DownloadType.BALANCE);
-		}
-	}
-
-	public static String getAccountIDStringFromFilePath(String path, Downloader.DownloadType type) {
 		String regex;
-		if (type == Downloader.DownloadType.RCD) {
+        if (isRecordFile(path) || isRecordSigFile(path)) {
 			regex = "record([\\d]+[.][\\d]+[.][\\d]+)";
-		} else if (type == Downloader.DownloadType.EVENT) {
+		} else if (isEventStreamFile(path) || isEventStreamSigFile(path)) {
 			regex = "events_([\\d]+[.][\\d]+[.][\\d]+)";
 		} else {
 			//account balance
@@ -601,50 +583,36 @@ public class Utility {
 		return n > N * 2 / 3.0;
 	}
 
-	/**
-	 * Convert an Instant to a Long type timestampInNanos
-	 * @param instant
-	 * @return
-	 */
-	public static Long convertInstantToNanos(Instant instant) {
-		if (instant == null) {
-			return null;
-		}
-		return instant.getEpochSecond() * SCALAR + instant.getNano();
-	}
+    /**
+     * Convert an Instant to a Long type timestampInNanos
+     */
+    public static Long convertInstantToNanos(Instant instant) {
+        try {
+            return Math.addExact(Math.multiplyExact(instant.getEpochSecond(), SCALAR), instant.getNano());
+        } catch (ArithmeticException e) {
+            log.error("Long overflow when converting Instant to nanos timestamp : {}", instant, e);
+            throw e;
+        }
+    }
 
-	/**
-	 * Convert seconds and nanos to a Long type timeStampInNanos
-	 * @param seconds
-	 * @param nanos
-	 * @return
-	 */
-    public static Long timeStampInNanos(long seconds, int nanos) {
-	  return seconds * SCALAR + nanos;
+    /**
+     * Converts time in (second, nanos) to time in only nanos.
+     */
+    public static Long convertToNanos(long second, long nanos) {
+        return convertInstantToNanos(Instant.ofEpochSecond(second, nanos));
     }
 
 	/**
 	 * Convert Timestamp to a Long type timeStampInNanos
-	 * @param TimeStamp
-	 * @return
 	 */
     public static Long timeStampInNanos(Timestamp timestamp) {
-	  return timestamp.getSeconds() * SCALAR + timestamp.getNanos();
+        try {
+            return Math.addExact(Math.multiplyExact(timestamp.getSeconds(), SCALAR), timestamp.getNanos());
+        } catch (ArithmeticException e) {
+            log.error("Long overflow when converting Timestamp to nanos timestamp : {}", timestamp, e);
+            throw e;
+        }
     }
-
-	/**
-	 * Convert a Long type timestampInNanos to an Instant
-	 * @param bigint
-	 * @return
-	 */
-	public static Instant convertNanosToInstant(Long bigint) {
-		if (bigint == null) {
-			return null;
-		}
-		long seconds = bigint / SCALAR;
-		int nanos = (int) (bigint % SCALAR);
-		return Instant.ofEpochSecond(seconds, nanos);
-	}
 
 	public static boolean hashIsEmpty(String hash) {
 		return StringUtils.isBlank(hash) || hash.equals(EMPTY_HASH);

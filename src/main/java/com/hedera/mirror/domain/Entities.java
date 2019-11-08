@@ -43,10 +43,10 @@ public class Entities {
 
     @Column(name = "fk_entity_type_id")
     private Integer entityTypeId;
-    
+
     @Column(name = "exp_time_seconds")
     private Long expiryTimeSeconds;
-    
+
     @Column(name = "exp_time_nanos")
     private Long expiryTimeNanos;
 
@@ -56,7 +56,7 @@ public class Entities {
 
     @Column(name = "fk_prox_acc_id")
     private Long proxyAccountId;
-    
+
     private boolean deleted;
 
     @Column(name = "exp_time_ns")
@@ -76,10 +76,8 @@ public class Entities {
 
     public void setExpiryTimeNs(Long expiryTimeNs) {
         this.expiryTimeNs = expiryTimeNs;
-        Instant instant = Utility.convertNanosToInstant(expiryTimeNs);
-        if (instant != null) {
-            setExpiryTimeSeconds(instant.getEpochSecond());
-            setExpiryTimeNanos((long)instant.getNano());
-        }
+        Instant instant = Instant.ofEpochSecond(0, expiryTimeNs);
+        setExpiryTimeSeconds(instant.getEpochSecond());
+        setExpiryTimeNanos((long)instant.getNano());
     }
 }

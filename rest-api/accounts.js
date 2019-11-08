@@ -18,6 +18,7 @@
  * ‍
  */
 'use strict';
+const config = require('./config.js');
 const utils = require('./utils.js');
 const transactions = require('./transactions.js');
 
@@ -44,7 +45,7 @@ const getAccountQueryPrefix = function() {
     const prefix = 
         "select ab.balance as account_balance\n" +
         "    , ab.consensus_timestamp as consensus_timestamp\n" +
-        "    , " + process.env.SHARD_NUM + " as entity_shard\n" +
+        "    , " + config.shard + " as entity_shard\n" +
         "    , coalesce(ab.account_realm_num, e.entity_realm) as entity_realm\n" +
         "    , coalesce(ab.account_num, e.entity_num) as entity_num\n" +
         "    , e.exp_time_ns\n" +
@@ -53,7 +54,7 @@ const getAccountQueryPrefix = function() {
         "    , e.deleted\n" +
         "from account_balances ab\n" +
         "full outer join t_entities e\n" +
-        "    on (" + process.env.SHARD_NUM + " = e.entity_shard\n" +
+        "    on (" + config.shard + " = e.entity_shard\n" +
         "        and ab.account_realm_num = e.entity_realm\n" +
         "        and ab.account_num =  e.entity_num\n" +
         "        and e.fk_entity_type_id < " + utils.ENTITY_TYPE_FILE + ")\n" +
@@ -82,11 +83,11 @@ const getAccounts = function (req) {
     // need to look  for the given account.id in both account_balances and t_entities table and combine with an 'or'
     const [accountQueryForAccountBalances, accountParamsForAccountBalances] =
         utils.parseParams(req, 'account.id',
-            [{ shard: process.env.SHARD_NUM, realm: 'ab.account_realm_num', num: 'ab.account_num' }],
+            [{ shard: config.shard, realm: 'ab.account_realm_num', num: 'ab.account_num' }],
             'entityId');
     const [accountQueryForEntity, accountParamsForEntity] =
         utils.parseParams(req, 'account.id',
-            [{ shard: process.env.SHARD_NUM, realm: 'e.entity_realm', num: ' e.entity_num' }],
+            [{ shard: config.shard, realm: 'e.entity_realm', num: ' e.entity_num' }],
             'entityId');
     const accountQuery = accountQueryForAccountBalances === '' ? '' :
         "(\n" + 
@@ -202,7 +203,7 @@ const getOneAccount = function (req, res) {
         "        and e.fk_entity_type_id < " + utils.ENTITY_TYPE_FILE + ")\n" +
         ")\n";
 
-    const entityParams = [acc.realm, acc.num, process.env.SHARD_NUM, acc.realm, acc.num];
+    const entityParams = [acc.realm, acc.num, config.shard, acc.realm, acc.num];
     const pgEntityQuery = utils.convertMySqlStyleQueryToPostgress(
         entitySql, entityParams);
 

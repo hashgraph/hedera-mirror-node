@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -100,8 +100,6 @@ const instantiateDatabase = async function() {
     // Until "server", "pool" and everything else is made non-static...
     oldPool = global.pool;
     global.pool = sqlConnection;
-    oldShardNum = process.env.SHARD_NUM;
-    process.env.SHARD_NUM = 0;
 
     await flywayMigrate();
     await setupData();
@@ -114,7 +112,7 @@ const instantiateDatabase = async function() {
 const flywayMigrate = function() {
     console.log('Using flyway CLI to construct schema');
     let exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
-    let configPath = '.node-flywaydb.integration.conf';
+    let configPath = path.join('config', '.node-flywaydb.integration.conf');
     let flywayEnv = {env: Object.assign({}, {
         'FLYWAY_URL': `jdbc:postgresql://${dbHost}:${dbPort}/${dbName}`
         ,'FLYWAY_USER': dbUser
@@ -167,10 +165,10 @@ const addAccount = async function(accountId) {
     return e;
 };
 
-const addTransaction = async function(consensusTimestamp, fileId, payerAccountId, transfers) {
+const addTransaction = async function(consensusTimestamp, fileId, payerAccountId, transfers, validDurationSeconds = 11, maxFee = 33) {
     await sqlConnection.query(
-        'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, fk_result_id, fk_trans_type_id) values ($1, $2, $3, $4, $5, $6, $7);',
-        [consensusTimestamp, consensusTimestamp - 1, fileId, accountEntityIds[payerAccountId], accountEntityIds[2], 24, 2]);
+        'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, fk_result_id, fk_trans_type_id, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
+         [consensusTimestamp, consensusTimestamp - 1, fileId, accountEntityIds[payerAccountId], accountEntityIds[2], 24, 2, validDurationSeconds, maxFee]);
     for (var i = 0; i < transfers.length; ++i) {
         let xfer = transfers[i];
         await sqlConnection.query(
@@ -188,9 +186,9 @@ const addTransaction = async function(consensusTimestamp, fileId, payerAccountId
  * @param amount
  * @returns {Promise<void>}
  */
-const addCryptoTransferTransaction = async function(consensusTimestamp, fileId, payerAccountId, recipientAccountId, amount) {
+const addCryptoTransferTransaction = async function(consensusTimestamp, fileId, payerAccountId, recipientAccountId, amount, validDurationSeconds, maxFee) {
     await addTransaction(consensusTimestamp, fileId, payerAccountId,
-        [[payerAccountId, (-1 - amount)], [recipientAccountId, amount], [2, 1]]);
+        [[payerAccountId, (-1 - amount)], [recipientAccountId, amount], [2, 1]], validDurationSeconds, maxFee);
 };
 
 /**
@@ -242,10 +240,6 @@ afterAll(() => {
         global.pool = oldPool;
         oldPool = null;
     }
-    if (oldShardNum !== null) {
-        process.env.SHARD_NUM = oldShardNum;
-        oldShardNum = null;
-    }
     if (process.env.CI) {
         let logPath = path.join(__dirname, '..', '..', 'logs', 'hedera_mirrornode_api_3000.log');
         console.log(logPath);
@@ -263,6 +257,12 @@ afterAll(() => {
 function mapTransactionResults(rows) {
     return rows.map(function(v) {
         return '@' + v['consensus_ns'] + ': account ' + v['account_num'] + " \u0127" + v['amount'];
+    });
+}
+
+function extractDurationAndMaxFeeFromTransactionResults(rows) {
+    return rows.map(function(v) {
+        return '@' + v['valid_duration_seconds'] + ',' + v['max_fee'];
     });
 }
 
@@ -304,6 +304,32 @@ test('DB integration test - transactions.reqToSql - invalid account', async () =
     let sql = transactions.reqToSql({query: {'account.id': '0.17.666'}});
     let res = await sqlConnection.query(sql.query, sql.params);
     expect(res.rowCount).toEqual(0);
+});
+
+test('DB integration test - transactions.reqToSql - null validDurationSeconds and maxFee inserts', async () => {
+    let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;',
+        ['nodurationfee']);
+    let fileId = res.rows[0]['id'];
+
+    await addCryptoTransferTransaction(1062, fileId, 3, 4, 50, 5, null); // null maxFee
+    await addCryptoTransferTransaction(1063, fileId, 3, 4, 70, null, 777); //null validDurationSeconds
+    await addCryptoTransferTransaction(1064, fileId, 3, 4, 70, null, null); // valid validDurationSeconds and maxFee
+
+    let sql = transactions.reqToSql({query: {'account.id': '0.15.3'}});
+    res = await sqlConnection.query(sql.query, sql.params);
+    expect(res.rowCount).toEqual(9);
+    expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual(
+        ['@5,null',
+            '@5,null',
+            '@5,null',
+            '@null,777',
+            '@null,777',
+            '@null,777',
+            '@null,null',
+            '@null,null',
+            '@null,null',
+        ]
+    );
 });
 
 let specPath = path.join(__dirname, 'specs');

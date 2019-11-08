@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,19 +25,19 @@ function normalizeSql(str) {
     return str.replace(/\s+/g, ' ').replace(/,\s*/g, ',').replace(/\s*,/g, ',').replace(/\s+$/, '');
 }
 
-const boilerplatePrefix = 
-    `select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num , t.memo , t.consensus_ns , valid_start_ns , 
-    ttr.result , t.fk_trans_type_id , ttt.name, t.fk_node_acc_id , enode.entity_shard as node_shard , 
-    enode.entity_realm as node_realm , enode.entity_num as node_num, account_id , 
-    eaccount.entity_shard as account_shard , eaccount.entity_realm as account_realm , 
-    eaccount.entity_num as account_num, amount , t.charged_tx_fee 
+const boilerplatePrefix =
+    `select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num , t.memo , t.consensus_ns , valid_start_ns ,
+    ttr.result , t.fk_trans_type_id , ttt.name, t.fk_node_acc_id , enode.entity_shard as node_shard ,
+    enode.entity_realm as node_realm , enode.entity_num as node_num, account_id ,
+    eaccount.entity_shard as account_shard , eaccount.entity_realm as account_realm ,
+    eaccount.entity_num as account_num, amount , t.charged_tx_fee, t.valid_duration_seconds, t.max_fee
 from ( select distinct ctl.consensus_timestamp
     from t_cryptotransferlists ctl
     join t_transactions t on t.consensus_ns = ctl.consensus_timestamp
     join t_transaction_results tr on t.fk_result_id = tr.id
     join t_entities eaccount on eaccount.id = ctl.account_id `;
 
-const boilerplateSufffix = 
+const boilerplateSufffix =
     ` join t_transactions t on tlist.consensus_timestamp = t.consensus_ns
     join t_transaction_results ttr on ttr.id = t.fk_result_id
     join t_entities enode on enode.id = t.fk_node_acc_id
@@ -50,7 +50,7 @@ const boilerplateSufffix =
 
 test('transactions by timestamp gte', () => {
     let sql = transactions.reqToSql({query: {timestamp: 'gte:1234'}});
-    let expected = normalizeSql(boilerplatePrefix + 
+    let expected = normalizeSql(boilerplatePrefix +
         `where 1=1
          and ((t.consensus_ns  >=  $1) ) and 1=1   order by ctl.consensus_timestamp desc limit $2 ) as tlist` +
         boilerplateSufffix)
@@ -60,7 +60,7 @@ test('transactions by timestamp gte', () => {
 
 test('transactions by timestamp eq', () => {
     let sql = transactions.reqToSql({query: {timestamp: 'eq:123'}});
-    let expected = normalizeSql(boilerplatePrefix + 
+    let expected = normalizeSql(boilerplatePrefix +
         `where 1=1
         and ((t.consensus_ns  =  $1) ) and 1=1   order by ctl.consensus_timestamp desc limit $2 ) as tlist` +
         boilerplateSufffix)
@@ -70,7 +70,7 @@ test('transactions by timestamp eq', () => {
 
 test('transactions by account eq', () => {
     let sql = transactions.reqToSql({query: {'account.id': '0.1.123'}});
-    let expected = normalizeSql(boilerplatePrefix + 
+    let expected = normalizeSql(boilerplatePrefix +
         ` where ctl.account_id in (select id from t_entities
             where ((entity_shard  =  $1 and entity_realm  =  $2 and entity_num  =  $3 )) and fk_entity_type_id < 3 limit 1000)
         and 1=1 and 1=1   order by ctl.consensus_timestamp desc

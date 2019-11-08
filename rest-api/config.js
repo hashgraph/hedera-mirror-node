@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,30 +17,103 @@
  * limitations under the License.
  * ‍
  */
-const config = {
-    limits: {
-        RESPONSE_ROWS: 1000,
-        MAX_BIGINT: 9223372036854775807
-    },
 
-    // Time to Live for cache entries for each type of API
-    ttls: {
-        transactions: 10,
-        balances: 60,
-        accounts: 60,
-        events: 10
-    },
+const extend = require('extend');
+const fs = require('fs');
+const yaml = require('js-yaml');
+const path = require('path');
 
-    // Refresh times for each type of files (in seconds)
-    fileUpdateRefreshTimes: {
-        records: 5,         // Record files are updated this often
-        balances: 15 * 60,  // Balance files are updated this often
-        events: 5 * 60      // Event files are updated this often
-    },
-
-    resultUpdateTimeout: 60, // Raise error if no results in this much time,
-
-    TEST_REALM: 0            // Realm for acceptane tests
+let configName = 'application';
+if (process.env.CONFIG_NAME) {
+  configName = process.env.CONFIG_NAME;
 }
 
-module.exports = config;
+let config = {};
+let loaded = false;
+
+function load(configPath) {
+  if (!configPath) {
+    return;
+  }
+
+  let configFile = path.join(configPath, configName + '.yml');
+  if (fs.existsSync(configFile)) {
+    loadYaml(configFile);
+  }
+
+  configFile = path.join(configPath, configName + '.yaml');
+  if (fs.existsSync(configFile)) {
+    loadYaml(configFile);
+  }
+}
+
+function loadYaml(configFile) {
+  try {
+    let doc = yaml.safeLoad(fs.readFileSync(configFile, 'utf8'));
+    console.log(`Loaded configuration source: ${configFile}`);
+    extend(true, config, doc);
+  } catch (err) {
+    console.log(`Skipping configuration ${configFile}: ${err}`);
+  }
+}
+
+function loadEnvironment() {
+  let keys = Object.keys(process.env);
+  let values = Object.values(process.env);
+
+  for (i in keys) {
+    setConfigValue(keys[i], values[i]);
+  }
+}
+
+/*
+ * Sets a config property from an environment variable by converting HEDERA_MYFOO_BAR to an object path notation hedera.myFoo.bar
+ * using a case insensitive search. If more than one property matches with a different case, it will choose the first.
+ */
+function setConfigValue(propertyPath, value) {
+  let current = config;
+  let properties = propertyPath.toLowerCase().split('_');
+
+  // Ignore properties that don't start with HEDERA_
+  if (properties.length <= 1 || properties[0] !== 'hedera') {
+    return;
+  }
+
+  for (let i in properties) {
+    let property = properties[i];
+
+    for (let [k, v] of Object.entries(current)) {
+      if (property === k.toLowerCase()) {
+        if (i < properties.length - 1) {
+          current = v;
+          break;
+        } else {
+          current[k] = convertType(value);
+          return;
+        }
+      }
+    }
+  }
+}
+
+function convertType(value) {
+  let parsedValue = value;
+
+  if (value !== null && value !== '' && !isNaN(value)) {
+    parsedValue = +value;
+  } else if (value === 'true' || value === 'false') {
+    parsedValue = (value === 'true');
+  }
+
+  return parsedValue;
+}
+
+if (!loaded) {
+  load(path.join(__dirname, 'config'));
+  load(__dirname);
+  load(process.env.CONFIG_PATH);
+  loadEnvironment();
+  loaded = true;
+}
+
+module.exports = config.hedera ? config.hedera.mirror : config;
