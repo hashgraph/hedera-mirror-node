@@ -1,0 +1,366 @@
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+'use strict';
+
+const acctestutils = require('./fetchtest_utils.js');
+const config = require('../../config.js');
+const math = require('mathjs');
+const transactionsPath= '/transactions';
+const maxLimit = config.api.maxLimit;
+
+let classResults = null;
+let server = undefined;
+
+/**
+ * Makes a call to the rest-api and returns the transacations object from the response
+ * @param {String} pathandquery 
+ * @return {Object} Transactions object from response
+ */
+const getTransactions = async function(pathandquery) {
+    try {
+        const json = await acctestutils.getAPIResponse(pathandquery);
+        return json.transactions;
+    } catch (error) {
+        console.log(error);
+        return {}
+    }
+}
+
+/**
+ * Add provided result to list of class results
+ * Also increment passed and failed count based
+ * @param {Object} res Test result
+ * @param {Boolean} passed Test passed flag
+ */
+const addTestResult = function(res, passed) {
+    classResults.testResults.push(res);
+    passed ? classResults.numPassedTests++ : classResults.numFailedTests++;
+}
+
+/**
+ * Check the required fields exist in the response object
+ * @param {Object} entry Transaction JSON object
+ */
+const checkMandatoryParams = function (entry) {
+    let check = true;
+    ['consensus_timestamp', 'valid_start_timestamp', 'charged_tx_fee', 'transaction_id',
+        'memo_base64', 'result', 'name', 'node', 'transfers'
+    ].forEach((field) => {
+        check = check && entry.hasOwnProperty(field);
+    });
+    return (check);
+}
+
+/**
+ * Verify base transactions call 
+ * Also ensure an account mentioned in the transaction can be connected with the said transaction
+ */
+const getTransactionsWithAccountCheck = async function() {
+    var currentTestResult = acctestutils.getMonitorTestResult();
+    
+    let url = acctestutils.getUrl(server, transactionsPath);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url); 
+
+    if (transactions.length !== maxLimit) {
+        var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    let mandatoryParamCheck = checkMandatoryParams(transactions[0]);
+    if (mandatoryParamCheck == false) {
+        var message = `transaction object is missing some mandatory fields`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+    
+    var accNum = 0
+    var highestAcc = 0
+    for (let xfer of transactions[0].transfers) {
+        if (xfer.amount > 0) {
+            accNum = acctestutils.toAccNum(xfer.account);
+            if (accNum > highestAcc) {
+                highestAcc = accNum;
+            }
+        }
+    }
+
+    if (accNum === 0) {
+        var message = `accNum is 0`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    if (undefined === transactions[0].consensus_timestamp) {
+        var message = `transactions[0].consensus_timestamp is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    url = acctestutils.getUrl(server, `${transactionsPath}?account.id=${highestAcc}&type=credit&limit=1`);
+    currentTestResult.url = url;
+
+    let accTransactions = await getTransactions(url); 
+    if (accTransactions.length !== 1) {
+        var message = `accTransactions.length of ${transactions.length} is not 1`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    let check = false;
+    for (let xfer of accTransactions[0].transfers) {
+        if (acctestutils.toAccNum(xfer.account) === highestAcc) {
+            check = true;
+        }
+    }
+
+    if (check == false) {
+        var message = `Highest acc check was not found`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    currentTestResult.result = 'passed';
+    currentTestResult.message = `Successfully called transactions and performed account check`
+
+    addTestResult(currentTestResult, true);
+}
+
+/**
+ * Verify transactions call with order query params provided
+ */
+const getTransactionsWithOrderParam = async function() {
+    var currentTestResult = acctestutils.getMonitorTestResult();
+    
+    let url = acctestutils.getUrl(server, `${transactionsPath}?order=asc`);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url); 
+    
+    if (transactions.length !== maxLimit) {
+        var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    let prevSeconds = 0;
+    for (let txn of transactions) {
+        if (acctestutils.secNsToSeconds(txn.seconds) < prevSeconds) {
+            check = false;
+        }
+        prevSeconds = acctestutils.secNsToSeconds(txn.seconds);
+    }
+
+    currentTestResult.result = 'passed';
+    currentTestResult.message = `Successfully called transactions with order params only`
+
+    addTestResult(currentTestResult, true);
+}
+
+/**
+ * Verify transactions call with limit query params provided
+ */
+const getTransactionsWithLimitParams = async function () {
+    var currentTestResult = acctestutils.getMonitorTestResult();
+
+    let url = acctestutils.getUrl(server, `${transactionsPath}?limit=10`);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url); 
+    
+    if (transactions.length !== 10) {
+        var message = `transactions.length of ${transactions.length} was expected to be 10`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    currentTestResult.result = 'passed';
+    currentTestResult.message = `Successfully called transactions with limit params only`
+
+    addTestResult(currentTestResult, true);
+}
+
+/**
+ * Verify transactions call with time and limit query params provided
+ */
+const getTransactionsWithTimeAndLimitParams = async function () {
+    var currentTestResult = acctestutils.getMonitorTestResult();
+
+    let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url);
+
+    if (transactions.length !== 1) {
+        var message = `transactions.length of ${transactions.length} was expected to be 1`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    let plusOne = math.add(math.bignumber(transactions[0].consensus_timestamp), math.bignumber(1));
+    let minusOne = math.subtract(math.bignumber(transactions[0].consensus_timestamp), math.bignumber(1));
+    let paq = `${transactionsPath}?timestamp=gt:${minusOne.toString()}` +
+                `&timestamp=lt:${plusOne.toString()}&limit=1`;
+
+    url = acctestutils.getUrl(server, paq);
+    transactions = await getTransactions(url);
+
+    if (transactions.length !== 1) {
+        var message = `transactions.length of ${transactions.length} was expected to be 1`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    currentTestResult.result = 'passed';
+    currentTestResult.message = `Successfully called transactions with time and limit params`
+
+    addTestResult(currentTestResult, true);
+}
+
+/**
+ * Verify single transactions can be retrieved
+ */
+const getSingleTransactionsById = async function() {
+    var currentTestResult = acctestutils.getMonitorTestResult();
+    
+    let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url);
+
+    if (transactions.length !== 1) {
+        var message = `transactions.length of ${transactions.length} was expected to be 1`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    let mandatoryParamCheck = checkMandatoryParams(transactions[0]);
+    if (mandatoryParamCheck == false) {
+        var message = `transaction object is missing some mandatory fields`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    url = acctestutils.getUrl(server, `${transactionsPath}/${transactions[0].transaction_id}`);
+    currentTestResult.url = url;
+
+    let singleTransactions = await getTransactions(url); 
+    if (singleTransactions.length !== 1) {
+        var message = `singleTransactions.length of ${transactions.length} is not 1`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    mandatoryParamCheck = checkMandatoryParams(transactions[0]);
+    if (mandatoryParamCheck == false) {
+        var message = `single transaction object is missing some mandatory fields`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    currentTestResult.result = 'passed';
+    currentTestResult.message = `Successfully retrieved single transactions by id`
+
+    addTestResult(currentTestResult, true);
+}
+
+/**
+ * Verfiy the freshness of transactions returned by the api
+ */
+const checkTransactionFreshness = async function() {
+    var currentTestResult = acctestutils.getMonitorTestResult();
+    
+    let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
+    currentTestResult.url = url;
+    let transactions = await getTransactions(url);
+
+    if (transactions.length !== 1) {
+        var message = `transactions.length of ${transactions.length} was expected to be 1`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    // Check for freshness of data
+    const txSec = transactions[0].consensus_timestamp.split('.')[0];
+    const currSec = Math.floor(new Date().getTime() / 1000);
+    const delta = currSec - txSec
+    const freshnessThreshold = config.api.fileUpdateRefreshTimes.records * 10;
+    
+    if (delta > freshnessThreshold) {
+        var message = `transactions was stale, ${delta} seconds old`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+        
+    currentTestResult.result = 'passed';
+    currentTestResult.message = `Successfully retrieved transactions from with ${freshnessThreshold} seconds ago`
+
+    addTestResult(currentTestResult, true);
+}
+
+/**
+ * Run all tests in an asynchronous fashion waiting for all tests to complete before calculating class success
+ */
+async function runTests() {
+    var tests = [];
+    tests.push(getTransactionsWithAccountCheck());
+    tests.push(getTransactionsWithOrderParam());
+    tests.push(getTransactionsWithLimitParams());
+    tests.push(getTransactionsWithTimeAndLimitParams());
+    tests.push(getSingleTransactionsById());
+    tests.push(checkTransactionFreshness());
+
+    await Promise.all(tests);
+
+    if (classResults.numPassedTests == classResults.testResults.length) {
+        classResults.success = true
+    }
+}
+
+/**
+ * Coordinates tests run. 
+ * Creating and returning a new classresults object representings transaction tests
+ */
+const runTransactionTests = function(svr) {
+    server = svr;
+    classResults = acctestutils.getMonitorClassResult();
+
+    return runTests().then(() => {
+        return classResults;
+    });
+}
+
+module.exports = {
+    runTransactionTests: runTransactionTests
+}

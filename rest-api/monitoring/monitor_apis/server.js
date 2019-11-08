@@ -80,11 +80,17 @@ if (!(serverlist.hasOwnProperty('interval') && serverlist.hasOwnProperty('server
 let interval = serverlist.interval;
 common.initResults();
 
-// Run all the tests periodically
-monitor.runEverything();
-setInterval(() => {
+let servers = serverlist.servers;
+
+const runMonitorTests = function() {
     console.log("Running the tests at: " + new Date());
-    monitor.runEverything();
+    monitor.runEverything(servers);
+}
+
+runMonitorTests();
+setInterval(() => { 
+    // Run all the tests periodically
+    runMonitorTests();
 }, interval * 1000);
 
 module.exports = app;

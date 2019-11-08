@@ -22,52 +22,79 @@
 
 var shell = require('shelljs');
 const common = require('./common.js');
+const fetchTests = require('./fetchTests.js')
 
 /**
  * Main function to run the tests and save results
  * @param {} None
  * @return {} None
  */
-const runEverything = async function () {
+const runEverything = async function (servers) {
     try {
-        const restservers = common.getServerList().servers;
+        const restservers = undefined === servers ? common.getServerList().servers : servers;
 
         if (restservers.length === 0) {
             return;
         }
         
-        for (const server of restservers) {
-            // Execute the tests using shell.exec
-            const cmd = `(cd ../.. && TARGET=https://${server.ip}:${server.port} node ./__acceptancetests__/acceptanceFetchTests.js)`;
+        let shellConfig = common.getServerList().shell;
+        const shellFlag = undefined === shellConfig ? true : shellConfig;
+        for (const server of restservers) {           
             if (common.getProcess(server) == undefined) {
-                // Execute the test and store the pid
-                const pid = shell.exec(cmd, {
-                    async: true
-                }, (code, out, err) => {
-                    let outJson;
-                    try {
-                        outJson = JSON.parse(out);
-                    } catch (err) {
-                        console.log('Error parsing cmd output: ' + err);
-                        outJson = {}
-                    }
+                // based on the presence of a shell flag in serverlist.json run tests through single node thread or as seperate shell processes
+                if (!shellFlag) {
+                    // execute test and store name
+                    fetchTests.runFetchTests(`http://${server.ip}:${server.port}`).then((outJson) => {
+                        let results = {};
+                        console.log(`****** shellFlag : ${shellFlag}, outjson : ${JSON.stringify(outJson)}`)
+                        if (outJson.hasOwnProperty('startTime') &&
+                            outJson.hasOwnProperty('testResults')) {
 
-                    let results = {};
-                    if (outJson.hasOwnProperty('startTime') &&
-                        outJson.hasOwnProperty('testResults')) {
+                            ['numPassedTests', 'numFailedTests', 'success','testResults','message'].forEach((k) => {
+                                results[k] = outJson[k];
+                            });
+                        } else {
+                            results = createFailedResultJson(`Test result unavailable`,
+                                `Test results not available for: ${server.name}`);
+                        }
+                        
+                        common.deleteProcess(server);
+                        common.saveResults(server, results);
+                    });
+                } else {
+                    // Execute the tests using shell.exec
+                    const cmd = `(cd ../.. && TARGET=https://${server.ip}:${server.port} node ./__acceptancetests__/acceptanceFetchTests.js)`;
 
-                        ['numPassedTests', 'numFailedTests', 'success','testResults','message'].forEach((k) => {
-                            results[k] = outJson[k];
-                        });
-                    } else {
-                        results = createFailedResultJson(`Test result unavailable`,
-                            `Test results not available for: ${server.name}`);
-                    }
-                    
-                    common.deleteProcess(server);
-                    common.saveResults(server, results);
-                });
-                common.saveProcess(server, pid);
+                    // Execute the test and store the pid
+                    const pid = shell.exec(cmd, {
+                        async: true
+                    }, (code, out, err) => {
+                        let outJson;
+                        try {
+                            outJson = JSON.parse(out);
+                        } catch (err) {
+                            console.log('Error parsing cmd output: ' + err);
+                            outJson = {}
+                        }
+
+                        let results = {};
+                        console.log(`****** shellFlag : ${shellFlag}, outjson : ${JSON.stringify(outJson)}`)
+                        if (outJson.hasOwnProperty('startTime') &&
+                            outJson.hasOwnProperty('testResults')) {
+
+                            ['numPassedTests', 'numFailedTests', 'success','testResults','message'].forEach((k) => {
+                                results[k] = outJson[k];
+                            });
+                        } else {
+                            results = createFailedResultJson(`Test result unavailable`,
+                                `Test results not available for: ${server.name}`);
+                        }
+                        
+                        common.deleteProcess(server);
+                        common.saveResults(server, results);
+                    });
+                }
+                common.saveProcess(server, server.name);
             } else {
                 const results = createFailedResultJson(`Test result unavailable`,
                     `Previous tests are still running for: ${server.name}`);

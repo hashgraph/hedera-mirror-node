@@ -20,11 +20,10 @@
 
 'use strict';
 
-const acctestutils = require('./acceptancetest_utils');
+const acctestutils = require('./fetchtest_utils.js');
 const transactionFetchTests = require('./transactionFetchTests');
 const accountFetchTests = require('./accountFetchTests');
 const balanceFetchTests = require('./balanceFetchTests');
-const server = process.env.TARGET;
 var results;
 
 /**
@@ -32,19 +31,20 @@ var results;
  * Each class manages its tests and returns a class rsults object
  * A single combined result object covering transaction, accounts and balances is returnred
  */
-const runFetchTests = async function() {
+const runFetchTests = async function(server) {
     if (undefined === server) {
         console.log(`server is undefined, skipping ....`)
         return
     }
     
     results = acctestutils.getMonitorClassResult();
+    var transactionResults = transactionFetchTests.runTransactionTests(server);
 
-    var transactionResults = transactionFetchTests.runTransactionTests();
-    var accountResults = accountFetchTests.runAccountTests();
-    var balanceResults = balanceFetchTests.runBalnceTests();
+    var accountResults = accountFetchTests.runAccountTests(server);
 
-    return await Promise.all([transactionResults, accountResults, balanceResults]).then((res) => {        
+    var balanceResults = balanceFetchTests.runBalanceTests(server);
+
+    return await Promise.all([transactionResults, accountResults, balanceResults]).then((res) => {
         combineResults(res[0]);
         combineResults(res[1]);
         combineResults(res[2]);
@@ -74,5 +74,6 @@ const combineResults = function(newresults) {
     results.success = results.success && newresults.success;
 }
 
-// run tests on file load
-runFetchTests()
+module.exports = {
+    runFetchTests: runFetchTests
+}

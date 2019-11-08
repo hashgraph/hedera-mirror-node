@@ -1,8 +1,7 @@
 const math = require('mathjs');
-const config = require('../config.js');
+const config = require('../../config.js');
 const fetch = require('node-fetch');
 
-const server = process.env.TARGET;
 const apiPrefix = '/api/v1';
 
 // monitoring class results template
@@ -79,7 +78,7 @@ const cloneObject = function(obj) {
  * @param {String} pathandquery rest-api endpoint path
  * @return {String} rest-api endpoint url
  */
-const getUrl = function(pathandquery) {
+const getUrl = function(server, pathandquery) {
     var endpoint = server;
     if (server.includes('localhost') || server.includes('127.0.0.1')) {
         endpoint = server.replace('https', 'http')
@@ -106,7 +105,7 @@ const getAPIResponse = async function(url) {
         const json = await response.json();
         return json;
     } catch (error) {
-        console.log(error);
+        console.log(`url : ${url}, error : ${error}`);
         return {};
     }
 }

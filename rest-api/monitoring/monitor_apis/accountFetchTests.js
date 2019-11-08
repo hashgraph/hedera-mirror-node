@@ -20,14 +20,14 @@
 
 'use strict';
 
-const acctestutils = require('./acceptancetest_utils.js');
-const config = require('../config.js');
+const acctestutils = require('./fetchtest_utils.js');
+const config = require('../../config.js');
 const math = require('mathjs');
 const accountsPath= '/accounts';
 const maxLimit = config.api.maxLimit;
 
-
 let classResults = null;
+let server = undefined;
 
 /**
  * Makes a call to the rest-api and returns the accounts object from the response
@@ -80,7 +80,7 @@ const checkMandatoryParams = function (entry) {
 const getAccountsWithAccountCheck = async function() {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
-    let url = acctestutils.getUrl(accountsPath);
+    let url = acctestutils.getUrl(server, accountsPath);
     currentTestResult.url = url;
     let accounts = await getAccounts(url); 
 
@@ -106,7 +106,7 @@ const getAccountsWithAccountCheck = async function() {
         }
     }
 
-    url = acctestutils.getUrl(`${accountsPath}?account.id=${highestAcc}&type=credit&limit=1`);
+    url = acctestutils.getUrl(server, `${accountsPath}?account.id=${highestAcc}&type=credit&limit=1`);
     currentTestResult.url = url;
 
     let singleAccount = await getAccounts(url); 
@@ -142,7 +142,7 @@ const getAccountsWithAccountCheck = async function() {
 const getAccountsWithTimeAndLimitParams = async function (json) {
     var currentTestResult = acctestutils.getMonitorTestResult();
 
-    let url = acctestutils.getUrl(`${accountsPath}?limit=1`);
+    let url = acctestutils.getUrl(server, `${accountsPath}?limit=1`);
     currentTestResult.url = url;
     let accounts = await getAccounts(url); 
 
@@ -158,7 +158,7 @@ const getAccountsWithTimeAndLimitParams = async function (json) {
     let paq = `${accountsPath}?timestamp=gt:${minusOne.toString()}` +
                 `&timestamp=lt:${plusOne.toString()}&limit=1`;
 
-    url = acctestutils.getUrl(paq);
+    url = acctestutils.getUrl(server, paq);
     currentTestResult.url = url;
     accounts = await getAccounts(url);
 
@@ -181,7 +181,7 @@ const getAccountsWithTimeAndLimitParams = async function (json) {
 const getSingleAccount = async function() {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
-    let url = acctestutils.getUrl(`${accountsPath}`);
+    let url = acctestutils.getUrl(server, `${accountsPath}`);
     currentTestResult.url = url;
     let accounts = await getAccounts(url);  
 
@@ -208,7 +208,7 @@ const getSingleAccount = async function() {
         }
     }
 
-    url = acctestutils.getUrl(`${accountsPath}/${acctestutils.fromAccNum(highestAcc)}`);
+    url = acctestutils.getUrl(server, `${accountsPath}/${acctestutils.fromAccNum(highestAcc)}`);
     currentTestResult.url = url;
 
     let singleAccount = await acctestutils.getAPIResponse(url); 
@@ -251,7 +251,8 @@ async function runTests() {
  * Coordinates tests run. 
  * Creating and returning a new classresults object representings accounts tests
  */
-const runAccountTests = function() {
+const runAccountTests = function(svr) {
+    server = svr;
     classResults = acctestutils.getMonitorClassResult();
 
     return runTests().then(() => {
