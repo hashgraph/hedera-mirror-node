@@ -126,6 +126,7 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
         // receipt
         assertEquals(record.getReceipt().getStatusValue(), dbResult.getProtobufId());
         assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.getResult());
+        assertArrayEquals(record.getTransactionHash().toByteArray(), dbTransaction.getTransactionHash());
 
     }
     protected final void assertTransaction(TransactionBody transactionBody, com.hedera.mirror.domain.Transaction dbTransaction) {

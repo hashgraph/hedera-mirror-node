@@ -93,6 +93,7 @@ public class RecordFileLogger {
         ,FK_REC_FILE_ID
 		,VALID_DURATION_SECONDS
 		,MAX_FEE
+        ,TRANSACTION_HASH
     }
 
     enum F_TRANSFERLIST {
@@ -186,8 +187,9 @@ public class RecordFileLogger {
 			sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
 					+ " (fk_node_acc_id, memo, valid_start_ns, fk_trans_type_id, fk_payer_acc_id"
 					+ ", fk_result_id, consensus_ns, fk_cud_entity_id, charged_tx_fee"
-					+ ", initial_balance, fk_rec_file_id, valid_duration_seconds, max_fee)"
- 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+					+ ", initial_balance, fk_rec_file_id, valid_duration_seconds, max_fee"
+					+ ", transaction_hash)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
 					+ " (consensus_timestamp, account_id, amount)"
 					+ " VALUES (?, ?, ?)");
@@ -335,6 +337,7 @@ public class RecordFileLogger {
 		sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), consensusNs);
 		sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), txRecord.getTransactionFee());
 		sqlInsertTransaction.setLong(F_TRANSACTION.MAX_FEE.ordinal(), body.getTransactionFee());
+		sqlInsertTransaction.setBytes(F_TRANSACTION.TRANSACTION_HASH.ordinal(), txRecord.getTransactionHash().toByteArray());
 
 		long entityId = 0;
 		long initialBalance = 0;
