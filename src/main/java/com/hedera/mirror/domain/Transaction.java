@@ -65,6 +65,5 @@ public class Transaction {
 
     private Long maxFee;
 
-    @Column(name = "transaction_hash")
     private byte[] transactionHash;
 }
