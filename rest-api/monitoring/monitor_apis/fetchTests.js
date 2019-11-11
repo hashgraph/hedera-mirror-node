@@ -50,9 +50,9 @@ const runFetchTests = async function(server) {
         combineResults(res[2]);
 
         results.message = `${results.numPassedTests} / ${results.numPassedTests + results.numFailedTests} tests succeeded`;
+        results.success = results.numFailedTests == 0 ? true : false;
 
         // output results to terminal for processing
-        console.log(JSON.stringify(results));
         return results;
     });
 }

@@ -215,6 +215,13 @@ const getTransactionsWithTimeAndLimitParams = async function () {
     currentTestResult.url = url;
     let transactions = await getTransactions(url);
 
+    if (undefined === transactions) {
+        var message = `transactions is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
@@ -229,6 +236,13 @@ const getTransactionsWithTimeAndLimitParams = async function () {
 
     url = acctestutils.getUrl(server, paq);
     transactions = await getTransactions(url);
+
+    if (undefined === transactions) {
+        var message = `transactions is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
@@ -272,6 +286,13 @@ const getSingleTransactionsById = async function() {
     currentTestResult.url = url;
 
     let singleTransactions = await getTransactions(url); 
+    if (undefined === singleTransactions) {
+        var message = `singleTransactions is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
     if (singleTransactions.length !== 1) {
         var message = `singleTransactions.length of ${transactions.length} is not 1`;
         currentTestResult.failureMessages.push(message);
@@ -302,6 +323,13 @@ const checkTransactionFreshness = async function() {
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
     currentTestResult.url = url;
     let transactions = await getTransactions(url);
+
+    if (undefined === transactions) {
+        var message = `transactions is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;

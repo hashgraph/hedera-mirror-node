@@ -46,7 +46,6 @@ const runEverything = async function (servers) {
                     // execute test and store name
                     fetchTests.runFetchTests(`http://${server.ip}:${server.port}`).then((outJson) => {
                         let results = {};
-                        console.log(`****** shellFlag : ${shellFlag}, outjson : ${JSON.stringify(outJson)}`)
                         if (outJson.hasOwnProperty('startTime') &&
                             outJson.hasOwnProperty('testResults')) {
 
@@ -63,7 +62,7 @@ const runEverything = async function (servers) {
                     });
                 } else {
                     // Execute the tests using shell.exec
-                    const cmd = `(cd ../.. && TARGET=https://${server.ip}:${server.port} node ./__acceptancetests__/acceptanceFetchTests.js)`;
+                    const cmd = `(cd ../.. && TARGET=http://${server.ip}:${server.port} node ./__acceptancetests__/acceptanceFetchTests.js)`;
 
                     // Execute the test and store the pid
                     const pid = shell.exec(cmd, {
@@ -78,7 +77,6 @@ const runEverything = async function (servers) {
                         }
 
                         let results = {};
-                        console.log(`****** shellFlag : ${shellFlag}, outjson : ${JSON.stringify(outJson)}`)
                         if (outJson.hasOwnProperty('startTime') &&
                             outJson.hasOwnProperty('testResults')) {
 
