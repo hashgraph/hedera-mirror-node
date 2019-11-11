@@ -34,13 +34,12 @@ let server = undefined;
  * @param {String} pathandquery 
  * @return {Object} Transactions object from response
  */
-const getTransactions = async function(pathandquery) {
+const getTransactions = async function(pathandquery, testResult) {
     try {
         const json = await acctestutils.getAPIResponse(pathandquery);
         return json.transactions;
     } catch (error) {
-        console.log(error);
-        return {}
+        testResult.failureMessages.push(error);
     }
 }
 
@@ -78,7 +77,14 @@ const getTransactionsWithAccountCheck = async function() {
     
     let url = acctestutils.getUrl(server, transactionsPath);
     currentTestResult.url = url;
-    let transactions = await getTransactions(url); 
+    let transactions = await getTransactions(url, currentTestResult); 
+
+    if (undefined === transactions) {
+        var message = `transactions is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     if (transactions.length !== maxLimit) {
         var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
@@ -123,7 +129,7 @@ const getTransactionsWithAccountCheck = async function() {
     url = acctestutils.getUrl(server, `${transactionsPath}?account.id=${highestAcc}&type=credit&limit=1`);
     currentTestResult.url = url;
 
-    let accTransactions = await getTransactions(url); 
+    let accTransactions = await getTransactions(url, currentTestResult); 
     if (accTransactions.length !== 1) {
         var message = `accTransactions.length of ${transactions.length} is not 1`;
         currentTestResult.failureMessages.push(message);
@@ -159,7 +165,14 @@ const getTransactionsWithOrderParam = async function() {
     
     let url = acctestutils.getUrl(server, `${transactionsPath}?order=asc`);
     currentTestResult.url = url;
-    let transactions = await getTransactions(url); 
+    let transactions = await getTransactions(url, currentTestResult); 
+
+    if (undefined === transactions) {
+        var message = `transactions is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
     
     if (transactions.length !== maxLimit) {
         var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
@@ -190,8 +203,15 @@ const getTransactionsWithLimitParams = async function () {
 
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=10`);
     currentTestResult.url = url;
-    let transactions = await getTransactions(url); 
+    let transactions = await getTransactions(url, currentTestResult); 
     
+    if (undefined === transactions) {
+        var message = `transactions is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
     if (transactions.length !== 10) {
         var message = `transactions.length of ${transactions.length} was expected to be 10`;
         currentTestResult.failureMessages.push(message);
@@ -213,7 +233,7 @@ const getTransactionsWithTimeAndLimitParams = async function () {
 
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
     currentTestResult.url = url;
-    let transactions = await getTransactions(url);
+    let transactions = await getTransactions(url, currentTestResult);
 
     if (undefined === transactions) {
         var message = `transactions is undefined`;
@@ -235,7 +255,7 @@ const getTransactionsWithTimeAndLimitParams = async function () {
                 `&timestamp=lt:${plusOne.toString()}&limit=1`;
 
     url = acctestutils.getUrl(server, paq);
-    transactions = await getTransactions(url);
+    transactions = await getTransactions(url, currentTestResult);
 
     if (undefined === transactions) {
         var message = `transactions is undefined`;
@@ -265,8 +285,15 @@ const getSingleTransactionsById = async function() {
     
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
     currentTestResult.url = url;
-    let transactions = await getTransactions(url);
+    let transactions = await getTransactions(url, currentTestResult);
 
+    if (undefined === transactions) {
+        var message = `transactions is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+    
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
@@ -285,7 +312,7 @@ const getSingleTransactionsById = async function() {
     url = acctestutils.getUrl(server, `${transactionsPath}/${transactions[0].transaction_id}`);
     currentTestResult.url = url;
 
-    let singleTransactions = await getTransactions(url); 
+    let singleTransactions = await getTransactions(url, currentTestResult); 
     if (undefined === singleTransactions) {
         var message = `singleTransactions is undefined`;
         currentTestResult.failureMessages.push(message);
@@ -322,7 +349,7 @@ const checkTransactionFreshness = async function() {
     
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
     currentTestResult.url = url;
-    let transactions = await getTransactions(url);
+    let transactions = await getTransactions(url, currentTestResult);
 
     if (undefined === transactions) {
         var message = `transactions is undefined`;

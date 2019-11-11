@@ -39,7 +39,7 @@ const getAccounts = async function(pathandquery) {
         const json = await acctestutils.getAPIResponse(pathandquery);
         return json.accounts;
     } catch (error) {
-        console.log(error);
+        testResult.failureMessages.push(error);
     }
 }
 
@@ -82,7 +82,14 @@ const getAccountsWithAccountCheck = async function() {
     
     let url = acctestutils.getUrl(server, accountsPath);
     currentTestResult.url = url;
-    let accounts = await getAccounts(url); 
+    let accounts = await getAccounts(url, currentTestResult); 
+
+    if (undefined === accounts) {
+        var message = `accounts is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     if (accounts.length !== maxLimit) {
         var message = `accounts.length of ${accounts.length} is less than limit ${maxLimit}`;
@@ -109,7 +116,14 @@ const getAccountsWithAccountCheck = async function() {
     url = acctestutils.getUrl(server, `${accountsPath}?account.id=${highestAcc}&type=credit&limit=1`);
     currentTestResult.url = url;
 
-    let singleAccount = await getAccounts(url); 
+    let singleAccount = await getAccounts(url, currentTestResult); 
+
+    if (undefined === singleAccount) {
+        var message = `singleAccount is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     if (singleAccount.length !== 1) {
         var message = `singleAccount.length of ${singleAccount.length} was expected to be 1`;
@@ -144,8 +158,15 @@ const getAccountsWithTimeAndLimitParams = async function (json) {
 
     let url = acctestutils.getUrl(server, `${accountsPath}?limit=1`);
     currentTestResult.url = url;
-    let accounts = await getAccounts(url); 
+    let accounts = await getAccounts(url, currentTestResult); 
 
+    if (undefined === accounts) {
+        var message = `accounts is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+    
     if (accounts.length !== 1) {
         var message = `accounts.length of ${accounts.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
@@ -160,7 +181,14 @@ const getAccountsWithTimeAndLimitParams = async function (json) {
 
     url = acctestutils.getUrl(server, paq);
     currentTestResult.url = url;
-    accounts = await getAccounts(url);
+    accounts = await getAccounts(url, currentTestResult);
+
+    if (undefined === accounts) {
+        var message = `accounts is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     if (accounts.length !== 1) {
         var message = `accounts.length of ${accounts.length} was expected to be 1`;
@@ -183,7 +211,14 @@ const getSingleAccount = async function() {
     
     let url = acctestutils.getUrl(server, `${accountsPath}`);
     currentTestResult.url = url;
-    let accounts = await getAccounts(url);  
+    let accounts = await getAccounts(url, currentTestResult);  
+
+    if (undefined === accounts) {
+        var message = `accounts is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     if (accounts.length !== maxLimit) {
         var message = `accounts.length of ${accounts.length} is less than limit ${maxLimit}`;
@@ -211,7 +246,22 @@ const getSingleAccount = async function() {
     url = acctestutils.getUrl(server, `${accountsPath}/${acctestutils.fromAccNum(highestAcc)}`);
     currentTestResult.url = url;
 
-    let singleAccount = await acctestutils.getAPIResponse(url); 
+    let singleAccount;
+    try { 
+        singleAccount= await acctestutils.getAPIResponse(url);
+    }
+    catch (error) {
+        currentTestResult.failureMessages.push(error);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
+    if (undefined === singleAccount) {
+        var message = `singleAccount is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     let check = false;
     if (singleAccount.account === acctestutils.fromAccNum(highestAcc)) {
@@ -226,7 +276,7 @@ const getSingleAccount = async function() {
     }
 
     currentTestResult.result = 'passed';
-    currentTestResult.message = `Successfully called accounts and performed account check`
+    currentTestResult.message = `Successfully called accounts for single account`
 
     addTestResult(currentTestResult, true);
 }

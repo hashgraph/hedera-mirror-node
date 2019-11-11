@@ -105,8 +105,9 @@ const getAPIResponse = async function(url) {
         const json = await response.json();
         return json;
     } catch (error) {
-        console.log(`url : ${url}, error : ${error}`);
-        return {};
+        var message = `Fetch error, url : ${url}, error : ${error}`
+        console.log(message);
+        throw message;
     }
 }
 

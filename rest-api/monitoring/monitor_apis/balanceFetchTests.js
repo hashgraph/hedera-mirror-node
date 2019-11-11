@@ -39,7 +39,7 @@ const getBalances = async function(pathandquery) {
         const json = await acctestutils.getAPIResponse(pathandquery);
         return json.balances;
     } catch (error) {
-        console.log(error);
+        testResult.failureMessages.push(error);
     }
 }
 
@@ -75,7 +75,14 @@ const getBalancesCheck = async function() {
     
     let url = acctestutils.getUrl(server, balancesPath);
     currentTestResult.url = url;
-    let balances = await getBalances(url); 
+    let balances = await getBalances(url, currentTestResult); 
+
+    if (undefined === balances) {
+        var message = `balances is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     if (balances.length !== maxLimit) {
         var message = `balances.length of ${balances.length} is less than limit ${maxLimit}`;
@@ -106,8 +113,24 @@ const getBalancesWithTimeAndLimitParams = async function (json) {
 
     let url = acctestutils.getUrl(server, `${balancesPath}?limit=1`);
     currentTestResult.url = url;
-    let balancesResponse = await acctestutils.getAPIResponse(url);
+    let balancesResponse;
+    try { 
+        balancesResponse= await acctestutils.getAPIResponse(url);
+    }
+    catch (error) {
+        currentTestResult.failureMessages.push(error);
+        addTestResult(currentTestResult, false);
+        return;
+    }
+
     let balances = balancesResponse.balances
+
+    if (undefined === balances) {
+        var message = `balances is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     if (balances.length !== 1) {
         var message = `balances.length of ${balances.length} was expected to be 1`;
@@ -123,7 +146,14 @@ const getBalancesWithTimeAndLimitParams = async function (json) {
 
     url = acctestutils.getUrl(server, paq);
     currentTestResult.url = url;
-    balances = await getBalances(url);
+    balances = await getBalances(url, currentTestResult);
+
+    if (undefined === balances) {
+        var message = `balances is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     if (balances.length !== 1) {
         var message = `balances.length of ${balances.length} was expected to be 1`;
@@ -146,7 +176,14 @@ const getSingleBalanceById = async function() {
     
     let url = acctestutils.getUrl(server, `${balancesPath}?limit=10`);
     currentTestResult.url = url;
-    let balances = await getBalances(url); 
+    let balances = await getBalances(url, currentTestResult); 
+
+    if (undefined === balances) {
+        var message = `balances is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     if (balances.length !== 10) {
         var message = `balances.length of ${balances.length} is less than limit ${maxLimit}`;
@@ -173,7 +210,14 @@ const getSingleBalanceById = async function() {
 
     url = acctestutils.getUrl(server, `${balancesPath}?account.id=${acctestutils.fromAccNum(highestAcc)}`);
     currentTestResult.url = url;
-    let singleBalance = await getBalances(url); 
+    let singleBalance = await getBalances(url, currentTestResult); 
+
+    if (undefined === singleBalance) {
+        var message = `singleBalance is undefined`;
+        currentTestResult.failureMessages.push(message);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     let check = false;
     if (singleBalance[0].account === acctestutils.fromAccNum(highestAcc)) {
@@ -201,7 +245,15 @@ const checkBalanceFreshness = async function() {
     
     let url = acctestutils.getUrl(server, `${balancesPath}?limit=1`);
     currentTestResult.url = url;
-    let balancesResponse = await acctestutils.getAPIResponse(url);
+    let balancesResponse;
+    try { 
+        balancesResponse= await acctestutils.getAPIResponse(url);
+    }
+    catch (error) {
+        currentTestResult.failureMessages.push(error);
+        addTestResult(currentTestResult, false);
+        return;
+    }
 
     // Check for freshness of data
     const txSec = balancesResponse.timestamp.split('.')[0];
