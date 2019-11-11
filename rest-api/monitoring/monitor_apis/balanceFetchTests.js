@@ -26,9 +26,6 @@ const math = require('mathjs');
 const balancesPath= '/balances';
 const maxLimit = config.api.maxLimit;
 
-let classResults = null;
-let server = undefined;
-
 /**
  * Makes a call to the rest-api and returns the balances object from the response
  * @param {String} pathandquery 
@@ -41,17 +38,6 @@ const getBalances = async function(pathandquery) {
     } catch (error) {
         testResult.failureMessages.push(error);
     }
-}
-
-/**
- * Add provided result to list of class results
- * Also increment passed and failed count based
- * @param {Object} res Test result
- * @param {Boolean} passed Test passed flag
- */
-const addTestResult = function(res, passed) {
-    classResults.testResults.push(res);
-    passed ? classResults.numPassedTests++ : classResults.numFailedTests++;
 }
 
 /**
@@ -69,8 +55,10 @@ const checkMandatoryParams = function (entry) {
 
 /**
  * Verify base balances call
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getBalancesCheck = async function() {
+const getBalancesCheck = async function(server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, balancesPath);
@@ -80,14 +68,14 @@ const getBalancesCheck = async function() {
     if (undefined === balances) {
         var message = `balances is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, classResults, currentTestResult, false);
         return;
     }
 
     if (balances.length !== maxLimit) {
         var message = `balances.length of ${balances.length} is less than limit ${maxLimit}`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -95,20 +83,22 @@ const getBalancesCheck = async function() {
     if (mandatoryParamCheck == false) {
         var message = `balance object is missing some mandatory fields`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully called balances and performed account check`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Verify balances call with time and limit query params provided
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getBalancesWithTimeAndLimitParams = async function (json) {
+const getBalancesWithTimeAndLimitParams = async function(server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(server, `${balancesPath}?limit=1`);
@@ -119,7 +109,7 @@ const getBalancesWithTimeAndLimitParams = async function (json) {
     }
     catch (error) {
         currentTestResult.failureMessages.push(error);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -128,14 +118,14 @@ const getBalancesWithTimeAndLimitParams = async function (json) {
     if (undefined === balances) {
         var message = `balances is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (balances.length !== 1) {
         var message = `balances.length of ${balances.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -151,27 +141,29 @@ const getBalancesWithTimeAndLimitParams = async function (json) {
     if (undefined === balances) {
         var message = `balances is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (balances.length !== 1) {
         var message = `balances.length of ${balances.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully called balances with time and limit params`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Verify single balance can be retrieved
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getSingleBalanceById = async function() {
+const getSingleBalanceById = async function(server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${balancesPath}?limit=10`);
@@ -181,14 +173,14 @@ const getSingleBalanceById = async function() {
     if (undefined === balances) {
         var message = `balances is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (balances.length !== 10) {
         var message = `balances.length of ${balances.length} is less than limit ${maxLimit}`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return currentTestResult;
     }
 
@@ -196,7 +188,7 @@ const getSingleBalanceById = async function() {
     if (mandatoryParamCheck == false) {
         var message = `account object is missing some mandatory fields`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return currentTestResult;
     }
     
@@ -215,7 +207,7 @@ const getSingleBalanceById = async function() {
     if (undefined === singleBalance) {
         var message = `singleBalance is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -227,20 +219,22 @@ const getSingleBalanceById = async function() {
     if (check == false) {
         var message = `Highest acc check was not found`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return
     }
 
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully called balances and performed account check`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Verfiy the freshness of balances returned by the api
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const checkBalanceFreshness = async function() {
+const checkBalanceFreshness = async function(server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${balancesPath}?limit=1`);
@@ -251,7 +245,7 @@ const checkBalanceFreshness = async function() {
     }
     catch (error) {
         currentTestResult.failureMessages.push(error);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -264,44 +258,39 @@ const checkBalanceFreshness = async function() {
     if (delta > freshnessThreshold) {
         var message = `balance was stale, ${delta} seconds old`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
         
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully retrieved balance from with ${freshnessThreshold} seconds ago`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Run all tests in an asynchronous fashion waiting for all tests to complete before calculating class success
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-async function runTests() {
+async function runTests(server, classResults) {
     var tests = [];
-    tests.push(getBalancesCheck());
-    tests.push(getBalancesWithTimeAndLimitParams());
-    tests.push(getSingleBalanceById());
-    tests.push(checkBalanceFreshness());
+    tests.push(getBalancesCheck(server, classResults));
+    tests.push(getBalancesWithTimeAndLimitParams(server, classResults));
+    tests.push(getSingleBalanceById(server, classResults));
+    tests.push(checkBalanceFreshness(server, classResults));
 
-    await Promise.all(tests);
-
-    if (classResults.numPassedTests == classResults.testResults.length) {
-        classResults.success = true
-    }
+    Promise.all(tests);
 }
 
 /**
  * Coordinates tests run. 
  * Creating and returning a new classresults object representings balance tests
+ * @param {Object} svr API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const runBalanceTests = function(svr) {
-    server = svr;
-    classResults = acctestutils.getMonitorClassResult();
-
-    return runTests().then(() => {
-        return classResults;
-    });
+const runBalanceTests = function(svr, classResults) {
+    runTests(svr, classResults);
 }
 
 module.exports = {

@@ -26,9 +26,6 @@ const math = require('mathjs');
 const transactionsPath= '/transactions';
 const maxLimit = config.api.maxLimit;
 
-let classResults = null;
-let server = undefined;
-
 /**
  * Makes a call to the rest-api and returns the transacations object from the response
  * @param {String} pathandquery 
@@ -41,17 +38,6 @@ const getTransactions = async function(pathandquery, testResult) {
     } catch (error) {
         testResult.failureMessages.push(error);
     }
-}
-
-/**
- * Add provided result to list of class results
- * Also increment passed and failed count based
- * @param {Object} res Test result
- * @param {Boolean} passed Test passed flag
- */
-const addTestResult = function(res, passed) {
-    classResults.testResults.push(res);
-    passed ? classResults.numPassedTests++ : classResults.numFailedTests++;
 }
 
 /**
@@ -71,8 +57,10 @@ const checkMandatoryParams = function (entry) {
 /**
  * Verify base transactions call 
  * Also ensure an account mentioned in the transaction can be connected with the said transaction
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getTransactionsWithAccountCheck = async function() {
+const getTransactionsWithAccountCheck = async function(server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, transactionsPath);
@@ -82,14 +70,14 @@ const getTransactionsWithAccountCheck = async function() {
     if (undefined === transactions) {
         var message = `transactions is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (transactions.length !== maxLimit) {
         var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -97,7 +85,7 @@ const getTransactionsWithAccountCheck = async function() {
     if (mandatoryParamCheck == false) {
         var message = `transaction object is missing some mandatory fields`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
     
@@ -115,14 +103,14 @@ const getTransactionsWithAccountCheck = async function() {
     if (accNum === 0) {
         var message = `accNum is 0`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (undefined === transactions[0].consensus_timestamp) {
         var message = `transactions[0].consensus_timestamp is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -133,7 +121,7 @@ const getTransactionsWithAccountCheck = async function() {
     if (accTransactions.length !== 1) {
         var message = `accTransactions.length of ${transactions.length} is not 1`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -147,20 +135,22 @@ const getTransactionsWithAccountCheck = async function() {
     if (check == false) {
         var message = `Highest acc check was not found`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully called transactions and performed account check`
-
-    addTestResult(currentTestResult, true);
+    
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Verify transactions call with order query params provided
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getTransactionsWithOrderParam = async function() {
+const getTransactionsWithOrderParam = async function(server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${transactionsPath}?order=asc`);
@@ -170,14 +160,14 @@ const getTransactionsWithOrderParam = async function() {
     if (undefined === transactions) {
         var message = `transactions is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
     
     if (transactions.length !== maxLimit) {
         var message = `transactions.length of ${transactions.length} is less than limit ${maxLimit}`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -192,13 +182,15 @@ const getTransactionsWithOrderParam = async function() {
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully called transactions with order params only`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Verify transactions call with limit query params provided
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getTransactionsWithLimitParams = async function () {
+const getTransactionsWithLimitParams = async function (server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=10`);
@@ -208,27 +200,29 @@ const getTransactionsWithLimitParams = async function () {
     if (undefined === transactions) {
         var message = `transactions is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (transactions.length !== 10) {
         var message = `transactions.length of ${transactions.length} was expected to be 10`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully called transactions with limit params only`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Verify transactions call with time and limit query params provided
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getTransactionsWithTimeAndLimitParams = async function () {
+const getTransactionsWithTimeAndLimitParams = async function(server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
@@ -238,14 +232,14 @@ const getTransactionsWithTimeAndLimitParams = async function () {
     if (undefined === transactions) {
         var message = `transactions is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -260,27 +254,29 @@ const getTransactionsWithTimeAndLimitParams = async function () {
     if (undefined === transactions) {
         var message = `transactions is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully called transactions with time and limit params`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Verify single transactions can be retrieved
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getSingleTransactionsById = async function() {
+const getSingleTransactionsById = async function(server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
@@ -290,14 +286,14 @@ const getSingleTransactionsById = async function() {
     if (undefined === transactions) {
         var message = `transactions is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
     
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -305,7 +301,7 @@ const getSingleTransactionsById = async function() {
     if (mandatoryParamCheck == false) {
         var message = `transaction object is missing some mandatory fields`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -316,14 +312,14 @@ const getSingleTransactionsById = async function() {
     if (undefined === singleTransactions) {
         var message = `singleTransactions is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (singleTransactions.length !== 1) {
         var message = `singleTransactions.length of ${transactions.length} is not 1`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -331,20 +327,22 @@ const getSingleTransactionsById = async function() {
     if (mandatoryParamCheck == false) {
         var message = `single transaction object is missing some mandatory fields`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully retrieved single transactions by id`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Verfiy the freshness of transactions returned by the api
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const checkTransactionFreshness = async function() {
+const checkTransactionFreshness = async function(server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
@@ -354,14 +352,14 @@ const checkTransactionFreshness = async function() {
     if (undefined === transactions) {
         var message = `transactions is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (transactions.length !== 1) {
         var message = `transactions.length of ${transactions.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -374,46 +372,41 @@ const checkTransactionFreshness = async function() {
     if (delta > freshnessThreshold) {
         var message = `transactions was stale, ${delta} seconds old`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
         
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully retrieved transactions from with ${freshnessThreshold} seconds ago`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Run all tests in an asynchronous fashion waiting for all tests to complete before calculating class success
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-async function runTests() {
+async function runTests(server, classResults) {
     var tests = [];
-    tests.push(getTransactionsWithAccountCheck());
-    tests.push(getTransactionsWithOrderParam());
-    tests.push(getTransactionsWithLimitParams());
-    tests.push(getTransactionsWithTimeAndLimitParams());
-    tests.push(getSingleTransactionsById());
-    tests.push(checkTransactionFreshness());
+    tests.push(getTransactionsWithAccountCheck(server, classResults));
+    tests.push(getTransactionsWithOrderParam(server, classResults));
+    tests.push(getTransactionsWithLimitParams(server, classResults));
+    tests.push(getTransactionsWithTimeAndLimitParams(server, classResults));
+    tests.push(getSingleTransactionsById(server, classResults));
+    tests.push(checkTransactionFreshness(server, classResults));
 
-    await Promise.all(tests);
-
-    if (classResults.numPassedTests == classResults.testResults.length) {
-        classResults.success = true
-    }
+    Promise.all(tests);
 }
 
 /**
  * Coordinates tests run. 
  * Creating and returning a new classresults object representings transaction tests
+ * @param {Object} svr API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const runTransactionTests = function(svr) {
-    server = svr;
-    classResults = acctestutils.getMonitorClassResult();
-
-    return runTests().then(() => {
-        return classResults;
-    });
+const runTransactionTests = function(svr, classResults) {
+    runTests(svr, classResults)
 }
 
 module.exports = {

@@ -24,12 +24,13 @@ const acctestutils = require('./fetchtest_utils.js');
 const transactionFetchTests = require('./transactionFetchTests');
 const accountFetchTests = require('./accountFetchTests');
 const balanceFetchTests = require('./balanceFetchTests');
-var results;
 
 /**
  * Run node fetch based tests against api endpoint
  * Each class manages its tests and returns a class rsults object
- * A single combined result object covering transaction, accounts and balances is returnred
+ * A single combined result object covering transaction, accounts and balances is returned
+ * @param {Object} server API host endpoint
+ * @return {Object} results object capturing tests for given endpoint
  */
 const runFetchTests = async function(server) {
     if (undefined === server) {
@@ -37,41 +38,16 @@ const runFetchTests = async function(server) {
         return
     }
     
-    results = acctestutils.getMonitorClassResult();
-    var transactionResults = transactionFetchTests.runTransactionTests(server);
+    let results = acctestutils.getMonitorClassResult();
+    var transactionResults = transactionFetchTests.runTransactionTests(server, results);
 
-    var accountResults = accountFetchTests.runAccountTests(server);
+    var accountResults = accountFetchTests.runAccountTests(server, results);
 
-    var balanceResults = balanceFetchTests.runBalanceTests(server);
+    var balanceResults = balanceFetchTests.runBalanceTests(server, results);
 
-    return await Promise.all([transactionResults, accountResults, balanceResults]).then((res) => {
-        combineResults(res[0]);
-        combineResults(res[1]);
-        combineResults(res[2]);
-
-        results.message = `${results.numPassedTests} / ${results.numPassedTests + results.numFailedTests} tests succeeded`;
-        results.success = results.numFailedTests == 0 ? true : false;
-
-        // output results to terminal for processing
+    return await Promise.all([transactionResults, accountResults, balanceResults]).then(() => {
         return results;
     });
-}
-
-/**
- * Combine the provided result opject with the overall class result object
- * Tests passed and failed numbers are incrment
- * Each test result is appended to class results
- * Success is set based on current and new results being true
- * @param {Object} newresults 
- */
-const combineResults = function(newresults) {
-    results.numFailedTests += newresults.numFailedTests;
-    results.numPassedTests += newresults.numPassedTests;
-    for (const res of newresults.testResults) {
-        results.testResults.push(res);
-    }
-
-    results.success = results.success && newresults.success;
 }
 
 module.exports = {

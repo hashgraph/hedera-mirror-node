@@ -8,6 +8,10 @@ const apiPrefix = '/api/v1';
 const classResults = {
     startTime: null,
     testResults: [],
+    testNums: {
+        passed: [0],
+        failed: [0]
+    },
     numPassedTests: 0,
     numFailedTests: 0,
     success: false,
@@ -129,6 +133,19 @@ const getMonitorTestResult = function() {
     return newTestResult;
 }
 
+/**
+ * Add provided result to list of class results
+ * Also increment passed and failed count based
+ * @param {Object} clssRes Class result object
+ * @param {Object} res Test result
+ * @param {Boolean} passed Test passed flag
+ */
+const addTestResult = function(clssRes, res, passed) {
+    clssRes.testResults.push(res);
+    passed ? clssRes.testNums.passed[0]++ : clssRes.testNums.failed[0]++;
+    passed ? clssRes.numPassedTests++ : clssRes.numFailedTests++;
+}
+
 module.exports = {
     nsToSecNs: nsToSecNs,
     secNsToNs: secNsToNs,
@@ -139,5 +156,6 @@ module.exports = {
     cloneObject: cloneObject,
     getAPIResponse: getAPIResponse,
     getMonitorClassResult: getMonitorClassResult,
-    getMonitorTestResult: getMonitorTestResult
+    getMonitorTestResult: getMonitorTestResult,
+    addTestResult: addTestResult
 }

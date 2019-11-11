@@ -26,9 +26,6 @@ const math = require('mathjs');
 const accountsPath= '/accounts';
 const maxLimit = config.api.maxLimit;
 
-let classResults = null;
-let server = undefined;
-
 /**
  * Makes a call to the rest-api and returns the accounts object from the response
  * @param {String} pathandquery 
@@ -41,17 +38,6 @@ const getAccounts = async function(pathandquery) {
     } catch (error) {
         testResult.failureMessages.push(error);
     }
-}
-
-/**
- * Add provided result to list of class results
- * Also increment passed and failed count based
- * @param {Object} res Test result
- * @param {Boolean} passed Test passed flag
- */
-const addTestResult = function(res, passed) {
-    classResults.testResults.push(res);
-    passed ? classResults.numPassedTests++ : classResults.numFailedTests++;
 }
 
 /**
@@ -76,8 +62,10 @@ const checkMandatoryParams = function (entry) {
 /**
  * Verify base accounts call 
  * Also ensure an account mentioned in the accounts can be confirmed as exisitng
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getAccountsWithAccountCheck = async function() {
+const getAccountsWithAccountCheck = async function(server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, accountsPath);
@@ -87,7 +75,7 @@ const getAccountsWithAccountCheck = async function() {
     if (undefined === accounts) {
         var message = `accounts is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -101,7 +89,7 @@ const getAccountsWithAccountCheck = async function() {
     if (mandatoryParamCheck == false) {
         var message = `account object is missing some mandatory fields`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
     
@@ -121,14 +109,14 @@ const getAccountsWithAccountCheck = async function() {
     if (undefined === singleAccount) {
         var message = `singleAccount is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (singleAccount.length !== 1) {
         var message = `singleAccount.length of ${singleAccount.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return
     }
 
@@ -140,20 +128,22 @@ const getAccountsWithAccountCheck = async function() {
     if (check == false) {
         var message = `Highest acc check was not found`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return
     }
 
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully called accounts and performed account check`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Verify accounts call with time and limit query params provided
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getAccountsWithTimeAndLimitParams = async function (json) {
+const getAccountsWithTimeAndLimitParams = async function (server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(server, `${accountsPath}?limit=1`);
@@ -163,14 +153,14 @@ const getAccountsWithTimeAndLimitParams = async function (json) {
     if (undefined === accounts) {
         var message = `accounts is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
     
     if (accounts.length !== 1) {
         var message = `accounts.length of ${accounts.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -186,27 +176,29 @@ const getAccountsWithTimeAndLimitParams = async function (json) {
     if (undefined === accounts) {
         var message = `accounts is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (accounts.length !== 1) {
         var message = `accounts.length of ${accounts.length} was expected to be 1`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully called accounts with time and limit params`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Verify single account can be retrieved
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getSingleAccount = async function() {
+const getSingleAccount = async function(server, classResults) {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${accountsPath}`);
@@ -216,14 +208,14 @@ const getSingleAccount = async function() {
     if (undefined === accounts) {
         var message = `accounts is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (accounts.length !== maxLimit) {
         var message = `accounts.length of ${accounts.length} is less than limit ${maxLimit}`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -231,7 +223,7 @@ const getSingleAccount = async function() {
     if (mandatoryParamCheck == false) {
         var message = `account object is missing some mandatory fields`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
     
@@ -252,14 +244,14 @@ const getSingleAccount = async function() {
     }
     catch (error) {
         currentTestResult.failureMessages.push(error);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
     if (undefined === singleAccount) {
         var message = `singleAccount is undefined`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return;
     }
 
@@ -271,43 +263,38 @@ const getSingleAccount = async function() {
     if (check == false) {
         var message = `Highest acc check was not found`;
         currentTestResult.failureMessages.push(message);
-        addTestResult(currentTestResult, false);
+        acctestutils.addTestResult(classResults, currentTestResult, false);
         return
     }
 
     currentTestResult.result = 'passed';
     currentTestResult.message = `Successfully called accounts for single account`
 
-    addTestResult(currentTestResult, true);
+    acctestutils.addTestResult(classResults, currentTestResult, true);
 }
 
 /**
  * Run all tests in an asynchronous fashion waiting for all tests to complete before calculating class success
+ * @param {Object} server API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-async function runTests() {
+async function runTests(server, classResults) {
     var tests = [];
-    tests.push(getAccountsWithAccountCheck());
-    tests.push(getAccountsWithTimeAndLimitParams());
-    tests.push(getSingleAccount());
+    tests.push(getAccountsWithAccountCheck(server, classResults));
+    tests.push(getAccountsWithTimeAndLimitParams(server, classResults));
+    tests.push(getSingleAccount(server, classResults));
 
-    await Promise.all(tests);
-
-    if (classResults.numPassedTests == classResults.testResults.length) {
-        classResults.success = true
-    }
+    Promise.all(tests);
 }
 
 /**
  * Coordinates tests run. 
  * Creating and returning a new classresults object representings accounts tests
+ * @param {Object} svr API host endpoint
+ * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const runAccountTests = function(svr) {
-    server = svr;
-    classResults = acctestutils.getMonitorClassResult();
-
-    return runTests().then(() => {
-        return classResults;
-    });
+const runAccountTests = function(svr, classResults) {
+    runTests(svr, classResults);
 }
 
 module.exports = {

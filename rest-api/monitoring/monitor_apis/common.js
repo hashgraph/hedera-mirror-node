@@ -64,7 +64,15 @@ const saveResults = (server, results) => {
  */
 const getStatus = () => {
     let results = Object.keys(currentResults).map((net) => {
+
+        // update numPassedTests, numFailedTests and success from testNums field. This can be removed if non shell approach is chosen
+        let passedCount = currentResults[net].results.testNums.passed[0];
+        let failedCount = currentResults[net].results.testNums.failed[0];
+        currentResults[net].results.numPassedTests = passedCount;
+        currentResults[net].results.numFailedTests = failedCount;
+        currentResults[net].results.success = (passedCount + failedCount) > 0 && failedCount == 0 ? true : false;
         currentResults[net].name = net;
+
         return (currentResults[net]);
     })
     return ({
