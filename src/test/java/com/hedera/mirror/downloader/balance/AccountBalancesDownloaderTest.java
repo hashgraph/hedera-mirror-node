@@ -24,7 +24,6 @@ import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.downloader.DownloaderProperties;
 import com.hedera.mirror.downloader.AbstractDownloaderTest;
-import com.hedera.utilities.Utility;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -60,7 +59,8 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     void downloadAndVerify() throws Exception {
         fileCopier.copy();
         downloader.download();
-        verify(applicationStatusRepository).updateStatusValue(ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, "2019-08-30T18_30_00.010147001Z_Balances.csv");
+        verify(applicationStatusRepository).updateStatusValue(
+                ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, "2019-08-30T18_30_00.010147001Z_Balances.csv");
         assertValidFiles(List.of("2019-08-30T18_15_00.016002001Z_Balances.csv", "2019-08-30T18_30_00.010147001Z_Balances.csv"));
     }
 
@@ -69,5 +69,13 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     void maxDownloadItemsReached() throws Exception {
         ((BalanceDownloaderProperties)downloaderProperties).setBatchSize(1);
         testMaxDownloadItemsReached("2019-08-30T18_15_00.016002001Z_Balances.csv");
+    }
+
+    @Test
+    @DisplayName("overwrite on download")
+    void overwriteOnDownload() throws Exception {
+        overwriteOnDownloadHelper(
+                "2019-08-30T18_15_00.016002001Z_Balances.csv", "2019-08-30T18_30_00.010147001Z_Balances.csv",
+                ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
     }
 }

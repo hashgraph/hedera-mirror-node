@@ -37,9 +37,7 @@ import javax.validation.constraints.NotNull;
 @ConfigurationProperties("hedera.mirror.downloader")
 public class CommonDownloaderProperties {
 
-    private String awsAccessKey;
-
-    private String awsSecretKey;
+    private String accessKey;
 
     @NotBlank
     private String bucketName;
@@ -52,6 +50,7 @@ public class CommonDownloaderProperties {
 
     private String region = "us-east-1";
 
+    private String secretKey;
 
     @Getter
     @RequiredArgsConstructor

@@ -46,9 +46,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +108,6 @@ public abstract class Downloader {
      *      value: a list of sig files with the same name and from different nodes folder;
      */
 	private Map<String, List<File>> downloadSigFiles() throws InterruptedException {
-		String prefix = downloaderProperties.getPrefix();
 		String lastValidFileName = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
         // foo.rcd < foo.rcd_sig. If we read foo.rcd from application stats, we have to start listing from
         // next to 'foo.rcd_sig'.
@@ -126,24 +123,24 @@ public abstract class Downloader {
 		 * For each node, create a thread that will make S3 ListObject requests as many times as necessary to
 		 * start maxDownloads download operations.
 		 */
+        final Path dataPath = downloaderProperties.getStreamPath().getParent();
 		for (String nodeAccountId : nodeAccountIds) {
 			tasks.add(Executors.callable(() -> {
 				log.debug("Downloading signature files for node {} created after file {}", nodeAccountId, lastValidSigFileName);
+                Stopwatch stopwatch = Stopwatch.createStarted();
 				// Get a list of objects in the bucket, 100 at a time
-				String s3prefix = prefix + nodeAccountId + "/";
-				Stopwatch stopwatch = Stopwatch.createStarted();
+				String s3prefix = downloaderProperties.getPrefix() + nodeAccountId + "/";
 
-                // prefix is of format "X/Y" (e.g. "recordstreams/record"), so a replace here with use of Paths in rest
-                // of the code ensures platform compatibility. More involved way would splitting 'prefix' in all
-                // DownloaderProperties implementations to two values and then join then separately for S3 and for
-                // local filesystem.
-                final Path sigFilesDir = downloaderProperties.getStreamPath().getParent()
-                        .resolve(prefix.replace('/', File.separatorChar) + nodeAccountId);
+                // s3prefix is of format "X/Y/" (e.g. "recordstreams/record0.0.3/"), so a replace here with use of
+                // Paths in rest of the code ensures platform compatibility. More involved way would splitting 'prefix'
+                // in all DownloaderProperties implementations to two values and then join then separately for S3 and
+                // for local filesystem.
+                final Path sigFilesDir = dataPath.resolve(s3prefix.replace('/', File.separatorChar));
                 // Ensure the directory for downloading sig files exists.
                 Utility.ensureDirectory(sigFilesDir);
 
                 try {
-                    // batchSize (number of items we plan do download in a single batch) times 2 for file + sig
+                    // batchSize (number of items we plan do download in a single batch) times 2 for file + sig.
                     final var listSize = (downloaderProperties.getBatchSize() * 2);
                     // Not using ListObjectsV2Request because it does not work with GCP.
                     ListObjectsRequest listRequest = ListObjectsRequest.builder()
@@ -155,7 +152,10 @@ public abstract class Downloader {
                             .build();
                     CompletableFuture<ListObjectsResponse> response = s3Client.listObjects(listRequest);
                     var pendingDownloads = new ArrayList<PendingDownload>(downloaderProperties.getBatchSize());
-                    // Loop through the list of remote files beginning a download for each relevant sig file.
+                    // Loop through the list of remote files beginning a download for each relevant sig file
+                    // Note:
+                    // lastValidSigFileName specified as marker above is not returned in these results by AWS S3.
+                    // However, it is returned by mockS3 implementation we use in our tests.
                     for (S3Object content : response.get().contents()) {
                         String s3ObjectKey = content.key();
                         if (s3ObjectKey.endsWith("_sig")) {

@@ -20,6 +20,7 @@ package com.hedera.mirror.config;
  * ‍
  */
 
+import lombok.extern.log4j.Log4j2;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -55,6 +56,7 @@ import java.util.List;
 
 @Configuration
 @EnableAsync
+@Log4j2
 public class MirrorNodeConfiguration {
 
     @Configuration
@@ -97,12 +99,15 @@ public class MirrorNodeConfiguration {
                 .connectionMaxIdleTime(Duration.ofSeconds(5))  // https://github.com/aws/aws-sdk-java-v2/issues/1122
                 .build();
 
-        AwsCredentialsProvider awsCredentials = AnonymousCredentialsProvider.create();
-
-        String accessKey = downloaderProperties.getAwsAccessKey();
-        String secretKey = downloaderProperties.getAwsSecretKey();
+        AwsCredentialsProvider awsCredentials;
+        String accessKey = downloaderProperties.getAccessKey();
+        String secretKey = downloaderProperties.getSecretKey();
         if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
+            log.info("Setting up S3 async client using provided access/secret key");
             awsCredentials = StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
+        } else {
+            log.info("Setting up S3 async client using anonymous credentials");
+            awsCredentials = AnonymousCredentialsProvider.create();
         }
 
         return S3AsyncClient.builder()
