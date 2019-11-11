@@ -49,7 +49,7 @@ const runEverything = async function (servers) {
                         if (outJson.hasOwnProperty('startTime') &&
                             outJson.hasOwnProperty('testResults')) {
 
-                            ['numPassedTests', 'numFailedTests', 'success','testResults','message'].forEach((k) => {
+                            ['numPassedTests', 'numFailedTests', 'success','testResults','message', 'testNums'].forEach((k) => {
                                 results[k] = outJson[k];
                             });
                         } else {
