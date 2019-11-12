@@ -104,6 +104,8 @@ public class TopicSubscriber implements Subscriber<TopicMessage> {
   public void onComplete() { ... }
 }
 ```
+  - If the database goes down or the listener misses a message, `TopicSubscriber` should continue retrying to connect and fill
+in any missing messages
 - Implement `ConsensusService`:
 ```java
 @GrpcService
@@ -117,8 +119,6 @@ public class ConsensusService extends ConsensusServiceGrpc.ConsensusServiceImplB
 - Perform `topicMessageRepository.findByFilter(filter)`
 - Create and subscribe a `TopicSubscriber` to the results from the repository
 - Map `TopicMessage` to `ConsensusTopicResponse`
-- There can be multiple subscribers on the same topic for the same GRPC server and we should consider optimizations
-around that
 
 ### Topic Listener
 
@@ -167,7 +167,7 @@ Provide the ability to notify components of new transactions:
 - Add new `t_entity_types` row with name `topic`
 - Add new columns to `t_entities`:
   - `submit_key bytea`
-  - `valid_start_time nanos_timestamp`
+  - `topic_valid_start_time nanos_timestamp`
 - Add new `t_transaction_types`:
   - `CONSENSUSCREATETOPIC=24`
   - `CONSENSUSUPDATETOPIC=25`
@@ -188,15 +188,24 @@ Provide the ability to notify components of new transactions:
 ```postgres-sql
 create table if not exists topic_message (
   consensus_timestamp nanos_timestamp primary key not null,
-  topic_id bigint not null references t_entities (id) on delete cascade on update cascade,
   message bytea not null,
+  realm bigint not null,
   running_hash bytea not null,
-  sequence_number bigint not null
+  sequence_number bigint not null,
+  topic_num bigint not null
 );
 
-create index if not exists topic_message_entity_id_timestamp
-on topic_message (topic_id, consensus_timestamp);
+create index if not exists topic_message_realm_num_timestamp
+on topic_message (realm, topic_num, consensus_timestamp);
 ```
 - Create a trigger that calls a new function on every insert of topic_message, serializes it to JSON and calls pg_notify
-- Alternative would be dynamically create trigger for each GRPC call, but deleting trigger would be racy and duplicate traffic for same topic
-- TODO: Support a retention of X days for `topic_message`?
+  - Alternative would be dynamically create trigger for each GRPC call, but deleting trigger would be racy and duplicate traffic for same topic
+- Implement a retention period for `topic_message` using a Java `@Scheduled` thread and a config property `hedera.mirror.parser.retention` of type `java.time.Duration`
+
+## Open Questions
+
+1. Should filter properties not apply to some tables or apply to all tables?
+2. Will `pg_notify` be able to handle the scale of data and clients required? See [Alternatives](#alternatives) section
+3. Will GRPC be able to handle the flood of messages without backpressure support? Investigate [salesforce/reactive-grpc](https://github.com/salesforce/reactive-grpc)
+4. What are the non-functional requirements for TPS/retention/client connections?
+5. How will we optimize for multiple clients requesting the same topic ID?
