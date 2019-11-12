@@ -66,10 +66,7 @@ const getStatus = () => {
     let results = Object.keys(currentResults).map((net) => {
         currentResults[net].name = net;
 
-        // Set num failed and passed to number types. Also set success based off of test performance. 
-        // UI can therefore continue to expect number and bool instead of parsing an array of the values
-        currentResults[net].results['numFailedTests'] = currentResults[net].results.numFailedTests[0];
-        currentResults[net].results['numPassedTests'] = currentResults[net].results.numPassedTests[0];
+        // Set success based off of test performance. 
         currentResults[net].results.success = currentResults[net].results.testResults.length > 0 && currentResults[net].results.numFailedTests == 0 ? true : false;
 
         return (currentResults[net]);

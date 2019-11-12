@@ -7,9 +7,9 @@ const apiPrefix = '/api/v1';
 // monitoring class results template
 const classResults = {
     testResults: [],
-    numPassedTests: [0], // use array of numbers instead of number to ensure updates to reference are persisted
-    numFailedTests: [0], // use array of numbers instead of number to ensure updates to reference are persisted
-    success: [false], // use array of bools instead of bool to ensure updates to reference are persisted
+    numPassedTests: 0, 
+    numFailedTests: 0,
+    success: false, 
     message: ''
 }
 
@@ -118,7 +118,7 @@ const getMonitorTestResult = () => {
  */
 const addTestResult = (clssRes, res, passed) => {
     clssRes.testResults.push(res);
-    passed ? clssRes.numPassedTests[0]++ : clssRes.numFailedTests[0]++
+    passed ? clssRes.numPassedTests++ : clssRes.numFailedTests++;
 }
 
 module.exports = {

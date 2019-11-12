@@ -43,10 +43,7 @@ const runEverything = async (servers) => {
                 fetchTests.runFetchTests(`http://${server.ip}:${server.port}`).then((outJson) => {
                     let results = {};
                     if (outJson.hasOwnProperty('testResults')) {
-
-                        ['numPassedTests', 'numFailedTests', 'success','testResults','message', 'testNums'].forEach((k) => {
-                            results[k] = outJson[k];
-                        });
+                        results = outJson;
                     } else {
                         results = createFailedResultJson(`Test result unavailable`,
                             `Test results not available for: ${server.name}`);
