@@ -25,6 +25,7 @@ const config = require('../../config.js');
 const math = require('mathjs');
 const transactionsPath= '/transactions';
 const maxLimit = config.api.maxLimit;
+const recordsFileUpdateRefreshTime = 5;
 
 /**
  * Makes a call to the rest-api and returns the transacations object from the response
@@ -365,10 +366,9 @@ const checkTransactionFreshness = async (server, classResults) => {
     // Check for freshness of data
     const txSec = transactions[0].consensus_timestamp.split('.')[0];
     const currSec = Math.floor(new Date().getTime() / 1000);
-    const delta = currSec - txSec
-    const freshnessThreshold = config.api.fileUpdateRefreshTimes.records * 10;
+    const delta = currSec - txSec;
     
-    if (delta > freshnessThreshold) {
+    if (delta > recordsFileUpdateRefreshTime) {
         var message = `transactions was stale, ${delta} seconds old`;
         currentTestResult.failureMessages.push(message);
         acctestutils.addTestResult(classResults, currentTestResult, false);

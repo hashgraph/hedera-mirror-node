@@ -25,6 +25,7 @@ const config = require('../../config.js');
 const math = require('mathjs');
 const balancesPath= '/balances';
 const maxLimit = config.api.maxLimit;
+const balanceFileUpdateRefreshTime = 900;
 
 /**
  * Makes a call to the rest-api and returns the balances object from the response
@@ -252,7 +253,7 @@ const checkBalanceFreshness = async (server, classResults) => {
     const txSec = balancesResponse.timestamp.split('.')[0];
     const currSec = Math.floor(new Date().getTime() / 1000);
     const delta = currSec - txSec
-    const freshnessThreshold = config.api.fileUpdateRefreshTimes.balances * 2;
+    const freshnessThreshold = balanceFileUpdateRefreshTime * 2;
     
     if (delta > freshnessThreshold) {
         var message = `balance was stale, ${delta} seconds old`;
