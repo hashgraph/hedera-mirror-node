@@ -20,7 +20,7 @@ attempts to design a scalable solution to provide such functionality.
 These items are not currently in scope at this time in order to deliver a MVP, but can be revisited later as the need arises:
 
 - Provide a HCS REST API
-- Provide a HCS WebSocket API
+- Provide a HCS WebSocket or Server Sent Events API
 - Provide a non-HCS GRPC API
 - Provide a "relay" service to publish to other downstream systems
 - Provide higher level functionality like encryption, fragmentation or reassembly
@@ -34,7 +34,7 @@ These items are not currently in scope at this time in order to deliver a MVP, b
 2. Parser persists to PostgreSQL
 3. Client queries GRPC API for messages from a specific topic
 4. GRPC API retrieves the current messages from PostgreSQL and returns to client
-5. GRPC API is notified of new `ConsensusSubmitMessage` transactions via PostgreSQL Notify
+5. GRPC API is notified of new messages via PostgreSQL Notify
 
 ### Alternatives
 
@@ -59,7 +59,7 @@ message ConsensusTopicQuery {
     .proto.TopicID topicID = 1; // A required topic ID to retrieve messages for.
     .proto.Timestamp consensusStartTime = 2; // Include messages which reached consensus on or after this time. Defaults to current time if not set.
     .proto.Timestamp consensusEndTime = 3; // Include messages which reached consensus before this time. If not set it will receive indefinitely.
-    uint32 limit = 4; // The maximum number of messages to receive before stopping. If not set or set to zero it will return messages indefinitely.
+    uint64 limit = 4; // The maximum number of messages to receive before stopping. If not set or set to zero it will return messages indefinitely.
 }
 
 message ConsensusTopicResponse {
@@ -98,17 +98,10 @@ asynchronous sequence of 0..N items.
 - Implement `TopicSubscriber` that wraps `StreamObserver` in a `org.reactivestreams.Subscriber`:
 ```java
 public class TopicSubscriber implements Subscriber<TopicMessage> {
-  public void onSubscribe(Subscription subscription) {
-  }
-
-  public void onNext(TopicMessage topicMessage) {
-  }
-
-  public void onError(Throwable throwable) {
-  }
-
-  public void onComplete() {
-  }
+  public void onSubscribe(Subscription subscription) { ... }
+  public void onNext(TopicMessage topicMessage) { ... }
+  public void onError(Throwable throwable) { ... }
+  public void onComplete() { ... }
 }
 ```
 - Implement `ConsensusService`:
@@ -144,6 +137,7 @@ current query finishes
 ### Persist
 
 Modify `RecordFileLogger` to handle HCS transactions
+- Modify Entities to handle Topic ID and new fields
 - Insert HCS transaction into `t_transactions`
 - Insert `ConsensusSubmitMessage` transactions into `topic_message`
 
@@ -171,7 +165,9 @@ Provide the ability to notify components of new transactions:
 ## Database
 
 - Add new `t_entity_types` row with name `topic`
-- Add new column `submit_key` to t_entities
+- Add new columns to `t_entities`:
+  - `submit_key bytea`
+  - `valid_start_time nanos_timestamp`
 - Add new `t_transaction_types`:
   - `CONSENSUSCREATETOPIC=24`
   - `CONSENSUSUPDATETOPIC=25`
@@ -192,14 +188,14 @@ Provide the ability to notify components of new transactions:
 ```postgres-sql
 create table if not exists topic_message (
   consensus_timestamp nanos_timestamp primary key not null,
-  entity_id bigint not null references t_entities (id) on delete cascade on update cascade,
+  topic_id bigint not null references t_entities (id) on delete cascade on update cascade,
   message bytea not null,
   running_hash bytea not null,
   sequence_number bigint not null
 );
 
 create index if not exists topic_message_entity_id_timestamp
-on topic_message (entity_id, consensus_timestamp);
+on topic_message (topic_id, consensus_timestamp);
 ```
 - Create a trigger that calls a new function on every insert of topic_message, serializes it to JSON and calls pg_notify
 - Alternative would be dynamically create trigger for each GRPC call, but deleting trigger would be racy and duplicate traffic for same topic
