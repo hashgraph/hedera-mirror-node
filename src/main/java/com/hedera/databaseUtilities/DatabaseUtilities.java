@@ -20,7 +20,7 @@ package com.hedera.databaseUtilities;
  * ‍
  */
 
-import com.hedera.utilities.Utility;
+import com.hedera.utilities.ShutdownHelper;
 import lombok.extern.log4j.Log4j2;
 
 import javax.inject.Named;
@@ -45,12 +45,11 @@ public class DatabaseUtilities {
 
     public static final Connection getConnection() {
         while (true) {
-            try {
-                if (Utility.checkStopFile()) {
-                    log.info("Stop file found, stopping.");
-                    System.exit(0);
-                }
+            if (ShutdownHelper.isStopping()) {
+               throw new IllegalStateException("Shutting down");
+            }
 
+            try {
                 return dataSource.getConnection();
             } catch (Exception e) {
                 log.warn("Unable to connect to database: {}", e.getMessage());

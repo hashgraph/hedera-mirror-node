@@ -27,6 +27,7 @@ import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.filedelimiters.FileDelimiter;
 import com.hedera.mirror.parser.FileParser;
 import com.hedera.platform.Transaction;
+import com.hedera.utilities.ShutdownHelper;
 import com.hedera.utilities.Utility;
 
 import lombok.extern.log4j.Log4j2;
@@ -443,8 +444,7 @@ public class EventStreamFileParser implements FileParser {
 
 		String prevFileHash = applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH);
 		for (String name : fileNames) {
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found, stopping");
+			if (ShutdownHelper.isStopping()) {
 				return false;
 			}
 			LoadResult loadResult = loadEventStreamFile(name, prevFileHash);
@@ -509,8 +509,7 @@ public class EventStreamFileParser implements FileParser {
 				return;
 			}
 
-			if (Utility.checkStopFile()) {
-				log.info("Stop file found");
+			if (ShutdownHelper.isStopping()) {
 				return;
 			}
 

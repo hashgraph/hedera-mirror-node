@@ -20,8 +20,6 @@ package com.hedera.mirror.downloader.record;
  * ‍
  */
 
-import com.amazonaws.services.s3.transfer.TransferManager;
-
 import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.domain.ApplicationStatusCode;
@@ -30,6 +28,7 @@ import com.hedera.mirror.parser.record.RecordFileParser;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import javax.inject.Named;
 
@@ -38,9 +37,9 @@ import javax.inject.Named;
 public class RecordFileDownloader extends Downloader {
 
     public RecordFileDownloader(
-            TransferManager transferManager, ApplicationStatusRepository applicationStatusRepository,
+            S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             NetworkAddressBook networkAddressBook, RecordDownloaderProperties downloaderProperties) {
-        super(transferManager, applicationStatusRepository, networkAddressBook, downloaderProperties);
+        super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties);
     }
 
     @Scheduled(fixedRateString = "${hedera.mirror.downloader.record.frequency:500}")

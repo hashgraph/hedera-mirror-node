@@ -21,10 +21,13 @@
 const extend = require('extend');
 const fs = require('fs');
 const yaml = require('js-yaml');
-const log4js = require('log4js');
 const path = require('path');
 
-const logger = log4js.getLogger('config');
+let configName = 'application';
+if (process.env.CONFIG_NAME) {
+  configName = process.env.CONFIG_NAME;
+}
+
 let config = {};
 let loaded = false;
 
@@ -33,24 +36,83 @@ function load(configPath) {
     return;
   }
 
-  let configFile = path.join(configPath, 'application.yml');
-  if (!fs.existsSync(configFile)) {
+  let configFile = path.join(configPath, configName + '.yml');
+  if (fs.existsSync(configFile)) {
+    loadYaml(configFile);
+  }
+
+  configFile = path.join(configPath, configName + '.yaml');
+  if (fs.existsSync(configFile)) {
+    loadYaml(configFile);
+  }
+}
+
+function loadYaml(configFile) {
+  try {
+    let doc = yaml.safeLoad(fs.readFileSync(configFile, 'utf8'));
+    console.log(`Loaded configuration source: ${configFile}`);
+    extend(true, config, doc);
+  } catch (err) {
+    console.log(`Skipping configuration ${configFile}: ${err}`);
+  }
+}
+
+function loadEnvironment() {
+  let keys = Object.keys(process.env);
+  let values = Object.values(process.env);
+
+  for (i in keys) {
+    setConfigValue(keys[i], values[i]);
+  }
+}
+
+/*
+ * Sets a config property from an environment variable by converting HEDERA_MYFOO_BAR to an object path notation hedera.myFoo.bar
+ * using a case insensitive search. If more than one property matches with a different case, it will choose the first.
+ */
+function setConfigValue(propertyPath, value) {
+  let current = config;
+  let properties = propertyPath.toLowerCase().split('_');
+
+  // Ignore properties that don't start with HEDERA_
+  if (properties.length <= 1 || properties[0] !== 'hedera') {
     return;
   }
 
-  try {
-    let doc = yaml.safeLoad(fs.readFileSync(configFile, 'utf8'));
-    logger.info(`Loaded configuration source: ${configFile}`);
-    extend(true, config, doc);
-  } catch (err) {
-    logger.error(`Skipping configuration ${configFile}: ${err}`);
+  for (let i in properties) {
+    let property = properties[i];
+
+    for (let [k, v] of Object.entries(current)) {
+      if (property === k.toLowerCase()) {
+        if (i < properties.length - 1) {
+          current = v;
+          break;
+        } else {
+          current[k] = convertType(value);
+          return;
+        }
+      }
+    }
   }
+}
+
+function convertType(value) {
+  let parsedValue = value;
+
+  if (value !== null && value !== '' && !isNaN(value)) {
+    parsedValue = +value;
+  } else if (value === 'true' || value === 'false') {
+    parsedValue = (value === 'true');
+  }
+
+  return parsedValue;
 }
 
 if (!loaded) {
   load(path.join(__dirname, 'config'));
   load(__dirname);
   load(process.env.CONFIG_PATH);
+  loadEnvironment();
   loaded = true;
 }
 

@@ -23,7 +23,6 @@ package com.hedera.recordFileLogger;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.LiveHash;
-import com.hedera.recordFileLogger.RecordFileLogger;
 import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
 import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -86,11 +85,10 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
 	@BeforeEach
 	void before() throws Exception {
+        parserProperties.setPersistClaims(true);
+        parserProperties.setPersistCryptoTransferAmounts(true);
 		assertTrue(RecordFileLogger.start());
 		assertEquals(INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-		parserProperties.setPersistClaims(true);
-		parserProperties.setPersistCryptoTransferAmounts(true);
-		RecordFileLogger.parserProperties = parserProperties;
 	}
 
 	@AfterEach

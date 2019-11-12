@@ -26,6 +26,7 @@ var acceptanceTestsTransactions = (function () {
     const acctestutils = require('./acceptancetest_utils.js');
     const config = require('../config.js');
     const maxLimit = config.api.maxLimit;
+    const fileUpdateRefreshTime = 5;
 
     beforeAll(async () => {
         moduleVars.verbose && console.log('Jest starting!');
@@ -89,6 +90,67 @@ var acceptanceTestsTransactions = (function () {
         return (true);
     }
 
+<<<<<<< HEAD
+=======
+    const checkMandatoryParams = function (entry) {
+        let check = true;
+        ['consensus_timestamp', 'valid_start_timestamp', 'charged_tx_fee', 'transaction_id',
+            'memo_base64', 'result', 'name', 'node', 'transfers', 'valid_duration_seconds', 'max_fee'
+        ].forEach((field) => {
+            check = check && entry.hasOwnProperty(field);
+        });
+        return (check);
+    }
+
+    describe('Monitoring tests - transactions', () => {
+        test('Get transactions with no parameters', async () => {
+            const response = await request(server).get(moduleVars.apiPrefix + '/transactions');
+            expect(response.status).toEqual(200);
+            let transactions = JSON.parse(response.text).transactions;
+            expect(transactions.length).toBe(maxLimit);
+
+            // Assert that all mandatory fields are present in the response
+            let check = checkMandatoryParams(transactions[0]);
+            expect(check).toBeTruthy();
+
+            // Check for freshness of data
+            const txSec = transactions[0].consensus_timestamp.split('.')[0];
+            const currSec = Math.floor(new Date().getTime() / 1000);
+            const delta = currSec - txSec;
+            check = delta < (10 * fileUpdateRefreshTime);
+            expect(check).toBeTruthy();
+        });
+
+        test('Get transactions with timestamp & limit parameters', async () => {
+            let plusOne = math.add(math.bignumber(moduleVars.testTx[0].consensus_timestamp), math.bignumber(1));
+            let minusOne = math.subtract(math.bignumber(moduleVars.testTx[0].consensus_timestamp), math.bignumber(1));
+            const url = `${moduleVars.apiPrefix}/transactions` +
+                `?timestamp=gt:${minusOne.toString()}` +
+                `&timestamp=lt:${plusOne.toString()}&limit=1`;
+            moduleVars.verbose && console.log(url);
+            const response = await request(server).get(url);
+            expect(response.status).toEqual(200);
+            let transactions = JSON.parse(response.text).transactions;
+            expect(transactions.length).toEqual(1);
+        });
+
+        test('Get transactions for a single transaction', async () => {
+            const url = `${moduleVars.apiPrefix}/transactions` +
+                `/${moduleVars.testTx[0].transaction_id}`;
+            moduleVars.verbose && console.log(url);
+            const response = await request(server).get(url);
+            expect(response.status).toEqual(200);
+            let transactions = JSON.parse(response.text).transactions;
+            expect(transactions.length).toEqual(1);
+            expect(transactions[0].transaction_id).toEqual(moduleVars.testTx[0].transaction_id);
+
+            // Assert that all mandatory fields are present in the response
+            let check = checkMandatoryParams(transactions[0]);
+            expect(check).toBeTruthy();
+        });
+    });
+
+>>>>>>> master
     describe('Acceptance tests - transactions', () => {
         test('Get transactions with limit parameters', async () => {
             const response = await request(server).get(moduleVars.apiPrefix + '/transactions?limit=10');
