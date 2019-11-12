@@ -31,20 +31,19 @@ const maxLimit = config.api.maxLimit;
  * @param {String} pathandquery 
  * @return {Object} Accounts object from response
  */
-const getAccounts = async function(pathandquery) {
-    try {
-        const json = await acctestutils.getAPIResponse(pathandquery);
-        return json.accounts;
-    } catch (error) {
+const getAccounts = (pathandquery) => {
+    return acctestutils.getAPIResponse(pathandquery).then((json) => {
+        return json.accounts
+    }).catch((error) => {
         testResult.failureMessages.push(error);
-    }
-}
+    })
+};
 
 /**
  * Check the required fields exist in the response object
  * @param {Object} entry Account JSON object
  */
-const checkMandatoryParams = function (entry) {
+const checkMandatoryParams = (entry) => {
     let check = true;
     ['balance', 'account', 'expiry_timestamp', 'auto_renew_period',
         'key', 'deleted'
@@ -65,7 +64,7 @@ const checkMandatoryParams = function (entry) {
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getAccountsWithAccountCheck = async function(server, classResults) {
+const getAccountsWithAccountCheck = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, accountsPath);
@@ -143,7 +142,7 @@ const getAccountsWithAccountCheck = async function(server, classResults) {
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getAccountsWithTimeAndLimitParams = async function (server, classResults) {
+const getAccountsWithTimeAndLimitParams = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(server, `${accountsPath}?limit=1`);
@@ -198,7 +197,7 @@ const getAccountsWithTimeAndLimitParams = async function (server, classResults) 
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getSingleAccount = async function(server, classResults) {
+const getSingleAccount = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${accountsPath}`);
@@ -274,27 +273,17 @@ const getSingleAccount = async function(server, classResults) {
 }
 
 /**
- * Run all tests in an asynchronous fashion waiting for all tests to complete before calculating class success
+ * Run all tests in an asynchronous fashion waiting for all tests to complete
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-async function runTests(server, classResults) {
+const runAccountTests = async (server, classResults) => {
     var tests = [];
     tests.push(getAccountsWithAccountCheck(server, classResults));
     tests.push(getAccountsWithTimeAndLimitParams(server, classResults));
     tests.push(getSingleAccount(server, classResults));
 
     Promise.all(tests);
-}
-
-/**
- * Coordinates tests run. 
- * Creating and returning a new classresults object representings accounts tests
- * @param {Object} svr API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
- */
-const runAccountTests = function(svr, classResults) {
-    runTests(svr, classResults);
 }
 
 module.exports = {

@@ -6,15 +6,10 @@ const apiPrefix = '/api/v1';
 
 // monitoring class results template
 const classResults = {
-    startTime: null,
     testResults: [],
-    testNums: {
-        passed: [0],
-        failed: [0]
-    },
-    numPassedTests: 0,
-    numFailedTests: 0,
-    success: false,
+    numPassedTests: [0], // use array of numbers instead of number to ensure updates to reference are persisted
+    numFailedTests: [0], // use array of numbers instead of number to ensure updates to reference are persisted
+    success: [false], // use array of bools instead of bool to ensure updates to reference are persisted
     message: ''
 }
 
@@ -28,29 +23,11 @@ const testResult = {
 }
 
 /**
- * Converts nanoseconds since epoch to seconds.nnnnnnnnn format
- * @param {String} ns Nanoseconds since epoch
- * @return {String} Seconds since epoch (seconds.nnnnnnnnn format) 
- */
-const nsToSecNs = function (ns) {
-    return (math.divide(math.bignumber(ns), math.bignumber(1e9)).toFixed(9).toString());
-}
-
-/**
- * Converts seconds since epoch (seconds.nnnnnnnnn format) to  nanoseconds
- * @param {String} Seconds since epoch (seconds.nnnnnnnnn format) 
- * @return {String} ns Nanoseconds since epoch
- */
-const secNsToNs = function (secNs) {
-    return (math.multiply(math.bignumber(secNs), math.bignumber(1e9)).toString());
-}
-
-/**
  * Converts seconds.nanoseconds to seconds (floor)
  * @param {String} secNs Seconds.Nanoseconds
  * @return {Number} Seconds 
  */
-const secNsToSeconds = function (secNs) {
+const secNsToSeconds = (secNs) => {
     return (math.floor(Number(secNs)));
 }
 
@@ -72,7 +49,7 @@ const fromAccNum = (accNum => `${config.shard}.0.${accNum}`)
  * Return a deep clone of a json object
  * @param {Object} obj 
  */
-const cloneObject = function(obj) {
+const cloneObject = (obj) => {
     return JSON.parse(JSON.stringify(obj));
 }
 
@@ -82,7 +59,7 @@ const cloneObject = function(obj) {
  * @param {String} pathandquery rest-api endpoint path
  * @return {String} rest-api endpoint url
  */
-const getUrl = function(server, pathandquery) {
+const getUrl = (server, pathandquery) => {
     var endpoint = server;
     if (server.includes('localhost') || server.includes('127.0.0.1')) {
         endpoint = server.replace('https', 'http')
@@ -98,36 +75,35 @@ const getUrl = function(server, pathandquery) {
  * @param {*} url rest-api endpoint
  * @return {Object} JSON object representing api response
  */
-const getAPIResponse = async function(url) {
-    try {
-        if (url.indexOf('/') === 0) {
-            // if url is path get full url including host
-            url = getUrl(url);
-        }
+const getAPIResponse = (url) => {
+    if (url.indexOf('/') === 0) {
+        // if url is path get full url including host
+        url = getUrl(url);
+    }
 
-        const response = await fetch(url);
-        const json = await response.json();
+    return fetch(url).then((response) => {
+        return response.json();
+    }).then((json) => {
         return json;
-    } catch (error) {
+    }).catch((error) => {
         var message = `Fetch error, url : ${url}, error : ${error}`
         console.log(message);
         throw message;
-    }
+    })
 }
 
 /**
  * Retrieve a new instance of the monitoring class results object
  */
-const getMonitorClassResult = function() {
+const getMonitorClassResult = () => {
     var newClassResult =  cloneObject(classResults);
-    newClassResult.startTime = Date.now();
     return newClassResult;
 }
 
 /**
  * Retrieve a new instance of the monitoring single test result object
  */
-const getMonitorTestResult = function() {
+const getMonitorTestResult = () => {
     var newTestResult =  cloneObject(testResult);
     newTestResult.at = Date.now();
     return newTestResult;
@@ -140,15 +116,12 @@ const getMonitorTestResult = function() {
  * @param {Object} res Test result
  * @param {Boolean} passed Test passed flag
  */
-const addTestResult = function(clssRes, res, passed) {
+const addTestResult = (clssRes, res, passed) => {
     clssRes.testResults.push(res);
-    passed ? clssRes.testNums.passed[0]++ : clssRes.testNums.failed[0]++;
-    passed ? clssRes.numPassedTests++ : clssRes.numFailedTests++;
+    passed ? clssRes.numPassedTests[0]++ : clssRes.numFailedTests[0]++
 }
 
 module.exports = {
-    nsToSecNs: nsToSecNs,
-    secNsToNs: secNsToNs,
     toAccNum: toAccNum,
     fromAccNum: fromAccNum,
     secNsToSeconds: secNsToSeconds,

@@ -31,20 +31,19 @@ const maxLimit = config.api.maxLimit;
  * @param {String} pathandquery 
  * @return {Object} Transactions object from response
  */
-const getBalances = async function(pathandquery) {
-    try {
-        const json = await acctestutils.getAPIResponse(pathandquery);
-        return json.balances;
-    } catch (error) {
+const getBalances = (pathandquery) => {
+    return acctestutils.getAPIResponse(pathandquery).then((json) => {
+        return json.balances
+    }).catch((error) => {
         testResult.failureMessages.push(error);
-    }
+    })
 }
 
 /**
  * Check the required fields exist in the response object
  * @param {Object} entry Balance JSON object
  */
-const checkMandatoryParams = function (entry) {
+const checkMandatoryParams = (entry) => {
     let check = true;
     ['account', 'balance'].forEach((field) => {
         check = check && entry.hasOwnProperty(field);
@@ -58,7 +57,7 @@ const checkMandatoryParams = function (entry) {
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getBalancesCheck = async function(server, classResults) {
+const getBalancesCheck = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, balancesPath);
@@ -98,7 +97,7 @@ const getBalancesCheck = async function(server, classResults) {
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getBalancesWithTimeAndLimitParams = async function(server, classResults) {
+const getBalancesWithTimeAndLimitParams = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(server, `${balancesPath}?limit=1`);
@@ -163,7 +162,7 @@ const getBalancesWithTimeAndLimitParams = async function(server, classResults) {
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getSingleBalanceById = async function(server, classResults) {
+const getSingleBalanceById = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${balancesPath}?limit=10`);
@@ -234,7 +233,7 @@ const getSingleBalanceById = async function(server, classResults) {
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const checkBalanceFreshness = async function(server, classResults) {
+const checkBalanceFreshness = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${balancesPath}?limit=1`);
@@ -269,11 +268,11 @@ const checkBalanceFreshness = async function(server, classResults) {
 }
 
 /**
- * Run all tests in an asynchronous fashion waiting for all tests to complete before calculating class success
+ * Run all tests in an asynchronous fashion waiting for all tests to complete
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-async function runTests(server, classResults) {
+const runBalanceTests = async (server, classResults) => {
     var tests = [];
     tests.push(getBalancesCheck(server, classResults));
     tests.push(getBalancesWithTimeAndLimitParams(server, classResults));
@@ -281,16 +280,6 @@ async function runTests(server, classResults) {
     tests.push(checkBalanceFreshness(server, classResults));
 
     Promise.all(tests);
-}
-
-/**
- * Coordinates tests run. 
- * Creating and returning a new classresults object representings balance tests
- * @param {Object} svr API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
- */
-const runBalanceTests = function(svr, classResults) {
-    runTests(svr, classResults);
 }
 
 module.exports = {

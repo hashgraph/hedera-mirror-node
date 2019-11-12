@@ -29,7 +29,7 @@ const fetchTests = require('./fetchTests.js')
  * @param {} None
  * @return {} None
  */
-const runEverything = async function (servers) {
+const runEverything = async (servers) => {
     try {
         const restservers = undefined === servers ? common.getServerList().servers : servers;
 
@@ -37,61 +37,25 @@ const runEverything = async function (servers) {
             return;
         }
         
-        let shellConfig = common.getServerList().shell;
-        const shellFlag = undefined === shellConfig ? true : shellConfig;
         for (const server of restservers) {           
             if (common.getProcess(server) == undefined) {
-                // based on the presence of a shell flag in serverlist.json run tests through single node thread or as seperate shell processes
-                if (!shellFlag) {
-                    // execute test and store name
-                    fetchTests.runFetchTests(`http://${server.ip}:${server.port}`).then((outJson) => {
-                        let results = {};
-                        if (outJson.hasOwnProperty('startTime') &&
-                            outJson.hasOwnProperty('testResults')) {
+                // execute test and store name
+                fetchTests.runFetchTests(`http://${server.ip}:${server.port}`).then((outJson) => {
+                    let results = {};
+                    if (outJson.hasOwnProperty('testResults')) {
 
-                            ['numPassedTests', 'numFailedTests', 'success','testResults','message', 'testNums'].forEach((k) => {
-                                results[k] = outJson[k];
-                            });
-                        } else {
-                            results = createFailedResultJson(`Test result unavailable`,
-                                `Test results not available for: ${server.name}`);
-                        }
-                        
-                        common.deleteProcess(server);
-                        common.saveResults(server, results);
-                    });
-                } else {
-                    // Execute the tests using shell.exec
-                    const cmd = `(cd ../.. && TARGET=http://${server.ip}:${server.port} node ./__acceptancetests__/acceptanceFetchTests.js)`;
+                        ['numPassedTests', 'numFailedTests', 'success','testResults','message', 'testNums'].forEach((k) => {
+                            results[k] = outJson[k];
+                        });
+                    } else {
+                        results = createFailedResultJson(`Test result unavailable`,
+                            `Test results not available for: ${server.name}`);
+                    }
+                    
+                    common.deleteProcess(server);
+                    common.saveResults(server, results);
+                });
 
-                    // Execute the test and store the pid
-                    const pid = shell.exec(cmd, {
-                        async: true
-                    }, (code, out, err) => {
-                        let outJson;
-                        try {
-                            outJson = JSON.parse(out);
-                        } catch (err) {
-                            console.log('Error parsing cmd output: ' + err);
-                            outJson = {}
-                        }
-
-                        let results = {};
-                        if (outJson.hasOwnProperty('startTime') &&
-                            outJson.hasOwnProperty('testResults')) {
-
-                            ['numPassedTests', 'numFailedTests', 'success','testResults','message'].forEach((k) => {
-                                results[k] = outJson[k];
-                            });
-                        } else {
-                            results = createFailedResultJson(`Test result unavailable`,
-                                `Test results not available for: ${server.name}`);
-                        }
-                        
-                        common.deleteProcess(server);
-                        common.saveResults(server, results);
-                    });
-                }
                 common.saveProcess(server, server.name);
             } else {
                 const results = createFailedResultJson(`Test result unavailable`,
@@ -112,7 +76,7 @@ const runEverything = async function (servers) {
  * @param {String} msg Message in the jest output
  * @return {Object} Constructed failed result object
  */
-const createFailedResultJson = function (title, msg) {
+const createFailedResultJson = (title, msg) => {
     const fail = {
         numPassedTests: 0,
         numFailedTests: 1,

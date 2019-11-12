@@ -32,20 +32,23 @@ const balanceFetchTests = require('./balanceFetchTests');
  * @param {Object} server API host endpoint
  * @return {Object} results object capturing tests for given endpoint
  */
-const runFetchTests = async function(server) {
+const runFetchTests = (server) => {
     if (undefined === server) {
         console.log(`server is undefined, skipping ....`)
         return
     }
     
     let results = acctestutils.getMonitorClassResult();
+
+    // results are passed by reference to avoid async calls modifying same result sets for single endpoint
     var transactionResults = transactionFetchTests.runTransactionTests(server, results);
 
     var accountResults = accountFetchTests.runAccountTests(server, results);
 
     var balanceResults = balanceFetchTests.runBalanceTests(server, results);
 
-    return await Promise.all([transactionResults, accountResults, balanceResults]).then(() => {
+    return Promise.all([transactionResults, accountResults, balanceResults]).then(() => {
+        results.success[0] = results.testResults.length > 0 && results.numFailedTests[0] == 0 ? true : false;
         return results;
     });
 }

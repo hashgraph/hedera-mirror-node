@@ -82,7 +82,7 @@ common.initResults();
 
 let servers = serverlist.servers;
 
-const runMonitorTests = function() {
+const runMonitorTests = () => {
     console.log("Running the tests at: " + new Date());
     monitor.runEverything(servers);
 }

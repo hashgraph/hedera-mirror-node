@@ -87,15 +87,13 @@ const makeTable = (data, server) => {
  * @return {HTML} HTML for the card for the given server
  */
 const makeCard = (data, server) => {
-    let cntPassed = 0;
-    let cntFailed = 0;
 
     if (!('results' in data)) {
         return ('No data received yet for at least one of the servers in your list ...');
     }
 
-    const cntTotal = data.results.numPassedTests + data.results.numFailedTests;
-    const dotcolor = data.results.success ? 'green' : 'red';
+    const cntTotal = data.results.numPassedTests[0] + data.results.numFailedTests[0];
+    const dotcolor = data.results.success[0] ? 'green' : 'red';
 
     let h = '';
     // Create a summary card

@@ -100,61 +100,6 @@ var acceptanceTestsAccounts = (function () {
         return (true);
     }
 
-    const checkMandatoryParams = function (entry) {
-        let check = true;
-        ['balance', 'account', 'expiry_timestamp', 'auto_renew_period',
-            'key', 'deleted'
-        ].forEach((field) => {
-            check = check && entry.hasOwnProperty(field);
-        });
-
-        ['timestamp', 'balance'].forEach((field) => {
-            check = check && entry.hasOwnProperty('balance') && entry.balance.hasOwnProperty(field);
-        });
-
-        return (check);
-    }
-
-    describe('Monitoring tests - accounts', () => {
-        test('Get accounts with no parameters', async () => {
-            const response = await request(server).get(moduleVars.apiPrefix + '/accounts');
-            expect(response.status).toEqual(200);
-            let accounts = JSON.parse(response.text).accounts;
-            expect(accounts.length).toBe(maxLimit);
-
-            // Assert that all mandatory fields are present in the response
-            let check = checkMandatoryParams(accounts[0]);
-            expect(check).toBeTruthy();
-        });
-
-        test('Get accounts with timestamp & limit parameters', async () => {
-            let plusOne = math.add(math.bignumber(moduleVars.testTimestamp), math.bignumber(1));
-            let minusOne = math.subtract(math.bignumber(moduleVars.testTimestamp), math.bignumber(1));
-            const url = `${moduleVars.apiPrefix}/accounts` +
-                `?timestamp=gt:${minusOne.toString()}` +
-                `&timestamp=lt:${plusOne.toString()}&limit=1`;
-            moduleVars.verbose && console.log(url);
-            const response = await request(server).get(url);
-            expect(response.status).toEqual(200);
-            let accounts = JSON.parse(response.text).accounts;
-            expect(accounts.length).toEqual(1);
-        });
-
-        test('Get accounts for a single account', async () => {
-            const url = `${moduleVars.apiPrefix}/accounts` +
-                `/${acctestutils.fromAccNum(moduleVars.testAccounts.highest)}`;
-            moduleVars.verbose && console.log(url);
-            const response = await request(server).get(url);
-            expect(response.status).toEqual(200);
-            let accounts = JSON.parse(response.text);
-            expect(accounts.account).toEqual(acctestutils.fromAccNum(moduleVars.testAccounts.highest));
-
-            // Assert that all mandatory fields are present in the response
-            let check = checkMandatoryParams(accounts);
-            expect(check).toBeTruthy();
-        });
-    });
-
     describe('Acceptance tests - accounts', () => {
         test('Get accounts with limit parameters', async () => {
             const response = await request(server).get(moduleVars.apiPrefix + '/accounts?limit=10');

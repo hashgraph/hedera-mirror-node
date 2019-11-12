@@ -31,20 +31,19 @@ const maxLimit = config.api.maxLimit;
  * @param {String} pathandquery 
  * @return {Object} Transactions object from response
  */
-const getTransactions = async function(pathandquery, testResult) {
-    try {
-        const json = await acctestutils.getAPIResponse(pathandquery);
-        return json.transactions;
-    } catch (error) {
+const getTransactions = (pathandquery) => {
+    return acctestutils.getAPIResponse(pathandquery).then((json) => {
+        return json.transactions
+    }).catch((error) => {
         testResult.failureMessages.push(error);
-    }
-}
+    })
+};
 
 /**
  * Check the required fields exist in the response object
  * @param {Object} entry Transaction JSON object
  */
-const checkMandatoryParams = function (entry) {
+const checkMandatoryParams = (entry) => {
     let check = true;
     ['consensus_timestamp', 'valid_start_timestamp', 'charged_tx_fee', 'transaction_id',
         'memo_base64', 'result', 'name', 'node', 'transfers'
@@ -60,7 +59,7 @@ const checkMandatoryParams = function (entry) {
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getTransactionsWithAccountCheck = async function(server, classResults) {
+const getTransactionsWithAccountCheck = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, transactionsPath);
@@ -150,7 +149,7 @@ const getTransactionsWithAccountCheck = async function(server, classResults) {
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getTransactionsWithOrderParam = async function(server, classResults) {
+const getTransactionsWithOrderParam = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${transactionsPath}?order=asc`);
@@ -190,7 +189,7 @@ const getTransactionsWithOrderParam = async function(server, classResults) {
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getTransactionsWithLimitParams = async function (server, classResults) {
+const getTransactionsWithLimitParams = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=10`);
@@ -222,7 +221,7 @@ const getTransactionsWithLimitParams = async function (server, classResults) {
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getTransactionsWithTimeAndLimitParams = async function(server, classResults) {
+const getTransactionsWithTimeAndLimitParams = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
 
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
@@ -276,7 +275,7 @@ const getTransactionsWithTimeAndLimitParams = async function(server, classResult
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const getSingleTransactionsById = async function(server, classResults) {
+const getSingleTransactionsById = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
@@ -342,7 +341,7 @@ const getSingleTransactionsById = async function(server, classResults) {
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-const checkTransactionFreshness = async function(server, classResults) {
+const checkTransactionFreshness = async (server, classResults) => {
     var currentTestResult = acctestutils.getMonitorTestResult();
     
     let url = acctestutils.getUrl(server, `${transactionsPath}?limit=1`);
@@ -383,11 +382,11 @@ const checkTransactionFreshness = async function(server, classResults) {
 }
 
 /**
- * Run all tests in an asynchronous fashion waiting for all tests to complete before calculating class success
+ * Run all tests in an asynchronous fashion waiting for all tests to complete
  * @param {Object} server API host endpoint
  * @param {Object} classResults shared class results object capturing tests for given endpoint
  */
-async function runTests(server, classResults) {
+const runTransactionTests = async (server, classResults) => {
     var tests = [];
     tests.push(getTransactionsWithAccountCheck(server, classResults));
     tests.push(getTransactionsWithOrderParam(server, classResults));
@@ -397,16 +396,6 @@ async function runTests(server, classResults) {
     tests.push(checkTransactionFreshness(server, classResults));
 
     Promise.all(tests);
-}
-
-/**
- * Coordinates tests run. 
- * Creating and returning a new classresults object representings transaction tests
- * @param {Object} svr API host endpoint
- * @param {Object} classResults shared class results object capturing tests for given endpoint
- */
-const runTransactionTests = function(svr, classResults) {
-    runTests(svr, classResults)
 }
 
 module.exports = {
