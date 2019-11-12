@@ -368,7 +368,7 @@ const checkTransactionFreshness = async (server, classResults) => {
     const currSec = Math.floor(new Date().getTime() / 1000);
     const delta = currSec - txSec;
     
-    if (delta > recordsFileUpdateRefreshTime) {
+    if (delta > recordsFileUpdateRefreshTime * 10) {
         var message = `transactions was stale, ${delta} seconds old`;
         currentTestResult.failureMessages.push(message);
         acctestutils.addTestResult(classResults, currentTestResult, false);
