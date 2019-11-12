@@ -367,8 +367,9 @@ const checkTransactionFreshness = async (server, classResults) => {
     const txSec = transactions[0].consensus_timestamp.split('.')[0];
     const currSec = Math.floor(new Date().getTime() / 1000);
     const delta = currSec - txSec;
+    let freshnessThreshold = recordsFileUpdateRefreshTime * 10;
     
-    if (delta > recordsFileUpdateRefreshTime * 10) {
+    if (delta > freshnessThreshold) {
         var message = `transactions was stale, ${delta} seconds old`;
         currentTestResult.failureMessages.push(message);
         acctestutils.addTestResult(classResults, currentTestResult, false);
