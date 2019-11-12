@@ -48,7 +48,6 @@ const runFetchTests = (server) => {
     var balanceResults = balanceFetchTests.runBalanceTests(server, results);
 
     return Promise.all([transactionResults, accountResults, balanceResults]).then(() => {
-        results.success[0] = results.testResults.length > 0 && results.numFailedTests[0] == 0 ? true : false;
         return results;
     });
 }

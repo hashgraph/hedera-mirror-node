@@ -92,8 +92,8 @@ const makeCard = (data, server) => {
         return ('No data received yet for at least one of the servers in your list ...');
     }
 
-    const cntTotal = data.results.numPassedTests[0] + data.results.numFailedTests[0];
-    const dotcolor = data.results.success[0] ? 'green' : 'red';
+    const cntTotal = data.results.numPassedTests + data.results.numFailedTests;
+    const dotcolor = data.results.success ? 'green' : 'red';
 
     let h = '';
     // Create a summary card
