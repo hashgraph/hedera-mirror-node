@@ -129,13 +129,13 @@ public abstract class Downloader {
 				log.debug("Downloading signature files for node {} created after file {}", nodeAccountId, lastValidSigFileName);
                 Stopwatch stopwatch = Stopwatch.createStarted();
 				// Get a list of objects in the bucket, 100 at a time
-				String s3prefix = downloaderProperties.getPrefix() + nodeAccountId + "/";
+				String s3Prefix = downloaderProperties.getPrefix() + nodeAccountId + "/";
 
-                // s3prefix is of format "X/Y/" (e.g. "recordstreams/record0.0.3/"), so a replace here with use of
+                // s3Prefix is of format "X/Y/" (e.g. "recordstreams/record0.0.3/"), so a replace here with use of
                 // Paths in rest of the code ensures platform compatibility. More involved way would splitting 'prefix'
                 // in all DownloaderProperties implementations to two values and then join then separately for S3 and
                 // for local filesystem.
-                final Path sigFilesDir = dataPath.resolve(s3prefix.replace('/', File.separatorChar));
+                final Path sigFilesDir = dataPath.resolve(s3Prefix.replace('/', File.separatorChar));
                 // Ensure the directory for downloading sig files exists.
                 Utility.ensureDirectory(sigFilesDir);
 
@@ -145,9 +145,9 @@ public abstract class Downloader {
                     // Not using ListObjectsV2Request because it does not work with GCP.
                     ListObjectsRequest listRequest = ListObjectsRequest.builder()
                             .bucket(downloaderProperties.getCommon().getBucketName())
-                            .prefix(s3prefix)
+                            .prefix(s3Prefix)
                             .delimiter("/")
-                            .marker(s3prefix + lastValidSigFileName)
+                            .marker(s3Prefix + lastValidSigFileName)
                             .maxKeys(listSize)
                             .build();
                     CompletableFuture<ListObjectsResponse> response = s3Client.listObjects(listRequest);

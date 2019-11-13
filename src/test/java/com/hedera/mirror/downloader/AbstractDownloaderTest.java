@@ -142,6 +142,8 @@ public abstract class AbstractDownloaderTest {
         assertValidFiles(List.of(fileName1, fileName2));
 
         reset(applicationStatusRepository);
+        // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
+        Files.walk(downloaderProperties.getStreamPath()).filter(this::isSigFile).forEach(AbstractDownloaderTest::corruptFile);
         // fileName1 will be used to calculate marker for list request. mockS3 also returns back the marker in the
         // results. This is unlike AWS S3 which does not return back the marker.
         doReturn(fileName1).when(applicationStatusRepository).findByStatusCode(key);
