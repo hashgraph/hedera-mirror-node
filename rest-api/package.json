@@ -36,12 +36,20 @@
     "pg"
   ],
   "devDependencies": {
+    "husky": "^3.0.9",
     "jest": "^24.9.0",
     "jest-junit": "^8.0.0",
     "node-flywaydb": "^2.1.0",
     "nodemon": "^1.19.1",
+    "prettier": "1.19.1",
+    "pretty-quick": "^2.0.1",
     "supertest": "^4.0.2",
     "testcontainers": "^2.0.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
   },
   "jest": {
     "reporters": [

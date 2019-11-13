@@ -102,7 +102,7 @@ function convertType(value) {
   if (value !== null && value !== '' && !isNaN(value)) {
     parsedValue = +value;
   } else if (value === 'true' || value === 'false') {
-    parsedValue = (value === 'true');
+    parsedValue = value === 'true';
   }
 
   return parsedValue;
