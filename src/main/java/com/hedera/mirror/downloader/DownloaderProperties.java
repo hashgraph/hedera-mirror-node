@@ -20,11 +20,11 @@ package com.hedera.mirror.downloader;
  * ‍
  */
 
+import java.nio.file.Path;
+import javax.annotation.PostConstruct;
+
 import com.hedera.mirror.domain.StreamType;
 import com.hedera.utilities.Utility;
-
-import javax.annotation.PostConstruct;
-import java.nio.file.Path;
 
 public interface DownloaderProperties {
 
@@ -33,7 +33,8 @@ public interface DownloaderProperties {
     CommonDownloaderProperties getCommon();
 
     /**
-     * The number of current mainnet nodes used to download signatures in parallel. Should be adjusted when nodes change
+     * The number of current mainnet nodes used to download signatures in parallel. Should be adjusted when nodes
+     * change
      */
     int getThreads();
 

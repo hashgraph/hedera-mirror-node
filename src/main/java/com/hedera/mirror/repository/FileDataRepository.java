@@ -20,8 +20,9 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.domain.FileData;
 import org.springframework.data.repository.CrudRepository;
+
+import com.hedera.mirror.domain.FileData;
 
 public interface FileDataRepository extends CrudRepository<FileData, Long> {
 }

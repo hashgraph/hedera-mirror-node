@@ -20,17 +20,17 @@ package com.hedera.mirror.downloader.event;
  * ‍
  */
 
-import com.hedera.mirror.addressbook.NetworkAddressBook;
-import com.hedera.mirror.domain.ApplicationStatusCode;
-import com.hedera.mirror.downloader.Downloader;
-import com.hedera.mirror.repository.ApplicationStatusRepository;
-import com.hedera.mirror.parser.event.EventStreamFileParser;
+import javax.inject.Named;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-import javax.inject.Named;
+import com.hedera.mirror.addressbook.NetworkAddressBook;
+import com.hedera.mirror.domain.ApplicationStatusCode;
+import com.hedera.mirror.downloader.Downloader;
+import com.hedera.mirror.parser.event.EventStreamFileParser;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
 
 @Log4j2
 @Named

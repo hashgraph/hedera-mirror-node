@@ -20,18 +20,20 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
-import com.hedera.mirror.domain.EntityType;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
+
+import com.hedera.mirror.domain.EntityType;
 
 public class EntityTypeRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void findByName() {
-    	assertThat(entityTypeRepository.findByName("account"))
-    		.isPresent()
-    		.get()
-    		.extracting(EntityType::getId)
-    		.isNotEqualTo(0L);    	
+        assertThat(entityTypeRepository.findByName("account"))
+                .isPresent()
+                .get()
+                .extracting(EntityType::getId)
+                .isNotEqualTo(0L);
     }
 }

@@ -9,9 +9,9 @@ package com.hedera.mirror.util;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,17 +20,16 @@ package com.hedera.mirror.util;
  * ‍
  */
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
- * Convert various time formats used by mirrornode data processing to the Instant class.
- * account balances filename timestamp, timestamp inside that file, etc.
- *
+ * Convert various time formats used by mirrornode data processing to the Instant class. account balances filename
+ * timestamp, timestamp inside that file, etc.
  */
 public final class TimestampConverter extends Exception {
     private static final TimeZone utc = TimeZone.getTimeZone("UTC");
@@ -38,6 +37,7 @@ public final class TimestampConverter extends Exception {
     /**
      * Convert to an Instant from a common regex matcher that contains named match groups: year, month, day, hour,
      * minute, second, and optionally subsecond (must be the 7th pattern match).
+     *
      * @param matcher
      * @return
      * @throws IllegalArgumentException (including NumberFormatException) if the date is not a valid date
@@ -71,13 +71,14 @@ public final class TimestampConverter extends Exception {
 
     /**
      * Create an instant at the specified Zulu time.
+     *
      * @param year
-     * @param month 1-12
-     * @param day 1-31
-     * @param hour 0-23
+     * @param month  1-12
+     * @param day    1-31
+     * @param hour   0-23
      * @param minute 0-59
      * @param second 0-59
-     * @param nano 0-999_999_999
+     * @param nano   0-999_999_999
      * @return
      * @throws IllegalArgumentException
      */

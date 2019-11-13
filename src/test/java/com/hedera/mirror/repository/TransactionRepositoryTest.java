@@ -20,54 +20,57 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.domain.Transaction;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.jdbc.Sql;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.hedera.mirror.domain.Transaction;
 
-@Sql(executionPhase= Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
+// Class manually commits so have to manually cleanup tables
 public class TransactionRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-		Transaction transaction = transactionRepository.save(transaction());
-		assertThat(transactionRepository.findById(transaction.getConsensusNs()).get())
-    		.isNotNull()
-    		.isEqualTo(transaction);
+        Transaction transaction = transactionRepository.save(transaction());
+        assertThat(transactionRepository.findById(transaction.getConsensusNs()).get())
+                .isNotNull()
+                .isEqualTo(transaction);
     }
 
     @Test
-	void existsByEntityAndType() {
-		Transaction transaction = transactionRepository.save(transaction());
-		assertThat(transactionRepository.existsByEntityAndType(transaction.getEntityId(), "CRYPTOCREATEACCOUNT", "FILECREATE")).isEqualTo(true);
-		assertThat(transactionRepository.existsByEntityAndType(transaction.getEntityId(), "CONTRACTCREATEINSTANCE")).isEqualTo(false);
-		assertThat(transactionRepository.existsByEntityAndType(-1L, "CRYPTOCREATEACCOUNT")).isEqualTo(false);
-	}
+    void existsByEntityAndType() {
+        Transaction transaction = transactionRepository.save(transaction());
+        assertThat(transactionRepository
+                .existsByEntityAndType(transaction.getEntityId(), "CRYPTOCREATEACCOUNT", "FILECREATE")).isEqualTo(true);
+        assertThat(transactionRepository.existsByEntityAndType(transaction.getEntityId(), "CONTRACTCREATEINSTANCE"))
+                .isEqualTo(false);
+        assertThat(transactionRepository.existsByEntityAndType(-1L, "CRYPTOCREATEACCOUNT")).isEqualTo(false);
+    }
 
-	private Transaction transaction() {
-		Long recordFileId = insertRecordFile().getId();
-		Long txEntityId = insertAccountEntity().getId();
-		Long nodeAccountId = insertAccountEntity().getId();
-		Long payerAccountId = insertAccountEntity().getId();
-		Integer transactionTypeId = transactionTypeRepository.findByName("CRYPTOCREATEACCOUNT").get().getId();
-		Integer resultId = transactionResultRepository.findByResult("SUCCESS").get().getId();
+    private Transaction transaction() {
+        Long recordFileId = insertRecordFile().getId();
+        Long txEntityId = insertAccountEntity().getId();
+        Long nodeAccountId = insertAccountEntity().getId();
+        Long payerAccountId = insertAccountEntity().getId();
+        Integer transactionTypeId = transactionTypeRepository.findByName("CRYPTOCREATEACCOUNT").get().getId();
+        Integer resultId = transactionResultRepository.findByResult("SUCCESS").get().getId();
 
-		Transaction transaction = new Transaction();
-		transaction.setChargedTxFee(100L);
-		transaction.setConsensusNs(10L);
-		transaction.setEntityId(txEntityId);
-		transaction.setInitialBalance(1000L);
-		transaction.setMemo("transaction memo".getBytes());
-		transaction.setNodeAccountId(nodeAccountId);
-		transaction.setPayerAccountId(payerAccountId);
-		transaction.setRecordFileId(recordFileId);
-		transaction.setResultId(resultId);
-		transaction.setTransactionTypeId(transactionTypeId);
-		transaction.setValidStartNs(20L);
-		transaction.setValidDurationSeconds(11L);
-		transaction.setMaxFee(33L);
-		return transaction;
-	}
+        Transaction transaction = new Transaction();
+        transaction.setChargedTxFee(100L);
+        transaction.setConsensusNs(10L);
+        transaction.setEntityId(txEntityId);
+        transaction.setInitialBalance(1000L);
+        transaction.setMemo("transaction memo".getBytes());
+        transaction.setNodeAccountId(nodeAccountId);
+        transaction.setPayerAccountId(payerAccountId);
+        transaction.setRecordFileId(recordFileId);
+        transaction.setResultId(resultId);
+        transaction.setTransactionTypeId(transactionTypeId);
+        transaction.setValidStartNs(20L);
+        transaction.setValidDurationSeconds(11L);
+        transaction.setMaxFee(33L);
+        return transaction;
+    }
 }

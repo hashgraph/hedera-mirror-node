@@ -21,8 +21,9 @@ package com.hedera.mirror.repository;
  */
 
 import java.util.Random;
-
 import javax.annotation.Resource;
+
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.IntegrationTest;
 import com.hedera.mirror.domain.Entities;
@@ -30,8 +31,6 @@ import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
 import com.hedera.mirror.domain.TransactionResult;
 import com.hedera.mirror.domain.TransactionType;
-
-import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 public abstract class AbstractRepositoryTest extends IntegrationTest {
@@ -57,69 +56,67 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     @Resource
     protected EntityTypeRepository entityTypeRepository;
 
-    private enum EntityType {
-    	account
-    	,file
-    	,contract
-    }
-
     protected final RecordFile insertRecordFile() {
-		final String fileName = "testfile";
-		RecordFile recordFile = new RecordFile();
-		recordFile.setName(fileName);
-		recordFile = recordFileRepository.save(recordFile);
+        final String fileName = "testfile";
+        RecordFile recordFile = new RecordFile();
+        recordFile.setName(fileName);
+        recordFile = recordFileRepository.save(recordFile);
 
-		return recordFile;
+        return recordFile;
     }
 
     private Entities insertEntity(EntityType entityType) {
-		Random rand = new Random();
+        Random rand = new Random();
 
-		Entities entity = new Entities();
-    	entity.setEntityShard((long)rand.nextInt(10000));
-    	entity.setEntityRealm((long)rand.nextInt(10000));
-    	entity.setEntityNum((long)rand.nextInt(10000));
+        Entities entity = new Entities();
+        entity.setEntityShard((long) rand.nextInt(10000));
+        entity.setEntityRealm((long) rand.nextInt(10000));
+        entity.setEntityNum((long) rand.nextInt(10000));
 
-    	entity.setEntityTypeId(entityTypeRepository.findByName(entityType.name()).get().getId());
-    	entity = entityRepository.save(entity);
+        entity.setEntityTypeId(entityTypeRepository.findByName(entityType.name()).get().getId());
+        entity = entityRepository.save(entity);
 
-    	return entity;
+        return entity;
     }
 
     protected final Entities insertAccountEntity() {
-    	return insertEntity(EntityType.account);
+        return insertEntity(EntityType.account);
     }
 
     protected final Entities insertFileEntity() {
-    	return insertEntity(EntityType.account);
+        return insertEntity(EntityType.account);
     }
 
     protected final Entities insertContractEntity() {
-    	return insertEntity(EntityType.account);
+        return insertEntity(EntityType.account);
     }
 
     protected final Transaction insertTransaction(long recordFileId, long entityId, String type) {
-    	final long chargedTxFee = 100;
-    	final long consensusNs = 10;
-    	final long validStartNs = 20;
+        final long chargedTxFee = 100;
+        final long consensusNs = 10;
+        final long validStartNs = 20;
 
-    	Transaction transaction = new Transaction();
-    	transaction.setRecordFileId(recordFileId);
-    	transaction.setChargedTxFee(chargedTxFee);
-    	transaction.setConsensusNs(consensusNs);
-    	transaction.setEntityId(entityId);
-    	transaction.setNodeAccountId(entityId);
-    	transaction.setPayerAccountId(entityId);
-    	TransactionResult result = transactionResultRepository.findByResult("SUCCESS").get();
-    	transaction.setResultId(result.getId());
-    	TransactionType transactionType = transactionTypeRepository.findByName(type).get();
-    	transaction.setTransactionTypeId(transactionType.getId());
-		transaction.setValidStartNs(validStartNs);
-		transaction.setValidDurationSeconds(11L);
-		transaction.setMaxFee(33L);
+        Transaction transaction = new Transaction();
+        transaction.setRecordFileId(recordFileId);
+        transaction.setChargedTxFee(chargedTxFee);
+        transaction.setConsensusNs(consensusNs);
+        transaction.setEntityId(entityId);
+        transaction.setNodeAccountId(entityId);
+        transaction.setPayerAccountId(entityId);
+        TransactionResult result = transactionResultRepository.findByResult("SUCCESS").get();
+        transaction.setResultId(result.getId());
+        TransactionType transactionType = transactionTypeRepository.findByName(type).get();
+        transaction.setTransactionTypeId(transactionType.getId());
+        transaction.setValidStartNs(validStartNs);
+        transaction.setValidDurationSeconds(11L);
+        transaction.setMaxFee(33L);
 
-    	transaction = transactionRepository.save(transaction);
+        transaction = transactionRepository.save(transaction);
 
-    	return transaction;
+        return transaction;
+    }
+
+    private enum EntityType {
+        account, file, contract
     }
 }

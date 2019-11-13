@@ -20,9 +20,14 @@ package com.hedera.mirror.domain;
  * ‍
  */
 
-import lombok.Data;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-import javax.persistence.*;
+import lombok.Data;
 
 @Data
 @Entity
@@ -38,10 +43,9 @@ public class RecordFile {
     private Long loadStart;
 
     private Long loadEnd;
-    
+
     private String fileHash;
 
     @Column(name = "prev_hash")
     private String previousHash;
-
 }

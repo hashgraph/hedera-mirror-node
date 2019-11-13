@@ -24,14 +24,13 @@ const server = require('../server');
 const testutils = require('./testutils.js');
 
 beforeAll(async () => {
-    jest.setTimeout(1000);
+  jest.setTimeout(1000);
 });
 
-afterAll(() => {
-});
+afterAll(() => {});
 
 const timeNow = parseInt(new Date().getTime() / 1000);
-const timeOneHourAgo = timeNow - (60 * 60);
+const timeOneHourAgo = timeNow - 60 * 60;
 
 // Validation functions
 /**
@@ -40,9 +39,9 @@ const timeOneHourAgo = timeNow - (60 * 60);
  * @param {Number} len Expected length
  * @return {Boolean}  Result of the check
  */
-const validateLen = function (transactions, len) {
-    return (transactions.length === len);
-}
+const validateLen = function(transactions, len) {
+  return transactions.length === len;
+};
 
 /**
  * Validate the range of timestamps in the transactions returned by the api
@@ -51,20 +50,20 @@ const validateLen = function (transactions, len) {
  * @param {Number} high Expected high limit of the timestamps
  * @return {Boolean}  Result of the check
  */
-const validateTsRange = function (transactions, low, high) {
-    let ret = true;
-    let offender = null;
-    for (const tx of transactions) {
-        if ((tx.consensus_timestamp < low) || (tx.consensus_timestamp > high)) {
-            offender = tx;
-            ret = false;
-        }
+const validateTsRange = function(transactions, low, high) {
+  let ret = true;
+  let offender = null;
+  for (const tx of transactions) {
+    if (tx.consensus_timestamp < low || tx.consensus_timestamp > high) {
+      offender = tx;
+      ret = false;
     }
-    if (!ret) {
-        console.log (`validateTsRange check failed: ${offender.consensus_timestamp} is not between ${low} and  ${high}`);
-    }
-    return (ret);
-}
+  }
+  if (!ret) {
+    console.log(`validateTsRange check failed: ${offender.consensus_timestamp} is not between ${low} and  ${high}`);
+  }
+  return ret;
+};
 
 /**
  * Validate the range of account ids in the transactions returned by the api
@@ -73,52 +72,63 @@ const validateTsRange = function (transactions, low, high) {
  * @param {Number} high Expected high limit of the account ids
  * @return {Boolean}  Result of the check
  */
-const validateAccNumRange = function (transactions, low, high) {
-    let ret = true;
-    let offender = null;
-    for (const tx of transactions) {
-        for (const xfer of tx.transfers) {
-            const accNum = xfer.account.split('.')[2];
-            if ((accNum < low) || (accNum > high)) {
-                offender = accNum;
-                ret = false;
-            }
-        }
+const validateAccNumRange = function(transactions, low, high) {
+  let ret = true;
+  let offender = null;
+  for (const tx of transactions) {
+    for (const xfer of tx.transfers) {
+      const accNum = xfer.account.split('.')[2];
+      if (accNum < low || accNum > high) {
+        offender = accNum;
+        ret = false;
+      }
     }
-    if (!ret) {
-        console.log (`validateAccNumRange check failed: ${offender} is not between ${low} and  ${high}`);
-    }
-    return (ret);
-}
+  }
+  if (!ret) {
+    console.log(`validateAccNumRange check failed: ${offender} is not between ${low} and  ${high}`);
+  }
+  return ret;
+};
 
 /**
  * Validate that all required fields are present in the response
  * @param {Array} transactions Array of transactions returned by the rest api
  * @return {Boolean}  Result of the check
  */
-const validateFields = function (transactions) {
-    let ret = true;
+const validateFields = function(transactions) {
+  let ret = true;
 
-    // Assert that all mandatory fields are present in the response
-    ['consensus_timestamp', 'valid_start_timestamp', 'charged_tx_fee', 'transaction_id',
-     'memo_base64', 'result', 'name', 'node', 'transfers', 'valid_duration_seconds', 'max_fee'].forEach ( (field) =>{
-        ret = ret && transactions[0].hasOwnProperty(field);
-    })
+  // Assert that all mandatory fields are present in the response
+  [
+    'consensus_timestamp',
+    'valid_start_timestamp',
+    'charged_tx_fee',
+    'transaction_id',
+    'memo_base64',
+    'result',
+    'name',
+    'node',
+    'transfers',
+    'valid_duration_seconds',
+    'max_fee'
+  ].forEach(field => {
+    ret = ret && transactions[0].hasOwnProperty(field);
+  });
 
-    // Assert that the transfers is an array
-    ret = ret && Array.isArray(transactions[0].transfers);
+  // Assert that the transfers is an array
+  ret = ret && Array.isArray(transactions[0].transfers);
 
-    // Assert that the transfers array has the mandatory fields
-    if (ret) {
-        ['account', 'amount'].forEach ( (field) =>{
-           ret = ret && transactions[0].transfers[0].hasOwnProperty(field);
-        });
-    }
-    if (!ret) {
-        console.log (`validateFields check failed: A mandatory parameter is missing`);
-    }
-    return (ret);
-}
+  // Assert that the transfers array has the mandatory fields
+  if (ret) {
+    ['account', 'amount'].forEach(field => {
+      ret = ret && transactions[0].transfers[0].hasOwnProperty(field);
+    });
+  }
+  if (!ret) {
+    console.log(`validateFields check failed: A mandatory parameter is missing`);
+  }
+  return ret;
+};
 
 /**
  * Validate the order of timestamps in the transactions returned by the api
@@ -126,25 +136,27 @@ const validateFields = function (transactions) {
  * @param {String} order Expected order ('asc' or 'desc')
  * @return {Boolean}  Result of the check
  */
-const validateOrder = function (transactions, order) {
-    let ret = true;
-    let offenderTx = null;
-    let offenderVal = null;
-    let direction = (order === 'desc') ? -1 : 1;
-    let val = transactions[0].consensus_timestamp - direction;
-    for (const tx of transactions) {
-        if ((val * direction) > (tx.consensus_timestamp * direction)) {
-            offenderTx = tx;
-            offenderVal = val;
-            ret = false;
-        }
-        val = tx.consensus_timestamp;
+const validateOrder = function(transactions, order) {
+  let ret = true;
+  let offenderTx = null;
+  let offenderVal = null;
+  let direction = order === 'desc' ? -1 : 1;
+  let val = transactions[0].consensus_timestamp - direction;
+  for (const tx of transactions) {
+    if (val * direction > tx.consensus_timestamp * direction) {
+      offenderTx = tx;
+      offenderVal = val;
+      ret = false;
     }
-    if (!ret) {
-        console.log (`validateOrder check failed: ${offenderTx.consensus_timestamp} - previous timestamp ${offenderVal} Order  ${order}`);
-    }
-    return (ret);
-}
+    val = tx.consensus_timestamp;
+  }
+  if (!ret) {
+    console.log(
+      `validateOrder check failed: ${offenderTx.consensus_timestamp} - previous timestamp ${offenderVal} Order  ${order}`
+    );
+  }
+  return ret;
+};
 
 /**
  * This is the list of individual tests. Each test validates one query parameter
@@ -157,95 +169,69 @@ const validateOrder = function (transactions, order) {
  * a set of checks you would like to perform on the resultant SQL query.
  */
 const singletests = {
-    timestamp_lowerlimit: {
-        urlparam: `timestamp=gte:${timeOneHourAgo}`,
-        checks: [
-            {field: 'consensus_ns', operator: '>=', value: timeOneHourAgo +'000000000'}
-        ],
-        checkFunctions: [
-            {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
-            {func: validateFields, args: []}
-        ]
-    },
-    timestamp_higherlimit: {
-        urlparam: `timestamp=lt:${timeNow}`,
-        checks: [
-            {field: 'consensus_ns', operator: '<', value: timeNow +'000000000'}
-        ],
-        checkFunctions: [
-            {func: validateTsRange, args: [0, timeNow]},
-            {func: validateFields, args: []}
-        ]
-    },
-    accountid_lowerlimit: {
-        urlparam: 'account.id=gte:0.0.1111',
-        checks: [
-            {field: 'entity_num', operator: '>=', value: 1111}
-        ],
-        checkFunctions: [
-            {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
-            {func: validateFields, args: []}
-        ]
-    },
-    accountid_higherlimit: {
-        urlparam: 'account.id=lt:0.0.2222',
-        checks: [
-            {field: 'entity_num', operator: '<', value: 2222},
-        ],
-        checkFunctions: [
-            {func: validateAccNumRange, args: [0, 2222]},
-            {func: validateFields, args: []}
-        ]
-    },
-    accountid_equal: {
-        urlparam: 'account.id=0.0.3333',
-        checks: [
-            {field: 'entity_num', operator: '=', value: 3333}
-        ],
-        checkFunctions: [
-            {func: validateAccNumRange, args: [3333, 3333]}
-        ]
-    },
-    limit: {
-        urlparam: 'limit=99',
-        checks: [
-            {field: 'limit', operator: '=', value: 99}
-        ],
-        checkFunctions: [
-            {func: validateLen, args: [99]},
-            {func: validateFields, args: []}
-        ]
-    },
-    order_asc: {
-        urlparam: 'order=asc',
-        checks: [
-            {field: 'order', operator: '=', value: 'asc'}
-        ],
-        checkFunctions: [
-            {func: validateOrder, args: ['asc']}
-        ]
-    },
-    order_desc: {
-        urlparam: 'order=desc',
-        checks: [
-            {field: 'order', operator: '=', value: 'desc'}
-        ],
-        checkFunctions: [
-            {func: validateOrder, args: ['desc']}
-        ]
-    },
-    result_fail: {
-        urlparam: 'result=fail',
-        checks: [
-            {field: 'result', operator: '!=', value: 'SUCCESS'}
-        ]
-    },
-    result_success: {
-        urlparam: 'result=success',
-        checks: [
-            {field: 'result', operator: '=', value: 'SUCCESS'}
-        ]
-    }
+  timestamp_lowerlimit: {
+    urlparam: `timestamp=gte:${timeOneHourAgo}`,
+    checks: [{field: 'consensus_ns', operator: '>=', value: timeOneHourAgo + '000000000'}],
+    checkFunctions: [
+      {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
+      {func: validateFields, args: []}
+    ]
+  },
+  timestamp_higherlimit: {
+    urlparam: `timestamp=lt:${timeNow}`,
+    checks: [{field: 'consensus_ns', operator: '<', value: timeNow + '000000000'}],
+    checkFunctions: [
+      {func: validateTsRange, args: [0, timeNow]},
+      {func: validateFields, args: []}
+    ]
+  },
+  accountid_lowerlimit: {
+    urlparam: 'account.id=gte:0.0.1111',
+    checks: [{field: 'entity_num', operator: '>=', value: 1111}],
+    checkFunctions: [
+      {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
+      {func: validateFields, args: []}
+    ]
+  },
+  accountid_higherlimit: {
+    urlparam: 'account.id=lt:0.0.2222',
+    checks: [{field: 'entity_num', operator: '<', value: 2222}],
+    checkFunctions: [
+      {func: validateAccNumRange, args: [0, 2222]},
+      {func: validateFields, args: []}
+    ]
+  },
+  accountid_equal: {
+    urlparam: 'account.id=0.0.3333',
+    checks: [{field: 'entity_num', operator: '=', value: 3333}],
+    checkFunctions: [{func: validateAccNumRange, args: [3333, 3333]}]
+  },
+  limit: {
+    urlparam: 'limit=99',
+    checks: [{field: 'limit', operator: '=', value: 99}],
+    checkFunctions: [
+      {func: validateLen, args: [99]},
+      {func: validateFields, args: []}
+    ]
+  },
+  order_asc: {
+    urlparam: 'order=asc',
+    checks: [{field: 'order', operator: '=', value: 'asc'}],
+    checkFunctions: [{func: validateOrder, args: ['asc']}]
+  },
+  order_desc: {
+    urlparam: 'order=desc',
+    checks: [{field: 'order', operator: '=', value: 'desc'}],
+    checkFunctions: [{func: validateOrder, args: ['desc']}]
+  },
+  result_fail: {
+    urlparam: 'result=fail',
+    checks: [{field: 'result', operator: '!=', value: 'SUCCESS'}]
+  },
+  result_success: {
+    urlparam: 'result=success',
+    checks: [{field: 'result', operator: '=', value: 'SUCCESS'}]
+  }
 };
 
 /**
@@ -257,92 +243,88 @@ const singletests = {
  * individual (single) tests in the object above.
  */
 const combinedtests = [
-    ['timestamp_lowerlimit', 'timestamp_higherlimit'],
-    ['accountid_lowerlimit', 'accountid_higherlimit'],
-    ['timestamp_lowerlimit', 'timestamp_higherlimit',
-        'accountid-lowerlimit', 'accountid_higherlimit'],
-    ['timestamp_lowerlimit', 'accountid_higherlimit', 'limit'],
-    ['timestamp_higherlimit', 'accountid_lowerlimit', 'result_fail'],
-    ['limit', 'result_success', 'order_asc']
+  ['timestamp_lowerlimit', 'timestamp_higherlimit'],
+  ['accountid_lowerlimit', 'accountid_higherlimit'],
+  ['timestamp_lowerlimit', 'timestamp_higherlimit', 'accountid-lowerlimit', 'accountid_higherlimit'],
+  ['timestamp_lowerlimit', 'accountid_higherlimit', 'limit'],
+  ['timestamp_higherlimit', 'accountid_lowerlimit', 'result_fail'],
+  ['limit', 'result_success', 'order_asc']
 ];
 
 // Start of tests
 describe('Transaction tests', () => {
-    let api = '/api/v1/transactions';
+  let api = '/api/v1/transactions';
 
-    // First, execute the single tests
-    for (const [name, item] of Object.entries(singletests)) {
-        test(`Transactions single test: ${name} - URL: ${item.urlparam}`, async () => {
-            let response = await request(server).get([api, item.urlparam].join('?'));
+  // First, execute the single tests
+  for (const [name, item] of Object.entries(singletests)) {
+    test(`Transactions single test: ${name} - URL: ${item.urlparam}`, async () => {
+      let response = await request(server).get([api, item.urlparam].join('?'));
 
-            expect(response.status).toEqual(200);
-            const transactions = JSON.parse(response.text).transactions;
-            const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+      expect(response.status).toEqual(200);
+      const transactions = JSON.parse(response.text).transactions;
+      const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
 
-            // Verify the sql query against each of the specified checks
-            let check = true;
-            for (const checkitem of item.checks) {
-                check = check && testutils.checkSql (parsedparams, checkitem);
-            }
-            expect (check).toBeTruthy();
+      // Verify the sql query against each of the specified checks
+      let check = true;
+      for (const checkitem of item.checks) {
+        check = check && testutils.checkSql(parsedparams, checkitem);
+      }
+      expect(check).toBeTruthy();
 
-
-            // Execute the specified functions to validate the output from the REST API
-            check = true;
-            if (item.hasOwnProperty('checkFunctions')) {
-                for (const cf of item.checkFunctions) {
-                    check = check && cf.func.apply(null, [transactions].concat(cf.args))
-                }
-            }
-            expect (check).toBeTruthy();
-        })
-    }
-
-    // And now, execute the combined tests
-    for (const combination of combinedtests) {
-        // Combine the individual (single) checks as specified in the combinedtests array
-        let combtest = {urls: [], checks: [], checkFunctions: [], names: ''};
-        for (const testname of combination) {
-            if (testname in singletests) {
-                combtest.names += testname + ' ';
-                combtest.urls.push(singletests[testname].urlparam);
-                combtest.checks = combtest.checks.concat(singletests[testname].checks);
-                combtest.checkFunctions = combtest.checkFunctions.concat(
-                    singletests[testname].hasOwnProperty('checkFunctions') ?
-                        singletests[testname].checkFunctions : []
-                )
-            }
+      // Execute the specified functions to validate the output from the REST API
+      check = true;
+      if (item.hasOwnProperty('checkFunctions')) {
+        for (const cf of item.checkFunctions) {
+          check = check && cf.func.apply(null, [transactions].concat(cf.args));
         }
-        const comburl = combtest.urls.join('&');
+      }
+      expect(check).toBeTruthy();
+    });
+  }
 
-        test(`Transactions combinationn test: ${combtest.names} - URL: ${comburl}`, async () => {
-            let response = await request(server).get([api, comburl].join('?'));
-            expect(response.status).toEqual(200);
-            const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
-            const transactions = JSON.parse(response.text).transactions;
-
-            // Verify the sql query against each of the specified checks
-            let check = true;
-            for (const checkitem of combtest.checks) {
-                check = check && testutils.checkSql (parsedparams, checkitem);
-            }
-            expect (check).toBeTruthy();
-
-            // Execute the specified functions to validate the output from the REST API
-            check = true;
-            if (combtest.hasOwnProperty('checkFunctions')) {
-                for (const cf of combtest.checkFunctions) {
-                    check = check && cf.func.apply(null, [transactions].concat(cf.args))
-                }
-            }
-            expect (check).toBeTruthy();
-        })
+  // And now, execute the combined tests
+  for (const combination of combinedtests) {
+    // Combine the individual (single) checks as specified in the combinedtests array
+    let combtest = {urls: [], checks: [], checkFunctions: [], names: ''};
+    for (const testname of combination) {
+      if (testname in singletests) {
+        combtest.names += testname + ' ';
+        combtest.urls.push(singletests[testname].urlparam);
+        combtest.checks = combtest.checks.concat(singletests[testname].checks);
+        combtest.checkFunctions = combtest.checkFunctions.concat(
+          singletests[testname].hasOwnProperty('checkFunctions') ? singletests[testname].checkFunctions : []
+        );
+      }
     }
+    const comburl = combtest.urls.join('&');
 
-    // Negative testing
-    testutils.testBadParams(request, server, api, 'timestamp', testutils.badParamsList());
-    testutils.testBadParams(request, server, api, 'account.id', testutils.badParamsList());
-    testutils.testBadParams(request, server, api, 'limit', testutils.badParamsList());
-    testutils.testBadParams(request, server, api, 'order', testutils.badParamsList());
+    test(`Transactions combinationn test: ${combtest.names} - URL: ${comburl}`, async () => {
+      let response = await request(server).get([api, comburl].join('?'));
+      expect(response.status).toEqual(200);
+      const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+      const transactions = JSON.parse(response.text).transactions;
 
+      // Verify the sql query against each of the specified checks
+      let check = true;
+      for (const checkitem of combtest.checks) {
+        check = check && testutils.checkSql(parsedparams, checkitem);
+      }
+      expect(check).toBeTruthy();
+
+      // Execute the specified functions to validate the output from the REST API
+      check = true;
+      if (combtest.hasOwnProperty('checkFunctions')) {
+        for (const cf of combtest.checkFunctions) {
+          check = check && cf.func.apply(null, [transactions].concat(cf.args));
+        }
+      }
+      expect(check).toBeTruthy();
+    });
+  }
+
+  // Negative testing
+  testutils.testBadParams(request, server, api, 'timestamp', testutils.badParamsList());
+  testutils.testBadParams(request, server, api, 'account.id', testutils.badParamsList());
+  testutils.testBadParams(request, server, api, 'limit', testutils.badParamsList());
+  testutils.testBadParams(request, server, api, 'order', testutils.badParamsList());
 });

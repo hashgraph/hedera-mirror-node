@@ -24,5 +24,4 @@ public enum HederaNetwork {
 
     MAINNET,
     TESTNET;
-
 }
