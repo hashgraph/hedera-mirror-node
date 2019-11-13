@@ -20,19 +20,19 @@
 
 'use strict';
 
-const acctestutils = require('./fetchtest_utils.js');
-const transactionFetchTests = require('./transactionFetchTests');
-const accountFetchTests = require('./accountFetchTests');
-const balanceFetchTests = require('./balanceFetchTests');
+const acctestutils = require('./monitortest_utils.js');
+const transactionTests = require('./transaction_tests');
+const accountTests = require('./account_tests');
+const balanceTests = require('./balance_tests');
 
 /**
- * Run node fetch based tests against api endpoint
+ * Run node based tests against api endpoint
  * Each class manages its tests and returns a class rsults object
  * A single combined result object covering transaction, accounts and balances is returned
  * @param {Object} server API host endpoint
  * @return {Object} results object capturing tests for given endpoint
  */
-const runFetchTests = (server) => {
+const runTests = (server) => {
     if (undefined === server) {
         console.log(`server is undefined, skipping ....`)
         return
@@ -41,11 +41,11 @@ const runFetchTests = (server) => {
     let results = acctestutils.getMonitorClassResult();
 
     // results are passed by reference to avoid async calls modifying same result sets for single endpoint
-    var transactionResults = transactionFetchTests.runTransactionTests(server, results);
+    var transactionResults = transactionTests.runTransactionTests(server, results);
 
-    var accountResults = accountFetchTests.runAccountTests(server, results);
+    var accountResults = accountTests.runAccountTests(server, results);
 
-    var balanceResults = balanceFetchTests.runBalanceTests(server, results);
+    var balanceResults = balanceTests.runBalanceTests(server, results);
 
     return Promise.all([transactionResults, accountResults, balanceResults]).then(() => {
         return results;
@@ -53,5 +53,5 @@ const runFetchTests = (server) => {
 }
 
 module.exports = {
-    runFetchTests: runFetchTests
+    runTests: runTests
 }

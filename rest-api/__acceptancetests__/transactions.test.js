@@ -90,8 +90,6 @@ var acceptanceTestsTransactions = (function () {
         return (true);
     }
 
-<<<<<<< HEAD
-=======
     const checkMandatoryParams = function (entry) {
         let check = true;
         ['consensus_timestamp', 'valid_start_timestamp', 'charged_tx_fee', 'transaction_id',
@@ -150,7 +148,6 @@ var acceptanceTestsTransactions = (function () {
         });
     });
 
->>>>>>> master
     describe('Acceptance tests - transactions', () => {
         test('Get transactions with limit parameters', async () => {
             const response = await request(server).get(moduleVars.apiPrefix + '/transactions?limit=10');

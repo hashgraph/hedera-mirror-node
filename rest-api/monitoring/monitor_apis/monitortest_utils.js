@@ -83,8 +83,6 @@ const getAPIResponse = (url) => {
 
     return fetch(url).then((response) => {
         return response.json();
-    }).then((json) => {
-        return json;
     }).catch((error) => {
         var message = `Fetch error, url : ${url}, error : ${error}`
         console.log(message);

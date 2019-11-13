@@ -20,9 +20,8 @@
 
 'use strict';
 
-var shell = require('shelljs');
 const common = require('./common.js');
-const fetchTests = require('./fetchTests.js')
+const monitorTests = require('./monitor_tests.js');
 
 /**
  * Main function to run the tests and save results
@@ -40,7 +39,7 @@ const runEverything = async (servers) => {
         for (const server of restservers) {           
             if (common.getProcess(server) == undefined) {
                 // execute test and store name
-                fetchTests.runFetchTests(`http://${server.ip}:${server.port}`).then((outJson) => {
+                monitorTests.runTests(`http://${server.ip}:${server.port}`).then((outJson) => {
                     let results = {};
                     if (outJson.hasOwnProperty('testResults')) {
                         results = outJson;
