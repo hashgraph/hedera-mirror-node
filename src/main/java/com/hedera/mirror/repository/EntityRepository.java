@@ -20,15 +20,17 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.domain.Entities;
-
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
+import com.hedera.mirror.domain.Entities;
+
 public interface EntityRepository extends CrudRepository<Entities, Long> {
-	@Query("from Entities where entityShard = :entity_shard and entityRealm = :entity_realm and entityNum = :entity_num")
-	Optional<Entities> findByPrimaryKey(@Param("entity_shard") Long entityShard, @Param("entity_realm") Long entityRealm, @Param("entity_num") Long entityNum);
+    @Query("from Entities where entityShard = :entity_shard and entityRealm = :entity_realm and entityNum = " +
+            ":entity_num")
+    Optional<Entities> findByPrimaryKey(@Param("entity_shard") Long entityShard,
+                                        @Param("entity_realm") Long entityRealm, @Param("entity_num") Long entityNum);
 }

@@ -20,12 +20,12 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.domain.TransactionType;
-
 import java.util.Optional;
 
 import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.domain.TransactionType;
+
 public interface TransactionTypeRepository extends CrudRepository<TransactionType, Integer> {
-	Optional<TransactionType> findByName(String name);
+    Optional<TransactionType> findByName(String name);
 }

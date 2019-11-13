@@ -20,8 +20,9 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.domain.LiveHash;
 import org.springframework.data.repository.CrudRepository;
+
+import com.hedera.mirror.domain.LiveHash;
 
 public interface LiveHashRepository extends CrudRepository<LiveHash, Long> {
 }

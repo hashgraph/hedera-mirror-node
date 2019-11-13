@@ -20,13 +20,14 @@ package com.hedera.databaseUtilities;
  * ‍
  */
 
-import com.hedera.utilities.ShutdownHelper;
-import lombok.extern.log4j.Log4j2;
-
-import javax.inject.Named;
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import javax.inject.Named;
+import javax.sql.DataSource;
+
+import lombok.extern.log4j.Log4j2;
+
+import com.hedera.utilities.ShutdownHelper;
 
 /**
  * @deprecated Use Spring Data repositories with domain objects
@@ -46,7 +47,7 @@ public class DatabaseUtilities {
     public static final Connection getConnection() {
         while (true) {
             if (ShutdownHelper.isStopping()) {
-               throw new IllegalStateException("Shutting down");
+                throw new IllegalStateException("Shutting down");
             }
 
             try {

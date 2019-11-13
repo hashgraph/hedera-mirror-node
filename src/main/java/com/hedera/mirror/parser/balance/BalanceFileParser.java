@@ -20,50 +20,48 @@ package com.hedera.mirror.parser.balance;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import com.google.common.base.Stopwatch;
+import javax.inject.Named;
 
 import com.hedera.mirror.parser.FileWatcher;
 import com.hedera.utilities.ShutdownHelper;
 import com.hedera.utilities.Utility;
 
-import javax.inject.Named;
-
 @Named
 public class BalanceFileParser extends FileWatcher {
 
-	public BalanceFileParser(BalanceParserProperties parserProperties) {
-		super(parserProperties);
-	}
+    public BalanceFileParser(BalanceParserProperties parserProperties) {
+        super(parserProperties);
+    }
 
-	@Override
-	public void onCreate() {
-		processLastBalanceFile();
-		processAllFilesForHistory();
-	}
+    @Override
+    public void onCreate() {
+        processLastBalanceFile();
+        processAllFilesForHistory();
+    }
 
-	protected boolean isEnabled() {
-		return parserProperties.isEnabled();
-	}
+    protected boolean isEnabled() {
+        return parserProperties.isEnabled();
+    }
 
-	private File getLatestBalanceFile() throws IOException {
-		File lastFile = null;
+    private File getLatestBalanceFile() throws IOException {
+        File lastFile = null;
         // find all files in path
         // return the greatest file name
 
         File balanceFilePath = parserProperties.getValidPath().toFile();
         List<String> balancefiles = new ArrayList<>();
-	    for (final File balanceFile : balanceFilePath.listFiles()) {
-	        if (balanceFile.getName().toString().endsWith(".csv") ) {
-	            balancefiles.add(balanceFile.getName());
-	        }
-
-	    }
+        for (final File balanceFile : balanceFilePath.listFiles()) {
+            if (balanceFile.getName().toString().endsWith(".csv")) {
+                balancefiles.add(balanceFile.getName());
+            }
+        }
         if (balancefiles.size() != 0) {
             Collections.sort(balancefiles);
 
@@ -71,48 +69,50 @@ public class BalanceFileParser extends FileWatcher {
         }
 
         return lastFile;
-	}
+    }
 
-	private void processAllFilesForHistory() {
-		Stopwatch stopwatch = Stopwatch.createStarted();
-
-        try {
-            File balanceFilePath = parserProperties.getValidPath().toFile();
-			File[] balanceFiles = balanceFilePath.listFiles();
-
-	        for (final File balanceFile : balanceFiles) {
-				if (ShutdownHelper.isStopping()) {
-					throw new RuntimeException("Process is shutting down");
-				}
-				if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath()).loadAccountBalances()) {
-					// move it
-					Utility.moveFileToParsedDir(balanceFile.getCanonicalPath(), "/parsedBalanceFiles/");
-				}
-	        }
-			log.info("Completed processing {} balance files in {}", balanceFiles.length, stopwatch);
-		} catch (Exception e) {
-            log.error("Error processing balances files after {}", stopwatch, e);
-		}
-	}
-
-	private void processLastBalanceFile() {
+    private void processAllFilesForHistory() {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         try {
-			File balanceFile = getLatestBalanceFile();
+            File balanceFilePath = parserProperties.getValidPath().toFile();
+            File[] balanceFiles = balanceFilePath.listFiles();
 
-			if (balanceFile == null) {
-				return;
-			}
+            for (final File balanceFile : balanceFiles) {
+                if (ShutdownHelper.isStopping()) {
+                    throw new RuntimeException("Process is shutting down");
+                }
+                if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath())
+                        .loadAccountBalances()) {
+                    // move it
+                    Utility.moveFileToParsedDir(balanceFile.getCanonicalPath(), "/parsedBalanceFiles/");
+                }
+            }
+            log.info("Completed processing {} balance files in {}", balanceFiles.length, stopwatch);
+        } catch (Exception e) {
+            log.error("Error processing balances files after {}", stopwatch, e);
+        }
+    }
 
-			log.debug("Processing last balance file {}", balanceFile);
+    private void processLastBalanceFile() {
+        Stopwatch stopwatch = Stopwatch.createStarted();
 
-			if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath()).loadAccountBalances()) {
-				// move it
-				Utility.moveFileToParsedDir(balanceFile.getCanonicalPath(), "/parsedBalanceFiles/");
-			}
-		} catch (Exception e) {
-			log.error("Error processing balances files after {}", stopwatch, e);
-		}
-	}
+        try {
+            File balanceFile = getLatestBalanceFile();
+
+            if (balanceFile == null) {
+                return;
+            }
+
+            log.debug("Processing last balance file {}", balanceFile);
+
+            if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath())
+                    .loadAccountBalances()) {
+                // move it
+                Utility.moveFileToParsedDir(balanceFile.getCanonicalPath(), "/parsedBalanceFiles/");
+            }
+        } catch (Exception e) {
+            log.error("Error processing balances files after {}", stopwatch, e);
+        }
+    }
 }

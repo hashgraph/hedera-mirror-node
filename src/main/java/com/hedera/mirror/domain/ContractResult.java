@@ -20,9 +20,12 @@ package com.hedera.mirror.domain;
  * ‍
  */
 
-import lombok.Data;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-import javax.persistence.*;
+import lombok.Data;
 
 @Data
 @Entity
@@ -40,5 +43,4 @@ public class ContractResult {
     private byte[] callResult;
 
     private Long gasUsed;
-
 }

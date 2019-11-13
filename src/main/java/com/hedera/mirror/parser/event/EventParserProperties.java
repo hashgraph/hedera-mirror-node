@@ -20,17 +20,18 @@ package com.hedera.mirror.parser.event;
  * ‍
  */
 
-import com.hedera.mirror.MirrorProperties;
-import com.hedera.mirror.domain.StreamType;
-import com.hedera.mirror.parser.ParserProperties;
+import java.nio.file.Path;
+import java.time.Duration;
+import javax.inject.Named;
+import javax.validation.constraints.NotNull;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
-import javax.inject.Named;
-import javax.validation.constraints.NotNull;
-import java.nio.file.Path;
-import java.time.Duration;
+
+import com.hedera.mirror.MirrorProperties;
+import com.hedera.mirror.domain.StreamType;
+import com.hedera.mirror.parser.ParserProperties;
 
 @Data
 @Named

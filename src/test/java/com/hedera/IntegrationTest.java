@@ -20,23 +20,24 @@ package com.hedera;
  * ‍
  */
 
+import javax.annotation.PreDestroy;
+
 import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.util.TestPropertyValues;
-import org.springframework.context.*;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testcontainers.containers.PostgreSQLContainer;
-
-import javax.annotation.*;
 
 @ContextConfiguration(initializers = IntegrationTest.TestDatabaseConfiguration.class)
 @SpringBootTest
 public abstract class IntegrationTest {
 
     /**
-     *  First try to use a Testcontainer. If Docker is not running or it fails to connect to the Testcontainer,
-     *  fallback to a database running on localhost.
+     * First try to use a Testcontainer. If Docker is not running or it fails to connect to the Testcontainer, fallback
+     * to a database running on localhost.
      */
     @Log4j2
     @TestConfiguration

@@ -20,33 +20,46 @@ package com.hedera.mirror.migration;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.from;
+
 import com.google.protobuf.ByteString;
-import com.hedera.IntegrationTest;
-import com.hedera.mirror.MirrorProperties;
-import com.hedera.mirror.domain.*;
-import com.hedera.mirror.domain.Transaction;
-import com.hedera.mirror.repository.*;
-import com.hedera.utilities.Utility;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.time.Instant;
+import javax.annotation.Resource;
+import javax.sql.DataSource;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.Context;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import scala.annotation.migration;
 
-import javax.annotation.Resource;
-import javax.sql.DataSource;
-import java.nio.file.*;
-import java.sql.Connection;
-import java.time.Instant;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.from;
+import com.hedera.IntegrationTest;
+import com.hedera.mirror.MirrorProperties;
+import com.hedera.mirror.domain.Entities;
+import com.hedera.mirror.domain.EntityType;
+import com.hedera.mirror.domain.RecordFile;
+import com.hedera.mirror.domain.Transaction;
+import com.hedera.mirror.domain.TransactionType;
+import com.hedera.mirror.repository.EntityRepository;
+import com.hedera.mirror.repository.EntityTypeRepository;
+import com.hedera.mirror.repository.RecordFileRepository;
+import com.hedera.mirror.repository.TransactionRepository;
+import com.hedera.mirror.repository.TransactionTypeRepository;
+import com.hedera.utilities.Utility;
 
 @Disabled("This refreshes the ApplicationContext halfway through tests, causing multiple DataSource objects to be in " +
         "use due the DatabaseUtilities hack. Can be re-enabled when DatabaseUtilities is deleted")
@@ -54,34 +67,25 @@ import static org.assertj.core.api.Assertions.from;
 @Transactional
 public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
 
-    private AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build();
-
-    @Resource
-    private V1_11_6__Missing_Entities migration;
-
-    @Resource
-    private DataSource dataSource;
-
-    @Resource
-    private EntityRepository entityRepository;
-
-    @Resource
-    private EntityTypeRepository entityTypeRepository;
-
-    @Resource
-    private RecordFileRepository recordFileRepository;
-
-    @Resource
-    private TransactionRepository transactionRepository;
-
-    @Resource
-    private TransactionTypeRepository transactionTypeRepository;
-
-    @Resource
-    private MirrorProperties mirrorProperties;
-
     @TempDir
     Path tempDir;
+    private AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build();
+    @Resource
+    private V1_11_6__Missing_Entities migration;
+    @Resource
+    private DataSource dataSource;
+    @Resource
+    private EntityRepository entityRepository;
+    @Resource
+    private EntityTypeRepository entityTypeRepository;
+    @Resource
+    private RecordFileRepository recordFileRepository;
+    @Resource
+    private TransactionRepository transactionRepository;
+    @Resource
+    private TransactionTypeRepository transactionTypeRepository;
+    @Resource
+    private MirrorProperties mirrorProperties;
 
     @BeforeEach
     void before() {
@@ -93,10 +97,12 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
         AccountInfo.Builder accountInfo = accountInfo();
         write(accountInfo.build());
         migration.migrate(new FlywayContext());
-        assertThat(entityRepository.findByPrimaryKey(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum()))
+        assertThat(entityRepository
+                .findByPrimaryKey(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum()))
                 .get()
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entities::getAutoRenewPeriod))
-                .returns(Utility.protobufKeyToHexIfEd25519OrNull(accountInfo.getKey().toByteArray()), from(Entities::getEd25519PublicKeyHex))
+                .returns(Utility.protobufKeyToHexIfEd25519OrNull(accountInfo.getKey()
+                        .toByteArray()), from(Entities::getEd25519PublicKeyHex))
                 .returns(accountInfo.getExpirationTime().getSeconds(), from(Entities::getExpiryTimeSeconds))
                 .returns(Long.valueOf(accountInfo.getExpirationTime().getNanos()), from(Entities::getExpiryTimeNanos))
                 .returns(Utility.timeStampInNanos(accountInfo.getExpirationTime()), from(Entities::getExpiryTimeNs))
@@ -107,7 +113,8 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
     void nullValues() throws Exception {
         write(AccountInfo.newBuilder().setAccountID(accountId).build());
         migration.migrate(new FlywayContext());
-        assertThat(entityRepository.findByPrimaryKey(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum()))
+        assertThat(entityRepository
+                .findByPrimaryKey(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum()))
                 .get()
                 .returns(null, from(Entities::getAutoRenewPeriod))
                 .returns(null, from(Entities::getEd25519PublicKeyHex))
@@ -136,7 +143,8 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
         transaction.setNodeAccountId(node.getId());
         transaction.setPayerAccountId(payer.getId());
         transaction.setRecordFileId(recordFile.getId());
-        transaction.setTransactionTypeId(transactionTypeRepository.findByName("CRYPTOCREATEACCOUNT").map(TransactionType::getId).orElse(null));
+        transaction.setTransactionTypeId(transactionTypeRepository.findByName("CRYPTOCREATEACCOUNT")
+                .map(TransactionType::getId).orElse(null));
         transaction.setValidStartNs(1L);
         transactionRepository.save(transaction);
 
@@ -163,7 +171,8 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
         assertThat(entityRepository.findById(entity.getId()))
                 .get()
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entities::getAutoRenewPeriod))
-                .returns(Utility.protobufKeyToHexIfEd25519OrNull(accountInfo.getKey().toByteArray()), from(Entities::getEd25519PublicKeyHex))
+                .returns(Utility.protobufKeyToHexIfEd25519OrNull(accountInfo.getKey()
+                        .toByteArray()), from(Entities::getEd25519PublicKeyHex))
                 .returns(accountInfo.getExpirationTime().getSeconds(), from(Entities::getExpiryTimeSeconds))
                 .returns(Long.valueOf(accountInfo.getExpirationTime().getNanos()), from(Entities::getExpiryTimeNanos))
                 .returns(Utility.timeStampInNanos(accountInfo.getExpirationTime()), from(Entities::getExpiryTimeNs))
@@ -178,7 +187,8 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
 
         migration.migrate(new FlywayContext());
 
-        assertThat(entityRepository.findByPrimaryKey(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum()))
+        assertThat(entityRepository
+                .findByPrimaryKey(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum()))
                 .get()
                 .extracting(Entities::isDeleted)
                 .isEqualTo(true);
@@ -186,7 +196,7 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
 
     @Test
     void emptyFile() throws Exception {
-        Files.write(migration.getAccountInfoPath(), new byte[]{});
+        Files.write(migration.getAccountInfoPath(), new byte[] {});
         migration.migrate(new FlywayContext());
         assertThat(entityRepository.count()).isEqualTo(0L);
     }

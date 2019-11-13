@@ -20,6 +20,9 @@ package com.hedera.mirror.addressbook;
  * ‍
  */
 
+import com.google.common.collect.ImmutableList;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,20 +30,16 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collection;
+import javax.inject.Named;
 
-import com.google.common.collect.ImmutableList;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.HederaNetwork;
 import com.hedera.mirror.domain.NodeAddress;
 import com.hedera.utilities.Utility;
-
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-
-import javax.inject.Named;
 
 @Log4j2
 @Named
@@ -59,8 +58,9 @@ public class NetworkAddressBook {
         try {
             File addressBookFile = path.toFile();
             if (!addressBookFile.exists() || !addressBookFile.canRead()) {
-                HederaNetwork hederaNetwork  = mirrorProperties.getNetwork();
-                Resource resource = new ClassPathResource(String.format("addressbook/%s", hederaNetwork.name().toLowerCase()));
+                HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
+                Resource resource = new ClassPathResource(String
+                        .format("addressbook/%s", hederaNetwork.name().toLowerCase()));
                 Path defaultAddressBook = resource.getFile().toPath();
                 Utility.ensureDirectory(path.getParent());
                 Files.copy(defaultAddressBook, path, StandardCopyOption.REPLACE_EXISTING);
@@ -72,21 +72,21 @@ public class NetworkAddressBook {
     }
 
     public void update(byte[] newContents) throws IOException {
-    	addressBookBytes = newContents;
-		saveToDisk();
+        addressBookBytes = newContents;
+        saveToDisk();
     }
 
     public void append(byte[] extraContents) throws IOException {
-    	byte[] newAddressBook = Arrays.copyOf(addressBookBytes, addressBookBytes.length + extraContents.length);
-    	System.arraycopy(extraContents, 0, newAddressBook, addressBookBytes.length, extraContents.length);
-    	addressBookBytes = newAddressBook;
-		saveToDisk();
+        byte[] newAddressBook = Arrays.copyOf(addressBookBytes, addressBookBytes.length + extraContents.length);
+        System.arraycopy(extraContents, 0, newAddressBook, addressBookBytes.length, extraContents.length);
+        addressBookBytes = newAddressBook;
+        saveToDisk();
     }
 
     private void saveToDisk() throws IOException {
         Path path = mirrorProperties.getAddressBookPath();
         Files.write(path, addressBookBytes);
-		log.info("New address book successfully saved to {}", path);
+        log.info("New address book successfully saved to {}", path);
     }
 
     public Collection<NodeAddress> load() {
@@ -97,7 +97,8 @@ public class NetworkAddressBook {
             byte[] addressBookBytes = Files.readAllBytes(path);
             NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
 
-            for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook.getNodeAddressList()) {
+            for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
+                    .getNodeAddressList()) {
                 NodeAddress nodeAddress = NodeAddress.builder()
                         .id(nodeAddressProto.getMemo().toStringUtf8())
                         .ip(nodeAddressProto.getIpAddress().toStringUtf8())

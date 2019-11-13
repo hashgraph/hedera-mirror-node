@@ -20,9 +20,13 @@ package com.hedera.mirror.domain;
  * ‍
  */
 
-import lombok.Data;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-import javax.persistence.*;
+import lombok.Data;
 
 @Data
 @Entity
@@ -36,5 +40,4 @@ public class ApplicationStatus {
     private String statusName;
 
     private String statusValue;
-
 }

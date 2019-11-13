@@ -20,16 +20,22 @@ package com.hedera.mirror.parser;
  * ‍
  */
 
-import com.hedera.utilities.ShutdownHelper;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.concurrent.TimeUnit;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 
-import java.nio.file.*;
-import java.util.concurrent.TimeUnit;
+import com.hedera.utilities.ShutdownHelper;
 
 @RequiredArgsConstructor
 public abstract class FileWatcher {
@@ -53,7 +59,8 @@ public abstract class FileWatcher {
 
         try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
             log.info("Watching directory for changes: {}", path);
-            WatchKey rootKey = path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
+            WatchKey rootKey = path
+                    .register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
             boolean valid = rootKey.isValid();
 
             while (valid && isEnabled()) {

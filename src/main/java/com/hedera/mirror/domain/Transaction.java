@@ -20,12 +20,12 @@ package com.hedera.mirror.domain;
  * ‍
  */
 
-import lombok.Data;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+
+import lombok.Data;
 
 @Data
 @Entity
@@ -41,7 +41,7 @@ public class Transaction {
     private byte[] memo;
 
     @Column(name = "fk_trans_type_id")
-     private Integer transactionTypeId;
+    private Integer transactionTypeId;
 
     @Column(name = "fk_result_id")
     private Integer resultId;

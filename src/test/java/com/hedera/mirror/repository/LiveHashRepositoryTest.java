@@ -20,32 +20,33 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.test.context.jdbc.Sql;
+
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.LiveHash;
 import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
-import org.junit.jupiter.api.Test;
-import org.springframework.test.context.jdbc.Sql;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-@Sql(executionPhase= Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
+// Class manually commits so have to manually cleanup tables
 public class LiveHashRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-    	RecordFile recordfile = insertRecordFile();
-    	Entities entity = insertAccountEntity();
-    	Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CRYPTOADDCLAIM");
+        RecordFile recordfile = insertRecordFile();
+        Entities entity = insertAccountEntity();
+        Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CRYPTOADDCLAIM");
 
-		LiveHash liveHash = new LiveHash();
-    	liveHash.setConsensusTimestamp(transaction.getConsensusNs());
-    	liveHash.setLivehash("some live hash".getBytes());
-    	liveHash = liveHashRepository.save(liveHash);
+        LiveHash liveHash = new LiveHash();
+        liveHash.setConsensusTimestamp(transaction.getConsensusNs());
+        liveHash.setLivehash("some live hash".getBytes());
+        liveHash = liveHashRepository.save(liveHash);
 
-    	assertThat(liveHashRepository.findById(transaction.getConsensusNs()).get())
-			.isNotNull()
-			.isEqualTo(liveHash);
-
+        assertThat(liveHashRepository.findById(transaction.getConsensusNs()).get())
+                .isNotNull()
+                .isEqualTo(liveHash);
     }
 }
