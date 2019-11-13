@@ -53,12 +53,15 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import lombok.extern.log4j.Log4j2;
+import javax.inject.Named;
 
 @Log4j2
+@Named
 public class RecordFileLogger {
     public static Connection connect = null;
 	private static Entities entities = null;
-	public static RecordParserProperties parserProperties = null;
+	private static RecordParserProperties parserProperties = null;
+	private static NetworkAddressBook networkAddressBook = null;
 
 	private static HashMap<String, Integer> transactionResults = null;
 	private static HashMap<String, Integer> transactionTypes = null;
@@ -130,6 +133,11 @@ public class RecordFileLogger {
     }
     static void setBatchSize(long batchSize) {
     	BATCH_SIZE = batchSize;
+    }
+
+    public RecordFileLogger(RecordParserProperties parserProperties, NetworkAddressBook networkAddressBook) {
+        RecordFileLogger.parserProperties = parserProperties;
+        RecordFileLogger.networkAddressBook = networkAddressBook;
     }
 
 	public static boolean start() {
@@ -630,7 +638,7 @@ public class RecordFileLogger {
 			// update the local address book
 			if (isFileAddressBook(transactionBody.getFileID())) {
 				// we have an address book update, refresh the local file
-				NetworkAddressBook.append(contents);
+				networkAddressBook.append(contents);
 			}
 		}
 	}
@@ -760,7 +768,7 @@ public class RecordFileLogger {
 		// update the local address book
 		if (isFileAddressBook(fileId)) {
 			// we have an address book update, refresh the local file
-			NetworkAddressBook.update(transactionBody.getContents().toByteArray());
+			networkAddressBook.update(transactionBody.getContents().toByteArray());
 		}
 	}
 

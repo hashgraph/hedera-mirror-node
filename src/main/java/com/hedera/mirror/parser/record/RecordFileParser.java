@@ -60,7 +60,6 @@ public class RecordFileParser implements FileParser {
 	public RecordFileParser(ApplicationStatusRepository applicationStatusRepository, RecordParserProperties parserProperties) {
 		this.applicationStatusRepository = applicationStatusRepository;
 		this.parserProperties = parserProperties;
-		RecordFileLogger.parserProperties = parserProperties;
 	}
 
 	/**
