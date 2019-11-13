@@ -24,6 +24,7 @@ import com.hedera.FileCopier;
 import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.config.MirrorNodeConfiguration;
+import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.domain.HederaNetwork;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 
@@ -46,6 +47,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 public abstract class AbstractDownloaderTest {
     @Mock(answer = Answers.RETURNS_SMART_NULLS)
@@ -129,6 +131,26 @@ public abstract class AbstractDownloaderTest {
                 .allMatch(p -> !isSigFile(p))
                 .extracting(p -> p.getFileName().toString())
                 .containsAll(filenames);
+    }
+
+    protected void overwriteOnDownloadHelper(String fileName1, String fileName2, ApplicationStatusCode key)
+            throws Exception {
+        fileCopier.copy();
+        downloader.download();
+        verify(applicationStatusRepository).updateStatusValue(key, fileName1);
+        verify(applicationStatusRepository).updateStatusValue(key, fileName2);
+        assertValidFiles(List.of(fileName1, fileName2));
+
+        reset(applicationStatusRepository);
+        // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
+        Files.walk(downloaderProperties.getStreamPath()).filter(this::isSigFile).forEach(AbstractDownloaderTest::corruptFile);
+        // fileName1 will be used to calculate marker for list request. mockS3 also returns back the marker in the
+        // results. This is unlike AWS S3 which does not return back the marker.
+        doReturn(fileName1).when(applicationStatusRepository).findByStatusCode(key);
+        downloader.download();
+        verify(applicationStatusRepository).updateStatusValue(key, fileName1);
+        verify(applicationStatusRepository).updateStatusValue(key, fileName2);
+        assertValidFiles(List.of(fileName1, fileName2));
     }
 
     @Test

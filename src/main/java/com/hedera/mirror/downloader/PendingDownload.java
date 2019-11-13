@@ -24,9 +24,10 @@ import com.google.common.base.Stopwatch;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.File;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 /**
  * The results of a pending download from the AWS TransferManager.
@@ -36,14 +37,14 @@ import java.util.concurrent.CompletableFuture;
 @Log4j2
 @Value
 class PendingDownload {
-    CompletableFuture future;
+    Future<GetObjectResponse> future;
 	Stopwatch stopwatch;
 	File file; // Destination file
 	String s3key; // Source S3 key
 	@NonFinal boolean alreadyWaited = false; // has waitForCompletion been called
 	@NonFinal boolean downloadSuccessful;
 
-	PendingDownload(final CompletableFuture future, final File file, final String s3key) {
+	PendingDownload(final Future<GetObjectResponse> future, final File file, final String s3key) {
 		this.future = future;
 		this.stopwatch = Stopwatch.createStarted();
 		this.file = file;

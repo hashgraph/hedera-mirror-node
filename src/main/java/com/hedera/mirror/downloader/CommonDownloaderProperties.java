@@ -39,8 +39,6 @@ public class CommonDownloaderProperties {
 
     private String accessKey;
 
-    private String secretKey;
-
     @NotBlank
     private String bucketName;
 
@@ -50,10 +48,9 @@ public class CommonDownloaderProperties {
     @Min(0)
     private int maxConcurrency = 1000; // aws sdk default = 50
 
-    @Min(0)
-    private int maxPendingAcquires = 10000; // aws sdk default = 10,000
-
     private String region = "us-east-1";
+
+    private String secretKey;
 
     @Getter
     @RequiredArgsConstructor

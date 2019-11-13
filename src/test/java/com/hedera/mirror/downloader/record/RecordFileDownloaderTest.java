@@ -27,11 +27,8 @@ import com.hedera.mirror.downloader.DownloaderProperties;
 import com.hedera.mirror.downloader.AbstractDownloaderTest;
 import com.hedera.utilities.Utility;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.ResourceUtils;
@@ -105,6 +102,13 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
     void maxDownloadItemsReached() throws Exception {
         ((RecordDownloaderProperties)downloaderProperties).setBatchSize(1);
         testMaxDownloadItemsReached("2019-08-30T18_10_00.419072Z.rcd");
+    }
+
+    @Test
+    @DisplayName("overwrite on download")
+    void overwriteOnDownload() throws Exception {
+        overwriteOnDownloadHelper("2019-08-30T18_10_00.419072Z.rcd", "2019-08-30T18_10_05.249678Z.rcd",
+                ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
     }
 
     @Test
