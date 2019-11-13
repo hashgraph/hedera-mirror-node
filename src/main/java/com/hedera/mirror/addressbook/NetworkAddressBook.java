@@ -46,8 +46,8 @@ import javax.inject.Named;
 @Named
 public class NetworkAddressBook {
 
-    private static MirrorProperties mirrorProperties;
-    static byte[] addressBookBytes = new byte[0];
+    private MirrorProperties mirrorProperties;
+    private byte[] addressBookBytes = new byte[0];
 
     public NetworkAddressBook(MirrorProperties mirrorProperties) {
         this.mirrorProperties = mirrorProperties;
@@ -71,19 +71,19 @@ public class NetworkAddressBook {
         }
     }
 
-    public static void update(byte[] newContents) throws IOException {
+    public void update(byte[] newContents) throws IOException {
     	addressBookBytes = newContents;
 		saveToDisk();
     }
 
-    public static void append(byte[] extraContents) throws IOException {
+    public void append(byte[] extraContents) throws IOException {
     	byte[] newAddressBook = Arrays.copyOf(addressBookBytes, addressBookBytes.length + extraContents.length);
     	System.arraycopy(extraContents, 0, newAddressBook, addressBookBytes.length, extraContents.length);
     	addressBookBytes = newAddressBook;
 		saveToDisk();
     }
 
-    private static void saveToDisk() throws IOException {
+    private void saveToDisk() throws IOException {
         Path path = mirrorProperties.getAddressBookPath();
         Files.write(path, addressBookBytes);
 		log.info("New address book successfully saved to {}", path);
