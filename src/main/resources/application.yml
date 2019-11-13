@@ -11,7 +11,7 @@ hedera:
 logging:
   level:
     root: warn
-    com.hedera: info
+    com.hedera.mirror: info
     org.flywaydb.core.internal.command.DbMigrate: info
     #org.hibernate.SQL: debug
     #org.hibernate.type.descriptor.sql.BasicBinder: trace

@@ -27,7 +27,7 @@ import java.sql.SQLException;
 
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.databaseUtilities.DatabaseUtilities;
+import com.hedera.mirror.util.DatabaseUtilities;
 
 @Log4j2
 public class EventStreamAnalytics {

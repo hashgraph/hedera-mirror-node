@@ -44,7 +44,7 @@ import com.hedera.mirror.domain.EntityType;
 import com.hedera.mirror.repository.EntityRepository;
 import com.hedera.mirror.repository.EntityTypeRepository;
 import com.hedera.mirror.repository.TransactionRepository;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.Utility;
 
 @Log4j2
 @Named

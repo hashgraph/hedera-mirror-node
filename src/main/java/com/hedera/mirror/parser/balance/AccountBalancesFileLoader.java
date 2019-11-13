@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.databaseUtilities.DatabaseUtilities;
+import com.hedera.mirror.util.DatabaseUtilities;
 import com.hedera.mirror.exception.InvalidDatasetException;
 import com.hedera.mirror.util.TimestampConverter;
 

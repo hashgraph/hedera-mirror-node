@@ -36,12 +36,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.ResourceUtils;
 
-import com.hedera.FileCopier;
+import com.hedera.mirror.FileCopier;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.downloader.AbstractDownloaderTest;
 import com.hedera.mirror.downloader.Downloader;
 import com.hedera.mirror.downloader.DownloaderProperties;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 public class RecordFileDownloaderTest extends AbstractDownloaderTest {

@@ -38,7 +38,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.domain.NodeAddress;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.Utility;
 
 @Log4j2
 public class NodeSignatureVerifier {
