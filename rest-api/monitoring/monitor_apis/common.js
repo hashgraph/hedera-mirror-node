@@ -65,6 +65,10 @@ const saveResults = (server, results) => {
 const getStatus = () => {
     let results = Object.keys(currentResults).map((net) => {
         currentResults[net].name = net;
+
+        // Set success based off of test performance. 
+        currentResults[net].results.success = currentResults[net].results.testResults.length > 0 && currentResults[net].results.numFailedTests == 0 ? true : false;
+
         return (currentResults[net]);
     })
     return ({
@@ -135,7 +139,7 @@ const getServerList = () => {
  * @param {Object} server the server for which the pid is requested
  * @return {Number} PID of the test process running for the given server
  */
-const getProcess = function (server) {
+const getProcess = (server) => {
     const key = `${server.ip}_${server.port}`;
     return (pids[key]);
 }
@@ -145,7 +149,7 @@ const getProcess = function (server) {
  * @param {Object} server the server for which the pid needs to be stored
  * @return {} None
  */
-const saveProcess = function (server, pid) {
+const saveProcess = (server, pid) => {
     const key = `${server.ip}_${server.port}`;
     pids[key] = pid;
 }
@@ -155,7 +159,7 @@ const saveProcess = function (server, pid) {
  * @param {Object} server the server for which the pid needs to be deleted
  * @return {} None
  */
-const deleteProcess = function (server) {
+const deleteProcess = (server) => {
     const key = `${server.ip}_${server.port}`;
     delete pids[key];
 }
