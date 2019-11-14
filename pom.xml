@@ -49,7 +49,6 @@
         <java.version>11</java.version>
         <jib.version>1.5.1</jib.version>
         <junit-jupiter.version>5.5.2</junit-jupiter.version>
-        <start-class>com.hedera.mirror.MirrorNodeApplication</start-class>
         <testcontainers.version>1.12.1</testcontainers.version>
     </properties>
     <dependencies>
