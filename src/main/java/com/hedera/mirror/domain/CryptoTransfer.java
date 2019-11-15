@@ -35,4 +35,8 @@ public class CryptoTransfer {
     private Long accountId;
 
     private Long amount;
+
+    private Long accountRealmNum;
+
+    private Long accountNum;
 }

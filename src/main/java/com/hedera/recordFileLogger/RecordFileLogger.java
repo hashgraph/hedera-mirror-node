@@ -27,20 +27,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.time.Instant;
 import java.util.HashMap;
 
 import com.hedera.databaseUtilities.DatabaseUtilities;
 import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.parser.record.RecordParserProperties;
 import com.hedera.utilities.Utility;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddClaimTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -101,6 +100,8 @@ public class RecordFileLogger {
         ,CONSENSUS_TIMESTAMP
         ,ACCOUNT_ID
         ,AMOUNT
+        ,ACCOUNT_REALM_NUM
+        ,ACCOUNT_NUM
         ,TYPE_ID
     }
 
@@ -191,8 +192,8 @@ public class RecordFileLogger {
 					+ ", transaction_hash)"
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
-					+ " (consensus_timestamp, account_id, amount)"
-					+ " VALUES (?, ?, ?)");
+					+ " (consensus_timestamp, account_id, amount, account_realm_num, account_num)"
+					+ " VALUES (?, ?, ?, ?, ?)");
 
 			sqlInsertFileData = connect.prepareStatement("INSERT INTO t_file_data"
 					+ " (consensus_timestamp, file_data)"
@@ -294,7 +295,7 @@ public class RecordFileLogger {
 	}
 
 	public static void storeRecord(Transaction transaction, TransactionRecord txRecord) throws Exception {
-		long createdAccountId = 0;
+		AccountID createdAccountId;
 		TransactionBody body;
 
 		if (transaction.hasBody()) {
@@ -318,7 +319,8 @@ public class RecordFileLogger {
 		sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), fileId);
 		sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION_SECONDS.ordinal(), validDurationSeconds);
 
-		long fkPayerAccountId = entities.createOrGetEntity(transactionID.getAccountID());
+		var fkPayerAccountIdObj = transactionID.getAccountID();
+		long fkPayerAccountId = entities.createOrGetEntity(fkPayerAccountIdObj);
 
 		sqlInsertTransaction.setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), fkPayerAccountId);
 
@@ -430,8 +432,8 @@ public class RecordFileLogger {
 					key = txMessage.getKey().toByteArray();
 				}
 				long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
-				entityId = entities.createEntity(txRecord.getReceipt().getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key, proxy_account_id);
-				createdAccountId = entityId;
+                createdAccountId = txRecord.getReceipt().getAccountID();
+				entityId = entities.createEntity(createdAccountId, expiration_time_sec, expiration_time_nanos, auto_renew_period, key, proxy_account_id);
 			}
 
 			initialBalance = body.getCryptoCreateAccount().getInitialBalance();
@@ -573,9 +575,9 @@ public class RecordFileLogger {
 
 		if ((txRecord.hasTransferList()) && parserProperties.isPersistCryptoTransferAmounts()) {
 			if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
-				insertCryptoCreateTransferList(consensusNs, txRecord, body, createdAccountId, fkPayerAccountId);
+				insertCryptoCreateTransferList(consensusNs, txRecord, body, txRecord.getReceipt().getAccountID(), fkPayerAccountIdObj);
 			} else {
-				insertTransferList(consensusNs, txRecord.getTransferList());
+                insertTransferList(consensusNs, txRecord.getTransferList());
 			}
 		}
 
@@ -688,38 +690,46 @@ public class RecordFileLogger {
 		for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
 			sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
 			var aa = transferList.getAccountAmounts(i);
+            var accountId = aa.getAccountID();
 			sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(),
-					entities.createOrGetEntity(aa.getAccountID()));
+					entities.createOrGetEntity(accountId));
 			sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), aa.getAmount());
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
+                    accountId.getRealmNum());
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_NUM.ordinal(),
+                    accountId.getAccountNum());
 			sqlInsertTransferList.addBatch();
 		}
 	}
 
-	private static void insertCryptoCreateTransferList(final long consensusTimestamp, final TransactionRecord txRecord, final TransactionBody body, final long createdAccountId, final long payerAccountId)
+	private static void insertCryptoCreateTransferList(final long consensusTimestamp, final TransactionRecord txRecord, final TransactionBody body, final AccountID createdAccountId, final AccountID payerAccountId)
 			throws SQLException {
 
     	long initialBalance = 0;
     	long createdAccountNum = 0;
-    	long payerAccountNum = 0;
 
 		// no need to add missing initial balance to transfer list if this is realm and shard <> 0
 		boolean addInitialBalance = (txRecord.getReceipt().getAccountID().getShardNum() == 0) && (txRecord.getReceipt().getAccountID().getRealmNum() == 0);
 
     	if (addInitialBalance) {
     		initialBalance = body.getCryptoCreateAccount().getInitialBalance();
-    		createdAccountNum = txRecord.getReceipt().getAccountID().getAccountNum();
-    		payerAccountNum = body.getTransactionID().getAccountID().getAccountNum();
+    		createdAccountNum = createdAccountId.getAccountNum();
     	}
     	TransferList transferList = txRecord.getTransferList();
 		for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
 			sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
 			var aa = transferList.getAccountAmounts(i);
 			long amount = aa.getAmount();
-			long account = aa.getAccountID().getAccountNum();
+            var accountId = aa.getAccountID();
+			long account = accountId.getAccountNum();
 
 			sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(),
 					entities.createOrGetEntity(aa.getAccountID()));
 			sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
+                    accountId.getRealmNum());
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_NUM.ordinal(),
+                    accountId.getAccountNum());
 			sqlInsertTransferList.addBatch();
 
         	if (addInitialBalance && (initialBalance == aa.getAmount()) && (account == createdAccountNum)) {
@@ -729,13 +739,23 @@ public class RecordFileLogger {
 
         if (addInitialBalance) {
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), payerAccountId);
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(),
+                    entities.createOrGetEntity(payerAccountId));
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), -initialBalance);
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
+                    payerAccountId.getRealmNum());
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_NUM.ordinal(),
+                    payerAccountId.getAccountNum());
 
             sqlInsertTransferList.addBatch();
 
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(), createdAccountId);
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(),
+                    entities.createOrGetEntity(createdAccountId));
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
+                    createdAccountId.getRealmNum());
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_NUM.ordinal(),
+                    createdAccountNum);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), initialBalance);
 
             sqlInsertTransferList.addBatch();

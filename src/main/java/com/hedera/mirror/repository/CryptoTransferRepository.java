@@ -27,4 +27,6 @@ import java.util.Optional;
 import org.springframework.data.repository.CrudRepository;
 
 public interface CryptoTransferRepository extends CrudRepository<CryptoTransfer, Long> {
-	Optional<CryptoTransfer> findByConsensusTimestampAndAccountId(Long consensusTimestamp, Long accountId);}
+	Optional<CryptoTransfer> findByConsensusTimestampAndAccountId(Long consensusTimestamp, Long accountId);
+    Optional<CryptoTransfer> findByConsensusTimestampAndAccountNum(Long consensusTimestamp, Long accountNum);
+}

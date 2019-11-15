@@ -19,6 +19,7 @@
  */
 'use strict';
 const utils = require('./utils.js');
+const config = require('./config.js');
 
 /**
  * Create transferlists from the output of SQL queries. The SQL table has different
@@ -59,7 +60,7 @@ const createTransferLists = function (rows, arr) {
         }
 
         transactions[row.consensus_ns].transfers.push({
-            account: row.account_shard + '.' + row.account_realm + '.' + row.account_num,
+            account: config.api.shard + '.' + row.account_realm + '.' + row.account_num,
             amount: Number(row.amount)
         });
     }
@@ -99,9 +100,8 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
         "   , enode.entity_realm as node_realm\n" +
         "   , enode.entity_num as node_num\n" +
         "   , account_id\n" +
-        "   , eaccount.entity_shard as account_shard\n" +
-        "   , eaccount.entity_realm as account_realm\n" +
-        "   , eaccount.entity_num as account_num\n" +
+        "   , ctl.account_realm_num as account_realm\n" +
+        "   , ctl.account_num as account_num\n" +
         "   , amount\n" +
         "   , t.charged_tx_fee\n" +
         "   , t.valid_duration_seconds\n" +
@@ -113,7 +113,6 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
         "   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n" +
         "   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n" +
         "   left outer join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl.consensus_timestamp\n" +
-        "   join t_entities eaccount on eaccount.id = ctl.account_id\n" +
         "   order by t.consensus_ns " + order + "\n";
     return (outerQuery);
 }
@@ -139,7 +138,6 @@ const getTransactionsInnerQuery = function (accountQuery, tsQuery, resultTypeQue
     '       from t_cryptotransferlists ctl\n' +
     '       join t_transactions t on t.consensus_ns = ctl.consensus_timestamp\n' +
     '       join t_transaction_results tr on t.fk_result_id = tr.id\n' +
-    '       join t_entities eaccount on eaccount.id = ctl.account_id\n' +
     '       where ';
     if (accountQuery) {
         innerQuery += "ctl.account_id in (select id from t_entities\n" +

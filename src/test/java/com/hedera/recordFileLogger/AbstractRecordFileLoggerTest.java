@@ -111,6 +111,7 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     		AccountID xferAccountId = accountAmount.getAccountID();
     		Optional<Entities> accountId = entityRepository.findByPrimaryKey(xferAccountId.getShardNum(), xferAccountId.getRealmNum(), xferAccountId.getAccountNum());
     		assertEquals(accountAmount.getAmount(), cryptoTransferRepository.findByConsensusTimestampAndAccountId(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountId.get().getId()).get().getAmount());
+            assertEquals(accountAmount.getAccountID().getRealmNum(), cryptoTransferRepository.findByConsensusTimestampAndAccountNum(Utility.timeStampInNanos(record.getConsensusTimestamp()), accountId.get().getEntityNum()).get().getAccountRealmNum());
     	}
     }
     protected final void assertRecord(TransactionRecord record, com.hedera.mirror.domain.Transaction dbTransaction) {
