@@ -32,13 +32,12 @@ function normalizeSql(str) {
 const boilerplatePrefix = `select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num , t.memo , t.consensus_ns , valid_start_ns ,
     ttr.result , t.fk_trans_type_id , ttt.name, t.fk_node_acc_id , enode.entity_shard as node_shard ,
     enode.entity_realm as node_realm , enode.entity_num as node_num, account_id ,
-    eaccount.entity_shard as account_shard , eaccount.entity_realm as account_realm ,
-    eaccount.entity_num as account_num, amount , t.charged_tx_fee, t.valid_duration_seconds, t.max_fee
+    ctl.account_realm_num as account_realm , ctl.account_num as account_num ,
+    amount , t.charged_tx_fee, t.valid_duration_seconds, t.max_fee
 from ( select distinct ctl.consensus_timestamp
     from t_cryptotransferlists ctl
     join t_transactions t on t.consensus_ns = ctl.consensus_timestamp
-    join t_transaction_results tr on t.fk_result_id = tr.id
-    join t_entities eaccount on eaccount.id = ctl.account_id `;
+    join t_transaction_results tr on t.fk_result_id = tr.id `;
 
 const boilerplateSufffix = ` join t_transactions t on tlist.consensus_timestamp = t.consensus_ns
     join t_transaction_results ttr on ttr.id = t.fk_result_id
@@ -46,7 +45,6 @@ const boilerplateSufffix = ` join t_transactions t on tlist.consensus_timestamp 
     join t_entities etrans on etrans.id = t.fk_payer_acc_id
     join t_transaction_types ttt on ttt.id = t.fk_trans_type_id
     left outer join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl.consensus_timestamp
-    join t_entities eaccount on eaccount.id = ctl.account_id
     order by t.consensus_ns desc`;
 
 test('transactions by timestamp gte', () => {

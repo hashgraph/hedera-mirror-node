@@ -118,7 +118,6 @@ const getTransactionsOuterQuery = function(innerQuery, order) {
     '   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n' +
     '   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n' +
     '   left outer join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl.consensus_timestamp\n' +
-    '   join t_entities eaccount on eaccount.id = ctl.account_id\n' +
     '   order by t.consensus_ns ' +
     order +
     '\n';
@@ -291,9 +290,8 @@ const getOneTransaction = function(req, res) {
     '   , enode.entity_realm as node_realm\n' +
     '   , enode.entity_num as node_num\n' +
     '   , account_id\n' +
-    '   , eaccount.entity_shard as account_shard\n' +
-    '   , eaccount.entity_realm as account_realm\n' +
-    '   , eaccount.entity_num as account_num\n' +
+    "   , ctl.account_realm_num as account_realm\n" +
+    "   , ctl.account_num as account_num\n" +
     '   , amount\n' +
     '   , charged_tx_fee\n' +
     '   , valid_duration_seconds\n' +
@@ -304,7 +302,6 @@ const getOneTransaction = function(req, res) {
     '   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n' +
     '   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n' +
     '   join t_cryptotransferlists ctl on  ctl.consensus_timestamp = t.consensus_ns\n' +
-    '   join t_entities eaccount on eaccount.id = ctl.account_id\n' +
     ' where etrans.entity_shard = ?\n' +
     '   and  etrans.entity_realm = ?\n' +
     '   and  etrans.entity_num = ?\n' +
