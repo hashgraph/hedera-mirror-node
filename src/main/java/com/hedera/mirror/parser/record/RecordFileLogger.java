@@ -49,8 +49,8 @@ import javax.inject.Named;
 
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.mirror.util.DatabaseUtilities;
 import com.hedera.mirror.addressbook.NetworkAddressBook;
+import com.hedera.mirror.util.DatabaseUtilities;
 import com.hedera.mirror.util.Utility;
 
 @Log4j2

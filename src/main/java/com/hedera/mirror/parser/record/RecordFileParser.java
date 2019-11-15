@@ -39,11 +39,11 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import com.hedera.mirror.util.FileDelimiter;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.parser.FileParser;
-import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.parser.record.RecordFileLogger.INIT_RESULT;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
+import com.hedera.mirror.util.FileDelimiter;
 import com.hedera.mirror.util.ShutdownHelper;
 import com.hedera.mirror.util.Utility;
 
