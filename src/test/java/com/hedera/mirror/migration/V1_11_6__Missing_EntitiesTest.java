@@ -47,7 +47,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.hedera.IntegrationTest;
+import com.hedera.mirror.IntegrationTest;
 import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.EntityType;
@@ -59,7 +59,7 @@ import com.hedera.mirror.repository.EntityTypeRepository;
 import com.hedera.mirror.repository.RecordFileRepository;
 import com.hedera.mirror.repository.TransactionRepository;
 import com.hedera.mirror.repository.TransactionTypeRepository;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.Utility;
 
 @Disabled("This refreshes the ApplicationContext halfway through tests, causing multiple DataSource objects to be in " +
         "use due the DatabaseUtilities hack. Can be re-enabled when DatabaseUtilities is deleted")

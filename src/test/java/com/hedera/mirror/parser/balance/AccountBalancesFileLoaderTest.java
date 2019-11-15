@@ -29,7 +29,7 @@ import javax.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 
-import com.hedera.IntegrationTest;
+import com.hedera.mirror.IntegrationTest;
 
 @Transactional
 public class AccountBalancesFileLoaderTest extends IntegrationTest {

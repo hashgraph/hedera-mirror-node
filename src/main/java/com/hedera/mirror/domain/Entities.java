@@ -32,7 +32,7 @@ import javax.persistence.Table;
 
 import lombok.Data;
 
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.Utility;
 
 @Data
 @Entity

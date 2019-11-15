@@ -31,7 +31,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.domain.HederaNetwork;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.Utility;
 
 @Data
 @Named

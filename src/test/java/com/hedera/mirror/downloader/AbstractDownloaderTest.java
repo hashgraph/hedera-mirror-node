@@ -43,14 +43,14 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-import com.hedera.FileCopier;
+import com.hedera.mirror.FileCopier;
 import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.config.MirrorNodeConfiguration;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.domain.HederaNetwork;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.Utility;
 
 public abstract class AbstractDownloaderTest {
     @Mock(answer = Answers.RETURNS_SMART_NULLS)

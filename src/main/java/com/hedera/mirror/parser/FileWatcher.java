@@ -35,7 +35,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 
-import com.hedera.utilities.ShutdownHelper;
+import com.hedera.mirror.util.ShutdownHelper;
 
 @RequiredArgsConstructor
 public abstract class FileWatcher {

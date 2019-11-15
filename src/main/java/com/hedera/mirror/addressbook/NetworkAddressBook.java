@@ -39,7 +39,7 @@ import org.springframework.core.io.Resource;
 import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.HederaNetwork;
 import com.hedera.mirror.domain.NodeAddress;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.Utility;
 
 @Log4j2
 @Named

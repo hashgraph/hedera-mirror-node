@@ -30,8 +30,8 @@ import java.util.List;
 import javax.inject.Named;
 
 import com.hedera.mirror.parser.FileWatcher;
-import com.hedera.utilities.ShutdownHelper;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.ShutdownHelper;
+import com.hedera.mirror.util.Utility;
 
 @Named
 public class BalanceFileParser extends FileWatcher {
