@@ -20,15 +20,16 @@ package com.hedera.utilities;
  *
  */
 
-import lombok.extern.log4j.Log4j2;
 import javax.inject.Named;
+
+import lombok.extern.log4j.Log4j2;
 
 /**
  * ShutdownHelper helps in shutting down the threads cleanly when JVM is doing down.
- *
+ * <p>
  * At some point when the mirror node process is going down, 'stopping' flag will be set to true. Since that point, all
- * threads will have fixed time (say 5 seconds), to stop gracefully. Therefore, long living and heavy lifting
- * threads should regularly probe for this flag.
+ * threads will have fixed time (say 5 seconds), to stop gracefully. Therefore, long living and heavy lifting threads
+ * should regularly probe for this flag.
  */
 @Log4j2
 @Named
@@ -50,7 +51,8 @@ public class ShutdownHelper {
         try {
             Thread.sleep(10 * 1000);
         } catch (InterruptedException e) {
-            log.error("Interrupted when waiting for shutdown...", e);;
+            log.error("Interrupted when waiting for shutdown...", e);
+            ;
         }
     }
 }

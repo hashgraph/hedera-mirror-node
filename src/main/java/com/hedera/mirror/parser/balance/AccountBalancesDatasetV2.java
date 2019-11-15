@@ -20,44 +20,47 @@ package com.hedera.mirror.parser.balance;
  * ‍
  */
 
-import com.hedera.mirror.exception.InvalidDatasetException;
-import com.hedera.mirror.util.TimestampConverter;
-import lombok.Getter;
-import lombok.extern.log4j.Log4j2;
-
-import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
+
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
+
+import com.hedera.mirror.exception.InvalidDatasetException;
+import com.hedera.mirror.util.TimestampConverter;
 
 /**
- * Loads a "V2" format account balance data stream header information and returns the post-header record stream
- * (CSV account balance lines).
+ * Loads a "V2" format account balance data stream header information and returns the post-header record stream (CSV
+ * account balance lines).
  */
 @Log4j2
 public final class AccountBalancesDatasetV2 implements AccountBalancesDataset {
     public static final Pattern TIMESTAMP_HEADER_PATTERN = Pattern.compile(
-            "^\\s*timestamp\\s*:\\s*(?<year>[0-9]{4})-(?<month>[0-9]{1,2})-(?<day>[0-9]{1,2})T(?<hour>[0-9]{1,2}):(?<minute>[0-9]{1,2}):(?<second>[0-9]{2})(\\.(?<subsecond>[0-9]{1,9}))?",
+            "^\\s*timestamp\\s*:\\s*(?<year>[0-9]{4})-(?<month>[0-9]{1,2})-(?<day>[0-9]{1,2})T(?<hour>[0-9]{1,2}):" +
+                    "(?<minute>[0-9]{1,2}):(?<second>[0-9]{2})(\\.(?<subsecond>[0-9]{1,9}))?",
             Pattern.CASE_INSENSITIVE);
     public static final Pattern COLUMN_HEADER_PATTERN = Pattern.compile("shard", Pattern.CASE_INSENSITIVE);
 
     private static final int MAX_HEADER_ROWS = 10;
-
+    private final TimestampConverter timestampConverter = new TimestampConverter();
     @Getter
-    private @Nullable Instant consensusTimestamp;
-    private @Nullable BufferedReader reader;
+    private @Nullable
+    Instant consensusTimestamp;
+    private @Nullable
+    BufferedReader reader;
     @Getter
     private String name;
     @Getter
     private int lineNumber;
 
-    private final TimestampConverter timestampConverter = new TimestampConverter();
-
     /**
      * Parses the header in the input stream in preparation for streaming the account balance rows.
-     * @param name for logging purposes (an identifier of the stream such as the filename or path)
+     *
+     * @param name   for logging purposes (an identifier of the stream such as the filename or path)
      * @param reader
      * @throws InvalidDatasetException if the file header does not match expectations
      */
@@ -89,7 +92,8 @@ public final class AccountBalancesDatasetV2 implements AccountBalancesDataset {
                 ++lineNumber;
                 var s = reader.readLine();
                 if (null == s) { // EOF
-                    throw new InvalidDatasetException("Timestamp and column header not found in account balance dataset");
+                    throw new InvalidDatasetException("Timestamp and column header not found in account balance " +
+                            "dataset");
                 }
                 var m = TIMESTAMP_HEADER_PATTERN.matcher(s);
                 if (m.find()) {
@@ -104,7 +108,8 @@ public final class AccountBalancesDatasetV2 implements AccountBalancesDataset {
                 if (m.find()) {
                     if (null == consensusTimestamp) {
                         throw new InvalidDatasetException(String.format(
-                                "%s:line(%d): Found expected last header line containing %s with no prior timestamp found",
+                                "%s:line(%d): Found expected last header line containing %s with no prior timestamp " +
+                                        "found",
                                 name, lineNumber, COLUMN_HEADER_PATTERN.pattern()));
                     }
                     return; // The column header is the last line before the datastream.
@@ -118,6 +123,7 @@ public final class AccountBalancesDatasetV2 implements AccountBalancesDataset {
 
     /**
      * Return the post-header stream of lines from the account balances CSV data.
+     *
      * @return
      */
     public Stream<NumberedLine> getRecordStream() {

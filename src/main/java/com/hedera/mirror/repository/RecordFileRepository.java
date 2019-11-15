@@ -20,8 +20,9 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.domain.RecordFile;
 import org.springframework.data.repository.CrudRepository;
+
+import com.hedera.mirror.domain.RecordFile;
 
 public interface RecordFileRepository extends CrudRepository<RecordFile, Long> {
 }

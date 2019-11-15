@@ -20,11 +20,9 @@ package com.hedera.recordFileLogger;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.domain.Entities;
-import com.hedera.mirror.domain.LiveHash;
-import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
-import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Claim;
@@ -46,45 +44,44 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 
-import org.junit.jupiter.api.*;
-import org.springframework.test.context.jdbc.Sql;
-import org.junit.jupiter.api.Test;
-
 import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.context.jdbc.Sql;
+
+import com.hedera.mirror.domain.Entities;
+import com.hedera.mirror.domain.LiveHash;
+import com.hedera.recordFileLogger.RecordFileLogger.INIT_RESULT;
+import com.hedera.utilities.Utility;
 
 // Class manually commits so have to manually cleanup tables
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
-	//TODO: These transaction data items are not saved to the database
-	//  cryptoCreateTransactionBody.getReceiveRecordThreshold()
-	//  cryptoCreateTransactionBody.getShardID()
-	//  cryptoCreateTransactionBody.getRealmID()
-	//  cryptoCreateTransactionBody.getNewRealmAdminKey()
-	//  cryptoCreateTransactionBody.getReceiverSigRequired()
-	//  cryptoCreateTransactionBody.getSendRecordThreshold()
-	//  cryptoCreateTransactionBody.getReceiveRecordThreshold()
-	//  transactionBody.getTransactionFee()
-	//  transactionBody.getTransactionValidDuration()
-	//  transaction.getSigMap()
-	//  record.getTransactionHash();
+    //TODO: These transaction data items are not saved to the database
+    //  cryptoCreateTransactionBody.getReceiveRecordThreshold()
+    //  cryptoCreateTransactionBody.getShardID()
+    //  cryptoCreateTransactionBody.getRealmID()
+    //  cryptoCreateTransactionBody.getNewRealmAdminKey()
+    //  cryptoCreateTransactionBody.getReceiverSigRequired()
+    //  cryptoCreateTransactionBody.getSendRecordThreshold()
+    //  cryptoCreateTransactionBody.getReceiveRecordThreshold()
+    //  transactionBody.getTransactionFee()
+    //  transactionBody.getTransactionValidDuration()
+    //  transaction.getSigMap()
+    //  record.getTransactionHash();
 
-	private static final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1001).build();
-	private static final String memo = "Crypto test memo";
-	private static final long[] transferAccounts = {98, 2002, 3};
-	private static long[] transferAmounts = {1000, -2000, 20};
+    private static final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1001)
+            .build();
+    private static final String memo = "Crypto test memo";
+    private static final long[] transferAccounts = {98, 2002, 3};
+    private static long[] transferAmounts = {1000, -2000, 20};
 
-	@BeforeEach
-	void before() throws Exception {
+    @BeforeEach
+    void before() throws Exception {
         parserProperties.setPersistClaims(true);
         parserProperties.setPersistCryptoTransferAmounts(true);
 		assertTrue(RecordFileLogger.start());
@@ -830,7 +827,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
 	@Test
 	void cryptoAddClaimDoNotPersist() throws Exception {
-	    RecordFileLogger.parserProperties.setPersistClaims(false);
+	    parserProperties.setPersistClaims(false);
 		// first create the account
 		final Transaction createTransaction = cryptoCreateTransaction();
 		final TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
@@ -966,7 +963,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
 	@Test
 	void cryptoTransferWithPersistence() throws Exception {
-	    RecordFileLogger.parserProperties.setPersistCryptoTransferAmounts(true);
+	    parserProperties.setPersistCryptoTransferAmounts(true);
 		// make the transfers
 		final Transaction transaction = cryptoTransferTransaction();
 		final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -1017,7 +1014,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
 	@Test
 	void cryptoTransferWithoutPersistence() throws Exception {
-	    RecordFileLogger.parserProperties.setPersistCryptoTransferAmounts(false);
+	    parserProperties.setPersistCryptoTransferAmounts(false);
 		// make the transfers
 		final Transaction transaction = cryptoTransferTransaction();
 		final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -1210,68 +1207,71 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 		claim.setHash(ByteString.copyFromUtf8("claim hash"));
 		KeyList.Builder keyList = KeyList.newBuilder();
 		keyList.addKeys(keyFromString("0a2312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110aaa"));
-		claim.setKeys(keyList);
+                claim.setKeys(keyList);
 
-		// Build a transaction
-		cryptoAddClaim.setClaim(claim);
+                // Build a transaction
+                cryptoAddClaim.setClaim(claim);
 
-		// Transaction body
-		final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
-		// body transaction
-		body.setCryptoAddClaim(cryptoAddClaim);
+                // Transaction body
+                final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+                // body transaction
+                body.setCryptoAddClaim(cryptoAddClaim);
 
-		transaction.setBodyBytes(body.build().toByteString());
-		transaction.setSigMap(getSigMap());
+                transaction.setBodyBytes(body.build().toByteString());
+                transaction.setSigMap(getSigMap());
 
-		return transaction.build();
-	}
+        return transaction.build();
+    }
 
-	private Transaction cryptoDeleteClaimTransaction() {
+    private Transaction cryptoDeleteClaimTransaction() {
 
-		// transaction id
-		final Transaction.Builder transaction = Transaction.newBuilder();
-		final CryptoDeleteClaimTransactionBody.Builder cryptoDeleteClaim = CryptoDeleteClaimTransactionBody.newBuilder();
+        // transaction id
+        final Transaction.Builder transaction = Transaction.newBuilder();
+        final CryptoDeleteClaimTransactionBody.Builder cryptoDeleteClaim = CryptoDeleteClaimTransactionBody
+                .newBuilder();
 
-		// Build a transaction
-		cryptoDeleteClaim.setAccountIDToDeleteFrom(accountId);
-		cryptoDeleteClaim.setHashToDelete(ByteString.copyFromUtf8("claim hash"));
+        // Build a transaction
+        cryptoDeleteClaim.setAccountIDToDeleteFrom(accountId);
+        cryptoDeleteClaim.setHashToDelete(ByteString.copyFromUtf8("claim hash"));
 
-		// Transaction body
-		final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
-		// body transaction
-		body.setCryptoDeleteClaim(cryptoDeleteClaim);
+        // Transaction body
+        final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+        // body transaction
+        body.setCryptoDeleteClaim(cryptoDeleteClaim);
 
-		transaction.setBodyBytes(body.build().toByteString());
-		transaction.setSigMap(getSigMap());
+        transaction.setBodyBytes(body.build().toByteString());
+        transaction.setSigMap(getSigMap());
 
-		return transaction.build();
-	}
-	private Transaction cryptoTransferTransaction() {
+        return transaction.build();
+    }
 
-		// transaction id
-		final Transaction.Builder transaction = Transaction.newBuilder();
-		final CryptoTransferTransactionBody.Builder cryptoTransferBody = CryptoTransferTransactionBody.newBuilder();
+    private Transaction cryptoTransferTransaction() {
 
-		// Build a transaction
-		final TransferList.Builder transferList = TransferList.newBuilder();
+        // transaction id
+        final Transaction.Builder transaction = Transaction.newBuilder();
+        final CryptoTransferTransactionBody.Builder cryptoTransferBody = CryptoTransferTransactionBody.newBuilder();
 
-		for (int i=0; i < transferAccounts.length; i++) {
-			AccountAmount.Builder accountAmount = AccountAmount.newBuilder();
-			accountAmount.setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(transferAccounts[i]));
-			accountAmount.setAmount(transferAmounts[i]);
-			transferList.addAccountAmounts(accountAmount);
-		}
+        // Build a transaction
+        final TransferList.Builder transferList = TransferList.newBuilder();
 
-		cryptoTransferBody.setTransfers(transferList);
+        for (int i = 0; i < transferAccounts.length; i++) {
+            AccountAmount.Builder accountAmount = AccountAmount.newBuilder();
+            accountAmount.setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0)
+                    .setAccountNum(transferAccounts[i]));
+            accountAmount.setAmount(transferAmounts[i]);
+            transferList.addAccountAmounts(accountAmount);
+        }
 
-		// Transaction body
-		final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
-		// body transaction
-		body.setCryptoTransfer(cryptoTransferBody);
+        cryptoTransferBody.setTransfers(transferList);
 
-		transaction.setBodyBytes(body.build().toByteString());
-		transaction.setSigMap(getSigMap());
+        // Transaction body
+        final TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+        // body transaction
+        body.setCryptoTransfer(cryptoTransferBody);
 
-		return transaction.build();
-	}
+        transaction.setBodyBytes(body.build().toByteString());
+        transaction.setSigMap(getSigMap());
+
+        return transaction.build();
+    }
 }

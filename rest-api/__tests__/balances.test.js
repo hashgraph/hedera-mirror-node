@@ -25,14 +25,13 @@ const testutils = require('./testutils.js');
 const config = require('../config.js');
 
 beforeAll(async () => {
-    jest.setTimeout(1000);
+  jest.setTimeout(1000);
 });
 
-afterAll(() => {
-});
+afterAll(() => {});
 
 const timeNow = parseInt(new Date().getTime() / 1000);
-const timeOneHourAgo = timeNow - (60 * 60);
+const timeOneHourAgo = timeNow - 60 * 60;
 
 // Validation functions
 /**
@@ -41,9 +40,9 @@ const timeOneHourAgo = timeNow - (60 * 60);
  * @param {Number} len Expected length
  * @return {Boolean}  Result of the check
  */
-const validateLen = function (balances, len) {
-    return (balances.balances.length === len);
-}
+const validateLen = function(balances, len) {
+  return balances.balances.length === len;
+};
 
 /**
  * Validate the range of timestamps in the balances returned by the api
@@ -52,14 +51,14 @@ const validateLen = function (balances, len) {
  * @param {Number} high Expected high limit of the timestamps
  * @return {Boolean}  Result of the check
  */
-const validateTsRange = function (balances, low, high) {
-    let ret = ((balances.timestamp >= low) && (balances.timestamp <= high));
+const validateTsRange = function(balances, low, high) {
+  let ret = balances.timestamp >= low && balances.timestamp <= high;
 
-    if (!ret) {
-        console.log (`validateTsRange check failed: ${balances.timestamp} is not between ${low} and  ${high}`);
-    }
-    return (ret);
-}
+  if (!ret) {
+    console.log(`validateTsRange check failed: ${balances.timestamp} is not between ${low} and  ${high}`);
+  }
+  return ret;
+};
 
 /**
  * Validate the range of account ids in the balances returned by the api
@@ -68,21 +67,21 @@ const validateTsRange = function (balances, low, high) {
  * @param {Number} high Expected high limit of the account ids
  * @return {Boolean}  Result of the check
  */
-const validateAccNumRange = function (balances, low, high) {
-    let ret = true;
-    let offender = null;
-    for (const bal of balances.balances) {
-            const accNum = bal.account.split('.')[2];
-            if ((accNum < low) || (accNum > high)) {
-                offender = accNum;
-                ret = false;
-        }
+const validateAccNumRange = function(balances, low, high) {
+  let ret = true;
+  let offender = null;
+  for (const bal of balances.balances) {
+    const accNum = bal.account.split('.')[2];
+    if (accNum < low || accNum > high) {
+      offender = accNum;
+      ret = false;
     }
-    if (!ret) {
-        console.log (`validateAccNumRange check failed: ${offender} is not between ${low} and  ${high}`);
-    }
-    return (ret);
-}
+  }
+  if (!ret) {
+    console.log(`validateAccNumRange check failed: ${offender} is not between ${low} and  ${high}`);
+  }
+  return ret;
+};
 
 /**
  * Validate the range of account balances in the balances returned by the api
@@ -91,49 +90,49 @@ const validateAccNumRange = function (balances, low, high) {
  * @param {Number} high Expected high limit of the balances
  * @return {Boolean}  Result of the check
  */
-const validateBalanceRange = function (balances, low, high) {
-    let ret = true;
-    let offender = null;
-    for (const bal of balances.balances) {
-            if ((bal.balance < low) || (bal.balance > high)) {
-                offender = bal.balance;
-                ret = false;
-        }
+const validateBalanceRange = function(balances, low, high) {
+  let ret = true;
+  let offender = null;
+  for (const bal of balances.balances) {
+    if (bal.balance < low || bal.balance > high) {
+      offender = bal.balance;
+      ret = false;
     }
-    if (!ret) {
-        console.log (`validateBalanceRange check failed: ${offender} is not between ${low} and  ${high}`);
-    }
-    return (ret);
-}
+  }
+  if (!ret) {
+    console.log(`validateBalanceRange check failed: ${offender} is not between ${low} and  ${high}`);
+  }
+  return ret;
+};
 
 /**
  * Validate that all required fields are present in the response
  * @param {Array} balances Array of balances returned by the rest api
  * @return {Boolean}  Result of the check
  */
-const validateFields = function (balances) {
-    let ret = true;
+const validateFields = function(balances) {
+  let ret = true;
 
-    // Assert that the balances is an array
-    ret = ret && Array.isArray(balances.balances);
+  // Assert that the balances is an array
+  ret = ret && Array.isArray(balances.balances);
 
-    // Assert that all mandatory fields are present in the response
-    ['timestamp', 'balances'].forEach ( (field) =>{
-        ret = ret && balances.hasOwnProperty(field);
-    })
+  // Assert that all mandatory fields are present in the response
+  ['timestamp', 'balances'].forEach(field => {
+    ret = ret && balances.hasOwnProperty(field);
+  });
 
-    // Assert that the balances array has the mandatory fields
-    if (ret) {
-        ['account', 'balance'].forEach ( (field) =>{
-           ret = ret && balances.balances[0].hasOwnProperty(field);
-        });
-    }
+  // Assert that the balances array has the mandatory fields
+  if (ret) {
+    ['account', 'balance'].forEach(field => {
+      ret = ret && balances.balances[0].hasOwnProperty(field);
+    });
+  }
 
-    if (!ret) {
-        console.log (`validateFields check failed: A mandatory parameter is missing`);
-    }
-    return (ret);
-}
+  if (!ret) {
+    console.log(`validateFields check failed: A mandatory parameter is missing`);
+  }
+  return ret;
+};
 
 /**
  * Validate the order of timestamps in the balances returned by the api
@@ -141,27 +140,26 @@ const validateFields = function (balances) {
  * @param {String} order Expected order ('asc' or 'desc')
  * @return {Boolean}  Result of the check
  */
-const validateOrder = function (balances, order) {
-    let ret = true;
-    let offenderAcc = null;
-    let offenderVal = null;
-    let direction = (order === 'desc') ? -1 : 1;
-    const toAccNum = (acc => acc.split('.')[2]);
-    let val = toAccNum(balances.balances[0].account) - direction;
-    for (const bal of balances.balances) {
-        if ((val * direction) > (toAccNum(bal.account) * direction)) {
-            offenderAcc = toAccNum(bal);
-            offenderVal = toAccNum(val);
-            ret = false;
-        }
-        val = bal;
+const validateOrder = function(balances, order) {
+  let ret = true;
+  let offenderAcc = null;
+  let offenderVal = null;
+  let direction = order === 'desc' ? -1 : 1;
+  const toAccNum = acc => acc.split('.')[2];
+  let val = toAccNum(balances.balances[0].account) - direction;
+  for (const bal of balances.balances) {
+    if (val * direction > toAccNum(bal.account) * direction) {
+      offenderAcc = toAccNum(bal);
+      offenderVal = toAccNum(val);
+      ret = false;
     }
-    if (!ret) {
-        console.log (`validateOrder check failed: ${offenderAcc} - previous account number ${offenderVal} Order  ${order}`);
-    }
-    return (ret);
-}
-
+    val = bal;
+  }
+  if (!ret) {
+    console.log(`validateOrder check failed: ${offenderAcc} - previous account number ${offenderVal} Order  ${order}`);
+  }
+  return ret;
+};
 
 /**
  * This is the list of individual tests. Each test validates one query parameter
@@ -174,121 +172,98 @@ const validateOrder = function (balances, order) {
  * a set of checks you would like to perform on the resultant SQL query.
  */
 const singletests = {
-    timestamp_lowerlimit: {
-        urlparam: `timestamp=gte:${timeOneHourAgo}`,
-        checks: [
-            {field: 'consensus_timestamp', operator: '>=', value: timeOneHourAgo +'000000000'}
-        ],
-        checkFunctions: [
-            {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
-            {func: validateFields, args: []}
-        ]
-    },
-    timestamp_higherlimit: {
-        urlparam: `timestamp=lt:${timeNow}`,
-        checks: [
-            {field: 'consensus_timestamp', operator: '<', value: timeNow +'000000000'}
-        ],
-        checkFunctions: [
-            {func: validateTsRange, args: [0, timeNow]},
-            {func: validateFields, args: []}
-        ]
-    },
-    timestamp_equal: {
-        urlparam: `timestamp=${timeOneHourAgo}`,
-        checks: [
-            {field: 'consensus_timestamp', operator: '<=', value: timeOneHourAgo +'000000000'}
-        ],
-        checkFunctions: [
-            {func: validateTsRange, args: [
-                timeOneHourAgo - config.api.maxLimit, timeOneHourAgo]},
-            {func: validateFields, args: []}
-        ]
-    },
-    accountid_lowerlimit: {
-        urlparam: 'account.id=gte:0.0.1111',
-        checks: [
-            {field: 'account_num', operator: '>=', value: 1111}
-        ],
-        checkFunctions: [
-            {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
-            {func: validateFields, args: []}
-        ]
-    },
-    accountid_higherlimit: {
-        urlparam: 'account.id=lt:0.0.2222',
-        checks: [
-            {field: 'account_num', operator: '<', value: 2222},
-        ],
-        checkFunctions: [
-            {func: validateAccNumRange, args: [0, 2222]},
-            {func: validateFields, args: []}
-        ]
-    },
-    accountid_equal: {
-        urlparam: 'account.id=0.0.3333',
-        checks: [
-            {field: 'account_num', operator: '=', value: 3333}
-        ],
-        checkFunctions: [
-            {func: validateAccNumRange, args: [3333, 3333]},
-            {func: validateFields, args: []}
-        ]
-    },
-    accountbalance_lowerlimit: {
-        urlparam: 'account.balance=gte:54321',
-        checks: [
-            {field: 'balance', operator: '>=', value: 54321}
-        ],
-        checkFunctions: [
-            {func: validateBalanceRange, args: [54321, Number.MAX_SAFE_INTEGER]},
-            {func: validateFields, args: []}
-        ]
-    },
-    accountbalance_higherlimit: {
-        urlparam: 'account.balance=lt:5432100',
-        checks: [
-            {field: 'balance', operator: '<', value: 5432100},
-        ],
-        checkFunctions: [
-            {func: validateBalanceRange, args: [0, 5432100]},
-            {func: validateFields, args: []}
-        ]
-    },
-    accountpublickey_equal: {
-        urlparam: 'account.publickey=6bd7b31fd59fc1b51314ac90253dfdbffa18eec48c00051e92635fe964a08c9b',
-        checks: [
-            {field: 'ed25519_public_key_hex', operator: '=', value: '6bd7b31fd59fc1b51314ac90253dfdbffa18eec48c00051e92635fe964a08c9b'}
-        ]
-    },
-    limit: {
-        urlparam: 'limit=99',
-        checks: [
-            {field: 'limit', operator: '=', value: 99}
-        ],
-        checkFunctions: [
-            {func: validateLen, args: [99]},
-            {func: validateFields, args: []}
-        ]
-    },
-    order_asc: {
-        urlparam: 'order=asc',
-        checks: [
-            {field: 'order', operator: '=', value: 'asc'}
-        ],
-        checkFunctions: [
-            {func: validateOrder, args: ['asc']}
-        ]
-    },
-    order_desc: {
-        urlparam: 'order=desc',
-        checks: [
-            {field: 'order', operator: '=', value: 'desc'}
-        ],
-        checkFunctions: [
-            {func: validateOrder, args: ['desc']}
-        ]
-    }
+  timestamp_lowerlimit: {
+    urlparam: `timestamp=gte:${timeOneHourAgo}`,
+    checks: [{field: 'consensus_timestamp', operator: '>=', value: timeOneHourAgo + '000000000'}],
+    checkFunctions: [
+      {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
+      {func: validateFields, args: []}
+    ]
+  },
+  timestamp_higherlimit: {
+    urlparam: `timestamp=lt:${timeNow}`,
+    checks: [{field: 'consensus_timestamp', operator: '<', value: timeNow + '000000000'}],
+    checkFunctions: [
+      {func: validateTsRange, args: [0, timeNow]},
+      {func: validateFields, args: []}
+    ]
+  },
+  timestamp_equal: {
+    urlparam: `timestamp=${timeOneHourAgo}`,
+    checks: [{field: 'consensus_timestamp', operator: '<=', value: timeOneHourAgo + '000000000'}],
+    checkFunctions: [
+      {func: validateTsRange, args: [timeOneHourAgo - config.api.maxLimit, timeOneHourAgo]},
+      {func: validateFields, args: []}
+    ]
+  },
+  accountid_lowerlimit: {
+    urlparam: 'account.id=gte:0.0.1111',
+    checks: [{field: 'account_num', operator: '>=', value: 1111}],
+    checkFunctions: [
+      {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
+      {func: validateFields, args: []}
+    ]
+  },
+  accountid_higherlimit: {
+    urlparam: 'account.id=lt:0.0.2222',
+    checks: [{field: 'account_num', operator: '<', value: 2222}],
+    checkFunctions: [
+      {func: validateAccNumRange, args: [0, 2222]},
+      {func: validateFields, args: []}
+    ]
+  },
+  accountid_equal: {
+    urlparam: 'account.id=0.0.3333',
+    checks: [{field: 'account_num', operator: '=', value: 3333}],
+    checkFunctions: [
+      {func: validateAccNumRange, args: [3333, 3333]},
+      {func: validateFields, args: []}
+    ]
+  },
+  accountbalance_lowerlimit: {
+    urlparam: 'account.balance=gte:54321',
+    checks: [{field: 'balance', operator: '>=', value: 54321}],
+    checkFunctions: [
+      {func: validateBalanceRange, args: [54321, Number.MAX_SAFE_INTEGER]},
+      {func: validateFields, args: []}
+    ]
+  },
+  accountbalance_higherlimit: {
+    urlparam: 'account.balance=lt:5432100',
+    checks: [{field: 'balance', operator: '<', value: 5432100}],
+    checkFunctions: [
+      {func: validateBalanceRange, args: [0, 5432100]},
+      {func: validateFields, args: []}
+    ]
+  },
+  accountpublickey_equal: {
+    urlparam: 'account.publickey=6bd7b31fd59fc1b51314ac90253dfdbffa18eec48c00051e92635fe964a08c9b',
+    checks: [
+      {
+        field: 'ed25519_public_key_hex',
+        operator: '=',
+        value: '6bd7b31fd59fc1b51314ac90253dfdbffa18eec48c00051e92635fe964a08c9b'
+      }
+    ]
+  },
+  limit: {
+    urlparam: 'limit=99',
+    checks: [{field: 'limit', operator: '=', value: 99}],
+    checkFunctions: [
+      {func: validateLen, args: [99]},
+      {func: validateFields, args: []}
+    ]
+  },
+  order_asc: {
+    urlparam: 'order=asc',
+    checks: [{field: 'order', operator: '=', value: 'asc'}],
+    checkFunctions: [{func: validateOrder, args: ['asc']}]
+  },
+  order_desc: {
+    urlparam: 'order=desc',
+    checks: [{field: 'order', operator: '=', value: 'desc'}],
+    checkFunctions: [{func: validateOrder, args: ['desc']}]
+  }
 };
 
 /**
@@ -300,88 +275,86 @@ const singletests = {
  * individual (single) tests in the object above.
  */
 const combinedtests = [
-    ['timestamp_lowerlimit', 'timestamp_higherlimit'],
-    ['accountid_lowerlimit', 'accountid_higherlimit'],
-    ['timestamp_lowerlimit', 'timestamp_higherlimit',
-        'accountid_lowerlimit', 'accountbalance_higherlimit'],
-    ['timestamp_lowerlimit', 'accountid_equal', 'accountbalance_lowerlimit', 'limit'],
-    ['timestamp_higherlimit', 'accountid_lowerlimit'],
-    ['limit', 'order_asc']
+  ['timestamp_lowerlimit', 'timestamp_higherlimit'],
+  ['accountid_lowerlimit', 'accountid_higherlimit'],
+  ['timestamp_lowerlimit', 'timestamp_higherlimit', 'accountid_lowerlimit', 'accountbalance_higherlimit'],
+  ['timestamp_lowerlimit', 'accountid_equal', 'accountbalance_lowerlimit', 'limit'],
+  ['timestamp_higherlimit', 'accountid_lowerlimit'],
+  ['limit', 'order_asc']
 ];
 
 // Start of tests
 describe('Balances tests', () => {
-    let api = '/api/v1/balances';
+  let api = '/api/v1/balances';
 
-    // First, execute the single tests
-    for (const [name, item] of Object.entries(singletests)) {
-        test(`Balances single test: ${name} - URL: ${item.urlparam}`, async () => {
-            let response = await request(server).get([api, item.urlparam].join('?'));
+  // First, execute the single tests
+  for (const [name, item] of Object.entries(singletests)) {
+    test(`Balances single test: ${name} - URL: ${item.urlparam}`, async () => {
+      let response = await request(server).get([api, item.urlparam].join('?'));
 
-            expect(response.status).toEqual(200);
-            const balances = JSON.parse(response.text);
-            const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+      expect(response.status).toEqual(200);
+      const balances = JSON.parse(response.text);
+      const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
 
-            // Verify the sql query against each of the specified checks
-            let check = true;
-            for (const checkitem of item.checks) {
-                check = check && testutils.checkSql (parsedparams, checkitem);
-            }
-            expect (check).toBeTruthy();
+      // Verify the sql query against each of the specified checks
+      let check = true;
+      for (const checkitem of item.checks) {
+        check = check && testutils.checkSql(parsedparams, checkitem);
+      }
+      expect(check).toBeTruthy();
 
-            // Execute the specified functions to validate the output from the REST API
-            check = true;
-            if (item.hasOwnProperty('checkFunctions')) {
-                for (const cf of item.checkFunctions) {
-                    check = check && cf.func.apply(null, [balances].concat(cf.args))
-                }
-            }
-            expect (check).toBeTruthy();
-        })
-    }
-
-    // And now, execute the combined tests
-    for (const combination of combinedtests) {
-        // Combine the individual (single) checks as specified in the combinedtests array
-        let combtest = {urls: [], checks: [], names: ''};
-        for (const testname of combination) {
-            if (testname in singletests) {
-                combtest.names += testname + ' ';
-                combtest.urls.push(singletests[testname].urlparam);
-                combtest.checks = combtest.checks.concat(singletests[testname].checks);
-            }
+      // Execute the specified functions to validate the output from the REST API
+      check = true;
+      if (item.hasOwnProperty('checkFunctions')) {
+        for (const cf of item.checkFunctions) {
+          check = check && cf.func.apply(null, [balances].concat(cf.args));
         }
-        const comburl = combtest.urls.join('&');
-        test(`Balances combination test: ${combtest.names} - URL: ${comburl}`, async () => {
-            let response = await request(server).get([api, comburl].join('?'));
-            expect(response.status).toEqual(200);
-            const balances = JSON.parse(response.text);
-            const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+      }
+      expect(check).toBeTruthy();
+    });
+  }
 
-            // Verify the sql query against each of the specified checks
-            let check = true;
-            for (const checkitem of combtest.checks) {
-                check = check && testutils.checkSql (parsedparams, checkitem);
-            }
-            expect (check).toBeTruthy();
-
-            // Execute the specified functions to validate the output from the REST API
-            check = true;
-            if (combtest.hasOwnProperty('checkFunctions')) {
-                for (const cf of combtest.checkFunctions) {
-                    check = check && cf.func.apply(null, [balances].concat(cf.args))
-                }
-            }
-            expect (check).toBeTruthy();
-        })
+  // And now, execute the combined tests
+  for (const combination of combinedtests) {
+    // Combine the individual (single) checks as specified in the combinedtests array
+    let combtest = {urls: [], checks: [], names: ''};
+    for (const testname of combination) {
+      if (testname in singletests) {
+        combtest.names += testname + ' ';
+        combtest.urls.push(singletests[testname].urlparam);
+        combtest.checks = combtest.checks.concat(singletests[testname].checks);
+      }
     }
+    const comburl = combtest.urls.join('&');
+    test(`Balances combination test: ${combtest.names} - URL: ${comburl}`, async () => {
+      let response = await request(server).get([api, comburl].join('?'));
+      expect(response.status).toEqual(200);
+      const balances = JSON.parse(response.text);
+      const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
 
-    // Negative testing
-    testutils.testBadParams(request, server, api, 'timestamp', testutils.badParamsList());
-    testutils.testBadParams(request, server, api, 'account.id', testutils.badParamsList());
-    testutils.testBadParams(request, server, api, 'account.balance', testutils.badParamsList());
-    testutils.testBadParams(request, server, api, 'account.publickey', testutils.badParamsList());
-    testutils.testBadParams(request, server, api, 'limit', testutils.badParamsList());
-    testutils.testBadParams(request, server, api, 'order', testutils.badParamsList());
+      // Verify the sql query against each of the specified checks
+      let check = true;
+      for (const checkitem of combtest.checks) {
+        check = check && testutils.checkSql(parsedparams, checkitem);
+      }
+      expect(check).toBeTruthy();
+
+      // Execute the specified functions to validate the output from the REST API
+      check = true;
+      if (combtest.hasOwnProperty('checkFunctions')) {
+        for (const cf of combtest.checkFunctions) {
+          check = check && cf.func.apply(null, [balances].concat(cf.args));
+        }
+      }
+      expect(check).toBeTruthy();
+    });
+  }
+
+  // Negative testing
+  testutils.testBadParams(request, server, api, 'timestamp', testutils.badParamsList());
+  testutils.testBadParams(request, server, api, 'account.id', testutils.badParamsList());
+  testutils.testBadParams(request, server, api, 'account.balance', testutils.badParamsList());
+  testutils.testBadParams(request, server, api, 'account.publickey', testutils.badParamsList());
+  testutils.testBadParams(request, server, api, 'limit', testutils.badParamsList());
+  testutils.testBadParams(request, server, api, 'order', testutils.badParamsList());
 });
-

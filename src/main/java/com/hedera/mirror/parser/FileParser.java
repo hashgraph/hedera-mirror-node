@@ -23,5 +23,4 @@ package com.hedera.mirror.parser;
 public interface FileParser {
 
     void parse();
-
 }

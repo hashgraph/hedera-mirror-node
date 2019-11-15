@@ -20,17 +20,18 @@ package com.hedera.mirror.downloader;
  *
  */
 
-import com.hedera.FileCopier;
-import com.hedera.mirror.MirrorProperties;
-import com.hedera.mirror.addressbook.NetworkAddressBook;
-import com.hedera.mirror.config.MirrorNodeConfiguration;
-import com.hedera.mirror.domain.ApplicationStatusCode;
-import com.hedera.mirror.domain.HederaNetwork;
-import com.hedera.mirror.repository.ApplicationStatusRepository;
-
-import com.hedera.utilities.Utility;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 
 import io.findify.s3mock.S3Mock;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,24 +42,21 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import com.hedera.FileCopier;
+import com.hedera.mirror.MirrorProperties;
+import com.hedera.mirror.addressbook.NetworkAddressBook;
+import com.hedera.mirror.config.MirrorNodeConfiguration;
+import com.hedera.mirror.domain.ApplicationStatusCode;
+import com.hedera.mirror.domain.HederaNetwork;
+import com.hedera.mirror.repository.ApplicationStatusRepository;
+import com.hedera.utilities.Utility;
 
 public abstract class AbstractDownloaderTest {
     @Mock(answer = Answers.RETURNS_SMART_NULLS)
     protected ApplicationStatusRepository applicationStatusRepository;
-
-    @TempDir
-    Path dataPath;
-
     @TempDir
     protected Path s3Path;
-
     protected S3Mock s3;
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties commonDownloaderProperties;
@@ -68,12 +66,27 @@ public abstract class AbstractDownloaderTest {
     protected DownloaderProperties downloaderProperties;
     protected Downloader downloader;
     protected Path validPath;
+    @TempDir
+    Path dataPath;
+
+    private static void corruptFile(Path p) {
+        try {
+            File file = p.toFile();
+            if (file.isFile()) {
+                FileUtils.writeStringToFile(file, "corrupt", "UTF-8", true);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     // Implementation can assume that mirrorProperties and commonDownloaderProperties have been initialized.
     protected abstract DownloaderProperties getDownloaderProperties();
+
     // Implementations can assume that s3AsyncClient, applicationStatusRepository, networkAddressBook and
     // downloaderProperties have been initialized.
     protected abstract Downloader getDownloader();
+
     protected abstract Path getTestDataDir();
 
     boolean isSigFile(Path path) {
@@ -143,7 +156,8 @@ public abstract class AbstractDownloaderTest {
 
         reset(applicationStatusRepository);
         // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
-        Files.walk(downloaderProperties.getStreamPath()).filter(this::isSigFile).forEach(AbstractDownloaderTest::corruptFile);
+        Files.walk(downloaderProperties.getStreamPath()).filter(this::isSigFile)
+                .forEach(AbstractDownloaderTest::corruptFile);
         // fileName1 will be used to calculate marker for list request. mockS3 also returns back the marker in the
         // results. This is unlike AWS S3 which does not return back the marker.
         doReturn(fileName1).when(applicationStatusRepository).findByStatusCode(key);
@@ -217,16 +231,5 @@ public abstract class AbstractDownloaderTest {
         validPath.toFile().delete();
         downloader.download();
         assertThat(validPath).doesNotExist();
-    }
-
-    private static void corruptFile(Path p) {
-        try {
-            File file = p.toFile();
-            if (file.isFile()) {
-                FileUtils.writeStringToFile(file, "corrupt", "UTF-8", true);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }

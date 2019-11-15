@@ -20,20 +20,20 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.domain.TransactionResult;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class TransactionResultRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void findByResult() {
-    	assertThat(transactionResultRepository.findByResult("INVALID_TRANSACTION"))
-    		.isPresent()
-    		.get()
-    		.extracting(TransactionResult::getId)
-    		.isNotEqualTo(0L);    	
+        assertThat(transactionResultRepository.findByResult("INVALID_TRANSACTION"))
+                .isPresent()
+                .get()
+                .extracting(TransactionResult::getId)
+                .isNotEqualTo(0L);
     }
 }
