@@ -20,31 +20,33 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.test.context.jdbc.Sql;
+
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.FileData;
 import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
-import org.junit.jupiter.api.Test;
-import org.springframework.test.context.jdbc.Sql;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-@Sql(executionPhase= Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql") // Class manually commits so have to manually cleanup tables
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
+// Class manually commits so have to manually cleanup tables
 public class FileDataRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-    	RecordFile recordfile = insertRecordFile();
-    	Entities entity = insertAccountEntity();
-    	Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "FILECREATE");
+        RecordFile recordfile = insertRecordFile();
+        Entities entity = insertAccountEntity();
+        Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "FILECREATE");
 
-    	FileData fileData = new FileData();
-    	fileData.setConsensusTimestamp(transaction.getConsensusNs());
-    	fileData.setFileData("some file data".getBytes());
-    	fileData = fileDataRepository.save(fileData);
+        FileData fileData = new FileData();
+        fileData.setConsensusTimestamp(transaction.getConsensusNs());
+        fileData.setFileData("some file data".getBytes());
+        fileData = fileDataRepository.save(fileData);
 
-    	assertThat(fileDataRepository.findById(transaction.getConsensusNs()).get())
-			.isNotNull()
-			.isEqualTo(fileData);
+        assertThat(fileDataRepository.findById(transaction.getConsensusNs()).get())
+                .isNotNull()
+                .isEqualTo(fileData);
     }
 }

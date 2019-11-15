@@ -16,6 +16,7 @@
     "dotenv": "^8.0.0",
     "express": "^4.17.1",
     "log4js": "^4.3.1",
+    "mathjs": "^6.2.3",
     "shelljs": "^0.8.3"
   },
   "devDependencies": {

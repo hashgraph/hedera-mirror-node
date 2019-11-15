@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
-	<Appenders>
-		<Console name="console" target="SYSTEM_OUT">
-			<PatternLayout pattern="%d %-5p [%-5t] %c{1.} %m%n %throwable{short}"/>
-		</Console>
-	</Appenders>
-	<Loggers>
-		<Root level="WARN">
-			<AppenderRef ref="console"/>
-		</Root>
-        <Logger name="com.hedera" level="INFO" additivity="false">
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d %-5p [%-5t] %c{1.} %m%n %throwable{short}"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="WARN">
+            <AppenderRef ref="console"/>
+        </Root>
+        <Logger name="com.hedera.mirror" level="INFO" additivity="false">
             <AppenderRef ref="console"/>
         </Logger>
-	</Loggers>
+    </Loggers>
 </Configuration>

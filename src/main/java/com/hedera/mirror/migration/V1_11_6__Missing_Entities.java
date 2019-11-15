@@ -21,27 +21,30 @@ package com.hedera.mirror.migration;
  */
 
 import com.google.common.base.Stopwatch;
-
-import com.hedera.mirror.MirrorProperties;
-import com.hedera.mirror.domain.Entities;
-import com.hedera.mirror.domain.EntityType;
-import com.hedera.mirror.repository.*;
-import com.hedera.utilities.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
-import lombok.*;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.nio.file.Path;
+import java.util.Optional;
+import javax.inject.Named;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
-import org.hibernate.boot.cfgxml.internal.ConfigLoader;
 
-import javax.inject.Named;
-import java.io.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Optional;
+import com.hedera.mirror.MirrorProperties;
+import com.hedera.mirror.domain.Entities;
+import com.hedera.mirror.domain.EntityType;
+import com.hedera.mirror.repository.EntityRepository;
+import com.hedera.mirror.repository.EntityTypeRepository;
+import com.hedera.mirror.repository.TransactionRepository;
+import com.hedera.mirror.util.Utility;
 
 @Log4j2
 @Named
@@ -93,7 +96,8 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
         AccountInfo accountInfo = AccountInfo.parseFrom(data);
         AccountID accountID = accountInfo.getAccountID();
 
-        Optional<Entities> entityExists = entityRepository.findByPrimaryKey(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum());
+        Optional<Entities> entityExists = entityRepository
+                .findByPrimaryKey(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum());
         if (entityExists.isPresent() && hasCreateTransaction(entityExists.get())) {
             return;
         }
@@ -114,7 +118,9 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
 
         if (entity.getProxyAccountId() == null && accountInfo.hasProxyAccountID()) {
             AccountID proxyAccountID = accountInfo.getProxyAccountID();
-            Entities proxyEntity = entityRepository.findByPrimaryKey(proxyAccountID.getShardNum(), proxyAccountID.getRealmNum(), proxyAccountID.getAccountNum())
+            Entities proxyEntity = entityRepository
+                    .findByPrimaryKey(proxyAccountID.getShardNum(), proxyAccountID.getRealmNum(), proxyAccountID
+                            .getAccountNum())
                     .orElseGet(() -> entityRepository.save(toEntity(proxyAccountID)));
             entity.setProxyAccountId(proxyEntity.getId());
         }
@@ -142,6 +148,7 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
     }
 
     private boolean hasCreateTransaction(Entities entity) {
-        return transactionRepository.existsByEntityAndType(entity.getId(), "CONTRACTCREATEINSTANCE", "CRYPTOCREATEACCOUNT", "FILECREATE");
+        return transactionRepository
+                .existsByEntityAndType(entity.getId(), "CONTRACTCREATEINSTANCE", "CRYPTOCREATEACCOUNT", "FILECREATE");
     }
 }

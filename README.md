@@ -69,7 +69,13 @@ BUCKET_NAME=<your-bucket-name> docker-compose up
 
 ## Contributing
 
-See the [contributing](CONTRIBUTING.md) guide
+Contributions are welcome. Please see the [contributing](CONTRIBUTING.md) guide to see how you can get
+involved.
+
+## Code of Conduct
+
+This project is governed by the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are
+expected to uphold this code of conduct. Please report unacceptable behavior to [oss@hedera.com](mailto:oss@hedera.com)
 
 ## License
 

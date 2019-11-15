@@ -21,10 +21,18 @@ package com.hedera.mirror.domain;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.utilities.Utility;
-import lombok.Data;
-import javax.persistence.*;
+
 import java.time.Instant;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import lombok.Data;
+
+import com.hedera.mirror.util.Utility;
 
 @Data
 @Entity
@@ -78,6 +86,6 @@ public class Entities {
         this.expiryTimeNs = expiryTimeNs;
         Instant instant = Instant.ofEpochSecond(0, expiryTimeNs);
         setExpiryTimeSeconds(instant.getEpochSecond());
-        setExpiryTimeNanos((long)instant.getNano());
+        setExpiryTimeNanos((long) instant.getNano());
     }
 }

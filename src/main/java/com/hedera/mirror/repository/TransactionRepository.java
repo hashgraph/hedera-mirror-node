@@ -20,13 +20,14 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.domain.Transaction;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.domain.Transaction;
+
 public interface TransactionRepository extends CrudRepository<Transaction, Long> {
 
-    @Query("select count(t) > 0 from Transaction t, TransactionType tt where t.entityId = ?1 and t.transactionTypeId = tt.id and tt.name in ?2")
+    @Query("select count(t) > 0 from Transaction t, TransactionType tt where t.entityId = ?1 and t.transactionTypeId " +
+            "= tt.id and tt.name in ?2")
     boolean existsByEntityAndType(long entityId, String... transactionTypes);
-
 }

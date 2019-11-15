@@ -20,49 +20,48 @@ package com.hedera.mirror.parser.record;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.Sets;
-import com.hedera.FileCopier;
-import com.hedera.IntegrationTest;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import javax.annotation.Resource;
+
+import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.test.context.jdbc.Sql;
+
+import com.hedera.mirror.FileCopier;
+import com.hedera.mirror.IntegrationTest;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.domain.StreamType;
 import com.hedera.mirror.domain.Transaction;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
 import com.hedera.mirror.repository.TransactionRepository;
-import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.test.context.jdbc.Sql;
-
-import javax.annotation.Resource;
-import java.io.File;
-import java.nio.file.*;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 // Class manually commits so have to manually cleanup tables
-@Sql(executionPhase= Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase= Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts="classpath:db/scripts/cleanup.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileParserTest extends IntegrationTest {
-
-    @Resource
-    private RecordFileParser recordFileParser;
-
-    @Resource
-    private ApplicationStatusRepository applicationStatusRepository;
-
-    @Resource
-    private TransactionRepository transactionRepository;
-
-    @Resource
-    private RecordParserProperties parserProperties;
 
     @TempDir
     Path dataPath;
-
     @Value("classpath:data")
     Path testPath;
-
+    @Resource
+    private RecordFileParser recordFileParser;
+    @Resource
+    private ApplicationStatusRepository applicationStatusRepository;
+    @Resource
+    private TransactionRepository transactionRepository;
+    @Resource
+    private RecordParserProperties parserProperties;
     private FileCopier fileCopier;
     private StreamType streamType;
 
@@ -113,7 +112,8 @@ public class RecordFileParserTest extends IntegrationTest {
 
     @Test
     void invalidFile() throws Exception {
-        File recordFile = dataPath.resolve(streamType.getPath()).resolve(streamType.getValid()).resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
+        File recordFile = dataPath.resolve(streamType.getPath()).resolve(streamType.getValid())
+                .resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
         FileUtils.writeStringToFile(recordFile, "corrupt", "UTF-8");
         recordFileParser.parse();
         assertThat(Files.walk(parserProperties.getParsedPath())).filteredOn(p -> !p.toFile().isDirectory()).hasSize(0);
@@ -132,7 +132,9 @@ public class RecordFileParserTest extends IntegrationTest {
     @Test
     void bypassHashMismatch() throws Exception {
         applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "123");
-        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, "2019-09-01T00:00:00.000000Z.rcd");
+        applicationStatusRepository
+                .updateStatusValue(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, "2019-09-01T00:00" +
+                        ":00.000000Z.rcd");
         fileCopier.copy();
         recordFileParser.parse();
 

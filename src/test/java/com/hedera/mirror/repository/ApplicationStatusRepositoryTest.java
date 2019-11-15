@@ -20,13 +20,14 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.IntegrationTest;
-import com.hedera.mirror.domain.ApplicationStatusCode;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
 
-import static org.assertj.core.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+import com.hedera.mirror.IntegrationTest;
+import com.hedera.mirror.domain.ApplicationStatusCode;
 
 public class ApplicationStatusRepositoryTest extends IntegrationTest {
 
@@ -37,11 +38,13 @@ public class ApplicationStatusRepositoryTest extends IntegrationTest {
     void updateStatusValue() {
         String expected = "value1";
         applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH, expected);
-        assertThat(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH)).isEqualTo(expected);
+        assertThat(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH))
+                .isEqualTo(expected);
 
         // Check cache invalidation
         expected = "value2";
         applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH, expected);
-        assertThat(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH)).isEqualTo(expected);
+        assertThat(applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH))
+                .isEqualTo(expected);
     }
 }

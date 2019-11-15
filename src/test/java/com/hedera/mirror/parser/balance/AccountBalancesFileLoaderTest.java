@@ -20,16 +20,16 @@ package com.hedera.mirror.parser.balance;
  * ‍
  */
 
-import com.hedera.IntegrationTest;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.file.Path;
+import javax.annotation.Resource;
+import javax.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 
-import javax.annotation.Resource;
-import javax.transaction.Transactional;
-import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.*;
+import com.hedera.mirror.IntegrationTest;
 
 @Transactional
 public class AccountBalancesFileLoaderTest extends IntegrationTest {
@@ -47,7 +47,7 @@ public class AccountBalancesFileLoaderTest extends IntegrationTest {
         boolean success = cut.loadAccountBalances();
         assertAll(
                 () -> assertEquals(25391, cut.getValidRowCount())
-                ,() -> assertTrue(success)
+                , () -> assertTrue(success)
         );
         // TODO assert the rows actually added to the database.
     }

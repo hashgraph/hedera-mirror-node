@@ -68,10 +68,7 @@ Name | Default | Description
 `hedera.mirror.downloader.event.frequency` | 1m | The fixed period between invocations. Can accept duration units like `50ms`, `10s` etc.
 `hedera.mirror.downloader.event.prefix` | eventsStreams/events_ | The prefix to search cloud storage for event files
 `hedera.mirror.downloader.event.threads` | 13 | The number of threads to search for new files to download
-`hedera.mirror.downloader.maxConnections` | 500 | The maximum number of allowed open HTTP connections when downloading files
-`hedera.mirror.downloader.maxQueued` | 500 | The maximum number of downloads to queue before blocking
-`hedera.mirror.downloader.maxThreads` | 60 | The maximum number of threads to download files
-`hedera.mirror.downloader.minThreads` | 20 | The minimum number of threads to download files
+`hedera.mirror.downloader.maxConcurrency` | 1000 | The maximum number of allowed open HTTP connections. Used by AWS SDK directly.
 `hedera.mirror.downloader.record.batchSize` | 40 | The number of signature files to download per node before downloading the signed files
 `hedera.mirror.downloader.record.enabled` | true | Whether to enable record file downloads
 `hedera.mirror.downloader.record.frequency` | 500ms | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.

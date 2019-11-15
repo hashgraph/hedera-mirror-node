@@ -21,17 +21,16 @@ package com.hedera.mirror.repository;
  * ‍
  */
 
-import com.hedera.mirror.config.CacheConfiguration;
-import com.hedera.mirror.domain.EntityType;
-
 import java.util.Optional;
 
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.config.CacheConfiguration;
+import com.hedera.mirror.domain.EntityType;
+
 public interface EntityTypeRepository extends CrudRepository<EntityType, Integer> {
 
-	@Cacheable(cacheManager = CacheConfiguration.EXPIRE_AFTER_5M, cacheNames = "entity_type")
-	Optional<EntityType> findByName(String name);
-
+    @Cacheable(cacheManager = CacheConfiguration.EXPIRE_AFTER_5M, cacheNames = "entity_type")
+    Optional<EntityType> findByName(String name);
 }

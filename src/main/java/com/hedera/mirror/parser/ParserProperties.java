@@ -20,11 +20,11 @@ package com.hedera.mirror.parser;
  * ‍
  */
 
-import com.hedera.mirror.domain.StreamType;
-import com.hedera.utilities.Utility;
-
-import javax.annotation.PostConstruct;
 import java.nio.file.Path;
+import javax.annotation.PostConstruct;
+
+import com.hedera.mirror.domain.StreamType;
+import com.hedera.mirror.util.Utility;
 
 public interface ParserProperties {
 
