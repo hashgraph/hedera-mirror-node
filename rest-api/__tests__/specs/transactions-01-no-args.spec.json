@@ -20,12 +20,12 @@
             "amount": 1
           },
           {
-            "account": "0.15.10",
-            "amount": -11
-          },
-          {
             "account": "0.15.9",
             "amount": 10
+          },
+          {
+            "account": "0.15.10",
+            "amount": -11
           }
         ]
       },
@@ -66,12 +66,12 @@
         "max_fee": "33",
         "transfers": [
           {
-            "account": "0.15.8",
-            "amount": -31
-          },
-          {
             "account": "0.15.2",
             "amount": 1
+          },
+          {
+            "account": "0.15.8",
+            "amount": -31
           },
           {
             "account": "0.15.9",
@@ -92,16 +92,16 @@
         "transaction_id": "0.15.3-0-000001061",
         "transfers": [
           {
+            "account": "0.15.2",
+            "amount": 1
+          },
+          {
             "account": "0.15.3",
             "amount": -51
           },
           {
             "account": "0.15.4",
             "amount": 50
-          },
-          {
-            "account": "0.15.2",
-            "amount": 1
           }
         ],
         "valid_duration_seconds": "5",
@@ -118,12 +118,12 @@
         "transaction_id": "0.15.3-0-000001062",
         "transfers": [
           {
-            "account": "0.15.3",
-            "amount": -71
-          },
-          {
             "account": "0.15.2",
             "amount": 1
+          },
+          {
+            "account": "0.15.3",
+            "amount": -71
           },
           {
             "account": "0.15.4",
@@ -148,12 +148,12 @@
             "amount": 1
           },
           {
-            "account": "0.15.4",
-            "amount": 70
-          },
-          {
             "account": "0.15.3",
             "amount": -71
+          },
+          {
+            "account": "0.15.4",
+            "amount": 70
           }
         ],
         "valid_duration_seconds": null,

@@ -44,6 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,17 +53,13 @@ import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.EntityType;
 import com.hedera.mirror.domain.RecordFile;
-import com.hedera.mirror.domain.Transaction;
-import com.hedera.mirror.domain.TransactionType;
 import com.hedera.mirror.repository.EntityRepository;
 import com.hedera.mirror.repository.EntityTypeRepository;
 import com.hedera.mirror.repository.RecordFileRepository;
-import com.hedera.mirror.repository.TransactionRepository;
-import com.hedera.mirror.repository.TransactionTypeRepository;
 import com.hedera.mirror.util.Utility;
 
 @Disabled("This refreshes the ApplicationContext halfway through tests, causing multiple DataSource objects to be in " +
-        "use due the DatabaseUtilities hack. Can be re-enabled when DatabaseUtilities is deleted")
+       "use due to the DatabaseUtilities hack. Can be re-enabled when DatabaseUtilities is deleted")
 @TestPropertySource(properties = "spring.flyway.target=1.11.5")
 @Transactional
 public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
@@ -81,11 +78,9 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
     @Resource
     private RecordFileRepository recordFileRepository;
     @Resource
-    private TransactionRepository transactionRepository;
-    @Resource
-    private TransactionTypeRepository transactionTypeRepository;
-    @Resource
     private MirrorProperties mirrorProperties;
+    @Resource
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void before() {
@@ -137,22 +132,17 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
         recordFile.setName("foo.rcd");
         recordFile = recordFileRepository.save(recordFile);
 
-        Transaction transaction = new Transaction();
-        transaction.setConsensusNs(1L);
-        transaction.setEntityId(entity.getId());
-        transaction.setNodeAccountId(node.getId());
-        transaction.setPayerAccountId(payer.getId());
-        transaction.setRecordFileId(recordFile.getId());
-        transaction.setTransactionTypeId(transactionTypeRepository.findByName("CRYPTOCREATEACCOUNT")
-                .map(TransactionType::getId).orElse(null));
-        transaction.setValidStartNs(1L);
-        transactionRepository.save(transaction);
+        long transactionTypeId = jdbcTemplate.queryForObject("select id from t_transaction_types where name = ?", new Object[] {"CRYPTOCREATEACCOUNT"}, Integer.class);
+
+        jdbcTemplate.update("insert into t_transactions (consensus_ns, fk_cud_entity_id, fk_node_acc_id, " +
+                       "fk_payer_acc_id, fk_rec_file_id, fk_trans_type_id, valid_start_ns) values(?,?,?,?,?,?,?)",
+                1L, entity.getId(), node.getId(), payer.getId(), recordFile.getId(), transactionTypeId, 1L);
 
         migration.migrate(new FlywayContext());
 
         assertThat(entityRepository.findAll())
                 .extracting(Entities::getId)
-                .containsExactly(entity.getId(), node.getId(), payer.getId());
+                .containsExactlyInAnyOrder(entity.getId(), node.getId(), payer.getId());
 
         assertThat(entityRepository.findById(entity.getId()))
                 .get()

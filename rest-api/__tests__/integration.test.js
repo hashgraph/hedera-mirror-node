@@ -183,15 +183,15 @@ const addTransaction = async function(
   maxFee = 33
 ) {
   await sqlConnection.query(
-    'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, fk_result_id, fk_trans_type_id, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
+    'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
     [
       consensusTimestamp,
       consensusTimestamp - 1,
       fileId,
       accountEntityIds[payerAccountId],
       accountEntityIds[2],
-      24,
-      2,
+      22,
+      14,
       validDurationSeconds,
       maxFee
     ]

@@ -22,6 +22,8 @@ package com.hedera.mirror.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -39,23 +41,11 @@ public class TransactionRepositoryTest extends AbstractRepositoryTest {
                 .isEqualTo(transaction);
     }
 
-    @Test
-    void existsByEntityAndType() {
-        Transaction transaction = transactionRepository.save(transaction());
-        assertThat(transactionRepository
-                .existsByEntityAndType(transaction.getEntityId(), "CRYPTOCREATEACCOUNT", "FILECREATE")).isEqualTo(true);
-        assertThat(transactionRepository.existsByEntityAndType(transaction.getEntityId(), "CONTRACTCREATEINSTANCE"))
-                .isEqualTo(false);
-        assertThat(transactionRepository.existsByEntityAndType(-1L, "CRYPTOCREATEACCOUNT")).isEqualTo(false);
-    }
-
     private Transaction transaction() {
         Long recordFileId = insertRecordFile().getId();
         Long txEntityId = insertAccountEntity().getId();
         Long nodeAccountId = insertAccountEntity().getId();
         Long payerAccountId = insertAccountEntity().getId();
-        Integer transactionTypeId = transactionTypeRepository.findByName("CRYPTOCREATEACCOUNT").get().getId();
-        Integer resultId = transactionResultRepository.findByResult("SUCCESS").get().getId();
 
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
@@ -66,8 +56,8 @@ public class TransactionRepositoryTest extends AbstractRepositoryTest {
         transaction.setNodeAccountId(nodeAccountId);
         transaction.setPayerAccountId(payerAccountId);
         transaction.setRecordFileId(recordFileId);
-        transaction.setResultId(resultId);
-        transaction.setTransactionTypeId(transactionTypeId);
+        transaction.setResult(ResponseCodeEnum.SUCCESS.getNumber());
+        transaction.setType(TransactionBody.DataCase.CRYPTOCREATEACCOUNT.getNumber());
         transaction.setValidStartNs(20L);
         transaction.setValidDurationSeconds(11L);
         transaction.setMaxFee(33L);

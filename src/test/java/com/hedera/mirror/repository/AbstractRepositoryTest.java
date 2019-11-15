@@ -23,6 +23,8 @@ package com.hedera.mirror.repository;
 import java.util.Random;
 import javax.annotation.Resource;
 
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.IntegrationTest;
@@ -103,10 +105,8 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
         transaction.setEntityId(entityId);
         transaction.setNodeAccountId(entityId);
         transaction.setPayerAccountId(entityId);
-        TransactionResult result = transactionResultRepository.findByResult("SUCCESS").get();
-        transaction.setResultId(result.getId());
-        TransactionType transactionType = transactionTypeRepository.findByName(type).get();
-        transaction.setTransactionTypeId(transactionType.getId());
+        transaction.setResult(ResponseCodeEnum.SUCCESS.getNumber());
+        transaction.setType(TransactionBody.DataCase.valueOf(type).getNumber());
         transaction.setValidStartNs(validStartNs);
         transaction.setValidDurationSeconds(11L);
         transaction.setMaxFee(33L);

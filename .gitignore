@@ -29,7 +29,7 @@ hs_err_pid*
 /data/
 .classpath
 output/
-db/
+/db/
 
 ### VisualStudioCode ###
 .vscode/*

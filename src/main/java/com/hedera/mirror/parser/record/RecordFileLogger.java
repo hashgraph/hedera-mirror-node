@@ -20,6 +20,7 @@ package com.hedera.mirror.parser.record;
  * ‍
  */
 
+import com.google.protobuf.Descriptors;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -60,9 +61,6 @@ public class RecordFileLogger {
     private static Entities entities = null;
     private static RecordParserProperties parserProperties = null;
     private static NetworkAddressBook networkAddressBook = null;
-
-    private static HashMap<String, Integer> transactionResults = null;
-    private static HashMap<String, Integer> transactionTypes = null;
 
     private static long fileId = 0;
     private static long BATCH_SIZE = 100;
@@ -110,40 +108,10 @@ public class RecordFileLogger {
             return false;
         }
 
-        if (transactionTypes == null) {
-            transactionTypes = new HashMap<String, Integer>();
-            ResultSet resultSet;
-            try {
-                resultSet = connect.createStatement()
-                        .executeQuery("SELECT id, name FROM t_transaction_types ORDER BY id");
-                while (resultSet.next()) {
-                    transactionTypes.put(resultSet.getString("name"), resultSet.getInt("id"));
-                }
-                resultSet.close();
-            } catch (SQLException e) {
-                log.error("Unable to fetch transaction types", e);
-                return false;
-            }
-        }
-        if (transactionResults == null) {
-            transactionResults = new HashMap<String, Integer>();
-            ResultSet resultSet;
-            try {
-                resultSet = RecordFileLogger.connect.createStatement()
-                        .executeQuery("SELECT id, result FROM t_transaction_results ORDER BY id");
-                while (resultSet.next()) {
-                    transactionResults.put(resultSet.getString("result"), resultSet.getInt("id"));
-                }
-                resultSet.close();
-            } catch (SQLException e) {
-                log.error("Unable to fetch entity types", e);
-                return false;
-            }
-        }
         try {
             sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
-                    + " (fk_node_acc_id, memo, valid_start_ns, fk_trans_type_id, fk_payer_acc_id"
-                    + ", fk_result_id, consensus_ns, fk_cud_entity_id, charged_tx_fee"
+                    + " (fk_node_acc_id, memo, valid_start_ns, type, fk_payer_acc_id"
+                    + ", result, consensus_ns, fk_cud_entity_id, charged_tx_fee"
                     + ", initial_balance, fk_rec_file_id, valid_duration_seconds, max_fee"
                     + ", transaction_hash)"
                     + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -271,27 +239,14 @@ public class RecordFileLogger {
         sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), fkNodeAccountId);
         sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), body.getMemo().getBytes());
         sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), validStartNs);
-        sqlInsertTransaction.setInt(F_TRANSACTION.FK_TRANS_TYPE_ID.ordinal(), getTransactionTypeId(body));
+        sqlInsertTransaction.setInt(F_TRANSACTION.TYPE.ordinal(), getTransactionType(body));
         sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), fileId);
         sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION_SECONDS.ordinal(), validDurationSeconds);
 
         long fkPayerAccountId = entities.createOrGetEntity(transactionID.getAccountID());
 
         sqlInsertTransaction.setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), fkPayerAccountId);
-
-        long fk_result_id = -1;
-        String responseCode = "";
-        try {
-            responseCode = ResponseCodeEnum.forNumber(txRecord.getReceipt().getStatus().getNumber())
-                    .getValueDescriptor().getName();
-        } catch (Exception e) {
-            log.error("Unknown response code, com.hederahashgraph.api library likely out of date. Exception {}", e);
-            throw e;
-        }
-
-        fk_result_id = transactionResults.get(responseCode);
-
-        sqlInsertTransaction.setLong(F_TRANSACTION.FK_RESULT.ordinal(), fk_result_id);
+        sqlInsertTransaction.setLong(F_TRANSACTION.RESULT.ordinal(), txRecord.getReceipt().getStatusValue());
         sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), consensusNs);
         sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), txRecord.getTransactionFee());
         sqlInsertTransaction.setLong(F_TRANSACTION.MAX_FEE.ordinal(), body.getTransactionFee());
@@ -732,15 +687,21 @@ public class RecordFileLogger {
         }
     }
 
-    private static int getTransactionTypeId(TransactionBody body) {
-        //TODO: Use oneOfDescriptor ?
-        String transactionName = body.getDataCase().name();
-        if (transactionTypes.containsKey(transactionName)) {
-            return transactionTypes.get(transactionName);
-        } else {
-            log.error("Transaction type {} not known to mirror node, storing 'UNKNOWN'", transactionName);
-            return transactionTypes.get("UNKNOWN");
-        }
+    /**
+     * Because body.getDataCase() can return null for unknown transaction types, we instead get oneof generically
+     *
+     * @param body
+     * @return The protobuf index that represents the transaction type
+     */
+    private static int getTransactionType(TransactionBody body) {
+         return body.getDescriptorForType()
+                .getOneofs()
+                .stream()
+                .filter(d -> "data".equals(d.getName()))
+                .map(d -> body.getOneofFieldDescriptor(d))
+                .map(Descriptors.FieldDescriptor::getIndex)
+                .findFirst()
+                .orElseThrow(() -> new UnsupportedOperationException("Unable to extract transaction type for transaction " + body.getTransactionID()));
     }
 
     public static void insertContractResults(final PreparedStatement insert, final long consensusTimestamp,
@@ -769,7 +730,7 @@ public class RecordFileLogger {
 
     enum F_TRANSACTION {
         ZERO // column indices start at 1, this creates the necessary offset
-        , FK_NODE_ACCOUNT_ID, MEMO, VALID_START_NS, FK_TRANS_TYPE_ID, FK_PAYER_ACCOUNT_ID, FK_RESULT, CONSENSUS_NS,
+        , FK_NODE_ACCOUNT_ID, MEMO, VALID_START_NS, TYPE, FK_PAYER_ACCOUNT_ID, RESULT, CONSENSUS_NS,
         CUD_ENTITY_ID, CHARGED_TX_FEE, INITIAL_BALANCE, FK_REC_FILE_ID, VALID_DURATION_SECONDS, MAX_FEE,
         TRANSACTION_HASH
     }

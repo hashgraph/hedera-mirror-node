@@ -40,11 +40,9 @@ public class Transaction {
 
     private byte[] memo;
 
-    @Column(name = "fk_trans_type_id")
-    private Integer transactionTypeId;
+    private Integer type;
 
-    @Column(name = "fk_result_id")
-    private Integer resultId;
+    private Integer result;
 
     @Column(name = "fk_payer_acc_id")
     private Long payerAccountId;
