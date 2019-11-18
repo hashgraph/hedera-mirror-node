@@ -613,8 +613,7 @@ public class Utility {
         try {
             return Math.addExact(Math.multiplyExact(timestamp.getSeconds(), SCALAR), timestamp.getNanos());
         } catch (ArithmeticException e) {
-            log.error("Long overflow when converting Timestamp to nanos timestamp : {}", timestamp, e);
-            throw e;
+            throw new ArithmeticException("Long overflow when converting Timestamp to nanos timestamp: " + timestamp);
         }
     }
 

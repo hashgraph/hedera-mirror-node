@@ -36,6 +36,7 @@ import java.time.Instant;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 
+import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.flywaydb.core.api.configuration.Configuration;
@@ -213,6 +214,17 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
         Files.write(migration.getAccountInfoPath(), new Hex().encode(accountInfo.build().toByteArray()));
         migration.migrate(new FlywayContext());
         assertThat(entityRepository.count()).isEqualTo(0L);
+    }
+
+    @Test
+    void longOverflow() throws Exception {
+        AccountInfo.Builder accountInfo = accountInfo().setExpirationTime(Timestamp.newBuilder().setSeconds(31556889864403199L).build());
+        write(accountInfo.build());
+        migration.migrate(new FlywayContext());
+        assertThat(entityRepository.findAll())
+                .hasSize(2)
+                .extracting(Entities::getExpiryTimeNs)
+                .containsOnlyNulls();
     }
 
     private AccountInfo.Builder accountInfo() throws Exception {

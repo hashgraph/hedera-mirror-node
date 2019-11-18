@@ -105,7 +105,11 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
         Entities entity = entityExists.orElseGet(() -> toEntity(accountID));
 
         if (entity.getExpiryTimeNs() == null && accountInfo.hasExpirationTime()) {
-            entity.setExpiryTimeNs(Utility.timeStampInNanos(accountInfo.getExpirationTime()));
+            try {
+                entity.setExpiryTimeNs(Utility.timeStampInNanos(accountInfo.getExpirationTime()));
+            } catch (ArithmeticException e) {
+                log.warn("Invalid expiration time for account {}: {}", accountID.getAccountNum(), StringUtils.trim(e.getMessage()));
+            }
         }
 
         if (entity.getAutoRenewPeriod() == null && accountInfo.hasAutoRenewPeriod()) {
