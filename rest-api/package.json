@@ -1,6 +1,6 @@
 {
   "name": "rest-api",
-  "version": "0.4.0-SNAPSHOT",
+  "version": "0.4.0-rc3",
   "description": "REST API for Hedera Mirror Node",
   "main": "server.js",
   "scripts": {

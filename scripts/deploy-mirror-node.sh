@@ -8,15 +8,14 @@ if [ -z "${version}" ]; then
     exit 1
 fi
 
-usrlib=/usr/lib/mirror-node/
-usretc=/usr/etc/mirror-node/
+usretc=/usr/etc/mirror-node
+usrlib=/usr/lib/mirror-node
+varlib=/var/lib/mirror-node
 ts=$(date -u +%s)
-upgrade=0
 
-mkdir -p "${usretc}" "${usrlib}" /var/lib/mirror-node
+mkdir -p "${usretc}" "${usrlib}" "${varlib}"
 
 if [ -f "${usrlib}/mirror-node.jar" ]; then
-    upgrade=1
     echo "Upgrading to ${version}"
 
     # Stop the service
@@ -26,8 +25,17 @@ if [ -f "${usrlib}/mirror-node.jar" ]; then
     echo "Backing up binary"
     mv "${usrlib}/mirror-node.jar" "${usrlib}/mirror-node.jar.${ts}.old"
 
+    if [ -f "${usretc}/0.0.102" ] && [ ! -f "${varlib}/addressbook.bin" ]; then
+      cp "${usretc}/0.0.102" "${varlib}/addressbook.bin"
+    fi
+
     # Handle the migration from config.json to application.yml
     if [ -f "${usretc}/config.json" ] && [ ! -f  "${usretc}/application.yml" ]; then
+        network="MAINNET"
+        if (grep "bucketName.*testnet" "${usretc}/config.json"); then
+            network="TESTNET"
+        fi
+
         apiPassword=$(grep -oP '"apiPassword": "\K[^"]+' "${usretc}/config.json")
         bucketName=$(grep -oP '"bucketName": "\K[^"]+' "${usretc}/config.json")
         dbHost=$(grep -oP '"dbUrl": "jdbc:postgresql://\K[^:]+' "${usretc}/config.json")
@@ -43,6 +51,7 @@ hedera:
       password: ${dbPassword}
     downloader:
       bucketName: ${bucketName}
+    network: ${network}
 EOF
     fi
 else
@@ -51,7 +60,7 @@ else
     cat > "${usretc}/application.yml" <<EOF
 hedera:
   mirror:
-    dataPath: /var/lib/mirror-node
+    dataPath: ${varlib}
     db:
       apiPassword:
       host:
