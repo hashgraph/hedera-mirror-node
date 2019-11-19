@@ -24,6 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.domain.CryptoTransfer;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -113,14 +116,12 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
             Optional<Entities> accountId = entityRepository
                     .findByPrimaryKey(xferAccountId.getShardNum(), xferAccountId.getRealmNum(), xferAccountId
                             .getAccountNum());
-            assertEquals(accountAmount.getAmount(), cryptoTransferRepository
-                    .findByConsensusTimestampAndAccountId(Utility
-                            .timeStampInNanos(record.getConsensusTimestamp()), accountId.get().getId()).get()
-                    .getAmount());
-            assertEquals(accountAmount.getAccountID().getRealmNum(), cryptoTransferRepository
-                    .findByConsensusTimestampAndAccountNum(Utility
-                            .timeStampInNanos(record.getConsensusTimestamp()), accountId.get().getEntityNum()).get()
-                    .getAccountRealmNum());
+            var accountNum = accountId.get().getEntityNum();
+            var cryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
+                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
+                    accountNum).get();
+            assertEquals(accountAmount.getAmount(), cryptoTransfer.getAmount());
+            assertEquals(accountAmount.getAccountID().getRealmNum(), cryptoTransfer.getAccountRealmNum());
 
         }
     }

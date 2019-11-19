@@ -151,8 +151,8 @@ public class RecordFileLogger {
                     + ", transaction_hash)"
                     + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
-					+ " (consensus_timestamp, account_id, amount, account_realm_num, account_num)"
-					+ " VALUES (?, ?, ?, ?, ?)");
+					+ " (consensus_timestamp, amount, account_realm_num, account_num)"
+					+ " VALUES (?, ?, ?, ?)");
 
             sqlInsertFileData = connect.prepareStatement("INSERT INTO t_file_data"
                     + " (consensus_timestamp, file_data)"
@@ -253,7 +253,6 @@ public class RecordFileLogger {
     }
 
     public static void storeRecord(Transaction transaction, TransactionRecord txRecord) throws Exception {
-        AccountID createdAccountId;
         TransactionBody body;
 
         if (transaction.hasBody()) {
@@ -394,8 +393,7 @@ public class RecordFileLogger {
                     key = txMessage.getKey().toByteArray();
                 }
                 long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
-                createdAccountId = txRecord.getReceipt().getAccountID();
-                entityId = entities.createEntity(createdAccountId, expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
+                entityId = entities.createEntity(txRecord.getReceipt().getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
                         proxy_account_id);
             }
 
@@ -658,8 +656,7 @@ public class RecordFileLogger {
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
             var aa = transferList.getAccountAmounts(i);
             var accountId = aa.getAccountID();
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(),
-                    entities.createOrGetEntity(accountId));
+            entities.createOrGetEntity(accountId);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), aa.getAmount());
             sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
                     accountId.getRealmNum());
@@ -689,26 +686,24 @@ public class RecordFileLogger {
             var aa = transferList.getAccountAmounts(i);
             long amount = aa.getAmount();
             var accountId = aa.getAccountID();
-			long account = accountId.getAccountNum();
+			long accountNum = accountId.getAccountNum();
+            entities.createOrGetEntity(accountId);
 
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(),
-                    entities.createOrGetEntity(aa.getAccountID()));
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
                     accountId.getRealmNum());
             sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_NUM.ordinal(),
-                    accountId.getAccountNum());
+                    accountNum);
             sqlInsertTransferList.addBatch();
 
-            if (addInitialBalance && (initialBalance == aa.getAmount()) && (account == createdAccountNum)) {
+            if (addInitialBalance && (initialBalance == aa.getAmount()) && (accountNum == createdAccountNum)) {
                 addInitialBalance = false;
             }
         }
 
         if (addInitialBalance) {
+            entities.createOrGetEntity(payerAccountId);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(),
-                    entities.createOrGetEntity(payerAccountId));
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), -initialBalance);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
                     payerAccountId.getRealmNum());
@@ -717,9 +712,8 @@ public class RecordFileLogger {
 
             sqlInsertTransferList.addBatch();
 
+            entities.createOrGetEntity(createdAccountId);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_ID.ordinal(),
-                    entities.createOrGetEntity(createdAccountId));
             sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
                     createdAccountId.getRealmNum());
             sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_NUM.ordinal(),
@@ -796,7 +790,7 @@ public class RecordFileLogger {
 
     enum F_TRANSFERLIST {
         ZERO // column indices start at 1, this creates the necessary offset
-        , CONSENSUS_TIMESTAMP, ACCOUNT_ID, AMOUNT, ACCOUNT_REALM_NUM, ACCOUNT_NUM
+        , CONSENSUS_TIMESTAMP, AMOUNT, ACCOUNT_REALM_NUM, ACCOUNT_NUM
     }
 
     enum F_FILE_DATA {

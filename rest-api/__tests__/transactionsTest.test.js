@@ -31,7 +31,7 @@ function normalizeSql(str) {
 
 const boilerplatePrefix = `select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num , t.memo , t.consensus_ns , valid_start_ns ,
     ttr.result , t.fk_trans_type_id , ttt.name, t.fk_node_acc_id , enode.entity_shard as node_shard ,
-    enode.entity_realm as node_realm , enode.entity_num as node_num, account_id ,
+    enode.entity_realm as node_realm , enode.entity_num as node_num,
     ctl.account_realm_num as account_realm , ctl.account_num as account_num ,
     amount , t.charged_tx_fee, t.valid_duration_seconds, t.max_fee
 from ( select distinct ctl.consensus_timestamp
@@ -44,7 +44,7 @@ const boilerplateSufffix = ` join t_transactions t on tlist.consensus_timestamp 
     join t_entities enode on enode.id = t.fk_node_acc_id
     join t_entities etrans on etrans.id = t.fk_payer_acc_id
     join t_transaction_types ttt on ttt.id = t.fk_trans_type_id
-    left outer join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl.consensus_timestamp
+    left outer join t_cryptotransferlists ctl on tlist.consensus_timestamp = ctl.consensus_timestamp 
     order by t.consensus_ns desc`;
 
 test('transactions by timestamp gte', () => {
@@ -75,12 +75,11 @@ test('transactions by account eq', () => {
   let sql = transactions.reqToSql({query: {'account.id': '0.1.123'}});
   let expected = normalizeSql(
     boilerplatePrefix +
-      ` where ctl.account_id in (select id from t_entities
-            where ((entity_shard  =  $1 and entity_realm  =  $2 and entity_num  =  $3 )) and fk_entity_type_id < 3 limit 1000)
-        and 1=1 and 1=1   order by ctl.consensus_timestamp desc
-        limit $4 ) as tlist` +
+      ` where (account_realm_num  =  $1 and account_num  =  $2 )` +
+        `and 1=1 and 1=1   order by ctl.consensus_timestamp desc
+        limit $3 ) as tlist` +
       boilerplateSufffix
   );
   expect(normalizeSql(sql.query)).toEqual(expected);
-  expect(sql.params).toEqual(['0', '1', '123', 1000]);
+  expect(sql.params).toEqual(['1', '123', 1000]);
 });

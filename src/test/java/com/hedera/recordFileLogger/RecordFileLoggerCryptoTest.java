@@ -197,9 +197,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 		final com.hedera.mirror.domain.Transaction dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
 		final Entities dbNewAccountEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
 		final Entities dbProxyAccountId = entityRepository.findById(dbNewAccountEntity.getProxyAccountId()).get();
-        final com.hedera.mirror.domain.CryptoTransfer dbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountId(
+        final com.hedera.mirror.domain.CryptoTransfer dbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
                 Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                dbNewAccountEntity.getId()).get();
+                dbNewAccountEntity.getEntityNum()).get();
         final AccountID recordReceiptAccountId = record.getReceipt().getAccountID();
 
 		assertAll(

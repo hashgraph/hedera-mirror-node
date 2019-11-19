@@ -34,8 +34,6 @@ public class CryptoTransfer {
     @Id
     private Long consensusTimestamp;
 
-    private Long accountId;
-
     private Long amount;
 
     private Long accountRealmNum;

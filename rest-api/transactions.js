@@ -102,7 +102,6 @@ const getTransactionsOuterQuery = function(innerQuery, order) {
     '   , enode.entity_shard as node_shard\n' +
     '   , enode.entity_realm as node_realm\n' +
     '   , enode.entity_num as node_num\n' +
-    '   , account_id\n' +
     "   , ctl.account_realm_num as account_realm\n" +
     "   , ctl.account_num as account_num\n" +
     '   , amount\n' +
@@ -147,13 +146,7 @@ const getTransactionsInnerQuery = function(accountQuery, tsQuery, resultTypeQuer
     '       join t_transaction_results tr on t.fk_result_id = tr.id\n' +
     '       where ';
   if (accountQuery) {
-    innerQuery +=
-      'ctl.account_id in (select id from t_entities\n' +
-      '\t\twhere ' +
-      accountQuery +
-      ' and fk_entity_type_id < ' +
-      utils.ENTITY_TYPE_FILE +
-      ' limit 1000)\n'; // Max limit on the inner query.
+    innerQuery += accountQuery; // Max limit on the inner query.
   } else {
     innerQuery += '1=1\n';
   }
@@ -177,9 +170,8 @@ const reqToSql = function(req) {
     'account.id',
     [
       {
-        shard: 'entity_shard',
-        realm: 'entity_realm',
-        num: 'entity_num'
+        realm: 'account_realm_num',
+        num: 'account_num'
       }
     ],
     'entityId'
