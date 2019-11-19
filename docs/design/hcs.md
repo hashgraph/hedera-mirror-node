@@ -9,22 +9,22 @@ attempts to design a scalable solution to provide such functionality.
 
 ## Goals
 
-- Ingest HCS related transactions from the mainnet and persist to the database
-- Provide a streaming GRPC API to subscribe to HCS topics
-- Persist a subset of entities or transaction types due to the potential increase in the volume of data caused by HCS
-- Provide a listener interface so third parties can add custom code to be notified of validated transactions
-- Make the Mirror Node easier for users to run to enable wider adoption by the community
+-   Ingest HCS related transactions from the mainnet and persist to the database
+-   Provide a streaming GRPC API to subscribe to HCS topics
+-   Persist a subset of entities or transaction types due to the potential increase in the volume of data caused by HCS
+-   Provide a listener interface so third parties can add custom code to be notified of validated transactions
+-   Make the Mirror Node easier for users to run to enable wider adoption by the community
 
 ## Non-Goals
 
 These items are not currently in scope at this time in order to deliver a MVP, but can be revisited later as the need arises:
 
-- Provide a HCS REST API
-- Provide a HCS WebSocket or Server Sent Events API
-- Provide a non-HCS GRPC API
-- Provide a "relay" service to publish to other downstream systems
-- Provide higher level functionality like encryption, fragmentation or reassembly
-- Gossip based Mirror Node
+-   Provide a HCS REST API
+-   Provide a HCS WebSocket or Server Sent Events API
+-   Provide a non-HCS GRPC API
+-   Provide a "relay" service to publish to other downstream systems
+-   Provide higher level functionality like encryption, fragmentation or reassembly
+-   Gossip based Mirror Node
 
 ## Architecture
 
@@ -38,19 +38,19 @@ These items are not currently in scope at this time in order to deliver a MVP, b
 
 ### Alternatives
 
-- Replace step #5 above with the GRPC layer polling for new data
-- Replace step #5 above with a message broker that parser publishes to and GRPC API consumes
+-   Replace step #5 above with the GRPC layer polling for new data
+-   Replace step #5 above with a message broker that parser publishes to and GRPC API consumes
 
 ## GRPC API
 
 ### Setup
 
-- Create a new Maven sub-project `mirror-api-grpc`
-- Use `com.github.os72:protoc-jar-maven-plugin` for protoc
-- Use `net.devh:grpc-spring-boot-starter` to manage GRPC component lifecycle
-- Use `spring-boot-starter-data-r2dbc` and `io.r2dbc:r2dbc-postgresql` for reactive database access and asynchronous pg_notify support
-- Create a Systemd unit file `mirror-grpc.sevice`
-- Add to CircleCI and deployment script
+-   Create a new Maven module `mirror-protobuf`
+-   Create a new Maven module `mirror-grpc`
+-   Use [reactive-grpc](https://github.com/salesforce/reactive-grpc/tree/master/reactor) to compile the protobuf and provide service stubs
+-   Use `spring-boot-starter-data-r2dbc` and `io.r2dbc:r2dbc-postgresql` for reactive database access and asynchronous pg_notify support
+-   Create a Systemd unit file `mirror-grpc.sevice`
+-   Add to CircleCI and deployment script
 
 ### Protobuf
 
@@ -78,14 +78,21 @@ service ConsensusService {
 
 ![Sequence diagram](hcs-consensus-service.png)
 
-- Implement `TopicMesage` domain class
-- Implement `TopicMessageRepository`:
+> _Note:_ A [Flux](https://projectreactor.io/docs/core/release/reference/#flux) is a reactive publisher that emits an
+> asynchronous sequence of 0..N items.
+
+#### Domain/Repository
+
+Implement a `TopicMesage` domain class and a `TopicMessageRepository`:
+
 ```java
 public interface TopicMessageRepository extends ReactiveCrudRepository<TopicMessage, Long>, TopicMessageRepositoryCustom {
 }
 ```
-- Implement custom repository method that uses R2DBC's [Fluent Data Access API](https://docs.spring.io/spring-data/r2dbc/docs/1.0.x/reference/html/#r2dbc.datbaseclient.fluent-api)
+
+Implement a custom repository method that uses R2DBC's [Fluent Data Access API](https://docs.spring.io/spring-data/r2dbc/docs/1.0.x/reference/html/#r2dbc.datbaseclient.fluent-api)
 to build a dynamic query based upon the filter:
+
 ```java
 public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryCustom {
   public Flux<TopicMessage> findByFilter(TopicMessageFilter filter) {
@@ -93,119 +100,142 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
   }
 }
 ```
-> _Note:_ A [Flux](https://projectreactor.io/docs/core/release/reference/#flux) is a reactive publisher that emits an
-asynchronous sequence of 0..N items.
-- Implement `TopicSubscriber` that wraps `StreamObserver` in a `org.reactivestreams.Subscriber`:
+
+#### Topic Message Service
+
 ```java
-public class TopicSubscriber implements Subscriber<TopicMessage> {
-  public void onSubscribe(Subscription subscription) { ... }
-  public void onNext(TopicMessage topicMessage) { ... }
-  public void onError(Throwable throwable) { ... }
-  public void onComplete() { ... }
+public interface TopicMessageService {
+    Flux<TopicMessage> subscribeTopic(TopicMessageFilter filter);
 }
 ```
-  - If the database goes down or the listener misses a message, `TopicSubscriber` should continue retrying to connect and fill
-in any missing messages
-- Implement `ConsensusService`:
+
+-   Implement a `TopicMessageServiceImpl` to provide a reusable service layer for different transport protocols:
+-   Perform `topicMessageRepository.findByFilter(filter)`
+-   If the database goes down, `TopicMessageService` should continue retrying to connect
+-   If the listener misses any messages, `TopicMessageService` should manually query for them before continuing
+
+#### GRPC Service
+
 ```java
-@GrpcService
-public class ConsensusService extends ConsensusServiceGrpc.ConsensusServiceImplBase {
-    public void subscribeTopic(ConsensusTopicQuery consensusTopicQuery, StreamObserver<ConsensusTopicResponse> streamObserver) {
+public class ConsensusServiceGrpc extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
+    public Flux<ConsensusTopicResponse> subscribeTopic(Mono<ConsensusTopicQuery> consensusTopicQuery) {
       ...
     }
 }
 ```
-- Map `ConsensusTopicQuery` to `TopicMessageFilter`
-- Perform `topicMessageRepository.findByFilter(filter)`
-- Create and subscribe a `TopicSubscriber` to the results from the repository
-- Map `TopicMessage` to `ConsensusTopicResponse`
 
-### Topic Listener
+-   Validate input
+-   Map `ConsensusTopicQuery` to `TopicMessageFilter`
+-   Perform `topicMessageService.subscribeTopic(filter)`
+-   Map `TopicMessage` to `ConsensusTopicResponse`
 
-Provide the ability to stream new topic messages from the database and notify open GRPC streams of new data:
-- Implement a `TopicListener` that uses R2DBC's notify/listen support:
+#### Topic Listener
+
 ```java
 public interface TopicListener {
     Flux<TopicMessage> listen(TopicMessageFilter filter);
 }
 ```
-- Register `ConsensusService` with `TopicListener` to receive notifications of topic messages, filtering and buffering appropriately until
-current query finishes
+
+-   Provide the ability to stream new topic messages from the database and notify open GRPC streams of new data:
+-   Implement a `TopicListener` that uses R2DBC's notify/listen support
+-   Register `TopicMessageService` with `TopicListener` to receive notifications of topic messages, filtering and
+    buffering appropriately until current query finishes
 
 ## Parser
 
 ### Persist
 
 Modify `RecordFileLogger` to handle HCS transactions
-- Modify Entities to handle Topic ID and new fields
-- Insert HCS transaction into `t_transactions`
-- Insert `ConsensusSubmitMessage` transactions into `topic_message`
+
+-   Modify Entities to handle Topic ID and new fields
+-   Insert HCS transaction into `t_transactions`
+-   Insert `ConsensusSubmitMessage` transactions into `topic_message`
 
 ### Filter
 
 Provide the ability to filter transactions before persisting via configuration:
-- Add a new option `hedera.mirror.parser.include`
-- Add a new option `hedera.mirror.parser.exclude` with higher priority than includes
-- The structure of both will be a list of transaction filters and get turned into a single Predicate
-at runtime:
+
+-   Add a new option `hedera.mirror.parser.include`
+-   Add a new option `hedera.mirror.parser.exclude` with higher priority than includes
+-   The structure of both will be a list of transaction filters and get turned into a single Predicate
+    at runtime:
+
 ```yaml
 include:
-  - transaction: [ConsensusCreateTopic, ConsensusDeleteTopic, ConsensusUpdateTopic, ConsensusSubmitMessage]
-    entity: [0.0.1001]
+    - transaction: [ConsensusCreateTopic, ConsensusDeleteTopic, ConsensusUpdateTopic, ConsensusSubmitMessage]
+      entity: [0.0.1001]
 ```
-- Remove options `hedera.mirror.parser.record.persist*` and convert defaults to newer format
+
+-   Remove options `hedera.mirror.parser.record.persist*` and convert defaults to newer format
 
 ### Notify
 
 Provide the ability to notify components of new transactions:
-- Provide a `TransactionListener.notify(new TransactionEvent(Transaction, Record))` interface to be notified of incoming transactions
-- Rework `RecordFileLogger` to implement `TransactionListener`
-- Decouple `RecordFileParser` and `RecordFileLogger` so that `RecordFileParser` invokes `TransactionListener`
+
+```java
+public interface TransactionListener {
+    void onTransaction(TransactionEvent event);
+}
+
+@Value
+public class TransactionEvent {
+    private final Transaction transaction;
+    private final TransactionRecord record;
+}
+```
+
+-   Rework `RecordFileLogger` to implement `TransactionListener`
+-   Decouple `RecordFileParser` and `RecordFileLogger` so that `RecordFileParser` invokes `TransactionListener`
 
 ## Database
 
-- Add new `t_entity_types` row with name `topic`
-- Add new columns to `t_entities`:
-  - `submit_key bytea`
-  - `topic_valid_start_time nanos_timestamp`
-- Add new `t_transaction_types`:
-  - `CONSENSUSCREATETOPIC=24`
-  - `CONSENSUSUPDATETOPIC=25`
-  - `CONSENSUSDELETETOPIC=26`
-  - `CONSENSUSSUBMITMESSAGE=27`
-- Add new `t_transaction_result`:
-  - `INVALID_TOPIC_ID = 150`
-  - `TOPIC_DELETED = 151`
-  - `MESSAGE_TOO_LONG = 152`
-  - `TOPIC_NOT_ENABLED = 153`
-  - `INVALID_TOPIC_VALID_START_TIME = 154`
-  - `INVALID_TOPIC_EXPIRATION_TIME = 155`
-  - `INVALID_TOPIC_ADMIN_KEY = 156`
-  - `INVALID_TOPIC_SUBMIT_KEY = 157`
-  - `UNAUTHORIZED = 158`
-  - `INVALID_TOPIC_MESSAGE = 159`
-- Add new table `topic_message`:
+-   Add new `t_entity_types` row with name `topic`
+-   Add new columns to `t_entities`:
+    -   `submit_key bytea`
+    -   `topic_valid_start_time nanos_timestamp`
+-   Add new `t_transaction_types`:
+    -   `CONSENSUSCREATETOPIC=24`
+    -   `CONSENSUSUPDATETOPIC=25`
+    -   `CONSENSUSDELETETOPIC=26`
+    -   `CONSENSUSSUBMITMESSAGE=27`
+-   Add new `t_transaction_result`:
+    -   `INVALID_TOPIC_ID = 150`
+    -   `TOPIC_DELETED = 151`
+    -   `MESSAGE_TOO_LONG = 152`
+    -   `TOPIC_NOT_ENABLED = 153`
+    -   `INVALID_TOPIC_VALID_START_TIME = 154`
+    -   `INVALID_TOPIC_EXPIRATION_TIME = 155`
+    -   `INVALID_TOPIC_ADMIN_KEY = 156`
+    -   `INVALID_TOPIC_SUBMIT_KEY = 157`
+    -   `UNAUTHORIZED = 158`
+    -   `INVALID_TOPIC_MESSAGE = 159`
+-   Add new table `topic_message`:
+
 ```postgres-sql
 create table if not exists topic_message (
   consensus_timestamp nanos_timestamp primary key not null,
   message bytea not null,
-  realm bigint not null,
+  realm entity_realm_num not null,
   running_hash bytea not null,
   sequence_number bigint not null,
-  topic_num bigint not null
+  topic_num entity_num not null
 );
 
 create index if not exists topic_message_realm_num_timestamp
 on topic_message (realm, topic_num, consensus_timestamp);
 ```
-- Create a trigger that calls a new function on every insert of topic_message, serializes it to JSON and calls pg_notify
-  - Alternative would be dynamically create trigger for each GRPC call, but deleting trigger would be racy and duplicate traffic for same topic
-- Implement a retention period for `topic_message` using a Java `@Scheduled` thread and a config property `hedera.mirror.parser.retention` of type `java.time.Duration`
+
+-   Create a trigger that calls a new function on every insert of topic_message, serializes it to JSON and calls pg_notify
+    -   Alternative would be dynamically create trigger for each GRPC call, but deleting trigger would be racy and duplicate traffic for same topic
+-   Implement a retention period for `topic_message` using a Java `@Scheduled` thread and a config property `hedera.mirror.parser.retention` of type `java.time.Duration`
+
+## Non-Functional Requirements
+
+See GitHub issue [374](https://github.com/hashgraph/hedera-mirror-node/issues/374)
 
 ## Open Questions
 
 1. Should filter properties not apply to some tables or apply to all tables?
 2. Will `pg_notify` be able to handle the scale of data and clients required? See [Alternatives](#alternatives) section
-3. Will GRPC be able to handle the flood of messages without backpressure support? Investigate [salesforce/reactive-grpc](https://github.com/salesforce/reactive-grpc)
-4. What are the non-functional requirements for TPS/retention/client connections?
-5. How will we optimize for multiple clients requesting the same topic ID?
+3. How will we optimize for multiple clients requesting the same topic ID?
