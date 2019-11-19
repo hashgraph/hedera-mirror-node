@@ -58,11 +58,8 @@ function loadYaml(configFile) {
 }
 
 function loadEnvironment() {
-  let keys = Object.keys(process.env);
-  let values = Object.values(process.env);
-
-  for (i in keys) {
-    setConfigValue(keys[i], values[i]);
+  for (const [key, value] of Object.entries(process.env)) {
+    setConfigValue(key, value);
   }
 }
 
@@ -89,6 +86,7 @@ function setConfigValue(propertyPath, value) {
           break;
         } else {
           current[k] = convertType(value);
+          console.log(`Override config with environment variable ${propertyPath}=${value}`);
           return;
         }
       }
