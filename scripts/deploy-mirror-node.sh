@@ -31,6 +31,11 @@ if [ -f "${usrlib}/mirror-node.jar" ]; then
 
     # Handle the migration from config.json to application.yml
     if [ -f "${usretc}/config.json" ] && [ ! -f  "${usretc}/application.yml" ]; then
+        network="MAINNET"
+        if (grep "bucketName.*testnet" "${usretc}/config.json"); then
+            network="TESTNET"
+        fi
+
         apiPassword=$(grep -oP '"apiPassword": "\K[^"]+' "${usretc}/config.json")
         bucketName=$(grep -oP '"bucketName": "\K[^"]+' "${usretc}/config.json")
         dbHost=$(grep -oP '"dbUrl": "jdbc:postgresql://\K[^:]+' "${usretc}/config.json")
@@ -46,6 +51,7 @@ hedera:
       password: ${dbPassword}
     downloader:
       bucketName: ${bucketName}
+    network: ${network}
 EOF
     fi
 else
