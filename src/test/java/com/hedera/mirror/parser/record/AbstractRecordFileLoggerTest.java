@@ -115,13 +115,13 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
             Optional<Entities> accountId = entityRepository
                     .findByPrimaryKey(xferAccountId.getShardNum(), xferAccountId.getRealmNum(), xferAccountId
                             .getAccountNum());
+
             var accountNum = accountId.get().getEntityNum();
             var cryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
                     Utility.timeStampInNanos(record.getConsensusTimestamp()),
                     accountNum).get();
             assertEquals(accountAmount.getAmount(), cryptoTransfer.getAmount());
             assertEquals(accountAmount.getAccountID().getRealmNum(), cryptoTransfer.getAccountRealmNum());
-
         }
     }
 

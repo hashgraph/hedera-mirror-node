@@ -1,7 +1,5 @@
 package com.hedera.mirror.parser.record;
 
-import com.hederahashgraph.api.proto.java.AccountID;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -22,6 +20,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -149,9 +148,10 @@ public class RecordFileLogger {
                     + ", initial_balance, fk_rec_file_id, valid_duration_seconds, max_fee"
                     + ", transaction_hash)"
                     + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+          
             sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
-					+ " (consensus_timestamp, amount, account_realm_num, account_num)"
-					+ " VALUES (?, ?, ?, ?)");
+                    + " (consensus_timestamp, amount, account_realm_num, account_num)"
+                    + " VALUES (?, ?, ?, ?)");
 
             sqlInsertFileData = connect.prepareStatement("INSERT INTO t_file_data"
                     + " (consensus_timestamp, file_data)"
@@ -252,6 +252,7 @@ public class RecordFileLogger {
     }
 
     public static void storeRecord(Transaction transaction, TransactionRecord txRecord) throws Exception {
+        long createdAccountId = 0;
         TransactionBody body;
 
         if (transaction.hasBody()) {
@@ -685,7 +686,7 @@ public class RecordFileLogger {
             var aa = transferList.getAccountAmounts(i);
             long amount = aa.getAmount();
             var accountId = aa.getAccountID();
-			long accountNum = accountId.getAccountNum();
+			      long accountNum = accountId.getAccountNum();
             entities.createOrGetEntity(accountId);
 
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
