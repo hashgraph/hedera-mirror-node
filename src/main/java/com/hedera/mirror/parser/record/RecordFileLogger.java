@@ -20,6 +20,7 @@ package com.hedera.mirror.parser.record;
  * ‍
  */
 
+import com.google.protobuf.Descriptors;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -41,10 +42,11 @@ import java.io.IOException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import javax.inject.Named;
 
 import lombok.extern.log4j.Log4j2;
@@ -60,9 +62,6 @@ public class RecordFileLogger {
     private static Entities entities = null;
     private static RecordParserProperties parserProperties = null;
     private static NetworkAddressBook networkAddressBook = null;
-
-    private static HashMap<String, Integer> transactionResults = null;
-    private static HashMap<String, Integer> transactionTypes = null;
 
     private static long fileId = 0;
     private static long BATCH_SIZE = 100;
@@ -110,40 +109,10 @@ public class RecordFileLogger {
             return false;
         }
 
-        if (transactionTypes == null) {
-            transactionTypes = new HashMap<String, Integer>();
-            ResultSet resultSet;
-            try {
-                resultSet = connect.createStatement()
-                        .executeQuery("SELECT id, name FROM t_transaction_types ORDER BY id");
-                while (resultSet.next()) {
-                    transactionTypes.put(resultSet.getString("name"), resultSet.getInt("id"));
-                }
-                resultSet.close();
-            } catch (SQLException e) {
-                log.error("Unable to fetch transaction types", e);
-                return false;
-            }
-        }
-        if (transactionResults == null) {
-            transactionResults = new HashMap<String, Integer>();
-            ResultSet resultSet;
-            try {
-                resultSet = RecordFileLogger.connect.createStatement()
-                        .executeQuery("SELECT id, result FROM t_transaction_results ORDER BY id");
-                while (resultSet.next()) {
-                    transactionResults.put(resultSet.getString("result"), resultSet.getInt("id"));
-                }
-                resultSet.close();
-            } catch (SQLException e) {
-                log.error("Unable to fetch entity types", e);
-                return false;
-            }
-        }
         try {
             sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
-                    + " (fk_node_acc_id, memo, valid_start_ns, fk_trans_type_id, fk_payer_acc_id"
-                    + ", fk_result_id, consensus_ns, fk_cud_entity_id, charged_tx_fee"
+                    + " (fk_node_acc_id, memo, valid_start_ns, type, fk_payer_acc_id"
+                    + ", result, consensus_ns, fk_cud_entity_id, charged_tx_fee"
                     + ", initial_balance, fk_rec_file_id, valid_duration_seconds, max_fee"
                     + ", transaction_hash)"
                     + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -271,27 +240,14 @@ public class RecordFileLogger {
         sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), fkNodeAccountId);
         sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), body.getMemo().getBytes());
         sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), validStartNs);
-        sqlInsertTransaction.setInt(F_TRANSACTION.FK_TRANS_TYPE_ID.ordinal(), getTransactionTypeId(body));
+        sqlInsertTransaction.setInt(F_TRANSACTION.TYPE.ordinal(), getTransactionType(body));
         sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), fileId);
         sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION_SECONDS.ordinal(), validDurationSeconds);
 
         long fkPayerAccountId = entities.createOrGetEntity(transactionID.getAccountID());
 
         sqlInsertTransaction.setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), fkPayerAccountId);
-
-        long fk_result_id = -1;
-        String responseCode = "";
-        try {
-            responseCode = ResponseCodeEnum.forNumber(txRecord.getReceipt().getStatus().getNumber())
-                    .getValueDescriptor().getName();
-        } catch (Exception e) {
-            log.error("Unknown response code, com.hederahashgraph.api library likely out of date. Exception {}", e);
-            throw e;
-        }
-
-        fk_result_id = transactionResults.get(responseCode);
-
-        sqlInsertTransaction.setLong(F_TRANSACTION.FK_RESULT.ordinal(), fk_result_id);
+        sqlInsertTransaction.setLong(F_TRANSACTION.RESULT.ordinal(), txRecord.getReceipt().getStatusValue());
         sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), consensusNs);
         sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), txRecord.getTransactionFee());
         sqlInsertTransaction.setLong(F_TRANSACTION.MAX_FEE.ordinal(), body.getTransactionFee());
@@ -392,7 +348,7 @@ public class RecordFileLogger {
                 }
                 long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
                 entityId = entities.createEntity(txRecord.getReceipt()
-                        .getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
+                                .getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
                         proxy_account_id);
                 createdAccountId = entityId;
             }
@@ -453,7 +409,7 @@ public class RecordFileLogger {
                 }
                 long proxy_account_id = 0;
                 entityId = entities.createEntity(txRecord.getReceipt()
-                        .getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
+                                .getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
                         proxy_account_id);
             }
         } else if (body.hasFileAppend()) {
@@ -662,7 +618,9 @@ public class RecordFileLogger {
         }
     }
 
-    private static void insertCryptoCreateTransferList(final long consensusTimestamp, final TransactionRecord txRecord, final TransactionBody body, final long createdAccountId, final long payerAccountId)
+    private static void insertCryptoCreateTransferList(final long consensusTimestamp,
+                                                       final TransactionRecord txRecord, final TransactionBody body,
+                                                       final long createdAccountId, final long payerAccountId)
             throws SQLException {
 
         long initialBalance = 0;
@@ -732,15 +690,28 @@ public class RecordFileLogger {
         }
     }
 
-    private static int getTransactionTypeId(TransactionBody body) {
-        //TODO: Use oneOfDescriptor ?
-        String transactionName = body.getDataCase().name();
-        if (transactionTypes.containsKey(transactionName)) {
-            return transactionTypes.get(transactionName);
-        } else {
-            log.error("Transaction type {} not known to mirror node, storing 'UNKNOWN'", transactionName);
-            return transactionTypes.get("UNKNOWN");
+    /**
+     * Because body.getDataCase() can return null for unknown transaction types, we instead get oneof generically
+     *
+     * @param body
+     * @return The protobuf ID that represents the transaction type
+     */
+    private static int getTransactionType(TransactionBody body) {
+        TransactionBody.DataCase dataCase = body.getDataCase();
+
+        if (dataCase == null || dataCase == TransactionBody.DataCase.DATA_NOT_SET) {
+            Set<Integer> unknownFields = body.getUnknownFields().asMap().keySet();
+
+            if (unknownFields.size() != 1) {
+                throw new IllegalStateException("Unable to guess correct transaction type since there's not exactly one: " + unknownFields);
+            }
+
+            int transactionType = unknownFields.iterator().next();
+            log.warn("Encountered unknown transaction type: {}", transactionType);
+            return transactionType;
         }
+
+        return dataCase.getNumber();
     }
 
     public static void insertContractResults(final PreparedStatement insert, final long consensusTimestamp,
@@ -769,7 +740,7 @@ public class RecordFileLogger {
 
     enum F_TRANSACTION {
         ZERO // column indices start at 1, this creates the necessary offset
-        , FK_NODE_ACCOUNT_ID, MEMO, VALID_START_NS, FK_TRANS_TYPE_ID, FK_PAYER_ACCOUNT_ID, FK_RESULT, CONSENSUS_NS,
+        , FK_NODE_ACCOUNT_ID, MEMO, VALID_START_NS, TYPE, FK_PAYER_ACCOUNT_ID, RESULT, CONSENSUS_NS,
         CUD_ENTITY_ID, CHARGED_TX_FEE, INITIAL_BALANCE, FK_REC_FILE_ID, VALID_DURATION_SECONDS, MAX_FEE,
         TRANSACTION_HASH
     }

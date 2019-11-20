@@ -33,7 +33,7 @@ public class TransactionTypeRepositoryTest extends AbstractRepositoryTest {
         assertThat(transactionTypeRepository.findByName("CRYPTOADDCLAIM"))
                 .isPresent()
                 .get()
-                .extracting(TransactionType::getId)
-                .isNotEqualTo(0L);
+                .extracting(TransactionType::getProtoId)
+                .isEqualTo(10);
     }
 }

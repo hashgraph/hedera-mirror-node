@@ -21,6 +21,7 @@ package com.hedera.mirror.parser.record;
  */
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 
@@ -47,6 +48,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
 
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -857,11 +859,59 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
     }
 
+    @Test
+    void unknownTransactionResult() throws Exception {
+        int unknownResult = -1000;
+        final Transaction transaction = cryptoCreateTransaction();
+        final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        final CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
+        final TransactionRecord record = transactionRecord(transactionBody, unknownResult);
+
+        RecordFileLogger.storeRecord(transaction, record);
+        RecordFileLogger.completeFile("", "");
+
+        assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .extracting(com.hedera.mirror.domain.Transaction::getResult)
+                .containsOnly(unknownResult);
+    }
+
+    /**
+     * This test writes a TransactionBody that contains a unknown field with a protobuf ID of 9999 to test that the
+     * unknown transaction is still inserted into the database.
+     *
+     * @throws Exception
+     */
+    @Test
+    void unknownTransactionType() throws Exception {
+        int unknownType = 9999;
+        byte[] transactionBodyBytes = Hex.decodeHex("0a120a0c08eb88d6ee0510e8eff7ab01120218021202180318c280de1922020878321043727970746f2074657374206d656d6ffaf004050a03666f6f");
+        final TransactionBody transactionBody = TransactionBody.parseFrom(transactionBodyBytes);
+        Transaction transaction = Transaction.newBuilder()
+                .setBodyBytes(transactionBody.toByteString())
+                .setSigMap(getSigMap())
+                .build();
+
+        final TransactionRecord record = transactionRecordSuccess(transactionBody);
+
+        RecordFileLogger.storeRecord(transaction, record);
+        RecordFileLogger.completeFile("", "");
+
+        assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .extracting(com.hedera.mirror.domain.Transaction::getType)
+                .containsOnly(unknownType);
+    }
+
     private TransactionRecord transactionRecordSuccess(TransactionBody transactionBody) {
         return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS);
     }
 
     private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum responseCode) {
+        return transactionRecord(transactionBody, responseCode.getNumber());
+    }
+
+    private TransactionRecord transactionRecord(TransactionBody transactionBody, int responseCode) {
         final TransactionRecord.Builder record = TransactionRecord.newBuilder();
 
         // record
@@ -872,7 +922,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         record.setConsensusTimestamp(consensusTimeStamp);
         record.setMemoBytes(ByteString.copyFromUtf8(transactionBody.getMemo()));
         receipt.setAccountID(accountId);
-        receipt.setStatus(responseCode);
+        receipt.setStatusValue(responseCode);
 
         record.setReceipt(receipt.build());
         record.setTransactionFee(transactionBody.getTransactionFee());

@@ -45,7 +45,6 @@ const createTransferLists = function(rows, arr) {
       transactions[row.consensus_ns]['id'] = row['id'];
       transactions[row.consensus_ns]['memo_base64'] = utils.encodeBase64(row['memo']);
       transactions[row.consensus_ns]['result'] = row['result'];
-      transactions[row.consensus_ns]['result'] = row['result'];
       transactions[row.consensus_ns]['name'] = row['name'];
       transactions[row.consensus_ns]['max_fee'] = utils.getNullableNumber(row['max_fee']);
       transactions[row.consensus_ns]['valid_duration_seconds'] = utils.getNullableNumber(row['valid_duration_seconds']);
@@ -94,9 +93,8 @@ const getTransactionsOuterQuery = function(innerQuery, order) {
     '   , t.memo\n' +
     '	, t.consensus_ns\n' +
     '   , valid_start_ns\n' +
-    '   , ttr.result\n' +
-    '   , t.fk_trans_type_id\n' +
-    '   , ttt.name\n' +
+    "   , coalesce(ttr.result, 'UNKNOWN') as result\n" +
+    "   , coalesce(ttt.name, 'UNKNOWN') as name\n" +
     '   , t.fk_node_acc_id\n' +
     '   , enode.entity_shard as node_shard\n' +
     '   , enode.entity_realm as node_realm\n' +
@@ -113,14 +111,15 @@ const getTransactionsOuterQuery = function(innerQuery, order) {
     innerQuery +
     ') as tlist\n' +
     '   join t_transactions t on tlist.consensus_timestamp = t.consensus_ns\n' +
-    '   join t_transaction_results ttr on ttr.id = t.fk_result_id\n' +
+    '   left outer join t_transaction_results ttr on ttr.proto_id = t.result\n' +
     '   join t_entities enode on enode.id = t.fk_node_acc_id\n' +
     '   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n' +
-    '   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n' +
+    '   left outer join t_transaction_types ttt on ttt.proto_id = t.type\n' +
     '   left outer join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl.consensus_timestamp\n' +
     '   join t_entities eaccount on eaccount.id = ctl.account_id\n' +
     '   order by t.consensus_ns ' +
     order +
+    ', account_num asc, amount asc ' +
     '\n';
   return outerQuery;
 };
@@ -145,7 +144,6 @@ const getTransactionsInnerQuery = function(accountQuery, tsQuery, resultTypeQuer
     '      select distinct ctl.consensus_timestamp\n' +
     '       from t_cryptotransferlists ctl\n' +
     '       join t_transactions t on t.consensus_ns = ctl.consensus_timestamp\n' +
-    '       join t_transaction_results tr on t.fk_result_id = tr.id\n' +
     '       join t_entities eaccount on eaccount.id = ctl.account_id\n' +
     '       where ';
   if (accountQuery) {
@@ -284,9 +282,8 @@ const getOneTransaction = function(req, res) {
     '   , t.memo\n' +
     '	, t.consensus_ns\n' +
     '   , valid_start_ns\n' +
-    '   , ttr.result\n' +
-    '   , t.fk_trans_type_id\n' +
-    '   , ttt.name\n' +
+    "   , coalesce(ttr.result, 'UNKNOWN') as result\n" +
+    "   , coalesce(ttt.name, 'UNKNOWN') as type\n" +
     '   , t.fk_node_acc_id\n' +
     '   , enode.entity_shard as node_shard\n' +
     '   , enode.entity_realm as node_realm\n' +
@@ -300,10 +297,10 @@ const getOneTransaction = function(req, res) {
     '   , valid_duration_seconds\n' +
     '   , max_fee\n' +
     ' from t_transactions t\n' +
-    '   join t_transaction_results ttr on ttr.id = t.fk_result_id\n' +
+    '   join t_transaction_results ttr on ttr.proto_id = t.result\n' +
     '   join t_entities enode on enode.id = t.fk_node_acc_id\n' +
     '   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n' +
-    '   join t_transaction_types ttt on ttt.id = t.fk_trans_type_id\n' +
+    '   join t_transaction_types ttt on ttt.proto_id = t.type\n' +
     '   join t_cryptotransferlists ctl on  ctl.consensus_timestamp = t.consensus_ns\n' +
     '   join t_entities eaccount on eaccount.id = ctl.account_id\n' +
     ' where etrans.entity_shard = ?\n' +

@@ -35,11 +35,7 @@ import lombok.Data;
 public class TransactionResult {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
-    @Column(name = "proto_id")
-    private Integer protobufId;
+    private Integer protoId;
 
     private String result;
 }

@@ -33,7 +33,7 @@ public class TransactionResultRepositoryTest extends AbstractRepositoryTest {
         assertThat(transactionResultRepository.findByResult("INVALID_TRANSACTION"))
                 .isPresent()
                 .get()
-                .extracting(TransactionResult::getId)
-                .isNotEqualTo(0L);
+                .extracting(TransactionResult::getProtoId)
+                .isEqualTo(1);
     }
 }

@@ -90,8 +90,8 @@ public class RecordFileParserTest extends IntegrationTest {
 
         assertThat(transactionRepository.findAll())
                 .hasSize(19 + 15)
-                .extracting(Transaction::getTransactionTypeId)
-                .containsOnlyElementsOf(Sets.newHashSet(2, 4, 14));
+                .extracting(Transaction::getType)
+                .containsOnlyElementsOf(Sets.newHashSet(11, 12, 14));
     }
 
     @Test
