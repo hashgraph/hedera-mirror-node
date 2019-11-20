@@ -152,7 +152,7 @@ class Pool {
     // Adjust the low/high values based on the SQL query parameters
     for (const param of parsedparams) {
       switch (param.field) {
-        case 'entity_num':
+        case 'account_num':
           accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
           break;
         case 'consensus_ns':

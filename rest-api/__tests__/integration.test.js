@@ -200,7 +200,7 @@ const addTransaction = async function(
     let xfer = transfers[i];
     await sqlConnection.query(
       'insert into t_cryptotransferlists (consensus_timestamp, amount, account_realm_num, account_num) values ($1, $2, $3, $4);',
-      [consensusTimestamp, xfer[1], realm, accountEntityIds[xfer[0]]]
+      [consensusTimestamp, xfer[1], realm, xfer[0]]
     );
   }
 };
