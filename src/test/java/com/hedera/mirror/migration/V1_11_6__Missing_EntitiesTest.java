@@ -36,6 +36,7 @@ import java.time.Instant;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 
+import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.flywaydb.core.api.configuration.Configuration;
@@ -47,7 +48,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.hedera.IntegrationTest;
+import com.hedera.mirror.IntegrationTest;
 import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.EntityType;
@@ -59,7 +60,7 @@ import com.hedera.mirror.repository.EntityTypeRepository;
 import com.hedera.mirror.repository.RecordFileRepository;
 import com.hedera.mirror.repository.TransactionRepository;
 import com.hedera.mirror.repository.TransactionTypeRepository;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.Utility;
 
 @Disabled("This refreshes the ApplicationContext halfway through tests, causing multiple DataSource objects to be in " +
         "use due the DatabaseUtilities hack. Can be re-enabled when DatabaseUtilities is deleted")
@@ -213,6 +214,17 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
         Files.write(migration.getAccountInfoPath(), new Hex().encode(accountInfo.build().toByteArray()));
         migration.migrate(new FlywayContext());
         assertThat(entityRepository.count()).isEqualTo(0L);
+    }
+
+    @Test
+    void longOverflow() throws Exception {
+        AccountInfo.Builder accountInfo = accountInfo().setExpirationTime(Timestamp.newBuilder().setSeconds(31556889864403199L).build());
+        write(accountInfo.build());
+        migration.migrate(new FlywayContext());
+        assertThat(entityRepository.findAll())
+                .hasSize(2)
+                .extracting(Entities::getExpiryTimeNs)
+                .containsOnlyNulls();
     }
 
     private AccountInfo.Builder accountInfo() throws Exception {

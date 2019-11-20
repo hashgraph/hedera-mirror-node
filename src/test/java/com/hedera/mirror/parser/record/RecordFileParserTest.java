@@ -37,8 +37,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.jdbc.Sql;
 
-import com.hedera.FileCopier;
-import com.hedera.IntegrationTest;
+import com.hedera.mirror.FileCopier;
+import com.hedera.mirror.IntegrationTest;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.domain.StreamType;
 import com.hedera.mirror.domain.Transaction;

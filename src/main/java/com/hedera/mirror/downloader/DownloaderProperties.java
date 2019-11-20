@@ -24,7 +24,7 @@ import java.nio.file.Path;
 import javax.annotation.PostConstruct;
 
 import com.hedera.mirror.domain.StreamType;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.Utility;
 
 public interface DownloaderProperties {
 

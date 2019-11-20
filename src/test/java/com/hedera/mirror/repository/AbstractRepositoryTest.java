@@ -25,7 +25,7 @@ import javax.annotation.Resource;
 
 import org.springframework.transaction.annotation.Transactional;
 
-import com.hedera.IntegrationTest;
+import com.hedera.mirror.IntegrationTest;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;

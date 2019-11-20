@@ -1,0 +1,94 @@
+{
+  "apps": [
+    {
+      "exec_mode": "fork_mode",
+      "script": "./server.js",
+      "name": "6551",
+      "env": {
+        "HEDERA_MIRROR_API_PORT": 6551,
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "exec_mode": "fork_mode",
+      "script": "./server.js",
+      "name": "6552",
+      "env": {
+        "HEDERA_MIRROR_API_PORT": 6552,
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "exec_mode": "fork_mode",
+      "script": "./server.js",
+      "name": "6553",
+      "env": {
+        "HEDERA_MIRROR_API_PORT": 6553,
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "exec_mode": "fork_mode",
+      "script": "./server.js",
+      "name": "6554",
+      "env": {
+        "HEDERA_MIRROR_API_PORT": 6554,
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "exec_mode": "fork_mode",
+      "script": "./server.js",
+      "name": "6555",
+      "env": {
+        "HEDERA_MIRROR_API_PORT": 6555,
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "exec_mode": "fork_mode",
+      "script": "./server.js",
+      "name": "6556",
+      "env": {
+        "HEDERA_MIRROR_API_PORT": 6556,
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "exec_mode": "fork_mode",
+      "script": "./server.js",
+      "name": "6557",
+      "env": {
+        "HEDERA_MIRROR_API_PORT": 6557,
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "exec_mode": "fork_mode",
+      "script": "./server.js",
+      "name": "6558",
+      "env": {
+        "HEDERA_MIRROR_API_PORT": 6558,
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "exec_mode": "fork_mode",
+      "script": "./server.js",
+      "name": "6559",
+      "env": {
+        "HEDERA_MIRROR_API_PORT": 6559,
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "exec_mode": "fork_mode",
+      "script": "./server.js",
+      "name": "6560",
+      "env": {
+        "HEDERA_MIRROR_API_PORT": 6560,
+        "NODE_ENV": "production"
+      }
+    }
+  ]
+}

@@ -89,9 +89,10 @@ describe('Load YAML configuration:', () => {
 
 describe('Load environment configuration:', () => {
   test('Number', () => {
-    process.env = {HEDERA_MIRROR_SHARD: '2'};
+    process.env = {HEDERA_MIRROR_SHARD: '2', HEDERA_MIRROR_API_PORT: '5552'};
     const config = require('../config');
     expect(config.shard).toBe(2);
+    expect(config.api.port).toBe(5552);
   });
 
   test('String', () => {

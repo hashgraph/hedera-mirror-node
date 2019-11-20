@@ -56,8 +56,8 @@ import com.hedera.mirror.addressbook.NetworkAddressBook;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 import com.hedera.mirror.domain.NodeAddress;
 import com.hedera.mirror.repository.ApplicationStatusRepository;
-import com.hedera.utilities.ShutdownHelper;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.ShutdownHelper;
+import com.hedera.mirror.util.Utility;
 
 public abstract class Downloader {
     protected final Logger log = LogManager.getLogger(getClass());

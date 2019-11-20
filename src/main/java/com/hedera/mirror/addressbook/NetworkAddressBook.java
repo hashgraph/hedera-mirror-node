@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,13 +34,14 @@ import java.util.Collection;
 import javax.inject.Named;
 
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.HederaNetwork;
 import com.hedera.mirror.domain.NodeAddress;
-import com.hedera.utilities.Utility;
+import com.hedera.mirror.util.Utility;
 
 @Log4j2
 @Named
@@ -59,11 +61,10 @@ public class NetworkAddressBook {
             File addressBookFile = path.toFile();
             if (!addressBookFile.exists() || !addressBookFile.canRead()) {
                 HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
-                Resource resource = new ClassPathResource(String
-                        .format("addressbook/%s", hederaNetwork.name().toLowerCase()));
-                Path defaultAddressBook = resource.getFile().toPath();
+                String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
+                Resource resource = new ClassPathResource(resourcePath, getClass());
                 Utility.ensureDirectory(path.getParent());
-                Files.copy(defaultAddressBook, path, StandardCopyOption.REPLACE_EXISTING);
+                IOUtils.copy(resource.getInputStream(), new FileOutputStream(addressBookFile));
                 log.info("Copied default address book {} to {}", resource, path);
             }
         } catch (Exception e) {

@@ -9,7 +9,7 @@
         <Root level="WARN">
             <AppenderRef ref="console"/>
         </Root>
-        <Logger name="com.hedera" level="INFO" additivity="false">
+        <Logger name="com.hedera.mirror" level="INFO" additivity="false">
             <AppenderRef ref="console"/>
         </Logger>
     </Loggers>

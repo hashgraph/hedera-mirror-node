@@ -26,7 +26,7 @@ import javax.annotation.Resource;
 
 import org.junit.jupiter.api.Test;
 
-import com.hedera.IntegrationTest;
+import com.hedera.mirror.IntegrationTest;
 import com.hedera.mirror.domain.ApplicationStatusCode;
 
 public class ApplicationStatusRepositoryTest extends IntegrationTest {
