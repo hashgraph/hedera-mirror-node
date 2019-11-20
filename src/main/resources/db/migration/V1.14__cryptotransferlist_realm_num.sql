@@ -28,7 +28,11 @@ alter table t_cryptotransferlists
 alter table t_cryptotransferlists
     alter column account_num set not null;
 
+-- add additional indexes
 create index if not exists idx__t_cryptotransferlists__consensus_and_realm_and_num
+    on t_cryptotransferlists (consensus_timestamp, account_realm_num, account_num);
+
+create index if not exists idx__t_cryptotransferlists__ts_then_acct
     on t_cryptotransferlists (consensus_timestamp, account_realm_num, account_num);
 
 -- drop constraint and acount_id
