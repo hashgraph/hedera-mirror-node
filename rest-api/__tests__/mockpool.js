@@ -183,7 +183,7 @@ class Pool {
       row.consensus_ns = this.toNs(this.timeNow - i);
       row.valid_start_ns = this.toNs(this.timeNow - i - 1);
       row.result = 'SUCCESS';
-      row.type = 2;
+      row.type = 14;
       row.name = 'CRYPTOTRANSFER';
       row.node_shard = 0;
       row.node_realm = 0;

@@ -23,6 +23,7 @@ const config = require('./config.js');
 const ed25519 = require('./ed25519.js');
 
 const ENTITY_TYPE_FILE = 3;
+const TRANSACTION_RESULT_SUCCESS = 22;
 
 const httpStatusCodes = {
   OK: 200,
@@ -371,9 +372,9 @@ const parseResultParams = function(req) {
   let query = '';
 
   if (resultType === 'success') {
-    query = "     result='SUCCESS'";
+    query = '     result=' + TRANSACTION_RESULT_SUCCESS;
   } else if (resultType === 'fail') {
-    query = "     result != 'SUCCESS'";
+    query = '     result != ' + TRANSACTION_RESULT_SUCCESS;
   }
   return query;
 };
@@ -647,5 +648,6 @@ module.exports = {
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
   getNullableNumber: getNullableNumber,
   nsToSecNsWithHyphen: nsToSecNsWithHyphen,
-  createTransactionId: createTransactionId
+  createTransactionId: createTransactionId,
+  TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS
 };

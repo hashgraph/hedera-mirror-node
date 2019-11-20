@@ -158,6 +158,24 @@
         ],
         "valid_duration_seconds": null,
         "valid_start_timestamp": "0.000001063"
+      },
+      {
+        "charged_tx_fee": 0,
+        "consensus_timestamp": "0.000001070",
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "UNKNOWN",
+        "node": "0.15.2",
+        "result": "UNKNOWN",
+        "transaction_id": "0.15.7-0-000001069",
+        "transfers": [
+          {
+            "account": "0.15.2",
+            "amount": 1
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "0.000001069"
       }
     ],
     "links": {

@@ -42,10 +42,11 @@ import java.io.IOException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import javax.inject.Named;
 
 import lombok.extern.log4j.Log4j2;
@@ -347,7 +348,7 @@ public class RecordFileLogger {
                 }
                 long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
                 entityId = entities.createEntity(txRecord.getReceipt()
-                        .getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
+                                .getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
                         proxy_account_id);
                 createdAccountId = entityId;
             }
@@ -408,7 +409,7 @@ public class RecordFileLogger {
                 }
                 long proxy_account_id = 0;
                 entityId = entities.createEntity(txRecord.getReceipt()
-                        .getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
+                                .getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
                         proxy_account_id);
             }
         } else if (body.hasFileAppend()) {
@@ -617,7 +618,9 @@ public class RecordFileLogger {
         }
     }
 
-    private static void insertCryptoCreateTransferList(final long consensusTimestamp, final TransactionRecord txRecord, final TransactionBody body, final long createdAccountId, final long payerAccountId)
+    private static void insertCryptoCreateTransferList(final long consensusTimestamp,
+                                                       final TransactionRecord txRecord, final TransactionBody body,
+                                                       final long createdAccountId, final long payerAccountId)
             throws SQLException {
 
         long initialBalance = 0;
@@ -691,17 +694,24 @@ public class RecordFileLogger {
      * Because body.getDataCase() can return null for unknown transaction types, we instead get oneof generically
      *
      * @param body
-     * @return The protobuf index that represents the transaction type
+     * @return The protobuf ID that represents the transaction type
      */
     private static int getTransactionType(TransactionBody body) {
-         return body.getDescriptorForType()
-                .getOneofs()
-                .stream()
-                .filter(d -> "data".equals(d.getName()))
-                .map(d -> body.getOneofFieldDescriptor(d))
-                .map(Descriptors.FieldDescriptor::getIndex)
-                .findFirst()
-                .orElseThrow(() -> new UnsupportedOperationException("Unable to extract transaction type for transaction " + body.getTransactionID()));
+        TransactionBody.DataCase dataCase = body.getDataCase();
+
+        if (dataCase == null || dataCase == TransactionBody.DataCase.DATA_NOT_SET) {
+            Set<Integer> unknownFields = body.getUnknownFields().asMap().keySet();
+
+            if (unknownFields.size() != 1) {
+                throw new IllegalStateException("Unable to guess correct transaction type since there's not exactly one: " + unknownFields);
+            }
+
+            int transactionType = unknownFields.iterator().next();
+            log.warn("Encountered unknown transaction type: {}", transactionType);
+            return transactionType;
+        }
+
+        return dataCase.getNumber();
     }
 
     public static void insertContractResults(final PreparedStatement insert, final long consensusTimestamp,

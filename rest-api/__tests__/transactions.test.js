@@ -22,6 +22,7 @@
 const request = require('supertest');
 const server = require('../server');
 const testutils = require('./testutils.js');
+const utils = require('../utils.js');
 
 beforeAll(async () => {
   jest.setTimeout(1000);
@@ -226,11 +227,11 @@ const singletests = {
   },
   result_fail: {
     urlparam: 'result=fail',
-    checks: [{field: 'result', operator: '!=', value: 'SUCCESS'}]
+    checks: [{field: 'result', operator: '!=', value: utils.TRANSACTION_RESULT_SUCCESS}]
   },
   result_success: {
     urlparam: 'result=success',
-    checks: [{field: 'result', operator: '=', value: 'SUCCESS'}]
+    checks: [{field: 'result', operator: '=', value: utils.TRANSACTION_RESULT_SUCCESS}]
   }
 };
 
@@ -298,7 +299,7 @@ describe('Transaction tests', () => {
     }
     const comburl = combtest.urls.join('&');
 
-    test(`Transactions combinationn test: ${combtest.names} - URL: ${comburl}`, async () => {
+    test(`Transactions combination test: ${combtest.names} - URL: ${comburl}`, async () => {
       let response = await request(server).get([api, comburl].join('?'));
       expect(response.status).toEqual(200);
       const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
