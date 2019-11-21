@@ -108,7 +108,7 @@ const parseSqlQueryAndParams = function(sqlquery, sqlparams, orderprefix = '') {
       });
     }
     // Result parameter
-    let resultparam = sql.match(/result\s*(!*=)\s*\'(.*?)\'/);
+    let resultparam = sql.match(/result\s*(!*=)\s*(\d+)/);
     if (resultparam !== null && resultparam.length == 3) {
       parsedparams.push({
         field: 'result',

@@ -127,7 +127,7 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
 
     protected final void assertRecord(TransactionRecord record, com.hedera.mirror.domain.Transaction dbTransaction) {
         final Entities dbPayerEntity = entityRepository.findById(dbTransaction.getPayerAccountId()).get();
-        final TransactionResult dbResult = transactionResultRepository.findById(dbTransaction.getResultId()).get();
+        final TransactionResult dbResult = transactionResultRepository.findById(dbTransaction.getResult()).get();
         // record inputs
         assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), dbTransaction.getConsensusNs());
         assertEquals(record.getTransactionFee(), dbTransaction.getChargedTxFee());
@@ -137,7 +137,7 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
         assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()), dbTransaction
                 .getValidStartNs());
         // receipt
-        assertEquals(record.getReceipt().getStatusValue(), dbResult.getProtobufId());
+        assertEquals(record.getReceipt().getStatusValue(), dbResult.getProtoId());
         assertEquals(record.getReceipt().getStatus().getValueDescriptor().getName(), dbResult.getResult());
         assertArrayEquals(record.getTransactionHash().toByteArray(), dbTransaction.getTransactionHash());
     }

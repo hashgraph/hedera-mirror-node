@@ -180,18 +180,20 @@ const addTransaction = async function(
   payerAccountId,
   transfers,
   validDurationSeconds = 11,
-  maxFee = 33
+  maxFee = 33,
+  result = 22,
+  type = 14
 ) {
   await sqlConnection.query(
-    'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, fk_result_id, fk_trans_type_id, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
+    'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
     [
       consensusTimestamp,
       consensusTimestamp - 1,
       fileId,
       accountEntityIds[payerAccountId],
       accountEntityIds[2],
-      24,
-      2,
+      result,
+      type,
       validDurationSeconds,
       maxFee
     ]
@@ -374,6 +376,20 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
     '@null,null',
     '@null,null'
   ]);
+});
+
+test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
+  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', [
+    'unknowntypeandresult'
+  ]);
+  let fileId = res.rows[0]['id'];
+  await addTransaction(1070, fileId, 7, [[2, 1]], 11, 33, -1, -1);
+
+  let sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
+  res = await sqlConnection.query(sql.query, sql.params);
+  expect(res.rowCount).toEqual(1);
+  expect(res.rows[0].name).toEqual('UNKNOWN');
+  expect(res.rows[0].result).toEqual('UNKNOWN');
 });
 
 const createAndPopulateNewAccount = async (id, ts, bal) => {

@@ -30,22 +30,21 @@ function normalizeSql(str) {
 }
 
 const boilerplatePrefix = `select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num , t.memo , t.consensus_ns , valid_start_ns ,
-    ttr.result , t.fk_trans_type_id , ttt.name, t.fk_node_acc_id , enode.entity_shard as node_shard ,
+    coalesce(ttr.result, 'UNKNOWN') as result , coalesce(ttt.name, 'UNKNOWN') as name , t.fk_node_acc_id , enode.entity_shard as node_shard ,
     enode.entity_realm as node_realm , enode.entity_num as node_num,
-    ctl.account_realm_num as account_realm , ctl.account_num as account_num ,
+    ctl.account_realm_num as account_realm , ctl.account_num as account_num, 
     amount , t.charged_tx_fee, t.valid_duration_seconds, t.max_fee
 from ( select distinct ctl.consensus_timestamp
     from t_cryptotransferlists ctl
-    join t_transactions t on t.consensus_ns = ctl.consensus_timestamp
-    join t_transaction_results tr on t.fk_result_id = tr.id `;
+    join t_transactions t on t.consensus_ns = ctl.consensus_timestamp `;
 
 const boilerplateSufffix = ` join t_transactions t on tlist.consensus_timestamp = t.consensus_ns
-    join t_transaction_results ttr on ttr.id = t.fk_result_id
+    left outer join t_transaction_results ttr on ttr.proto_id = t.result
     join t_entities enode on enode.id = t.fk_node_acc_id
     join t_entities etrans on etrans.id = t.fk_payer_acc_id
-    join t_transaction_types ttt on ttt.id = t.fk_trans_type_id
-    left outer join t_cryptotransferlists ctl on tlist.consensus_timestamp = ctl.consensus_timestamp 
-    order by t.consensus_ns desc`;
+    left outer join t_transaction_types ttt on ttt.proto_id = t.type
+    left outer join t_cryptotransferlists ctl on tlist.consensus_timestamp = ctl.consensus_timestamp
+    order by t.consensus_ns desc,account_num asc,amount asc`;
 
 test('transactions by timestamp gte', () => {
   let sql = transactions.reqToSql({query: {timestamp: 'gte:1234'}});
