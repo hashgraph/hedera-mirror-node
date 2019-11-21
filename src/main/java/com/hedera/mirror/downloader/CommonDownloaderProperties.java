@@ -20,7 +20,6 @@ package com.hedera.mirror.downloader;
  * ‍
  */
 
-import javax.inject.Named;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -32,7 +31,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Data
-@Named
 @Validated
 @ConfigurationProperties("hedera.mirror.downloader")
 public class CommonDownloaderProperties {

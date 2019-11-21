@@ -22,7 +22,6 @@ package com.hedera.mirror;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import javax.inject.Named;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
@@ -34,7 +33,6 @@ import com.hedera.mirror.domain.HederaNetwork;
 import com.hedera.mirror.util.Utility;
 
 @Data
-@Named
 @Validated
 @ConfigurationProperties("hedera.mirror")
 public class MirrorProperties {

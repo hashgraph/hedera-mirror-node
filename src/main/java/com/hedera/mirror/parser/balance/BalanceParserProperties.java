@@ -21,7 +21,6 @@ package com.hedera.mirror.parser.balance;
  */
 
 import java.nio.file.Path;
-import javax.inject.Named;
 import javax.validation.constraints.Min;
 
 import lombok.Data;
@@ -33,7 +32,6 @@ import com.hedera.mirror.domain.StreamType;
 import com.hedera.mirror.parser.ParserProperties;
 
 @Data
-@Named
 @Validated
 @ConfigurationProperties("hedera.mirror.parser.balance")
 public class BalanceParserProperties implements ParserProperties {

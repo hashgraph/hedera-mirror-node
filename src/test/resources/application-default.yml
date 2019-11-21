@@ -4,6 +4,9 @@ hedera:
       bucketName: test
       cloudProvider: LOCAL
     network: TESTNET
+    parser:
+      balance:
+        enabled: false
 spring:
   task:
     scheduling:
