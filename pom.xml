@@ -32,6 +32,7 @@
 
     <modules>
         <module>hedera-mirror-coverage</module>
+        <module>hedera-mirror-faker</module>
         <module>hedera-mirror-grpc</module>
         <module>hedera-mirror-importer</module>
         <module>hedera-mirror-protobuf</module>
@@ -57,6 +58,7 @@
         <hedera-protobuf.version>hcs-11c0d9176b-1</hedera-protobuf.version>
         <jacoco.version>0.8.5</jacoco.version>
         <java.version>11</java.version>
+        <javax.version>1</javax.version>
         <jib.version>1.8.0</jib.version>
         <testcontainers.version>1.12.1</testcontainers.version>
     </properties>
