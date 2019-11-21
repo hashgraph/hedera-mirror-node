@@ -144,21 +144,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -243,21 +229,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -310,21 +282,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -385,21 +343,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList tList = tempRecord.getTransferList();
-        for (int i = 0; i < tList.getAccountAmountsCount(); ++i) {
-            var aa = tList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -458,21 +402,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -532,21 +462,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -596,21 +512,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -669,21 +571,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -742,21 +630,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -809,21 +683,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -873,21 +733,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -945,21 +791,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -996,21 +828,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         );
 
         // Crypto transfer list
-        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
-
-            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
-            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
-            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
-            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
-        }
+        verifyRepoCryptoTransferList(record);
 	}
 
 	@Test
@@ -1274,5 +1092,23 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         transaction.setSigMap(getSigMap());
 
         return transaction.build();
+    }
+
+    private void verifyRepoCryptoTransferList(TransactionRecord record) {
+        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
+        TransferList transferList = record.getTransferList();
+        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
+            var aa = transferList.getAccountAmounts(i);
+            var accountId = aa.getAccountID();
+
+            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndAccountNum(
+                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
+                    accountId.getAccountNum()).get();
+
+            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer.getConsensusTimestamp());
+            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
+            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getAccountRealmNum());
+            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getAccountNum());
+        }
     }
 }
