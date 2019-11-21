@@ -6,12 +6,14 @@
   "scripts": {
     "test": "jest --testPathPattern='__tests__/*'",
     "acceptancetest": "__acceptancetests__/acceptancetests",
+    "perftest": "__performancetests__/perfTest.js",
     "dev": "nodemon app.js"
   },
   "author": "Atul Mahamuni",
   "license": "Apache-2.0",
   "dependencies": {
     "asn1js": "^2.0.26",
+    "axios": "^0.19.0",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
