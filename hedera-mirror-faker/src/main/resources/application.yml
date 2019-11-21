@@ -1,0 +1,55 @@
+faker:
+  totalTimeSec: 86400
+  transactionsPerSecond: # 3-8 txns per second
+    rangeMin: 3
+    rangeMax: 8
+  transaction:
+    cryptoTransactionsPerThousand: 990
+    fileTransactionsPerThousand: 10
+    crypto:
+      createsPerThousand: 10
+      transfersPerThousand: 988
+      updatesPerThousand: 1
+      deletesPerThousand: 1
+      numSeedAccounts: 10000
+      transferAmount:
+        constant: 1000
+      numTransferLists:
+        rangeMin: 1
+        rangeMax: 10
+      memoSizeBytes:
+        constant: 5
+    file:
+      createsPerThousand: 800
+      appendsPerThousand: 100
+      updatesPerThousand: 80
+      deletesPerThousand: 20
+      numSeedFiles: 1000
+      fileDataSize:
+        rangeMin: 0
+        rangeMax: 5000
+      memoSizeBytes:
+        constant: 5
+
+logging:
+  level:
+    root: warn
+    com.hedera.faker: info
+    org.flywaydb.core.internal.command.DbMigrate: info
+
+spring:
+  datasource:
+    name: ${hedera.mirror.db.name}
+    password: ${hedera.mirror.db.password}
+    url: jdbc:postgresql://${hedera.mirror.db.host}:${hedera.mirror.db.port}/${hedera.mirror.db.name}?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+    username: ${hedera.mirror.db.username}
+  flyway:
+    connectRetries: 10
+    baselineOnMigrate: true
+    baselineVersion: 0
+    ignoreMissingMigrations: true
+    placeholders:
+      api-password: ${hedera.mirror.db.apiPassword}
+      api-user: ${hedera.mirror.db.apiUsername}
+      db-name: ${hedera.mirror.db.name}
+      db-user: ${hedera.mirror.db.username}
