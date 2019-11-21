@@ -73,7 +73,9 @@ jobs:
             NAME=hedera-mirror-importer-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
             WORKSPACE=/tmp/workspace
             mkdir -p ${WORKSPACE}/${NAME}
-            mv hedera-mirror-importer/target/hedera-mirror-importer-*.jar ${WORKSPACE}/${NAME}
+            # Truncate '-exec' from jar name
+            jarname=jarname=$(ls hedera-mirror-importer/target/hedera-mirror-importer-*-exec.jar | sed -E "s:.*target/(.*)-exec.jar:\1:")
+            mv hedera-mirror-importer/target/hedera-mirror-importer-*-exec.jar ${WORKSPACE}/${NAME}/${jarname}.jar
             mv hedera-mirror-importer/scripts ${WORKSPACE}/${NAME}
             mkdir -p ${WORKSPACE}/artifacts
             tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}
