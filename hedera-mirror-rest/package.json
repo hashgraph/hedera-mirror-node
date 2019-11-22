@@ -1,7 +1,7 @@
 {
-  "name": "hedera-mirror-rest",
-  "version": "0.4.1-SNAPSHOT",
-  "description": "REST API for Hedera Mirror Node",
+  "name": "hedera-mirror-rest-hcs",
+  "version": "0.1.0-SNAPSHOT",
+  "description": "REST API for Hedera Mirror Node (HCS preview)",
   "main": "server.js",
   "scripts": {
     "test": "jest --testPathPattern='__tests__/*'",

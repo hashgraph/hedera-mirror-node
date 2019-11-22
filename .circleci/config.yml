@@ -68,7 +68,17 @@ jobs:
           name: Upload Code Coverage
           command: bash <(curl -s https://codecov.io/bash)
       - run:
-          name: Collecting assets
+          name: Collecting assets for hedera-mirror-grpc
+          command: |
+            NAME=hedera-mirror-grpc-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
+            WORKSPACE=/tmp/workspace
+            mkdir -p ${WORKSPACE}/${NAME}
+            mv hedera-mirror-grpc/target/hedera-mirror-grpc-*.jar ${WORKSPACE}/${NAME}
+            mv hedera-mirror-grpc/scripts ${WORKSPACE}/${NAME}
+            mkdir -p ${WORKSPACE}/artifacts
+            tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}
+      - run:
+          name: Collecting assets for hedera-mirror-importer
           command: |
             NAME=hedera-mirror-importer-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
             WORKSPACE=/tmp/workspace
