@@ -1,29 +1,39 @@
 #!/bin/sh -ex
 
-# CD to parent directory containing scripts, lib, mirror-node.jar, etc.
+# CD to parent directory containing scripts, lib, mirror-importer.jar, etc.
 cd "$(dirname $0)/.."
-version=$(ls -1 -d "../"mirror-node-[vb]* | tr '\n' '\0' | xargs -0 -n 1 basename | tail -1 | sed -e "s/mirror-node-//")
+version=$(ls -1 -d "../"mirror-importer-[vb]* | tr '\n' '\0' | xargs -0 -n 1 basename | tail -1 | sed -e "s/mirror-importer-//")
 if [ -z "${version}" ]; then
-    echo "Can't find mirror-node-v* versioned parent directory. Unrecognized layout. Aborting"
+    echo "Can't find mirror-importer-v* versioned parent directory. Unrecognized layout. Aborting"
     exit 1
 fi
 
-usretc=/usr/etc/mirror-node
-usrlib=/usr/lib/mirror-node
-varlib=/var/lib/mirror-node
+usretc=/usr/etc/mirror-importer
+usrlib=/usr/lib/mirror-importer
+varlib=/var/lib/mirror-importer
 ts=$(date -u +%s)
 
 mkdir -p "${usretc}" "${usrlib}" "${varlib}"
 
-if [ -f "${usrlib}/mirror-node.jar" ]; then
+if [ -f "/usr/lib/mirror-node/mirror-node.jar" ] || [ -f "${usrlib}/mirror-importer.jar" ]; then
     echo "Upgrading to ${version}"
 
+    if [ -f "/usr/lib/mirror-node/mirror-node.jar" ]; then
+    echo "Migrating from 'mirror-node' to 'mirror-importer'"
+        oldjarname="mirror-node"
+        mv /usr/etc/mirror-node/* ${usretc}
+        mv /usr/lib/mirror-node/* ${usrlib}
+        mv /var/lib/mirror-node/* ${varlib}
+    else
+        oldjarname="mirror-importer"
+    fi
+
     # Stop the service
-    echo "Stopping mirror-node service"
-    systemctl stop mirror-node.service || true
+    echo "Stopping ${oldjarname} service"
+    systemctl stop ${oldjarname}.service || true
 
     echo "Backing up binary"
-    mv "${usrlib}/mirror-node.jar" "${usrlib}/mirror-node.jar.${ts}.old"
+    mv "${usrlib}/${oldjarname}.jar" "${usrlib}/${oldjarname}.jar.${ts}.old"
 
     if [ -f "${usretc}/0.0.102" ] && [ ! -f "${varlib}/addressbook.bin" ]; then
       cp "${usretc}/0.0.102" "${varlib}/addressbook.bin"
@@ -71,12 +81,12 @@ EOF
 fi
 
 echo "Copying new binary"
-cp mirror-node.jar "${usrlib}"
+cp mirror-importer.jar "${usrlib}"
 
-echo "Setting up mirror-node systemd service"
-cp scripts/mirror-node.service /etc/systemd/system
+echo "Setting up mirror-importer systemd service"
+cp scripts/mirror-importer.service /etc/systemd/system
 systemctl daemon-reload
-systemctl enable mirror-node.service
+systemctl enable mirror-importer.service
 
-echo "Starting mirror-node service"
-systemctl start mirror-node.service
+echo "Starting mirror-importer service"
+systemctl start mirror-importer.service

@@ -107,7 +107,7 @@ sudo mv accountBalances eventsStreams recordstreams backup20191114/
 4 ) Wipe Database
 
 ```console
-scp src/main/resources/db/scripts/cleanup.sql user@server:~
+scp mirror-importer/src/main/resources/db/scripts/cleanup.sql user@server:~
 ssh user@server
 psql -h dbhost -d mirror_node -U mirror_node -f cleanup.sql
 ```
