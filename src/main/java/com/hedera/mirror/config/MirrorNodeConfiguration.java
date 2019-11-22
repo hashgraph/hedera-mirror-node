@@ -22,24 +22,11 @@ package com.hedera.mirror.config;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
-import org.flywaydb.core.api.configuration.FluentConfiguration;
-import org.flywaydb.core.api.migration.JavaMigration;
-import org.flywaydb.core.api.resolver.Context;
-import org.flywaydb.core.api.resolver.ResolvedMigration;
-import org.flywaydb.core.internal.configuration.ConfigUtils;
-import org.flywaydb.core.internal.resolver.ResolvedMigrationComparator;
-import org.flywaydb.core.internal.resolver.ResolvedMigrationImpl;
-import org.flywaydb.core.internal.resolver.java.JavaMigrationResolver;
-import org.flywaydb.core.internal.util.ClassUtils;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -59,33 +46,6 @@ import com.hedera.mirror.downloader.CommonDownloaderProperties;
 @EnableAsync
 @Log4j2
 public class MirrorNodeConfiguration {
-
-    // TODO: Remove in Spring Boot 2.2
-    @Bean
-    FlywayConfigurationCustomizer flywayCustomizer(ObjectProvider<JavaMigration> javaMigrations) {
-        return new FlywayConfigurationCustomizer() {
-            @Override
-            public void customize(FluentConfiguration configuration) {
-                configuration.resolvers(new JavaMigrationResolver(null, null) {
-                    @Override
-                    public List<ResolvedMigration> resolveMigrations(Context context) {
-                        List<ResolvedMigration> resolvedMigrations = new ArrayList<>();
-
-                        for (JavaMigration migration : javaMigrations) {
-                            ConfigUtils.injectFlywayConfiguration(migration, configuration);
-                            ResolvedMigrationImpl resolvedMigration = extractMigrationInfo(migration);
-                            resolvedMigration.setPhysicalLocation(ClassUtils.getLocationOnDisk(migration.getClass()));
-                            resolvedMigration.setExecutor(createExecutor(migration));
-                            resolvedMigrations.add(resolvedMigration);
-                        }
-
-                        Collections.sort(resolvedMigrations, new ResolvedMigrationComparator());
-                        return resolvedMigrations;
-                    }
-                });
-            }
-        };
-    }
 
     @Bean
     public S3AsyncClient s3AsyncClient(CommonDownloaderProperties downloaderProperties) {

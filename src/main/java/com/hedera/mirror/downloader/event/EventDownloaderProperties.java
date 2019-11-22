@@ -22,7 +22,6 @@ package com.hedera.mirror.downloader.event;
 
 import java.nio.file.Path;
 import java.time.Duration;
-import javax.inject.Named;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -37,7 +36,6 @@ import com.hedera.mirror.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.downloader.DownloaderProperties;
 
 @Data
-@Named
 @Validated
 @ConfigurationProperties("hedera.mirror.downloader.event")
 public class EventDownloaderProperties implements DownloaderProperties {

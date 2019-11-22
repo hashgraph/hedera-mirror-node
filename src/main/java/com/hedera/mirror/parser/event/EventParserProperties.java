@@ -22,7 +22,6 @@ package com.hedera.mirror.parser.event;
 
 import java.nio.file.Path;
 import java.time.Duration;
-import javax.inject.Named;
 import javax.validation.constraints.NotNull;
 
 import lombok.Data;
@@ -34,7 +33,6 @@ import com.hedera.mirror.domain.StreamType;
 import com.hedera.mirror.parser.ParserProperties;
 
 @Data
-@Named
 @Validated
 @ConfigurationProperties("hedera.mirror.parser.event")
 public class EventParserProperties implements ParserProperties {

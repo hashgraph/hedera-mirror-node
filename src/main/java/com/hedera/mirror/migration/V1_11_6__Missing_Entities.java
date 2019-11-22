@@ -31,13 +31,13 @@ import java.nio.file.Path;
 import java.util.Optional;
 import javax.inject.Named;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.jdbc.core.JdbcOperations;
 
 import com.hedera.mirror.MirrorProperties;
 import com.hedera.mirror.domain.Entities;
@@ -48,13 +48,22 @@ import com.hedera.mirror.util.Utility;
 
 @Log4j2
 @Named
-@RequiredArgsConstructor
 public class V1_11_6__Missing_Entities extends BaseJavaMigration {
 
     private final MirrorProperties mirrorProperties;
     private final EntityRepository entityRepository;
     private final EntityTypeRepository entityTypeRepository;
-    private final JdbcTemplate jdbcTemplate;
+    private final JdbcOperations jdbcOperations;
+
+    // There's a circular dependency of Flyway -> this -> Repositories/JdbcOperations -> Flyway, so use @Lazy to break it.
+    // Correct way is to not use repositories and construct manually: new JdbcTemplate(context.getConnection())
+    public V1_11_6__Missing_Entities(MirrorProperties mirrorProperties, @Lazy EntityRepository entityRepository,
+            @Lazy EntityTypeRepository entityTypeRepository, @Lazy JdbcOperations jdbcOperations) {
+        this.mirrorProperties = mirrorProperties;
+        this.entityRepository = entityRepository;
+        this.entityTypeRepository = entityTypeRepository;
+        this.jdbcOperations = jdbcOperations;
+    }
 
     @Override
     public void migrate(Context context) throws Exception {
@@ -152,7 +161,7 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
     }
 
     private boolean hasCreateTransaction(Entities entity) {
-        return jdbcTemplate.queryForObject("select count(*) > 0 from t_transactions t, t_transaction_types tt where " +
+        return jdbcOperations.queryForObject("select count(*) > 0 from t_transactions t, t_transaction_types tt where " +
                         "t.fk_cud_entity_id = ? and t.fk_trans_type_id = tt.id and tt.name in (?,?,?)",
                 new Object[] {entity.getId(), "CONTRACTCREATEINSTANCE", "CRYPTOCREATEACCOUNT", "FILECREATE"}, Boolean.class);
     }
