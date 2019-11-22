@@ -20,13 +20,14 @@ package com.hedera.mirror.util;
  * ‍
  */
 
+import com.google.common.util.concurrent.Uninterruptibles;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.sql.DataSource;
 
-import com.google.common.util.concurrent.Uninterruptibles;
 import lombok.extern.log4j.Log4j2;
 
 /**
@@ -54,6 +55,7 @@ public class DatabaseUtilities {
                 return dataSource.getConnection();
             } catch (Exception e) {
                 log.warn("Unable to connect to database: {}", e.getMessage());
+                // Don't use 100% CPU if DataSource is null or can't connect
                 Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
             }
         }
