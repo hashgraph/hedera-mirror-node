@@ -4,8 +4,9 @@ about: Get an answer to your question
 title: ''
 labels: question
 assignees: ''
-
 ---
+
+# 3-question
 
 Please ask questions you have in our [Discord](https://discordapp.com/invite/FFb9YFX) group first. You can also search GitHub to see if the issue has been reported already.
 
