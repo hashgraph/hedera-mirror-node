@@ -216,14 +216,14 @@ public class TransactionEvent {
 create table if not exists topic_message (
   consensus_timestamp nanos_timestamp primary key not null,
   message bytea not null,
-  realm entity_realm_num not null,
+  realm_num entity_realm_num not null,
   running_hash bytea not null,
   sequence_number bigint not null,
   topic_num entity_num not null
 );
 
 create index if not exists topic_message_realm_num_timestamp
-on topic_message (realm, topic_num, consensus_timestamp);
+on topic_message (realm_num, topic_num, consensus_timestamp);
 ```
 
 -   Create a trigger that calls a new function on every insert of topic_message, serializes it to JSON and calls pg_notify
