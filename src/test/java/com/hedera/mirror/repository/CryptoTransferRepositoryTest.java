@@ -22,20 +22,16 @@ package com.hedera.mirror.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.Test;
+
+import com.hedera.mirror.domain.CryptoTransfer;
 import com.hedera.mirror.domain.Entities;
 import com.hedera.mirror.domain.RecordFile;
 import com.hedera.mirror.domain.Transaction;
 
-import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.domain.CryptoTransfer;
-
-import org.springframework.test.context.jdbc.Sql;
-
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-public class CryptoTransferRepositoryTest  extends AbstractRepositoryTest {
+public class CryptoTransferRepositoryTest extends AbstractRepositoryTest {
     @Test
-    void insert() {
+    void findByConsensusTimestampAndEntityNum() {
         RecordFile recordfile = insertRecordFile();
         Entities entity = insertAccountEntity();
         Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CRYPTOTRANSFER");
@@ -44,13 +40,13 @@ public class CryptoTransferRepositoryTest  extends AbstractRepositoryTest {
         final long accountNum = 2;
         CryptoTransfer cryptoTransfer = new CryptoTransfer();
         cryptoTransfer.setConsensusTimestamp(consensusNs);
-        cryptoTransfer.setAccountRealmNum(1L);
-        cryptoTransfer.setAccountNum(accountNum);
+        cryptoTransfer.setRealmNum(1L);
+        cryptoTransfer.setEntityNum(accountNum);
         cryptoTransfer.setAmount(40L);
 
         cryptoTransfer = cryptoTransferRepository.save(cryptoTransfer);
 
-        assertThat(cryptoTransferRepository.findByConsensusTimestampAndAccountNum(consensusNs, accountNum).get())
+        assertThat(cryptoTransferRepository.findByConsensusTimestampAndEntityNum(consensusNs, accountNum).get())
                 .isNotNull()
                 .isEqualTo(cryptoTransfer);
     }

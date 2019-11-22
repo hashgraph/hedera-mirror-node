@@ -68,7 +68,7 @@ const validateTsRange = function(transactions, low, high) {
 
 /**
  * Validate the range of account ids in the transactions returned by the api
- * At least one transfer should match the expected range
+ * At least one transfer in a transaction should match the expected range
  * @param {Array} transactions Array of transactions returned by the rest api
  * @param {Number} low Expected low limit of the account ids
  * @param {Number} high Expected high limit of the account ids
@@ -81,14 +81,22 @@ const validateAccNumRange = function(transactions, low, high) {
     for (const xfer of tx.transfers) {
       const accNum = xfer.account.split('.')[2];
       if (accNum >= low && accNum <= high) {
-        return true;
+        // if at least one transfer is valid move to next transaction
+        ret = true;
+        break;
       }
     }
+
+    if (!ret) {
+      console.log(`validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${JSON.stringify(tx)}`);
+      return false;
+    }
+
+    // reset ret
+    ret = false;
   }
-  if (!ret) {
-    console.log(`validateAccNumRange check failed: No transfer with account between ${low} and  ${high} was found`);
-  }
-  return ret;
+
+  return true;
 };
 
 /**
@@ -188,7 +196,7 @@ const singletests = {
   },
   accountid_lowerlimit: {
     urlparam: 'account.id=gte:0.0.1111',
-    checks: [{field: 'account_num', operator: '>=', value: 1111}],
+    checks: [{field: 'entity_num', operator: '>=', value: 1111}],
     checkFunctions: [
       {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
       {func: validateFields, args: []}
@@ -196,7 +204,7 @@ const singletests = {
   },
   accountid_higherlimit: {
     urlparam: 'account.id=lt:0.0.2222',
-    checks: [{field: 'account_num', operator: '<', value: 2222}],
+    checks: [{field: 'entity_num', operator: '<', value: 2222}],
     checkFunctions: [
       {func: validateAccNumRange, args: [0, 2222]},
       {func: validateFields, args: []}
@@ -204,7 +212,7 @@ const singletests = {
   },
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
-    checks: [{field: 'account_num', operator: '=', value: 3333}],
+    checks: [{field: 'entity_num', operator: '=', value: 3333}],
     checkFunctions: [{func: validateAccNumRange, args: [3333, 3333]}]
   },
   limit: {

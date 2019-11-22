@@ -238,7 +238,7 @@ const parseComparatorSymbol = function(fields, valArr, type = null, valueTransla
           if (type === 'entityId') {
 
             // add realm_num check once
-            if (!queryStr.includes('account_realm_num = ?'))
+            if (!queryStr.includes('realm_num = ?'))
             {
                 fquery =
                     f.realm +
@@ -246,7 +246,7 @@ const parseComparatorSymbol = function(fields, valArr, type = null, valueTransla
                     opsMap['eq'] +
                     ' ? and ';
             }
-            
+
             fquery +=
               f.num +
               ' ' +

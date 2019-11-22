@@ -27,5 +27,5 @@ import org.springframework.data.repository.CrudRepository;
 import com.hedera.mirror.domain.CryptoTransfer;
 
 public interface CryptoTransferRepository extends CrudRepository<CryptoTransfer, Long> {
-    Optional<CryptoTransfer> findByConsensusTimestampAndAccountNum(Long consensusTimestamp, Long accountNum);
+    Optional<CryptoTransfer> findByConsensusTimestampAndEntityNum(Long consensusTimestamp, Long entityNum);
 }

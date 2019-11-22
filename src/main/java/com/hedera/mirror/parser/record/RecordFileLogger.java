@@ -20,8 +20,6 @@ package com.hedera.mirror.parser.record;
  * ‍
  */
 
-
-import com.google.protobuf.Descriptors;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -46,8 +44,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import javax.inject.Named;
 
@@ -120,7 +116,7 @@ public class RecordFileLogger {
                     + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
-                    + " (consensus_timestamp, amount, account_realm_num, account_num)"
+                    + " (consensus_timestamp, amount, realm_num, entity_num)"
                     + " VALUES (?, ?, ?, ?)");
 
             sqlInsertFileData = connect.prepareStatement("INSERT INTO t_file_data"
@@ -249,7 +245,8 @@ public class RecordFileLogger {
 
         AccountID fkPayerAccountId = transactionID.getAccountID();
 
-        sqlInsertTransaction.setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), entities.createOrGetEntity(fkPayerAccountId));
+        sqlInsertTransaction
+                .setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), entities.createOrGetEntity(fkPayerAccountId));
         sqlInsertTransaction.setLong(F_TRANSACTION.RESULT.ordinal(), txRecord.getReceipt().getStatusValue());
         sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), consensusNs);
         sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), txRecord.getTransactionFee());
@@ -412,7 +409,7 @@ public class RecordFileLogger {
                 }
                 long proxy_account_id = 0;
                 entityId = entities.createEntity(txRecord.getReceipt()
-                        .getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
+                                .getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
                         proxy_account_id);
             }
         } else if (body.hasFileAppend()) {
@@ -498,7 +495,8 @@ public class RecordFileLogger {
 
         if ((txRecord.hasTransferList()) && parserProperties.isPersistCryptoTransferAmounts()) {
             if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
-                insertCryptoCreateTransferList(consensusNs, txRecord, body, txRecord.getReceipt().getAccountID(), fkPayerAccountId);
+                insertCryptoCreateTransferList(consensusNs, txRecord, body, txRecord.getReceipt()
+                        .getAccountID(), fkPayerAccountId);
             } else {
                 insertTransferList(consensusNs, txRecord.getTransferList());
             }
@@ -617,9 +615,9 @@ public class RecordFileLogger {
             var accountId = aa.getAccountID();
             entities.createOrGetEntity(accountId);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), aa.getAmount());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
                     accountId.getRealmNum());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_NUM.ordinal(),
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ENTITY_NUM.ordinal(),
                     accountId.getAccountNum());
             sqlInsertTransferList.addBatch();
         }
@@ -649,13 +647,13 @@ public class RecordFileLogger {
             var aa = transferList.getAccountAmounts(i);
             long amount = aa.getAmount();
             var accountId = aa.getAccountID();
-			      long accountNum = accountId.getAccountNum();
+            long accountNum = accountId.getAccountNum();
             entities.createOrGetEntity(accountId);
 
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
                     accountId.getRealmNum());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_NUM.ordinal(),
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ENTITY_NUM.ordinal(),
                     accountNum);
             sqlInsertTransferList.addBatch();
 
@@ -668,18 +666,18 @@ public class RecordFileLogger {
             entities.createOrGetEntity(payerAccountId);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), -initialBalance);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
                     payerAccountId.getRealmNum());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_NUM.ordinal(),
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ENTITY_NUM.ordinal(),
                     payerAccountId.getAccountNum());
 
             sqlInsertTransferList.addBatch();
 
             entities.createOrGetEntity(createdAccountId);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_REALM_NUM.ordinal(),
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
                     createdAccountId.getRealmNum());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ACCOUNT_NUM.ordinal(),
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ENTITY_NUM.ordinal(),
                     createdAccountNum);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), initialBalance);
 
@@ -722,7 +720,8 @@ public class RecordFileLogger {
             Set<Integer> unknownFields = body.getUnknownFields().asMap().keySet();
 
             if (unknownFields.size() != 1) {
-                throw new IllegalStateException("Unable to guess correct transaction type since there's not exactly one: " + unknownFields);
+                throw new IllegalStateException("Unable to guess correct transaction type since there's not exactly " +
+                        "one: " + unknownFields);
             }
 
             int transactionType = unknownFields.iterator().next();
@@ -766,7 +765,7 @@ public class RecordFileLogger {
 
     enum F_TRANSFERLIST {
         ZERO // column indices start at 1, this creates the necessary offset
-        , CONSENSUS_TIMESTAMP, AMOUNT, ACCOUNT_REALM_NUM, ACCOUNT_NUM
+        , CONSENSUS_TIMESTAMP, AMOUNT, REALM_NUM, ENTITY_NUM
     }
 
     enum F_FILE_DATA {

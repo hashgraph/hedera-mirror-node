@@ -201,7 +201,7 @@ const addTransaction = async function(
   for (var i = 0; i < transfers.length; ++i) {
     let xfer = transfers[i];
     await sqlConnection.query(
-      'insert into t_cryptotransferlists (consensus_timestamp, amount, account_realm_num, account_num) values ($1, $2, $3, $4);',
+      'insert into t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
       [consensusTimestamp, xfer[1], realm, xfer[0]]
     );
   }
@@ -418,9 +418,9 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
   // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
   // Note bank is out of desired range but is expected in query result
-  expect(res.rowCount).toEqual(6); 
+  expect(res.rowCount).toEqual(6);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
-    
+
     '@2063: account 2 \u01271',
     '@2063: account 63 \u0127-71',
     '@2063: account 82 \u012770',

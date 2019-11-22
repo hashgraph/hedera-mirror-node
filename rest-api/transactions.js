@@ -97,11 +97,10 @@ const getTransactionsOuterQuery = function(innerQuery, order) {
     "   , coalesce(ttr.result, 'UNKNOWN') as result\n" +
     "   , coalesce(ttt.name, 'UNKNOWN') as name\n" +
     '   , t.fk_node_acc_id\n' +
-    '   , enode.entity_shard as node_shard\n' +
     '   , enode.entity_realm as node_realm\n' +
     '   , enode.entity_num as node_num\n' +
-    "   , ctl.account_realm_num as account_realm\n" +
-    "   , ctl.account_num as account_num\n" +
+    "   , ctl.realm_num as account_realm\n" +
+    "   , ctl.entity_num as account_num\n" +
     '   , amount\n' +
     '   , t.charged_tx_fee\n' +
     '   , t.valid_duration_seconds\n' +
@@ -168,8 +167,8 @@ const reqToSql = function(req) {
     'account.id',
     [
       {
-        realm: 'account_realm_num',
-        num: 'account_num'
+        realm: 'realm_num',
+        num: 'entity_num'
       }
     ],
     'entityId'
@@ -279,8 +278,8 @@ const getOneTransaction = function(req, res) {
     '   , enode.entity_realm as node_realm\n' +
     '   , enode.entity_num as node_num\n' +
     '   , account_id\n' +
-    "   , ctl.account_realm_num as account_realm\n" +
-    "   , ctl.account_num as account_num\n" +
+    "   , ctl.realm_num as account_realm\n" +
+    "   , ctl.entity_num as account_num\n" +
     '   , amount\n' +
     '   , charged_tx_fee\n' +
     '   , valid_duration_seconds\n' +

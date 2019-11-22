@@ -1,5 +1,5 @@
 ---
---- Replace t_cryptotransferlists.account_id with account_realm_num, and account_num
+--- Replace t_cryptotransferlists.account_id with realm_num and entity_num
 ---
 
 -- drop previous indexes
@@ -9,31 +9,31 @@ drop index if exists
 drop index if exists
     idx__t_cryptotransferlists__consensus_and_account;
 
--- add account_realm_num, and account_num
+-- add realm_num and entity_num
 alter table t_cryptotransferlists
-    add column if not exists account_realm_num entity_realm_num null;
+    add column if not exists realm_num entity_realm_num null;
 
 alter table t_cryptotransferlists
-    add column if not exists account_num entity_num null;
+    add column if not exists entity_num entity_num null;
 
--- populate account_realm_num, and account_num from t_entities table
+-- populate realm_num and entity_num from t_entities table
 with dupe_entities as (
         select id, entity_realm, entity_num from t_entities
 )
-update t_cryptotransferlists c set account_realm_num = de.entity_realm, account_num = de.entity_num from dupe_entities de where c.account_id = de.id;
+update t_cryptotransferlists c set realm_num = de.entity_realm, entity_num = de.entity_num from dupe_entities de where c.account_id = de.id;
 
 alter table t_cryptotransferlists
-    alter column account_realm_num set not null;
+    alter column realm_num set not null;
 
 alter table t_cryptotransferlists
-    alter column account_num set not null;
+    alter column entity_num set not null;
 
 -- add additional indexes
 create index if not exists idx__t_cryptotransferlists__consensus_and_realm_and_num
-    on t_cryptotransferlists (consensus_timestamp, account_realm_num, account_num);
+    on t_cryptotransferlists (consensus_timestamp, realm_num, entity_num);
 
 create index if not exists idx__t_cryptotransferlists__ts_then_acct
-    on t_cryptotransferlists (consensus_timestamp, account_realm_num, account_num);
+    on t_cryptotransferlists (consensus_timestamp, realm_num, entity_num);
 
 -- drop constraint and acount_id
 alter table t_cryptotransferlists
