@@ -86,11 +86,11 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     }
 
     protected final Entities insertFileEntity() {
-        return insertEntity(EntityType.account);
+        return insertEntity(EntityType.file);
     }
 
     protected final Entities insertContractEntity() {
-        return insertEntity(EntityType.account);
+        return insertEntity(EntityType.contract);
     }
 
     protected final Transaction insertTransaction(long recordFileId, long entityId, String type) {

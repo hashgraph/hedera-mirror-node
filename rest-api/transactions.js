@@ -19,6 +19,7 @@
  */
 'use strict';
 const utils = require('./utils.js');
+const config = require('./config.js');
 
 /**
  * Create transferlists from the output of SQL queries. The SQL table has different
@@ -48,11 +49,11 @@ const createTransferLists = function(rows, arr) {
       transactions[row.consensus_ns]['name'] = row['name'];
       transactions[row.consensus_ns]['max_fee'] = utils.getNullableNumber(row['max_fee']);
       transactions[row.consensus_ns]['valid_duration_seconds'] = utils.getNullableNumber(row['valid_duration_seconds']);
-      transactions[row.consensus_ns]['node'] = row.node_shard + '.' + row.node_realm + '.' + row.node_num;
+      transactions[row.consensus_ns]['node'] = config.shard + '.' + row.node_realm + '.' + row.node_num;
 
       // Construct a transaction id using format: shard.realm.num-sssssssssss-nnnnnnnnn
       transactions[row.consensus_ns]['transaction_id'] = utils.createTransactionId(
-        row.entity_shard,
+        config.shard,
         row.entity_realm,
         row.entity_num,
         validStartTimestamp
@@ -62,8 +63,8 @@ const createTransferLists = function(rows, arr) {
     }
 
     transactions[row.consensus_ns].transfers.push({
-      account: row.account_shard + '.' + row.account_realm + '.' + row.account_num,
-      amount: Number(row.amount)
+        account: config.shard + '.' + row.account_realm + '.' + row.account_num,
+        amount: Number(row.amount)
     });
   }
 
@@ -96,13 +97,10 @@ const getTransactionsOuterQuery = function(innerQuery, order) {
     "   , coalesce(ttr.result, 'UNKNOWN') as result\n" +
     "   , coalesce(ttt.name, 'UNKNOWN') as name\n" +
     '   , t.fk_node_acc_id\n' +
-    '   , enode.entity_shard as node_shard\n' +
     '   , enode.entity_realm as node_realm\n' +
     '   , enode.entity_num as node_num\n' +
-    '   , account_id\n' +
-    '   , eaccount.entity_shard as account_shard\n' +
-    '   , eaccount.entity_realm as account_realm\n' +
-    '   , eaccount.entity_num as account_num\n' +
+    "   , ctl.realm_num as account_realm\n" +
+    "   , ctl.entity_num as account_num\n" +
     '   , amount\n' +
     '   , t.charged_tx_fee\n' +
     '   , t.valid_duration_seconds\n' +
@@ -116,7 +114,6 @@ const getTransactionsOuterQuery = function(innerQuery, order) {
     '   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n' +
     '   left outer join t_transaction_types ttt on ttt.proto_id = t.type\n' +
     '   left outer join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl.consensus_timestamp\n' +
-    '   join t_entities eaccount on eaccount.id = ctl.account_id\n' +
     '   order by t.consensus_ns ' +
     order +
     ', account_num asc, amount asc ' +
@@ -144,16 +141,9 @@ const getTransactionsInnerQuery = function(accountQuery, tsQuery, resultTypeQuer
     '      select distinct ctl.consensus_timestamp\n' +
     '       from t_cryptotransferlists ctl\n' +
     '       join t_transactions t on t.consensus_ns = ctl.consensus_timestamp\n' +
-    '       join t_entities eaccount on eaccount.id = ctl.account_id\n' +
     '       where ';
   if (accountQuery) {
-    innerQuery +=
-      'ctl.account_id in (select id from t_entities\n' +
-      '\t\twhere ' +
-      accountQuery +
-      ' and fk_entity_type_id < ' +
-      utils.ENTITY_TYPE_FILE +
-      ' limit 1000)\n'; // Max limit on the inner query.
+    innerQuery += accountQuery; // Max limit on the inner query.
   } else {
     innerQuery += '1=1\n';
   }
@@ -177,8 +167,7 @@ const reqToSql = function(req) {
     'account.id',
     [
       {
-        shard: 'entity_shard',
-        realm: 'entity_realm',
+        realm: 'realm_num',
         num: 'entity_num'
       }
     ],
@@ -289,9 +278,8 @@ const getOneTransaction = function(req, res) {
     '   , enode.entity_realm as node_realm\n' +
     '   , enode.entity_num as node_num\n' +
     '   , account_id\n' +
-    '   , eaccount.entity_shard as account_shard\n' +
-    '   , eaccount.entity_realm as account_realm\n' +
-    '   , eaccount.entity_num as account_num\n' +
+    "   , ctl.realm_num as account_realm\n" +
+    "   , ctl.entity_num as account_num\n" +
     '   , amount\n' +
     '   , charged_tx_fee\n' +
     '   , valid_duration_seconds\n' +
@@ -302,7 +290,6 @@ const getOneTransaction = function(req, res) {
     '   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n' +
     '   join t_transaction_types ttt on ttt.proto_id = t.type\n' +
     '   join t_cryptotransferlists ctl on  ctl.consensus_timestamp = t.consensus_ns\n' +
-    '   join t_entities eaccount on eaccount.id = ctl.account_id\n' +
     ' where etrans.entity_shard = ?\n' +
     '   and  etrans.entity_realm = ?\n' +
     '   and  etrans.entity_num = ?\n' +

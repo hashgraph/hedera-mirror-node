@@ -68,27 +68,35 @@ const validateTsRange = function(transactions, low, high) {
 
 /**
  * Validate the range of account ids in the transactions returned by the api
+ * At least one transfer in a transaction should match the expected range
  * @param {Array} transactions Array of transactions returned by the rest api
  * @param {Number} low Expected low limit of the account ids
  * @param {Number} high Expected high limit of the account ids
  * @return {Boolean}  Result of the check
  */
 const validateAccNumRange = function(transactions, low, high) {
-  let ret = true;
+  let ret = false;
   let offender = null;
   for (const tx of transactions) {
     for (const xfer of tx.transfers) {
       const accNum = xfer.account.split('.')[2];
-      if (accNum < low || accNum > high) {
-        offender = accNum;
-        ret = false;
+      if (accNum >= low && accNum <= high) {
+        // if at least one transfer is valid move to next transaction
+        ret = true;
+        break;
       }
     }
+
+    if (!ret) {
+      console.log(`validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${JSON.stringify(tx)}`);
+      return false;
+    }
+
+    // reset ret
+    ret = false;
   }
-  if (!ret) {
-    console.log(`validateAccNumRange check failed: ${offender} is not between ${low} and  ${high}`);
-  }
-  return ret;
+
+  return true;
 };
 
 /**

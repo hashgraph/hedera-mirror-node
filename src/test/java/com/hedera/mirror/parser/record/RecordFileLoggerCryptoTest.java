@@ -20,11 +20,10 @@ package com.hedera.mirror.parser.record;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.assertj.core.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Claim;
@@ -81,7 +80,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
             .build();
     private static final String memo = "Crypto test memo";
     private static final long[] transferAccounts = {98, 2002, 3};
-    private static long[] transferAmounts = {1000, -2000, 20};
+    private static final long[] transferAmounts = {1000, -2000, 20};
 
     @BeforeEach
     void before() throws Exception {
@@ -148,6 +147,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -188,6 +190,11 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
         final Entities dbNewAccountEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
         final Entities dbProxyAccountId = entityRepository.findById(dbNewAccountEntity.getProxyAccountId()).get();
+        final com.hedera.mirror.domain.CryptoTransfer dbCryptoTransfer = cryptoTransferRepository
+                .findByConsensusTimestampAndEntityNum(
+                        Utility.timeStampInNanos(record.getConsensusTimestamp()),
+                        dbNewAccountEntity.getEntityNum()).get();
+        final AccountID recordReceiptAccountId = record.getReceipt().getAccountID();
 
         assertAll(
                 // row counts
@@ -224,7 +231,16 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
+
+                // Crypto transfer list
+                , () -> assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), dbCryptoTransfer
+                        .getConsensusTimestamp())
+                , () -> assertEquals(recordReceiptAccountId.getRealmNum(), dbCryptoTransfer.getRealmNum())
+                , () -> assertEquals(recordReceiptAccountId.getAccountNum(), dbCryptoTransfer.getEntityNum())
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -280,6 +296,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -344,6 +363,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -404,6 +426,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -468,6 +493,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 // Additional entity checks
                 , () -> assertFalse(dbAccountEntity.isDeleted())
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -517,8 +545,10 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
                 // no changes to entity
                 , () -> assertEquals(dbAccountEntityBefore, dbAccountEntity)
-
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -576,6 +606,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertNull(dbAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbAccountEntity.getExpiryTimeNanos())
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -634,6 +667,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertNull(dbAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbAccountEntity.getExpiryTimeNanos())
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -686,6 +722,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertArrayEquals(cryptoAddClaimTransactionBody.getClaim().getHash().toByteArray(), dbLiveHash
                         .getLivehash())
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -734,6 +773,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 // transaction body inputs
                 , () -> assertAccount(cryptoAddClaimTransactionBody.getClaim().getAccountID(), dbAccountEntity)
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -790,6 +832,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertAccount(deleteClaimTransactionBody.getAccountIDToDeleteFrom(), dbAccountEntity)
                 // TODO (issue #303) check deleted
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -825,6 +870,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 // record transfer list
                 , () -> assertRecordTransfers(record)
         );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
     }
 
     @Test
@@ -857,6 +905,20 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 // record inputs
                 , () -> assertRecord(record, dbTransaction)
         );
+
+        // Crypto transfer list
+        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
+        TransferList transferList = record.getTransferList();
+        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
+            var aa = transferList.getAccountAmounts(i);
+            var accountId = aa.getAccountID();
+
+            boolean isPresent = cryptoTransferRepository.findByConsensusTimestampAndEntityNum(
+                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
+                    accountId.getAccountNum()).isPresent();
+
+            assertEquals(false, isPresent);
+        }
     }
 
     @Test
@@ -885,7 +947,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
     @Test
     void unknownTransactionType() throws Exception {
         int unknownType = 9999;
-        byte[] transactionBodyBytes = Hex.decodeHex("0a120a0c08eb88d6ee0510e8eff7ab01120218021202180318c280de1922020878321043727970746f2074657374206d656d6ffaf004050a03666f6f");
+        byte[] transactionBodyBytes = Hex
+                .decodeHex(
+                        "0a120a0c08eb88d6ee0510e8eff7ab01120218021202180318c280de1922020878321043727970746f2074657374206d656d6ffaf004050a03666f6f");
         final TransactionBody transactionBody = TransactionBody.parseFrom(transactionBodyBytes);
         Transaction transaction = Transaction.newBuilder()
                 .setBodyBytes(transactionBody.toByteString())
@@ -954,7 +1018,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         cryptoCreate.setInitialBalance(1000L);
         cryptoCreate.setKey(keyFromString("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"));
         cryptoCreate
-                .setNewRealmAdminKey(keyFromString("0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"));
+                .setNewRealmAdminKey(keyFromString(
+                        "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"));
         cryptoCreate.setProxyAccountID(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3));
         cryptoCreate.setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build());
         cryptoCreate.setShardID(ShardID.newBuilder().setShardNum(0));
@@ -983,7 +1048,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         cryptoCreate.setInitialBalance(1000L);
         cryptoCreate.setKey(keyFromString("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"));
         cryptoCreate
-                .setNewRealmAdminKey(keyFromString("0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"));
+                .setNewRealmAdminKey(keyFromString(
+                        "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"));
         cryptoCreate.setProxyAccountID(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3));
         cryptoCreate.setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build());
         cryptoCreate.setShardID(ShardID.newBuilder().setShardNum(0));
@@ -1128,5 +1194,24 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         transaction.setSigMap(getSigMap());
 
         return transaction.build();
+    }
+
+    private void verifyRepoCryptoTransferList(TransactionRecord record) {
+        com.hedera.mirror.domain.CryptoTransfer tempDbCryptoTransfer;
+        TransferList transferList = record.getTransferList();
+        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
+            var aa = transferList.getAccountAmounts(i);
+            var accountId = aa.getAccountID();
+
+            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndEntityNum(
+                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
+                    accountId.getAccountNum()).get();
+
+            assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer
+                    .getConsensusTimestamp());
+            assertEquals(aa.getAmount(), tempDbCryptoTransfer.getAmount());
+            assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getRealmNum());
+            assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getEntityNum());
+        }
     }
 }

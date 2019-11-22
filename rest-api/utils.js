@@ -236,24 +236,23 @@ const parseComparatorSymbol = function(fields, valArr, type = null, valueTransla
         for (let f of fields) {
           let fquery = '';
           if (type === 'entityId') {
-            const shardRealmOp = ['gt', 'lt'].includes(op) ? op + 'e' : op;
 
-            fquery =
-              '(' +
-              f.shard +
-              ' ' +
-              opsMap[shardRealmOp] +
-              ' ? and ' +
-              f.realm +
-              ' ' +
-              opsMap[shardRealmOp] +
-              ' ? and ' +
+            // add realm_num check once
+            if (!queryStr.includes('realm_num = ?'))
+            {
+                fquery =
+                    f.realm +
+                    ' ' +
+                    opsMap['eq'] +
+                    ' ? and ';
+            }
+
+            fquery +=
               f.num +
               ' ' +
               opsMap[op] +
-              ' ? ' +
-              ')';
-            vals = vals.concat([entity.shard, entity.realm, entity.num]);
+              ' ? ';
+            vals = vals.concat([entity.realm, entity.num]);
           } else if (type === 'timestamp_ns') {
             // Expect timestamp input as (a) just seconds,
             // (b) seconds.mmm (3-digit milliseconds),

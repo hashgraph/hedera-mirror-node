@@ -30,22 +30,20 @@ function normalizeSql(str) {
 }
 
 const boilerplatePrefix = `select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num , t.memo , t.consensus_ns , valid_start_ns ,
-    coalesce(ttr.result, 'UNKNOWN') as result , coalesce(ttt.name, 'UNKNOWN') as name , t.fk_node_acc_id , enode.entity_shard as node_shard ,
-    enode.entity_realm as node_realm , enode.entity_num as node_num, account_id ,
-    eaccount.entity_shard as account_shard , eaccount.entity_realm as account_realm ,
-    eaccount.entity_num as account_num, amount , t.charged_tx_fee, t.valid_duration_seconds, t.max_fee
+    coalesce(ttr.result, 'UNKNOWN') as result , coalesce(ttt.name, 'UNKNOWN') as name , t.fk_node_acc_id ,
+    enode.entity_realm as node_realm , enode.entity_num as node_num,
+    ctl.realm_num as account_realm, ctl.entity_num as account_num,
+    amount , t.charged_tx_fee, t.valid_duration_seconds, t.max_fee
 from ( select distinct ctl.consensus_timestamp
     from t_cryptotransferlists ctl
-    join t_transactions t on t.consensus_ns = ctl.consensus_timestamp
-    join t_entities eaccount on eaccount.id = ctl.account_id `;
+    join t_transactions t on t.consensus_ns = ctl.consensus_timestamp `;
 
 const boilerplateSufffix = ` join t_transactions t on tlist.consensus_timestamp = t.consensus_ns
     left outer join t_transaction_results ttr on ttr.proto_id = t.result
     join t_entities enode on enode.id = t.fk_node_acc_id
     join t_entities etrans on etrans.id = t.fk_payer_acc_id
     left outer join t_transaction_types ttt on ttt.proto_id = t.type
-    left outer join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl.consensus_timestamp
-    join t_entities eaccount on eaccount.id = ctl.account_id
+    left outer join t_cryptotransferlists ctl on tlist.consensus_timestamp = ctl.consensus_timestamp
     order by t.consensus_ns desc,account_num asc,amount asc`;
 
 test('transactions by timestamp gte', () => {
@@ -76,12 +74,11 @@ test('transactions by account eq', () => {
   let sql = transactions.reqToSql({query: {'account.id': '0.1.123'}});
   let expected = normalizeSql(
     boilerplatePrefix +
-      ` where ctl.account_id in (select id from t_entities
-            where ((entity_shard  =  $1 and entity_realm  =  $2 and entity_num  =  $3 )) and fk_entity_type_id < 3 limit 1000)
-        and 1=1 and 1=1   order by ctl.consensus_timestamp desc
-        limit $4 ) as tlist` +
+      ` where (realm_num  =  $1 and entity_num  =  $2 )` +
+        `and 1=1 and 1=1   order by ctl.consensus_timestamp desc
+        limit $3 ) as tlist` +
       boilerplateSufffix
   );
   expect(normalizeSql(sql.query)).toEqual(expected);
-  expect(sql.params).toEqual(['0', '1', '123', 1000]);
+  expect(sql.params).toEqual(['1', '123', 1000]);
 });

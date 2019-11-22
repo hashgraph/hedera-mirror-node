@@ -201,8 +201,8 @@ const addTransaction = async function(
   for (var i = 0; i < transfers.length; ++i) {
     let xfer = transfers[i];
     await sqlConnection.query(
-      'insert into t_cryptotransferlists (consensus_timestamp, account_id, amount) values ($1, $2, $3);',
-      [consensusTimestamp, accountEntityIds[xfer[0]], xfer[1]]
+      'insert into t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
+      [consensusTimestamp, xfer[1], realm, xfer[0]]
     );
   }
 };
@@ -223,7 +223,8 @@ const addCryptoTransferTransaction = async function(
   recipientAccountId,
   amount,
   validDurationSeconds,
-  maxFee
+  maxFee,
+  bankId = 2
 ) {
   await addTransaction(
     consensusTimestamp,
@@ -232,7 +233,7 @@ const addCryptoTransferTransaction = async function(
     [
       [payerAccountId, -1 - amount],
       [recipientAccountId, amount],
-      [2, 1]
+      [bankId, 1]
     ],
     validDurationSeconds,
     maxFee
@@ -389,6 +390,44 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
   expect(res.rowCount).toEqual(1);
   expect(res.rows[0].name).toEqual('UNKNOWN');
   expect(res.rows[0].result).toEqual('UNKNOWN');
+});
+
+const createAndPopulateNewAccount = async (id, ts, bal) => {
+  await addAccount(id);
+  await sqlConnection.query(
+    'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
+    [ts, realm, id, bal]
+  );
+}
+
+test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
+  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['accountrange']);
+  let fileId = res.rows[0]['id'];
+
+  await createAndPopulateNewAccount(13, 5, 10);
+  await createAndPopulateNewAccount(63, 6, 50);
+  await createAndPopulateNewAccount(82, 7, 100);
+
+  // create 3 transactions - 9 transfers
+  await addCryptoTransferTransaction(2062, fileId, 13, 63, 50, 5000, 50);
+  await addCryptoTransferTransaction(2063, fileId, 63, 82, 70, 7000, 777);
+  await addCryptoTransferTransaction(2064, fileId, 82, 63, 20, 8000, -80);
+
+  let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70','lte:0.15.100']}});
+  res = await sqlConnection.query(sql.query, sql.params);
+
+  // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
+  // Note bank is out of desired range but is expected in query result
+  expect(res.rowCount).toEqual(6);
+  expect(mapTransactionResults(res.rows).sort()).toEqual([
+
+    '@2063: account 2 \u01271',
+    '@2063: account 63 \u0127-71',
+    '@2063: account 82 \u012770',
+    '@2064: account 2 \u01271',
+    '@2064: account 63 \u012720',
+    '@2064: account 82 \u0127-21'
+  ]);
 });
 
 let specPath = path.join(__dirname, 'specs');
