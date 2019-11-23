@@ -4,9 +4,8 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>mirror-api-rest</artifactId>
+    <artifactId>mirror-rest</artifactId>
     <name>Hedera Mirror Node REST API Server</name>
-    <description>Hedera Mirror Node REST API Server serves data mirrored from Hedera nodes</description>
 
     <parent>
         <groupId>com.hedera</groupId>
@@ -27,7 +26,7 @@
                         <argument>hederahashgraph/mirror-node-api</argument>
                         <argument>-t</argument>
                         <argument>hederahashgraph/mirror-node-api:${project.version}</argument>
-                        <argument>./rest-api</argument>
+                        <argument>./</argument>
                     </arguments>
                 </configuration>
                 <executions>
@@ -40,10 +39,16 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>com.google.cloud.tools</groupId>
-                <artifactId>jib-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
                 <configuration>
-                    <skip>true</skip>
+                    <includes>
+                        <include>*.js</include>
+                        <include>__tests__/*.js</include>
+                    </includes>
+                    <roots>
+                        <root>.</root>
+                    </roots>
                 </configuration>
             </plugin>
         </plugins>

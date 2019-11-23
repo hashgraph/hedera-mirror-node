@@ -88,7 +88,11 @@ const validateAccNumRange = function(transactions, low, high) {
     }
 
     if (!ret) {
-      console.log(`validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${JSON.stringify(tx)}`);
+      console.log(
+        `validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${JSON.stringify(
+          tx
+        )}`
+      );
       return false;
     }
 

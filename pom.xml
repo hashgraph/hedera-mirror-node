@@ -19,7 +19,8 @@
 
     <modules>
         <module>mirror-importer</module>
-        <module>mirror-api-rest</module>
+        <module>mirror-rest</module>
+        <module>jacoco-aggregator</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -59,91 +60,37 @@
     <url>https://github.com/hashgraph/hedera-mirror-node</url>
 
     <properties>
-        <commons-io.version>2.6</commons-io.version>
-        <hedera-protobuf.version>0.3.5</hedera-protobuf.version>
-        <hedera-sdk.version>0.6.1</hedera-sdk.version>
-        <jacoco.version>0.8.4</jacoco.version>
+        <jacoco.version>0.8.5</jacoco.version>
         <java.version>11</java.version>
-        <jib.version>1.8.0</jib.version>
-        <testcontainers.version>1.12.1</testcontainers.version>
     </properties>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <argLine>-Xmx512m</argLine>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <version>2.0.0</version>
-                <configuration>
-                    <canUpdateCopyright>true</canUpdateCopyright>
-                    <includes>
-                        <include>**/*.java</include>
-                        <include>rest-api/*.js</include>
-                        <include>rest-api/__tests__/*.js</include>
-                    </includes>
-                    <licenseName>apache_v2</licenseName>
-                    <roots>
-                        <root>src/main/java</root>
-                        <root>src/test/java</root>
-                        <root>rest-api</root>
-                    </roots>
-                    <!-- These contain unprintable characters to suppress showing the delimiters -->
-                    <processEndTag>‍</processEndTag>
-                    <processStartTag>‌</processStartTag>
-                    <sectionDelimiter>​</sectionDelimiter>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                        <configuration>
-                            <dataFile>target/jacoco.exec</dataFile>
-                            <outputDirectory>target/site/jacoco</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>com.google.cloud.tools</groupId>
-                <artifactId>jib-maven-plugin</artifactId>
-                <version>${jib.version}</version>
-                <configuration>
-                    <to>
-                        <image>hederahashgraph/mirror-node</image>
-                        <tags>
-                            <tag>${project.version}</tag>
-                        </tags>
-                    </to>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>dockerBuild</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <!-- Jacoco prepare-agent builds some command-line params without -->
+                        <!-- which jacoco will not instrument. Hence it is important to add -->
+                        <!-- those command-line params here (${argLine} holds those params) -->
+                        <argLine>${argLine} -Xms512m</argLine>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <version>2.0.0</version>
+                    <configuration>
+                        <canUpdateCopyright>true</canUpdateCopyright>
+                        <licenseName>apache_v2</licenseName>
+                        <!-- These contain unprintable characters to suppress showing the delimiters -->
+                        <processEndTag>‍</processEndTag>
+                        <processStartTag>‌</processStartTag>
+                        <sectionDelimiter>​</sectionDelimiter>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 </project>

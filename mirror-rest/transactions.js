@@ -63,8 +63,8 @@ const createTransferLists = function(rows, arr) {
     }
 
     transactions[row.consensus_ns].transfers.push({
-        account: config.shard + '.' + row.account_realm + '.' + row.account_num,
-        amount: Number(row.amount)
+      account: config.shard + '.' + row.account_realm + '.' + row.account_num,
+      amount: Number(row.amount)
     });
   }
 
@@ -99,8 +99,8 @@ const getTransactionsOuterQuery = function(innerQuery, order) {
     '   , t.fk_node_acc_id\n' +
     '   , enode.entity_realm as node_realm\n' +
     '   , enode.entity_num as node_num\n' +
-    "   , ctl.realm_num as account_realm\n" +
-    "   , ctl.entity_num as account_num\n" +
+    '   , ctl.realm_num as account_realm\n' +
+    '   , ctl.entity_num as account_num\n' +
     '   , amount\n' +
     '   , t.charged_tx_fee\n' +
     '   , t.valid_duration_seconds\n' +
@@ -278,8 +278,8 @@ const getOneTransaction = function(req, res) {
     '   , enode.entity_realm as node_realm\n' +
     '   , enode.entity_num as node_num\n' +
     '   , account_id\n' +
-    "   , ctl.realm_num as account_realm\n" +
-    "   , ctl.entity_num as account_num\n" +
+    '   , ctl.realm_num as account_realm\n' +
+    '   , ctl.entity_num as account_num\n' +
     '   , amount\n' +
     '   , charged_tx_fee\n' +
     '   , valid_duration_seconds\n' +

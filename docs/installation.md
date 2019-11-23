@@ -44,7 +44,7 @@ manage the process. See the [operations](operations.md) documentation for more i
 To start the REST API ensure you have the necessary [configuration](configuration.md) populated and run:
 
 ```console
-cd mirror-api-rest/rest-api
+cd mirror-rest
 npm install
 npm start
 ```
@@ -61,7 +61,7 @@ npm test
 
 The acceptance tests can be used against a live instance to verify the REST API is functioning correctly. To use specify
 the instance IP address and port as a `TARGET` environment variable. See the
-[monitoring](../rest-api/monitoring/README.md) documentation for more detail.
+[monitoring](../mirror-rest/monitoring/README.md) documentation for more detail.
 
 ```console
 TARGET=127.0.0.1:5551 npm run acceptancetest

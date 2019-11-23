@@ -18,6 +18,10 @@ mkdir -p "${usretc}" "${usrlib}" "${varlib}"
 if [ -f "/usr/lib/mirror-node/mirror-node.jar" ] || [ -f "${usrlib}/mirror-importer.jar" ]; then
     echo "Upgrading to ${version}"
 
+    # Stop the service
+    echo "Stopping ${oldjarname} service"
+    systemctl stop ${oldjarname}.service || true
+
     if [ -f "/usr/lib/mirror-node/mirror-node.jar" ]; then
     echo "Migrating from 'mirror-node' to 'mirror-importer'"
         oldjarname="mirror-node"
@@ -27,10 +31,6 @@ if [ -f "/usr/lib/mirror-node/mirror-node.jar" ] || [ -f "${usrlib}/mirror-impor
     else
         oldjarname="mirror-importer"
     fi
-
-    # Stop the service
-    echo "Stopping ${oldjarname} service"
-    systemctl stop ${oldjarname}.service || true
 
     echo "Backing up binary"
     mv "${usrlib}/${oldjarname}.jar" "${usrlib}/${oldjarname}.jar.${ts}.old"

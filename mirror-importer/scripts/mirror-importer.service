@@ -1,15 +1,15 @@
 [Unit]
 After=syslog.target
-Description=Hedera Mirror Node
+Description=Hedera Mirror Importer
 
 [Service]
-ExecStart=/usr/bin/java -jar mirror-node.jar -Djavax.net.ssl.trustStorePassword=changeit -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector --spring.config.additional-location=file:/usr/etc/mirror-node/
+ExecStart=/usr/bin/java -jar mirror-importer.jar -Djavax.net.ssl.trustStorePassword=changeit -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector --spring.config.additional-location=file:/usr/etc/mirror-importer/
 LimitNOFILE=65536
 Restart=on-failure
 RestartSec=1
 SuccessExitStatus=143
 Type=simple
-WorkingDirectory=/usr/lib/mirror-node
+WorkingDirectory=/usr/lib/mirror-importer
 
 [Install]
 WantedBy=multi-user.target

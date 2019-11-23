@@ -6,9 +6,7 @@
 
     <artifactId>mirror-importer</artifactId>
     <name>Hedera Mirror Node Importer</name>
-    <description>Hedera Mirror Node mirrors data from Hedera nodes</description>
 
-    <!-- Inherits from the Jib Multimodule parent POM. -->
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>mirror-node</artifactId>
@@ -16,6 +14,15 @@
     </parent>
 
     <packaging>jar</packaging>
+
+    <properties>
+        <commons-io.version>2.6</commons-io.version>
+        <disruptor.version>3.4.2</disruptor.version> <!-- Used for asynchronous logging -->
+        <hedera-protobuf.version>0.3.5</hedera-protobuf.version>
+        <hedera-sdk.version>0.6.1</hedera-sdk.version>
+        <jib.version>1.8.0</jib.version>
+        <testcontainers.version>1.12.1</testcontainers.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -31,6 +38,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-log4j2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>${disruptor.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -145,8 +157,64 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>${jib.version}</version>
+                <configuration>
+                    <to>
+                        <image>hederahashgraph/mirror-node</image>
+                        <tags>
+                            <tag>${project.version}</tag>
+                        </tags>
+                    </to>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>dockerBuild</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/*.java</include>
+                    </includes>
+                    <roots>
+                        <root>.</root>
+                    </roots>
+                </configuration>
             </plugin>
         </plugins>
     </build>

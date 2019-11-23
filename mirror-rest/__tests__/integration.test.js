@@ -108,8 +108,7 @@ const instantiateDatabase = async function() {
 };
 
 /**
- * Run the sql (non-java) based migrations in
- * ../mirror-importer/src/main/resources/db/migration against the target database.
+ * Run the sql (non-java) based migrations stored in the importer project against the target database.
  * @returns {Promise}
  */
 const flywayMigrate = function() {

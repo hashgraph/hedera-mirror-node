@@ -236,22 +236,12 @@ const parseComparatorSymbol = function(fields, valArr, type = null, valueTransla
         for (let f of fields) {
           let fquery = '';
           if (type === 'entityId') {
-
             // add realm_num check once
-            if (!queryStr.includes('realm_num = ?'))
-            {
-                fquery =
-                    f.realm +
-                    ' ' +
-                    opsMap['eq'] +
-                    ' ? and ';
+            if (!queryStr.includes('realm_num = ?')) {
+              fquery = f.realm + ' ' + opsMap['eq'] + ' ? and ';
             }
 
-            fquery +=
-              f.num +
-              ' ' +
-              opsMap[op] +
-              ' ? ';
+            fquery += f.num + ' ' + opsMap[op] + ' ? ';
             vals = vals.concat([entity.realm, entity.num]);
           } else if (type === 'timestamp_ns') {
             // Expect timestamp input as (a) just seconds,

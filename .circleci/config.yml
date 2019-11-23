@@ -10,9 +10,9 @@ references:
       name: Generating mirror-importer.tgz
       working_directory: /tmp/workspace/
       command: |
-        _tagged_dir=mirror-importer-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
-        mv mirror-importer "${_tagged_dir}"
-        tar -czf /tmp/workspace/mirror-importer.tgz "${_tagged_dir}"
+        tgzname=mirror-importer-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
+        mv mirror-importer "${tgzname}"
+        tar -czf /tmp/workspace/${tgzname}.tgz "${tgzname}"
 
 workflows:
   version: 2
@@ -24,7 +24,7 @@ workflows:
               only: /.*/
             tags:
               only: /.*/
-      - build_rest_api:
+      - build_mirror_rest:
           filters: # required since `release_artifacts` has tag filters AND requires `this`
             branches:
               only: /.*/
@@ -33,7 +33,7 @@ workflows:
       - release_artifacts:
           requires:
             - build_mirror_importer
-            - build_rest_api
+            - build_mirror_rest
           filters:
             branches:
               ignore: /.*/
@@ -80,7 +80,7 @@ jobs:
           paths:
             - mirror-importer
 
-  build_rest_api:
+  build_mirror_rest:
     docker:
       - image: node:12.10.0
       - image: circleci/postgres:9.6.14
@@ -92,39 +92,39 @@ jobs:
       - checkout:
       - restore_cache:
           keys:
-            - npm-v1-{{ .Branch }}-{{ checksum "mirror-api-rest/rest-api/package-lock.json" }}
+            - npm-v1-{{ .Branch }}-{{ checksum "mirror-rest/package-lock.json" }}
             - npm-v1-{{ .Branch }}
             - npm-v1-
       - run:
-          working_directory: "mirror-api-rest/rest-api"
+          working_directory: "mirror-rest"
           name: Run npm ci (ensure node_modules is based on package-lock.json).
           command: npm ci
       - save_cache:
-          key: npm-v1-{{ .Branch }}-{{ checksum "mirror-api-rest/rest-api/package-lock.json" }}
+          key: npm-v1-{{ .Branch }}-{{ checksum "mirror-rest/package-lock.json" }}
           paths:
             - node_modules
             - .node-flywaydb
             - ~/.npm
       - run:
-          working_directory: "mirror-api-rest/rest-api"
+          working_directory: "mirror-rest"
           name: Run npm test
           command: npm test
           environment:
             TEST_DB_HOST: "127.0.0.1"
             TEST_DB_NAME: "mirror_node_integration"
       - store_test_results:
-          path: mirror-api-rest/rest-api/target/jest-junit
+          path: mirror-rest/target/jest-junit
       - run:
-          working_directory: "mirror-api-rest/rest-api"
-          name: Collecting rest-api assets
+          working_directory: "mirror-rest"
+          name: Collecting mirror-rest assets
           command: |
             npm pack
             mkdir -p /tmp/workspace/
-            mv rest-api*.tgz /tmp/workspace/rest-api.tgz
+            mv mirror-rest*.tgz /tmp/workspace/mirror-rest-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}.tgz
       - persist_to_workspace:
           root: *workspace_root
           paths:
-            - rest-api.tgz
+            - mirror-rest-*.tgz
 
   release_artifacts:
     docker:
@@ -133,9 +133,9 @@ jobs:
       - *attach_workspace
       - *package_mirror_importer
       - store_artifacts:
-          path: /tmp/workspace/mirror-importer.tgz
+          path: /tmp/workspace/mirror-importer-*.tgz
       - store_artifacts:
-          path: /tmp/workspace/rest-api.tgz
+          path: /tmp/workspace/mirror-rest-*.tgz
 
 dependencies:
   override:
