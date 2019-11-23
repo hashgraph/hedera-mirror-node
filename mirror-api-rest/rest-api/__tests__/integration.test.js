@@ -108,7 +108,8 @@ const instantiateDatabase = async function() {
 };
 
 /**
- * Run the sql (non-java) based migrations in ../src/main/resources/db/migration against the target database.
+ * Run the sql (non-java) based migrations in
+ * ../mirror-importer/src/main/resources/db/migration against the target database.
  * @returns {Promise}
  */
 const flywayMigrate = function() {
@@ -126,7 +127,7 @@ const flywayMigrate = function() {
         'FLYWAY_PLACEHOLDERS_db-user': dbUser,
         'FLYWAY_PLACEHOLDERS_api-user': 'mirror_api',
         'FLYWAY_PLACEHOLDERS_api-password': 'mirror_api_pass',
-        FLYWAY_LOCATIONS: 'filesystem:../src/main/resources/db/migration'
+        FLYWAY_LOCATIONS: 'filesystem:../mirror-importer/src/main/resources/db/migration'
       },
       process.env
     )
@@ -398,7 +399,7 @@ const createAndPopulateNewAccount = async (id, ts, bal) => {
     'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
     [ts, realm, id, bal]
   );
-}
+};
 
 test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
   let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['accountrange']);
@@ -413,14 +414,13 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   await addCryptoTransferTransaction(2063, fileId, 63, 82, 70, 7000, 777);
   await addCryptoTransferTransaction(2064, fileId, 82, 63, 20, 8000, -80);
 
-  let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70','lte:0.15.100']}});
+  let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.100']}});
   res = await sqlConnection.query(sql.query, sql.params);
 
   // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
   // Note bank is out of desired range but is expected in query result
   expect(res.rowCount).toEqual(6);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
-
     '@2063: account 2 \u01271',
     '@2063: account 63 \u0127-71',
     '@2063: account 82 \u012770',
