@@ -60,7 +60,6 @@
 
     <properties>
         <commons-io.version>2.6</commons-io.version>
-<!--        <disruptor.version>3.4.2</disruptor.version>-->
         <hedera-protobuf.version>0.3.5</hedera-protobuf.version>
         <hedera-sdk.version>0.6.1</hedera-sdk.version>
         <jacoco.version>0.8.4</jacoco.version>
