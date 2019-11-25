@@ -5,14 +5,6 @@ references:
   attach_workspace: &attach_workspace
     attach_workspace:
       at: *workspace_root
-  package_mirror_importer: &package_mirror_importer
-    run:
-      name: Generating mirror-importer.tgz
-      working_directory: /tmp/workspace/
-      command: |
-        tgzname=mirror-importer-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
-        mv mirror-importer "${tgzname}"
-        tar -czf /tmp/workspace/${tgzname}.tgz "${tgzname}"
 
 workflows:
   version: 2
@@ -72,13 +64,17 @@ jobs:
       - run:
           name: Collecting mirror-importer assets
           command: |
-            mkdir -p /tmp/workspace/mirror-importer/
-            mv mirror-importer/target/mirror-importer-*.jar /tmp/workspace/mirror-importer/mirror-importer.jar
-            mv mirror-importer/scripts /tmp/workspace/mirror-importer/
+            NAME=mirror-importer-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
+            WORKSPACE=/tmp/workspace
+            mkdir -p ${WORKSPACE}/${NAME}
+            mv mirror-importer/target/mirror-importer-*.jar ${WORKSPACE}/${NAME}/mirror-importer.jar
+            mv mirror-importer/scripts ${WORKSPACE}/${NAME}
+            mkdir -p ${WORKSPACE}/artifacts
+            tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}
       - persist_to_workspace:
           root: *workspace_root
           paths:
-            - mirror-importer
+            - artifacts
 
   build_mirror_rest:
     docker:
@@ -118,24 +114,22 @@ jobs:
           working_directory: "mirror-rest"
           name: Collecting mirror-rest assets
           command: |
+            NAME=mirror-rest-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
             npm pack
-            mkdir -p /tmp/workspace/
-            mv mirror-rest*.tgz /tmp/workspace/mirror-rest-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}.tgz
+            mkdir -p /tmp/workspace/artifacts
+            mv mirror-rest*.tgz /tmp/workspace/artifacts/${NAME}.tgz
       - persist_to_workspace:
           root: *workspace_root
           paths:
-            - mirror-rest-*.tgz
+            - artifacts
 
   release_artifacts:
     docker:
       - image: adoptopenjdk:11-jdk-hotspot
     steps:
       - *attach_workspace
-      - *package_mirror_importer
       - store_artifacts:
-          path: /tmp/workspace/mirror-importer-*.tgz
-      - store_artifacts:
-          path: /tmp/workspace/mirror-rest-*.tgz
+          path: /tmp/workspace/artifacts
 
 dependencies:
   override:
