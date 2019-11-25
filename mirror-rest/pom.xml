@@ -23,9 +23,9 @@
                     <arguments>
                         <argument>build</argument>
                         <argument>-t</argument>
-                        <argument>hederahashgraph/mirror-node-api</argument>
+                        <argument>hederahashgraph/mirror-rest</argument>
                         <argument>-t</argument>
-                        <argument>hederahashgraph/mirror-node-api:${project.version}</argument>
+                        <argument>hederahashgraph/mirror-rest:${project.version}</argument>
                         <argument>./</argument>
                     </arguments>
                 </configuration>

@@ -23,7 +23,7 @@ if [ -f "/usr/lib/mirror-node/mirror-node.jar" ] || [ -f "${usrlib}/mirror-impor
     systemctl stop ${oldjarname}.service || true
 
     if [ -f "/usr/lib/mirror-node/mirror-node.jar" ]; then
-    echo "Migrating from 'mirror-node' to 'mirror-importer'"
+        echo "Migrating from 'mirror-node' to 'mirror-importer'"
         oldjarname="mirror-node"
         mv /usr/etc/mirror-node/* ${usretc}
         mv /usr/lib/mirror-node/* ${usrlib}

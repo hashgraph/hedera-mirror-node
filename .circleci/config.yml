@@ -130,7 +130,3 @@ jobs:
       - *attach_workspace
       - store_artifacts:
           path: /tmp/workspace/artifacts
-
-dependencies:
-  override:
-    - mvn install -DskipTests

@@ -1,6 +1,6 @@
-version: '3.3'
+version: "3.3"
 services:
-  mirror-node-postgres:
+  mirror-db:
     image: postgres:9.6-alpine
     restart: unless-stopped
     stop_grace_period: 2m
@@ -15,20 +15,20 @@ services:
     ports:
       - 5432:5432
 
-  mirror-node-backend:
-    image: hederahashgraph/mirror-node
+  mirror-importer:
+    image: hederahashgraph/mirror-importer
     restart: unless-stopped
     environment:
-      HEDERA_MIRROR_DATAPATH: /var/lib/mirror-node
-      HEDERA_MIRROR_DB_HOST: mirror-node-postgres
+      HEDERA_MIRROR_DATAPATH: /var/lib/mirror-importer
+      HEDERA_MIRROR_DB_HOST: mirror-db
       HEDERA_MIRROR_DOWNLOADER_BUCKETNAME: ${BUCKET_NAME}
     volumes:
-      - ./data:/var/lib/mirror-node
+      - ./data:/var/lib/mirror-importer
 
-  mirror-node-api:
-    image: hederahashgraph/mirror-node-api
+  mirror-rest:
+    image: hederahashgraph/mirror-rest
     environment:
-      HEDERA_MIRROR_DB_HOST: mirror-node-postgres
+      HEDERA_MIRROR_DB_HOST: mirror-db
     restart: unless-stopped
     tty: true
     ports:

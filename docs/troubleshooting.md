@@ -87,19 +87,19 @@ be no errors but you won't receive any new data after the restart event. To reco
 1 ) Stop Mirror Node
 
 ```console
-sudo systemctl stop mirror-node
+sudo systemctl stop mirror-importer
 ```
 
 2 ) Change Bucket Name and Region
 
 ```console
-sudo vi /usr/etc/mirror-node/application.yml
+sudo vi /usr/etc/mirror-importer/application.yml
 ```
 
 3 ) Backup files
 
 ```console
-cd /var/lib/mirror-node
+cd /var/lib/mirror-importer
 sudo mkdir backup20191114
 sudo mv accountBalances eventsStreams recordstreams backup20191114/
 ```
@@ -115,5 +115,5 @@ psql -h dbhost -d mirror_node -U mirror_node -f cleanup.sql
 5 ) Start Mirror Node
 
 ```console
-sudo systemctl start mirror-node
+sudo systemctl start mirror-importer
 ```

@@ -78,12 +78,13 @@ Docker Compose scripts are provided and run all the mirror node components:
 Containers use the following persisted volumes:
 
 -   `./db` on your local machine maps to `/var/lib/postgresql/data` in the containers. This contains the files for the
-    PostgreSQL database. If the database container fails to initialise properly and the database fails to run, you will have
-    to delete this folder prior to attempting a restart otherwise the database initialisation scripts will not be run.
+    PostgreSQL database. If the database container fails to initialise properly and the database fails to run, you will
+    have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will not be
+    run.
 
--   `./data` on your local machine maps to `/var/lib/mirror-node` in the container. This contains files downloaded from S3
-    or GCP. These are necessary not only for the database data to be persisted, but also so that the parsing containers can
-    access file obtained via the downloading containers
+-   `./data` on your local machine maps to `/var/lib/mirror-importer` in the container. This contains files downloaded
+    from S3 or GCP. These are necessary not only for the database data to be persisted, but also so that the parsing
+    containers can access file obtained via the downloading containers
 
 ### Starting
 
@@ -104,9 +105,9 @@ BUCKET_NAME=<your-bucket> docker-compose up
 Shutting down the database container via `docker-compose down` may result in a corrupted database that may not restart
 or may take longer than usual to restart. In order to avoid this, shell into the container and issue the following command:
 
-Use `docker ps` to get the name of the database container, it should be something like `mirror-node-postgres`.
+Use `docker ps` to get the name of the database container, it should be something like `mirror-db`.
 
-Use the command `docker exec -it docker_mirror-node-postgres_1 /bin/sh` to get a shell in the container.
+Use the command `docker exec -it docker_mirror-db_1 /bin/sh` to get a shell in the container.
 
 `su - postgres -c "PGDATA=$PGDATA /usr/local/bin/pg_ctl -w stop"`
 

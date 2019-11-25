@@ -166,7 +166,7 @@
                 <version>${jib.version}</version>
                 <configuration>
                     <to>
-                        <image>hederahashgraph/mirror-node</image>
+                        <image>hederahashgraph/mirror-importer</image>
                         <tags>
                             <tag>${project.version}</tag>
                         </tags>
