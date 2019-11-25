@@ -1,42 +1,33 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
-
     <groupId>com.hedera</groupId>
-    <artifactId>mirror-node</artifactId>
+    <artifactId>hedera-mirror-node</artifactId>
     <version>0.4.1-SNAPSHOT</version>
     <name>Hedera Mirror Node</name>
     <description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
-
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>2.2.1.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-
     <modules>
-        <module>mirror-importer</module>
-        <module>mirror-rest</module>
-        <module>jacoco-aggregator</module>
+        <module>hedera-mirror-coverage</module>
+        <module>hedera-mirror-importer</module>
+        <module>hedera-mirror-rest</module>
     </modules>
-
     <packaging>pom</packaging>
-
     <ciManagement>
         <system>CircleCI</system>
         <url>https://circleci.com/gh/hashgraph/hedera-mirror-node</url>
     </ciManagement>
-
     <inceptionYear>2019</inceptionYear>
-
     <issueManagement>
         <system>GitHub</system>
         <url>https://github.com/hashgraph/hedera-mirror-node/issues</url>
     </issueManagement>
-
     <licenses>
         <license>
             <name>Apache License 2.0</name>
@@ -44,26 +35,20 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-
     <organization>
         <name>Hedera Hashgraph, LLC</name>
         <url>https://hedera.com</url>
     </organization>
-
-
     <scm>
         <connection>https://github.com/hashgraph/hedera-mirror-node.git</connection>
         <tag>master</tag>
         <url>https://github.com/hashgraph/hedera-mirror-node/tree/master</url>
     </scm>
-
     <url>https://github.com/hashgraph/hedera-mirror-node</url>
-
     <properties>
         <jacoco.version>0.8.5</jacoco.version>
         <java.version>11</java.version>
     </properties>
-
     <build>
         <pluginManagement>
             <plugins>

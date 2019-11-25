@@ -18,13 +18,13 @@ compile a runnable Mirror Node JAR file in the `target` directory.
 
 In addition to OpenJDK 11, you will need to install [PostgreSQL](https://postgresql.org) 9.6 and initialize it. The only
 setup required is to create the initial database and owner since [Flyway](https://flywaydb.org) manages the
-database schema. The SQL script located at `mirror-importer/src/main/resources/db/scripts/init.sql` can be used to
+database schema. The SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init.sql` can be used to
 accomplish this. Edit the file and change the `db_name`, `db_user`, `db_password` or `db_owner` as appropriate.
 Make sure the application [configuration](configuration.md) matches the values in the script. Run the script as a DB
 admin user and check the output carefully to ensure no errors occurred.
 
 ```console
-psql postgres -f mirror-importer/src/main/resources/db/scripts/init.sql
+psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init.sql
 ```
 
 ### Importer
@@ -33,10 +33,10 @@ To run the Importer, first populate the configuration at one of the supported
 [configuration](configuration.md) paths, then run:
 
 ```console
-java -jar mirror-importer/target/mirror-importer-*.jar
+java -jar hedera-mirror-importer/target/hedera-mirror-importer-*.jar
 ```
 
-Additionally, there is a Systemd unit file located in the `mirror-importer/scripts/` directory that can be used to
+Additionally, there is a Systemd unit file located in the `hedera-mirror-importer/scripts/` directory that can be used to
 manage the process. See the [operations](operations.md) documentation for more information.
 
 ### REST API
@@ -44,7 +44,7 @@ manage the process. See the [operations](operations.md) documentation for more i
 To start the REST API ensure you have the necessary [configuration](configuration.md) populated and run:
 
 ```console
-cd mirror-rest
+cd hedera-mirror-rest
 npm install
 npm start
 ```
@@ -61,7 +61,7 @@ npm test
 
 The acceptance tests can be used against a live instance to verify the REST API is functioning correctly. To use specify
 the instance IP address and port as a `TARGET` environment variable. See the
-[monitoring](../mirror-rest/monitoring/README.md) documentation for more detail.
+[monitoring](../hedera-mirror-rest/monitoring/README.md) documentation for more detail.
 
 ```console
 TARGET=127.0.0.1:5551 npm run acceptancetest
@@ -82,7 +82,7 @@ Containers use the following persisted volumes:
     have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will not be
     run.
 
--   `./data` on your local machine maps to `/var/lib/mirror-importer` in the container. This contains files downloaded
+-   `./data` on your local machine maps to `/var/lib/hedera-mirror-importer` in the container. This contains files downloaded
     from S3 or GCP. These are necessary not only for the database data to be persisted, but also so that the parsing
     containers can access file obtained via the downloading containers
 
@@ -105,9 +105,9 @@ BUCKET_NAME=<your-bucket> docker-compose up
 Shutting down the database container via `docker-compose down` may result in a corrupted database that may not restart
 or may take longer than usual to restart. In order to avoid this, shell into the container and issue the following command:
 
-Use `docker ps` to get the name of the database container, it should be something like `mirror-db`.
+Use `docker ps` to get the name of the database container, it should be something like `hedera-mirror-node_db_1`.
 
-Use the command `docker exec -it docker_mirror-db_1 /bin/sh` to get a shell in the container.
+Use the command `docker exec -it hedera-mirror-node_db_1 /bin/sh` to get a shell in the container.
 
 `su - postgres -c "PGDATA=$PGDATA /usr/local/bin/pg_ctl -w stop"`
 

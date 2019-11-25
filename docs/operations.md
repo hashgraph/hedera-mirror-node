@@ -2,31 +2,31 @@
 
 ## File Layout
 
--   `/usr/lib/mirror-importer` - Binaries
--   `/usr/etc/mirror-importer` - Configuration files
+-   `/usr/lib/hedera-mirror-importer` - Binaries
+-   `/usr/etc/hedera-mirror-importer` - Configuration files
     -   `application.yml`
--   `/var/lib/mirror-importer` - Data
+-   `/var/lib/hedera-mirror-importer` - Data
     -   `addressbook.bin` - The current address book in use
     -   `accountBalances` - The downloaded balance and signature files
     -   `recordstreams` - The downloaded record and signature files
--   `/etc/systemd/system/mirror-importer.service` - systemd service definitions
+-   `/etc/systemd/system/hedera-mirror-importer.service` - systemd service definitions
 
 ## Starting
 
 ```
-sudo systemctl start mirror-importer.service
+sudo systemctl start hedera-mirror-importer.service
 ```
 
 ## Stopping
 
 ```
-sudo systemctl stop mirror-importer.service
+sudo systemctl stop hedera-mirror-importer.service
 ```
 
 ## Monitoring logs (tailing)
 
 ```
-sudo journalctl -fu mirror-importer.service
+sudo journalctl -fu hedera-mirror-importer.service
 ```
 
 ## Normal system logs

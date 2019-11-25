@@ -27,7 +27,7 @@ hs_err_pid*
 target/
 .project
 /data/
-mirror-importer/data/
+hedera-mirror-importer/data/
 .classpath
 output/
 /db/

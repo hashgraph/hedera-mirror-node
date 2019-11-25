@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>mirror-importer</artifactId>
+    <artifactId>hedera-mirror-importer</artifactId>
+    <description>Hedera Mirror Importer downloads and validates file streams from the cloud and imports them into the
+        database
+    </description>
     <name>Hedera Mirror Node Importer</name>
-
     <parent>
         <groupId>com.hedera</groupId>
-        <artifactId>mirror-node</artifactId>
+        <artifactId>hedera-mirror-node</artifactId>
         <version>0.4.1-SNAPSHOT</version>
     </parent>
-
     <packaging>jar</packaging>
-
     <properties>
         <commons-io.version>2.6</commons-io.version>
         <disruptor.version>3.4.2</disruptor.version> <!-- Used for asynchronous logging -->
@@ -23,54 +21,10 @@
         <jib.version>1.8.0</jib.version>
         <testcontainers.version>1.12.1</testcontainers.version>
     </properties>
-
     <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-log4j2</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.lmax</groupId>
-            <artifactId>disruptor</artifactId>
-            <version>${disruptor.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-cache</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.hedera.hashgraph</groupId>
@@ -89,12 +43,13 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>${disruptor.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -102,17 +57,17 @@
             <version>${commons-io.version}</version>
         </dependency>
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>s3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>netty-nio-client</artifactId>
-        </dependency>
-        <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
             <version>1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.hibernate.validator</groupId>
@@ -122,13 +77,49 @@
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator-annotation-processor</artifactId>
         </dependency>
-        <!-- Test -->
         <dependency>
-            <groupId>org.testcontainers</groupId>
+            <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>${testcontainers.version}</version>
-            <scope>test</scope>
+            <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-log4j2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>netty-nio-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+        </dependency>
+        <!-- Test -->
         <dependency>
             <groupId>io.findify</groupId>
             <artifactId>s3mock_2.12</artifactId>
@@ -140,8 +131,13 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -153,7 +149,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
     <build>
         <plugins>
             <plugin>
@@ -166,7 +161,7 @@
                 <version>${jib.version}</version>
                 <configuration>
                     <to>
-                        <image>hederahashgraph/mirror-importer</image>
+                        <image>docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-importer</image>
                         <tags>
                             <tag>${project.version}</tag>
                         </tags>

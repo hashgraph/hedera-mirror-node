@@ -87,19 +87,19 @@ be no errors but you won't receive any new data after the restart event. To reco
 1 ) Stop Mirror Node
 
 ```console
-sudo systemctl stop mirror-importer
+sudo systemctl stop hedera-mirror-importer
 ```
 
 2 ) Change Bucket Name and Region
 
 ```console
-sudo vi /usr/etc/mirror-importer/application.yml
+sudo vi /usr/etc/hedera-mirror-importer/application.yml
 ```
 
 3 ) Backup files
 
 ```console
-cd /var/lib/mirror-importer
+cd /var/lib/hedera-mirror-importer
 sudo mkdir backup20191114
 sudo mv accountBalances eventsStreams recordstreams backup20191114/
 ```
@@ -107,7 +107,7 @@ sudo mv accountBalances eventsStreams recordstreams backup20191114/
 4 ) Wipe Database
 
 ```console
-scp mirror-importer/src/main/resources/db/scripts/cleanup.sql user@server:~
+scp hedera-mirror-importer/src/main/resources/db/scripts/cleanup.sql user@server:~
 ssh user@server
 psql -h dbhost -d mirror_node -U mirror_node -f cleanup.sql
 ```
@@ -115,5 +115,5 @@ psql -h dbhost -d mirror_node -U mirror_node -f cleanup.sql
 5 ) Start Mirror Node
 
 ```console
-sudo systemctl start mirror-importer
+sudo systemctl start hedera-mirror-importer
 ```

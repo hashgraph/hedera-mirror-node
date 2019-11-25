@@ -1,18 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>mirror-rest</artifactId>
-    <name>Hedera Mirror Node REST API Server</name>
-
+    <artifactId>hedera-mirror-rest</artifactId>
+    <name>Hedera Mirror Node REST API</name>
     <parent>
         <groupId>com.hedera</groupId>
-        <artifactId>mirror-node</artifactId>
+        <artifactId>hedera-mirror-node</artifactId>
         <version>0.4.1-SNAPSHOT</version>
     </parent>
-
     <build>
         <plugins>
             <plugin>
@@ -23,9 +19,11 @@
                     <arguments>
                         <argument>build</argument>
                         <argument>-t</argument>
-                        <argument>hederahashgraph/mirror-rest</argument>
+                        <argument>docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-rest</argument>
                         <argument>-t</argument>
-                        <argument>hederahashgraph/mirror-rest:${project.version}</argument>
+                        <argument>
+                            docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-rest:${project.version}
+                        </argument>
                         <argument>./</argument>
                     </arguments>
                 </configuration>

@@ -36,7 +36,7 @@ A dashboard polls the above-mentioned APIs and displays the results.
 
 ```
 git clone git@github.com:hashgraph/hedera-mirror-node.git
-cd hedera-mirror-node/mirror-rest/monitoring
+cd hedera-mirror-node/hedera-mirror-rest/monitoring
 ```
 
 To run the monitor_apis backend:
@@ -52,7 +52,7 @@ PORT=xxxx npm start  // To start the monitoring server on port xxxx (Note: pleas
 The server will start polling Hedera mirror nodes specified in the config/serverlist.json file.
 The default timeout to populate the data is 2 minutes. After 2 minutes, you can verify the output using `curl <ip-address-where-you-run-monitoring-service>:<port>/api/v1/status` command.
 
-To run the dashboard (from hedera-mirror-node/mirror-rest/monitoring directory):
+To run the dashboard (from `hedera-mirror-rest/monitoring` directory):
 
 ```
 cd monitor_dashboard
