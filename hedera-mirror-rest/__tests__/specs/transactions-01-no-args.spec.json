@@ -213,18 +213,18 @@
         "result": "SUCCESS",
         "transaction_id": "0.15.63-0-000002062",
         "transfers": [
-         {
-           "account": "0.15.2",
-           "amount": 1
-         },
-         {
-           "account": "0.15.63",
-           "amount": -71
-         },
-         {
-           "account": "0.15.82",
-           "amount": 70
-         }
+          {
+            "account": "0.15.2",
+            "amount": 1
+          },
+          {
+            "account": "0.15.63",
+            "amount": -71
+          },
+          {
+            "account": "0.15.82",
+            "amount": 70
+          }
         ],
         "valid_duration_seconds": "7000",
         "valid_start_timestamp": "0.000002062"
@@ -239,18 +239,18 @@
         "result": "SUCCESS",
         "transaction_id": "0.15.82-0-000002063",
         "transfers": [
-         {
-           "account": "0.15.2",
-           "amount": 1
-         },
-         {
-           "account": "0.15.63",
-           "amount": 20
-         },
-         {
-           "account": "0.15.82",
-           "amount": -21
-         }
+          {
+            "account": "0.15.2",
+            "amount": 1
+          },
+          {
+            "account": "0.15.63",
+            "amount": 20
+          },
+          {
+            "account": "0.15.82",
+            "amount": -21
+          }
         ],
         "valid_duration_seconds": "8000",
         "valid_start_timestamp": "0.000002063"

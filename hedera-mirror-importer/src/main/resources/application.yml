@@ -17,7 +17,7 @@ logging:
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 spring:
   application:
-    name: hedera-mirror-node
+    name: hedera-mirror-importer
   datasource:
     name: ${hedera.mirror.db.name}
     password: ${hedera.mirror.db.password}

@@ -38,7 +38,7 @@ const custom = {
 
 beforeEach(() => {
   jest.resetModules();
-  tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mirror-rest-api-'));
+  tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hedera-mirror-rest-'));
   process.env = {CONFIG_PATH: tempDir};
   cleanup();
 });

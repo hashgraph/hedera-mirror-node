@@ -75,7 +75,7 @@ test('transactions by account eq', () => {
   let expected = normalizeSql(
     boilerplatePrefix +
       ` where (realm_num  =  $1 and entity_num  =  $2 )` +
-        `and 1=1 and 1=1   order by ctl.consensus_timestamp desc
+      `and 1=1 and 1=1   order by ctl.consensus_timestamp desc
         limit $3 ) as tlist` +
       boilerplateSufffix
   );

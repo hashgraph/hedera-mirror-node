@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>hedera-mirror-rest</artifactId>
+    <name>Hedera Mirror Node REST API</name>
+    <parent>
+        <groupId>com.hedera</groupId>
+        <artifactId>hedera-mirror-node</artifactId>
+        <version>0.4.1-SNAPSHOT</version>
+    </parent>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <executable>docker</executable>
+                    <arguments>
+                        <argument>build</argument>
+                        <argument>-t</argument>
+                        <argument>docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-rest</argument>
+                        <argument>-t</argument>
+                        <argument>
+                            docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-rest:${project.version}
+                        </argument>
+                        <argument>./</argument>
+                    </arguments>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>*.js</include>
+                        <include>__tests__/*.js</include>
+                    </includes>
+                    <roots>
+                        <root>.</root>
+                    </roots>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
