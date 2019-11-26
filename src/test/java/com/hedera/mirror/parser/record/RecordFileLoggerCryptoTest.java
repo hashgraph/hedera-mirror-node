@@ -51,7 +51,10 @@ import java.time.Instant;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.domain.Entities;
@@ -467,6 +470,52 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertFalse(dbAccountEntity.isDeleted())
+        );
+    }
+
+    @DisplayName("update account such that expiration timestamp overflows nanos_timestamp")
+    @ParameterizedTest(name = "with seconds {0} and expectedNanosTimestamp {1}")
+    @CsvSource({
+            "9223372036854775807, 9223372036854775807",
+            "31556889864403199, 9223372036854775807",
+            "-9223372036854775808, -9223372036854775808",
+            "-1000000000000000000, -9223372036854775808"
+    })
+    void cryptoUpdateExpirationOverflow(long seconds, long expectedNanosTimestamp) throws Exception {
+
+        // first create the account
+        var createTransaction = cryptoCreateTransaction();
+        var createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
+        var createRecord = transactionRecordSuccess(createTransactionBody);
+
+        RecordFileLogger.storeRecord(createTransaction, createRecord);
+
+        // now update
+        var updateTransaction = Transaction.newBuilder();
+        var updateTransactionBody = CryptoUpdateTransactionBody.newBuilder();
+        updateTransactionBody.setAccountIDToUpdate(accountId);
+
+        // *** THIS IS THE OVERFLOW WE WANT TO TEST ***
+        // This should result in the entity having a NULL expiration
+        updateTransactionBody.setExpirationTime(Timestamp.newBuilder().setSeconds(seconds));
+
+        var transactionBody = defaultTransactionBodyBuilder(memo);
+        transactionBody.setCryptoUpdateAccount(updateTransactionBody.build());
+        updateTransaction.setBodyBytes(transactionBody.build().toByteString());
+        var rec = transactionRecordSuccess(transactionBody.build());
+
+        RecordFileLogger.storeRecord(updateTransaction.build(), rec);
+        RecordFileLogger.completeFile("", "");
+
+        var dbTransaction = transactionRepository
+                .findById(Utility.timeStampInNanos(rec.getConsensusTimestamp())).get();
+        var dbAccountEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
+
+        assertAll(
+                // row counts
+                () -> assertEquals(1, recordFileRepository.count())
+                , () -> assertEquals(2, transactionRepository.count())
+                , () -> assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpiryTimeNs())
         );
     }
 

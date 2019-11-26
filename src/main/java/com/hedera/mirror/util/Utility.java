@@ -591,19 +591,19 @@ public class Utility {
      * Convert an Instant to a Long type timestampInNanos
      */
     public static Long convertInstantToNanos(Instant instant) {
-        try {
-            return Math.addExact(Math.multiplyExact(instant.getEpochSecond(), SCALAR), instant.getNano());
-        } catch (ArithmeticException e) {
-            log.error("Long overflow when converting Instant to nanos timestamp : {}", instant, e);
-            throw e;
-        }
+        return convertToNanos(instant.getEpochSecond(), instant.getNano());
     }
 
     /**
      * Converts time in (second, nanos) to time in only nanos.
      */
     public static Long convertToNanos(long second, long nanos) {
-        return convertInstantToNanos(Instant.ofEpochSecond(second, nanos));
+        try {
+            return Math.addExact(Math.multiplyExact(second, SCALAR), nanos);
+        } catch (ArithmeticException e) {
+            log.error("Long overflow when converting time to nanos timestamp : {}s {}ns", second, nanos);
+            throw e;
+        }
     }
 
     /**

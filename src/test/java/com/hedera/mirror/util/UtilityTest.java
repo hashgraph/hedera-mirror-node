@@ -232,6 +232,15 @@ public class UtilityTest {
         );
     }
 
+    @ParameterizedTest(name = "with seconds {0} and nanos {1}")
+    @CsvSource({
+            "9223372036854775807, 0",
+            "-9223372036854775808, 0"
+    })
+    void convertInstantToNanosThrows(long seconds, int nanos) {
+        assertThrows(ArithmeticException.class, () -> Utility.convertToNanos(seconds, nanos));
+    }
+
     @Test
     @DisplayName("converting illegal instant to nanos")
     void convertInstantToNanosIllegalInput() {
