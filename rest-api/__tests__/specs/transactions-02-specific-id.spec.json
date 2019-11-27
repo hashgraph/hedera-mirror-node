@@ -1,0 +1,34 @@
+{
+  "url": "/api/v1/transactions/0.15.10-0000000000-000001049",
+  "responseStatus": 200,
+  "responseJson": {
+    "transactions": [
+      {
+        "consensus_timestamp": "0.000001050",
+        "valid_start_timestamp": "0.000001049",
+        "charged_tx_fee": 0,
+        "memo_base64": null,
+        "result": "SUCCESS",
+        "name": "CRYPTOTRANSFER",
+        "node": "0.15.2",
+        "transaction_id": "0.15.10-0-000001049",
+        "valid_duration_seconds": "11",
+        "max_fee": "33",
+        "transfers": [
+          {
+            "account": "0.15.2",
+            "amount": 1
+          },
+          {
+            "account": "0.15.9",
+            "amount": 10
+          },
+          {
+            "account": "0.15.10",
+            "amount": -11
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -283,7 +283,7 @@ const getOneTransaction = function(req, res) {
     '	, t.consensus_ns\n' +
     '   , valid_start_ns\n' +
     "   , coalesce(ttr.result, 'UNKNOWN') as result\n" +
-    "   , coalesce(ttt.name, 'UNKNOWN') as type\n" +
+    "   , coalesce(ttt.name, 'UNKNOWN') as name\n" +
     '   , t.fk_node_acc_id\n' +
     '   , enode.entity_shard as node_shard\n' +
     '   , enode.entity_realm as node_realm\n' +
@@ -307,7 +307,7 @@ const getOneTransaction = function(req, res) {
     '   and  etrans.entity_realm = ?\n' +
     '   and  etrans.entity_num = ?\n' +
     '   and  t.valid_start_ns = ?\n' +
-    ' order by consensus_ns asc'; // In case of duplicate transactions, only the first succeeds
+    ' order by consensus_ns asc, account_num asc, amount asc'; // In case of duplicate transactions, only the first succeeds
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(sqlQuery, sqlParams);
 
