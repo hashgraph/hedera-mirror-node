@@ -232,12 +232,31 @@ public class UtilityTest {
         );
     }
 
-    @Test
-    @DisplayName("converting illegal instant to nanos")
-    void convertInstantToNanosIllegalInput() {
-        assertThrows(ArithmeticException.class, () -> {
-            Utility.convertToNanos(1568376750538L, 0L);
-        });
+    @ParameterizedTest(name = "with seconds {0} and nanos {1}")
+    @CsvSource({
+            "1568376750538, 0",
+            "9223372036854775807, 0",
+            "-9223372036854775808, 0",
+            "9223372036, 854775808",
+            "-9223372036, -854775809"
+    })
+    void convertInstantToNanosThrows(long seconds, int nanos) {
+        assertThrows(ArithmeticException.class, () -> Utility.convertToNanos(seconds, nanos));
+    }
+
+    @ParameterizedTest(name = "with seconds {0} and nanos {1}")
+    @CsvSource({
+            "0, 0, 0",
+            "1574880387, 0, 1574880387000000000",
+            "1574880387, 999999999, 1574880387999999999",
+            "1568376750538, 0, 9223372036854775807",
+            "9223372036854775807, 0, 9223372036854775807",
+            "-9223372036854775808, 0, -9223372036854775808",
+            "9223372036, 854775808, 9223372036854775807",
+            "-9223372036, -854775809, -9223372036854775808"
+    })
+    void convertInstantToNanosMax(long seconds, int nanos, long expected) {
+        assertThat(Utility.convertToNanosMax(seconds, nanos)).isEqualTo(expected);
     }
 
     @ParameterizedTest(name = "with seconds {0} and nanos {1}")
