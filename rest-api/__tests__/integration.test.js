@@ -160,14 +160,14 @@ const flywayMigrate = function() {
 const shard = 0;
 const realm = 15;
 const accountEntityIds = {};
-const addAccount = async function(accountId) {
+const addAccount = async function(accountId, exp_tm_nanosecs = 4223372036854775807) {
   let e = accountEntityIds[accountId];
   if (e) {
     return e;
   }
   let res = await sqlConnection.query(
-    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num) values ($1, $2, $3, $4) returning id;',
-    [1, shard, realm, accountId]
+    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns) values ($1, $2, $3, $4, $5) returning id;',
+    [1, shard, realm, accountId, exp_tm_nanosecs]
   );
   e = res.rows[0]['id'];
   accountEntityIds[accountId] = e;
@@ -242,16 +242,26 @@ const addCryptoTransferTransaction = async function(
 /**
  * Setup test data in the postgres instance.
  */
+const accountCount = 10;
+const minExpiryAccountId = accountCount - 1;
+const maxExpiryAccountId = accountCount;
 const setupData = async function() {
   let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['test']);
   let fileId = res.rows[0]['id'];
   console.log(`Record file id is ${fileId}`);
 
-  const accountCount = 10;
   const balancePerAccountCount = 3;
   console.log(`Adding ${accountCount} accounts with ${balancePerAccountCount} balances per account`);
   for (var i = 1; i <= accountCount; ++i) {
-    await addAccount(i);
+    if (i == maxExpiryAccountId) {
+    // set max expiry time for account accountCount
+      await addAccount(i, '9223372036854775807');
+    } else if (i == minExpiryAccountId) {
+    // set min expiry time for account accountCount - 1
+      await addAccount(i, '-9223372036854775808');
+    } else {
+      await addAccount(i);
+    }
     // Add 3 balances for each account.
     for (var ts = 0; ts < balancePerAccountCount; ++ts) {
       await sqlConnection.query(
@@ -389,6 +399,28 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
   expect(res.rowCount).toEqual(1);
   expect(res.rows[0].name).toEqual('UNKNOWN');
   expect(res.rows[0].result).toEqual('UNKNOWN');
+});
+
+test('DB integration test - account min expiration time', async () => {
+
+  let response = await request(server).get(`/api/v1/accounts?account.id=${shard}.${realm}.${minExpiryAccountId}`);
+  expect(response.status).toEqual(200);
+
+  var accounts = JSON.parse(response.text).accounts;
+  expect(accounts.length).toEqual(1);
+  var account = accounts[0];
+  expect(account.expiry_timestamp).toEqual('-9223372036.854775808');
+});
+
+test('DB integration test - account max expiration time', async () => {
+
+  var response = await request(server).get(`/api/v1/accounts?account.id=${shard}.${realm}.${maxExpiryAccountId}`);
+  expect(response.status).toEqual(200);
+
+  var accounts = JSON.parse(response.text).accounts;
+  expect(accounts.length).toEqual(1);
+  var account = accounts[0];
+  expect(account.expiry_timestamp).toEqual('9223372036.854775807');
 });
 
 let specPath = path.join(__dirname, 'specs');
