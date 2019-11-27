@@ -512,10 +512,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         var dbAccountEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
 
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpiryTimeNs())
+                () -> assertEquals(1, recordFileRepository.count()),
+                () -> assertEquals(2, transactionRepository.count()),
+                () -> assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpiryTimeNs())
         );
     }
 

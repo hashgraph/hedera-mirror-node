@@ -607,6 +607,19 @@ public class Utility {
     }
 
     /**
+     * Converts time in (second, nanos) to time in only nanos, with a fallback if overflow:
+     * If positive overflow, return the max time in the future (Long.MAX_VALUE).
+     * If negative overflow, return the max time in the past (Long.MIN_VALUE).
+     */
+    public static Long convertToNanosMax(long second, long nanos) {
+        try {
+            return convertToNanos(second, nanos);
+        } catch (ArithmeticException ex) {
+            return second >= 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
+        }
+    }
+
+    /**
      * Convert Timestamp to a Long type timeStampInNanos
      */
     public static Long timeStampInNanos(Timestamp timestamp) {

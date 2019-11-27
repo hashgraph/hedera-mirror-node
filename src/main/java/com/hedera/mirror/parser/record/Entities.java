@@ -139,21 +139,7 @@ public class Entities {
             if ((exp_time_seconds != 0) || (exp_time_nanos != 0)) {
                 updateEntity.setLong(1, exp_time_seconds);
                 updateEntity.setLong(2, exp_time_nanos);
-                try {
-                    updateEntity.setLong(3, Utility.convertToNanos(exp_time_seconds, exp_time_nanos));
-                } catch (ArithmeticException ex) {
-                    log.warn("Detected an 'update' transaction for entity {}.{}.{} with an invalid expiration date. " +
-                                    "{}s {}ns",
-                            shard, realm, num, exp_time_seconds, exp_time_nanos, ex);
-                    if (exp_time_seconds >= 0) {
-                        // Assume positive overflow, set expiration explicitly to a time in the future.
-                        updateEntity.setLong(3, Long.MAX_VALUE);
-                    } else {
-                        // Assume negative overflow, set expiration to a time in the past.
-                        updateEntity.setLong(3, Long.MIN_VALUE);
-                    }
-                }
-
+                updateEntity.setLong(3, Utility.convertToNanosMax(exp_time_seconds, exp_time_nanos));
                 fieldCount = 3;
             }
 
@@ -346,21 +332,7 @@ public class Entities {
             entityCreate.setInt(5, fk_entity_type);
             entityCreate.setLong(6, exp_time_seconds);
             entityCreate.setLong(7, exp_time_nanos);
-
-            try {
-                entityCreate.setLong(8, Utility.convertToNanos(exp_time_seconds, exp_time_nanos));
-            } catch (ArithmeticException ex) {
-                log.warn("Detected a 'create' transaction for entity {}.{}.{} with an invalid expiration date. {}s " +
-                                "{}ns",
-                        shard, realm, num, exp_time_seconds, exp_time_nanos, ex);
-                if (exp_time_seconds >= 0) {
-                    // Assume positive overflow, set expiration explicitly to the max value.
-                    entityCreate.setLong(8, Long.MAX_VALUE);
-                } else {
-                    // Assume negative overflow, set expiration to a time in the past.
-                    entityCreate.setLong(8, Long.MIN_VALUE);
-                }
-            }
+            entityCreate.setLong(8, Utility.convertToNanosMax(exp_time_seconds, exp_time_nanos));
             entityCreate.setLong(9, auto_renew_period);
 
             if (key == null) {

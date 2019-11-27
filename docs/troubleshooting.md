@@ -63,6 +63,7 @@ issues are resolvable by updating the application configuration and restarting t
 These should be investigated by Hedera, but require no immediate escalation unless they are occurring frequently (more than 1/min).
 
 -   `Transaction type .* not known to mirror node`
+-   `Long overflow when converting time to nanos timestamp`
 
 ## Known Issues
 
