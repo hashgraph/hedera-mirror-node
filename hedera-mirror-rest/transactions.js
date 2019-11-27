@@ -272,12 +272,11 @@ const getOneTransaction = function(req, res) {
     '	, t.consensus_ns\n' +
     '   , valid_start_ns\n' +
     "   , coalesce(ttr.result, 'UNKNOWN') as result\n" +
-    "   , coalesce(ttt.name, 'UNKNOWN') as type\n" +
+    "   , coalesce(ttt.name, 'UNKNOWN') as name\n" +
     '   , t.fk_node_acc_id\n' +
     '   , enode.entity_shard as node_shard\n' +
     '   , enode.entity_realm as node_realm\n' +
     '   , enode.entity_num as node_num\n' +
-    '   , account_id\n' +
     '   , ctl.realm_num as account_realm\n' +
     '   , ctl.entity_num as account_num\n' +
     '   , amount\n' +
