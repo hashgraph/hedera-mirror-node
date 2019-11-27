@@ -10,13 +10,13 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>
     <properties>
         <commons-io.version>2.6</commons-io.version>
         <disruptor.version>3.4.2</disruptor.version> <!-- Used for asynchronous logging -->
-        <hedera-protobuf.version>0.3.5</hedera-protobuf.version>
+        <hedera-protobuf.version>0.3.6</hedera-protobuf.version>
         <hedera-sdk.version>0.6.1</hedera-sdk.version>
         <jib.version>1.8.0</jib.version>
         <testcontainers.version>1.12.1</testcontainers.version>
