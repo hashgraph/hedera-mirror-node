@@ -20,11 +20,13 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
@@ -53,8 +55,11 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.MirrorProperties;
@@ -321,6 +326,26 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
                 , () -> assertFalse(dbFileEntity.isDeleted())
         );
+    }
+
+    @ParameterizedTest(name = "with {0} s and expected {1} ns")
+    @CsvSource({
+            "9223372036854775807, 9223372036854775807",
+            "31556889864403199, 9223372036854775807",
+            "-9223372036854775808, -9223372036854775808",
+            "-1000000000000000000, -9223372036854775808"
+    })
+    void fileCreateExpirationTimeOverflow(long seconds, long expectedNanosTimestamp) throws Exception {
+        final Transaction transaction = fileCreateTransaction(Timestamp.newBuilder().setSeconds(seconds).build());
+        final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        final TransactionRecord record = transactionRecord(transactionBody);
+
+        RecordFileLogger.storeRecord(transaction, record);
+        RecordFileLogger.completeFile("", "");
+
+        var dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+        var dbAccountEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
+        assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpiryTimeNs());
     }
 
     @Test
@@ -1637,21 +1662,25 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
     }
 
     private Transaction fileCreateTransaction() {
+        return fileCreateTransaction(Timestamp.newBuilder()
+                .setSeconds(1571487857L)
+                .setNanos(181579000)
+                .build());
+    }
+
+    private Transaction fileCreateTransaction(Timestamp expirationTime) {
 
         Transaction.Builder transaction = Transaction.newBuilder();
         FileCreateTransactionBody.Builder fileCreate = FileCreateTransactionBody.newBuilder();
 
         // file create
-        String fileData = "Hedera hashgraph is great!";
-        long expiryTimeSeconds = 1571487857L;
-        int expiryTimeNanos = 181579000;
-        String key = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
+        final String fileData = "Hedera hashgraph is great!";
+        final String key = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
 
         // Build a transaction
         fileCreate.setContents(ByteString.copyFromUtf8(fileData));
-        fileCreate.setExpirationTime(Timestamp.newBuilder().setSeconds(expiryTimeSeconds).setNanos(expiryTimeNanos)
-                .build());
-        KeyList.Builder keyList = KeyList.newBuilder();
+        fileCreate.setExpirationTime(expirationTime);
+        final KeyList.Builder keyList = KeyList.newBuilder();
         keyList.addKeys(keyFromString(key));
         fileCreate.setKeys(keyList);
         fileCreate.setNewRealmAdminKey(keyFromString(realmAdminKey));

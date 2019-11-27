@@ -160,14 +160,14 @@ const flywayMigrate = function() {
 const shard = 0;
 const realm = 15;
 const accountEntityIds = {};
-const addAccount = async function(accountId) {
+const addAccount = async function(accountId, exp_tm_nanosecs = 4223372036854775807) {
   let e = accountEntityIds[accountId];
   if (e) {
     return e;
   }
   let res = await sqlConnection.query(
-    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num) values ($1, $2, $3, $4) returning id;',
-    [1, shard, realm, accountId]
+    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns) values ($1, $2, $3, $4, $5) returning id;',
+    [1, shard, realm, accountId, exp_tm_nanosecs]
   );
   e = res.rows[0]['id'];
   accountEntityIds[accountId] = e;
@@ -243,16 +243,26 @@ const addCryptoTransferTransaction = async function(
 /**
  * Setup test data in the postgres instance.
  */
+const accountCount = 10;
+const minExpiryAccountId = accountCount - 1;
+const maxExpiryAccountId = accountCount;
 const setupData = async function() {
   let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['test']);
   let fileId = res.rows[0]['id'];
   console.log(`Record file id is ${fileId}`);
 
-  const accountCount = 10;
   const balancePerAccountCount = 3;
   console.log(`Adding ${accountCount} accounts with ${balancePerAccountCount} balances per account`);
   for (var i = 1; i <= accountCount; ++i) {
-    await addAccount(i);
+    if (i == maxExpiryAccountId) {
+      // set max expiry time for account accountCount
+      await addAccount(i, '9223372036854775807');
+    } else if (i == minExpiryAccountId) {
+      // set min expiry time for account accountCount - 1
+      await addAccount(i, '-9223372036854775808');
+    } else {
+      await addAccount(i);
+    }
     // Add 3 balances for each account.
     for (var ts = 0; ts < balancePerAccountCount; ++ts) {
       await sqlConnection.query(

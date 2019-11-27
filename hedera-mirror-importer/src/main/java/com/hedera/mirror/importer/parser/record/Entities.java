@@ -20,9 +20,6 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import static java.sql.Types.VARBINARY;
-import static java.sql.Types.VARCHAR;
-
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -35,11 +32,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.time.DateTimeException;
 import java.util.HashMap;
 
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.util.Utility;
+
+import static java.sql.Types.*;
 
 @Log4j2
 public class Entities {
@@ -139,7 +139,7 @@ public class Entities {
             if ((exp_time_seconds != 0) || (exp_time_nanos != 0)) {
                 updateEntity.setLong(1, exp_time_seconds);
                 updateEntity.setLong(2, exp_time_nanos);
-                updateEntity.setLong(3, Utility.convertToNanos(exp_time_seconds, exp_time_nanos));
+                updateEntity.setLong(3, Utility.convertToNanosMax(exp_time_seconds, exp_time_nanos));
                 fieldCount = 3;
             }
 
@@ -332,8 +332,7 @@ public class Entities {
             entityCreate.setInt(5, fk_entity_type);
             entityCreate.setLong(6, exp_time_seconds);
             entityCreate.setLong(7, exp_time_nanos);
-
-            entityCreate.setLong(8, Utility.convertToNanos(exp_time_seconds, exp_time_nanos));
+            entityCreate.setLong(8, Utility.convertToNanosMax(exp_time_seconds, exp_time_nanos));
             entityCreate.setLong(9, auto_renew_period);
 
             if (key == null) {
