@@ -293,7 +293,7 @@ const getOneTransaction = function(req, res) {
     '   and  etrans.entity_realm = ?\n' +
     '   and  etrans.entity_num = ?\n' +
     '   and  t.valid_start_ns = ?\n' +
-    ' order by consensus_ns asc'; // In case of duplicate transactions, only the first succeeds
+    ' order by consensus_ns asc, account_num asc, amount asc'; // In case of duplicate transactions, only the first succeeds
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(sqlQuery, sqlParams);
 
