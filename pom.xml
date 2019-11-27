@@ -48,6 +48,7 @@
     </scm>
     <url>https://github.com/hashgraph/hedera-mirror-node</url>
     <properties>
+        <hedera-protobuf.version>hcs-11c0d9176b-1</hedera-protobuf.version>
         <jacoco.version>0.8.5</jacoco.version>
         <java.version>11</java.version>
         <jib.version>1.8.0</jib.version>

@@ -61,7 +61,7 @@
         <dependency>
             <groupId>com.github.hashgraph</groupId>
             <artifactId>hedera-protobuf</artifactId>
-            <version>hcs-11c0d9176b-1</version>
+            <version>${hedera-protobuf.version}</version>
         </dependency>
     </dependencies>
 
