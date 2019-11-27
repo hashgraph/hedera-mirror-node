@@ -401,28 +401,6 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
   expect(res.rows[0].result).toEqual('UNKNOWN');
 });
 
-test('DB integration test - account min expiration time', async () => {
-
-  let response = await request(server).get(`/api/v1/accounts?account.id=${shard}.${realm}.${minExpiryAccountId}`);
-  expect(response.status).toEqual(200);
-
-  var accounts = JSON.parse(response.text).accounts;
-  expect(accounts.length).toEqual(1);
-  var account = accounts[0];
-  expect(account.expiry_timestamp).toEqual('-9223372036.854775808');
-});
-
-test('DB integration test - account max expiration time', async () => {
-
-  var response = await request(server).get(`/api/v1/accounts?account.id=${shard}.${realm}.${maxExpiryAccountId}`);
-  expect(response.status).toEqual(200);
-
-  var accounts = JSON.parse(response.text).accounts;
-  expect(accounts.length).toEqual(1);
-  var account = accounts[0];
-  expect(account.expiry_timestamp).toEqual('9223372036.854775807');
-});
-
 let specPath = path.join(__dirname, 'specs');
 fs.readdirSync(specPath).forEach(function(file) {
   let p = path.join(specPath, file);
