@@ -2,23 +2,21 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>hedera-mirror-importer</artifactId>
+    <artifactId>hedera-mirror-importer-hcs</artifactId>
     <description>Hedera Mirror Importer downloads and validates file streams from the cloud and imports them into the
         database
     </description>
-    <name>Hedera Mirror Node Importer</name>
+    <name>Hedera Mirror Node Importer (HCS preview)</name>
     <parent>
         <groupId>com.hedera</groupId>
-        <artifactId>hedera-mirror-node</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <artifactId>hedera-mirror-node-hcs</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>
     <properties>
         <commons-io.version>2.6</commons-io.version>
         <disruptor.version>3.4.2</disruptor.version> <!-- Used for asynchronous logging -->
-        <hedera-protobuf.version>0.3.5</hedera-protobuf.version>
         <hedera-sdk.version>0.6.1</hedera-sdk.version>
-        <jib.version>1.8.0</jib.version>
         <testcontainers.version>1.12.1</testcontainers.version>
     </properties>
     <dependencies>
@@ -27,8 +25,8 @@
             <artifactId>caffeine</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.hedera.hashgraph</groupId>
-            <artifactId>hedera-protobuf-java-api</artifactId>
+            <groupId>com.github.hashgraph</groupId>
+            <artifactId>hedera-protobuf</artifactId>
             <version>${hedera-protobuf.version}</version>
         </dependency>
         <dependency>
@@ -161,7 +159,7 @@
                 <version>${jib.version}</version>
                 <configuration>
                     <to>
-                        <image>docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-importer</image>
+                        <image>docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-importer-hcs</image>
                         <tags>
                             <tag>${project.version}</tag>
                         </tags>
