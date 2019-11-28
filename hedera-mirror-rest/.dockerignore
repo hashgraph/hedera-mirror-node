@@ -1,5 +1,6 @@
 *.log
-__tests__
+__acceptancetests__/
+__tests__/
 .dockerignore
 .gitignore
 Dockerfile
