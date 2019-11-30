@@ -2,7 +2,7 @@ package com.hedera.mirror.importer.util;
 
 /*-
  * ‌
- * Hedera Mirror Node (HCS)
+ * Hedera Mirror Node
  * ​
  * Copyright (C) 2019 Hedera Hashgraph, LLC
  * ​
