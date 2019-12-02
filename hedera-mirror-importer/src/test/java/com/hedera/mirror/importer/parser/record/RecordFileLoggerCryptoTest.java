@@ -536,7 +536,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         updateTransactionBody.setAccountIDToUpdate(accountId);
 
         // *** THIS IS THE OVERFLOW WE WANT TO TEST ***
-        // This should result in the entity having a NULL expiration
+        // This should result in the entity having a Long.MAX_VALUE or Long.MIN_VALUE expirations (the results of
+        // overflows).
         updateTransactionBody.setExpirationTime(Timestamp.newBuilder().setSeconds(seconds));
 
         var transactionBody = defaultTransactionBodyBuilder(memo);
