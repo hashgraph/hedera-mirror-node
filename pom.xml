@@ -48,7 +48,6 @@
     </scm>
     <url>https://github.com/hashgraph/hedera-mirror-node</url>
     <properties>
-        <docker.repository>docker.pkg.github.com/hashgraph/hedera-mirror-node</docker.repository>
         <grpc.version>1.25.0</grpc.version>
         <hedera-protobuf.version>hcs-11c0d9176b-1</hedera-protobuf.version>
         <jacoco.version>0.8.5</jacoco.version>
@@ -69,70 +68,15 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>org.jacoco</groupId>
-                    <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>${jacoco.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>prepare-agent</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>report</id>
-                            <phase>test</phase>
-                            <goals>
-                                <goal>report</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>com.google.cloud.tools</groupId>
-                    <artifactId>jib-maven-plugin</artifactId>
-                    <version>${jib.version}</version>
-                    <configuration>
-                        <to>
-                            <image>${docker.repository}/${project.artifactId}</image>
-                            <tags>
-                                <tag>${project.version}</tag>
-                            </tags>
-                        </to>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <phase>install</phase>
-                            <goals>
-                                <goal>dockerBuild</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <!-- To update license headers: ./mvnw license:update-file-header -N -->
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>license-maven-plugin</artifactId>
                     <version>2.0.0</version>
-                    <inherited>false</inherited>
                     <configuration>
                         <canUpdateCopyright>true</canUpdateCopyright>
-                        <excludes>
-                            <exclude>**/node_modules/**/*</exclude>
-                            <exclude>**/target/**/*</exclude>
-                            <exclude>.mvn/**/*</exclude>
-                        </excludes>
-                        <includes>
-                            <include>**/*.js</include>
-                            <include>**/*.java</include>
-                            <include>**/*.proto</include>
-                        </includes>
                         <licenseName>apache_v2</licenseName>
                         <!-- These contain unprintable characters to suppress showing the delimiters -->
                         <processEndTag>‍</processEndTag>
                         <processStartTag>‌</processStartTag>
-                        <roots>
-                            <root>.</root>
-                        </roots>
                         <sectionDelimiter>​</sectionDelimiter>
                     </configuration>
                 </plugin>
