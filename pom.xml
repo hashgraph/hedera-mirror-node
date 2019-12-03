@@ -5,7 +5,7 @@
     <groupId>com.hedera</groupId>
     <artifactId>hedera-mirror-node-hcs</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <name>Hedera Mirror Node (HCS preview)</name>
+    <name>Hedera Mirror Node (HCS)</name>
     <description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -48,6 +48,7 @@
     </scm>
     <url>https://github.com/hashgraph/hedera-mirror-node</url>
     <properties>
+        <grpc.version>1.25.0</grpc.version>
         <hedera-protobuf.version>hcs-11c0d9176b-1</hedera-protobuf.version>
         <jacoco.version>0.8.5</jacoco.version>
         <java.version>11</java.version>
@@ -84,7 +85,7 @@
     </build>
     <repositories>
         <repository>
-            <id>jitpack.io</id>
+            <id>jitpack.io</id> <!-- Used for the com.github.hashgraph:hedera-protobuf HCS snapshots -->
             <url>https://jitpack.io</url>
         </repository>
     </repositories>

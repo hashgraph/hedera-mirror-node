@@ -20,21 +20,52 @@ package com.hedera.mirror.grpc.service;
  * ‍
  */
 
+import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import io.grpc.Status;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import net.devh.boot.grpc.server.service.GrpcService;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
+@GrpcService
 @Log4j2
 @RequiredArgsConstructor
 public class ConsensusService extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
+
+    @Override
     public Flux<ConsensusTopicResponse> subscribeTopic(Mono<ConsensusTopicQuery> request) {
-        throw new StatusRuntimeException(Status.UNIMPLEMENTED);
+        long limit = request.block().getLimit();
+        if (limit < 0) {
+            throw Status.INVALID_ARGUMENT.augmentDescription("Cannot be negative").asRuntimeException();
+        }
+
+        return Flux.<ConsensusTopicResponse, Long>generate(() -> 1L, (state, sink) -> {
+            if (state <= limit || limit == 0) {
+                sink.next(response(state));
+            } else {
+                sink.complete();
+            }
+            return state + 1;
+        });
+    }
+
+    private ConsensusTopicResponse response(long sequenceNumber) {
+        try {
+            return ConsensusTopicResponse.newBuilder()
+                    .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(sequenceNumber).build())
+                    .setMessage(ByteString.copyFrom("Message #" + sequenceNumber, "UTF-8"))
+                    .setSequenceNumber(sequenceNumber)
+                    .setRunningHash(ByteString.copyFrom(Longs.toByteArray(sequenceNumber)))
+                    .build();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

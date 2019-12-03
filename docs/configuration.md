@@ -50,8 +50,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.dataPath`                                   | ./data                  | The data directory used to store downloaded files and other application state                      |
 | `hedera.mirror.db.apiPassword`                             | mirror_api_pass         | The database password the API uses to connect. **Should be changed from default**                  |
 | `hedera.mirror.db.apiUsername`                             | mirror_api              | The username the API uses to connect to the database                                               |
-| `hedera.mirror.db.grpcPassword`                            | mirror_grpc_pass        | The database password the GRPC API uses to connect. **Should be changed from default**             |
-| `hedera.mirror.db.grpcUsername`                            | mirror_grpc             | The username the GRPC API uses to connect to the database                                          |
 | `hedera.mirror.db.host`                                    | 127.0.0.1               | The IP or hostname used to connect to the database                                                 |
 | `hedera.mirror.db.name`                                    | mirror_node             | The name of the database                                                                           |
 | `hedera.mirror.db.password`                                | mirror_node_pass        | The database password the processor uses to connect. **Should be changed from default**            |
@@ -78,6 +76,11 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.downloader.record.threads`                  | 13                      | The number of threads to search for new files to download                                          |
 | `hedera.mirror.downloader.region`                          | us-east-1               | The region associated with the bucket                                                              |
 | `hedera.mirror.downloader.secretKey`                       | ""                      | The cloud storage secret key                                                                       |
+| `hedera.mirror.grpc.db.host`                               | 127.0.0.1               | The IP or hostname used to connect to the database                                                 |
+| `hedera.mirror.grpc.db.name`                               | mirror_node             | The name of the database                                                                           |
+| `hedera.mirror.grpc.db.password`                           | mirror_grpc_pass        | The database password the GRPC API uses to connect. **Should be changed from default**             |
+| `hedera.mirror.grpc.db.port`                               | 5432                    | The port used to connect to the database                                                           |
+| `hedera.mirror.grpc.db.username`                           | mirror_grpc             | The username the GRPC API uses to connect to the database                                          |
 | `hedera.mirror.grpc.port`                                  | 5600                    | The GRPC API port                                                                                  |
 | `hedera.mirror.network`                                    | MAINNET                 | Which Hedera network to use. Can be either `MAINNET` or `TESTNET`                                  |
 | `hedera.mirror.parser.balance.batchSize`                   | 2000                    | The number of balances to insert before committing                                                 |
