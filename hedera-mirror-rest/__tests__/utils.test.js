@@ -20,7 +20,6 @@
 'use strict';
 
 const request = require('supertest');
-const math = require('mathjs');
 const utils = require('../utils.js');
 
 describe('Utils getNullableNumber tests', () => {
