@@ -26,6 +26,15 @@
  * Tests instantiate the database schema via a flywaydb wrapper using the flyway CLI to clean and migrate the
  * schema (using sql files in the ../src/resources/db/migration directory).
  *
+ * Test data is created by:
+ * 1) reading account id, balance, expiration and crypto transfer information from integration_test_data.json
+ * 2) storing those accounts in integration DB
+ * 3) creating 3 balances records per account at timestamp 1000, 2000, 3000 in the integration DB
+ * 4) apply transfers (from integration_test_data.json) to the integration DB
+ *
+ * Tests are then run in code below (find TESTS all caps) and by comparing requests/responses from the server to data
+ * in the specs/ dir.
+ *
  * environment variables used:
  * TEST_DB_HOST (default: use testcontainers, examples: localhost, dbhost, 10.0.0.75)
  * TEST_DB_PORT (default: 5432)
@@ -153,21 +162,21 @@ const flywayMigrate = function() {
 
 //
 // TEST DATA
-// shard 0, realm 15, accounts 1-50
+// shard 0, realm 15, accounts 1-10
 // 3 balances per account
 // several transactions
 //
 const shard = 0;
 const realm = 15;
 const accountEntityIds = {};
-const addAccount = async function(accountId) {
+const addAccount = async function(accountId, exp_tm_nanosecs = null) {
   let e = accountEntityIds[accountId];
   if (e) {
     return e;
   }
   let res = await sqlConnection.query(
-    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num) values ($1, $2, $3, $4) returning id;',
-    [1, shard, realm, accountId]
+    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns) values ($1, $2, $3, $4, $5) returning id;',
+    [1, shard, realm, accountId, exp_tm_nanosecs]
   );
   e = res.rows[0]['id'];
   accountEntityIds[accountId] = e;
@@ -243,29 +252,34 @@ const addCryptoTransferTransaction = async function(
 /**
  * Setup test data in the postgres instance.
  */
+const testDataPath = path.join(__dirname, 'integration_test_data.json');
+const testData = fs.readFileSync(testDataPath);
+const testDataJson = JSON.parse(testData);
+
 const setupData = async function() {
   let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['test']);
   let fileId = res.rows[0]['id'];
   console.log(`Record file id is ${fileId}`);
 
-  const accountCount = 10;
   const balancePerAccountCount = 3;
-  console.log(`Adding ${accountCount} accounts with ${balancePerAccountCount} balances per account`);
-  for (var i = 1; i <= accountCount; ++i) {
-    await addAccount(i);
+  const testAccounts = testDataJson['accounts'];
+  console.log(`Adding ${testAccounts.length} accounts with ${balancePerAccountCount} balances per account`);
+  for (let account of testAccounts) {
+    await addAccount(account.id, account.expiration_ns);
+
     // Add 3 balances for each account.
     for (var ts = 0; ts < balancePerAccountCount; ++ts) {
       await sqlConnection.query(
         'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
-        [ts * 1000, realm, i, i * 10]
+        [ts * 1000, realm, account.id, account.balance]
       );
     }
   }
 
   console.log('Adding crypto transfer transactions');
-  await addCryptoTransferTransaction(1050, fileId, 10, 9, 10);
-  await addCryptoTransferTransaction(1051, fileId, 10, 9, 20);
-  await addCryptoTransferTransaction(1052, fileId, 8, 9, 30);
+  for (let transfer of testDataJson['transfers']) {
+    await addCryptoTransferTransaction(transfer.time, fileId, transfer.from, transfer.to, transfer.amount);
+  }
 
   console.log('Finished initializing DB data');
 };
