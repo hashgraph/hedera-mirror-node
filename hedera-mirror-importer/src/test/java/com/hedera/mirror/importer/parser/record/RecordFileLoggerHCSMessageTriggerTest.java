@@ -57,7 +57,7 @@ public class RecordFileLoggerHCSMessageTriggerTest extends IntegrationTest {
 
             // setup listener
             listenStatement = conn.createStatement();
-            listenStatement.execute("LISTEN t_topic_message");
+            listenStatement.execute("LISTEN topic_message");
 
             // verify no notifications present yet
             PGNotification[] notifications = pgConn.getNotifications();
@@ -70,16 +70,9 @@ public class RecordFileLoggerHCSMessageTriggerTest extends IntegrationTest {
             long topicNUm = 7L;
             byte[] message = "Verify hcs message triggers notification out".getBytes();
             byte[] runHash = new byte[] {(byte) 0x4D};
-            byte[] seqNum = new byte[] {(byte) 0x5A};
+            long seqNum = 3L;
 
-            String triggerSQL = "INSERT INTO t_topic_message"
-                    + "(consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
-                    + " VALUES (" + refConsensusTimeStamp + ", 0, 7, decode('DEADBEEF', 'hex'), decode('DEADBEEF', " +
-                    "'hex'), " +
-                    "decode('DEADBEEF', 'hex'))";
-//            triggerStatement.executeUpdate(triggerSQL);
-
-            sqlInsertTopicData = conn.prepareStatement("INSERT INTO t_topic_message"
+            sqlInsertTopicData = conn.prepareStatement("INSERT INTO topic_message"
                     + "(consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
                     + " VALUES (?, ?, ?, ?, ?, ? )");
 
@@ -88,7 +81,7 @@ public class RecordFileLoggerHCSMessageTriggerTest extends IntegrationTest {
             sqlInsertTopicData.setLong(3, topicNUm);
             sqlInsertTopicData.setBytes(4, message);
             sqlInsertTopicData.setBytes(5, runHash);
-            sqlInsertTopicData.setBytes(6, seqNum);
+            sqlInsertTopicData.setLong(6, seqNum);
             sqlInsertTopicData.executeUpdate();
 
             // check for new notifications. Timeout after 5 secs
@@ -97,7 +90,7 @@ public class RecordFileLoggerHCSMessageTriggerTest extends IntegrationTest {
             assertThat(notifications.length).isEqualTo(1);
 
             String notificationName = notifications[0].getName();
-            assertThat(notificationName).isEqualTo("t_topic_message");
+            assertThat(notificationName).isEqualTo("topic_message");
 
             String hcsMessage = notifications[0].getParameter();
             assertThat(hcsMessage).contains("\"consensus_timestamp\":" + Long.toString(refConsensusTimeStamp));
@@ -107,7 +100,7 @@ public class RecordFileLoggerHCSMessageTriggerTest extends IntegrationTest {
                     "\"message\":\"" +
                             "\\\\x56657269667920686373206d657373616765207472696767657273206e6f74696669636174696f6e206f7574");
             assertThat(hcsMessage).contains("\"running_hash\":\"\\\\x4d\"");
-            assertThat(hcsMessage).contains("\"sequence_number\":\"\\\\x5a\"");
+            assertThat(hcsMessage).contains("\"sequence_number\":" + Long.toString(seqNum));
         } catch (Exception ex) {
             log.error(ex.toString());
             throw ex;
