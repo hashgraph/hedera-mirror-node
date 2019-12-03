@@ -1,35 +1,43 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>hedera-mirror-importer</artifactId>
-    <description>Hedera Mirror Importer downloads and validates file streams from the cloud and imports them into the
-        database
+
+    <artifactId>hedera-mirror-importer-hcs</artifactId>
+    <description>
+        Hedera Mirror Importer downloads and validates file streams from the cloud and imports them into the database
     </description>
-    <name>Hedera Mirror Node Importer</name>
+    <modelVersion>4.0.0</modelVersion>
+    <name>Hedera Mirror Node Importer (HCS)</name>
+    <packaging>jar</packaging>
+
     <parent>
         <groupId>com.hedera</groupId>
-        <artifactId>hedera-mirror-node</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <artifactId>hedera-mirror-node-hcs</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
-    <packaging>jar</packaging>
+
     <properties>
         <commons-io.version>2.6</commons-io.version>
         <disruptor.version>3.4.2</disruptor.version> <!-- Used for asynchronous logging -->
-        <hedera-protobuf.version>0.3.5</hedera-protobuf.version>
         <hedera-sdk.version>0.6.1</hedera-sdk.version>
-        <jib.version>1.8.0</jib.version>
         <testcontainers.version>1.12.1</testcontainers.version>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.hedera.hashgraph</groupId>
-            <artifactId>hedera-protobuf-java-api</artifactId>
+            <groupId>com.github.hashgraph</groupId>
+            <artifactId>hedera-protobuf</artifactId>
             <version>${hedera-protobuf.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.hedera.hashgraph</groupId>
@@ -138,6 +146,7 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -149,67 +158,20 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-            </plugin>
-            <plugin>
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>
-                <version>${jib.version}</version>
-                <configuration>
-                    <to>
-                        <image>docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-importer</image>
-                        <tags>
-                            <tag>${project.version}</tag>
-                        </tags>
-                    </to>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>dockerBuild</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <configuration>
-                    <includes>
-                        <include>**/*.java</include>
-                    </includes>
-                    <roots>
-                        <root>.</root>
-                    </roots>
-                </configuration>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

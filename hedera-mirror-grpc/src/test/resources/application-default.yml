@@ -1,0 +1,8 @@
+grpc:
+  client:
+    GLOBAL:
+      negotiationType: plaintext
+    local:
+      address: in-process:local
+  server:
+    inProcessName: local

@@ -15,8 +15,18 @@ services:
     ports:
       - 5432:5432
 
+  grpc:
+    image: docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-grpc-hcs
+    restart: unless-stopped
+    environment:
+      HEDERA_MIRROR_DB_HOST: db
+    volumes:
+      - ./hedera-mirror-grpc/scripts/init-pg-users.sh:/docker-entrypoint-initdb.d/10-init-pg-users.sh
+    ports:
+      - 5600:5600
+
   importer:
-    image: docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-importer
+    image: docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-importer-hcs
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_DATAPATH: /var/lib/hedera-mirror-importer
@@ -26,7 +36,7 @@ services:
       - ./data:/var/lib/hedera-mirror-importer
 
   rest:
-    image: docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-rest
+    image: docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-rest-hcs
     environment:
       HEDERA_MIRROR_DB_HOST: db
     restart: unless-stopped

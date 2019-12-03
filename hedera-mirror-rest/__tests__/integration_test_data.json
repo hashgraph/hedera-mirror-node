@@ -1,0 +1,74 @@
+{
+  "accounts": [
+    {
+      "id": 1,
+      "balance": 10,
+      "expiration_ns": null
+    },
+    {
+      "id": 2,
+      "balance": 20,
+      "expiration_ns": null
+    },
+    {
+      "id": 3,
+      "balance": 30,
+      "expiration_ns": null
+    },
+    {
+      "id": 4,
+      "balance": 40,
+      "expiration_ns": null
+    },
+    {
+      "id": 5,
+      "balance": 50,
+      "expiration_ns": null
+    },
+    {
+      "id": 6,
+      "balance": 60,
+      "expiration_ns": null
+    },
+    {
+      "id": 7,
+      "balance": 70,
+      "expiration_ns": null
+    },
+    {
+      "id": 8,
+      "balance": 80,
+      "expiration_ns": null
+    },
+    {
+      "id": 9,
+      "balance": 90,
+      "expiration_ns": "-9223372036854775808"
+    },
+    {
+      "id": 10,
+      "balance": 100,
+      "expiration_ns": "9223372036854775807"
+    }
+  ],
+  "transfers": [
+    {
+      "time": 1050,
+      "from": 10,
+      "to": 9,
+      "amount": 10
+    },
+    {
+      "time": 1051,
+      "from": 10,
+      "to": 9,
+      "amount": 20
+    },
+    {
+      "time": 1052,
+      "from": 8,
+      "to": 9,
+      "amount": 30
+    }
+  ]
+}

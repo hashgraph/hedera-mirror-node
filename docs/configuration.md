@@ -1,7 +1,7 @@
 # Configuration
 
-The two components of the Hedera Mirror Node, the Importer and REST API, both support loading configuration from
-an `application.yml` file or via the environment. Some of the configuration properties overlap between the two, so
+The three components of the Hedera Mirror Node, the Importer, REST API and GRPC API, all support loading configuration
+from an `application.yml` file or via the environment. Some of the configuration properties overlap between them, so
 to simplify configuration it is recommended to create a single `application.yml` for use by both.
 
 Most configuration settings have appropriate defaults and can be left unchanged. One of the exceptions is
@@ -10,7 +10,7 @@ is not publicly available at this time. Another important property that should b
 it controls which Hedera network to mirror. Additionally, the password properties have a default, but it is recommended
 they be changed from the default.
 
-## Importer
+## Importer and GRPC API
 
 The Hedera Mirror Node uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the application.
 As as a result, you can use properties files, YAML files, environment variables and command-line arguments
@@ -76,6 +76,12 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.downloader.record.threads`                  | 13                      | The number of threads to search for new files to download                                          |
 | `hedera.mirror.downloader.region`                          | us-east-1               | The region associated with the bucket                                                              |
 | `hedera.mirror.downloader.secretKey`                       | ""                      | The cloud storage secret key                                                                       |
+| `hedera.mirror.grpc.db.host`                               | 127.0.0.1               | The IP or hostname used to connect to the database                                                 |
+| `hedera.mirror.grpc.db.name`                               | mirror_node             | The name of the database                                                                           |
+| `hedera.mirror.grpc.db.password`                           | mirror_grpc_pass        | The database password the GRPC API uses to connect. **Should be changed from default**             |
+| `hedera.mirror.grpc.db.port`                               | 5432                    | The port used to connect to the database                                                           |
+| `hedera.mirror.grpc.db.username`                           | mirror_grpc             | The username the GRPC API uses to connect to the database                                          |
+| `hedera.mirror.grpc.port`                                  | 5600                    | The GRPC API port                                                                                  |
 | `hedera.mirror.network`                                    | MAINNET                 | Which Hedera network to use. Can be either `MAINNET` or `TESTNET`                                  |
 | `hedera.mirror.parser.balance.batchSize`                   | 2000                    | The number of balances to insert before committing                                                 |
 | `hedera.mirror.parser.balance.enabled`                     | true                    | Whether to enable balance file parsing                                                             |

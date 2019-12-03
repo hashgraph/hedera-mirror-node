@@ -1,9 +1,6 @@
 # Compiled class file
 *.class
 
-# Log file
-*.log
-
 # OS specific
 .DS_Store
 
@@ -20,17 +17,26 @@
 *.ear
 *.zip
 *.tar.gz
+*.tgz
 *.rar
+
+# Node.js
+.env
+.node-version
+.node-flywaydb/
+node_modules/
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 target/
 .project
-/data/
+
+# Application specific
 hedera-mirror-importer/data/
-.classpath
-output/
+hedera-mirror-*/application.yml
+/data/
 /db/
+*.log
 
 ### VisualStudioCode ###
 .vscode/*
@@ -110,5 +116,5 @@ local.properties
 .sts4-cache/
 
 # End of https://www.gitignore.io/api/eclipse
-/.idea/
-/*.iml
+.idea/
+*.iml

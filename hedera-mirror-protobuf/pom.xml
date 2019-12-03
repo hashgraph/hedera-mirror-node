@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <artifactId>hedera-mirror-protobuf-hcs</artifactId>
+    <description>Protobuf definitions for the Hedera Hashgraph Mirror Node API (MAPI)</description>
+    <modelVersion>4.0.0</modelVersion>
+    <name>Hedera Mirror Node Protobuf (HCS)</name>
+    <packaging>jar</packaging>
+
+    <parent>
+        <groupId>com.hedera</groupId>
+        <artifactId>hedera-mirror-node-hcs</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <properties>
+        <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
+        <protoc.version>3.9.2</protoc.version>
+        <reactor-grpc.version>1.0.0</reactor-grpc.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.salesforce.servicelibs</groupId>
+            <artifactId>reactor-grpc-stub</artifactId>
+            <version>${reactor-grpc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-protobuf</artifactId>
+            <version>${grpc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hashgraph</groupId>
+            <artifactId>hedera-protobuf</artifactId>
+            <version>${hedera-protobuf.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.6.2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.xolstice.maven.plugins</groupId>
+                <artifactId>protobuf-maven-plugin</artifactId>
+                <version>${protobuf.plugin.version}</version>
+                <configuration>
+                    <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}
+                    </protocArtifact>
+                    <pluginId>grpc-java</pluginId>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
+                    </pluginArtifact>
+                    <protocPlugins>
+                        <protocPlugin>
+                            <id>reactor-grpc</id>
+                            <groupId>com.salesforce.servicelibs</groupId>
+                            <artifactId>reactor-grpc</artifactId>
+                            <version>${reactor-grpc.version}</version>
+                            <mainClass>com.salesforce.reactorgrpc.ReactorGrpcGenerator</mainClass>
+                        </protocPlugin>
+                    </protocPlugins>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>compile-custom</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+            </extension>
+        </extensions>
+    </build>
+</project>

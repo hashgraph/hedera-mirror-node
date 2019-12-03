@@ -1,52 +1,45 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <artifactId>hedera-mirror-rest-hcs</artifactId>
+    <description>REST API for Hedera Hashgraph Mirror Nodes</description>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>hedera-mirror-rest</artifactId>
-    <name>Hedera Mirror Node REST API</name>
+    <name>Hedera Mirror Node REST API (HCS)</name>
+    <packaging>pom</packaging>
+
     <parent>
         <groupId>com.hedera</groupId>
-        <artifactId>hedera-mirror-node</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <artifactId>hedera-mirror-node-hcs</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
+
     <build>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <configuration>
-                    <executable>docker</executable>
-                    <arguments>
-                        <argument>build</argument>
-                        <argument>-t</argument>
-                        <argument>docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-rest</argument>
-                        <argument>-t</argument>
-                        <argument>
-                            docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-rest:${project.version}
-                        </argument>
-                        <argument>./</argument>
-                    </arguments>
-                </configuration>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>0.31.0</version>
                 <executions>
                     <execution>
-                        <phase>install</phase>
                         <goals>
-                            <goal>exec</goal>
+                            <goal>build</goal>
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
                 <configuration>
-                    <includes>
-                        <include>*.js</include>
-                        <include>__tests__/*.js</include>
-                    </includes>
-                    <roots>
-                        <root>.</root>
-                    </roots>
+                    <images>
+                        <image>
+                            <build>
+                                <contextDir>${project.basedir}</contextDir>
+                                <tags>
+                                    <tag>latest</tag>
+                                    <tag>${project.version}</tag>
+                                </tags>
+                            </build>
+                            <name>${docker.repository}/${project.artifactId}</name>
+                        </image>
+                    </images>
                 </configuration>
             </plugin>
         </plugins>

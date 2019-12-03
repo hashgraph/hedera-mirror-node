@@ -1,33 +1,27 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+
     <groupId>com.hedera</groupId>
-    <artifactId>hedera-mirror-node</artifactId>
-    <version>0.4.1-SNAPSHOT</version>
-    <name>Hedera Mirror Node</name>
+    <artifactId>hedera-mirror-node-hcs</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.2.1.RELEASE</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
-    <modules>
-        <module>hedera-mirror-coverage</module>
-        <module>hedera-mirror-importer</module>
-        <module>hedera-mirror-rest</module>
-    </modules>
+    <inceptionYear>2019</inceptionYear>
+    <modelVersion>4.0.0</modelVersion>
+    <name>Hedera Mirror Node (HCS)</name>
     <packaging>pom</packaging>
+    <url>https://github.com/hashgraph/hedera-mirror-node</url>
+
     <ciManagement>
         <system>CircleCI</system>
         <url>https://circleci.com/gh/hashgraph/hedera-mirror-node</url>
     </ciManagement>
-    <inceptionYear>2019</inceptionYear>
+
     <issueManagement>
         <system>GitHub</system>
         <url>https://github.com/hashgraph/hedera-mirror-node/issues</url>
     </issueManagement>
+
     <licenses>
         <license>
             <name>Apache License 2.0</name>
@@ -35,20 +29,42 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <modules>
+        <module>hedera-mirror-coverage</module>
+        <module>hedera-mirror-grpc</module>
+        <module>hedera-mirror-importer</module>
+        <module>hedera-mirror-protobuf</module>
+        <module>hedera-mirror-rest</module>
+    </modules>
+
     <organization>
         <name>Hedera Hashgraph, LLC</name>
         <url>https://hedera.com</url>
     </organization>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.2.1.RELEASE</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <properties>
+        <docker.repository>docker.pkg.github.com/hashgraph/hedera-mirror-node</docker.repository>
+        <grpc.version>1.25.0</grpc.version>
+        <hedera-protobuf.version>hcs-11c0d9176b-1</hedera-protobuf.version>
+        <jacoco.version>0.8.5</jacoco.version>
+        <java.version>11</java.version>
+        <jib.version>1.8.0</jib.version>
+    </properties>
+
     <scm>
         <connection>https://github.com/hashgraph/hedera-mirror-node.git</connection>
         <tag>master</tag>
         <url>https://github.com/hashgraph/hedera-mirror-node/tree/master</url>
     </scm>
-    <url>https://github.com/hashgraph/hedera-mirror-node</url>
-    <properties>
-        <jacoco.version>0.8.5</jacoco.version>
-        <java.version>11</java.version>
-    </properties>
+
     <build>
         <pluginManagement>
             <plugins>
@@ -63,19 +79,80 @@
                     </configuration>
                 </plugin>
                 <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>report</id>
+                            <phase>test</phase>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>com.google.cloud.tools</groupId>
+                    <artifactId>jib-maven-plugin</artifactId>
+                    <version>${jib.version}</version>
+                    <configuration>
+                        <to>
+                            <image>${docker.repository}/${project.artifactId}</image>
+                            <tags>
+                                <tag>${project.version}</tag>
+                            </tags>
+                        </to>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>install</phase>
+                            <goals>
+                                <goal>dockerBuild</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <!-- To update license headers: ./mvnw license:update-file-header -N -->
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>license-maven-plugin</artifactId>
                     <version>2.0.0</version>
+                    <inherited>false</inherited>
                     <configuration>
                         <canUpdateCopyright>true</canUpdateCopyright>
+                        <excludes>
+                            <exclude>**/node_modules/**/*</exclude>
+                            <exclude>**/target/**/*</exclude>
+                            <exclude>.mvn/**/*</exclude>
+                        </excludes>
+                        <includes>
+                            <include>**/*.js</include>
+                            <include>**/*.java</include>
+                            <include>**/*.proto</include>
+                        </includes>
                         <licenseName>apache_v2</licenseName>
                         <!-- These contain unprintable characters to suppress showing the delimiters -->
                         <processEndTag>‍</processEndTag>
                         <processStartTag>‌</processStartTag>
+                        <roots>
+                            <root>.</root>
+                        </roots>
                         <sectionDelimiter>​</sectionDelimiter>
                     </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
     </build>
+    <repositories>
+        <repository>
+            <id>jitpack.io</id> <!-- Used for the com.github.hashgraph:hedera-protobuf HCS snapshots -->
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 </project>
