@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>hedera-mirror-coverage-hcs</artifactId>
-    <name>Hedera Mirror Node Coverage (HCS preview)</name>
+    <name>Hedera Mirror Node Coverage (HCS)</name>
     <description>Aggregates module-specific code coverage reports</description>
     <parent>
         <groupId>com.hedera</groupId>

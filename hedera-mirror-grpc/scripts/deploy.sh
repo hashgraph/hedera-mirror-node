@@ -13,19 +13,21 @@ if [ -z "${version}" ]; then
 fi
 
 mkdir -p "${usretc}" "${usrlib}"
+systemctl stop "${name}.service" || true
 
-echo "Fresh install of ${version}"
-echo "Creating empty config (will need to be edited)"
-cat > "${usretc}/application.yml" <<EOF
+if [ ! -f "${usretc}/application.yml" ]; then
+    echo "Fresh install of ${version}"
+    read -p "Database hostname: " dbHost
+    read -p "Database password: " dbPassword
+    cat > "${usretc}/application.yml" <<EOF
 hedera:
   mirror:
-    db:
-      grpcPassword:
-      grpcUsername:
-      host:
-      name:
-      port:
+    grpc:
+      db:
+        host:  ${dbHost}
+        password:  ${dbPassword}
 EOF
+fi
 
 echo "Copying new binary"
 rm -f "${usrlib}/${name}.jar"

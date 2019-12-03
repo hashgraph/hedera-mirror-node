@@ -3,10 +3,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>hedera-mirror-importer-hcs</artifactId>
-    <description>Hedera Mirror Importer downloads and validates file streams from the cloud and imports them into the
-        database
+    <description>
+        Hedera Mirror Importer downloads and validates file streams from the cloud and imports them into the database
     </description>
-    <name>Hedera Mirror Node Importer (HCS preview)</name>
+    <name>Hedera Mirror Node Importer (HCS)</name>
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node-hcs</artifactId>
