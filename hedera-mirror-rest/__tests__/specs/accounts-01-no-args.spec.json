@@ -97,7 +97,7 @@
           "balance": 90
         },
         "account": "0.15.9",
-        "expiry_timestamp": null,
+        "expiry_timestamp": "-9223372036.854775808",
         "auto_renew_period": null,
         "key": null,
         "deleted": false
@@ -108,7 +108,7 @@
           "balance": 100
         },
         "account": "0.15.10",
-        "expiry_timestamp": null,
+        "expiry_timestamp": "9223372036.854775807",
         "auto_renew_period": null,
         "key": null,
         "deleted": false

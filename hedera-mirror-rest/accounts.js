@@ -232,11 +232,10 @@ const getOneAccount = function(req, res) {
   const creditDebit = utils.parseCreditDebitParams(req);
 
   const accountQuery =
-    'entity_shard = ?\n' +
-    '    and entity_realm = ?\n' +
-    '    and entity_num = ?' +
+    'realm_num = ?\n' +
+    '    and entity_num = ? ' +
     (creditDebit === 'credit' ? ' and ctl.amount > 0 ' : creditDebit === 'debit' ? ' and ctl.amount < 0 ' : '');
-  const accountParams = [acc.shard, acc.realm, acc.num];
+  const accountParams = [acc.realm, acc.num];
 
   let innerQuery = transactions.getTransactionsInnerQuery(
     accountQuery,

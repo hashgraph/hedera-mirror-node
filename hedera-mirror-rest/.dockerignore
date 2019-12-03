@@ -1,8 +1,0 @@
-*.log
-__tests__
-.dockerignore
-.gitignore
-Dockerfile
-/.node-flywaydb*
-/node_modules/
-.node-version
