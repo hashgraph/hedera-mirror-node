@@ -1,7 +1,9 @@
 package com.hedera.mirror.importer.repository;
 
+import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -13,6 +15,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
+import org.springframework.test.context.transaction.TestTransaction;
 
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -74,7 +77,7 @@ public class TopicMessageRepositoryTest extends AbstractRepositoryTest {
             assertThat(notifications).isNotNull();
             assertThat(notifications.length).isEqualTo(1);
 
-            // insert new hcs message
+            // insert new hcs topic message
             triggerStatement = conn.createStatement();
             long refConsensusTimeStamp = 1568491241176959000L;
             long realmNum = 1L;
@@ -90,10 +93,21 @@ public class TopicMessageRepositoryTest extends AbstractRepositoryTest {
             topicMessageResult.setMessage(message);
             topicMessageResult.setRunningHash(runHash);
             topicMessageResult.setSequenceNumber(seqNum);
+
+            // the @Transactional annotation on AbstractRepositoryTest means the session isn't auto flushed per command
+            // to ensure that db is actually updated we make use of the TestTransaction class to ensure the
+            // topicMessageRepository.save() is committed
+            TestTransaction.flagForCommit();
             topicMessageResult = topicMessageRepository.save(topicMessageResult);
+            TestTransaction.end();
+
+            // verify repository db was updated
+            Assertions.assertThat(topicMessageRepository.findById(refConsensusTimeStamp).get())
+                    .isNotNull()
+                    .isEqualTo(topicMessageResult);
 
             // check for new notifications. Timeout after 5 secs
-            notifications = pgConn.getNotifications(35000);
+            notifications = pgConn.getNotifications(5000);
             assertThat(notifications).isNotNull();
             assertThat(notifications.length).isEqualTo(1);
 
@@ -101,16 +115,23 @@ public class TopicMessageRepositoryTest extends AbstractRepositoryTest {
             assertThat(notificationName).isEqualTo("topic_message");
 
             String hcsMessage = notifications[0].getParameter();
-            assertThat(hcsMessage)
-                    .contains("\"consensus_timestamp\":" + topicMessageResult.getConsensusTimestamp());
-            assertThat(hcsMessage).contains("\"realm_num\":" + topicMessageResult.getRealmNum());
-            assertThat(hcsMessage).contains("\"topic_num\":" + topicMessageResult.getTopicNum());
-            assertThat(hcsMessage).contains(
-                    "\"message\":\"" +
-                            "\\\\x56657269667920686373206d657373616765207472696767657273206e6f74696669636174696f6e206f7574");
-            assertThat(hcsMessage).contains("\"running_hash\":\"\\\\x4d\"");
-            assertThat(hcsMessage)
-                    .contains("\"sequence_number\":" + topicMessageResult.getSequenceNumber());
+            assertThatJson(hcsMessage).isObject()
+                    .containsEntry("consensus_timestamp", BigDecimal
+                            .valueOf((topicMessageResult.getConsensusTimestamp())));
+            assertThatJson(hcsMessage).isObject()
+                    .containsEntry("realm_num", BigDecimal
+                            .valueOf((topicMessageResult.getRealmNum())));
+            assertThatJson(hcsMessage).isObject()
+                    .containsEntry("topic_num", BigDecimal
+                            .valueOf((topicMessageResult.getTopicNum())));
+            assertThatJson(hcsMessage).isObject()
+                    .containsEntry("message",
+                            "\\x56657269667920686373206d657373616765207472696767657273206e6f74696669636174696f6e206f7574");
+            assertThatJson(hcsMessage).isObject()
+                    .containsEntry("running_hash", "\\x4d");
+            assertThatJson(hcsMessage).isObject()
+                    .containsEntry("sequence_number", BigDecimal
+                            .valueOf((topicMessageResult.getSequenceNumber())));
         } catch (Exception ex) {
             log.error(ex.toString());
             throw ex;
