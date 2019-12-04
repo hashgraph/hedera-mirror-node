@@ -70,6 +70,7 @@ public class RecordFileLogger {
     private static PreparedStatement sqlInsertFileData;
     private static PreparedStatement sqlInsertContractCall;
     private static PreparedStatement sqlInsertClaimData;
+    private static PreparedStatement sqlInsertTopicMessage;
 
     public RecordFileLogger(RecordParserProperties parserProperties, NetworkAddressBook networkAddressBook) {
         RecordFileLogger.parserProperties = parserProperties;
@@ -130,6 +131,10 @@ public class RecordFileLogger {
             sqlInsertClaimData = connect.prepareStatement("INSERT INTO t_livehashes"
                     + " (consensus_timestamp, livehash)"
                     + " VALUES (?, ?)");
+
+            sqlInsertTopicMessage = connect.prepareStatement("insert into topic_message"
+                    + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
+                    + " values (?, ?, ?, ?, ?, ?)");
         } catch (SQLException e) {
             log.error("Unable to prepare SQL statements", e);
             return false;
@@ -145,6 +150,7 @@ public class RecordFileLogger {
             sqlInsertTransaction.close();
             sqlInsertContractCall.close();
             sqlInsertClaimData.close();
+            sqlInsertTopicMessage.close();
 
             connect = DatabaseUtilities.closeDatabase(connect);
             return false;
@@ -482,6 +488,14 @@ public class RecordFileLogger {
                     entityId = entities.createOrGetEntity(fileId);
                 }
             }
+        } else if (body.hasConsensusCreateTopic()) {
+            entityId = storeConsensusCreateTopic(body, txRecord);
+        } else if (body.hasConsensusUpdateTopic()) {
+            entityId = storeConsensusUpdateTopic(body, txRecord);
+        } else if (body.hasConsensusDeleteTopic()) {
+            entityId = storeConsensusDeleteTopic(body, txRecord);
+        } else if (body.hasConsensusSubmitMessage()) {
+            entityId = storeConsensusSubmitMessage(body, txRecord);
         }
 
         if (entityId == 0) {
@@ -528,6 +542,169 @@ public class RecordFileLogger {
         } else {
             batch_count += 1;
         }
+    }
+
+    /**
+     * Store ConsensusCreateTopic transaction in the database.
+     *
+     * @param body
+     * @param transactionRecord
+     * @return Entity ID of the newly created topic, or 0 if no topic was created
+     * @throws SQLException
+     * @throws IllegalArgumentException
+     */
+    private static long storeConsensusCreateTopic(TransactionBody body, TransactionRecord transactionRecord)
+            throws SQLException {
+        if (!body.hasConsensusCreateTopic()) {
+            throw new IllegalArgumentException("transaction is not a ConsensusCreateTopic");
+        }
+
+        if (!transactionRecord.getReceipt().hasTopicID()) {
+            return 0;
+        }
+
+        var transactionBody = body.getConsensusCreateTopic();
+        long expirationTimeSec = 0;
+        long expirationTimeNanos = 0;
+        long validStartTime = 0;
+
+        if (transactionBody.hasExpirationTime()) {
+            var exp = transactionBody.getExpirationTime();
+            expirationTimeSec = exp.getSeconds();
+            expirationTimeNanos = exp.getNanos();
+        }
+
+        // If either key is empty, they should end up as empty bytea in the DB to indicate that there is
+        // explicitly no value, as opposed to null which has been used to indicate the value is unknown.
+        var adminKey = transactionBody.hasAdminKey() ? transactionBody.getAdminKey()
+                .toByteArray() : new byte[0];
+        var submitKey = transactionBody.hasSubmitKey() ? transactionBody.getSubmitKey()
+                .toByteArray() : new byte[0];
+
+        if (transactionBody.hasValidStartTime()) {
+            var vst = transactionBody.getValidStartTime();
+            validStartTime = Utility.convertToNanosMax(vst.getSeconds(), vst.getNanos());
+        }
+
+        return entities.createEntity(transactionRecord.getReceipt().getTopicID(), expirationTimeSec,
+                expirationTimeNanos, adminKey, submitKey, validStartTime);
+    }
+
+    /**
+     * Store ConsensusUpdateTopic transaction in the database.
+     *
+     * @param body
+     * @param transactionRecord
+     * @return Entity ID of the updated topic, or 0 if no topic was updated
+     * @throws SQLException
+     * @throws IllegalArgumentException
+     */
+    private static long storeConsensusUpdateTopic(TransactionBody body, TransactionRecord transactionRecord)
+            throws SQLException {
+        if (!body.hasConsensusUpdateTopic()) {
+            throw new IllegalArgumentException("transaction is not a ConsensusUpdateTopic");
+        }
+
+        var transactionBody = body.getConsensusUpdateTopic();
+        if (!transactionBody.hasTopicID()) {
+            return 0;
+        }
+
+        var topicId = transactionBody.getTopicID();
+        if (!isSuccessful(transactionRecord)) {
+            return entities.createOrGetEntity(topicId);
+        }
+
+        // Missing values in the protobuf indicate "do not update". 0s and nulls to updateEntity cause the target
+        // columns to not be modified.
+
+        long expirationTimeSec = 0;
+        long expirationTimeNanos = 0;
+        long validStartTime = 0;
+
+        if (transactionBody.hasExpirationTime()) {
+            var exp = transactionBody.getExpirationTime();
+            expirationTimeSec = exp.getSeconds();
+            expirationTimeNanos = exp.getNanos();
+        }
+
+        var adminKey = transactionBody.hasAdminKey() ? transactionBody.getAdminKey()
+                .toByteArray() : null;
+        var submitKey = transactionBody.hasSubmitKey() ? transactionBody.getSubmitKey()
+                .toByteArray() : null;
+
+        if (transactionBody.hasValidStartTime()) {
+            var vst = transactionBody.getValidStartTime();
+            validStartTime = Utility.convertToNanosMax(vst.getSeconds(), vst.getNanos());
+        }
+
+        return entities.updateEntity(topicId, expirationTimeSec, expirationTimeNanos, adminKey,
+                submitKey, validStartTime);
+    }
+
+    /**
+     * Store ConsensusDeleteTopic transaction in the database.
+     *
+     * @param body
+     * @param transactionRecord
+     * @return Entity ID of the deleted topic, or 0 if no topic was deleted
+     * @throws SQLException
+     * @throws IllegalArgumentException
+     */
+    private static long storeConsensusDeleteTopic(TransactionBody body, TransactionRecord transactionRecord)
+            throws SQLException {
+        if (!body.hasConsensusDeleteTopic()) {
+            throw new IllegalArgumentException("transaction is not a ConsensusDeleteTopic");
+        }
+
+        var transactionBody = body.getConsensusDeleteTopic();
+        if (!transactionBody.hasTopicID()) {
+            return 0;
+        }
+
+        var topicId = transactionBody.getTopicID();
+        if (!isSuccessful(transactionRecord)) {
+            return entities.createOrGetEntity(topicId);
+        }
+
+        return entities.deleteEntity(topicId);
+    }
+
+    /**
+     * Store ConsensusDeleteTopic transaction in the database.
+     *
+     * @param body
+     * @param transactionRecord
+     * @return Entity ID of the deleted topic, or 0 if no topic was deleted
+     * @throws SQLException
+     * @throws IllegalArgumentException
+     */
+    private static long storeConsensusSubmitMessage(TransactionBody body, TransactionRecord transactionRecord)
+            throws SQLException {
+        if (!body.hasConsensusSubmitMessage()) {
+            throw new IllegalArgumentException("transaction is not a ConsensusSubmitMessage");
+        }
+
+        var transactionBody = body.getConsensusSubmitMessage();
+        if (!transactionBody.hasTopicID()) {
+            return 0;
+        }
+
+        var topicId = transactionBody.getTopicID();
+
+        if (isSuccessful(transactionRecord)) {
+            var receipt = transactionRecord.getReceipt();
+            var ts = transactionRecord.getConsensusTimestamp();
+            sqlInsertTopicMessage.setLong(1, Utility.convertToNanos(ts.getSeconds(), ts.getNanos()));
+            sqlInsertTopicMessage.setShort(2, (short) topicId.getRealmNum());
+            sqlInsertTopicMessage.setInt(3, (int) topicId.getTopicNum());
+            sqlInsertTopicMessage.setBytes(4, transactionBody.getMessage().toByteArray());
+            sqlInsertTopicMessage.setBytes(5, receipt.getTopicRunningHash().toByteArray());
+            sqlInsertTopicMessage.setLong(6, receipt.getTopicSequenceNumber());
+            sqlInsertTopicMessage.addBatch();
+        }
+
+        return entities.createOrGetEntity(topicId);
     }
 
     private static void insertFileCreate(long consensusTimestamp, FileCreateTransactionBody transactionBody,
@@ -750,6 +927,7 @@ public class RecordFileLogger {
         sqlInsertFileData.executeBatch();
         sqlInsertContractCall.executeBatch();
         sqlInsertClaimData.executeBatch();
+        sqlInsertTopicMessage.executeBatch();
     }
 
     public enum INIT_RESULT {
