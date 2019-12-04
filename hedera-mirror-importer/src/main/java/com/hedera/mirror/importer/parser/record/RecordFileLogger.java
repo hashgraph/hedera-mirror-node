@@ -112,8 +112,8 @@ public class RecordFileLogger {
                     + " (fk_node_acc_id, memo, valid_start_ns, type, fk_payer_acc_id"
                     + ", result, consensus_ns, fk_cud_entity_id, charged_tx_fee"
                     + ", initial_balance, fk_rec_file_id, valid_duration_seconds, max_fee"
-                    + ", transaction_hash)"
-                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    + ", transaction_hash, transaction_bytes)"
+                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
                     + " (consensus_timestamp, amount, realm_num, entity_num)"
@@ -218,6 +218,10 @@ public class RecordFileLogger {
     }
 
     public static void storeRecord(Transaction transaction, TransactionRecord txRecord) throws Exception {
+        storeRecord(transaction, txRecord, null);
+    }
+
+    public static void storeRecord(Transaction transaction, TransactionRecord txRecord, byte[] rawBytes) throws Exception {
         long createdAccountId = 0;
         TransactionBody body;
 
@@ -253,6 +257,10 @@ public class RecordFileLogger {
         sqlInsertTransaction.setLong(F_TRANSACTION.MAX_FEE.ordinal(), body.getTransactionFee());
         sqlInsertTransaction
                 .setBytes(F_TRANSACTION.TRANSACTION_HASH.ordinal(), txRecord.getTransactionHash().toByteArray());
+        // Store the raw bytes only if configured - otherwise null
+        sqlInsertTransaction
+                .setBytes(F_TRANSACTION.TRANSACTION_BYTES.ordinal(),
+                        parserProperties.isPersistTransactionBytes() ? rawBytes : null);
 
         long entityId = 0;
         long initialBalance = 0;
@@ -760,7 +768,7 @@ public class RecordFileLogger {
         ZERO // column indices start at 1, this creates the necessary offset
         , FK_NODE_ACCOUNT_ID, MEMO, VALID_START_NS, TYPE, FK_PAYER_ACCOUNT_ID, RESULT, CONSENSUS_NS,
         CUD_ENTITY_ID, CHARGED_TX_FEE, INITIAL_BALANCE, FK_REC_FILE_ID, VALID_DURATION_SECONDS, MAX_FEE,
-        TRANSACTION_HASH
+        TRANSACTION_HASH, TRANSACTION_BYTES
     }
 
     enum F_TRANSFERLIST {

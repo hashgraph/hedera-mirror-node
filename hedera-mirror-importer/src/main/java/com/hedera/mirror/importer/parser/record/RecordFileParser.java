@@ -173,7 +173,7 @@ public class RecordFileParser implements FileParser {
                                 dis.readFully(rawBytes);
 
                                 TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
-                                RecordFileLogger.storeRecord(transaction, txRecord);
+                                RecordFileLogger.storeRecord(transaction, txRecord, rawBytes);
 
                                 if (log.isTraceEnabled()) {
                                     log.trace("Transaction = {}, Record = {}", Utility
