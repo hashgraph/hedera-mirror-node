@@ -22,25 +22,23 @@ package com.hedera.mirror.importer.domain;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.Table;
 
 import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "topic_message")
 public class TopicMessage {
 
     @Id
     private Long consensusTimestamp;
 
-    private Long realmNum;
-
-    private Long topicNum;
-
     private byte[] message;
+
+    private Long realmNum;
 
     private byte[] runningHash;
 
     private Long sequenceNumber;
+
+    private Long topicNum;
 }

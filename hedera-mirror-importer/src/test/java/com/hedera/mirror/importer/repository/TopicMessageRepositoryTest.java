@@ -1,11 +1,30 @@
 package com.hedera.mirror.importer.repository;
 
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.Statement;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
@@ -24,6 +43,8 @@ import com.hedera.mirror.importer.domain.Transaction;
 
 @Log4j2
 public class TopicMessageRepositoryTest extends AbstractRepositoryTest {
+    @Resource
+    protected TopicMessageRepository topicMessageRepository;
     @Resource
     private DataSource dataSource;
 
@@ -50,21 +71,12 @@ public class TopicMessageRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void triggerCausesNotification() throws Exception {
-        Connection conn = null;
-        PGConnection pgConn = null;
-        Statement listenStatement = null;
-        PreparedStatement sqlInsertTopicData = null;
-        Statement triggerStatement = null;
-
-        try {
-
-            conn = dataSource.getConnection();
+        try (Connection conn = dataSource.getConnection(); Statement listenStatement = conn.createStatement()) {
 
             // obtain pg connection
-            pgConn = conn.unwrap(org.postgresql.PGConnection.class);
+            PGConnection pgConn = conn.unwrap(org.postgresql.PGConnection.class);
 
             // setup listener
-            listenStatement = conn.createStatement();
             listenStatement.execute("LISTEN topic_message");
 
             // verify no notifications present yet
@@ -74,25 +86,18 @@ public class TopicMessageRepositoryTest extends AbstractRepositoryTest {
             // verify notification can be picked up
             listenStatement.execute("NOTIFY topic_message");
             notifications = pgConn.getNotifications(5000);
-            assertThat(notifications).isNotNull();
-            assertThat(notifications.length).isEqualTo(1);
+            assertThat(notifications).isNotNull().hasSize(1);
 
             // insert new hcs topic message
-            triggerStatement = conn.createStatement();
             long refConsensusTimeStamp = 1568491241176959000L;
-            long realmNum = 1L;
-            long topicNUm = 7L;
-            byte[] message = "Verify hcs message triggers notification out".getBytes();
-            byte[] runHash = new byte[] {(byte) 0x4D};
-            long seqNum = 3L;
 
             TopicMessage topicMessageResult = new TopicMessage();
-            topicMessageResult.setConsensusTimestamp(refConsensusTimeStamp);
-            topicMessageResult.setRealmNum(realmNum);
-            topicMessageResult.setTopicNum(topicNUm);
-            topicMessageResult.setMessage(message);
-            topicMessageResult.setRunningHash(runHash);
-            topicMessageResult.setSequenceNumber(seqNum);
+            topicMessageResult.setConsensusTimestamp(1568491241176959000L);
+            topicMessageResult.setRealmNum(1L);
+            topicMessageResult.setTopicNum(7L);
+            topicMessageResult.setMessage("Verify hcs message triggers notification out".getBytes());
+            topicMessageResult.setRunningHash(new byte[] {(byte) 0x4D});
+            topicMessageResult.setSequenceNumber(3L);
 
             // the @Transactional annotation on AbstractRepositoryTest means the session isn't auto flushed per command
             // to ensure that db is actually updated we make use of the TestTransaction class to ensure the
@@ -117,41 +122,16 @@ public class TopicMessageRepositoryTest extends AbstractRepositoryTest {
             String hcsMessage = notifications[0].getParameter();
             assertThatJson(hcsMessage).isObject()
                     .containsEntry("consensus_timestamp", BigDecimal
-                            .valueOf((topicMessageResult.getConsensusTimestamp())));
-            assertThatJson(hcsMessage).isObject()
+                            .valueOf((topicMessageResult.getConsensusTimestamp())))
                     .containsEntry("realm_num", BigDecimal
-                            .valueOf((topicMessageResult.getRealmNum())));
-            assertThatJson(hcsMessage).isObject()
+                            .valueOf((topicMessageResult.getRealmNum())))
                     .containsEntry("topic_num", BigDecimal
-                            .valueOf((topicMessageResult.getTopicNum())));
-            assertThatJson(hcsMessage).isObject()
+                            .valueOf((topicMessageResult.getTopicNum())))
                     .containsEntry("message",
-                            "\\x56657269667920686373206d657373616765207472696767657273206e6f74696669636174696f6e206f7574");
-            assertThatJson(hcsMessage).isObject()
-                    .containsEntry("running_hash", "\\x4d");
-            assertThatJson(hcsMessage).isObject()
+                            "\\x56657269667920686373206d657373616765207472696767657273206e6f74696669636174696f6e206f7574")
+                    .containsEntry("running_hash", "\\x4d")
                     .containsEntry("sequence_number", BigDecimal
                             .valueOf((topicMessageResult.getSequenceNumber())));
-        } catch (Exception ex) {
-            log.error(ex.toString());
-            throw ex;
-        } finally {
-            // cleanup connections and statements
-            if (conn != null) {
-                conn.close();
-            }
-
-            if (listenStatement != null && !listenStatement.isClosed()) {
-                listenStatement.close();
-            }
-
-            if (sqlInsertTopicData != null && !sqlInsertTopicData.isClosed()) {
-                sqlInsertTopicData.close();
-            }
-
-            if (triggerStatement != null && !triggerStatement.isClosed()) {
-                triggerStatement.close();
-            }
         }
     }
 }
