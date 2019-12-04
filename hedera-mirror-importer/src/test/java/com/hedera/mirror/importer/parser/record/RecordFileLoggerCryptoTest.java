@@ -55,6 +55,7 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.util.Utility;
+import java.util.Arrays;
 
 public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
