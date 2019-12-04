@@ -20,8 +20,6 @@ services:
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_DB_HOST: db
-    volumes:
-      - ./hedera-mirror-grpc/scripts/init-pg-users.sh:/docker-entrypoint-initdb.d/10-init-pg-users.sh
     ports:
       - 5600:5600
 

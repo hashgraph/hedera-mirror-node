@@ -1,6 +1,8 @@
 # Operations
 
-## File Layout
+## Importer
+
+### File Layout
 
 -   `/usr/lib/hedera-mirror-importer` - Binaries
 -   `/usr/etc/hedera-mirror-importer` - Configuration files
@@ -11,25 +13,25 @@
     -   `recordstreams` - The downloaded record and signature files
 -   `/etc/systemd/system/hedera-mirror-importer.service` - systemd service definitions
 
-## Starting
+### Starting
 
 ```
 sudo systemctl start hedera-mirror-importer.service
 ```
 
-## Stopping
+### Stopping
 
 ```
 sudo systemctl stop hedera-mirror-importer.service
 ```
 
-## Monitoring logs (tailing)
+### Monitoring logs (tailing)
 
 ```
 sudo journalctl -fu hedera-mirror-importer.service
 ```
 
-## Normal system logs
+### Normal system logs
 
 Normal output should include several frequent INFO level messages such as:
 
@@ -40,6 +42,30 @@ Normal output should include several frequent INFO level messages such as:
 -   `AccountBalancesFileLoader Starting processing account balances file`
 -   `BalanceFileParser Completed processing .* balance files`
 
-## State changes
+### State changes
 
 The mirror importer service, if shutdown cleanly will log `Shutting down.....` message
+
+## GRPC API
+
+### File Layout
+
+TODO
+
+### Starting
+
+```
+sudo systemctl start hedera-mirror-grpc.service
+```
+
+### Stopping
+
+```
+sudo systemctl stop hedera-mirror-grpc.service
+```
+
+### Monitoring logs (tailing)
+
+```
+sudo journalctl -fu hedera-mirror-grpc.service
+```

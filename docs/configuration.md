@@ -12,8 +12,8 @@ they be changed from the default.
 
 ## Importer and GRPC API
 
-The Hedera Mirror Node uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the application.
-As as a result, you can use properties files, YAML files, environment variables and command-line arguments
+The Importer and GRPC API uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the
+application. As as a result, you can use properties files, YAML files, environment variables and command-line arguments
 to supply configuration. See the Spring Boot [documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config)
 for the location and order it loads configuration.
 

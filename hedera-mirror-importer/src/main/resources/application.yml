@@ -3,6 +3,8 @@ hedera:
     db:
       apiPassword: mirror_api_pass
       apiUsername: mirror_api
+      grpcPassword: mirror_grpc_pass
+      grpcUsername: mirror_grpc
       host: 127.0.0.1
       name: mirror_node
       password: mirror_node_pass
@@ -33,6 +35,8 @@ spring:
       api-user: ${hedera.mirror.db.api-username}
       db-name: ${hedera.mirror.db.name}
       db-user: ${hedera.mirror.db.username}
+      grpc-password: ${hedera.mirror.db.grpc-password}
+      grpc-user: ${hedera.mirror.db.grpc-username}
   task:
     scheduling:
       pool:
