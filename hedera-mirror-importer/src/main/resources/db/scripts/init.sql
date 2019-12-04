@@ -1,4 +1,6 @@
--- Change the values below if you are not installing via Docker (environment variable values come from .env file)
+-- Script to setup PostgresSQL initially when not using docker-compose. See docs/configuration.md
+-- This script is to set up only the main user and db, which in case of docker are automatically set up via
+-- POSTGRES_DB, POSTGRES_PASSWORD, and POSTGRES_USER environment configuration.
 
 -- name of the database
 \set db_name 'mirror_node'
