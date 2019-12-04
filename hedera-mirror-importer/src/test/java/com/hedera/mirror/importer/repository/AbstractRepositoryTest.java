@@ -56,6 +56,8 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     protected TransactionTypeRepository transactionTypeRepository;
     @Resource
     protected EntityTypeRepository entityTypeRepository;
+    @Resource
+    protected TopicMessageRepository topicMessageRepository;
 
     protected final RecordFile insertRecordFile() {
         String fileName = "testfile";

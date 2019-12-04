@@ -55,6 +55,8 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
         entity.setExpiryTimeSeconds(400L);
         entity.setKey("key".getBytes());
         entity.setProxyAccountId(proxyEntity.getId());
+        entity.setSubmitKey("SubmitKey".getBytes());
+        entity.setTopicValidStartTime(700L);
         entity = entityRepository.save(entity);
 
         assertThat(entityRepository
