@@ -60,6 +60,7 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.util.Utility;
+import java.util.Arrays;
 
 // Class manually commits so have to manually cleanup tables
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
@@ -1319,7 +1320,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
 
-        assertTrue(dbTransaction.getTransactionBytes().length > 0);
+        assertEquals(0, java.util.Arrays.compare(dbTransaction.getTransactionBytes(), rawBytes));
     }
 
     @Test

@@ -89,4 +89,5 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.parser.record.persistCryptoTransferAmounts` | true                    | Persist crypto transfer amounts to the database                                                    |
 | `hedera.mirror.parser.record.persistFiles`                 | true                    | Persist all file data to the database                                                              |
 | `hedera.mirror.parser.record.persistSystemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                               |
+| `hedera.mirror.parser.record.persistTransactionBytes`      | false                   | Persist raw transaction bytes to the database                                                      |
 | `hedera.mirror.shard`                                      | 0                       | The default shard number that this mirror node participates in                                     |
