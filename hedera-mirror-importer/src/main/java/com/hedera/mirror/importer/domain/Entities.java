@@ -73,6 +73,10 @@ public class Entities {
     @Column(name = "ed25519_public_key_hex")
     private String ed25519PublicKeyHex;
 
+    private byte[] submitKey;
+
+    private Long topicValidStartTime;
+
     public void setKey(byte[] key) {
         try {
             this.key = key;
