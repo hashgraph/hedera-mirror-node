@@ -18,9 +18,7 @@
 
     <properties>
         <commons-io.version>2.6</commons-io.version>
-        <disruptor.version>3.4.2</disruptor.version> <!-- Used for asynchronous logging -->
         <hedera-sdk.version>0.6.1</hedera-sdk.version>
-        <testcontainers.version>1.12.1</testcontainers.version>
     </properties>
 
     <dependencies>

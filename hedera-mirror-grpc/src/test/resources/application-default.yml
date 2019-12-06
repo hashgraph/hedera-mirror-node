@@ -6,3 +6,7 @@ grpc:
       address: in-process:local
   server:
     inProcessName: local
+spring:
+  r2dbc:
+    initializationMode: ALWAYS
+    schema: "classpath:schema.sql"
