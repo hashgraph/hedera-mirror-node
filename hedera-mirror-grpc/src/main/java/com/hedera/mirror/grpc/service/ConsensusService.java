@@ -22,6 +22,7 @@ package com.hedera.mirror.grpc.service;
 
 import com.google.protobuf.ByteString;
 import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import javax.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -48,11 +49,15 @@ public class ConsensusService extends ReactorConsensusServiceGrpc.ConsensusServi
         try {
             TopicMessageFilter filter = request.map(this::toFilter).block();
             return topicMessageService.subscribeTopic(filter).map(this::toResponse);
-        } catch (ConstraintViolationException e) {
-            return Flux.error(Status.INVALID_ARGUMENT.augmentDescription(e.getMessage()).withCause(e)
-                    .asRuntimeException());
-        } catch (Exception e) {
+        } catch (StatusRuntimeException e) {
+            log.warn("Error", e);
             return Flux.error(e);
+        } catch (ConstraintViolationException e) {
+            log.warn("Invalid subscribe topic request", e);
+            return Flux.error(Status.INVALID_ARGUMENT.augmentDescription(e.getMessage()).asRuntimeException());
+        } catch (Exception e) {
+            log.error("Unknown exception", e);
+            return Flux.error(Status.INTERNAL.augmentDescription(e.getMessage()).asRuntimeException());
         }
     }
 

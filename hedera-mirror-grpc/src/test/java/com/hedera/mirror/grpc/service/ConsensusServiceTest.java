@@ -63,7 +63,7 @@ public class ConsensusServiceTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void invalidLimit() throws Exception {
+    void constraintValidationException() throws Exception {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setTopicID(TopicID.newBuilder().build())
                 .setLimit(-1)

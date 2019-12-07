@@ -41,6 +41,8 @@ jobs:
           POSTGRES_DB: mirror_node
           POSTGRES_PASSWORD: mirror_node_pass
           POSTGRES_USER: mirror_node
+          HEDERA_MIRROR_GRPC_DB_PASSWORD: mirror_node_pass
+          HEDERA_MIRROR_GRPC_DB_USERNAME: mirror_node
     steps:
       - checkout
       - run:
