@@ -26,8 +26,9 @@ import javax.validation.ConstraintValidatorContext;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 public class EndTimeValidator implements ConstraintValidator<EndTime, TopicMessageFilter> {
+
     @Override
-    public void initialize(EndTime contactNumber) {
+    public void initialize(EndTime endTime) {
     }
 
     @Override

@@ -39,14 +39,14 @@ public class DomainBuilder {
     private final DatabaseClient databaseClient;
     private long sequenceNumber = 0L;
 
-    public TopicMessage topicMessage() {
-        return topicMessage(t -> {
-        });
-    }
-
     @PostConstruct
     void setup() {
         databaseClient.delete().from(TopicMessage.class).fetch().rowsUpdated().block();
+    }
+
+    public TopicMessage topicMessage() {
+        return topicMessage(t -> {
+        });
     }
 
     /**
