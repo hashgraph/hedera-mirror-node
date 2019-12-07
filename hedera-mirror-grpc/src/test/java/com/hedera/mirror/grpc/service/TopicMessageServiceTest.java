@@ -102,7 +102,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessage topicMessage3 = domainBuilder.topicMessage();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.MIN)
+                .startTime(Instant.EPOCH)
                 .endTime(Instant.now())
                 .build();
 

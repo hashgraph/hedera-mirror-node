@@ -6,6 +6,12 @@ grpc:
       address: in-process:local
   server:
     inProcessName: local
+hedera:
+  mirror:
+    grpc:
+      db:
+        password: mirror_node_pass
+        username: mirror_node
 spring:
   r2dbc:
     initializationMode: ALWAYS
