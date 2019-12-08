@@ -53,10 +53,10 @@ public class ConsensusService extends ReactorConsensusServiceGrpc.ConsensusServi
             log.warn("Error", e);
             return Flux.error(e);
         } catch (ConstraintViolationException e) {
-            log.warn("Invalid subscribe topic request", e);
+            log.warn("Invalid request", e);
             return Flux.error(Status.INVALID_ARGUMENT.augmentDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
-            log.error("Unknown exception", e);
+            log.error("Unexpected exception", e);
             return Flux.error(Status.INTERNAL.augmentDescription(e.getMessage()).asRuntimeException());
         }
     }
