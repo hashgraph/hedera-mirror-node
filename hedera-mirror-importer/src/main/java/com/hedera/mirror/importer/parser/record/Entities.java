@@ -245,6 +245,10 @@ public class Entities {
 
     public long updateEntity(ContractID contractId, long exp_time_seconds, long exp_time_nanos,
                              long auto_renew_period, byte[] key, long fk_proxy_account_id, String memo) throws SQLException {
+        // Can't clear memo on contracts. 0 length indicates no change.
+        if (memo != null && memo.length() == 0) {
+            memo = null;
+        }
         return updateEntity(FK_CONTRACT, contractId.getShardNum(), contractId.getRealmNum(), contractId
                         .getContractNum(), exp_time_seconds, exp_time_nanos, auto_renew_period, key,
                 fk_proxy_account_id,
