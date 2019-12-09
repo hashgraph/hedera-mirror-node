@@ -28,8 +28,10 @@ import com.google.protobuf.ByteString;
 
 import com.google.protobuf.StringValue;
 
+import com.hedera.mirror.importer.KeyConverter;
 import com.hedera.mirror.importer.TestUtils;
 
+import com.hedera.mirror.importer.TopicIdConverter;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
@@ -41,18 +43,20 @@ import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.test.context.jdbc.Sql;
-import javax.annotation.Resource;
 
 // Class manually commits so have to manually cleanup tables
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
@@ -67,10 +71,6 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
     void before() throws Exception {
         assertTrue(RecordFileLogger.start());
         Assertions.assertEquals(RecordFileLogger.INIT_RESULT.OK, RecordFileLogger.initFile("TopicTest"));
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
-        parserProperties.setPersistContracts(true);
-        parserProperties.setPersistCryptoTransferAmounts(true);
     }
 
     @AfterEach
@@ -80,280 +80,435 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.65537, 10, 20, admin-key, submit-key, 30, 111222333, empty, SUCCESS",
-            "0.0.2147483647, 9223372036854775807, 2147483647, null, null, 9223372036854775807, 111222444, memo, " +
-                    "SUCCESS",
-            "0.0.1, -9223372036854775808, -2147483648, empty, empty, -9223372036854775808, 111222555, memo, SUCCESS",
-            "0.0.55, 10, 20, admin-key, submit-key, 30, 111222666, memo, INVALID_TOPIC_ID"
+            "0.0.65537, 10, 20, admin-key, submit-key, 30, '', 1000000",
+            "0.0.2147483647, 9223372036854775807, 2147483647, admin-key, '', 9223372036854775807, memo, 1000001",
+            "0.0.1, -9223372036854775808, -2147483648, '', '', -9223372036854775808, memo, 1000002",
+            "0.0.55, 10, 20, admin-key, submit-key, 30, memo, 1000003"
     })
-    void createTopicTest(String topicId, long expirationTimeSeconds, int expirationTimeNanos, String adminKey,
-                         String submitKey, long validStartTime, long consensusTimestamp, String memo,
-                         String responseCode) throws Exception {
-        var tid = TestUtils.toTopicId(topicId);
-        var ak = TestUtils.toKey(adminKey);
-        byte[] expectedAdminKey = null;
-        var sk = TestUtils.toKey(submitKey);
-        byte[] expectedSubmitKey = null;
-        memo = TestUtils.toStringWithNullOrEmpty(memo);
-        var rc = ResponseCodeEnum.valueOf(responseCode);
+    void createTopicTest(@ConvertWith(TopicIdConverter.class) TopicID topicId, long expirationTimeSeconds,
+                         int expirationTimeNanos, @ConvertWith(KeyConverter.class) Key adminKey,
+                         @ConvertWith(KeyConverter.class) Key submitKey, long validStartTime, String memo,
+                         long consensusTimestamp) throws Exception {
+        var responseCode = ResponseCodeEnum.SUCCESS;
+        var transaction = createCreateTopicTransaction(expirationTimeSeconds, expirationTimeNanos, adminKey,
+                submitKey, validStartTime, memo);
+        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
+                responseCode);
+        var expectedEntity = createTopicEntity(topicId, expirationTimeSeconds, expirationTimeNanos, adminKey, submitKey,
+                validStartTime, memo);
 
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository
+                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertThat(entity)
+                .isEqualToIgnoringGivenFields(expectedEntity, "id");
+    }
+
+    @Test
+    void createTopicTestNulls() throws Exception {
+        var topicId = 200L;
+        var consensusTimestamp = 2_000_000L;
+        var responseCode = ResponseCodeEnum.SUCCESS;
+        var transaction = createCreateTopicTransaction(10, 20, null, null,
+                30, null);
+        var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
+                .build(), null, null, consensusTimestamp, responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository.findByPrimaryKey(0L, 0L, topicId).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertThat(entity)
+                .returns("".getBytes(), from(Entities::getKey))
+                .returns("".getBytes(), from(Entities::getSubmitKey))
+                .returns("", from(Entities::getMemo))
+                .returns(false, from(Entities::isDeleted))
+                .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
+    }
+
+    @Test
+    void createTopicTestError() throws Exception {
+        var consensusTimestamp = 3_000_000L;
+        var responseCode = ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+        var transaction = createCreateTopicTransaction(10, 20, null, null,
+                30, "memo");
+        var transactionRecord = createTransactionRecord(null, null, null, consensusTimestamp, responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        assertTransactionInRepository(responseCode, consensusTimestamp, null);
+        assertEquals(2L, entityRepository.count()); // Node, payer, no topic
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0.0.1300, 10, 20, admin-key, submit-key, 30, memo,   11, 21, updated-admin-key, updated-submit-key, 31, " +
+                    "updated-memo, 4000000",
+            "0.0.1301, 10, 20, admin-key, submit-key, 30, memo,   11, 21, '', '', 31, '', 4000001",
+            "0.0.1302, 0, 0, '', '', 0, '',   11, 21, updated-admin-key, updated-submit-key, 31, updated-memo, 4000002"
+    })
+    void updateTopicTest(@ConvertWith(TopicIdConverter.class) TopicID topicId, long expirationTimeSeconds,
+                         int expirationTimeNanos, @ConvertWith(KeyConverter.class) Key adminKey,
+                         @ConvertWith(KeyConverter.class) Key submitKey, long validStartTime, String memo,
+                         long updatedExpirationTimeSeconds, int updatedExpirationTimeNanos,
+                         @ConvertWith(KeyConverter.class) Key updatedAdminKey,
+                         @ConvertWith(KeyConverter.class) Key updatedSubmitKey, long updatedValidStartTime,
+                         String updatedMemo, long consensusTimestamp) throws Exception {
+        // Store topic to be updated.
+        var topic = createTopicEntity(topicId, expirationTimeSeconds, expirationTimeNanos, adminKey, submitKey,
+                validStartTime, memo);
+        entityRepository.save(topic);
+
+        var responseCode = ResponseCodeEnum.SUCCESS;
+        var transaction = createUpdateTopicTransaction(topicId, updatedExpirationTimeSeconds,
+                updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedValidStartTime, updatedMemo);
+        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
+                responseCode);
+        var expectedEntity = createTopicEntity(topicId, updatedExpirationTimeSeconds, updatedExpirationTimeNanos,
+                updatedAdminKey, updatedSubmitKey,
+                updatedValidStartTime, updatedMemo);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository
+                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertThat(entity)
+                .isEqualToIgnoringGivenFields(expectedEntity, "id");
+    }
+
+    @Test
+    void updateTopicTestError() throws Exception {
+        var topicId = TopicID.newBuilder().setTopicNum(1600).build();
+        var adminKey = (Key) new KeyConverter().convert("admin-key", null);
+        var submitKey = (Key) new KeyConverter().convert("submit-key", null);
+        var updatedAdminKey = (Key) new KeyConverter().convert("updated-admin-key", null);
+        var updatedSubmitKey = (Key) new KeyConverter().convert("updated-submit-key", null);
+        var consensusTimestamp = 6_000_000L;
+        var responseCode = ResponseCodeEnum.INVALID_TOPIC_ID;
+
+        // Store topic to be updated.
+        var topic = createTopicEntity(topicId, 10L, 20, adminKey, submitKey, 30L, "memo");
+        entityRepository.save(topic);
+
+        var transaction = createUpdateTopicTransaction(topicId, 11, 21, updatedAdminKey, updatedSubmitKey, 31,
+                "updated-memo");
+        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
+                responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository
+                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertThat(entity)
+                .isEqualToIgnoringGivenFields(topic, "id");
+    }
+
+    @Test
+    void updateTopicTestTopicNotFound() throws Exception {
+        var topicId = TopicID.newBuilder().setTopicNum(1800).build();
+        var adminKey = (Key) new KeyConverter().convert("updated-admin-key", null);
+        var submitKey = (Key) new KeyConverter().convert("updated-submit-key", null);
+        var consensusTimestamp = 6_000_000L;
+        var responseCode = ResponseCodeEnum.SUCCESS;
+
+        var topic = createTopicEntity(topicId, 11L, 21, adminKey, submitKey, 31L, "updated-memo");
+        // Topic does not get stored in the repository beforehand.
+
+        var transaction = createUpdateTopicTransaction(topicId, topic.getExpiryTimeSeconds(), topic.getExpiryTimeNanos()
+                .intValue(), adminKey, submitKey, topic.getTopicValidStartTime(), topic.getMemo());
+        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
+                responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository
+                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertThat(entity)
+                .isEqualToIgnoringGivenFields(topic, "id");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0.0.1500, 10, 20, admin-key, submit-key, 30, memo, 5000000,   0, 0, , , 0,",
+            "0.0.1501, 0, 0, '', '', 0, '', 5000001,   0, 0, , , 0,",
+            "0.0.1502, 10, 20, admin-key, submit-key, 30, memo, 5000002,   0, 0, updated-admin-key, " +
+                    "updated-submit-key, 0, updated-memo",
+            "0.0.1503, 10, 20, admin-key, submit-key, 30, memo, 5000003,   11, 21, , , 31,"
+    })
+    void updateTopicTestPartialUpdates(@ConvertWith(TopicIdConverter.class) TopicID topicId, long expirationTimeSeconds,
+                                       int expirationTimeNanos, @ConvertWith(KeyConverter.class) Key adminKey,
+                                       @ConvertWith(KeyConverter.class) Key submitKey, long validStartTime, String memo,
+                                       long consensusTimestamp, long updatedExpirationTimeSeconds,
+                                       int updatedExpirationTimeNanos,
+                                       @ConvertWith(KeyConverter.class) Key updatedAdminKey,
+                                       @ConvertWith(KeyConverter.class) Key updatedSubmitKey,
+                                       long updatedValidStartTime, String updatedMemo) throws Exception {
+        // Store topic to be updated.
+        var topic = createTopicEntity(topicId, expirationTimeSeconds, expirationTimeNanos, adminKey, submitKey,
+                validStartTime, memo);
+        entityRepository.save(topic);
+
+        // Setup the expected entity.
+        if (updatedExpirationTimeSeconds != 0 && updatedExpirationTimeNanos != 0) {
+            topic.setExpiryTimeNs(Utility.convertToNanosMax(updatedExpirationTimeSeconds, updatedExpirationTimeNanos));
+            topic.setExpiryTimeSeconds(updatedExpirationTimeSeconds);
+            topic.setExpiryTimeNanos((long) updatedExpirationTimeNanos);
+        }
+        if (updatedValidStartTime != 0) {
+            topic.setTopicValidStartTime(updatedValidStartTime);
+        }
+        if (updatedAdminKey != null) {
+            topic.setKey(updatedAdminKey.toByteArray());
+        }
+        if (updatedSubmitKey != null) {
+            topic.setSubmitKey(updatedSubmitKey.toByteArray());
+        }
+        if (updatedMemo != null) {
+            topic.setMemo(updatedMemo);
+        }
+
+        var responseCode = ResponseCodeEnum.SUCCESS;
+        var transaction = createUpdateTopicTransaction(topicId, updatedExpirationTimeSeconds,
+                updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedValidStartTime, updatedMemo);
+        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
+                responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository
+                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertThat(entity)
+                .isEqualToIgnoringGivenFields(topic, "id");
+    }
+
+    @Test
+    void deleteTopicTest() throws Exception {
+        var topicId = TopicID.newBuilder().setTopicNum(1700L).build();
+        var consensusTimestamp = 7_000_000L;
+        var responseCode = ResponseCodeEnum.SUCCESS;
+
+        // Store topic to be deleted.
+        var topic = createTopicEntity(topicId, null, null, null, null, null, null);
+        entityRepository.save(topic);
+
+        // Setup expected data
+        topic.setDeleted(true);
+
+        var transaction = createDeleteTopicTransaction(topicId);
+        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
+                responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository
+                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertThat(entity)
+                .isEqualToIgnoringGivenFields(topic, "id");
+    }
+
+    @Test
+    void deleteTopicTestTopicNotFound() throws Exception {
+        var topicId = TopicID.newBuilder().setTopicNum(2000L).build();
+        var consensusTimestamp = 10_000_000L;
+        var responseCode = ResponseCodeEnum.SUCCESS;
+
+        // Setup expected data
+        var topic = createTopicEntity(topicId, null, null, null, null, null, null);
+        topic.setDeleted(true);
+        // Topic not saved to the repository.
+
+        var transaction = createDeleteTopicTransaction(topicId);
+        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
+                responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository
+                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertThat(entity)
+                .isEqualToIgnoringGivenFields(topic, "id");
+    }
+
+    @Test
+    void deleteTopicTestError() throws Exception {
+        var topicId = TopicID.newBuilder().setTopicNum(1900L).build();
+        var consensusTimestamp = 9_000_000L;
+        var responseCode = ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+
+        // Store topic to be deleted.
+        var topic = createTopicEntity(topicId, 10L, 20, null, null, 30L, null);
+        entityRepository.save(topic);
+
+        var transaction = createDeleteTopicTransaction(topicId);
+        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
+                responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository
+                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertThat(entity)
+                .isEqualToIgnoringGivenFields(topic, "id");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0.0.9000, test-message0, 9000000, runninghash, 1",
+            "0.0.9001, '', 9000001, '', 9223372036854775807"
+    })
+    void submitMessageTest(@ConvertWith(TopicIdConverter.class) TopicID topicId, String message,
+                           long consensusTimestamp, String runningHash,
+                           long sequenceNumber) throws Exception {
+        var responseCode = ResponseCodeEnum.SUCCESS;
+
+        var topic = createTopicEntity(topicId, 10L, 20, null, null, 30L, null);
+        entityRepository.save(topic);
+
+        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp);
+        var transaction = createSubmitMessageTransaction(topicId, message);
+        var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
+                .getBytes(), consensusTimestamp, responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository
+                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertThat(entity)
+                .isEqualToIgnoringGivenFields(topic, "id");
+        assertThat(topicMessageRepository.findById(consensusTimestamp)).get()
+                .isEqualTo(topicMessage);
+    }
+
+    @Test
+    void submitMessageTestTopicNotFound() throws Exception {
+        var responseCode = ResponseCodeEnum.SUCCESS;
+        var topicId = (TopicID) new TopicIdConverter().convert("0.0.10000", null);
+        var consensusTimestamp = 10_000_000L;
+        var message = "message";
+        var sequenceNumber = 10_000L;
+        var runningHash = "running-hash";
+
+        var topic = createTopicEntity(topicId, null, null, null, null, null, null);
+        // Topic NOT saved in the repository.
+
+        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp);
+        var transaction = createSubmitMessageTransaction(topicId, message);
+        var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
+                .getBytes(), consensusTimestamp, responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository
+                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertEquals(1L, topicMessageRepository.count());
+        assertThat(entity)
+                .isEqualToIgnoringGivenFields(topic, "id");
+        assertThat(topicMessageRepository.findById(consensusTimestamp)).get()
+                .isEqualTo(topicMessage);
+    }
+
+    @Test
+    void submitMessageTestTopicError() throws Exception {
+        var responseCode = ResponseCodeEnum.INVALID_TOPIC_ID;
+        var topicId = (TopicID) new TopicIdConverter().convert("0.0.11000", null);
+        var consensusTimestamp = 11_000_000L;
+        var message = "message";
+        var sequenceNumber = 11_000L;
+        var runningHash = "running-hash";
+
+        var topic = createTopicEntity(topicId, 10L, 20, null, null, 30L, null);
+        entityRepository.save(topic);
+
+        var transaction = createSubmitMessageTransaction(topicId, message);
+        var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
+                .getBytes(), consensusTimestamp, responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository
+                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(3L, entityRepository.count()); // Node, payer, topic
+        assertThat(entity)
+                .isEqualToIgnoringGivenFields(topic, "id");
+        assertThat(topicMessageRepository.findById(consensusTimestamp)).isNotPresent();
+        assertEquals(0L, topicMessageRepository.count());
+    }
+
+    private com.hederahashgraph.api.proto.java.Transaction createCreateTopicTransaction(long expirationTimeSeconds,
+                                                                                        int expirationTimeNanos,
+                                                                                        Key adminKey, Key submitKey,
+                                                                                        long validStartTime,
+                                                                                        String memo) {
         var innerBody = ConsensusCreateTopicTransactionBody.newBuilder()
                 .setExpirationTime(TestUtils.toTimestamp(expirationTimeSeconds, expirationTimeNanos))
                 .setValidStartTime(TestUtils.toTimestamp(validStartTime));
-        if (ak != null) {
-            innerBody.setAdminKey(ak);
-            expectedAdminKey = ak.toByteArray();
+        if (adminKey != null) {
+            innerBody.setAdminKey(adminKey);
         }
-        if (sk != null) {
-            innerBody.setSubmitKey(sk);
-            expectedSubmitKey = sk.toByteArray();
+        if (submitKey != null) {
+            innerBody.setSubmitKey(submitKey);
         }
-        innerBody.setMemo(memo);
+        if (memo != null) {
+            innerBody.setMemo(memo);
+        }
         var body = createTransactionBody().setConsensusCreateTopic(innerBody).build();
-        var transaction = com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
+        return com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
                 .build();
-        var receipt = TransactionReceipt.newBuilder().setStatus(rc);
-        if (ResponseCodeEnum.SUCCESS == rc) {
-            receipt.setTopicID(tid);
-        }
-        var transactionRecord = TransactionRecord.newBuilder().setReceipt(receipt)
-                .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)).build();
-
-        RecordFileLogger.storeRecord(transaction, transactionRecord);
-        RecordFileLogger.completeFile("", "");
-
-        // If either key is null, the expectation is that the DB will store an empty value.
-        if (null == ak) {
-            expectedAdminKey = new byte[0];
-        }
-        if (null == sk) {
-            expectedSubmitKey = new byte[0];
-        }
-
-        assertThat(transactionRepository.findById(consensusTimestamp).get())
-                .returns(rc.getNumber(), from(Transaction::getResult))
-                .returns(TRANSACTION_MEMO.getBytes(), from(Transaction::getMemo));
-        if (ResponseCodeEnum.SUCCESS == rc) {
-            assertThat(entityRepository.findByPrimaryKey(tid.getShardNum(), tid.getRealmNum(), tid.getTopicNum()).get())
-                    .returns(tid.getTopicNum(), from(Entities::getEntityNum))
-                    .returns(tid.getRealmNum(), from(Entities::getEntityRealm))
-                    .returns(Utility.convertToNanosMax(expirationTimeSeconds, expirationTimeNanos),
-                            from(Entities::getExpiryTimeNs))
-                    .returns(expirationTimeSeconds,
-                            from(Entities::getExpiryTimeSeconds))
-                    .returns((long) expirationTimeNanos,
-                            from(Entities::getExpiryTimeNanos))
-                    .returns(expectedAdminKey, from(Entities::getKey))
-                    .returns(expectedSubmitKey, from(Entities::getSubmitKey))
-                    .returns(validStartTime, from(Entities::getTopicValidStartTime))
-                    .returns(false, from(Entities::isDeleted))
-                    .returns(memo, from(Entities::getMemo))
-                    .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
-        } else {
-            Assertions.assertFalse(entityRepository
-                    .findByPrimaryKey(tid.getShardNum(), tid.getRealmNum(), tid.getTopicNum()).isPresent());
-        }
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "0.0.1300, 10, 20, admin-key, submit-key, 30, memo, 11, 21, updated-admin-key, updated-submit-key, 31, " +
-                    "888, updated-memo, SUCCESS",
-            "0.0.1301, 10, 20, admin-key, submit-key, 30, empty, 0, 0, null, null, 0, 889, updated-memo, SUCCESS",
-            "0.0.1302, 10, 20, null, null, 30, empty, 0, 0, empty, empty, 0, 890, null, SUCCESS",
-            "0.0.1303, 10, 20, null, empty, 30, memo, 0, 21, empty, null, 0, 891, null, SUCCESS",
-            "0.0.1304, 10, 20, empty, null, 30, memo, 11, 0, empty, null, 0, 892, empty, SUCCESS",
-            "0.0.1300, 10, 20, admin-key, submit-key, 30, memo, 11, 21, updated-admin-key, updated-submit-key, 31, " +
-                    "893, updated-memo, INVALID_TOPIC_ID"
-    })
-    void updateTopicTest(String topicId, long expirationTimeSeconds, long expirationTimeNanos, String adminKey,
-                         String submitKey, long validStartTime, String memo, long updatedExpirationTimeSeconds,
-                         long updatedExpirationTimeNanos,
-                         String updatedAdminKey, String updatedSubmitKey, long updatedValidStartTime,
-                         long consensusTimestamp, String updatedMemo, String responseCode) throws Exception {
-        var tid = TestUtils.toTopicId(topicId);
-        memo = TestUtils.toStringWithNullOrEmpty(memo);
-        updatedMemo = TestUtils.toStringWithNullOrEmpty(updatedMemo);
-
-        // Store topic to be updated.
-        var topic = new Entities();
-        topic.setEntityShard(tid.getShardNum());
-        topic.setEntityRealm(tid.getRealmNum());
-        topic.setEntityNum(tid.getTopicNum());
-        topic.setKey(TestUtils.toByteArray(adminKey));
-        topic.setSubmitKey(TestUtils.toByteArray(submitKey));
-        topic.setTopicValidStartTime(validStartTime);
-        topic.setEntityTypeId(TOPIC_ENTITY_TYPE_ID);
-        topic.setExpiryTimeSeconds(expirationTimeSeconds);
-        topic.setExpiryTimeNanos(expirationTimeNanos);
-        topic.setExpiryTimeNs(Utility.convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
-        topic.setMemo(memo);
-        entityRepository.save(topic);
-
-        var rc = ResponseCodeEnum.valueOf(responseCode);
-        var updatedAk = TestUtils.toKey(updatedAdminKey);
-        var updatedSk = TestUtils.toKey(updatedSubmitKey);
-
-        var innerBody = ConsensusUpdateTopicTransactionBody.newBuilder()
-                .setTopicID(tid)
-                .setExpirationTime(TestUtils.toTimestamp(updatedExpirationTimeSeconds, updatedExpirationTimeNanos))
-                .setValidStartTime(TestUtils.toTimestamp(updatedValidStartTime));
-        if (updatedAk != null) {
-            innerBody.setAdminKey(updatedAk);
+    private TransactionRecord createTransactionRecord(TopicID topicId, Long topicSequenceNumber,
+                                                      byte[] topicRunningHash, long consensusTimestamp,
+                                                      ResponseCodeEnum responseCode) {
+        var receipt = TransactionReceipt.newBuilder().setStatus(responseCode);
+        if (null != topicId) {
+            receipt.setTopicID(topicId);
         }
-        if (updatedSk != null) {
-            innerBody.setSubmitKey(updatedSk);
+        if (null != topicSequenceNumber) {
+            receipt.setTopicSequenceNumber(topicSequenceNumber);
         }
-        if (updatedMemo != null) {
-            innerBody.setMemo(StringValue.of(updatedMemo));
-        }
-        var body = createTransactionBody().setConsensusUpdateTopic(innerBody).build();
-        var transaction = com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
-                .build();
-        var receipt = TransactionReceipt.newBuilder().setStatus(rc);
-        if (ResponseCodeEnum.SUCCESS == rc) {
-            receipt.setTopicID(tid);
+        if (null != topicRunningHash) {
+            receipt.setTopicRunningHash(ByteString.copyFrom(topicRunningHash));
         }
         var transactionRecord = TransactionRecord.newBuilder().setReceipt(receipt)
-                .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)).build();
-
-        RecordFileLogger.storeRecord(transaction, transactionRecord);
-        RecordFileLogger.completeFile("", "");
-
-        assertThat(transactionRepository.findById(consensusTimestamp).get())
-                .returns(rc.getNumber(), from(Transaction::getResult))
-                .returns(TRANSACTION_MEMO.getBytes(), from(Transaction::getMemo));
-        if (ResponseCodeEnum.SUCCESS == rc) {
-            // When 0s or nulls are passed, those fields are expected to remain unmodified.
-            var expectedExpirationTimeSeconds = updatedExpirationTimeSeconds;
-            var expectedExpirationTimeNanos = updatedExpirationTimeNanos;
-            var expectedAdminKey = (null == updatedAk) ? TestUtils.toByteArray(adminKey) : updatedAk.toByteArray();
-            var expectedSubmitKey = (null == updatedSk) ? TestUtils.toByteArray(submitKey) : updatedSk.toByteArray();
-            var expectedValidStartTime = (0 == updatedValidStartTime) ? validStartTime : updatedValidStartTime;
-            if ((0 == updatedExpirationTimeSeconds) && (0 == updatedExpirationTimeNanos)) {
-                expectedExpirationTimeSeconds = expirationTimeSeconds;
-                expectedExpirationTimeNanos = expirationTimeNanos;
-            }
-            var expectedExpirationTime = Utility
-                    .convertToNanosMax(expectedExpirationTimeSeconds, expectedExpirationTimeNanos);
-            var expectedMemo = (null == updatedMemo) ? memo : updatedMemo;
-
-            assertThat(entityRepository.findByPrimaryKey(tid.getShardNum(), tid.getRealmNum(), tid.getTopicNum()).get())
-                    .returns(tid.getTopicNum(), from(Entities::getEntityNum))
-                    .returns(tid.getRealmNum(), from(Entities::getEntityRealm))
-                    .returns(expectedExpirationTime, from(Entities::getExpiryTimeNs))
-                    .returns(expectedExpirationTimeSeconds, from(Entities::getExpiryTimeSeconds))
-                    .returns((long) expectedExpirationTimeNanos, from(Entities::getExpiryTimeNanos))
-                    .returns(expectedAdminKey, from(Entities::getKey))
-                    .returns(expectedSubmitKey, from(Entities::getSubmitKey))
-                    .returns(expectedValidStartTime, from(Entities::getTopicValidStartTime))
-                    .returns(false, from(Entities::isDeleted))
-                    .returns(expectedMemo, from(Entities::getMemo))
-                    .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
-        } else {
-            assertThat(entityRepository.findByPrimaryKey(tid.getShardNum(), tid.getRealmNum(), tid.getTopicNum()).get())
-                    .returns(tid.getTopicNum(), from(Entities::getEntityNum))
-                    .returns(tid.getRealmNum(), from(Entities::getEntityRealm))
-                    .returns(Utility
-                                    .convertToNanosMax(expirationTimeSeconds, expirationTimeNanos),
-                            from(Entities::getExpiryTimeNs))
-                    .returns(expirationTimeSeconds,
-                            from(Entities::getExpiryTimeSeconds))
-                    .returns((long) expirationTimeNanos,
-                            from(Entities::getExpiryTimeNanos))
-                    .returns(TestUtils.toByteArray(adminKey), from(Entities::getKey))
-                    .returns(TestUtils
-                            .toByteArray(submitKey), from(Entities::getSubmitKey))
-                    .returns(validStartTime, from(Entities::getTopicValidStartTime))
-                    .returns(false, from(Entities::isDeleted))
-                    .returns(memo, from(Entities::getMemo))
-                    .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
-        }
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "0.0.1400, 20200101, SUCCESS",
-            "0.0.1401, 20200102, UNAUTHORIZED"
-    })
-    void deleteTopicTest(String topicId, long consensusTimestamp, String responseCode) throws Exception {
-        var tid = TestUtils.toTopicId(topicId);
-
-        // Store topic to be updated.
-        var topic = new Entities();
-        topic.setEntityShard(tid.getShardNum());
-        topic.setEntityRealm(tid.getRealmNum());
-        topic.setEntityNum(tid.getTopicNum());
-        topic.setEntityTypeId(TOPIC_ENTITY_TYPE_ID);
-        topic = entityRepository.save(topic);
-        Assertions.assertFalse(topic.isDeleted());
-
-        var rc = ResponseCodeEnum.valueOf(responseCode);
-        var innerBody = ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(tid);
-        var body = createTransactionBody().setConsensusDeleteTopic(innerBody).build();
-        var transaction = com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
-                .build();
-        var receipt = TransactionReceipt.newBuilder().setStatus(rc);
-        if (ResponseCodeEnum.SUCCESS == rc) {
-            receipt.setTopicID(tid);
-        }
-        var transactionRecord = TransactionRecord.newBuilder().setReceipt(receipt)
-                .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)).build();
-
-        RecordFileLogger.storeRecord(transaction, transactionRecord);
-        RecordFileLogger.completeFile("", "");
-
-        assertThat(transactionRepository.findById(consensusTimestamp).get())
-                .returns(rc.getNumber(), from(Transaction::getResult))
-                .returns(TRANSACTION_MEMO.getBytes(), from(Transaction::getMemo));
-        assertThat(entityRepository.findByPrimaryKey(tid.getShardNum(), tid.getRealmNum(), tid.getTopicNum()).get())
-                .returns((ResponseCodeEnum.SUCCESS == rc), from(Entities::isDeleted));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "0.0.12000, test-message0, 2019121900, runninghash, 9, SUCCESS",
-            "0.0.12001, test-message1, 2019121900, empty, 9223372036854775807, SUCCESS",
-            "0.0.12002, empty, 2019121901, null, 0, INVALID_TOPIC_MESSAGE",
-            "0.0.12003, test-message3, 2019121902, null, 0, INVALID_TOPIC_ID"
-    })
-    void submitMessageTest(String topicId, @NotNull String message, long consensusTimestamp, String runningHash,
-                           long sequenceNumber, String responseCode) throws Exception {
-        var tid = TestUtils.toTopicId(topicId);
-        var rc = ResponseCodeEnum.valueOf(responseCode);
-
-        var innerBody = ConsensusSubmitMessageTransactionBody.newBuilder()
-                .setTopicID(tid)
-                .setMessage(ByteString.copyFrom(message.getBytes())).build();
-        var body = createTransactionBody().setConsensusSubmitMessage(innerBody).build();
-        var transaction = com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
-                .build();
-        var receipt = TransactionReceipt.newBuilder().setStatus(rc);
-        if (ResponseCodeEnum.SUCCESS == rc) {
-            receipt.setTopicID(tid)
-                    .setTopicRunningHash(ByteString.copyFrom(runningHash.getBytes()))
-                    .setTopicSequenceNumber(sequenceNumber);
-        }
-
-        var transactionRecord = TransactionRecord.newBuilder().setReceipt(receipt)
-                .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)).build();
-
-        RecordFileLogger.storeRecord(transaction, transactionRecord);
-        RecordFileLogger.completeFile("", "");
-
-        assertThat(transactionRepository.findById(consensusTimestamp).get())
-                .returns(rc.getNumber(), from(Transaction::getResult))
-                .returns(TRANSACTION_MEMO.getBytes(), from(Transaction::getMemo));
-        if (ResponseCodeEnum.SUCCESS == rc) {
-            assertThat(topicMessageRepository.findById(consensusTimestamp).get())
-                    .returns(message.getBytes(), from(TopicMessage::getMessage))
-                    .returns(tid.getRealmNum(), from(TopicMessage::getRealmNum))
-                    .returns(tid.getTopicNum(), from(TopicMessage::getTopicNum))
-                    .returns(sequenceNumber, from(TopicMessage::getSequenceNumber))
-                    .returns(runningHash.getBytes(), from(TopicMessage::getRunningHash));
-        } else {
-            Assertions.assertFalse(topicMessageRepository.findById(consensusTimestamp).isPresent());
-        }
+                .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp));
+        return transactionRecord.build();
     }
 
     private TransactionBody.Builder createTransactionBody() {
@@ -362,5 +517,93 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
                 .setNodeAccountID(TestUtils.toAccountId(NODE_ID))
                 .setTransactionID(TestUtils.toTransactionId(TRANSACTION_ID))
                 .setMemo(TRANSACTION_MEMO);
+    }
+
+    private Entities createTopicEntity(TopicID topicId, Long expirationTimeSeconds, Integer expirationTimeNanos,
+                                       Key adminKey, Key submitKey, Long validStartTime, String memo) {
+        var topic = new Entities();
+        topic.setEntityShard(topicId.getShardNum());
+        topic.setEntityRealm(topicId.getRealmNum());
+        topic.setEntityNum(topicId.getTopicNum());
+        if (expirationTimeSeconds != null && expirationTimeNanos != null) {
+            topic.setExpiryTimeNs(Utility
+                    .convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
+            topic.setExpiryTimeSeconds(expirationTimeSeconds);
+            topic.setExpiryTimeNanos(expirationTimeNanos.longValue());
+        }
+        if (null != adminKey) {
+            topic.setKey(adminKey.toByteArray());
+        }
+        if (null != submitKey) {
+            topic.setSubmitKey(submitKey.toByteArray());
+        }
+        topic.setTopicValidStartTime(validStartTime);
+        topic.setMemo(memo);
+        topic.setEntityTypeId(TOPIC_ENTITY_TYPE_ID);
+        return topic;
+    }
+
+    private TopicMessage createTopicMessage(TopicID topicId, String message, long sequenceNumber, String runningHash,
+                                            long consensusTimestamp) {
+        var topicMessage = new TopicMessage();
+        topicMessage.setConsensusTimestamp(consensusTimestamp);
+        topicMessage.setRealmNum(topicId.getRealmNum());
+        topicMessage.setTopicNum(topicId.getTopicNum());
+        topicMessage.setMessage(message.getBytes());
+        topicMessage.setSequenceNumber(sequenceNumber);
+        topicMessage.setRunningHash(runningHash.getBytes());
+        return topicMessage;
+    }
+
+    private com.hederahashgraph.api.proto.java.Transaction createUpdateTopicTransaction(TopicID topicId,
+                                                                                        long expirationTimeSeconds,
+                                                                                        int expirationTimeNanos,
+                                                                                        Key adminKey, Key submitKey,
+                                                                                        long validStartTime,
+                                                                                        String memo) {
+        var innerBody = ConsensusUpdateTopicTransactionBody.newBuilder()
+                .setTopicID(topicId)
+                .setExpirationTime(TestUtils.toTimestamp(expirationTimeSeconds, expirationTimeNanos))
+                .setValidStartTime(TestUtils.toTimestamp(validStartTime));
+        if (adminKey != null) {
+            innerBody.setAdminKey(adminKey);
+        }
+        if (submitKey != null) {
+            innerBody.setSubmitKey(submitKey);
+        }
+        if (memo != null) {
+            innerBody.setMemo(StringValue.of(memo));
+        }
+        var body = createTransactionBody().setConsensusUpdateTopic(innerBody).build();
+        return com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
+                .build();
+    }
+
+    private com.hederahashgraph.api.proto.java.Transaction createDeleteTopicTransaction(TopicID topicId) {
+        var innerBody = ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(topicId);
+        var body = createTransactionBody().setConsensusDeleteTopic(innerBody).build();
+        return com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
+                .build();
+    }
+
+    private com.hederahashgraph.api.proto.java.Transaction createSubmitMessageTransaction(TopicID topicId,
+                                                                                          String message) {
+        var innerBody = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .setTopicID(topicId)
+                .setMessage(ByteString.copyFrom(message.getBytes()));
+        var body = createTransactionBody().setConsensusSubmitMessage(innerBody).build();
+        return com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
+                .build();
+    }
+
+    private void assertTransactionInRepository(ResponseCodeEnum responseCode, long consensusTimestamp, Long entityId) {
+        var transaction = transactionRepository.findById(consensusTimestamp).get();
+        assertThat(transaction)
+                .returns(responseCode.getNumber(), from(Transaction::getResult))
+                .returns(TRANSACTION_MEMO.getBytes(), from(Transaction::getMemo));
+        if (entityId != null) {
+            assertThat(transaction)
+                    .returns(entityId, from(Transaction::getEntityId));
+        }
     }
 }
