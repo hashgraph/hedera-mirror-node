@@ -467,7 +467,6 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
         assertEquals(3L, entityRepository.count()); // Node, payer, topic
         assertThat(entity)
                 .isEqualToIgnoringGivenFields(topic, "id");
-        assertThat(topicMessageRepository.findById(consensusTimestamp)).isNotPresent();
         assertEquals(0L, topicMessageRepository.count());
     }
 
