@@ -46,23 +46,16 @@ public class ConsensusService extends ReactorConsensusServiceGrpc.ConsensusServi
 
     @Override
     public Flux<ConsensusTopicResponse> subscribeTopic(Mono<ConsensusTopicQuery> request) {
-        try {
-            TopicMessageFilter filter = request.map(this::toFilter).block();
-            return topicMessageService.subscribeTopic(filter).map(this::toResponse);
-        } catch (StatusRuntimeException e) {
-            log.warn("Error", e);
-            return Flux.error(e);
-        } catch (ConstraintViolationException e) {
-            log.warn("Invalid request", e);
-            return Flux.error(Status.INVALID_ARGUMENT.augmentDescription(e.getMessage()).asRuntimeException());
-        } catch (Exception e) {
-            log.error("Unexpected exception", e);
-            return Flux.error(Status.INTERNAL.augmentDescription(e.getMessage()).asRuntimeException());
-        }
+        return request.map(this::toFilter)
+                .flatMapMany(topicMessageService::subscribeTopic)
+                .map(this::toResponse)
+                .onErrorMap(ConstraintViolationException.class, t -> mapError(t, Status.INVALID_ARGUMENT))
+                .onErrorMap(t -> mapError(t, Status.INTERNAL));
     }
 
     private TopicMessageFilter toFilter(ConsensusTopicQuery query) {
         if (!query.hasTopicID()) {
+            log.warn("Missing required topicID");
             throw Status.INVALID_ARGUMENT.augmentDescription("Missing required topicID").asRuntimeException();
         }
 
@@ -83,17 +76,20 @@ public class ConsensusService extends ReactorConsensusServiceGrpc.ConsensusServi
     }
 
     private ConsensusTopicResponse toResponse(TopicMessage topicMessage) {
-        try {
-            return ConsensusTopicResponse.newBuilder()
-                    .setConsensusTimestamp(ProtoUtil.toTimestamp(topicMessage.getConsensusTimestamp()))
-                    .setMessage(ByteString.copyFrom(topicMessage.getMessage()))
-                    .setSequenceNumber(topicMessage.getSequenceNumber())
-                    .setRunningHash(ByteString.copyFrom(topicMessage.getRunningHash()))
-                    .build();
-        } catch (Exception e) {
-            throw Status.INTERNAL
-                    .augmentDescription("Unable to convert topic message to ConsensusTopicResponse")
-                    .asRuntimeException();
+        return ConsensusTopicResponse.newBuilder()
+                .setConsensusTimestamp(ProtoUtil.toTimestamp(topicMessage.getConsensusTimestamp()))
+                .setMessage(ByteString.copyFrom(topicMessage.getMessage()))
+                .setSequenceNumber(topicMessage.getSequenceNumber())
+                .setRunningHash(ByteString.copyFrom(topicMessage.getRunningHash()))
+                .build();
+    }
+
+    private Throwable mapError(Throwable throwable, Status status) {
+        if (throwable instanceof StatusRuntimeException) {
+            return throwable;
         }
+
+        log.error("Error", throwable);
+        return status.augmentDescription(throwable.getMessage()).asRuntimeException();
     }
 }

@@ -29,17 +29,12 @@ import org.springframework.data.convert.ReadingConverter;
 @ReadingConverter
 public class LongToInstantConverter implements Converter<Long, Instant> {
 
-    // Reserve 9 of the least significant digits for nanoseconds
-    private static final long SCALAR = 1_000_000_000L;
-
     @Override
     public Instant convert(Long source) {
         if (source == null) {
             return null;
         }
 
-        long seconds = source / SCALAR;
-        int nanoseconds = (int) (source % SCALAR);
-        return Instant.ofEpochSecond(seconds, nanoseconds);
+        return Instant.ofEpochSecond(0, source);
     }
 }

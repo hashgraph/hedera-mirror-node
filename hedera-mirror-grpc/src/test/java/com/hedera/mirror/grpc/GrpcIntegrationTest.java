@@ -45,6 +45,7 @@ public abstract class GrpcIntegrationTest {
         private static PostgreSQLContainer postgresql;
 
         static {
+            // Lower timeouts from default to not slow down tests as much if not using Docker
             System.setProperty("testcontainers.environmentprovider.timeout", "1");
             System.setProperty("testcontainers.npipesocketprovider.timeout", "1");
             System.setProperty("testcontainers.unixsocketprovider.timeout", "1");

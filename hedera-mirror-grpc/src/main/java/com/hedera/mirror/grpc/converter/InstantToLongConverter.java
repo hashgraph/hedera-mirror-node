@@ -30,13 +30,13 @@ import org.springframework.data.convert.WritingConverter;
 public class InstantToLongConverter implements Converter<Instant, Long> {
 
     // Reserve 9 of the least significant digits for nanoseconds
-    private static final long SCALAR = 1_000_000_000L;
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
     @Override
     public Long convert(Instant instant) {
         if (instant == null) {
             return null;
         }
-        return Math.addExact(Math.multiplyExact(instant.getEpochSecond(), SCALAR), instant.getNano());
+        return Math.addExact(Math.multiplyExact(instant.getEpochSecond(), NANOS_PER_SECOND), instant.getNano());
     }
 }
