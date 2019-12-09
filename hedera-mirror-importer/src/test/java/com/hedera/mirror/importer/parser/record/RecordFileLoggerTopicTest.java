@@ -26,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 
+import com.google.protobuf.StringValue;
+
 import com.hedera.mirror.importer.TestUtils;
 
 import com.hedera.mirror.importer.domain.Entities;
@@ -78,18 +80,21 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.65537, 10, 20, admin-key, submit-key, 30, 111222333, SUCCESS",
-            "0.0.2147483647, 9223372036854775807, 2147483647, null, null, 9223372036854775807, 111222444, SUCCESS",
-            "0.0.1, -9223372036854775808, -2147483648, empty, empty, -9223372036854775807, 111222555, SUCCESS",
-            "0.0.55, 10, 20, admin-key, submit-key, 30, 111222666, INVALID_TOPIC_ID"
+            "0.0.65537, 10, 20, admin-key, submit-key, 30, 111222333, empty, SUCCESS",
+            "0.0.2147483647, 9223372036854775807, 2147483647, null, null, 9223372036854775807, 111222444, memo, " +
+                    "SUCCESS",
+            "0.0.1, -9223372036854775808, -2147483648, empty, empty, -9223372036854775808, 111222555, memo, SUCCESS",
+            "0.0.55, 10, 20, admin-key, submit-key, 30, 111222666, memo, INVALID_TOPIC_ID"
     })
     void createTopicTest(String topicId, long expirationTimeSeconds, int expirationTimeNanos, String adminKey,
-                         String submitKey, long validStartTime, long consensusTimestamp, String responseCode) throws Exception {
+                         String submitKey, long validStartTime, long consensusTimestamp, String memo,
+                         String responseCode) throws Exception {
         var tid = TestUtils.toTopicId(topicId);
         var ak = TestUtils.toKey(adminKey);
         byte[] expectedAdminKey = null;
         var sk = TestUtils.toKey(submitKey);
         byte[] expectedSubmitKey = null;
+        memo = TestUtils.toStringWithNullOrEmpty(memo);
         var rc = ResponseCodeEnum.valueOf(responseCode);
 
         var innerBody = ConsensusCreateTopicTransactionBody.newBuilder()
@@ -103,6 +108,7 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
             innerBody.setSubmitKey(sk);
             expectedSubmitKey = sk.toByteArray();
         }
+        innerBody.setMemo(memo);
         var body = createTransactionBody().setConsensusCreateTopic(innerBody).build();
         var transaction = com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
                 .build();
@@ -141,6 +147,7 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
                     .returns(expectedSubmitKey, from(Entities::getSubmitKey))
                     .returns(validStartTime, from(Entities::getTopicValidStartTime))
                     .returns(false, from(Entities::isDeleted))
+                    .returns(memo, from(Entities::getMemo))
                     .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
         } else {
             Assertions.assertFalse(entityRepository
@@ -150,21 +157,23 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.1300, 10, 20, admin-key, submit-key, 30, 11, 21, updated-admin-key, updated-submit-key, 31, 888, " +
-                    "SUCCESS",
-            "0.0.1301, 10, 20, admin-key, submit-key, 30, 0, 0, null, null, 0, 889, SUCCESS",
-            "0.0.1302, 10, 20, null, null, 30, 0, 0, empty, empty, 0, 890, SUCCESS",
-            "0.0.1303, 10, 20, null, empty, 30, 0, 21, empty, null, 0, 891, SUCCESS",
-            "0.0.1304, 10, 20, empty, null, 30, 11, 0, empty, null, 0, 892, SUCCESS",
-            "0.0.1300, 10, 20, admin-key, submit-key, 30, 11, 21, updated-admin-key, updated-submit-key, 31, 893, " +
-                    "INVALID_TOPIC_ID"
+            "0.0.1300, 10, 20, admin-key, submit-key, 30, memo, 11, 21, updated-admin-key, updated-submit-key, 31, " +
+                    "888, updated-memo, SUCCESS",
+            "0.0.1301, 10, 20, admin-key, submit-key, 30, empty, 0, 0, null, null, 0, 889, updated-memo, SUCCESS",
+            "0.0.1302, 10, 20, null, null, 30, empty, 0, 0, empty, empty, 0, 890, null, SUCCESS",
+            "0.0.1303, 10, 20, null, empty, 30, memo, 0, 21, empty, null, 0, 891, null, SUCCESS",
+            "0.0.1304, 10, 20, empty, null, 30, memo, 11, 0, empty, null, 0, 892, empty, SUCCESS",
+            "0.0.1300, 10, 20, admin-key, submit-key, 30, memo, 11, 21, updated-admin-key, updated-submit-key, 31, " +
+                    "893, updated-memo, INVALID_TOPIC_ID"
     })
     void updateTopicTest(String topicId, long expirationTimeSeconds, long expirationTimeNanos, String adminKey,
-                         String submitKey, long validStartTime, long updatedExpirationTimeSeconds,
+                         String submitKey, long validStartTime, String memo, long updatedExpirationTimeSeconds,
                          long updatedExpirationTimeNanos,
                          String updatedAdminKey, String updatedSubmitKey, long updatedValidStartTime,
-                         long consensusTimestamp, String responseCode) throws Exception {
+                         long consensusTimestamp, String updatedMemo, String responseCode) throws Exception {
         var tid = TestUtils.toTopicId(topicId);
+        memo = TestUtils.toStringWithNullOrEmpty(memo);
+        updatedMemo = TestUtils.toStringWithNullOrEmpty(updatedMemo);
 
         // Store topic to be updated.
         var topic = new Entities();
@@ -178,6 +187,7 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
         topic.setExpiryTimeSeconds(expirationTimeSeconds);
         topic.setExpiryTimeNanos(expirationTimeNanos);
         topic.setExpiryTimeNs(Utility.convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
+        topic.setMemo(memo);
         entityRepository.save(topic);
 
         var rc = ResponseCodeEnum.valueOf(responseCode);
@@ -194,6 +204,9 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
         if (updatedSk != null) {
             innerBody.setSubmitKey(updatedSk);
         }
+        if (updatedMemo != null) {
+            innerBody.setMemo(StringValue.of(updatedMemo));
+        }
         var body = createTransactionBody().setConsensusUpdateTopic(innerBody).build();
         var transaction = com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
                 .build();
@@ -207,23 +220,24 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
         RecordFileLogger.storeRecord(transaction, transactionRecord);
         RecordFileLogger.completeFile("", "");
 
-        // When 0s or nulls are passed, those fields are expected to remain unmodified.
-        var expectedExpirationTimeSeconds = updatedExpirationTimeSeconds;
-        var expectedExpirationTimeNanos = updatedExpirationTimeNanos;
-        var expectedAdminKey = (null == updatedAk) ? TestUtils.toByteArray(adminKey) : updatedAk.toByteArray();
-        var expectedSubmitKey = (null == updatedSk) ? TestUtils.toByteArray(submitKey) : updatedSk.toByteArray();
-        var expectedValidStartTime = (0 == updatedValidStartTime) ? validStartTime : updatedValidStartTime;
-        if ((0 == updatedExpirationTimeSeconds) && (0 == updatedExpirationTimeNanos)) {
-            expectedExpirationTimeSeconds = expirationTimeSeconds;
-            expectedExpirationTimeNanos = expirationTimeNanos;
-        }
-        var expectedExpirationTime = Utility
-                .convertToNanosMax(expectedExpirationTimeSeconds, expectedExpirationTimeNanos);
-
         assertThat(transactionRepository.findById(consensusTimestamp).get())
                 .returns(rc.getNumber(), from(Transaction::getResult))
                 .returns(TRANSACTION_MEMO.getBytes(), from(Transaction::getMemo));
         if (ResponseCodeEnum.SUCCESS == rc) {
+            // When 0s or nulls are passed, those fields are expected to remain unmodified.
+            var expectedExpirationTimeSeconds = updatedExpirationTimeSeconds;
+            var expectedExpirationTimeNanos = updatedExpirationTimeNanos;
+            var expectedAdminKey = (null == updatedAk) ? TestUtils.toByteArray(adminKey) : updatedAk.toByteArray();
+            var expectedSubmitKey = (null == updatedSk) ? TestUtils.toByteArray(submitKey) : updatedSk.toByteArray();
+            var expectedValidStartTime = (0 == updatedValidStartTime) ? validStartTime : updatedValidStartTime;
+            if ((0 == updatedExpirationTimeSeconds) && (0 == updatedExpirationTimeNanos)) {
+                expectedExpirationTimeSeconds = expirationTimeSeconds;
+                expectedExpirationTimeNanos = expirationTimeNanos;
+            }
+            var expectedExpirationTime = Utility
+                    .convertToNanosMax(expectedExpirationTimeSeconds, expectedExpirationTimeNanos);
+            var expectedMemo = (null == updatedMemo) ? memo : updatedMemo;
+
             assertThat(entityRepository.findByPrimaryKey(tid.getShardNum(), tid.getRealmNum(), tid.getTopicNum()).get())
                     .returns(tid.getTopicNum(), from(Entities::getEntityNum))
                     .returns(tid.getRealmNum(), from(Entities::getEntityRealm))
@@ -234,6 +248,7 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
                     .returns(expectedSubmitKey, from(Entities::getSubmitKey))
                     .returns(expectedValidStartTime, from(Entities::getTopicValidStartTime))
                     .returns(false, from(Entities::isDeleted))
+                    .returns(expectedMemo, from(Entities::getMemo))
                     .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
         } else {
             assertThat(entityRepository.findByPrimaryKey(tid.getShardNum(), tid.getRealmNum(), tid.getTopicNum()).get())
@@ -251,6 +266,7 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
                             .toByteArray(submitKey), from(Entities::getSubmitKey))
                     .returns(validStartTime, from(Entities::getTopicValidStartTime))
                     .returns(false, from(Entities::isDeleted))
+                    .returns(memo, from(Entities::getMemo))
                     .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
         }
     }

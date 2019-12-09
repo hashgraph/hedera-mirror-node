@@ -14,7 +14,8 @@ CREATE FUNCTION f_entity_create(_shard t_entities.entity_shard%TYPE
                                , _key t_entities.key%type
                                , _proxy_acc_id t_entities.fk_prox_acc_id%TYPE
                                , _submit_key t_entities.submit_key%type
-                               , _topic_valid_start_time t_entities.topic_valid_start_time%type) RETURNS BIGINT AS
+                               , _topic_valid_start_time t_entities.topic_valid_start_time%type
+                               , _memo t_entities.memo%type) RETURNS BIGINT AS
 $$
 DECLARE
     entity_id BIGINT;
@@ -40,7 +41,8 @@ BEGIN
                                , key
                                , fk_prox_acc_id
                                , submit_key
-                               , topic_valid_start_time)
+                               , topic_valid_start_time
+                               , memo)
         SELECT _shard
              , _realm
              , _num
@@ -53,7 +55,8 @@ BEGIN
              , _key
              , CASE WHEN _proxy_acc_id = 0 THEN NULL ELSE _proxy_acc_id END
              , _submit_key
-             , case when _topic_valid_start_time = 0 then null else _topic_valid_start_time end
+             , CASE WHEN _topic_valid_start_time = 0 THEN NULL ELSE _topic_valid_start_time END
+             , _memo
 
         RETURNING id INTO entity_id;
     END IF;

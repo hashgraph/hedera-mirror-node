@@ -21,15 +21,17 @@ package com.hedera.mirror.importer;
  */
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.importer.util.Utility;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.time.Instant;
 
 public final class TestUtils {
-    final static long BILLION = 1000000000;
-
     /**
      * Convert a string input parameter to a byte array. String values of "null" result in null result, "empty" result
      * in empty byte array return.
@@ -44,6 +46,22 @@ public final class TestUtils {
             return new byte[0];
         }
         return val.getBytes();
+    }
+
+    /**
+     * Convert a string input parameter to a string where values of "null" result in null result, "empty" result in
+     * empty string returned.
+     *
+     * @param val
+     * @return
+     */
+    public static String toStringWithNullOrEmpty(String val) {
+        if (null == val || val.equalsIgnoreCase("null")) {
+            return null;
+        } else if (val.equalsIgnoreCase("empty")) {
+            return new String();
+        }
+        return val;
     }
 
     public static AccountID toAccountId(String accountId) {
@@ -76,8 +94,7 @@ public final class TestUtils {
     }
 
     public static Timestamp toTimestamp(long nanosecondsSinceEpoch) {
-        return Timestamp.newBuilder().setSeconds(nanosecondsSinceEpoch / BILLION)
-                .setNanos((int) (nanosecondsSinceEpoch % BILLION)).build();
+        return Utility.instantToTimestamp(Instant.ofEpochSecond(0, nanosecondsSinceEpoch));
     }
 
     public static Timestamp toTimestamp(long seconds, long nanoseconds) {

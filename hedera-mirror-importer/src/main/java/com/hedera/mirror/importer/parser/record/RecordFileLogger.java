@@ -294,7 +294,7 @@ public class RecordFileLogger {
 
                 entityId = entities
                         .createEntity(contractId, expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
-                                proxy_account_id);
+                                proxy_account_id, txMessage.getMemo());
             }
 
             initialBalance = body.getContractCreateInstance().getInitialBalance();
@@ -329,7 +329,7 @@ public class RecordFileLogger {
             if (doUpdateEntity) {
                 long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
                 entityId = entities.updateEntity(contractId, expiration_time_sec,
-                        expiration_time_nanos, auto_renew_period, key, proxy_account_id);
+                        expiration_time_nanos, auto_renew_period, key, proxy_account_id, txMessage.getMemo());
             } else {
                 entityId = entities.createOrGetEntity(contractId);
             }
@@ -587,7 +587,7 @@ public class RecordFileLogger {
         }
 
         return entities.createEntity(transactionRecord.getReceipt().getTopicID(), expirationTimeSec,
-                expirationTimeNanos, adminKey, submitKey, validStartTime);
+                expirationTimeNanos, adminKey, submitKey, validStartTime, transactionBody.getMemo());
     }
 
     /**
@@ -607,6 +607,7 @@ public class RecordFileLogger {
 
         var transactionBody = body.getConsensusUpdateTopic();
         if (!transactionBody.hasTopicID()) {
+            log.warn("Encountered a ConsensusUpdateTopic transaction without topic ID: {}", body);
             return 0;
         }
 
@@ -638,8 +639,9 @@ public class RecordFileLogger {
             validStartTime = Utility.convertToNanosMax(vst.getSeconds(), vst.getNanos());
         }
 
+        var memo = transactionBody.hasMemo() ? transactionBody.getMemo().getValue() : null;
         return entities.updateEntity(topicId, expirationTimeSec, expirationTimeNanos, adminKey,
-                submitKey, validStartTime);
+                submitKey, validStartTime, memo);
     }
 
     /**
@@ -659,6 +661,7 @@ public class RecordFileLogger {
 
         var transactionBody = body.getConsensusDeleteTopic();
         if (!transactionBody.hasTopicID()) {
+            log.warn("Encountered a ConsensusDeleteTopic transaction without topic ID: {}", body);
             return 0;
         }
 
@@ -671,11 +674,11 @@ public class RecordFileLogger {
     }
 
     /**
-     * Store ConsensusDeleteTopic transaction in the database.
+     * Store ConsensusSubmitMessage transaction in the database.
      *
      * @param body
      * @param transactionRecord
-     * @return Entity ID of the deleted topic, or 0 if no topic was deleted
+     * @return Entity ID of the topic, or 0 if no topic was deleted
      * @throws SQLException
      * @throws IllegalArgumentException
      */
@@ -687,6 +690,7 @@ public class RecordFileLogger {
 
         var transactionBody = body.getConsensusSubmitMessage();
         if (!transactionBody.hasTopicID()) {
+            log.warn("Encountered a ConsensusSubmitMessage transaction without topic ID: {}", body);
             return 0;
         }
 

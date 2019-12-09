@@ -53,21 +53,22 @@ public class EntitiesTest extends IntegrationTest {
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.65537, 10, 20, admin-key, submit-key, 30",
-            "0.0.2147483647, 9223372036854775807, 9223372036854775807, null, null, 9223372036854775807",
-            "0.0.1, -9223372036854775808, -9223372036854775808, empty, empty, -9223372036854775807"
+            "0.0.65537, 10, 20, admin-key, submit-key, 30, empty",
+            "0.0.2147483647, 9223372036854775807, 9223372036854775807, null, null, 9223372036854775807, memo",
+            "0.0.1, -9223372036854775808, -9223372036854775808, empty, empty, -9223372036854775808, memo"
     })
     void createTopicTest(String topicId, long expirationTimeSeconds, long expirationTimeNanos, String adminKey,
-                         String submitKey, long validStartTime) throws Exception {
+                         String submitKey, long validStartTime, String memo) throws Exception {
         long entityId;
         var ak = TestUtils.toByteArray(adminKey);
         var sk = TestUtils.toByteArray(submitKey);
+        memo = TestUtils.toStringWithNullOrEmpty(memo);
 
         var tid = TestUtils.toTopicId(topicId);
 
         try (var conn = dataSource.getConnection()) {
             var cut = new com.hedera.mirror.importer.parser.record.Entities(conn);
-            entityId = cut.createEntity(tid, expirationTimeSeconds, expirationTimeNanos, ak, sk, validStartTime);
+            entityId = cut.createEntity(tid, expirationTimeSeconds, expirationTimeNanos, ak, sk, validStartTime, memo);
         }
 
         assertThat(repo.findById(entityId).get())
@@ -82,6 +83,7 @@ public class EntitiesTest extends IntegrationTest {
                 .returns(sk, from(Entities::getSubmitKey))
                 .returns(validStartTime, from(Entities::getTopicValidStartTime))
                 .returns(false, from(Entities::isDeleted))
+                .returns(memo, from(Entities::getMemo))
                 .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
     }
 
@@ -90,7 +92,7 @@ public class EntitiesTest extends IntegrationTest {
         long entityId;
         try (var conn = dataSource.getConnection()) {
             var cut = new com.hedera.mirror.importer.parser.record.Entities(conn);
-            entityId = cut.createEntity(TestUtils.toTopicId("0.0.1"), 0, 0, null, null, 0);
+            entityId = cut.createEntity(TestUtils.toTopicId("0.0.1"), 0, 0, null, null, 0, null);
         }
         assertThat(repo.findById(entityId).get())
                 .returns(1L, from(Entities::getEntityNum))
@@ -101,6 +103,7 @@ public class EntitiesTest extends IntegrationTest {
                 .returns(null, from(Entities::getKey))
                 .returns(null, from(Entities::getSubmitKey))
                 .returns(null, from(Entities::getTopicValidStartTime))
+                .returns(null, from(Entities::getMemo))
                 .returns(false, from(Entities::isDeleted))
                 .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
     }
@@ -108,31 +111,34 @@ public class EntitiesTest extends IntegrationTest {
     // Using 0.0.-1 to indicate NOT to create the topic, just run the update.
     @ParameterizedTest
     @CsvSource({
-            "0.0.65537, 10, 20, admin-key, submit-key, 30, 11, 21, updated-admin-key, updated-submit-key, 31",
-            "0.0.1234, 10, 20, admin-key, submit-key, 30, 0, 0, null, null, 0",
-            "0.0.1235, 10, 20, null, null, 30, 0, 0, empty, empty, 0",
-            "0.0.1236, 10, 20, null, empty, 30, 0, 21, empty, null, 0",
-            "0.0.1237, 10, 20, empty, null, 30, 11, 0, empty, null, 0",
-            "0.0.-1, 0, 0, null, null, 30, 11, 21, updated-admin-key, updated-submit-key, 31"
+            "0.0.65537, 10, 20, admin-key, submit-key, 30, memo, 11, 21, updated-admin-key, updated-submit-key, 31, me",
+            "0.0.1234, 10, 20, admin-key, submit-key, 30, me, 0, 0, null, null, 0, memo",
+            "0.0.1235, 10, 20, null, null, 30, null, 0, 0, empty, empty, 0, null",
+            "0.0.1236, 10, 20, null, empty, 30, memo, 0, 21, empty, null, 0, null",
+            "0.0.1237, 10, 20, empty, null, 30, memo, 11, 0, empty, null, 0, empty",
+            "0.0.-1, 0, 0, null, null, 30, null, 11, 21, updated-admin-key, updated-submit-key, 31, null"
     })
     void updateTopicTest(String topicId, long expirationTimeSeconds, long expirationTimeNanos, String adminKey,
-                         String submitKey, long validStartTime, long updatedExpirationTimeSeconds,
+                         String submitKey, long validStartTime, String memo, long updatedExpirationTimeSeconds,
                          long updatedExpirationTimeNanos,
-                         String updatedAdminKey, String updatedSubmitKey, long updatedValidStartTime) throws Exception {
+                         String updatedAdminKey, String updatedSubmitKey, long updatedValidStartTime,
+                         String updatedMemo) throws Exception {
         long entityId;
         var ak = TestUtils.toByteArray(adminKey);
         var sk = TestUtils.toByteArray(submitKey);
         var updatedAk = TestUtils.toByteArray(updatedAdminKey);
         var updatedSk = TestUtils.toByteArray(updatedSubmitKey);
         var tid = TestUtils.toTopicId(topicId);
+        memo = TestUtils.toStringWithNullOrEmpty(memo);
+        updatedMemo = TestUtils.toStringWithNullOrEmpty(updatedMemo);
 
         try (var conn = dataSource.getConnection()) {
             var cut = new com.hedera.mirror.importer.parser.record.Entities(conn);
             if (-1 != tid.getTopicNum()) {
-                cut.createEntity(tid, expirationTimeSeconds, expirationTimeNanos, ak, sk, validStartTime);
+                cut.createEntity(tid, expirationTimeSeconds, expirationTimeNanos, ak, sk, validStartTime, memo);
             }
             entityId = cut.updateEntity(tid, updatedExpirationTimeSeconds, updatedExpirationTimeNanos, updatedAk,
-                    updatedSk, updatedValidStartTime);
+                    updatedSk, updatedValidStartTime, updatedMemo);
         }
 
         // When 0s or nulls are passed, those fields are expected to remain unmodified.
@@ -145,6 +151,7 @@ public class EntitiesTest extends IntegrationTest {
             expectedExpirationTimeSeconds = expirationTimeSeconds;
             expectedExpirationTimeNanos = expirationTimeNanos;
         }
+        var expectedMemo = (null == updatedMemo) ? memo : updatedMemo;
 
         assertThat(repo.findById(entityId).get())
                 .returns(tid.getTopicNum(), from(Entities::getEntityNum))
@@ -158,6 +165,7 @@ public class EntitiesTest extends IntegrationTest {
                 .returns(expectedSubmitKey, from(Entities::getSubmitKey))
                 .returns(expectedValidStartTime, from(Entities::getTopicValidStartTime))
                 .returns(false, from(Entities::isDeleted))
+                .returns(expectedMemo, from(Entities::getMemo))
                 .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
     }
 
@@ -168,7 +176,7 @@ public class EntitiesTest extends IntegrationTest {
 
         try (var conn = dataSource.getConnection()) {
             var cut = new com.hedera.mirror.importer.parser.record.Entities(conn);
-            entityId = cut.createEntity(topicId, 0, 0, null, null, 0);
+            entityId = cut.createEntity(topicId, 0, 0, null, null, 0, null);
             cut.deleteEntity(topicId);
         }
 
