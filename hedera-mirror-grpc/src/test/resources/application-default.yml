@@ -13,6 +13,19 @@ hedera:
         password: mirror_node_pass
         username: mirror_node
 spring:
-  r2dbc:
-    initializationMode: ALWAYS
-    schema: "classpath:schema.sql"
+  datasource:
+    name: ${hedera.mirror.grpc.db.name}
+    password: ${hedera.mirror.grpc.db.password}
+    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}
+    username: ${hedera.mirror.grpc.db.username}
+  flyway:
+    connectRetries: 10
+    baselineOnMigrate: true
+    baselineVersion: 0
+    ignoreMissingMigrations: true
+    locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration"
+    placeholders:
+      api-password: mirror_api_pass
+      api-user: mirror_api
+      db-name: ${hedera.mirror.grpc.db.name}
+      db-user: ${hedera.mirror.grpc.db.username}

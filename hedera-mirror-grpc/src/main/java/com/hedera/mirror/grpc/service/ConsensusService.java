@@ -49,8 +49,8 @@ public class ConsensusService extends ReactorConsensusServiceGrpc.ConsensusServi
         return request.map(this::toFilter)
                 .flatMapMany(topicMessageService::subscribeTopic)
                 .map(this::toResponse)
-                .onErrorMap(ConstraintViolationException.class, t -> mapError(t, Status.INVALID_ARGUMENT))
-                .onErrorMap(t -> mapError(t, Status.INTERNAL));
+                .onErrorMap(ConstraintViolationException.class, t -> invalidRequest(t))
+                .onErrorMap(t -> unknownError(t));
     }
 
     private TopicMessageFilter toFilter(ConsensusTopicQuery query) {
@@ -84,12 +84,17 @@ public class ConsensusService extends ReactorConsensusServiceGrpc.ConsensusServi
                 .build();
     }
 
-    private Throwable mapError(Throwable throwable, Status status) {
-        if (throwable instanceof StatusRuntimeException) {
-            return throwable;
+    private Throwable invalidRequest(Throwable t) {
+        log.warn("Invalid ConsensusTopicQuery: {}", t.getMessage());
+        return Status.INVALID_ARGUMENT.augmentDescription(t.getMessage()).asRuntimeException();
+    }
+
+    private Throwable unknownError(Throwable t) {
+        if (t instanceof StatusRuntimeException) {
+            return t;
         }
 
-        log.error("Error", throwable);
-        return status.augmentDescription(throwable.getMessage()).asRuntimeException();
+        log.error("Error", t);
+        return Status.INTERNAL.augmentDescription(t.getMessage()).asRuntimeException();
     }
 }

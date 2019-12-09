@@ -63,6 +63,7 @@ public abstract class GrpcIntegrationTest {
                         .of("hedera.mirror.grpc.db.name=" + postgresql.getDatabaseName())
                         .and("hedera.mirror.grpc.db.password=" + postgresql.getPassword())
                         .and("hedera.mirror.grpc.db.username=" + postgresql.getUsername())
+                        .and("spring.datasource.url=" + postgresql.getJdbcUrl())
                         .and("spring.r2dbc.url=" + postgresql.getJdbcUrl()
                                 .replace("jdbc:", "r2dbc:"))
                         .applyTo(applicationContext);
