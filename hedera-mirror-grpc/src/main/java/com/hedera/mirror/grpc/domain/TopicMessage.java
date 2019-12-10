@@ -20,12 +20,8 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
-import java.time.Instant;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-
-import com.hedera.mirror.grpc.converter.LongToInstantDeserializer;
-
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,9 +29,10 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 import org.springframework.data.annotation.Id;
 
+import com.hedera.mirror.grpc.converter.LongToInstantDeserializer;
+
 @Builder
 @Value
-@JsonPOJOBuilder
 @AllArgsConstructor
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 public class TopicMessage {

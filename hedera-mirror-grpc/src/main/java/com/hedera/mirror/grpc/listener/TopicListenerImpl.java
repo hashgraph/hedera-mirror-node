@@ -21,21 +21,17 @@ package com.hedera.mirror.grpc.listener;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-
-import com.hedera.mirror.grpc.domain.TopicMessage;
-
-import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-
 import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.spi.ConnectionFactory;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
-import io.r2dbc.postgresql.api.Notification;
-import reactor.core.publisher.Mono;
+
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 @Component
 @Log4j2
@@ -47,7 +43,8 @@ public class TopicListenerImpl implements TopicListener {
 
     public TopicListenerImpl(ConnectionFactory connectionFactory) {
         ConnectionPool connectionPool = (ConnectionPool) connectionFactory;
-        PostgresqlConnectionFactory postgressqlConnectionFactory = (PostgresqlConnectionFactory) connectionPool.unwrap();
+        PostgresqlConnectionFactory postgressqlConnectionFactory = (PostgresqlConnectionFactory) connectionPool
+                .unwrap();
         topicMessages = postgressqlConnectionFactory.create().flatMapMany(it -> {
             return it.createStatement("LISTEN topic_message")
                     .execute()
@@ -56,8 +53,9 @@ public class TopicListenerImpl implements TopicListener {
         }).share();
     }
 
+    @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
-        return topicMessages.filterWhen(t -> asyncFilterMessage(t, filter));
+        return topicMessages.filter(t -> asyncFilterMessage(t, filter));
     }
 
     private TopicMessage toTopicMessage(Notification notification) {
@@ -65,33 +63,31 @@ public class TopicListenerImpl implements TopicListener {
         TopicMessage topicMessage = null;
         try {
             topicMessage = OBJECT_MAPPER.readValue(parameter, TopicMessage.class);
-            log.debug("Listener: {}", topicMessage.getSequenceNumber());
-        }
-        catch (Exception ex) {
-            log.error("OBJECT_MAPPER failed to parse TopicMessage type from string: {}", parameter, ex);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
         }
 
         return topicMessage;
     }
 
-    private Mono<Boolean> asyncFilterMessage(TopicMessage message, TopicMessageFilter filter) {
+    private boolean asyncFilterMessage(TopicMessage message, TopicMessageFilter filter) {
 
         if (message.getRealmNum() != filter.getRealmNum()) {
-            return Mono.just(false);
+            return false;
         }
 
         if (message.getTopicNum() != filter.getTopicNum()) {
-            return Mono.just(false);
+            return false;
         }
 
         if (filter.getStartTime().isBefore(message.getConsensusTimestamp())) {
-            return Mono.just(false);
+            return false;
         }
 
         if (filter.getEndTime() != null && filter.getEndTime().isBefore(message.getConsensusTimestamp())) {
-            return Mono.just(false);
+            return false;
         }
 
-        return Mono.just(true);
+        return true;
     }
 }

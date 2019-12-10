@@ -21,10 +21,6 @@ package com.hedera.mirror.grpc.service;
  */
 
 import javax.inject.Named;
-
-import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
-import com.hedera.mirror.grpc.listener.TopicListener;
-
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -33,13 +29,14 @@ import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import com.hedera.mirror.grpc.listener.TopicListener;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 
 @Named
 @Log4j2
 @RequiredArgsConstructor
 @Validated
-public class TopicMessageServiceImpl extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase implements TopicMessageService {
+public class TopicMessageServiceImpl implements TopicMessageService {
 
     private final TopicListener topicListener;
     private final TopicMessageRepository topicMessageRepository;
@@ -52,7 +49,7 @@ public class TopicMessageServiceImpl extends ReactorConsensusServiceGrpc.Consens
 
         // setup incoming messages flow
         Flux<TopicMessage> incomingMessages = topicListener.listen(filter)
-                .filter(t -> t.getConsensusTimestamp().toEpochMilli() > topicContext.getLastSequenceNumber());
+                .filter(t -> t.getSequenceNumber() > topicContext.getLastSequenceNumber());
 
         // collect historical messages
         Flux<TopicMessage> historicalMessages = topicMessageRepository.findByFilter(filter)
@@ -65,10 +62,12 @@ public class TopicMessageServiceImpl extends ReactorConsensusServiceGrpc.Consens
         // Compare the first sequence number of the notification and the last from the repository call.
         // If there's a gap then make a db call for topic messages of the given sequence number range
         // note items may not be in oder so maybe find the max of the db call and the min of the notifications
-        // this will have to be done lazily because you may not have a notification to use. Maybe use a doFirst() / doOnSubscribe
+        // this will have to be done lazily because you may not have a notification to use. Maybe use a doFirst() /
+        // doOnSubscribe
 
         log.info("Finished");
-        return Flux.concat(incomingMessages, historicalMessages);
+        return Flux.concat(incomingMessages, historicalMessages)
+                .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t);
     }
 
     @Data

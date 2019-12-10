@@ -24,31 +24,19 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-
-import com.hedera.mirror.grpc.GrpcIntegrationTest;
-
-import com.hedera.mirror.grpc.domain.DomainBuilder;
-import com.hedera.mirror.grpc.domain.TopicMessage;
-import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-
-import com.hedera.mirror.grpc.repository.TopicMessageRepository;
-
-import io.r2dbc.spi.ConnectionFactory;
-import javafx.util.Pair;
+import java.time.Duration;
+import java.time.Instant;
+import javax.annotation.Resource;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
-import javax.annotation.Resource;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.HashMap;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.hedera.mirror.grpc.GrpcIntegrationTest;
+import com.hedera.mirror.grpc.domain.DomainBuilder;
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 public class TopicListenerImplTest extends GrpcIntegrationTest {
 
@@ -61,12 +49,12 @@ public class TopicListenerImplTest extends GrpcIntegrationTest {
 
     @Resource
     private TopicListener topicListener;
-
-    @Resource
-    private ConnectionFactory connectionFactory;
-
-     @Resource
-    private TopicMessageRepository topicMessageRepository;
+//    private DatabaseClient databaseClient;
+//
+//    @PostConstruct
+//    void setup() {
+//        databaseClient.delete().from(TopicMessage.class).fetch().rowsUpdated().block();
+//    }
 
     @Test
     void verifyListenerReceivesMessages() {
@@ -75,17 +63,15 @@ public class TopicListenerImplTest extends GrpcIntegrationTest {
                 .build();
 
         Flux.interval(Duration.ofMillis(5), Schedulers.single()).flatMap(i -> {
-                    var message = domainBuilder.topicMessageAsync(t -> {});
+                    var message = domainBuilder.topicMessage(t -> {
+                    });
                     return message;
                 }
         )
-                .doOnNext(s -> System.out.println("*****Emitted a message from generator!!! : " + s))
                 .take(10)
-                .doOnSubscribe(s -> System.out.println("*****Generator Subscribed!!!"))
                 .subscribe();
 
-        Flux<TopicMessage> receivedTopicMessages = topicListener.listen(filter)
-                .doOnNext(s -> {System.out.println("*****Heard a message from notifier!!! : " + s);});
+        Flux<TopicMessage> receivedTopicMessages = topicListener.listen(filter);
 
         StepVerifier.create(receivedTopicMessages)
                 .expectNextCount(10)
@@ -101,16 +87,13 @@ public class TopicListenerImplTest extends GrpcIntegrationTest {
                 .build();
 
         Flux.interval(Duration.ofMillis(5), Schedulers.single()).flatMap(i -> {
-                    return domainBuilder.topicMessageAsync(t -> t.topicNum(i.intValue()));
+                    return domainBuilder.topicMessage(t -> t.topicNum(i.intValue()));
                 }
         )
-            .doOnNext(s -> System.out.println("*****Emitted a message from generator!!! : " + s))
-            .take(10)
-            .doOnSubscribe(s -> System.out.println("*****Generator Subscribed!!!"))
-            .subscribe();
+                .take(10)
+                .subscribe();
 
-        Flux<TopicMessage> receivedTopicMessages = topicListener.listen(filter)
-                .doOnNext(s -> {System.out.println("*****Heard a message from notifier!!! : " + s);});
+        Flux<TopicMessage> receivedTopicMessages = topicListener.listen(filter);
 
         StepVerifier.create(receivedTopicMessages)
                 .assertNext(topic -> Assertions.assertThat(topic.getTopicNum()).isEqualTo(2))
@@ -120,62 +103,42 @@ public class TopicListenerImplTest extends GrpcIntegrationTest {
 
     @Test
     void verifyListenerReceivesMultipleMessagesForSingleTopic() {
+        int desiredTopicNum = 2;
+        int topicNumFactor = 5; // use this to ensure sequence numbers match expected as they may come out of order
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .topicNum(2L)
+                .topicNum(desiredTopicNum)
                 .startTime(Instant.now())
                 .build();
 
-
-        Mono<TopicMessage> topicMessage1 = domainBuilder.topicMessageAsync(t -> t.topicNum(1).sequenceNumber(1));
-        Mono<TopicMessage> topicMessage2 = domainBuilder.topicMessageAsync(t -> t.topicNum(1).sequenceNumber(2));
-        Mono<TopicMessage> topicMessage3 = domainBuilder.topicMessageAsync(t -> t.topicNum(1).sequenceNumber(3));
-
-//        Flux.just(
-//                domainBuilder.topicMessageAsync(t -> t.topicNum(0).sequenceNumber(1)),
-//                domainBuilder.topicMessageAsync(t -> t.topicNum(0).sequenceNumber(1)),
-//                topicMessage1,
-//                topicMessage2,
-//                topicMessage3,
-//                domainBuilder.topicMessageAsync(t -> t.topicNum(2).sequenceNumber(1)))
-//            .delayElements(Duration.ofMillis(5), Schedulers.single())
-//            .doOnNext(s -> System.out.println("*****Emitted a message from generator!!! : " + s))
-//            .take(10)
-//            .doOnSubscribe(s -> System.out.println("*****Generator Subscribed!!!"))
-//            .subscribe();
-
-        var pair1 = new Pair<Integer, Integer>(1, 1);
-        var pair2 = new Pair<Integer, Integer>(1, 2);
-        var pair3 = new Pair<Integer, Integer>(1, 3);
-        HashMap<Integer, Pair<Integer, Integer>> messageMappings = new HashMap<>();
-        messageMappings.put(0, new Pair<Integer, Integer>(0, 1));
-        messageMappings.put(1, new Pair<Integer, Integer>(0, 2));
-        messageMappings.put(2, pair1);
-        messageMappings.put(3, pair2);
-        messageMappings.put(4, pair3);
-        messageMappings.put(5, new Pair<Integer, Integer>(2, 1));
-
+        int seqNum = 0;
         Flux.interval(Duration.ofMillis(5), Schedulers.single()).flatMap(i -> {
-                    var key = Math.toIntExact(i);
-                    System.out.println("*****Getting element : " + key);
-                    var pair = messageMappings.get(i);
-                    return domainBuilder.topicMessageAsync(t -> t.topicNum(pair.getKey()).sequenceNumber(pair.getValue()));
-                }
-        )
-                .doOnNext(s -> System.out.println("*****Emitted a message from generator!!! : " + s))
-                .take(messageMappings.size())
-                .doOnSubscribe(s -> System.out.println("*****Generator Subscribed!!!"))
+            return domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(i * 3));
+        })
+                .take(2)
                 .subscribe();
 
-        Flux<TopicMessage> receivedTopicMessages = topicListener.listen(filter)
-                .doOnNext(s -> {System.out.println("*****Heard a message from notifier!!! : " + s);});
+        Flux.interval(Duration.ofMillis(5), Schedulers.single()).flatMap(i -> {
+            return domainBuilder.topicMessage(t -> t.topicNum(desiredTopicNum).sequenceNumber(i * topicNumFactor));
+        })
+                .take(3)
+                .subscribe();
+
+        Flux.interval(Duration.ofMillis(5), Schedulers.single()).flatMap(i -> {
+            return domainBuilder.topicMessage(t -> t.topicNum(3).sequenceNumber(i * 7));
+        })
+                .take(2)
+                .subscribe();
+
+        Flux<TopicMessage> receivedTopicMessages = topicListener.listen(filter);
 
         StepVerifier.create(receivedTopicMessages)
-                .expectNextMatches(u -> u.getTopicNum() == pair1.getKey() && u.getSequenceNumber() == pair1.getValue())
-                .expectNextMatches(u -> u.getTopicNum() == pair2.getKey() && u.getSequenceNumber() == pair2.getValue())
-                .expectNextMatches(u -> u.getTopicNum() == pair3.getKey() && u.getSequenceNumber() == pair3.getValue())
-//                .expectNext(topicMessage1.block())
-//                .expectNext(topicMessage2.block())
-//                .expectNext(topicMessage3.block())
+                .expectNextCount(3)
+                .expectNextMatches(u -> u.getTopicNum() == desiredTopicNum && u
+                        .getSequenceNumber() % topicNumFactor == 0)
+                .expectNextMatches(u -> u.getTopicNum() == desiredTopicNum && u
+                        .getSequenceNumber() % topicNumFactor == 0)
+                .expectNextMatches(u -> u.getTopicNum() == desiredTopicNum && u
+                        .getSequenceNumber() % topicNumFactor == 0)
                 .thenCancel()
                 .verify();
     }

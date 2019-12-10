@@ -97,9 +97,9 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void historicalMessages() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage();
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)

@@ -35,7 +35,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DomainBuilder {
-
     private final Instant now = Instant.now();
     private final DatabaseClient databaseClient;
     private long sequenceNumber = 0L;
@@ -45,7 +44,7 @@ public class DomainBuilder {
         databaseClient.delete().from(TopicMessage.class).fetch().rowsUpdated().block();
     }
 
-    public TopicMessage topicMessage() {
+    public Mono<TopicMessage> topicMessage() {
         return topicMessage(t -> {
         });
     }
@@ -57,7 +56,7 @@ public class DomainBuilder {
      * @param customizer allows one to customize the TopicMessage before it is inserted
      * @return the inserted TopicMessage
      */
-    public TopicMessage topicMessage(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
+    public Mono<TopicMessage> topicMessage(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
         TopicMessage.TopicMessageBuilder builder = TopicMessage.builder()
                 .consensusTimestamp(now.plus(sequenceNumber, ChronoUnit.NANOS))
                 .realmNum(0)
@@ -65,30 +64,9 @@ public class DomainBuilder {
                 .runningHash(new byte[] {3, 4, 5})
                 .sequenceNumber(++sequenceNumber)
                 .topicNum(0);
-
         customizer.accept(builder);
         TopicMessage topicMessage = builder.build();
-        insert(topicMessage).block();
-        return topicMessage;
-    }
-
-    public Mono<TopicMessage> topicMessageAsync() {
-        return topicMessageAsync(t -> {
-        });
-    }
-
-    public Mono<TopicMessage> topicMessageAsync(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
-        TopicMessage.TopicMessageBuilder builder = TopicMessage.builder()
-                .consensusTimestamp(now.plus(sequenceNumber, ChronoUnit.NANOS))
-                .realmNum(0)
-                .message(new byte[] {0, 1, 2})
-                .runningHash(new byte[] {3, 4, 5})
-                .sequenceNumber(++sequenceNumber)
-                .topicNum(0);
-
-        customizer.accept(builder);
-        TopicMessage topicMessage = builder.build();
-        return insert(topicMessage).then(Mono.just(topicMessage));
+        return insert(topicMessage).thenReturn(topicMessage);
     }
 
     private <T> Mono<?> insert(T domainObject) {

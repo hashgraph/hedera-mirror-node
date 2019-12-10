@@ -78,9 +78,9 @@ public class ConsensusServiceTest extends GrpcIntegrationTest {
 
     @Test
     void subscribeTopicReactive() throws Exception {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage();
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setLimit(3L)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
@@ -97,9 +97,9 @@ public class ConsensusServiceTest extends GrpcIntegrationTest {
 
     @Test
     void subscribeTopicBlocking() throws Exception {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage();
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setLimit(3L)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
