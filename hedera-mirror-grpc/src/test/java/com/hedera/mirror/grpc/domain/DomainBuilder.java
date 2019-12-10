@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.r2dbc.core.DatabaseClient;
+import reactor.core.publisher.Mono;
 
 @Named
 @RequiredArgsConstructor
@@ -67,16 +68,34 @@ public class DomainBuilder {
 
         customizer.accept(builder);
         TopicMessage topicMessage = builder.build();
-        insert(topicMessage);
+        insert(topicMessage).block();
         return topicMessage;
     }
 
-    private <T> void insert(T domainObject) {
-        databaseClient.insert()
+    public Mono<TopicMessage> topicMessageAsync() {
+        return topicMessageAsync(t -> {
+        });
+    }
+
+    public Mono<TopicMessage> topicMessageAsync(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
+        TopicMessage.TopicMessageBuilder builder = TopicMessage.builder()
+                .consensusTimestamp(now.plus(sequenceNumber, ChronoUnit.NANOS))
+                .realmNum(0)
+                .message(new byte[] {0, 1, 2})
+                .runningHash(new byte[] {3, 4, 5})
+                .sequenceNumber(++sequenceNumber)
+                .topicNum(0);
+
+        customizer.accept(builder);
+        TopicMessage topicMessage = builder.build();
+        return insert(topicMessage).then(Mono.just(topicMessage));
+    }
+
+    private <T> Mono<?> insert(T domainObject) {
+        return databaseClient.insert()
                 .into((Class<T>) domainObject.getClass())
                 .using(domainObject)
                 .fetch()
-                .first()
-                .block();
+                .first();
     }
 }

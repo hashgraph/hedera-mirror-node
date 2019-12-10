@@ -21,15 +21,27 @@ package com.hedera.mirror.grpc.domain;
  */
 
 import java.time.Instant;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+
+import com.hedera.mirror.grpc.converter.LongToInstantDeserializer;
+
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Value;
 import org.springframework.data.annotation.Id;
 
 @Builder
 @Value
+@JsonPOJOBuilder
+@AllArgsConstructor
+@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 public class TopicMessage {
 
     @Id
+    @JsonDeserialize(using = LongToInstantDeserializer.class)
     private Instant consensusTimestamp;
 
     private byte[] message;
