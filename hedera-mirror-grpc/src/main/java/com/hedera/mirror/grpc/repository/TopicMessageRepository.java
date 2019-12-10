@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.grpc.repository;
 
 /*-
  * ‌
@@ -20,24 +20,11 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import lombok.Data;
+import java.time.Instant;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
-@Data
-@Entity
-public class TopicMessage {
+import com.hedera.mirror.grpc.domain.TopicMessage;
 
-    @Id
-    private long consensusTimestamp;
-
-    private byte[] message;
-
-    private int realmNum;
-
-    private byte[] runningHash;
-
-    private long sequenceNumber;
-
-    private int topicNum;
+public interface TopicMessageRepository extends ReactiveCrudRepository<TopicMessage, Instant>,
+        TopicMessageRepositoryCustom {
 }

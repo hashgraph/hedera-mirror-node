@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.grpc.converter;
 
 /*-
  * ‌
@@ -20,24 +20,21 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import lombok.Data;
+import java.time.Instant;
+import javax.inject.Named;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.convert.ReadingConverter;
 
-@Data
-@Entity
-public class TopicMessage {
+@Named
+@ReadingConverter
+public class LongToInstantConverter implements Converter<Long, Instant> {
 
-    @Id
-    private long consensusTimestamp;
+    @Override
+    public Instant convert(Long source) {
+        if (source == null) {
+            return null;
+        }
 
-    private byte[] message;
-
-    private int realmNum;
-
-    private byte[] runningHash;
-
-    private long sequenceNumber;
-
-    private int topicNum;
+        return Instant.ofEpochSecond(0, source);
+    }
 }

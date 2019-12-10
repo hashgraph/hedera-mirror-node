@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.grpc.validation;
 
 /*-
  * ‌
@@ -20,24 +20,20 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import lombok.Data;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.validation.Constraint;
+import javax.validation.Payload;
 
-@Data
-@Entity
-public class TopicMessage {
+@Constraint(validatedBy = EndTimeValidator.class)
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface EndTime {
+    String message() default "End time must be after start time";
 
-    @Id
-    private long consensusTimestamp;
+    Class<?>[] groups() default {};
 
-    private byte[] message;
-
-    private int realmNum;
-
-    private byte[] runningHash;
-
-    private long sequenceNumber;
-
-    private int topicNum;
+    Class<? extends Payload>[] payload() default {};
 }

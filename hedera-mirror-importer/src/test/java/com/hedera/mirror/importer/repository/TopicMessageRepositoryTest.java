@@ -20,54 +20,31 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.math.BigDecimal;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import java.sql.Connection;
 import java.sql.Statement;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
-
-import lombok.extern.log4j.Log4j2;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
 import org.springframework.test.context.transaction.TestTransaction;
 
-import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
-import com.hedera.mirror.importer.domain.Transaction;
 
-@Log4j2
 public class TopicMessageRepositoryTest extends AbstractRepositoryTest {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+
     @Resource
     protected TopicMessageRepository topicMessageRepository;
+
     @Resource
     private DataSource dataSource;
-
-    @Test
-    void insert() {
-
-        RecordFile recordfile = insertRecordFile();
-        Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CONTRACTCALL");
-
-        TopicMessage topicMessageResult = new TopicMessage();
-        topicMessageResult.setConsensusTimestamp(transaction.getConsensusNs());
-        topicMessageResult.setRealmNum(1L);
-        topicMessageResult.setTopicNum(2L);
-        topicMessageResult.setMessage("TopicMessage".getBytes());
-        topicMessageResult.setRunningHash("RunningHash".getBytes());
-        topicMessageResult.setSequenceNumber(99L);
-        topicMessageResult = topicMessageRepository.save(topicMessageResult);
-
-        Assertions.assertThat(topicMessageRepository.findById(transaction.getConsensusNs()).get())
-                .isNotNull()
-                .isEqualTo(topicMessageResult);
-    }
 
     @Test
     void triggerCausesNotification() throws Exception {
@@ -81,7 +58,7 @@ public class TopicMessageRepositoryTest extends AbstractRepositoryTest {
 
             // verify no notifications present yet
             PGNotification[] notifications = pgConn.getNotifications();
-            assertThat(notifications == null || notifications.length == 0).isTrue();
+            assertThat(notifications).isNullOrEmpty();
 
             // verify notification can be picked up
             listenStatement.execute("NOTIFY topic_message");
@@ -89,49 +66,35 @@ public class TopicMessageRepositoryTest extends AbstractRepositoryTest {
             assertThat(notifications).isNotNull().hasSize(1);
 
             // insert new hcs topic message
-            long refConsensusTimeStamp = 1568491241176959000L;
-
-            TopicMessage topicMessageResult = new TopicMessage();
-            topicMessageResult.setConsensusTimestamp(1568491241176959000L);
-            topicMessageResult.setRealmNum(1L);
-            topicMessageResult.setTopicNum(7L);
-            topicMessageResult.setMessage("Verify hcs message triggers notification out".getBytes());
-            topicMessageResult.setRunningHash(new byte[] {(byte) 0x4D});
-            topicMessageResult.setSequenceNumber(3L);
+            TopicMessage topicMessage = new TopicMessage();
+            topicMessage.setConsensusTimestamp(1568491241176959000L);
+            topicMessage.setRealmNum(1);
+            topicMessage.setTopicNum(7);
+            topicMessage.setMessage("Verify hcs message triggers notification out".getBytes());
+            topicMessage.setRunningHash(new byte[] {(byte) 0x4D});
+            topicMessage.setSequenceNumber(3L);
 
             // the @Transactional annotation on AbstractRepositoryTest means the session isn't auto flushed per command
             // to ensure that db is actually updated we make use of the TestTransaction class to ensure the
             // topicMessageRepository.save() is committed
             TestTransaction.flagForCommit();
-            topicMessageResult = topicMessageRepository.save(topicMessageResult);
+            topicMessage = topicMessageRepository.save(topicMessage);
             TestTransaction.end();
 
             // verify repository db was updated
-            Assertions.assertThat(topicMessageRepository.findById(refConsensusTimeStamp).get())
-                    .isNotNull()
-                    .isEqualTo(topicMessageResult);
+            assertThat(topicMessageRepository.findById(topicMessage.getConsensusTimestamp()))
+                    .get()
+                    .isEqualTo(topicMessage);
 
             // check for new notifications. Timeout after 5 secs
             notifications = pgConn.getNotifications(5000);
-            assertThat(notifications).isNotNull();
-            assertThat(notifications.length).isEqualTo(1);
+            assertThat(notifications).isNotNull()
+                    .hasSize(1)
+                    .extracting("name")
+                    .containsExactly("topic_message");
 
-            String notificationName = notifications[0].getName();
-            assertThat(notificationName).isEqualTo("topic_message");
-
-            String hcsMessage = notifications[0].getParameter();
-            assertThatJson(hcsMessage).isObject()
-                    .containsEntry("consensus_timestamp", BigDecimal
-                            .valueOf((topicMessageResult.getConsensusTimestamp())))
-                    .containsEntry("realm_num", BigDecimal
-                            .valueOf((topicMessageResult.getRealmNum())))
-                    .containsEntry("topic_num", BigDecimal
-                            .valueOf((topicMessageResult.getTopicNum())))
-                    .containsEntry("message",
-                            "\\x56657269667920686373206d657373616765207472696767657273206e6f74696669636174696f6e206f7574")
-                    .containsEntry("running_hash", "\\x4d")
-                    .containsEntry("sequence_number", BigDecimal
-                            .valueOf((topicMessageResult.getSequenceNumber())));
+            String notificationMessage = notifications[0].getParameter();
+            assertThat(OBJECT_MAPPER.readValue(notificationMessage, TopicMessage.class)).isEqualTo(topicMessage);
         }
     }
 }

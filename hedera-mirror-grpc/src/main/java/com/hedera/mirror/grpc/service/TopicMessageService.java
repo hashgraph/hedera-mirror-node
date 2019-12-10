@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.grpc.service;
 
 /*-
  * ‌
@@ -20,24 +20,13 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import lombok.Data;
+import javax.validation.Valid;
+import reactor.core.publisher.Flux;
 
-@Data
-@Entity
-public class TopicMessage {
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
-    @Id
-    private long consensusTimestamp;
+public interface TopicMessageService {
 
-    private byte[] message;
-
-    private int realmNum;
-
-    private byte[] runningHash;
-
-    private long sequenceNumber;
-
-    private int topicNum;
+    Flux<TopicMessage> subscribeTopic(@Valid TopicMessageFilter filter);
 }

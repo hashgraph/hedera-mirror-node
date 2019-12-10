@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.grpc.domain;
 
 /*-
  * ‌
@@ -20,24 +20,37 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import lombok.Data;
+import java.time.Instant;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import lombok.Builder;
+import lombok.Value;
+import org.springframework.validation.annotation.Validated;
 
-@Data
-@Entity
-public class TopicMessage {
+import com.hedera.mirror.grpc.validation.EndTime;
 
-    @Id
-    private long consensusTimestamp;
+@Builder
+@EndTime
+@Validated
+@Value
+public class TopicMessageFilter {
 
-    private byte[] message;
+    private Instant endTime;
 
-    private int realmNum;
+    @Min(0)
+    private long limit;
 
-    private byte[] runningHash;
+    @Min(0)
+    private long realmNum;
 
-    private long sequenceNumber;
+    @NotNull
+    @Builder.Default
+    private Instant startTime = Instant.now();
 
-    private int topicNum;
+    @Min(0)
+    private long topicNum;
+
+    public boolean hasLimit() {
+        return limit > 0;
+    }
 }

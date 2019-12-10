@@ -51,12 +51,14 @@
     </parent>
 
     <properties>
+        <disruptor.version>3.4.2</disruptor.version> <!-- Used for asynchronous logging -->
         <docker.repository>docker.pkg.github.com/hashgraph/hedera-mirror-node</docker.repository>
         <grpc.version>1.25.0</grpc.version>
         <hedera-protobuf.version>hcs-11c0d9176b-1</hedera-protobuf.version>
         <jacoco.version>0.8.5</jacoco.version>
         <java.version>11</java.version>
         <jib.version>1.8.0</jib.version>
+        <testcontainers.version>1.12.1</testcontainers.version>
     </properties>
 
     <scm>

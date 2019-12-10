@@ -25,19 +25,7 @@ import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-
 import com.google.protobuf.StringValue;
-
-import com.hedera.mirror.importer.KeyConverter;
-import com.hedera.mirror.importer.TestUtils;
-
-import com.hedera.mirror.importer.TopicIdConverter;
-import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.TopicMessage;
-import com.hedera.mirror.importer.domain.Transaction;
-
-import com.hedera.mirror.importer.util.Utility;
-
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -57,6 +45,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.test.context.jdbc.Sql;
+
+import com.hedera.mirror.importer.KeyConverter;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.TopicIdConverter;
+import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.util.Utility;
 
 // Class manually commits so have to manually cleanup tables
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
@@ -546,8 +542,8 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
                                             long consensusTimestamp) {
         var topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusTimestamp);
-        topicMessage.setRealmNum(topicId.getRealmNum());
-        topicMessage.setTopicNum(topicId.getTopicNum());
+        topicMessage.setRealmNum((int) topicId.getRealmNum());
+        topicMessage.setTopicNum((int) topicId.getTopicNum());
         topicMessage.setMessage(message.getBytes());
         topicMessage.setSequenceNumber(sequenceNumber);
         topicMessage.setRunningHash(runningHash.getBytes());

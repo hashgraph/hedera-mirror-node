@@ -20,10 +20,10 @@ package com.hedera.mirror.grpc.service;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import javax.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.server.service.GrpcService;
@@ -33,39 +33,68 @@ import reactor.core.publisher.Mono;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import com.hedera.mirror.grpc.util.ProtoUtil;
 
 @GrpcService
 @Log4j2
 @RequiredArgsConstructor
 public class ConsensusService extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
 
+    private final TopicMessageService topicMessageService;
+
     @Override
     public Flux<ConsensusTopicResponse> subscribeTopic(Mono<ConsensusTopicQuery> request) {
-        long limit = request.block().getLimit();
-        if (limit < 0) {
-            throw Status.INVALID_ARGUMENT.augmentDescription("Cannot be negative").asRuntimeException();
-        }
-
-        return Flux.<ConsensusTopicResponse, Long>generate(() -> 1L, (state, sink) -> {
-            if (state <= limit || limit == 0) {
-                sink.next(response(state));
-            } else {
-                sink.complete();
-            }
-            return state + 1;
-        });
+        return request.map(this::toFilter)
+                .flatMapMany(topicMessageService::subscribeTopic)
+                .map(this::toResponse)
+                .onErrorMap(ConstraintViolationException.class, t -> invalidRequest(t))
+                .onErrorMap(t -> unknownError(t));
     }
 
-    private ConsensusTopicResponse response(long sequenceNumber) {
-        try {
-            return ConsensusTopicResponse.newBuilder()
-                    .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(sequenceNumber).build())
-                    .setMessage(ByteString.copyFrom("Message #" + sequenceNumber, "UTF-8"))
-                    .setSequenceNumber(sequenceNumber)
-                    .setRunningHash(ByteString.copyFrom(Longs.toByteArray(sequenceNumber)))
-                    .build();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    private TopicMessageFilter toFilter(ConsensusTopicQuery query) {
+        if (!query.hasTopicID()) {
+            log.warn("Missing required topicID");
+            throw Status.INVALID_ARGUMENT.augmentDescription("Missing required topicID").asRuntimeException();
         }
+
+        TopicMessageFilter.TopicMessageFilterBuilder builder = TopicMessageFilter.builder()
+                .limit(query.getLimit())
+                .realmNum(query.getTopicID().getRealmNum())
+                .topicNum(query.getTopicID().getTopicNum());
+
+        if (query.hasConsensusStartTime()) {
+            builder.startTime(ProtoUtil.fromTimestamp(query.getConsensusStartTime()));
+        }
+
+        if (query.hasConsensusEndTime()) {
+            builder.endTime(ProtoUtil.fromTimestamp(query.getConsensusEndTime()));
+        }
+
+        return builder.build();
+    }
+
+    private ConsensusTopicResponse toResponse(TopicMessage topicMessage) {
+        return ConsensusTopicResponse.newBuilder()
+                .setConsensusTimestamp(ProtoUtil.toTimestamp(topicMessage.getConsensusTimestamp()))
+                .setMessage(ByteString.copyFrom(topicMessage.getMessage()))
+                .setSequenceNumber(topicMessage.getSequenceNumber())
+                .setRunningHash(ByteString.copyFrom(topicMessage.getRunningHash()))
+                .build();
+    }
+
+    private Throwable invalidRequest(Throwable t) {
+        log.warn("Invalid ConsensusTopicQuery: {}", t.getMessage());
+        return Status.INVALID_ARGUMENT.augmentDescription(t.getMessage()).asRuntimeException();
+    }
+
+    private Throwable unknownError(Throwable t) {
+        if (t instanceof StatusRuntimeException) {
+            return t;
+        }
+
+        log.error("Error", t);
+        return Status.INTERNAL.augmentDescription(t.getMessage()).asRuntimeException();
     }
 }
