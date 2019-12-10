@@ -63,7 +63,7 @@ values (158, 'UNAUTHORIZED');
 insert into t_transaction_results (proto_id, result)
 values (159, 'INVALID_TOPIC_MESSAGE');
 
--- Define trigger function
+-- Define trigger function. Base64 encoding is required since JSON doesn't support binary
 create or replace function topic_message_notifier()
     returns trigger
     language plpgsql
@@ -78,8 +78,8 @@ begin
                      select NEW.consensus_timestamp,
                             NEW.realm_num,
                             NEW.topic_num,
-                            NEW.message,
-                            NEW.running_hash,
+                            encode(NEW.message, 'base64'),
+                            encode(NEW.running_hash, 'base64'),
                             NEW.sequence_number
                  )
         select pg_notify(topicmsg, row_to_json(payload)::text)

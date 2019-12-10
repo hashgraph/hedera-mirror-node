@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.grpc.domain;
 
 /*-
  * ‌
@@ -20,16 +20,17 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import lombok.Data;
+import java.time.Instant;
+import lombok.Builder;
+import lombok.Value;
+import org.springframework.data.annotation.Id;
 
-@Data
-@Entity
+@Builder
+@Value
 public class TopicMessage {
 
     @Id
-    private long consensusTimestamp;
+    private Instant consensusTimestamp;
 
     private byte[] message;
 

@@ -1,28 +1,48 @@
 package com.hedera.mirror.grpc.service;
 
-import static org.assertj.core.api.Assertions.*;
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
 
-import com.google.common.primitives.Longs;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.protobuf.ByteString;
-
-import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
-
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TopicID;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-
-
+import javax.annotation.Resource;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
+import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
+import com.hedera.mirror.grpc.GrpcIntegrationTest;
+import com.hedera.mirror.grpc.domain.DomainBuilder;
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.util.ProtoUtil;
 
-@SpringBootTest
-public class ConsensusServiceTest {
+public class ConsensusServiceTest extends GrpcIntegrationTest {
 
     @GrpcClient("local")
     private ReactorConsensusServiceGrpc.ReactorConsensusServiceStub grpcConsensusService;
@@ -30,65 +50,83 @@ public class ConsensusServiceTest {
     @GrpcClient("local")
     private ConsensusServiceGrpc.ConsensusServiceBlockingStub blockingService;
 
-    @Test
-    void subscribeTopicReactive() throws Exception {
-        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder().setLimit(3L).build();
-        grpcConsensusService.subscribeTopic(Mono.just(query))
-                .as(StepVerifier::create)
-                .expectNext(response(1L))
-                .expectNext(response(2L))
-                .expectNext(response(3L))
-                .verifyComplete();
-    }
+    @Resource
+    private DomainBuilder domainBuilder;
 
     @Test
-    void subscribeTopicReactiveInfinite() throws Exception {
+    void missingTopicID() throws Exception {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder().build();
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectNext(response(1L))
-                .expectNext(response(2L))
-                .expectNext(response(3L))
-                .expectNext(response(4L))
-                .thenCancel()
+                .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "Missing required topicID"))
                 .verify();
     }
 
     @Test
-    void subscribeTopicReactiveInvalidLimit() throws Exception {
-        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder().setLimit(-1L).build();
+    void constraintViolationException() throws Exception {
+        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
+                .setTopicID(TopicID.newBuilder().build())
+                .setLimit(-1)
+                .build();
+
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectError(StatusRuntimeException.class);
+                .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "limit: must be greater " +
+                        "than or equal to 0"))
+                .verify();
+    }
+
+    @Test
+    void subscribeTopicReactive() throws Exception {
+        TopicMessage topicMessage1 = domainBuilder.topicMessage();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage();
+        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
+                .setLimit(3L)
+                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
+                .build();
+
+        grpcConsensusService.subscribeTopic(Mono.just(query))
+                .as(StepVerifier::create)
+                .expectNext(response(topicMessage1))
+                .expectNext(response(topicMessage2))
+                .expectNext(response(topicMessage3))
+                .verifyComplete();
     }
 
     @Test
     void subscribeTopicBlocking() throws Exception {
-        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder().setLimit(3L).build();
+        TopicMessage topicMessage1 = domainBuilder.topicMessage();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage();
+        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
+                .setLimit(3L)
+                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
+                .build();
+
         assertThat(blockingService.subscribeTopic(query))
                 .toIterable()
                 .hasSize(3)
-                .containsExactly(
-                        response(1L),
-                        response(2L),
-                        response(3L)
-                );
+                .containsSequence(response(topicMessage1), response(topicMessage2), response(topicMessage3));
     }
 
-    @Test
-    void subscribeTopicBlockingInvalidLimit() throws Exception {
-        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder().setLimit(-1L).build();
-        assertThatThrownBy(() -> blockingService.subscribeTopic(query).hasNext())
+    void assertException(Throwable t, Status.Code status, String message) {
+        assertThat(t).isNotNull()
                 .isInstanceOf(StatusRuntimeException.class)
-                .hasMessageContaining("Cannot be negative");
+                .hasMessageContaining(message);
+
+        StatusRuntimeException statusRuntimeException = (StatusRuntimeException) t;
+        assertThat(statusRuntimeException.getStatus().getCode()).isEqualTo(status);
     }
 
-    private ConsensusTopicResponse response(long sequenceNumber) throws Exception {
+    private ConsensusTopicResponse response(TopicMessage topicMessage) throws Exception {
         return ConsensusTopicResponse.newBuilder()
-                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(sequenceNumber).build())
-                .setMessage(ByteString.copyFrom("Message #" + sequenceNumber, "UTF-8"))
-                .setSequenceNumber(sequenceNumber)
-                .setRunningHash(ByteString.copyFrom(Longs.toByteArray(sequenceNumber)))
+                .setConsensusTimestamp(ProtoUtil.toTimestamp(topicMessage.getConsensusTimestamp()))
+                .setMessage(ByteString.copyFrom(topicMessage.getMessage()))
+                .setSequenceNumber(topicMessage.getSequenceNumber())
+                .setRunningHash(ByteString.copyFrom(topicMessage.getRunningHash()))
                 .build();
     }
 }
