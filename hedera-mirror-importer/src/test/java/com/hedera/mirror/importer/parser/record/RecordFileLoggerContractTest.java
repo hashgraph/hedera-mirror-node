@@ -135,6 +135,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
                         .getAutoRenewPeriod())
                 , () -> assertArrayEquals(contractCreateTransactionBody.getAdminKey().toByteArray(), dbContractEntity
                         .getKey())
+                , () -> assertEquals(contractCreateTransactionBody.getMemo(), dbContractEntity.getMemo())
                 , () -> assertAccount(contractCreateTransactionBody.getProxyAccountID(), dbProxyAccountId)
                 , () -> assertArrayEquals(contractCreateTransactionBody.getConstructorParameters()
                         .toByteArray(), dbContractResults.getFunctionParameters())
@@ -318,6 +319,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
                         .getAutoRenewPeriod())
                 , () -> assertArrayEquals(contractUpdateTransactionBody.getAdminKey().toByteArray(), dbContractEntity
                         .getKey())
+                , () -> assertEquals(contractUpdateTransactionBody.getMemo(), dbContractEntity.getMemo())
                 , () -> assertAccount(contractUpdateTransactionBody.getProxyAccountID(), dbProxyAccountId)
                 , () -> assertEquals(contractUpdateTransactionBody.getExpirationTime().getSeconds(), dbContractEntity
                         .getExpiryTimeSeconds())
