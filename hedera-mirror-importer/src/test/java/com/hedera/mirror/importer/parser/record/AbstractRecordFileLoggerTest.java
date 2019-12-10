@@ -24,6 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.importer.repository.TopicMessageRepository;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -77,6 +80,8 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     protected TransactionResultRepository transactionResultRepository;
     @Resource
     protected EntityTypeRepository entityTypeRepository;
+    @Resource
+    protected TopicMessageRepository topicMessageRepository;
 
     @Resource
     protected RecordParserProperties parserProperties;

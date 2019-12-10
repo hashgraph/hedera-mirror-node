@@ -48,6 +48,7 @@ Some of these messages may indicate an integration issue between Hedera services
 -   `ERRORS processing account balances file`
 -   `Application status code .* does not exist in the database`
 -   `Long overflow when converting Instant to nanos timestamp : *`
+-   `Encountered a Consensus.* transaction without topic ID`
 
 ## Messages that may not require escalation
 
