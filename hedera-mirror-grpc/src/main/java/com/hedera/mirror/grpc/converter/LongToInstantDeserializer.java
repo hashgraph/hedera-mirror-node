@@ -28,7 +28,9 @@ import java.io.IOException;
 import java.time.Instant;
 
 public class LongToInstantDeserializer extends StdDeserializer<Instant> {
+
     private static final long serialVersionUID = -8215882906184345545L;
+    private static final LongToInstantConverter longToInstantConverter = new LongToInstantConverter();
 
     public LongToInstantDeserializer() {
         super(Instant.class);
@@ -37,6 +39,6 @@ public class LongToInstantDeserializer extends StdDeserializer<Instant> {
     @Override
     public Instant deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException,
             JsonProcessingException {
-        return Instant.ofEpochSecond(0, jsonParser.getLongValue());
+        return longToInstantConverter.convert(jsonParser.getLongValue());
     }
 }

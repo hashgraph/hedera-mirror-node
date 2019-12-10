@@ -22,10 +22,7 @@ package com.hedera.mirror.grpc.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.Instant;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import lombok.Value;
 import org.springframework.data.annotation.Id;
 
@@ -33,8 +30,6 @@ import com.hedera.mirror.grpc.converter.LongToInstantDeserializer;
 
 @Builder
 @Value
-@AllArgsConstructor
-@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 public class TopicMessage {
 
     @Id

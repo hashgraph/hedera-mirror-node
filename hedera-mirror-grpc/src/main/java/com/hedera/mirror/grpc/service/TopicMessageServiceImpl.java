@@ -44,17 +44,18 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     @Override
     public Flux<TopicMessage> subscribeTopic(TopicMessageFilter filter) {
         log.info("Subscribing to topic: {}", filter);
-
         TopicContext topicContext = new TopicContext();
 
         // setup incoming messages flow
         Flux<TopicMessage> incomingMessages = topicListener.listen(filter)
-                .filter(t -> t.getSequenceNumber() > topicContext.getLastSequenceNumber());
+                .filter(t -> t.getSequenceNumber() > topicContext.getLastSequenceNumber())
+                .bufferUntil(t -> topicContext.isQueryComplete())
+                .flatMapIterable(t -> t);
 
         // collect historical messages
-        Flux<TopicMessage> historicalMessages = topicMessageRepository.findByFilter(filter)
+        Flux<TopicMessage> repositoryMessages = topicMessageRepository.findByFilter(filter)
                 .doOnNext(t -> topicContext.setLastSequenceNumber(t.getSequenceNumber()))
-                .doOnComplete(() -> topicContext.setQueryComplete(true));
+                .doOnComplete(() -> topicContext.setQueryComplete(true))
 
         incomingMessages.subscribe();
 
@@ -65,8 +66,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         // this will have to be done lazily because you may not have a notification to use. Maybe use a doFirst() /
         // doOnSubscribe
 
-        log.info("Finished");
-        return Flux.concat(incomingMessages, historicalMessages)
+        return Flux.concat(repositoryMessages, incomingMessages)
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t);
     }
 

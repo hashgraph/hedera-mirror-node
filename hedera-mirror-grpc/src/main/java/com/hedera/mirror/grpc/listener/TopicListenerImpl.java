@@ -26,16 +26,17 @@ import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.Notification;
 import io.r2dbc.spi.ConnectionFactory;
+import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
-@Component
+@Named
 @Log4j2
 public class TopicListenerImpl implements TopicListener {
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
 
@@ -45,6 +46,7 @@ public class TopicListenerImpl implements TopicListener {
         ConnectionPool connectionPool = (ConnectionPool) connectionFactory;
         PostgresqlConnectionFactory postgressqlConnectionFactory = (PostgresqlConnectionFactory) connectionPool
                 .unwrap();
+
         topicMessages = postgressqlConnectionFactory.create().flatMapMany(it -> {
             return it.createStatement("LISTEN topic_message")
                     .execute()
@@ -55,36 +57,28 @@ public class TopicListenerImpl implements TopicListener {
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
-        return topicMessages.filter(t -> asyncFilterMessage(t, filter));
+        return topicMessages.filter(t -> filterMessage(t, filter))
+                .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()));
     }
 
     private TopicMessage toTopicMessage(Notification notification) {
-        String parameter = notification.getParameter();
-        TopicMessage topicMessage = null;
         try {
-            topicMessage = OBJECT_MAPPER.readValue(parameter, TopicMessage.class);
+            return OBJECT_MAPPER.readValue(notification.getParameter(), TopicMessage.class);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
-
-        return topicMessage;
     }
 
-    private boolean asyncFilterMessage(TopicMessage message, TopicMessageFilter filter) {
-
-        if (message.getRealmNum() != filter.getRealmNum()) {
+    private boolean filterMessage(TopicMessage message, TopicMessageFilter filter) {
+        if (filter.getRealmNum() != message.getRealmNum()) {
             return false;
         }
 
-        if (message.getTopicNum() != filter.getTopicNum()) {
+        if (filter.getTopicNum() != message.getTopicNum()) {
             return false;
         }
 
-        if (filter.getStartTime().isBefore(message.getConsensusTimestamp())) {
-            return false;
-        }
-
-        if (filter.getEndTime() != null && filter.getEndTime().isBefore(message.getConsensusTimestamp())) {
+        if (!filter.getStartTime().isBefore(message.getConsensusTimestamp())) {
             return false;
         }
 
