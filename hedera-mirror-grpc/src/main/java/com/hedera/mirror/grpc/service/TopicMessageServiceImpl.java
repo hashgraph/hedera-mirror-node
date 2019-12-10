@@ -56,6 +56,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         Flux<TopicMessage> repositoryMessages = topicMessageRepository.findByFilter(filter)
                 .doOnNext(t -> topicContext.setLastSequenceNumber(t.getSequenceNumber()))
                 .doOnComplete(() -> topicContext.setQueryComplete(true))
+                .doOnComplete(() -> log.info("Query complete for filter: {}", filter));
 
         incomingMessages.subscribe();
 
