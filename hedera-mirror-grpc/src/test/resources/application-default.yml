@@ -10,7 +10,7 @@ hedera:
   mirror:
     grpc:
       db:
-        name: mirror_node_grpc_test
+        name: mirror_node_test
         password: mirror_node_pass
         username: mirror_node
 spring:
