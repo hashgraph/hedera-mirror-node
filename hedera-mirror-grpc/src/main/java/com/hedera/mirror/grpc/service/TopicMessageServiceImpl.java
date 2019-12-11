@@ -20,8 +20,10 @@ package com.hedera.mirror.grpc.service;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
-import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.validation.annotation.Validated;
@@ -54,9 +56,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
         // collect historical messages
         Flux<TopicMessage> repositoryMessages = topicMessageRepository.findByFilter(filter)
-                .doOnNext(t -> topicContext.setLastSequenceNumber(t.getSequenceNumber()))
-                .doOnComplete(() -> topicContext.setQueryComplete(true))
-                .doOnComplete(() -> log.info("Query complete for filter: {}", filter));
+                .doOnComplete(topicContext::onQueryComplete);
 
         incomingMessages.subscribe();
 
@@ -68,12 +68,32 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         // doOnSubscribe
 
         return Flux.concat(repositoryMessages, incomingMessages)
-                .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t);
+                .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
+                .doOnNext(topicContext::onNext)
+                .doOnComplete(topicContext::onComplete);
     }
 
-    @Data
+    @Getter
     private class TopicContext {
+
+        private final Stopwatch stopwatch = Stopwatch.createStarted();
+        private final AtomicLong count = new AtomicLong(0L);
         private volatile boolean queryComplete = false;
-        private volatile Long lastSequenceNumber = Long.MAX_VALUE;
+        private volatile long lastSequenceNumber = Long.MIN_VALUE;
+
+        void onNext(TopicMessage topicMessage) {
+            lastSequenceNumber = topicMessage.getSequenceNumber();
+            count.incrementAndGet();
+            log.info("Received message #{}: {}", count, topicMessage); // TODO: trace
+        }
+
+        void onQueryComplete() {
+            queryComplete = true;
+            log.info("Query completed with {} results in {}", count, stopwatch);
+        }
+
+        void onComplete() {
+            log.info("Stream completed with {} results in {}", count, stopwatch);
+        }
     }
 }

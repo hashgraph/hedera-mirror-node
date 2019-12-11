@@ -22,11 +22,17 @@ package com.hedera.mirror.grpc.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Resource;
 import javax.validation.ConstraintViolationException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
@@ -92,7 +98,10 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         topicMessageService.subscribeTopic(filter)
                 .as(StepVerifier::create)
-                .verifyComplete();
+                .expectNextCount(0L)
+                .thenAwait(Duration.ofMillis(100))
+                .thenCancel()
+                .verify();
     }
 
     @Test
@@ -103,7 +112,26 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .endTime(Instant.now())
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .as(StepVerifier::create)
+                .expectNext(topicMessage1, topicMessage2, topicMessage3)
+                .thenCancel()
+                .verify();
+    }
+
+    @Disabled("Corner case not implemented")
+    @Test
+    void historicalMessagesWithEndTime() {
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage4 = domainBuilder.topicMessage().block();
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .endTime(topicMessage4.getConsensusTimestamp())
                 .build();
 
         topicMessageService.subscribeTopic(filter)
@@ -112,5 +140,86 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .expectNext(topicMessage2)
                 .expectNext(topicMessage3)
                 .verifyComplete();
+    }
+
+    @Test
+    void historicalMessagesWithLimit() {
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .limit(2)
+                .startTime(Instant.EPOCH)
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .as(StepVerifier::create)
+                .expectNext(topicMessage1)
+                .expectNext(topicMessage2)
+                .verifyComplete();
+    }
+
+    @Test
+    void incomingMessages() {
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(10))
+                .then(() -> generator(3).subscribe())
+                .expectNext(1L, 2L, 3L)
+                .thenAwait(Duration.ofMillis(100))
+                .thenCancel()
+                .verify();
+    }
+
+    @Test
+    void incomingMessagesWithLimit() {
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .limit(2)
+                .startTime(Instant.EPOCH)
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .then(() -> generator(3).subscribe())
+                .expectNext(1L, 2L)
+                .verifyComplete();
+    }
+
+    @Test
+    void incomingMessagesWithEndTime() {
+        Instant now = Instant.now();
+        Flux<TopicMessage> generator = Flux.concat(
+                domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(2))),
+                domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(1))),
+                domainBuilder.topicMessage(t -> t.consensusTimestamp(now))
+        );
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .endTime(now)
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .then(() -> generator.subscribe())
+                .expectNext(1L, 2L)
+                .thenCancel()
+                .verify();
+    }
+
+    private Flux<TopicMessage> generator(long count) {
+        List<Publisher<TopicMessage>> publishers = new ArrayList<>();
+        for (int i = 0; i < count; ++i) {
+            publishers.add(domainBuilder.topicMessage());
+        }
+        return Flux.concat(publishers);
     }
 }

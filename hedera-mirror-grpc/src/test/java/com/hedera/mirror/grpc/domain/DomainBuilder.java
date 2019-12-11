@@ -20,21 +20,25 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.function.Consumer;
-import javax.annotation.PostConstruct;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Named;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.function.Consumer;
+
+@Log4j2
 @Named
 @RequiredArgsConstructor
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DomainBuilder {
+
     private final Instant now = Instant.now();
     private final DatabaseClient databaseClient;
     private long sequenceNumber = 0L;
@@ -60,10 +64,11 @@ public class DomainBuilder {
         TopicMessage.TopicMessageBuilder builder = TopicMessage.builder()
                 .consensusTimestamp(now.plus(sequenceNumber, ChronoUnit.NANOS))
                 .realmNum(0)
-                .message(new byte[] {0, 1, 2})
-                .runningHash(new byte[] {3, 4, 5})
+                .message(new byte[]{0, 1, 2})
+                .runningHash(new byte[]{3, 4, 5})
                 .sequenceNumber(++sequenceNumber)
                 .topicNum(0);
+
         customizer.accept(builder);
         TopicMessage topicMessage = builder.build();
         return insert(topicMessage).thenReturn(topicMessage);
@@ -74,6 +79,7 @@ public class DomainBuilder {
                 .into((Class<T>) domainObject.getClass())
                 .using(domainObject)
                 .fetch()
-                .first();
+                .first()
+                .doOnNext(d -> log.debug("Inserted: {}", d));
     }
 }

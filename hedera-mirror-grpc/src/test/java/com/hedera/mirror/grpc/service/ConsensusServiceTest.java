@@ -30,6 +30,7 @@ import io.grpc.StatusRuntimeException;
 import javax.annotation.Resource;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -81,17 +82,23 @@ public class ConsensusServiceTest extends GrpcIntegrationTest {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
-                .setLimit(3L)
+                .setLimit(5L)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
                 .build();
+
+        Flux<TopicMessage> generator = Flux.concat(domainBuilder.topicMessage(), domainBuilder.topicMessage());
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
                 .expectNext(response(topicMessage1))
                 .expectNext(response(topicMessage2))
                 .expectNext(response(topicMessage3))
+                .then(() -> generator.subscribe())
+                .expectNextCount(2)
+                .thenAwait()
                 .verifyComplete();
     }
 
