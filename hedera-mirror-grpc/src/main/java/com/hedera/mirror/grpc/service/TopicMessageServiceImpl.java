@@ -46,6 +46,16 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         log.info("Subscribing to topic: {}", filter);
         TopicContext topicContext = new TopicContext();
 
+        // To:do - Handle 3 time scenarios that exist, historical, incoming and both
+//        Instant reqTime = Instant.now();
+//        if (filter.getEndTime() != null && filter.getEndTime().isBefore(reqTime)) {
+//            // query for historical messages only
+//        } else if (filter.getStartTime().isAfter(reqTime)) {
+//            // filter for incoming future messages only
+//        } else {
+//            // get both historical and future
+//        }
+
         // setup incoming messages flow
         Flux<TopicMessage> incomingMessages = topicListener.listen(filter)
                 .filter(t -> t.getSequenceNumber() > topicContext.getLastSequenceNumber())
@@ -69,6 +79,16 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
         return Flux.concat(repositoryMessages, incomingMessages)
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t);
+    }
+
+    public Flux<TopicMessage> getHistoricalMessages(TopicMessageFilter filter) {
+        return topicMessageRepository.findByFilter(filter)
+                .doOnComplete(() -> log.info("Historical messages query complete for filter: {}", filter));
+    }
+
+    public Flux<TopicMessage> getIncomingMessages(TopicMessageFilter filter) {
+        return topicListener.listen(filter)
+                .doOnComplete(() -> log.info("Incoming messages query complete for filter: {}", filter));
     }
 
     @Data

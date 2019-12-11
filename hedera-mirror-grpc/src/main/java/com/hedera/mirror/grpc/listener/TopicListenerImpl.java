@@ -78,7 +78,8 @@ public class TopicListenerImpl implements TopicListener {
             return false;
         }
 
-        if (!filter.getStartTime().isBefore(message.getConsensusTimestamp())) {
+        // if the filter is looking for messages after the given message time then skip
+        if (filter.getStartTime().compareTo((message.getConsensusTimestamp())) == 1) {
             return false;
         }
 
