@@ -336,7 +336,7 @@ public abstract class Downloader {
             }
 
             if (!valid) {
-                log.error("File could not be verified by at least 2/3 of nodes: {}", sigFileName);
+                log.error("File could not be verified by more than 2/3 of nodes: {}", sigFileName);
             }
         }
     }
@@ -353,7 +353,7 @@ public abstract class Downloader {
         String prevFileHash = getPrevFileHash(filePath);
 
         if (prevFileHash == null) {
-            log.warn("Doesn't contain valid previous file hash: {}", filePath);
+            log.warn("Does not contain valid previous file hash: {}", filePath);
             return false;
         }
 

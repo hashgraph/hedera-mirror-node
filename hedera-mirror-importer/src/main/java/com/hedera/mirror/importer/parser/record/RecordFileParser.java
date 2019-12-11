@@ -285,7 +285,7 @@ public class RecordFileParser implements FileParser {
                         log.debug("No files to parse");
                     }
                 } else {
-                    log.error("Input parameter {} is not a folder", path);
+                    log.error("Input parameter is not a folder: {}", path);
                 }
                 RecordFileLogger.finish();
             }
