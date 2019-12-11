@@ -182,7 +182,7 @@ public abstract class Downloader {
                                 files.add(sigFile);
                             }
                         } catch (InterruptedException ex) {
-                            log.error("Failed downloading {} in {}", pd.getS3key(), pd.getStopwatch(), ex);
+                            log.warn("Failed downloading {} in {}", pd.getS3key(), pd.getStopwatch(), ex);
                         }
                     });
                     if (ref.count > 0) {
@@ -381,10 +381,10 @@ public abstract class Downloader {
             if (pendingDownload.isDownloadSuccessful()) {
                 return pendingDownload.getFile();
             } else {
-                log.error("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId);
+                log.warn("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId);
             }
         } catch (Exception ex) {
-            log.error("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId, ex);
+            log.warn("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId, ex);
         }
         return null;
     }
