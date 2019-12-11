@@ -25,10 +25,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Resource;
 import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -96,7 +99,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         topicMessageService.subscribeTopic(filter)
                 .as(StepVerifier::create)
                 .expectNextCount(0L)
-                .thenAwait(Duration.ofMillis(200))
+                .thenAwait(Duration.ofMillis(100))
                 .thenCancel()
                 .verify();
     }
@@ -109,7 +112,6 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .endTime(Instant.now())
                 .build();
 
         topicMessageService.subscribeTopic(filter)
@@ -160,45 +162,44 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void incomingMessages() {
-        Flux.range(0, 3)
-                .flatMap(i -> domainBuilder.topicMessage())
-                .subscribe();
-
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .build();
 
         topicMessageService.subscribeTopic(filter)
+                .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .expectNextCount(3)
+                .thenAwait(Duration.ofMillis(10))
+                .then(() -> generator(3).subscribe())
+                .expectNext(1L, 2L, 3L)
+                .thenAwait(Duration.ofMillis(100))
                 .thenCancel()
                 .verify();
     }
 
     @Test
     void incomingMessagesWithLimit() {
-        Flux.range(0, 3)
-                .flatMap(i -> domainBuilder.topicMessage())
-                .subscribe();
-
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(2)
                 .startTime(Instant.EPOCH)
                 .build();
 
         topicMessageService.subscribeTopic(filter)
+                .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .expectNextCount(2)
-                .thenCancel()
-                .verify();
+                .then(() -> generator(3).subscribe())
+                .expectNext(1L, 2L)
+                .verifyComplete();
     }
 
     @Test
     void incomingMessagesWithEndTime() {
         Instant now = Instant.now();
-        Flux.range(0, 3)
-                .flatMap(i -> domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(i))))
-                .subscribe();
+        Flux<TopicMessage> generator = Flux.concat(
+                domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(2))),
+                domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(1))),
+                domainBuilder.topicMessage(t -> t.consensusTimestamp(now))
+        );
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -206,9 +207,19 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .build();
 
         topicMessageService.subscribeTopic(filter)
+                .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .expectNextCount(2)
+                .then(() -> generator.subscribe())
+                .expectNext(1L, 2L)
                 .thenCancel()
                 .verify();
+    }
+
+    private Flux<TopicMessage> generator(long count) {
+        List<Publisher<TopicMessage>> publishers = new ArrayList<>();
+        for (int i = 0; i < count; ++i) {
+            publishers.add(domainBuilder.topicMessage());
+        }
+        return Flux.concat(publishers);
     }
 }
