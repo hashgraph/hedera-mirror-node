@@ -88,16 +88,17 @@ Containers use the following persisted volumes:
 
 ### Starting
 
-To start, first ensure the Docker image is built locally by running Maven install then start via Docker Compose. The
-only required property to set is the `BUCKET_NAME`, but other values should be tweaked like database passwords, network,
-etc.
-See the [configuration](configuration.md) documentation for more details on available properties. These customized
-properties can be passed to Docker Compose via an
-[environment file](https://docs.docker.com/compose/compose-file/#env_file).
+Before starting, [configure](configuration.md) the application by preparing an `application.yml` with the desired custom
+values. This file can then be passed to Docker compose by uncommenting the following line in the `docker-compose.yml`
+and setting it to the path of the local file:
+
+`- ./application.yml:/usr/etc/hedera-mirror-importer/application.yml`
+
+Finally, run the commands to build and startup:
 
 ```console
 ./mvnw clean install -DskipTests
-BUCKET_NAME=<your-bucket> docker-compose up
+docker-compose up
 ```
 
 ### Stopping

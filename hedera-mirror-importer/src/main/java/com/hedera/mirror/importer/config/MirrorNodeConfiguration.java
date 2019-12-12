@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.config;
 
 import java.net.URI;
 import java.time.Duration;
-
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -63,6 +62,9 @@ public class MirrorNodeConfiguration {
             log.info("Setting up S3 async client using anonymous credentials");
             awsCredentials = AnonymousCredentialsProvider.create();
         }
+
+        log.info("Configured to download from {} in region {} with bucket name '{}'", downloaderProperties
+                .getCloudProvider(), downloaderProperties.getRegion(), downloaderProperties.getBucketName());
 
         return S3AsyncClient.builder()
                 .credentialsProvider(awsCredentials)
