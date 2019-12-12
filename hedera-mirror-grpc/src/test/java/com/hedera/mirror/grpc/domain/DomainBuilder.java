@@ -22,14 +22,21 @@ package com.hedera.mirror.grpc.domain;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.r2dbc.core.DatabaseClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+@Log4j2
 @Named
 @RequiredArgsConstructor
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -44,7 +51,7 @@ public class DomainBuilder {
         databaseClient.delete().from(TopicMessage.class).fetch().rowsUpdated().block();
     }
 
-    public TopicMessage topicMessage() {
+    public Mono<TopicMessage> topicMessage() {
         return topicMessage(t -> {
         });
     }
@@ -56,7 +63,7 @@ public class DomainBuilder {
      * @param customizer allows one to customize the TopicMessage before it is inserted
      * @return the inserted TopicMessage
      */
-    public TopicMessage topicMessage(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
+    public Mono<TopicMessage> topicMessage(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
         TopicMessage.TopicMessageBuilder builder = TopicMessage.builder()
                 .consensusTimestamp(now.plus(sequenceNumber, ChronoUnit.NANOS))
                 .realmNum(0)
@@ -67,16 +74,23 @@ public class DomainBuilder {
 
         customizer.accept(builder);
         TopicMessage topicMessage = builder.build();
-        insert(topicMessage);
-        return topicMessage;
+        return insert(topicMessage).thenReturn(topicMessage);
     }
 
-    private <T> void insert(T domainObject) {
-        databaseClient.insert()
+    public Flux<TopicMessage> topicMessages(long count) {
+        List<Publisher<TopicMessage>> publishers = new ArrayList<>();
+        for (int i = 0; i < count; ++i) {
+            publishers.add(topicMessage());
+        }
+        return Flux.concat(publishers);
+    }
+
+    private <T> Mono<?> insert(T domainObject) {
+        return databaseClient.insert()
                 .into((Class<T>) domainObject.getClass())
                 .using(domainObject)
                 .fetch()
                 .first()
-                .block();
+                .doOnNext(d -> log.debug("Inserted: {}", d));
     }
 }
