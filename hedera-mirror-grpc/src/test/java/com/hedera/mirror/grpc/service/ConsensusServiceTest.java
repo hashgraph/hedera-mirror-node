@@ -61,7 +61,7 @@ public class ConsensusServiceTest extends GrpcIntegrationTest {
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "Missing required topicID"))
-                .verify();
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
@@ -75,7 +75,7 @@ public class ConsensusServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "limit: must be greater " +
                         "than or equal to 0"))
-                .verify();
+                .verify(Duration.ofMillis(500));
     }
 
     @Test

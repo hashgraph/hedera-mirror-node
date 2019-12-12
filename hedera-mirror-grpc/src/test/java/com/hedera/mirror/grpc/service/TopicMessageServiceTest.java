@@ -97,7 +97,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .expectNextCount(0L)
                 .thenAwait(Duration.ofMillis(100))
                 .thenCancel()
-                .verify();
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
@@ -114,7 +114,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .expectNext(topicMessage1, topicMessage2, topicMessage3)
                 .thenCancel()
-                .verify();
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
@@ -166,10 +166,10 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
                 .then(() -> domainBuilder.topicMessages(3).subscribe())
-                .expectNext(1L, 2L, 3L)
                 .thenAwait(Duration.ofMillis(100))
+                .expectNext(1L, 2L, 3L)
                 .thenCancel()
-                .verify();
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
@@ -184,6 +184,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
                 .then(() -> domainBuilder.topicMessages(3).subscribe())
+                .thenAwait(Duration.ofMillis(100))
                 .expectNext(1L, 2L)
                 .verifyComplete();
     }
@@ -207,9 +208,10 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
                 .then(() -> generator.subscribe())
+                .thenAwait(Duration.ofMillis(100))
                 .expectNext(1L, 2L)
                 .thenCancel()
-                .verify();
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
@@ -228,6 +230,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
                 .then(() -> domainBuilder.topicMessages(3).subscribe())
+                .thenAwait(Duration.ofMillis(100))
                 .expectNext(1L, 2L, 3L, 4L, 5L)
                 .verifyComplete();
     }
@@ -253,9 +256,10 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
                 .then(() -> generator.subscribe())
+                .thenAwait(Duration.ofMillis(100))
                 .expectNext(2L, 4L)
                 .thenCancel()
-                .verify();
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
@@ -279,8 +283,60 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
                 .then(() -> generator.subscribe())
+                .thenAwait(Duration.ofMillis(100))
                 .expectNext(2L, 4L)
                 .thenCancel()
-                .verify();
+                .verify(Duration.ofMillis(500));
+    }
+
+    @Test
+    void duplicateMessages() {
+        Instant now = Instant.now();
+
+        // Timestamps have to be unique in the DB, so just fake sequence numbers
+        Flux<TopicMessage> generator = Flux.concat(
+                domainBuilder.topicMessage(t -> t.sequenceNumber(1).consensusTimestamp(now)),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(1).consensusTimestamp(now.plusSeconds(1))),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(2).consensusTimestamp(now.plusSeconds(2))),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(1).consensusTimestamp(now.plusSeconds(3)))
+        );
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(100))
+                .then(() -> generator.subscribe())
+                .thenAwait(Duration.ofMillis(100))
+                .expectNext(1L, 2L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
+    }
+
+    @Test
+    void messageOutOfOrder() {
+        Instant now = Instant.now();
+        Flux<TopicMessage> generator = Flux.concat(
+                domainBuilder.topicMessage(t -> t.sequenceNumber(1).consensusTimestamp(now)),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(3).consensusTimestamp(now.plusSeconds(2))),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(2).consensusTimestamp(now.plusSeconds(1)))
+        );
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(100))
+                .then(() -> generator.subscribe())
+                .thenAwait(Duration.ofMillis(100))
+                .expectNext(1L, 2L, 3L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
     }
 }

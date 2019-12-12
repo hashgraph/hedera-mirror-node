@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -50,6 +51,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         return topicMessageRepository.findByFilter(filter)
                 .doOnComplete(topicContext::onComplete)
                 .concatWith(incomingMessages(topicContext))
+                .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
                 .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .doOnNext(topicContext::onNext)
@@ -58,22 +60,26 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
     private Flux<TopicMessage> incomingMessages(TopicContext topicContext) {
         return topicListener.listen(topicContext.getFilter())
-                .switchMap(t -> topicContext.isNext(t) ? Flux.just(t) : missingMessages(topicContext));
+                .flatMap(t -> topicContext.isNext(t) ? Mono.just(t) : missingMessages(topicContext, t));
     }
 
-    private Flux<TopicMessage> missingMessages(TopicContext topicContext) {
+    private Flux<TopicMessage> missingMessages(TopicContext topicContext, TopicMessage current) {
         TopicMessage last = topicContext.getLastTopicMessage();
         TopicMessageFilter filter = topicContext.getFilter();
         TopicMessageFilter newFilter = TopicMessageFilter.builder()
-                .endTime(filter.getEndTime())
-                .limit(Math.max(0, filter.getLimit() - topicContext.getCount().get()))
+                .endTime(current.getConsensusTimestamp())
+                .limit(current.getSequenceNumber() - last.getSequenceNumber() - 1)
                 .realmNum(filter.getRealmNum())
                 .startTime(last.getConsensusTimestamp().plusNanos(1))
                 .topicNum(filter.getTopicNum())
                 .build();
 
-        log.info("Querying for missing messages after sequenceNumber: {}", last.getSequenceNumber());
-        return topicMessageRepository.findByFilter(newFilter);
+        log.info("Querying topic {} for missing messages between sequence {} and {}",
+                topicContext.getTopicId(), last.getSequenceNumber(), current.getSequenceNumber());
+
+        return topicMessageRepository.findByFilter(newFilter)
+                .filter(t -> t.getConsensusTimestamp().isBefore(current.getConsensusTimestamp()))
+                .concatWith(Mono.just(current));
     }
 
     private enum Mode {
@@ -83,21 +89,35 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         Mode next() {
             return this == QUERY ? LISTEN : this;
         }
+
+        @Override
+        public String toString() {
+            return super.toString().toLowerCase();
+        }
     }
 
     @Data
     private class TopicContext {
 
         private final TopicMessageFilter filter;
-        private final Stopwatch stopwatch = Stopwatch.createStarted();
-        private final AtomicLong count = new AtomicLong(0L);
-        private volatile TopicMessage lastTopicMessage = null;
-        private volatile Mode mode = Mode.QUERY;
+        private final String topicId;
+        private final Stopwatch stopwatch;
+        private final AtomicLong count;
+        private volatile TopicMessage lastTopicMessage;
+        private volatile Mode mode;
+
+        public TopicContext(TopicMessageFilter filter) {
+            this.filter = filter;
+            topicId = filter.getRealmNum() + "." + filter.getTopicNum();
+            stopwatch = Stopwatch.createStarted();
+            count = new AtomicLong(0L);
+            mode = Mode.QUERY;
+        }
 
         void onNext(TopicMessage topicMessage) {
             lastTopicMessage = topicMessage;
             count.incrementAndGet();
-            log.trace("Received message #{}: {}", count, topicMessage);
+            log.trace("Topic {} received message #{}: {}", topicId, count, topicMessage);
         }
 
         boolean isNext(TopicMessage topicMessage) {
@@ -106,7 +126,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         void onComplete() {
-            log.info("{} completed with {} results in {}", mode, count, stopwatch);
+            log.info("Topic {} {} complete with {} messages in {}", topicId, mode, count, stopwatch);
             mode = mode.next();
         }
     }

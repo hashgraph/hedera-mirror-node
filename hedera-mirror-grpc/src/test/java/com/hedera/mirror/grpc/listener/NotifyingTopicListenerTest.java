@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -41,8 +42,11 @@ public class NotifyingTopicListenerTest extends GrpcIntegrationTest {
     @Resource
     private TopicListener topicListener;
 
+    @Resource
+    private DatabaseClient databaseClient;
+
     @Test
-    void receivesMessages() {
+    void startTimeBefore() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .build();
@@ -54,7 +58,42 @@ public class NotifyingTopicListenerTest extends GrpcIntegrationTest {
                 .then(() -> domainBuilder.topicMessages(10).subscribe())
                 .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
                 .thenCancel()
-                .verify();
+                .verify(Duration.ofMillis(500));
+    }
+
+    @Test
+    void startTimeEquals() {
+        Instant now = Instant.now();
+        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(now));
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(now)
+                .build();
+
+        topicListener.listen(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> topicMessage.subscribe())
+                .expectNext(1L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
+    }
+
+    @Test
+    void startTimeAfter() {
+        Instant now = Instant.now();
+        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(1)));
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(now)
+                .build();
+
+        topicListener.listen(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .then(() -> topicMessage.subscribe())
+                .expectNoEvent(Duration.ofMillis(50))
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
@@ -77,7 +116,7 @@ public class NotifyingTopicListenerTest extends GrpcIntegrationTest {
                 .then(() -> generator.subscribe())
                 .expectNext(2L)
                 .thenCancel()
-                .verify();
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
@@ -100,41 +139,23 @@ public class NotifyingTopicListenerTest extends GrpcIntegrationTest {
                 .then(() -> generator.subscribe())
                 .expectNext(2L)
                 .thenCancel()
-                .verify();
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
-    void startTimeEquals() {
-        Instant now = Instant.now();
-        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(now));
+    void jsonError() {
+        Mono<?> generator = databaseClient.execute("NOTIFY topic_message, 'invalid'").fetch().first();
+
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(now)
+                .startTime(Instant.EPOCH)
                 .build();
 
         topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> topicMessage.subscribe())
-                .expectNext(1L)
-                .thenCancel()
-                .verify();
-    }
-
-    @Test
-    void startTimeAfter() {
-        Instant now = Instant.now();
-        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(1)));
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(now)
-                .build();
-
-        topicListener.listen(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
-                .then(() -> topicMessage.subscribe())
-                .expectNoEvent(Duration.ofMillis(50))
-                .thenCancel()
-                .verify();
+                .then(() -> generator.subscribe())
+                .expectError(RuntimeException.class)
+                .verify(Duration.ofMillis(500));
     }
 }

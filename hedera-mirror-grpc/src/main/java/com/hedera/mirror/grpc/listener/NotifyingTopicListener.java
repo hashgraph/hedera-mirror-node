@@ -58,7 +58,7 @@ public class NotifyingTopicListener implements TopicListener {
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
         return topicMessages.filter(t -> filterMessage(t, filter))
-                .doOnSubscribe(s -> log.info("Listening for messages"));
+                .doOnSubscribe(s -> log.info("Listening for messages: {}", filter));
     }
 
     private TopicMessage toTopicMessage(Notification notification) {
