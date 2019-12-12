@@ -20,16 +20,21 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.Instant;
+import java.util.Comparator;
 import lombok.Builder;
 import lombok.Value;
 import org.springframework.data.annotation.Id;
 
+import com.hedera.mirror.grpc.converter.LongToInstantDeserializer;
+
 @Builder
 @Value
-public class TopicMessage {
+public class TopicMessage implements Comparable<TopicMessage> {
 
     @Id
+    @JsonDeserialize(using = LongToInstantDeserializer.class)
     private Instant consensusTimestamp;
 
     private byte[] message;
@@ -41,4 +46,9 @@ public class TopicMessage {
     private long sequenceNumber;
 
     private int topicNum;
+
+    @Override
+    public int compareTo(TopicMessage other) {
+        return Comparator.nullsFirst(Comparator.comparingLong(TopicMessage::getSequenceNumber)).compare(this, other);
+    }
 }

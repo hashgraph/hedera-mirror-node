@@ -61,8 +61,8 @@ public class ConsensusService extends ReactorConsensusServiceGrpc.ConsensusServi
 
         TopicMessageFilter.TopicMessageFilterBuilder builder = TopicMessageFilter.builder()
                 .limit(query.getLimit())
-                .realmNum(query.getTopicID().getRealmNum())
-                .topicNum(query.getTopicID().getTopicNum());
+                .realmNum((int) query.getTopicID().getRealmNum())
+                .topicNum((int) query.getTopicID().getTopicNum());
 
         if (query.hasConsensusStartTime()) {
             builder.startTime(ProtoUtil.fromTimestamp(query.getConsensusStartTime()));

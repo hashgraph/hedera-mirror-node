@@ -41,14 +41,14 @@ public class TopicMessageFilter {
     private long limit;
 
     @Min(0)
-    private long realmNum;
+    private int realmNum;
 
     @NotNull
     @Builder.Default
     private Instant startTime = Instant.now();
 
     @Min(0)
-    private long topicNum;
+    private int topicNum;
 
     public boolean hasLimit() {
         return limit > 0;

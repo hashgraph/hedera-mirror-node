@@ -27,9 +27,11 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import java.time.Duration;
 import javax.annotation.Resource;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -59,7 +61,7 @@ public class ConsensusServiceTest extends GrpcIntegrationTest {
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "Missing required topicID"))
-                .verify();
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
@@ -73,33 +75,40 @@ public class ConsensusServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "limit: must be greater " +
                         "than or equal to 0"))
-                .verify();
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
     void subscribeTopicReactive() throws Exception {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage();
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
-                .setLimit(3L)
+                .setLimit(5L)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
                 .build();
+
+        Flux<TopicMessage> generator = Flux.concat(domainBuilder.topicMessage(), domainBuilder.topicMessage());
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
                 .expectNext(response(topicMessage1))
                 .expectNext(response(topicMessage2))
                 .expectNext(response(topicMessage3))
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> generator.blockLast())
+                .expectNextCount(2)
+                .thenAwait()
                 .verifyComplete();
     }
 
     @Test
     void subscribeTopicBlocking() throws Exception {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage();
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setLimit(3L)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
