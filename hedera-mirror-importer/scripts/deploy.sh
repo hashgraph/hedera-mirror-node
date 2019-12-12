@@ -1,5 +1,8 @@
 #!/bin/sh -ex
 
+artifactname=hedera-mirror-importer-hcs
+
+# name of the service and directories
 name=hedera-mirror-importer
 usretc="/usr/etc/${name}"
 usrlib="/usr/lib/${name}"
@@ -7,9 +10,14 @@ varlib="/var/lib/${name}"
 
 # CD to parent directory
 cd "$(dirname $0)/.."
-version=$(ls -1 -d "../"${name}-[vb]* | tr '\n' '\0' | xargs -0 -n 1 basename | tail -1 | sed -e "s/${name}-//")
+version=$(ls -1 -d "../"${artifactname}-[vb]* | tr '\n' '\0' | xargs -0 -n 1 basename | tail -1 | sed -e "s/${artifactname}-//")
 if [ -z "${version}" ]; then
-    echo "Can't find ${name}-v* versioned parent directory. Unrecognized layout. Aborting"
+    echo "Can't find ${artifactname}-[vb]* versioned parent directory. Unrecognized layout. Aborting"
+    exit 1
+fi
+jarname="${artifactname}-${version:1}.jar"
+if [ ! -f "${jarname}" ]; then
+    echo "Can't find ${jarname}. Aborting"
     exit 1
 fi
 
@@ -82,8 +90,8 @@ fi
 
 echo "Copying new binary"
 rm -f "${usrlib}/${name}.jar"
-cp "${name}-${version}.jar" "${usrlib}"
-ln -s "${usrlib}/${name}-${version}.jar" "${usrlib}/${name}.jar"
+cp "${jarname}" "${usrlib}"
+ln -s "${usrlib}/${jarname}" "${usrlib}/${name}.jar"
 
 echo "Setting up ${name} systemd service"
 cp "scripts/${name}.service" /etc/systemd/system

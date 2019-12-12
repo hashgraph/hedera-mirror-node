@@ -1,6 +1,6 @@
 {
   "name": "hedera-mirror-rest-hcs",
-  "version": "0.1.0-SNAPSHOT",
+  "version": "0.1.0-rc1",
   "description": "Hedera Mirror Node REST API (HCS)",
   "main": "server.js",
   "scripts": {
