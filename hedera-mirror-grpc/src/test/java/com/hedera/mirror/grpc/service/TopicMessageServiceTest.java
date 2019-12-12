@@ -165,8 +165,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> domainBuilder.topicMessages(3).subscribe())
-                .thenAwait(Duration.ofMillis(100))
+                .then(() -> domainBuilder.topicMessages(3).blockLast())
                 .expectNext(1L, 2L, 3L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -183,8 +182,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> domainBuilder.topicMessages(3).subscribe())
-                .thenAwait(Duration.ofMillis(100))
+                .then(() -> domainBuilder.topicMessages(3).blockLast())
                 .expectNext(1L, 2L)
                 .verifyComplete();
     }
@@ -207,8 +205,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> generator.subscribe())
-                .thenAwait(Duration.ofMillis(100))
+                .then(() -> generator.blockLast())
                 .expectNext(1L, 2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -229,8 +226,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> domainBuilder.topicMessages(3).subscribe())
-                .thenAwait(Duration.ofMillis(100))
+                .then(() -> domainBuilder.topicMessages(3).blockLast())
                 .expectNext(1L, 2L, 3L, 4L, 5L)
                 .verifyComplete();
     }
@@ -255,8 +251,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> generator.subscribe())
-                .thenAwait(Duration.ofMillis(100))
+                .then(() -> generator.blockLast())
                 .expectNext(2L, 4L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -282,8 +277,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> generator.subscribe())
-                .thenAwait(Duration.ofMillis(100))
+                .then(() -> generator.blockLast())
                 .expectNext(2L, 4L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -309,8 +303,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> generator.subscribe())
-                .thenAwait(Duration.ofMillis(100))
+                .then(() -> generator.blockLast())
                 .expectNext(1L, 2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -333,8 +326,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> generator.subscribe())
-                .thenAwait(Duration.ofMillis(100))
+                .then(() -> generator.blockLast())
                 .expectNext(1L, 2L, 3L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));

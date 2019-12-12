@@ -55,7 +55,7 @@ public class NotifyingTopicListenerTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> domainBuilder.topicMessages(10).subscribe())
+                .then(() -> domainBuilder.topicMessages(10).blockLast())
                 .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -73,7 +73,7 @@ public class NotifyingTopicListenerTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> topicMessage.subscribe())
+                .then(() -> topicMessage.block())
                 .expectNext(1L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -113,7 +113,7 @@ public class NotifyingTopicListenerTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> generator.subscribe())
+                .then(() -> generator.blockLast())
                 .expectNext(2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -136,7 +136,7 @@ public class NotifyingTopicListenerTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> generator.subscribe())
+                .then(() -> generator.blockLast())
                 .expectNext(2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -154,7 +154,7 @@ public class NotifyingTopicListenerTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> generator.subscribe())
+                .then(() -> generator.block())
                 .expectError(RuntimeException.class)
                 .verify(Duration.ofMillis(500));
     }

@@ -98,7 +98,7 @@ public class ConsensusServiceTest extends GrpcIntegrationTest {
                 .expectNext(response(topicMessage2))
                 .expectNext(response(topicMessage3))
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> generator.subscribe())
+                .then(() -> generator.blockLast())
                 .expectNextCount(2)
                 .thenAwait()
                 .verifyComplete();
