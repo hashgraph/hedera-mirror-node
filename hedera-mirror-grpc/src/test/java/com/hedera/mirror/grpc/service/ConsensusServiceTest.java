@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import java.time.Duration;
 import javax.annotation.Resource;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.Test;
@@ -96,6 +97,7 @@ public class ConsensusServiceTest extends GrpcIntegrationTest {
                 .expectNext(response(topicMessage1))
                 .expectNext(response(topicMessage2))
                 .expectNext(response(topicMessage3))
+                .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.subscribe())
                 .expectNextCount(2)
                 .thenAwait()

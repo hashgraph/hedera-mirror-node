@@ -46,74 +46,68 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     @Override
     public Flux<TopicMessage> subscribeTopic(TopicMessageFilter filter) {
         log.info("Subscribing to topic: {}", filter);
-        TopicContext topicContext = new TopicContext();
-
-        // To:do - Handle 3 time scenarios that exist, historical, incoming and both
-//        Instant reqTime = Instant.now();
-//        if (filter.getEndTime() != null && filter.getEndTime().isBefore(reqTime)) {
-//            // query for historical messages only
-//        } else if (filter.getStartTime().isAfter(reqTime)) {
-//            // filter for incoming future messages only
-//        } else {
-//            // get both historical and future
-//        }
-
-        // setup incoming messages flow
-        Flux<TopicMessage> incomingMessages = topicListener.listen(filter)
-                .filter(t -> t.getSequenceNumber() > topicContext.getLastSequenceNumber())
-                .bufferUntil(t -> topicContext.isQueryComplete())
-                .flatMapIterable(t -> t);
-
-        // collect historical messages
-        Flux<TopicMessage> repositoryMessages = topicMessageRepository.findByFilter(filter)
-                .doOnComplete(topicContext::onQueryComplete);
-
-        incomingMessages.subscribe();
-
-        // To:do - determine if any missing messages exist.
-        // Compare the first sequence number of the notification and the last from the repository call.
-        // If there's a gap then make a db call for topic messages of the given sequence number range
-        // note items may not be in oder so maybe find the max of the db call and the min of the notifications
-        // this will have to be done lazily because you may not have a notification to use. Maybe use a doFirst() /
-        // doOnSubscribe
-
-        return Flux.concat(repositoryMessages, incomingMessages)
+        TopicContext topicContext = new TopicContext(filter);
+        return topicMessageRepository.findByFilter(filter)
+                .doOnComplete(topicContext::onComplete)
+                .concatWith(incomingMessages(topicContext))
+                .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .doOnNext(topicContext::onNext)
                 .doOnComplete(topicContext::onComplete);
     }
 
-    public Flux<TopicMessage> getHistoricalMessages(TopicMessageFilter filter) {
-        return topicMessageRepository.findByFilter(filter)
-                .doOnComplete(() -> log.info("Historical messages query complete for filter: {}", filter));
+    private Flux<TopicMessage> incomingMessages(TopicContext topicContext) {
+        return topicListener.listen(topicContext.getFilter())
+                .switchMap(t -> topicContext.isNext(t) ? Flux.just(t) : missingMessages(topicContext));
     }
 
-    public Flux<TopicMessage> getIncomingMessages(TopicMessageFilter filter) {
-        return topicListener.listen(filter)
-                .doOnComplete(() -> log.info("Incoming messages query complete for filter: {}", filter));
+    private Flux<TopicMessage> missingMessages(TopicContext topicContext) {
+        TopicMessage last = topicContext.getLastTopicMessage();
+        TopicMessageFilter filter = topicContext.getFilter();
+        TopicMessageFilter newFilter = TopicMessageFilter.builder()
+                .endTime(filter.getEndTime())
+                .limit(Math.max(0, filter.getLimit() - topicContext.getCount().get()))
+                .realmNum(filter.getRealmNum())
+                .startTime(last.getConsensusTimestamp().plusNanos(1))
+                .topicNum(filter.getTopicNum())
+                .build();
+
+        log.info("Querying for missing messages after sequenceNumber: {}", last.getSequenceNumber());
+        return topicMessageRepository.findByFilter(newFilter);
+    }
+
+    private enum Mode {
+        QUERY,
+        LISTEN;
+
+        Mode next() {
+            return this == QUERY ? LISTEN : this;
+        }
     }
 
     @Data
     private class TopicContext {
 
+        private final TopicMessageFilter filter;
         private final Stopwatch stopwatch = Stopwatch.createStarted();
         private final AtomicLong count = new AtomicLong(0L);
-        private volatile boolean queryComplete = false;
-        private volatile long lastSequenceNumber = Long.MIN_VALUE;
+        private volatile TopicMessage lastTopicMessage = null;
+        private volatile Mode mode = Mode.QUERY;
 
         void onNext(TopicMessage topicMessage) {
-            lastSequenceNumber = topicMessage.getSequenceNumber();
+            lastTopicMessage = topicMessage;
             count.incrementAndGet();
-            log.info("Received message #{}: {}", count, topicMessage); // TODO: trace
+            log.trace("Received message #{}: {}", count, topicMessage);
         }
 
-        void onQueryComplete() {
-            queryComplete = true;
-            log.info("Query completed with {} results in {}", count, stopwatch);
+        boolean isNext(TopicMessage topicMessage) {
+            return lastTopicMessage == null || topicMessage.getSequenceNumber() == lastTopicMessage
+                    .getSequenceNumber() + 1;
         }
 
         void onComplete() {
-            log.info("Stream completed with {} results in {}", count, stopwatch);
+            log.info("{} completed with {} results in {}", mode, count, stopwatch);
+            mode = mode.next();
         }
     }
 }

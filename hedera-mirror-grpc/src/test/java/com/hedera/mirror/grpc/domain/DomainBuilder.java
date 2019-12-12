@@ -20,18 +20,21 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import javax.annotation.PostConstruct;
+import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.r2dbc.core.DatabaseClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Named;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.function.Consumer;
 
 @Log4j2
 @Named
@@ -64,14 +67,22 @@ public class DomainBuilder {
         TopicMessage.TopicMessageBuilder builder = TopicMessage.builder()
                 .consensusTimestamp(now.plus(sequenceNumber, ChronoUnit.NANOS))
                 .realmNum(0)
-                .message(new byte[]{0, 1, 2})
-                .runningHash(new byte[]{3, 4, 5})
+                .message(new byte[] {0, 1, 2})
+                .runningHash(new byte[] {3, 4, 5})
                 .sequenceNumber(++sequenceNumber)
                 .topicNum(0);
 
         customizer.accept(builder);
         TopicMessage topicMessage = builder.build();
         return insert(topicMessage).thenReturn(topicMessage);
+    }
+
+    public Flux<TopicMessage> topicMessages(long count) {
+        List<Publisher<TopicMessage>> publishers = new ArrayList<>();
+        for (int i = 0; i < count; ++i) {
+            publishers.add(topicMessage());
+        }
+        return Flux.concat(publishers);
     }
 
     private <T> Mono<?> insert(T domainObject) {

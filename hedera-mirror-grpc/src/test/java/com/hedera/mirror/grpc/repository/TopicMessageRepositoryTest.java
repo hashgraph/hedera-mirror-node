@@ -21,6 +21,7 @@ package com.hedera.mirror.grpc.repository;
  */
 
 import javax.annotation.Resource;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
@@ -88,6 +89,7 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
                 .verifyComplete();
     }
 
+    @Disabled("We temporarily filter at the service layer at the cost of potentially throwing away some messages")
     @Test
     void findByFilterWithEndTime() {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();

@@ -35,14 +35,14 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 @Named
 @Log4j2
-public class TopicListenerImpl implements TopicListener {
+public class NotifyingTopicListener implements TopicListener {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
 
     private final Flux<TopicMessage> topicMessages;
 
-    public TopicListenerImpl(ConnectionFactory connectionFactory) {
+    public NotifyingTopicListener(ConnectionFactory connectionFactory) {
         ConnectionPool connectionPool = (ConnectionPool) connectionFactory;
         PostgresqlConnectionFactory postgressqlConnectionFactory = (PostgresqlConnectionFactory) connectionPool
                 .unwrap();
@@ -58,7 +58,7 @@ public class TopicListenerImpl implements TopicListener {
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
         return topicMessages.filter(t -> filterMessage(t, filter))
-                .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()));
+                .doOnSubscribe(s -> log.info("Listening for messages"));
     }
 
     private TopicMessage toTopicMessage(Notification notification) {
@@ -70,19 +70,8 @@ public class TopicListenerImpl implements TopicListener {
     }
 
     private boolean filterMessage(TopicMessage message, TopicMessageFilter filter) {
-        if (filter.getRealmNum() != message.getRealmNum()) {
-            return false;
-        }
-
-        if (filter.getTopicNum() != message.getTopicNum()) {
-            return false;
-        }
-
-        // if the filter is looking for messages after the given message time then skip
-        if (filter.getStartTime().isAfter(message.getConsensusTimestamp())) {
-            return false;
-        }
-
-        return true;
+        return filter.getRealmNum() == message.getRealmNum() &&
+                filter.getTopicNum() == message.getTopicNum() &&
+                !filter.getStartTime().isAfter(message.getConsensusTimestamp());
     }
 }
