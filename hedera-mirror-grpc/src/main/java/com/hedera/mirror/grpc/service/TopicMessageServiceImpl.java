@@ -21,6 +21,7 @@ package com.hedera.mirror.grpc.service;
  */
 
 import com.google.common.base.Stopwatch;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.Data;
@@ -60,10 +61,15 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
     private Flux<TopicMessage> incomingMessages(TopicContext topicContext) {
         return topicListener.listen(topicContext.getFilter())
-                .flatMap(t -> topicContext.isNext(t) ? Mono.just(t) : missingMessages(topicContext, t));
+                .as(t -> topicContext.shouldListen() ? t : Flux.<TopicMessage>empty())
+                .flatMap(t -> missingMessages(topicContext, t));
     }
 
     private Flux<TopicMessage> missingMessages(TopicContext topicContext, TopicMessage current) {
+        if (topicContext.isNext(current)) {
+            return Flux.just(current);
+        }
+
         TopicMessage last = topicContext.getLastTopicMessage();
         TopicMessageFilter filter = topicContext.getFilter();
         TopicMessageFilter newFilter = TopicMessageFilter.builder()
@@ -78,7 +84,6 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 topicContext.getTopicId(), last.getSequenceNumber(), current.getSequenceNumber());
 
         return topicMessageRepository.findByFilter(newFilter)
-                .filter(t -> t.getConsensusTimestamp().isBefore(current.getConsensusTimestamp()))
                 .concatWith(Mono.just(current));
     }
 
@@ -103,6 +108,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         private final String topicId;
         private final Stopwatch stopwatch;
         private final AtomicLong count;
+        private final Instant startTime;
         private volatile TopicMessage lastTopicMessage;
         private volatile Mode mode;
 
@@ -111,6 +117,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             topicId = filter.getRealmNum() + "." + filter.getTopicNum();
             stopwatch = Stopwatch.createStarted();
             count = new AtomicLong(0L);
+            startTime = Instant.now();
             mode = Mode.QUERY;
         }
 
@@ -118,6 +125,10 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             lastTopicMessage = topicMessage;
             count.incrementAndGet();
             log.trace("Topic {} received message #{}: {}", topicId, count, topicMessage);
+        }
+
+        boolean shouldListen() {
+            return filter.getEndTime() == null || filter.getEndTime().isAfter(startTime);
         }
 
         boolean isNext(TopicMessage topicMessage) {

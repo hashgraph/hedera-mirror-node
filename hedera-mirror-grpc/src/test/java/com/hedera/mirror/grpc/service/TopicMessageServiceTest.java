@@ -189,16 +189,16 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void incomingMessagesWithEndTime() {
-        Instant now = Instant.now();
+        Instant endTime = Instant.now().plusSeconds(10);
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(2))),
-                domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(1))),
-                domainBuilder.topicMessage(t -> t.consensusTimestamp(now))
+                domainBuilder.topicMessage(t -> t.consensusTimestamp(endTime.minusNanos(2))),
+                domainBuilder.topicMessage(t -> t.consensusTimestamp(endTime.minusNanos(1))),
+                domainBuilder.topicMessage(t -> t.consensusTimestamp(endTime))
         );
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .endTime(now)
+                .endTime(endTime)
                 .build();
 
         topicMessageService.subscribeTopic(filter)
