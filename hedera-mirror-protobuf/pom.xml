@@ -16,7 +16,7 @@
 
     <properties>
         <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
-        <protoc.version>3.9.2</protoc.version>
+        <protoc.version>3.11.1</protoc.version>
         <reactor-grpc.version>1.0.0</reactor-grpc.version>
     </properties>
 
@@ -47,6 +47,15 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>kr.motd.maven</groupId>
                 <artifactId>os-maven-plugin</artifactId>
                 <version>1.6.2</version>
@@ -56,10 +65,12 @@
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>${protobuf.plugin.version}</version>
                 <configuration>
-                    <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}
+                    <protocArtifact>
+                        com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}
                     </protocArtifact>
                     <pluginId>grpc-java</pluginId>
-                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
+                    <pluginArtifact>
+                        io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
                     </pluginArtifact>
                     <protocPlugins>
                         <protocPlugin>
