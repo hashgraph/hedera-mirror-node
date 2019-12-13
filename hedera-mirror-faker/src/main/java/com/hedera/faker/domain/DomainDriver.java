@@ -21,9 +21,9 @@ package com.hedera.faker.domain;
 
 import com.google.common.base.Stopwatch;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Named;
 
 import lombok.extern.log4j.Log4j2;
@@ -50,7 +50,7 @@ public class DomainDriver implements ApplicationRunner {
     /**
      * Generates nanos part of the timestamp
      */
-    private final Distribution<Long> consensusNanoAdjustments;
+    private final Distribution<Long> consensusNanoAdjustmentsDistribution;
 
     public DomainDriver(FakerProperties properties, DomainTransactionGenerator domainTransactionGenerator,
                         EntityManager entityManager, DomainWriter domainWriter) {
@@ -59,7 +59,7 @@ public class DomainDriver implements ApplicationRunner {
         this.entityManager = entityManager;
         this.domainWriter = domainWriter;
 
-        consensusNanoAdjustments = new RandomDistributionFromRange(0, 1000000000);
+        consensusNanoAdjustmentsDistribution = new RandomDistributionFromRange(0, 1000000000);
     }
 
     @Override
@@ -73,8 +73,7 @@ public class DomainDriver implements ApplicationRunner {
         while (currentFakeTime < endTime) {
             int numTransactions = properties.getTransactionsPerSecond().sample().intValue();
             log.debug("Generating {} transactions for time {}", numTransactions, currentFakeTime);
-            List<Long> consensusNanoAdjustments = new ArrayList<>(
-                    this.consensusNanoAdjustments.sampleDistinct(numTransactions));
+            List<Long> consensusNanoAdjustments = consensusNanoAdjustmentsDistribution.sampleDistinct(numTransactions);
             Collections.sort(consensusNanoAdjustments);
             for (long nanoAdjustment : consensusNanoAdjustments) {
                 long consensusTimestampNs = Utility.convertToNanos(currentFakeTime, nanoAdjustment);
@@ -97,9 +96,8 @@ public class DomainDriver implements ApplicationRunner {
     }
 
     private void writeBalances(long consensusNs) {
-        List<Long> balances = entityManager.getBalances();
-        for (int i = 0; i < balances.size(); i++) {
-            domainWriter.addAccountBalances(consensusNs, balances.get(i), i);
+        for (Map.Entry<Long, Long> entry : entityManager.getBalances().entrySet()) {
+            domainWriter.addAccountBalances(consensusNs, entry.getValue(), entry.getKey());
         }
         log.debug("Wrote balances data at {}", consensusNs);
     }
