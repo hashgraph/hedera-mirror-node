@@ -30,7 +30,7 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /^v.*/
+              only: /^.*\/v.*/
 
 jobs:
   build_maven:
@@ -70,7 +70,8 @@ jobs:
       - run:
           name: Collecting assets for hedera-mirror-grpc
           command: |
-            NAME=hedera-mirror-grpc-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
+            VERSION_TAG=${CIRCLE_TAG/*\//}
+            NAME=hedera-mirror-grpc-hcs-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
             WORKSPACE=/tmp/workspace
             mkdir -p ${WORKSPACE}/${NAME}
             mv hedera-mirror-grpc/target/hedera-mirror-grpc-*.jar ${WORKSPACE}/${NAME}
@@ -80,7 +81,8 @@ jobs:
       - run:
           name: Collecting assets for hedera-mirror-importer
           command: |
-            NAME=hedera-mirror-importer-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
+            VERSION_TAG=${CIRCLE_TAG/*\//}
+            NAME=hedera-mirror-importer-hcs-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
             WORKSPACE=/tmp/workspace
             mkdir -p ${WORKSPACE}/${NAME}
             mv hedera-mirror-importer/target/hedera-mirror-importer-*.jar ${WORKSPACE}/${NAME}
@@ -130,7 +132,8 @@ jobs:
           working_directory: "hedera-mirror-rest"
           name: Collecting assets
           command: |
-            NAME=hedera-mirror-rest-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
+            VERSION_TAG=${CIRCLE_TAG/*\//}
+            NAME=hedera-mirror-rest-hcs-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
             npm pack
             mkdir -p /tmp/workspace/artifacts
             mv hedera-mirror-rest*.tgz /tmp/workspace/artifacts/${NAME}.tgz
