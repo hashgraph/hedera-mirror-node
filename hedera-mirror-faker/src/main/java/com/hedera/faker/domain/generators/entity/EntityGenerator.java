@@ -65,16 +65,18 @@ public class EntityGenerator {
 
     private void generateAndWriteEntityType(EntityManager.EntitySet entitySet, DomainWriter domainWriter,
                                             Function<Long, Entities> generateFn, String type) {
-        entitySet.getActive().forEach((id) -> {
-            domainWriter.addEntity(generateFn.apply(id));
-        });
-        entitySet.getDeleted().forEach((id) -> {
-            Entities entity = generateFn.apply(id);
-            entity.setDeleted(true);
+        int count = 0;
+        int deleted = 0;
+        for (Long entityId = entitySet.getStartEntityId(); entityId < entitySet.getNextEntityId(); entityId++) {
+            Entities entity = generateFn.apply(entityId);
+            if (entitySet.getDeleted().contains(entityId)) {
+                entity.setDeleted(true);
+                deleted++;
+            }
+            count++;
             domainWriter.addEntity(entity);
-        });
-        log.info("Wrote {} active and {} deleted {} entities",
-                entitySet.getActive().size(), entitySet.getDeleted().size(), type);
+        }
+        log.info("Wrote {} entities, containing {} marked deleted", count, deleted);
     }
 
     private Entities createBaseEntity(Long id) {

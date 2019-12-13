@@ -19,17 +19,19 @@ package com.hedera.faker.common;
  * ‍
  */
 
-import java.util.AbstractSet;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import javax.inject.Named;
 
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
+
+import com.hedera.faker.sampling.Distribution;
+import com.hedera.faker.sampling.RandomDistributionFromRange;
 
 @Log4j2
 @Named
@@ -37,157 +39,81 @@ public class EntityManager {
 
     @Getter
     private final long nodeAccountId;
+
     @Getter
     private final EntitySet accounts;
+
     @Getter
     private final EntitySet files;
-    /**
-     * Keeps track of balances for the entities. It is ArrayList for efficient iteration when writing out balances
-     * data.
-     */
+
+    // Keeps track of entities' balances.
     @Getter
-    private final ArrayList<Long> balances;
-    private long nextNewEntityNum;
+    private final Map<Long, Long> balances;
+
     @Getter
     private final long portalEntity;  // Used to create crypto accounts
-    private final Random random;
 
     public EntityManager() {
-        random = new Random();
-        nextNewEntityNum = 0;
-        accounts = new EntitySet();
-        files = new EntitySet();
-        balances = new ArrayList<>(100000);  // Reasonable initial capacity.
+        accounts = new EntitySet(0L);  // Account entities start from 0
+        files = new EntitySet(100_000_000L);
+        balances = new HashMap<>();
 
         // Create one node account with id = 0.
         nodeAccountId = accounts.newEntity();
-        balances.add(0L);  // balance of nodeAccountId
+        balances.put(nodeAccountId, 0L);  // balance of nodeAccountId
 
         // Create portal account with id = 1 which can fund other accounts on creation.
         portalEntity = accounts.newEntity();
         // Source of all hbars for couple 100 million transactions.
-        balances.add(1000_000_000_000_000_000L);  // balance of portalEntity
+        balances.put(portalEntity, 1000_000_000_000_000_000L);  // balance of nodeAccountId
     }
 
     public void addBalance(long accountId, long value) {
-        balances.set((int) accountId, balances.get((int) accountId) + value);
+        balances.put(accountId, balances.get(accountId) + value);
     }
 
-    // Source: https://stackoverflow.com/a/5669034
-    // This is to get random values from a set. Stream on HashSet doesn't give random members, it returns almost same
-    // values every time.
-    public static class RandomSet<E> extends AbstractSet<E> {
-
-        List<E> dta = new ArrayList<>();
-        Map<E, Integer> idx = new HashMap<>();
-
-        @Override
-        public boolean add(E item) {
-            if (idx.containsKey(item)) {
-                return false;
-            }
-            idx.put(item, dta.size());
-            dta.add(item);
-            return true;
-        }
-
-        /**
-         * Override element at position <code>id</code> with last element.
-         *
-         * @param id
-         */
-        public E removeAt(int id) {
-            if (id >= dta.size()) {
-                return null;
-            }
-            E res = dta.get(id);
-            idx.remove(res);
-            E last = dta.remove(dta.size() - 1);
-            // skip filling the hole if last is removed
-            if (id < dta.size()) {
-                idx.put(last, id);
-                dta.set(id, last);
-            }
-            return res;
-        }
-
-        @Override
-        public boolean remove(Object item) {
-            Integer id = idx.get(item);
-            if (id == null) {
-                return false;
-            }
-            removeAt(id);
-            return true;
-        }
-
-        public E pollRandom(Random rnd) {
-            if (dta.isEmpty()) {
-                return null;
-            }
-            int id = rnd.nextInt(dta.size());
-            return dta.get(id);
-        }
-
-        @Override
-        public int size() {
-            return dta.size();
-        }
-
-        @Override
-        public Iterator<E> iterator() {
-            return dta.iterator();
-        }
-    }
-
+    /**
+     * Represents set of entities for a specific entity type.
+     * Only keeps track of entity ids ever created. Does not keep track of active/deleted entity ids
+     * since mirror node does not do rigorous validations like - no update transaction should be done on deleted entity.
+     */
     public class EntitySet {
         @Getter
-        final RandomSet<Long> active = new RandomSet<>();
+        Long startEntityId;
 
         @Getter
-        final RandomSet<Long> deleted = new RandomSet<>();
+        Long nextEntityId;
 
-        public List<Long> getActive(int n) {
-            List<Long> result = new ArrayList<>(n);
-            for (int i = 0; i < n; i++) {
-                result.add(active.pollRandom(random));
-            }
-            return result;
+        Distribution<Long> entitySampler;
+
+        @Getter
+        final Set<Long> deleted = new HashSet<>();
+
+        EntitySet(Long startEntityId) {
+            this.startEntityId = startEntityId;
+            nextEntityId = startEntityId;
+            entitySampler = new RandomDistributionFromRange(startEntityId, nextEntityId);
         }
 
-        public List<Long> getDeleted(int n) {
-            List<Long> result = new ArrayList<>(n);
-            for (int i = 0; i < n; i++) {
-                result.add(deleted.pollRandom(random));
-            }
-            return result;
+        public Long getRandom() {
+            return entitySampler.sample(1).get(0);
+        }
+
+        public List<Long> getRandom(int n) {
+            return entitySampler.sampleDistinct(n);
         }
 
         public Long newEntity() {
-            long newEntity = nextNewEntityNum;
-            nextNewEntityNum++;
-            active.add(newEntity);
-            balances.add(0L);  // initial balance
-            log.trace("New entity {}", newEntity);
-            return newEntity;
+            long newEntityId = nextEntityId;
+            nextEntityId++;
+            entitySampler = new RandomDistributionFromRange(startEntityId, nextEntityId);
+            balances.put(newEntityId, 0L);  // initial balance
+            log.trace("New entity {}", newEntityId);
+            return newEntityId;
         }
 
         public void delete(Long entityId) {
-            if (active.contains(entityId)) {
-                active.remove(entityId);
-                deleted.add(entityId);
-            } else {
-                log.error("Cannot delete entity {}, not in active set", entityId);
-            }
-        }
-
-        public void undelete(Long entityId) {
-            if (deleted.contains(entityId)) {
-                deleted.remove(entityId);
-                active.add(entityId);
-            } else {
-                log.error("Cannot undelete entity {}, not in deleted set", entityId);
-            }
+            deleted.add(entityId);
         }
     }
 }

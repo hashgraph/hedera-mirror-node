@@ -47,15 +47,15 @@ public interface Distribution<T> {
      *
      * @return collection of {@code N} distinct items sampled from the distribution.
      */
-    default Set<T> sampleDistinct(int n) {
+    default List<T> sampleDistinct(int n) {
         Set<T> result = new HashSet<>(n);
         for (int i = 0; i < n; ) {
             T newElement = sample();
             if (!result.contains(newElement)) {
-                result.add(sample());
+                result.add(newElement);
                 i++;
             }
         }
-        return result;
+        return new ArrayList<>(result);
     }
 }

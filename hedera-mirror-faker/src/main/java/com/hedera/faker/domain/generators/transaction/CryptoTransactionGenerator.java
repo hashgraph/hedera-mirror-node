@@ -106,7 +106,7 @@ public class CryptoTransactionGenerator implements TransactionGenerator {
     private void updateAccount(Transaction transaction) {
         transaction.setInitialBalance(0L);
         transaction.setType(15);  // 15 = CRYPTOUPDATEACCOUNT
-        Long accountId = entityManager.getAccounts().getActive(1).get(0);
+        Long accountId = entityManager.getAccounts().getRandom();
         transaction.setEntityId(accountId);
         transaction.setPayerAccountId(accountId);
         log.trace("CRYPTOUPDATEACCOUNT transaction: entity {}", accountId);
@@ -118,7 +118,7 @@ public class CryptoTransactionGenerator implements TransactionGenerator {
 
         long numTransferLists = properties.getNumTransferLists().sample();
         // first account is sender, rest are receivers
-        List<Long> accountIds = entityManager.getAccounts().getActive((int) numTransferLists + 1);
+        List<Long> accountIds = entityManager.getAccounts().getRandom((int) numTransferLists + 1);
 
         long totalValue = 0;
         for (int i = 0; i < numTransferLists; i++) {
@@ -135,7 +135,7 @@ public class CryptoTransactionGenerator implements TransactionGenerator {
     private void deleteAccount(Transaction transaction) {
         transaction.setInitialBalance(0L);
         transaction.setType(12);  // 12 = CRYPTODELETE
-        Long accountId = entityManager.getAccounts().getActive(1).get(0);
+        Long accountId = entityManager.getAccounts().getRandom();
         entityManager.getAccounts().delete(accountId);
         transaction.setEntityId(accountId);
         transaction.setPayerAccountId(accountId); // TODO: is payer account different or same as entity being deleted?

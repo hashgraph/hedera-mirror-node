@@ -79,7 +79,7 @@ public class FileTransactionGenerator implements TransactionGenerator {
         transaction.setValidDurationSeconds(120L);
         transaction.setMaxFee(1_000_000L);
         transaction.setInitialBalance(0L);
-        Long payerAccountId = entityManager.getAccounts().getActive(1).get(0);
+        Long payerAccountId = entityManager.getAccounts().getRandom();
         transaction.setPayerAccountId(payerAccountId);
         entityManager.addBalance(payerAccountId, -txFee);
         transaction.setMemo(MEMO);
@@ -103,7 +103,7 @@ public class FileTransactionGenerator implements TransactionGenerator {
 
     private void appendFile(Transaction transaction) {
         transaction.setType(16);  // 16 = FILEAPPEND
-        Long fileId = entityManager.getFiles().getActive(1).get(0);
+        Long fileId = entityManager.getFiles().getRandom();
         transaction.setEntityId(fileId);
         createFileData(transaction.getConsensusNs());
         log.trace("FILEAPPEND transaction: fileId {}", fileId);
@@ -111,18 +111,18 @@ public class FileTransactionGenerator implements TransactionGenerator {
 
     private void updateFile(Transaction transaction) {
         transaction.setType(19);  // 19 = FILEUPDATE
-        Long fileId = entityManager.getFiles().getActive(1).get(0);
+        Long fileId = entityManager.getFiles().getRandom();
         transaction.setEntityId(fileId);
         createFileData(transaction.getConsensusNs());
-        log.trace("FILEAPPEND transaction: fileId {}", fileId);
+        log.trace("FILEUPDATE transaction: fileId {}", fileId);
     }
 
     private void deleteFile(Transaction transaction) {
         transaction.setType(18);  // 18 = FILEDELETE
-        Long fileId = entityManager.getFiles().getActive(1).get(0);
+        Long fileId = entityManager.getFiles().getRandom();
         entityManager.getFiles().delete(fileId);
         transaction.setEntityId(fileId);
-        log.trace("FILEAPPEND transaction: fileId {}", fileId);
+        log.trace("FILEDELETE transaction: fileId {}", fileId);
     }
 
     private void createFileData(long consensusNs) {
