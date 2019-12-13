@@ -35,14 +35,9 @@ import com.hedera.faker.sampling.NumberDistributionConfig;
 @EqualsAndHashCode(callSuper = false)
 @Named
 @ConfigurationProperties("faker.transaction.crypto")
-public class CryptoTransactionProperties extends CommonFieldsProperties {
+public class CryptoTransactionProperties {
 
     private final NumberDistributionConfig numTransferLists = new NumberDistributionConfig();
-
-    /**
-     * Sample values for amount to transfer
-     */
-    private final NumberDistributionConfig transferAmount = new NumberDistributionConfig();
 
     /**
      * CRYPTOCREATEACCOUNT transactions per thousand crypto transactions
@@ -70,11 +65,8 @@ public class CryptoTransactionProperties extends CommonFieldsProperties {
      */
     private int numSeedAccounts;
 
-    @Override
     @PostConstruct
     void initDistributions() {
-        super.initDistributions();
         numTransferLists.initDistribution();
-        transferAmount.initDistribution();
     }
 }

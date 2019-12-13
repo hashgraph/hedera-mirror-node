@@ -74,7 +74,8 @@ public class EntityManager {
     }
 
     // Source: https://stackoverflow.com/a/5669034
-    // Stream on HashSet doesn't give random members. It returns same values almost all times.
+    // This is to get random values from a set. Stream on HashSet doesn't give random members, it returns almost same
+    // values every time.
     public static class RandomSet<E> extends AbstractSet<E> {
 
         List<E> dta = new ArrayList<>();

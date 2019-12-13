@@ -21,7 +21,6 @@ package com.hedera.faker.domain.generators.transaction;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.function.Consumer;
 import javax.inject.Named;
 
@@ -43,12 +42,14 @@ import com.hedera.mirror.importer.domain.Transaction;
 @Log4j2
 public class CryptoTransactionGenerator implements TransactionGenerator {
     private final int RESULT_SUCCESS = 22;
+    private final byte[] MEMO = new byte[] {0b0, 0b1, 0b01, 0b10, 0b11}; // TODO: change size to avg. size seen in prod
+    private final int CRYPTO_TRANSFER_AMOUNT = 1000;
 
     private final CryptoTransactionProperties properties;
     private final EntityManager entityManager;
     private final DomainWriter domainWriter;
-    private int numTransactionsGenerated;
     private final Distribution<Consumer<Transaction>> transactionType;
+    private int numTransactionsGenerated;
 
     public CryptoTransactionGenerator(
             CryptoTransactionProperties properties, EntityManager entityManager, DomainWriter domainWriter) {
@@ -73,11 +74,11 @@ public class CryptoTransactionGenerator implements TransactionGenerator {
         transaction.setNodeAccountId(entityManager.getNodeAccountId());
         transaction.setResult(RESULT_SUCCESS);
         transaction.setChargedTxFee(100_000L); // Note: place holder value only. Doesn't affect balances.
-        transaction
-                .setValidStartNs(consensusTimestampNs - 10_000_000_000L);  // set to fixed 10 sec before consensus time
+        // set to fixed 10 sec before consensus time
+        transaction.setValidStartNs(consensusTimestampNs - 10_000_000_000L);
         transaction.setValidDurationSeconds(120L);
         transaction.setMaxFee(1_000_000L);
-        setMemo(transaction);
+        transaction.setMemo(MEMO);
 
         if (numTransactionsGenerated < properties.getNumSeedAccounts()) {
             createAccount(transaction);
@@ -121,10 +122,9 @@ public class CryptoTransactionGenerator implements TransactionGenerator {
 
         long totalValue = 0;
         for (int i = 0; i < numTransferLists; i++) {
-            long value = properties.getTransferAmount().sample();
             domainWriter.addCryptoTransfer(createCryptoTransfer(
-                    transaction.getConsensusNs(), accountIds.get(i + 1), value));
-            totalValue += value;
+                    transaction.getConsensusNs(), accountIds.get(i + 1), CRYPTO_TRANSFER_AMOUNT));
+            totalValue += CRYPTO_TRANSFER_AMOUNT;
         }
         domainWriter.addCryptoTransfer(createCryptoTransfer(
                 transaction.getConsensusNs(), accountIds.get(0), -totalValue));
@@ -150,12 +150,5 @@ public class CryptoTransactionGenerator implements TransactionGenerator {
         cryptoTransfer.setAmount(value);
         entityManager.addBalance(accountId, value);
         return cryptoTransfer;
-    }
-
-    private void setMemo(Transaction transaction) {
-        long memoSize = properties.getMemoSizeBytes().sample();
-        byte[] memoBytes = new byte[(int) memoSize];
-        new Random().nextBytes(memoBytes);
-        transaction.setMemo(memoBytes);
     }
 }

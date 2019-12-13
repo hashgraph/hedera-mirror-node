@@ -54,6 +54,7 @@ import com.hedera.mirror.importer.util.Utility;
  * <p>
  * Don't care tables: - entity_types - flyway_schema_history
  */
+// TODO: how to load bytes correctly (memo, key, etc)
 @Named
 @Log4j2
 public class PostgresCSVDomainWriter implements DomainWriter {
@@ -82,7 +83,8 @@ public class PostgresCSVDomainWriter implements DomainWriter {
                 CSVFormat.DEFAULT.withHeader(
                         "fk_node_acc_id", "memo", "fk_payer_acc_id", "charged_tx_fee", "initial_balance",
                         "fk_cud_entity_id", "fk_rec_file_id", "valid_start_ns", "consensus_ns",
-                        "valid_duration_seconds", "max_fee", "transaction_hash", "result", "type"));
+                        "valid_duration_seconds", "max_fee", "transaction_hash", "result", "type",
+                        "transaction_bytes"));
     }
 
     private static CSVPrinter getEntitiesCSVPrinter(String outputDir) throws IOException {
@@ -139,8 +141,8 @@ public class PostgresCSVDomainWriter implements DomainWriter {
                     transaction.getNodeAccountId(), transaction.getMemo(), transaction.getPayerAccountId(),
                     transaction.getChargedTxFee(), transaction.getInitialBalance(), transaction.getEntityId(),
                     /* record file id */ 0, transaction.getValidStartNs(), transaction.getConsensusNs(),
-                    transaction.getValidDurationSeconds(), transaction.getMaxFee(), null, transaction.getResult(),
-                    transaction.getType());
+                    transaction.getValidDurationSeconds(), transaction.getMaxFee(), transaction.getTransactionHash(),
+                    transaction.getResult(), transaction.getType(), transaction.getTransactionBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
