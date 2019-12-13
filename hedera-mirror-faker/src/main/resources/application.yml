@@ -12,13 +12,9 @@ faker:
       updatesPerThousand: 1
       deletesPerThousand: 1
       numSeedAccounts: 10000
-      transferAmount:
-        constant: 1000
       numTransferLists:
         rangeMin: 1
         rangeMax: 10
-      memoSizeBytes:
-        constant: 5
     file:
       createsPerThousand: 800
       appendsPerThousand: 100
@@ -28,8 +24,6 @@ faker:
       fileDataSize:
         rangeMin: 0
         rangeMax: 5000
-      memoSizeBytes:
-        constant: 5
 
 logging:
   level:

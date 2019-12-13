@@ -42,12 +42,13 @@ import com.hedera.mirror.importer.domain.Transaction;
 @Named
 public class FileTransactionGenerator implements TransactionGenerator {
     private final int RESULT_SUCCESS = 22;
+    private final byte[] MEMO = new byte[] {0b0, 0b1, 0b01, 0b10, 0b11}; // TODO: change size to avg. size seen in prod
 
     private final FileTransactionProperties properties;
     private final EntityManager entityManager;
     private final DomainWriter domainWriter;
-    private int numTransactionsGenerated;
     private final Distribution<Consumer<Transaction>> transactionType;
+    private int numTransactionsGenerated;
 
     public FileTransactionGenerator(
             FileTransactionProperties properties, EntityManager entityManager, DomainWriter domainWriter) {
@@ -81,7 +82,7 @@ public class FileTransactionGenerator implements TransactionGenerator {
         Long payerAccountId = entityManager.getAccounts().getActive(1).get(0);
         transaction.setPayerAccountId(payerAccountId);
         entityManager.addBalance(payerAccountId, -txFee);
-        setMemo(transaction);
+        transaction.setMemo(MEMO);
 
         if (numTransactionsGenerated < properties.getNumSeedFiles()) {
             createFile(transaction);
@@ -132,12 +133,5 @@ public class FileTransactionGenerator implements TransactionGenerator {
         new Random().nextBytes(fileDataBytes);
         fileData.setFileData(fileDataBytes);
         domainWriter.addFileData(fileData);
-    }
-
-    private void setMemo(Transaction transaction) {
-        long memoSize = properties.getMemoSizeBytes().sample();
-        byte[] memoBytes = new byte[(int) memoSize];
-        new Random().nextBytes(memoBytes);
-        transaction.setMemo(memoBytes);
     }
 }

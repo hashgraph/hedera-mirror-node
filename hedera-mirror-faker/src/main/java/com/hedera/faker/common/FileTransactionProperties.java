@@ -32,7 +32,7 @@ import com.hedera.faker.sampling.NumberDistributionConfig;
 @EqualsAndHashCode(callSuper = false)
 @Named
 @ConfigurationProperties("faker.transaction.file")
-public class FileTransactionProperties extends CommonFieldsProperties {
+public class FileTransactionProperties {
 
     private final NumberDistributionConfig fileDataSize = new NumberDistributionConfig();
 
@@ -68,10 +68,8 @@ public class FileTransactionProperties extends CommonFieldsProperties {
      */
     private int numSeedFiles;
 
-    @Override
     @PostConstruct
     void initDistributions() {
-        super.initDistributions();
         fileDataSize.initDistribution();
     }
 }
