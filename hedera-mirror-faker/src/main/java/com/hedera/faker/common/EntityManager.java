@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import javax.inject.Named;
 
@@ -46,6 +45,9 @@ public class EntityManager {
     @Getter
     private final EntitySet files;
 
+    @Getter
+    private final EntitySet topics;
+
     // Keeps track of entities' balances.
     @Getter
     private final Map<Long, Long> balances;
@@ -56,6 +58,7 @@ public class EntityManager {
     public EntityManager() {
         accounts = new EntitySet(0L);  // Account entities start from 0
         files = new EntitySet(100_000_000L);
+        topics = new EntitySet(200_000_000L);
         balances = new HashMap<>();
 
         // Create one node account with id = 0.

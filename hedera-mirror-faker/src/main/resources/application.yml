@@ -4,8 +4,9 @@ faker:
     rangeMin: 3
     rangeMax: 8
   transaction:
-    cryptoTransactionsFrequency: 990
+    cryptoTransactionsFrequency: 490
     fileTransactionsFrequency: 10
+    topicTransactionsFrequency: 500
     crypto:
       createsFrequency: 10
       transfersFrequency: 988
@@ -24,6 +25,15 @@ faker:
       fileDataSize:
         rangeMin: 0
         rangeMax: 5000
+    topic:
+      createsFrequency: 1
+      updatesFrequency: 1
+      deletesFrequency: 1
+      submitMessageFrequency: 997
+      numSeedTopics: 10
+      messageSize:
+        rangeMin: 0
+        rangeMax: 3000
 
 logging:
   level:

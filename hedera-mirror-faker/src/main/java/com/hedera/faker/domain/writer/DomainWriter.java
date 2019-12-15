@@ -22,6 +22,7 @@ package com.hedera.faker.domain.writer;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 
 public interface DomainWriter {
@@ -32,6 +33,8 @@ public interface DomainWriter {
     void addCryptoTransfer(CryptoTransfer cryptoTransfer);
 
     void addFileData(FileData fileData);
+
+    void addTopicMessage(TopicMessage topicMessage);
 
     void addAccountBalances(long consensusNs, long balance, long accountNum);
 

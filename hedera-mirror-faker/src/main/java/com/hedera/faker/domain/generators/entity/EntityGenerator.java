@@ -60,6 +60,7 @@ public class EntityGenerator {
         Stopwatch stopwatch = Stopwatch.createStarted();
         generateAndWriteEntityType(entityManager.getAccounts(), domainWriter, this::generateAccountEntity, "account");
         generateAndWriteEntityType(entityManager.getFiles(), domainWriter, this::generateFileEntity, "file");
+        generateAndWriteEntityType(entityManager.getTopics(), domainWriter, this::generateTopicEntity, "topic");
         log.info("Generated all entities in {}", stopwatch);
     }
 
@@ -101,6 +102,12 @@ public class EntityGenerator {
     private Entities generateFileEntity(long id) {
         Entities entity = createBaseEntity(id);
         entity.setEntityTypeId(3); // 3 = file
+        return entity;
+    }
+
+    private Entities generateTopicEntity(long id) {
+        Entities entity = createBaseEntity(id);
+        entity.setEntityTypeId(4); // 4 = topic
         return entity;
     }
 }

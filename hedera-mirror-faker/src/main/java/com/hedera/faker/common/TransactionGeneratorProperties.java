@@ -30,4 +30,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class TransactionGeneratorProperties {
     private int cryptoTransactionsFrequency;
     private int fileTransactionsFrequency;
+    private int topicTransactionsFrequency;
 }

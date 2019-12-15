@@ -35,6 +35,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -44,6 +45,7 @@ import com.hedera.mirror.importer.util.Utility;
  * Generated data:
  * <p>
  * Fake data for tables: - t_transactions - t_file_data - t_cryptotransferlists - t_entities - account_balances
+ * - topic_message
  * <p>
  * Fake 'constant' data for tables: - t_record_files : single row with id 0.
  * <p>
@@ -63,6 +65,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
     private final CSVPrinter cryptoTransferListsWriter;
     private final CSVPrinter entitiesWriter;
     private final CSVPrinter fileDataWriter;
+    private final CSVPrinter topicMessageWriter;
     private final CSVPrinter accountBalancesWriter;
 
     PostgresCSVDomainWriter(Properties properties) throws IOException {
@@ -73,6 +76,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         cryptoTransferListsWriter = getCryptoTransferListsCSVPrinter(outputDir);
         entitiesWriter = getEntitiesCSVPrinter(outputDir);
         fileDataWriter = getFileDataCSVPrinter(outputDir);
+        topicMessageWriter = getTopicMessageCSVPrinter(outputDir);
         accountBalancesWriter = getAccountBalancesCSVPrinter(outputDir);
         writeRecordFilesCSV(outputDir);
     }
@@ -83,8 +87,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
                 CSVFormat.DEFAULT.withHeader(
                         "fk_node_acc_id", "memo", "fk_payer_acc_id", "charged_tx_fee", "initial_balance",
                         "fk_cud_entity_id", "fk_rec_file_id", "valid_start_ns", "consensus_ns",
-                        "valid_duration_seconds", "max_fee", "transaction_hash", "result", "type",
-                        "transaction_bytes"));
+                        "valid_duration_seconds", "max_fee", "transaction_hash", "result", "type"));
     }
 
     private static CSVPrinter getEntitiesCSVPrinter(String outputDir) throws IOException {
@@ -93,7 +96,8 @@ public class PostgresCSVDomainWriter implements DomainWriter {
                 CSVFormat.DEFAULT.withHeader(
                         "id", "entity_num", "entity_realm", "entity_shard", "fk_entity_type_id", "exp_time_seconds",
                         "exp_time_nanos", "auto_renew_period", "admin_key__deprecated", "key", "fk_prox_acc_id",
-                        "deleted", "exp_time_ns", "ed25519_public_key_hex"));
+                        "deleted", "exp_time_ns", "ed25519_public_key_hex", "submit_key", "topic_valid_start_time",
+                        "memo"));
     }
 
     private static CSVPrinter getCryptoTransferListsCSVPrinter(String outputDir) throws IOException {
@@ -106,6 +110,13 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         return new CSVPrinter(
                 Files.newBufferedWriter(Paths.get(outputDir, "t_file_data")),
                 CSVFormat.DEFAULT.withHeader("file_data", "consensus_timestamp"));
+    }
+
+    private static CSVPrinter getTopicMessageCSVPrinter(String outputDir) throws IOException {
+        return new CSVPrinter(
+                Files.newBufferedWriter(Paths.get(outputDir, "topic_message")),
+                CSVFormat.DEFAULT.withHeader("consensus_timestamp", "realm_num", "topic_num", "message",
+                        "running_hash", "sequence_number"));
     }
 
     private static CSVPrinter getAccountBalancesCSVPrinter(String outputDir) throws IOException {
@@ -130,8 +141,9 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         transactionsWriter.close();
         cryptoTransferListsWriter.close();
         entitiesWriter.close();
-        accountBalancesWriter.close();
         fileDataWriter.close();
+        topicMessageWriter.close();
+        accountBalancesWriter.close();
     }
 
     @Override
@@ -142,8 +154,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
                     transaction.getChargedTxFee(), transaction.getInitialBalance(), transaction.getEntityId(),
                     /* record file id */ 0, transaction.getValidStartNs(), transaction.getConsensusNs(),
                     transaction.getValidDurationSeconds(), transaction.getMaxFee(),
-                    toHex(transaction.getTransactionHash()), transaction.getResult(), transaction.getType(),
-                    toHex(transaction.getTransactionBytes()));
+                    toHex(transaction.getTransactionHash()), transaction.getResult(), transaction.getType());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -157,7 +168,8 @@ public class PostgresCSVDomainWriter implements DomainWriter {
                     entity.getId(), entity.getEntityNum(), entity.getEntityRealm(), entity.getEntityShard(),
                     entity.getEntityTypeId(), entity.getExpiryTimeSeconds(), entity.getExpiryTimeNanos(),
                     entity.getAutoRenewPeriod(), null, toHex(entity.getKey()), entity.getProxyAccountId(),
-                    entity.isDeleted(), entity.getExpiryTimeNs(), entity.getEd25519PublicKeyHex());
+                    entity.isDeleted(), entity.getExpiryTimeNs(), entity.getEd25519PublicKeyHex(),
+                    toHex(entity.getSubmitKey()), entity.getTopicValidStartTime(), entity.getMemo());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -185,6 +197,17 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         }
         log.trace("added file data size {} at timestamp {}", fileData.getFileData().length,
                 fileData.getConsensusTimestamp());
+    }
+
+    @Override
+    public void addTopicMessage(TopicMessage topicMessage) {
+        try {
+            topicMessageWriter.printRecord(topicMessage.getConsensusTimestamp(), topicMessage.getRealmNum(),
+                    topicMessage.getTopicNum(), toHex(topicMessage.getMessage()), toHex(topicMessage.getRunningHash()),
+                    topicMessage.getSequenceNumber());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
