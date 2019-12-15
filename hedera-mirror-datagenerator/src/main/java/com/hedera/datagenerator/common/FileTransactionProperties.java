@@ -19,7 +19,6 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
-import javax.annotation.PostConstruct;
 import javax.inject.Named;
 import lombok.Data;
 
@@ -63,7 +62,6 @@ public class FileTransactionProperties {
 
     private final NumberDistributionConfig fileDataSize = new NumberDistributionConfig();
 
-    @PostConstruct
     void initDistributions() {
         fileDataSize.initDistribution();
     }

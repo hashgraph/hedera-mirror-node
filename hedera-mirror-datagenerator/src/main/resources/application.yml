@@ -7,7 +7,7 @@ hedera:
         rangeMax: 8
       transaction:
         crypto:
-          frequency: 990
+          frequency: 490
           createsFrequency: 10
           transfersFrequency: 988
           updatesFrequency: 1
@@ -26,6 +26,16 @@ hedera:
           fileDataSize:
             rangeMin: 0
             rangeMax: 5000
+        topic:
+          frequency: 500
+          createsFrequency: 1
+          updatesFrequency: 1
+          deletesFrequency: 1
+          submitMessageFrequency: 997
+          numSeedTopics: 10
+          messageSize:
+            rangeMin: 0
+            rangeMax: 3000
 
 logging:
   level:
