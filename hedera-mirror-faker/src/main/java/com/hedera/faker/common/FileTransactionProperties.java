@@ -42,22 +42,22 @@ public class FileTransactionProperties {
     private int maxFileDataSize;
 
     /**
-     * FILECREATE transactions per thousand file transactions
+     * Relative frequency of FILECREATE transactions
      */
     private int createsFrequency;
 
     /**
-     * FILEAPPEND transactions per thousand file transactions
+     * Relative frequency of FILEAPPEND transactions
      */
     private int appendsFrequency;
 
     /**
-     * FILEUPDATE transactions per thousand file transactions
+     * Relative frequency of FILEUPDATE transactions
      */
     private int updatesFrequency;
 
     /**
-     * FILEDELETE transactions per thousand file transactions
+     * Relative frequency of FILEDELETE transactions
      */
     private int deletesFrequency;
 
