@@ -85,7 +85,7 @@ public class EntityGenerator {
         entity.setEntityShard(0L);
         entity.setEntityRealm(0L);
         entity.setEntityNum(id);
-        entity.setKey(fixedKey);  // TODO: values are wrong in db "[B@2f1f9515" and null
+        entity.setKey(fixedKey);
         // Following fields are left null: exp_time_seconds, exp_time_nanos, exp_time_ns
         entity.setAutoRenewPeriod(null);
         entity.setProxyAccountId(null);

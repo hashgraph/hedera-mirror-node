@@ -27,6 +27,7 @@ import javax.inject.Named;
 
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -54,7 +55,6 @@ import com.hedera.mirror.importer.util.Utility;
  * <p>
  * Don't care tables: - entity_types - flyway_schema_history
  */
-// TODO: how to load bytes correctly (memo, key, etc)
 @Named
 @Log4j2
 public class PostgresCSVDomainWriter implements DomainWriter {
@@ -138,11 +138,12 @@ public class PostgresCSVDomainWriter implements DomainWriter {
     public void addTransaction(Transaction transaction) {
         try {
             transactionsWriter.printRecord(
-                    transaction.getNodeAccountId(), transaction.getMemo(), transaction.getPayerAccountId(),
+                    transaction.getNodeAccountId(), toHex(transaction.getMemo()), transaction.getPayerAccountId(),
                     transaction.getChargedTxFee(), transaction.getInitialBalance(), transaction.getEntityId(),
                     /* record file id */ 0, transaction.getValidStartNs(), transaction.getConsensusNs(),
-                    transaction.getValidDurationSeconds(), transaction.getMaxFee(), transaction.getTransactionHash(),
-                    transaction.getResult(), transaction.getType(), transaction.getTransactionBytes());
+                    transaction.getValidDurationSeconds(), transaction.getMaxFee(),
+                    toHex(transaction.getTransactionHash()), transaction.getResult(), transaction.getType(),
+                    toHex(transaction.getTransactionBytes()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -155,8 +156,8 @@ public class PostgresCSVDomainWriter implements DomainWriter {
             entitiesWriter.printRecord(
                     entity.getId(), entity.getEntityNum(), entity.getEntityRealm(), entity.getEntityShard(),
                     entity.getEntityTypeId(), entity.getExpiryTimeSeconds(), entity.getExpiryTimeNanos(),
-                    entity.getAutoRenewPeriod(), null, entity.getKey(), entity.getProxyAccountId(), entity.isDeleted(),
-                    entity.getExpiryTimeNs(), entity.getEd25519PublicKeyHex());
+                    entity.getAutoRenewPeriod(), null, toHex(entity.getKey()), entity.getProxyAccountId(),
+                    entity.isDeleted(), entity.getExpiryTimeNs(), entity.getEd25519PublicKeyHex());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -178,7 +179,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
     @Override
     public void addFileData(FileData fileData) {
         try {
-            fileDataWriter.printRecord(fileData.getFileData(), fileData.getConsensusTimestamp());
+            fileDataWriter.printRecord(toHex(fileData.getFileData()), fileData.getConsensusTimestamp());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -192,6 +193,14 @@ public class PostgresCSVDomainWriter implements DomainWriter {
             accountBalancesWriter.printRecord(consensusNs, balance, 0, accountNum);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private String toHex(byte[] data) {
+        if (data == null) {
+            return null;
+        } else {
+            return "\\x" + Hex.encodeHexString(data);
         }
     }
 
