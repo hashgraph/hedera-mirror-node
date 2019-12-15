@@ -40,22 +40,22 @@ public class CryptoTransactionProperties {
     private final NumberDistributionConfig numTransferLists = new NumberDistributionConfig();
 
     /**
-     * CRYPTOCREATEACCOUNT transactions per thousand crypto transactions
+     * Relative frequency of CRYPTOCREATEACCOUNT transactions
      */
     private int createsFrequency;
 
     /**
-     * CRYPTOTRANSFER transactions per thousand crypto transactions
+     * Relative frequency of CRYPTOTRANSFER transactions
      */
     private int transfersFrequency;
 
     /**
-     * CRYPTOUPDATEACCOUNT transactions per thousand crypto transactions
+     * Relative frequency of CRYPTOUPDATEACCOUNT transactions
      */
     private int updatesFrequency;
 
     /**
-     * CRYPTODELETE transactions per thousand crypto transactions
+     * Relative frequency of CRYPTODELETE transactions
      */
     private int deletesFrequency;
 
