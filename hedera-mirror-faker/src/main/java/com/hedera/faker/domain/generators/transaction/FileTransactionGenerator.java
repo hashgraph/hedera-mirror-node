@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.function.Consumer;
 import javax.inject.Named;
 
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.faker.common.EntityManager;
@@ -40,57 +41,27 @@ import com.hedera.mirror.importer.domain.Transaction;
  */
 @Log4j2
 @Named
-public class FileTransactionGenerator implements TransactionGenerator {
-    private final int RESULT_SUCCESS = 22;
-    private final byte[] MEMO = new byte[] {0b0, 0b1, 0b01, 0b10, 0b11}; // TODO: change size to avg. size seen in prod
+public class FileTransactionGenerator extends TransactionGenerator {
 
     private final FileTransactionProperties properties;
-    private final EntityManager entityManager;
-    private final DomainWriter domainWriter;
-    private final Distribution<Consumer<Transaction>> transactionType;
-    private int numTransactionsGenerated;
+    @Getter
+    private final Distribution<Consumer<Transaction>> transactionDistribution;
 
     public FileTransactionGenerator(
             FileTransactionProperties properties, EntityManager entityManager, DomainWriter domainWriter) {
+        super(entityManager, domainWriter, properties.getNumSeedFiles());
         this.properties = properties;
-        this.entityManager = entityManager;
-        this.domainWriter = domainWriter;
-        numTransactionsGenerated = 0;
-
-        Map<Consumer<Transaction>, Integer> transactionTypeDistribution = Map.of(
+        transactionDistribution = new FrequencyDistribution<>(Map.of(
                 this::createFile, this.properties.getCreatesFrequency(),
                 this::appendFile, this.properties.getAppendsFrequency(),
                 this::updateFile, this.properties.getUpdatesFrequency(),
                 this::deleteFile, this.properties.getDeletesFrequency()
-        );
-        transactionType = new FrequencyDistribution<>(transactionTypeDistribution);
+        ));
     }
 
     @Override
-    public void generateTransaction(long consensusTimestampNs) {
-        Transaction transaction = new Transaction();
-        long txFee = 100_000L;
-        transaction.setConsensusNs(consensusTimestampNs);
-        transaction.setNodeAccountId(entityManager.getNodeAccountId());
-        transaction.setResult(RESULT_SUCCESS);
-        transaction.setChargedTxFee(txFee);
-        // set to fixed 10 sec before consensus time
-        transaction.setValidStartNs(consensusTimestampNs - 10_000_000_000L);
-        transaction.setValidDurationSeconds(120L);
-        transaction.setMaxFee(1_000_000L);
-        transaction.setInitialBalance(0L);
-        Long payerAccountId = entityManager.getAccounts().getRandom();
-        transaction.setPayerAccountId(payerAccountId);
-        entityManager.addBalance(payerAccountId, -txFee);
-        transaction.setMemo(MEMO);
-
-        if (numTransactionsGenerated < properties.getNumSeedFiles()) {
-            createFile(transaction);
-        } else {
-            transactionType.sample().accept(transaction);
-        }
-        domainWriter.addTransaction(transaction);
-        numTransactionsGenerated++;
+    public void seedEntity(Transaction transaction) {
+        createFile(transaction);
     }
 
     private void createFile(Transaction transaction) {
