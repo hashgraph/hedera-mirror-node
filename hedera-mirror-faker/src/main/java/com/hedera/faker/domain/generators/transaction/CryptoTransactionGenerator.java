@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import javax.inject.Named;
 
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.faker.common.CryptoTransactionProperties;
@@ -40,53 +41,27 @@ import com.hedera.mirror.importer.domain.Transaction;
  */
 @Named
 @Log4j2
-public class CryptoTransactionGenerator implements TransactionGenerator {
-    private final int RESULT_SUCCESS = 22;
-    private final byte[] MEMO = new byte[] {0b0, 0b1, 0b01, 0b10, 0b11}; // TODO: change size to avg. size seen in prod
-    private final int CRYPTO_TRANSFER_AMOUNT = 1000;
+public class CryptoTransactionGenerator extends TransactionGenerator {
 
     private final CryptoTransactionProperties properties;
-    private final EntityManager entityManager;
-    private final DomainWriter domainWriter;
-    private final Distribution<Consumer<Transaction>> transactionType;
-    private int numTransactionsGenerated;
+    @Getter
+    private final Distribution<Consumer<Transaction>> transactionDistribution;
 
     public CryptoTransactionGenerator(
             CryptoTransactionProperties properties, EntityManager entityManager, DomainWriter domainWriter) {
+        super(entityManager, domainWriter, properties.getNumSeedAccounts());
         this.properties = properties;
-        this.entityManager = entityManager;
-        this.domainWriter = domainWriter;
-        numTransactionsGenerated = 0;
-
-        Map<Consumer<Transaction>, Integer> transactionTypeDistribution = Map.of(
+        transactionDistribution = new FrequencyDistribution<>(Map.of(
                 this::createAccount, this.properties.getCreatesFrequency(),
                 this::transfer, this.properties.getTransfersFrequency(),
                 this::updateAccount, this.properties.getUpdatesFrequency(),
                 this::deleteAccount, this.properties.getDeletesFrequency()
-        );
-        transactionType = new FrequencyDistribution<>(transactionTypeDistribution);
+        ));
     }
 
     @Override
-    public void generateTransaction(long consensusTimestampNs) {
-        Transaction transaction = new Transaction();
-        transaction.setConsensusNs(consensusTimestampNs);
-        transaction.setNodeAccountId(entityManager.getNodeAccountId());
-        transaction.setResult(RESULT_SUCCESS);
-        transaction.setChargedTxFee(100_000L); // Note: place holder value only. Doesn't affect balances.
-        // set to fixed 10 sec before consensus time
-        transaction.setValidStartNs(consensusTimestampNs - 10_000_000_000L);
-        transaction.setValidDurationSeconds(120L);
-        transaction.setMaxFee(1_000_000L);
-        transaction.setMemo(MEMO);
-
-        if (numTransactionsGenerated < properties.getNumSeedAccounts()) {
-            createAccount(transaction);
-        } else {
-            transactionType.sample().accept(transaction);
-        }
-        domainWriter.addTransaction(transaction);
-        numTransactionsGenerated++;
+    public void seedEntity(Transaction transaction) {
+        createAccount(transaction);
     }
 
     private void createAccount(Transaction transaction) {
@@ -121,10 +96,11 @@ public class CryptoTransactionGenerator implements TransactionGenerator {
         List<Long> accountIds = entityManager.getAccounts().getRandom((int) numTransferLists + 1);
 
         long totalValue = 0;
+        int singleTransferAmount = 1000;
         for (int i = 0; i < numTransferLists; i++) {
             domainWriter.addCryptoTransfer(createCryptoTransfer(
-                    transaction.getConsensusNs(), accountIds.get(i + 1), CRYPTO_TRANSFER_AMOUNT));
-            totalValue += CRYPTO_TRANSFER_AMOUNT;
+                    transaction.getConsensusNs(), accountIds.get(i + 1), singleTransferAmount));
+            totalValue += singleTransferAmount;
         }
         domainWriter.addCryptoTransfer(createCryptoTransfer(
                 transaction.getConsensusNs(), accountIds.get(0), -totalValue));

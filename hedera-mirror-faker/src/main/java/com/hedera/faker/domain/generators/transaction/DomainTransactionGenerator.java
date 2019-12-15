@@ -30,7 +30,7 @@ import com.hedera.faker.sampling.FrequencyDistribution;
  * Generates mixed types of transactions. Uses CryptoTransactionGenerator and FileTransactionGenerator.
  */
 @Named
-public class DomainTransactionGenerator implements TransactionGenerator {
+public class DomainTransactionGenerator {
 
     private final FrequencyDistribution<TransactionGenerator> mixedTransactionGenerator;
 
@@ -43,7 +43,6 @@ public class DomainTransactionGenerator implements TransactionGenerator {
         ));
     }
 
-    @Override
     public void generateTransaction(long consensusTimestampNs) {
         mixedTransactionGenerator.sample().generateTransaction(consensusTimestampNs);
     }
