@@ -58,10 +58,10 @@ public class FileTransactionGenerator implements TransactionGenerator {
         numTransactionsGenerated = 0;
 
         Map<Consumer<Transaction>, Integer> transactionTypeDistribution = Map.of(
-                this::createFile, this.properties.getCreatesPerThousand(),
-                this::appendFile, this.properties.getAppendsPerThousand(),
-                this::updateFile, this.properties.getUpdatesPerThousand(),
-                this::deleteFile, this.properties.getDeletesPerThousand()
+                this::createFile, this.properties.getCreatesFrequency(),
+                this::appendFile, this.properties.getAppendsFrequency(),
+                this::updateFile, this.properties.getUpdatesFrequency(),
+                this::deleteFile, this.properties.getDeletesFrequency()
         );
         transactionType = new FrequencyDistribution<>(transactionTypeDistribution);
     }

@@ -44,22 +44,22 @@ public class FileTransactionProperties {
     /**
      * FILECREATE transactions per thousand file transactions
      */
-    private int createsPerThousand;
+    private int createsFrequency;
 
     /**
      * FILEAPPEND transactions per thousand file transactions
      */
-    private int appendsPerThousand;
+    private int appendsFrequency;
 
     /**
      * FILEUPDATE transactions per thousand file transactions
      */
-    private int updatesPerThousand;
+    private int updatesFrequency;
 
     /**
      * FILEDELETE transactions per thousand file transactions
      */
-    private int deletesPerThousand;
+    private int deletesFrequency;
 
     /**
      * When generating transactions, first 'numSeedFiles' number of transactions will be of type FILECREATE only. This

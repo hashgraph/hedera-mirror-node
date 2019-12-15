@@ -28,6 +28,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Named
 @ConfigurationProperties("faker.transaction")
 public class TransactionGeneratorProperties {
-    private int cryptoTransactionsPerThousand;
-    private int fileTransactionsPerThousand;
+    private int cryptoTransactionsFrequency;
+    private int fileTransactionsFrequency;
 }

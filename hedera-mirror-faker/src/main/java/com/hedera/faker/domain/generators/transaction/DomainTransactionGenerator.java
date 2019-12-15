@@ -38,8 +38,8 @@ public class DomainTransactionGenerator implements TransactionGenerator {
             TransactionGeneratorProperties properties, CryptoTransactionGenerator cryptoTransactionGenerator,
             FileTransactionGenerator fileTransactionGenerator) {
         mixedTransactionGenerator = new FrequencyDistribution<>(Map.of(
-                cryptoTransactionGenerator, properties.getCryptoTransactionsPerThousand(),
-                fileTransactionGenerator, properties.getFileTransactionsPerThousand()
+                cryptoTransactionGenerator, properties.getCryptoTransactionsFrequency(),
+                fileTransactionGenerator, properties.getFileTransactionsFrequency()
         ));
     }
 

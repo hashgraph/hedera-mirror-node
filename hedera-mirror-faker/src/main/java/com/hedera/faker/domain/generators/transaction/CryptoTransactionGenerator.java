@@ -59,10 +59,10 @@ public class CryptoTransactionGenerator implements TransactionGenerator {
         numTransactionsGenerated = 0;
 
         Map<Consumer<Transaction>, Integer> transactionTypeDistribution = Map.of(
-                this::createAccount, this.properties.getCreatesPerThousand(),
-                this::transfer, this.properties.getTransfersPerThousand(),
-                this::updateAccount, this.properties.getUpdatesPerThousand(),
-                this::deleteAccount, this.properties.getDeletesPerThousand()
+                this::createAccount, this.properties.getCreatesFrequency(),
+                this::transfer, this.properties.getTransfersFrequency(),
+                this::updateAccount, this.properties.getUpdatesFrequency(),
+                this::deleteAccount, this.properties.getDeletesFrequency()
         );
         transactionType = new FrequencyDistribution<>(transactionTypeDistribution);
     }
