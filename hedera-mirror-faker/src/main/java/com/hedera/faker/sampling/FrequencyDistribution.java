@@ -20,48 +20,42 @@ package com.hedera.faker.sampling;
  */
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * Generates frequency distribution of values. Frequencies are expressed in either parts-per-thousand,
- * parts-per-ten-thousand or parts-per-million.
+ * Generates frequency distribution of values.
+ * For a distribution specified by A:10, B:1000, C:100, creates a shuffled array with each element's occurrence count
+ * equal to its frequency.
+ * sample() returns values from this array.
  */
 @RequiredArgsConstructor
 public class FrequencyDistribution<T> implements Distribution<T> {
-    private final int cumulativeFrequency;
-    private List<Pair<Integer, T>> cumulativeFrequencyDistribution;
-    private Random random;
+    private List<T> randomizedSamples;
+    private int index;
+    private int totalFrequency;
 
     public FrequencyDistribution(Map<T, Integer> distribution) {
-        int cf = 0;
-        cumulativeFrequencyDistribution = new ArrayList<>(distribution.size());
+        index = -1;
+        totalFrequency = 0;
         for (Map.Entry<T, Integer> entry : distribution.entrySet()) {
-            cf += entry.getValue();
-            cumulativeFrequencyDistribution.add(Pair.of(cf, entry.getKey()));
+            totalFrequency += entry.getValue();
         }
-        if (cf != 1000 && cf != 10000 && cf != 1000000) {
-            throw new IllegalArgumentException(
-                    "Frequencies should be either parts-per-thousand, parts-per-ten-thousand, or parts-per-million. " +
-                            "The cumulative frequency should add upto 1000 or 10000 or 1million. Found " + cf);
+        randomizedSamples = new ArrayList<>(totalFrequency);
+        for (Map.Entry<T, Integer> entry : distribution.entrySet()) {
+            for (int i = 0; i < entry.getValue(); i++) {
+                randomizedSamples.add(entry.getKey());
+            }
         }
-        cumulativeFrequency = cf;
-        random = new Random();
+        Collections.shuffle(randomizedSamples);
     }
 
     @Override
     public T sample() {
-        int roll = random.nextInt(cumulativeFrequency);
-        for (var entry : cumulativeFrequencyDistribution) {
-            if (roll < entry.getLeft()) {
-                return entry.getRight();
-            }
-        }
-        throw new IllegalStateException(
-                "Should not reach here since cumulativeFrequencyDistribution should add to " + cumulativeFrequency);
+        index = (index + 1) % totalFrequency;
+        return randomizedSamples.get(index);
     }
 }

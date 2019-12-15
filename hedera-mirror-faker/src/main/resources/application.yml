@@ -4,22 +4,22 @@ faker:
     rangeMin: 3
     rangeMax: 8
   transaction:
-    cryptoTransactionsPerThousand: 990
-    fileTransactionsPerThousand: 10
+    cryptoTransactionsFrequency: 990
+    fileTransactionsFrequency: 10
     crypto:
-      createsPerThousand: 10
-      transfersPerThousand: 988
-      updatesPerThousand: 1
-      deletesPerThousand: 1
+      createsFrequency: 10
+      transfersFrequency: 988
+      updatesFrequency: 1
+      deletesFrequency: 1
       numSeedAccounts: 10000
       numTransferLists:
         rangeMin: 1
         rangeMax: 10
     file:
-      createsPerThousand: 800
-      appendsPerThousand: 100
-      updatesPerThousand: 80
-      deletesPerThousand: 20
+      createsFrequency: 800
+      appendsFrequency: 100
+      updatesFrequency: 80
+      deletesFrequency: 20
       numSeedFiles: 1000
       fileDataSize:
         rangeMin: 0

@@ -42,22 +42,22 @@ public class CryptoTransactionProperties {
     /**
      * CRYPTOCREATEACCOUNT transactions per thousand crypto transactions
      */
-    private int createsPerThousand;
+    private int createsFrequency;
 
     /**
      * CRYPTOTRANSFER transactions per thousand crypto transactions
      */
-    private int transfersPerThousand;
+    private int transfersFrequency;
 
     /**
      * CRYPTOUPDATEACCOUNT transactions per thousand crypto transactions
      */
-    private int updatesPerThousand;
+    private int updatesFrequency;
 
     /**
      * CRYPTODELETE transactions per thousand crypto transactions
      */
-    private int deletesPerThousand;
+    private int deletesFrequency;
 
     /**
      * When generating transactions, first 'numSeedAccounts' number of transactions will be of type CRYPTOCREATEACCOUNT
