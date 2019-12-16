@@ -2,42 +2,36 @@
 --- Replace t_cryptotransferlists.account_id with realm_num and entity_num
 ---
 
--- drop previous indexes
-drop index if exists
-    idx__t_cryptotransferlists__account_and_consensus;
-
-drop index if exists
-    idx__t_cryptotransferlists__consensus_and_account;
-
--- add realm_num and entity_num
-alter table t_cryptotransferlists
-    add column if not exists realm_num entity_realm_num null;
-
-alter table t_cryptotransferlists
-    add column if not exists entity_num entity_num null;
-
 -- populate realm_num and entity_num from t_entities table
-with dupe_entities as (
-        select id, entity_realm, entity_num from t_entities
-)
-update t_cryptotransferlists c set realm_num = de.entity_realm, entity_num = de.entity_num from dupe_entities de where c.account_id = de.id;
+-- instead of in place update insert into a new table without index overhead for optimal performance
+create table t_cryptotransferlists_migrate
+(
+    consensus_timestamp nanos_timestamp     not null,
+    realm_num           entity_realm_num    not null,
+    entity_num          entity_num          not null,
+    amount              hbar_tinybars       not null
+);
 
-alter table t_cryptotransferlists
-    alter column realm_num set not null;
+insert into t_cryptotransferlists_migrate (consensus_timestamp, realm_num, entity_num, amount)
+select ctl.consensus_timestamp, ent.entity_realm, ent.entity_num, ctl.amount
+from t_cryptotransferlists ctl
+         join t_entities ent
+              on ctl.account_id = ent.id;
 
-alter table t_cryptotransferlists
-    alter column entity_num set not null;
+-- swap tables
+drop table t_cryptotransferlists cascade;
+alter table t_cryptotransferlists_migrate
+    rename to t_cryptotransferlists;
 
--- add additional indexes
+    -- add indexes
+create index if not exists idx__t_cryptotransferlist_amount ON t_cryptotransferlists (amount);
+
 create index if not exists idx__t_cryptotransferlists__consensus_and_realm_and_num
     on t_cryptotransferlists (consensus_timestamp, realm_num, entity_num);
 
-create index if not exists idx__t_cryptotransferlists__ts_then_acct
-    on t_cryptotransferlists (consensus_timestamp, realm_num, entity_num);
+create index if not exists idx__t_cryptotransferlists__realm_and_num_and_consensus
+    on t_cryptotransferlists (realm_num, entity_num, consensus_timestamp);
 
--- drop constraint and acount_id
+-- add foreign key
 alter table t_cryptotransferlists
-   drop constraint if exists fk_ctl_account_id;
-
-alter table t_cryptotransferlists
-    drop column if exists account_id;
+    add constraint fk__t_transactions foreign key (consensus_timestamp) references t_transactions (consensus_ns);
