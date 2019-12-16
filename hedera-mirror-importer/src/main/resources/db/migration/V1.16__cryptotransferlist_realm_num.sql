@@ -29,6 +29,9 @@ create index if not exists idx__t_cryptotransferlist_amount ON t_cryptotransferl
 create index if not exists idx__t_cryptotransferlists__consensus_and_realm_and_num
     on t_cryptotransferlists (consensus_timestamp, realm_num, entity_num);
 
+create index if not exists idx__t_cryptotransferlists__realm_and_num_and_consensus
+    on t_cryptotransferlists (realm_num, entity_num, consensus_timestamp);
+
 -- add foreign key
 alter table t_cryptotransferlists
     add constraint fk__t_transactions foreign key (consensus_timestamp) references t_transactions (consensus_ns);
