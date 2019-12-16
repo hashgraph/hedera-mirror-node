@@ -25,20 +25,20 @@ from t_cryptotransferlists ctl
          join t_entities ent
               on ctl.account_id = ent.id;
 
--- add indexes
-create index if not exists idx__t_cryptotransferlist_amount ON t_cryptotransferlists_migrate (amount);
-
-create index if not exists idx__t_cryptotransferlists__ts_then_acct
-    on t_cryptotransferlists_migrate (consensus_timestamp, entity_num);
-
-create index if not exists idx__t_cryptotransferlists__consensus_and_realm_and_num
-    on t_cryptotransferlists_migrate (consensus_timestamp, realm_num, entity_num);
-
--- add foreign key
-alter table t_cryptotransferlists_migrate
-    add constraint fk__t_transactions foreign key (consensus_timestamp) references t_transactions (consensus_ns);
-
 -- swap tables
 drop table t_cryptotransferlists;
 alter table t_cryptotransferlists_migrate
     rename to t_cryptotransferlists;
+
+    -- add indexes
+create index if not exists idx__t_cryptotransferlist_amount ON t_cryptotransferlists (amount);
+
+create index if not exists idx__t_cryptotransferlists__ts_then_acct
+    on t_cryptotransferlists (consensus_timestamp, entity_num);
+
+create index if not exists idx__t_cryptotransferlists__consensus_and_realm_and_num
+    on t_cryptotransferlists (consensus_timestamp, realm_num, entity_num);
+
+-- add foreign key
+alter table t_cryptotransferlists
+    add constraint fk__t_transactions foreign key (consensus_timestamp) references t_transactions (consensus_ns);
