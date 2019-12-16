@@ -9,4 +9,4 @@ hedera:
       apiUsername: mirror_api
     apiServer: 127.0.0.1:5551
     querySetsFile: /tmp/apiperftest/querySets.yml
-    resultsFile: /tmp/apiperftest/apiResults.yml
+    resultsDir: /tmp/apiperftest/

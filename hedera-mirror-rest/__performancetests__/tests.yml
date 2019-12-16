@@ -25,8 +25,8 @@ tests:
     filterAxis: ACCOUNTID
     count: 5
     rangeNumAccounts: 100
-  - name: 'transactions_debit_asc - account ids range (100)'
-    query: '/transactions?result=success&type=credit&order=asc'
+  - name: 'transactions_success_debit_asc - account ids range (100)'
+    query: '/transactions?result=success&type=debit&order=asc'
     filterAxis: ACCOUNTID
     count: 5
     rangeNumAccounts: 100

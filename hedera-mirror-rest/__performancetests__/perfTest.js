@@ -90,17 +90,18 @@ const executeQueries = async function() {
   console.log(allResults);
   let hrend = process.hrtime(hrstart);
   console.log(`Finished executing queries. Time : ${hrend[0]}s ${parseInt(hrend[1] / 1000000)}ms `);
-  let resultsFile = config.resultsFile;
-  if (resultsFile !== '') {
+  let resultsDir = config.resultsDir;
+  if (resultsDir !== undefined && resultsDir !== '') {
+    let dateTime = new Date().toJSON().substring(0, 19);
+    let resultFileName = path.join(resultsDir, 'apiResults-' + dateTime + '.yml');
     try {
-      let parentDir = path.dirname(resultsFile);
-      if (!fs.existsSync(parentDir)) {
-        fs.mkdirSync(parentDir);
+      if (!fs.existsSync(resultsDir)) {
+        fs.mkdirSync(resultsDir);
       }
-      console.log(`Writing results to ${resultsFile}`);
-      fs.writeFileSync(resultsFile, yaml.safeDump(allResults));
+      console.log(`Writing results to ${resultFileName}`);
+      fs.writeFileSync(resultFileName, yaml.safeDump(allResults));
     } catch (err) {
-      console.log(`Failed to write results to ${resultsFile}: ${err}`);
+      console.log(`Failed to write results to ${resultFileName}: ${err}`);
     }
   }
 };
