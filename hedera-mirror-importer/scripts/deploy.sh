@@ -12,7 +12,7 @@ if [ -z "${version}" ]; then
     echo "Can't find ${name}-[vb]* versioned parent directory. Unrecognized layout. Aborting"
     exit 1
 fi
-jarname="${name}-${version:1}.jar"
+jarname="${name}-${version:-1}.jar"
 if [ ! -f "${jarname}" ]; then
     echo "Can't find ${jarname}. Aborting"
     exit 1
