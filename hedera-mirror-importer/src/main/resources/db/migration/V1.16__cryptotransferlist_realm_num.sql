@@ -2,21 +2,14 @@
 --- Replace t_cryptotransferlists.account_id with realm_num and entity_num
 ---
 
--- drop previous indexes
-drop index if exists
-    idx__t_cryptotransferlists__account_and_consensus;
-
-drop index if exists
-    idx__t_cryptotransferlists__consensus_and_account;
-
 -- populate realm_num and entity_num from t_entities table
 -- instead of in place update insert into a new table without index overhead for optimal performance
 create table t_cryptotransferlists_migrate
 (
-    consensus_timestamp nanos_timestamp not null,
-    realm_num           entity_num      not null,
-    entity_num          entity_num      not null,
-    amount              hbar_tinybars   not null
+    consensus_timestamp nanos_timestamp     not null,
+    realm_num           entity_realm_num    not null,
+    entity_num          entity_num          not null,
+    amount              hbar_tinybars       not null
 );
 
 insert into t_cryptotransferlists_migrate (consensus_timestamp, realm_num, entity_num, amount)
@@ -26,15 +19,12 @@ from t_cryptotransferlists ctl
               on ctl.account_id = ent.id;
 
 -- swap tables
-drop table t_cryptotransferlists;
+drop table t_cryptotransferlists cascade;
 alter table t_cryptotransferlists_migrate
     rename to t_cryptotransferlists;
 
     -- add indexes
 create index if not exists idx__t_cryptotransferlist_amount ON t_cryptotransferlists (amount);
-
-create index if not exists idx__t_cryptotransferlists__ts_then_acct
-    on t_cryptotransferlists (consensus_timestamp, entity_num);
 
 create index if not exists idx__t_cryptotransferlists__consensus_and_realm_and_num
     on t_cryptotransferlists (consensus_timestamp, realm_num, entity_num);
