@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,22 +20,26 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-/**
- * Invalid dataset such as an account balances dataset.
- */
-public class InvalidDatasetException extends ImporterException {
+import java.io.File;
+import lombok.Data;
 
-    private static final long serialVersionUID = 3679395824341309905L;
+import com.hedera.mirror.importer.util.Utility;
 
-    public InvalidDatasetException(String message) {
-        super(message);
+@Data
+public class SignatureStream implements Comparable<SignatureStream> {
+
+    private File file;
+    private byte[] hash;
+    private String node;
+    private byte[] signature;
+    private boolean valid;
+
+    @Override
+    public int compareTo(SignatureStream other) {
+        return file.compareTo(other.getFile());
     }
 
-    public InvalidDatasetException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public InvalidDatasetException(String message, Throwable throwable) {
-        super(message, throwable);
+    public String getHashAsHex() {
+        return Utility.bytesToHex(hash);
     }
 }
