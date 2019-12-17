@@ -173,7 +173,7 @@ public class RecordFileLogger {
                 return INIT_RESULT.OK;
             }
         } catch (SQLException e) {
-            log.error("Error saving file {} in database", fileName, e);
+            log.error("Error saving file in database: {}", fileName, e);
         }
         return INIT_RESULT.FAIL;
     }

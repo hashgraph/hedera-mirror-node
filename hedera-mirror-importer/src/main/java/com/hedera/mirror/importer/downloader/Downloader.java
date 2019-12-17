@@ -182,7 +182,7 @@ public abstract class Downloader {
                                 files.add(sigFile);
                             }
                         } catch (InterruptedException ex) {
-                            log.error("Failed downloading {} in {}", pd.getS3key(), pd.getStopwatch(), ex);
+                            log.warn("Failed downloading {} in {}", pd.getS3key(), pd.getStopwatch(), ex);
                         }
                     });
                     if (ref.count > 0) {
@@ -336,7 +336,7 @@ public abstract class Downloader {
             }
 
             if (!valid) {
-                log.error("File could not be verified by at least 2/3 of nodes: {}", sigFileName);
+                log.error("File could not be verified by more than 2/3 of nodes: {}", sigFileName);
             }
         }
     }
@@ -353,7 +353,7 @@ public abstract class Downloader {
         String prevFileHash = getPrevFileHash(filePath);
 
         if (prevFileHash == null) {
-            log.warn("Doesn't contain valid previous file hash: {}", filePath);
+            log.warn("Does not contain valid previous file hash: {}", filePath);
             return false;
         }
 
@@ -381,10 +381,10 @@ public abstract class Downloader {
             if (pendingDownload.isDownloadSuccessful()) {
                 return pendingDownload.getFile();
             } else {
-                log.error("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId);
+                log.warn("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId);
             }
         } catch (Exception ex) {
-            log.error("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId, ex);
+            log.warn("Failed downloading {} from node {}", s3ObjectKey, nodeAccountId, ex);
         }
         return null;
     }

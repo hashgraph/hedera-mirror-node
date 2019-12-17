@@ -553,7 +553,7 @@ public class EventStreamFileParser implements FileParser {
                 log.error("Error closing database connection", e);
             }
         } catch (Exception e) {
-            log.error("Error parsing record files", e);
+            log.error("Error parsing events files", e);
         }
     }
 

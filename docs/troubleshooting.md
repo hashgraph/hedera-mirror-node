@@ -1,91 +1,167 @@
 # Troubleshooting
 
-## Record files
+This troubleshooting guide lists methods for detecting and handling issues with mirror node.
 
-Record stream files that have successfully been downloaded and parsed will be moved to `${hedera.mirror.dataPath}/recordstreams/parsedRecordFiles`.
+## Handling issues
 
-## Transient Errors
+### Importer
 
-The record and account balance downloaders are constantly downloading files from AWS and google.
-Temporary errors occur and the system will recover quickly.
-If they don't self-resolve fairly quickly (files download attempts will be retried rapidly) - escalate.
-The record stream should be downloaded every 5-10 seconds, account balances approximately every 15 minutes.
-Temporary network/download errors should not persist for more than 30 seconds.
+#### First step
 
--   `RecordFileDownloader Failed downloading .*`
--   `Failed downloading .* after .*`
--   `Failed to download key .* from cloud`
--   `File watching events may have been lost or discarded`
--   `Unable to set connection to not auto commit`
--   `Error saving file .* in database`
+Any time there is any disruption on the mirrornet at all, the first thing to do is decide whether the failover is
+healthy. If it is, we want to switch DNS immediately while we troubleshoot what is happening.
 
-## Messages likely requiring service restart
+Similarly, any time mirror node needs to be restarted, switch DNS to the failover first if it is healthy.
+
+#### Log-based issues
+
+Following is list of error messages and how to begin handling issues when they are encountered.
+
+-   `Encountered unknown transaction type`
+
+    Ideally, this should not happen because new transaction types are released after updating mirror node to be able to
+    handle them. Alerted only when impacting significant number of transactions.
+
+    Actions:
+
+    -   There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise
+        next morning).
+
+-   `Error closing connection`
+
+    If this happens, it's possible that database will eventually run out of open connections.
+
+    Actions:
+
+    -   Check Cloud SQL console to figure out if connection limit is being reached. If so, restarting importer would
+        be one way to temporarily fix it.
+    -   Ensure no service outage happens due to connection limit, restart as needed.
+
+-   `Error parsing record file` \
+    `Expecting previous file hash, but found file delimiter` \
+    `Hash mismatch for file` \
+    `Previous file hash not available` \
+    `Unable to extract hash and signature from file` \
+    `Unknown file delimiter` \
+    `Unknown record file delimiter`
+
+    All of the above errors happen when data inside stream files is not as expected. It can be because of new bug
+    introduced on the importer side, or due to mainnet node publishing bad data.
+
+    Actions:
+
+    -   Notify devops immediately
+    -   Check if any recent changes were made to the code related to the error
+
+-   `Error saving file in database` \
+    `Unable to connect to database` \
+    `Unable to fetch entity types` \
+    `Unable to prepare SQL statements` \
+    `Unable to set connection to not auto commit`
+
+    All of the above errors have some SQLException as the root cause.
+
+    Actions:
+
+    -   Check Cloud SQL instance is up and running correctly (by executing some SQL queries). If the problem seems on
+        Cloud SQL side, escalate to devops.
 
 -   `Error starting watch service`
--   `Unable to fetch entity types`
--   `Unable to fetch transaction types`
 
-If restarting doesn't resolve these errors
+    Caused when FileWatcher used by balancer has failed to start. As a result, balances will not be updated.
 
-1. Diagnose as a database issue
-2. Failing that - escalate
+    Actions:
 
-## Messages that require immediate escalation
+    -   Try restarting the importer. If it doesn't fix the error, investigate.
 
-Some of these messages may indicate an integration issue between Hedera services and the mirror node, or a significant defect on either.
-
--   `Previous file hash not available`
--   `Hash mismatch for file`
--   `Unknown record file delimiter`
--   `Unknown file delimiter`
--   `Error parsing record file`
--   `Expecting previous file hash, not found file delimiter`
--   `Unable to extract hash and signature from file`
--   `Exception .*`
-    -   See exception details for more info (attempt to diagnose, including trying to restart the service, but escalate anyway)
--   `Failed to verify record files`
--   `Account balance dataset timestamp mismatch!`
 -   `ERRORS processing account balances file`
--   `Application status code .* does not exist in the database`
--   `Long overflow when converting Instant to nanos timestamp : *`
 
-## Messages that may not require escalation
+    Can be caused either by bad data in account balances stream or due to SQL exceptions. In either case, exception are
+    logged and the action is retried.
 
-The following issues may be related to a misconfiguration issue. If the mirror node had recently been bounced, see if these
-issues are resolvable by updating the application configuration and restarting the service. If not, escalate.
+    Actions:
 
--   `Address book file .* not found`
--   `.* environment variable not set`
--   `Error updating application status`
+    -   If bad data in the stream, escalate to devops
+    -   If due to sql exception, check if next try is successful. If the error continues, investigate.
 
-## Messages that do not require immediate escalation
+-   `Exception`
 
-These should be investigated by Hedera, but require no immediate escalation unless they are occurring frequently (more than 1/min).
+    Actions:
 
--   `Transaction type .* not known to mirror node`
+    -   See exception details for more info (attempt to diagnose, including trying to restart the service, but escalate
+        anyway)
+
+-   `Failed downloading`
+
+    These errors happen even in a perfectly running mirror node, but are pretty infrequent (one every few minutes).
+    Failed download attempts will be retried rapidly. If they happen two much, investigate.
+    Many possible causes - S3 may be down, or there maybe other connection issues.
+
+    Actions:
+
+    -   Try downloading failing files locally (checks S3 is up)
+    -   Check socket usage, packet loss, etc on importer instance
+
+-   `Failed to parse NodeAddressBook from`
+
+    Actions:
+
+    -   There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise
+        next morning).
+
+-   `File could not be verified by more than 2/3 of nodes`
+    This can happen if
+
+    1. Some mainnet nodes are still in the process of uploading their signatures for the latest file (benign case).
+       Logging rate will be at most 20/min.
+    2. Bad signatures by some mainnet nodes, halts the downloader progress. Logging rate in this case can reach
+       100/min.
+
+    Effect: In case of bad signatures, it'll halt system progress.
+
+    Actions:
+
+    -   If happens due to bad signatures, escalate to devops.
+
+-   `File watching events may have been lost or discarded`
+    Actions:
+
+    -   Monitor logs (and `${hedera.mirror.dataPath}/accountBalances/valid` directory) to ensure that all account balances
+        stream files get processed. If not, bring to team's attention in reasonable time.
+
 -   `Long overflow when converting time to nanos timestamp`
 
-## Known Issues
+    Importer assumes all timestamps can be converted into nanos-since-epoch and stored as `Long`. This error will
+    halt the progress of parser
 
-### Illegal access
+    Actions:
 
-The error below may appear on the console when running the `.jar` file, this is normal and nothing to be concerned about:
+    -   There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise
+        next morning).
 
-```code
-WARNING: An illegal reflective access operation has occurred
-WARNING: Illegal reflective access by com.google.protobuf.UnsafeUtil (file:/home/hedera/mirrornode/lib/protobuf-java-3.5.1.jar) to field java.nio.Buffer.address
-WARNING: Please consider reporting this to the maintainers of com.google.protobuf.UnsafeUtil
-WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
-WARNING: All illegal access operations will be denied in a future release
-```
+-   `Unable to copy address book from`
 
-### Stream Restart
+    Actions:
+
+    -   For emergency fix, manually copy known good address book to the destination.
+
+-   `Unable to guess correct transaction type since there's not exactly one`
+
+    Ideally, this should not happen because new transaction types are released after updating mirror node to be able to
+    handle them. However, occurrence of this error means parser will keep retrying and will never make progress
+
+    Actions:
+
+    -   There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise
+        next morning).
+
+#### Stream Restart
 
 There have been cases in the past before OA where the stream had to be restarted. A stream restart entails a new S3 bucket
 and zeroing out the hash of the previous file in the first file in that bucket. If you're using the old bucket, there will
 be no errors but you won't receive any new data after the restart event. To recover you need the wipe the files and database:
 
-1 ) Stop Mirror Node
+1 ) Stop Mirror Node Importer
 
 ```console
 sudo systemctl stop hedera-mirror-importer
@@ -113,8 +189,100 @@ ssh user@server
 psql -h dbhost -d mirror_node -U mirror_node -f cleanup.sql
 ```
 
-5 ) Start Mirror Node
+5 ) Start Mirror Node Importer
 
 ```console
 sudo systemctl start hedera-mirror-importer
 ```
+
+## Detecting and alerting issues
+
+This section lists alerts to detect issues when a mirror node might not be functioning normally, and guiding rules
+to help prioritize new alerts.
+
+The priorities below are based on
+[PagerDuty's Alert Priorities](https://response.pagerduty.com/oncall/alerting_principles/) and warrant same responses
+as mentioned in that link.
+
+### Priorities
+
+#### High Priority
+
+If a message signals any of the following, then it qualifies as high priority:
+
+1. Service is down
+2. A scenario which will certainly halt system progress \
+   For example, parser encounters badly formatted file which will certainly halt parser's progress.
+3. Data loading delayed more than accepted SLA
+4. Anything that adversely impacts many transactions \
+   For example, timestamp overflow affecting many transactions
+
+Alerts: High-Priority PagerDuty Alert 24/7/365
+Response: Requires immediate human action
+
+#### Medium Priority
+
+If a message signals any of the following, then it qualifies as medium priority:
+
+1. Service is lagging
+2. A scenario which may halt system progress \
+   For example, many badly formatted files are encountered by downloader and it is possible that progress may halt.
+
+Alerts: High-Priority PagerDuty Alert during business hours only
+Response: Requires human action within 24 hours.
+
+#### Low Priority
+
+If a message signals any of the following, then it qualifies as low priority:
+
+1. An unexpected scenario, which if continues for sufficient time can eventually lead to medium/high priority scenarios
+2. Non-critical system assumption are broken but no real or very limited impact (say few transactions) \
+   For example, required field missing in transaction/receipt which only impacts that transaction. For instance, topicId
+   missing in update/delete topic transaction. \
+   For example, invalid/Missing signatures but it doesn't halt progress since it's only from one of the many nodes.
+
+Alerts: Low-Priority PagerDuty Alert during business hours only
+Response: Requires human action at some point.
+
+### Importer
+
+#### Log-based alerts
+
+| Log Message                                                              | Default Priority | Conditional Priority            |
+| ------------------------------------------------------------------------ | ---------------- | ------------------------------- |
+| `Error parsing record file`                                              | HIGH             |                                 |
+| `Error starting watch service`                                           | HIGH             |                                 |
+| `ERRORS processing account balances file`                                | HIGH             |                                 |
+| `Expecting previous file hash, but found file delimiter`                 | HIGH             |                                 |
+| `Failed to parse NodeAddressBook from`                                   | HIGH             |                                 |
+| `Hash mismatch for file`                                                 | HIGH             |                                 |
+| `Long overflow when converting time to nanos timestamp`                  | HIGH             |                                 |
+| `Previous file hash not available`                                       | HIGH             |                                 |
+| `Unable to copy address book from`                                       | HIGH             |                                 |
+| `Unable to extract hash and signature from file`                         | HIGH             |                                 |
+| `Unable to guess correct transaction type since there's not exactly one` | HIGH             |                                 |
+| `Unknown file delimiter`                                                 | HIGH             |                                 |
+| `Unknown record file delimiter`                                          | HIGH             |                                 |
+| `Error processing balances files after`                                  | MEDIUM           |                                 |
+| `Exception processing account balances file`                             | MEDIUM           |                                 |
+| `Encountered unknown transaction type`                                   | LOW              | HIGH (if 10 entries over 10 min |
+| `Error closing connection`                                               | LOW              | HIGH (if 10 entries over 10 min |
+| `Account balance dataset timestamp mismatch!`                            | LOW              |                                 |
+| `Error decoding hex string`                                              | LOW              |                                 |
+| `Error reading previous file hash`                                       | LOW              |                                 |
+| `Failed to verify`                                                       | LOW              |                                 |
+| `Input parameter is not a folder`                                        | LOW              |                                 |
+| `Invalid signature in file`                                              | LOW              |                                 |
+| `Missing signature for file`                                             | LOW              |                                 |
+| `Error saving file in database`                                          | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Failed downloading`                                                     | NONE             | HIGH (if 30 entries in 1 min)   |
+| `File could not be verified by more than 2/3 of nodes`                   | NONE             | HIGH (if 30 entries in 1 min)   |
+| `File watching events may have been lost or discarded`                   | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to connect to database`                                          | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to fetch entity types`                                           | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to prepare SQL statements`                                       | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to set connection to not auto commit`                            | NONE             | HIGH (if 30 entries in 1 min)   |
+
+Anything that wakes up a human in the middle of the night should be immediately actionable. For all `HIGH` priority
+alerts, there should be a section in the guide above listing immediate actionable steps someone can take to reduce
+issue's severity of or to fix it.
