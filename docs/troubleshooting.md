@@ -1,19 +1,21 @@
 # Troubleshooting
 
-This troubleshooting guide lists detecting and handling scenarios when a mirror node might not be functioning normally.
+This troubleshooting guide lists methods for detecting and handling issues with mirror node.
 
-## Importer
+## Handling issues
 
-Following is list of error messages and how to begin handling scenarios when they are encountered.
+### Importer
 
 #### First step
 
 Any time there is any disruption on the mirrornet at all, the first thing to do is decide whether the failover is
 healthy. If it is, we want to switch DNS immediately while we troubleshoot what is happening.
 
-#### Log messages based scenarios
+Similarly, any time mirror node needs to be restarted, switch DNS to the failover first if it is healthy.
 
-Any time mirror node needs to be restarted, switch DNS to the failover first if it is healthy.
+#### Log-based issues
+
+Following is list of error messages and how to begin handling issues when they are encountered.
 
 -   `Encountered unknown transaction type`
 
@@ -35,12 +37,12 @@ Any time mirror node needs to be restarted, switch DNS to the failover first if 
         be one way to temporarily fix it.
     -   Ensure no service outage happens due to connection limit, restart as needed.
 
--   `Error parsing record file`
-    `Expecting previous file hash, but found file delimiter`
-    `Hash mismatch for file`
-    `Previous file hash not available`
-    `Unable to extract hash and signature from file`
-    `Unknown file delimiter`
+-   `Error parsing record file` \
+    `Expecting previous file hash, but found file delimiter` \
+    `Hash mismatch for file` \
+    `Previous file hash not available` \
+    `Unable to extract hash and signature from file` \
+    `Unknown file delimiter` \
     `Unknown record file delimiter`
 
     All of the above errors happen when data inside stream files is not as expected. It can be because of new bug
@@ -51,10 +53,10 @@ Any time mirror node needs to be restarted, switch DNS to the failover first if 
     -   Notify devops immediately
     -   Check if any recent changes were made to the code related to the error
 
--   `Error saving file in database`
-    `Unable to connect to database`
-    `Unable to fetch entity types`
-    `Unable to prepare SQL statements`
+-   `Error saving file in database` \
+    `Unable to connect to database` \
+    `Unable to fetch entity types` \
+    `Unable to prepare SQL statements` \
     `Unable to set connection to not auto commit`
 
     All of the above errors have some SQLException as the root cause.
@@ -112,9 +114,10 @@ Any time mirror node needs to be restarted, switch DNS to the failover first if 
 
     1. Some mainnet nodes are still in the process of uploading their signatures for the latest file (benign case).
        Logging rate will be at most 20/min.
-    2. Bad signatures by some mainnet nodes, halts the downloader progress. Logging rate in this case can reach 100/min.
-       Effect: In case of bad signatures, it'll halt system progress.
-       Action: Contact devops. Investigate source of bad signatures. Sadly there is no quick fix for this situation.
+    2. Bad signatures by some mainnet nodes, halts the downloader progress. Logging rate in this case can reach
+       100/min.
+
+    Effect: In case of bad signatures, it'll halt system progress.
 
     Actions:
 
@@ -152,7 +155,7 @@ Any time mirror node needs to be restarted, switch DNS to the failover first if 
     -   There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise
         next morning).
 
-### Stream Restart
+#### Stream Restart
 
 There have been cases in the past before OA where the stream had to be restarted. A stream restart entails a new S3 bucket
 and zeroing out the hash of the previous file in the first file in that bucket. If you're using the old bucket, there will
@@ -192,9 +195,9 @@ psql -h dbhost -d mirror_node -U mirror_node -f cleanup.sql
 sudo systemctl start hedera-mirror-importer
 ```
 
-## Alerts
+## Detecting and alerting issues
 
-This section lists alerts to detect scenarios when a mirror node might not be functioning normally, and guiding rules
+This section lists alerts to detect issues when a mirror node might not be functioning normally, and guiding rules
 to help prioritize new alerts.
 
 The priorities below are based on
@@ -208,11 +211,11 @@ as mentioned in that link.
 If a message signals any of the following, then it qualifies as high priority:
 
 1. Service is down
-2. A scenario which will certainly halt system progress
-   For eg. Parser encounters badly formatted file which will certainly halt parser's progress.
+2. A scenario which will certainly halt system progress \
+   For example, parser encounters badly formatted file which will certainly halt parser's progress.
 3. Data loading delayed more than accepted SLA
-4. Anything that adversely impacts many transactions
-   For eg. Timestamp overflow affecting many transactions
+4. Anything that adversely impacts many transactions \
+   For example, timestamp overflow affecting many transactions
 
 Alerts: High-Priority PagerDuty Alert 24/7/365
 Response: Requires immediate human action
@@ -222,8 +225,8 @@ Response: Requires immediate human action
 If a message signals any of the following, then it qualifies as medium priority:
 
 1. Service is lagging
-2. A scenario which may halt system progress
-   For eg. Many badly formatted files are encountered by downloader and it is possible that progress may halt.
+2. A scenario which may halt system progress \
+   For example, many badly formatted files are encountered by downloader and it is possible that progress may halt.
 
 Alerts: High-Priority PagerDuty Alert during business hours only
 Response: Requires human action within 24 hours.
@@ -232,25 +235,24 @@ Response: Requires human action within 24 hours.
 
 If a message signals any of the following, then it qualifies as low priority:
 
-1. An unexpected scenario, which if continues for sufficient time can eventually lead to medium/high priority scenarios.
-2. Non-critical system assumption are broken and but no real or very limited impact (say few transactions).
-   For eg. Required field missing in transaction/receipt which only impacts that transaction. For instance, topicId
-   missing in update/delete topic transaction.
-   For eg. Invalid/Missing signatures but it doesn't halt progress since it's only from one of the many nodes.
+1. An unexpected scenario, which if continues for sufficient time can eventually lead to medium/high priority scenarios
+2. Non-critical system assumption are broken but no real or very limited impact (say few transactions) \
+   For example, required field missing in transaction/receipt which only impacts that transaction. For instance, topicId
+   missing in update/delete topic transaction. \
+   For example, invalid/Missing signatures but it doesn't halt progress since it's only from one of the many nodes.
 
 Alerts: Low-Priority PagerDuty Alert during business hours only
 Response: Requires human action at some point.
 
-## Importer
+### Importer
 
-### Log messages that require alerts
+#### Log-based alerts
 
 | Log Message                                                              | Default Priority | Conditional Priority            |
 | ------------------------------------------------------------------------ | ---------------- | ------------------------------- |
 | `Error parsing record file`                                              | HIGH             |                                 |
 | `Error starting watch service`                                           | HIGH             |                                 |
 | `ERRORS processing account balances file`                                | HIGH             |                                 |
-| `Exception`                                                              | HIGH             |                                 |
 | `Expecting previous file hash, but found file delimiter`                 | HIGH             |                                 |
 | `Failed to parse NodeAddressBook from`                                   | HIGH             |                                 |
 | `Hash mismatch for file`                                                 | HIGH             |                                 |
