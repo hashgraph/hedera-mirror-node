@@ -272,12 +272,13 @@ Response: Requires human action at some point.
 | `Error reading previous file hash`                                       | LOW              |                                 |
 | `Failed to verify`                                                       | LOW              |                                 |
 | `Input parameter is not a folder`                                        | LOW              |                                 |
-| `Invalid signature in file`                                              | LOW              |                                 |
+| `Failed to verify signature with public key`                             | LOW              |                                 |
 | `Missing signature for file`                                             | LOW              |                                 |
 | `Error saving file in database`                                          | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Failed downloading`                                                     | NONE             | HIGH (if 30 entries in 1 min)   |
 | `File could not be verified by more than 2/3 of nodes`                   | NONE             | HIGH (if 30 entries in 1 min)   |
 | `File watching events may have been lost or discarded`                   | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Signature verification failed`                                          | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Unable to connect to database`                                          | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Unable to fetch entity types`                                           | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Unable to prepare SQL statements`                                       | NONE             | HIGH (if 30 entries in 1 min)   |

@@ -26,12 +26,10 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 
 import io.findify.s3mock.S3Mock;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -217,7 +215,7 @@ public abstract class AbstractDownloaderTest {
 
     @Test
     @DisplayName("Invalid or incomplete file")
-    void invalidBalanceFile() throws Exception {
+    void invalidFile() throws Exception {
         fileCopier.copy();
         Files.walk(s3Path).filter(file -> !isSigFile(file)).forEach(AbstractDownloaderTest::corruptFile);
         downloader.download();

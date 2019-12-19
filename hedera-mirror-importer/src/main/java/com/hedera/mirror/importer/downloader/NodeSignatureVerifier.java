@@ -20,24 +20,24 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
-import java.io.File;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import java.security.PublicKey;
 import java.security.Signature;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
-
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
 import com.hedera.mirror.importer.domain.NodeAddress;
+import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -52,83 +52,100 @@ public class NodeSignatureVerifier {
                 .collect(Collectors.toMap(NodeAddress::getId, NodeAddress::getPublicKeyAsObject));
     }
 
+    private static boolean consensusReached(long n, long N) {
+        return n > N * 2 / 3.0;
+    }
+
     /**
      * Verifies that the signature files are signed by corresponding node's PublicKey. For valid signature files, we
-     * compare their Hashes to see if more than 2/3 Hashes match. If more than 2/3 Hashes match, we return a List of
-     * Files which contains this Hash.
+     * compare their hashes to see if more than 2/3 Hashes match. If a signature is valid, we put the hash in its
+     * content and its file to the map, to see if more than 2/3 valid signatures have the same hash.
      *
-     * @param sigFiles a list of a sig files which have the same timestamp
-     * @return Pair of <hash of valid data file, list of valid sig files>. Valid means the signature is valid and the
-     * Hash is agreed by super-majority nodes. If validity of signatures can not be established, then returns <null,
-     * empty list>.
+     * @param signatures a list of a sig files which have the same timestamp
+     * @throws SignatureVerificationException
      */
-    public Pair<byte[], List<File>> verifySignatureFiles(List<File> sigFiles) {
-        // If a signature is valid, we put the Hash in its content and its File to the map, to see if more than 2/3
-        // valid signatures have the same Hash
-        Map<String, Set<File>> hashToSigFiles = new HashMap<>();
-        for (File sigFile : sigFiles) {
-            Pair<byte[], byte[]> hashAndSig = Utility.extractHashAndSigFromFile(sigFile);
+    public void verify(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
+        Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
+        String filename = null;
+        int consensusCount = 0;
+
+        for (FileStreamSignature fileStreamSignature : signatures) {
+            if (filename == null) {
+                filename = fileStreamSignature.getFile().getName();
+            }
+
+            Pair<byte[], byte[]> hashAndSig = Utility.extractHashAndSigFromFile(fileStreamSignature.getFile());
             if (hashAndSig == null) {
                 continue;
             }
-            String nodeAccountID = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
-            if (verifySignature(hashAndSig.getLeft(), hashAndSig.getRight(), nodeAccountID, sigFile.getPath())) {
-                String hashString = Hex.encodeHexString(hashAndSig.getLeft());
-                hashToSigFiles
-                        .putIfAbsent(hashString, new HashSet<>());  // only one key present in common case, no
-                // efficiency issues.
-                hashToSigFiles.get(hashString).add(sigFile);
-            } else {
-                log.error("Invalid signature in file {}", sigFile.getPath());
+
+            fileStreamSignature.setHash(hashAndSig.getLeft());
+            fileStreamSignature.setSignature(hashAndSig.getRight());
+            fileStreamSignature.setStatus(SignatureStatus.PARSED);
+
+            if (verifySignature(fileStreamSignature)) {
+                fileStreamSignature.setStatus(SignatureStatus.VERIFIED);
+                signatureHashMap.put(fileStreamSignature.getHashAsHex(), fileStreamSignature);
             }
         }
 
-        for (String key : hashToSigFiles.keySet()) {
-            if (Utility.greaterThanSuperMajorityNum(hashToSigFiles.get(key).size(),
-                    nodeIDPubKeyMap.size())) {
-                byte[] hash = null;
-                try {
-                    hash = Hex.decodeHex(key);
-                } catch (DecoderException e) {
-                    log.error("Error decoding hex string {}", key);
-                }
-                return Pair.of(hash, new ArrayList<>(hashToSigFiles.get(key)));
+        for (String key : signatureHashMap.keySet()) {
+            Collection<FileStreamSignature> validatedSignatures = signatureHashMap.get(key);
+
+            if (consensusReached(validatedSignatures.size(), nodeIDPubKeyMap.size())) {
+                consensusCount += validatedSignatures.size();
+                validatedSignatures.stream().forEach(s -> s.setStatus(SignatureStatus.CONSENSUS_REACHED));
             }
         }
-        return Pair.of(null, new ArrayList<>());
+
+        if (consensusCount == nodeIDPubKeyMap.size()) {
+            log.debug("Verified signature file {} reached consensus", filename);
+        } else if (consensusCount > 0) {
+            log.warn("Verified signature file {} reached consensus but with some errors: {}", filename,
+                    statusMap(signatures));
+        } else {
+            throw new SignatureVerificationException("Signature verification failed for " + filename + ": " + statusMap(signatures));
+        }
     }
 
     /**
      * check whether the given signature is valid
      *
-     * @param data          the data that was signed
-     * @param signature     the claimed signature of that data
-     * @param nodeAccountID the node's accountID string
+     * @param fileStreamSignature the data that was signed
      * @return true if the signature is valid
      */
-    private boolean verifySignature(byte[] data, byte[] signature,
-                                    String nodeAccountID, String filePath) {
-        PublicKey publicKey = nodeIDPubKeyMap.get(nodeAccountID);
+    private boolean verifySignature(FileStreamSignature fileStreamSignature) {
+        PublicKey publicKey = nodeIDPubKeyMap.get(fileStreamSignature.getNode());
         if (publicKey == null) {
-            log.warn("Missing PublicKey for node {}", nodeAccountID);
+            log.warn("Missing PublicKey for node {}", fileStreamSignature.getNode());
             return false;
         }
 
-        if (signature == null) {
-            log.error("Missing signature for file {}", filePath);
+        if (fileStreamSignature.getSignature() == null) {
+            log.error("Missing signature data: {}", fileStreamSignature);
             return false;
         }
 
         try {
-            log.trace("Verifying signature of file {} with public key of node {}", filePath, nodeAccountID);
+            log.trace("Verifying signature: {}", fileStreamSignature);
             Signature sig = Signature.getInstance("SHA384withRSA", "SunRsaSign");
             sig.initVerify(publicKey);
-            sig.update(data);
-            return sig.verify(signature);
+            sig.update(fileStreamSignature.getHash());
+            return sig.verify(fileStreamSignature.getSignature());
         } catch (Exception e) {
-            log.error("Failed to verify Signature: {}, PublicKey: {}, NodeID: {}, File: {}", signature, publicKey,
-                    nodeAccountID, filePath, e);
+            log.error("Failed to verify signature with public key {}: {}", publicKey, fileStreamSignature, e);
         }
         return false;
+    }
+
+    private Map<String, Collection<String>> statusMap(Collection<FileStreamSignature> signatures) {
+        Map<String, Collection<String>> statusMap = signatures.stream()
+                .collect(Collectors.groupingBy(fss -> fss.getStatus().toString(),
+                        Collectors.mapping(FileStreamSignature::getNode, Collectors.toCollection(TreeSet::new))));
+        Set<String> seenNodes = signatures.stream().map(FileStreamSignature::getNode).collect(Collectors.toSet());
+        Set<String> missingNodes = new TreeSet<>(Sets.difference(nodeIDPubKeyMap.keySet(), seenNodes));
+        statusMap.put("MISSING", missingNodes);
+        statusMap.remove(SignatureStatus.CONSENSUS_REACHED.toString());
+        return statusMap;
     }
 }

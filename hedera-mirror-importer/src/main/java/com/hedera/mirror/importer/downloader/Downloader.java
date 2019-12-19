@@ -23,26 +23,25 @@ package com.hedera.mirror.importer.downloader;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import com.google.common.base.Stopwatch;
-
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.TreeMultimap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -54,7 +53,9 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
+import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.NodeAddress;
+import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
@@ -68,7 +69,7 @@ public abstract class Downloader {
     private final DownloaderProperties downloaderProperties;
     // Thread pool used one per node during the download process for signatures.
     private final ExecutorService signatureDownloadThreadPool;
-    private List<String> nodeAccountIds;
+    private Set<String> nodeAccountIds;
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
                       NetworkAddressBook networkAddressBook, DownloaderProperties downloaderProperties) {
@@ -77,7 +78,7 @@ public abstract class Downloader {
         this.networkAddressBook = networkAddressBook;
         this.downloaderProperties = downloaderProperties;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
-        nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toList());
+        nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toSet());
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
     }
 
@@ -92,6 +93,8 @@ public abstract class Downloader {
             var sigFilesMap = downloadSigFiles();
             // Verify signature files and download corresponding files of valid signature files
             verifySigsAndDownloadDataFiles(sigFilesMap);
+        } catch (SignatureVerificationException e) {
+            log.warn(e.getMessage());
         } catch (Exception e) {
             log.error("Error downloading files", e);
         }
@@ -104,16 +107,16 @@ public abstract class Downloader {
      *
      * @return key: sig file name value: a list of sig files with the same name and from different nodes folder;
      */
-    private Map<String, List<File>> downloadSigFiles() throws InterruptedException {
+    private Multimap<String, FileStreamSignature> downloadSigFiles() throws InterruptedException {
         String lastValidFileName = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
         // foo.rcd < foo.rcd_sig. If we read foo.rcd from application stats, we have to start listing from
         // next to 'foo.rcd_sig'.
         String lastValidSigFileName = lastValidFileName.isEmpty() ? "" : lastValidFileName + "_sig";
-
-        var sigFilesMap = new ConcurrentHashMap<String, List<File>>();
+        Multimap<String, FileStreamSignature> sigFilesMap = Multimaps
+                .synchronizedSortedSetMultimap(TreeMultimap.create());
 
         // refresh node account ids
-        nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toList());
+        nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toSet());
         List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
         var totalDownloads = new AtomicInteger();
         /**
@@ -176,10 +179,10 @@ public abstract class Downloader {
                             if (pd.waitForCompletion()) {
                                 ref.count++;
                                 File sigFile = pd.getFile();
-                                String fileName = sigFile.getName();
-                                sigFilesMap.putIfAbsent(fileName, Collections.synchronizedList(new ArrayList<>()));
-                                List<File> files = sigFilesMap.get(fileName);
-                                files.add(sigFile);
+                                FileStreamSignature fileStreamSignature = new FileStreamSignature();
+                                fileStreamSignature.setFile(sigFile);
+                                fileStreamSignature.setNode(Utility.getAccountIDStringFromFilePath(sigFile));
+                                sigFilesMap.put(sigFile.getName(), fileStreamSignature);
                             }
                         } catch (InterruptedException ex) {
                             log.warn("Failed downloading {} in {}", pd.getS3key(), pd.getStopwatch(), ex);
@@ -268,44 +271,33 @@ public abstract class Downloader {
      *
      * @param sigFilesMap
      */
-    private void verifySigsAndDownloadDataFiles(Map<String, List<File>> sigFilesMap) {
+    private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
         // reload address book and keys in case it has been updated by RecordFileLogger
-        NodeSignatureVerifier verifier = new NodeSignatureVerifier(networkAddressBook);
+        NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(networkAddressBook);
         Path validPath = downloaderProperties.getValidPath();
 
-        List<String> sigFileNames = new ArrayList<>(sigFilesMap.keySet());
-        // sort in increasing order of timestamp, so that we process files in the order they are written.
-        // It's very important for record and event files because they form immutable linked list by include one file's
-        // hash into next file.
-        Collections.sort(sigFileNames);
-
-        for (String sigFileName : sigFileNames) {
+        for (String sigFileName : sigFilesMap.keySet()) {
             if (ShutdownHelper.isStopping()) {
                 return;
             }
 
-            List<File> sigFiles = sigFilesMap.get(sigFileName);
+            Collection<FileStreamSignature> signatures = sigFilesMap.get(sigFileName);
+            nodeSignatureVerifier.verify(signatures);
             boolean valid = false;
 
-            // If the number of sigFiles is not greater than 2/3 of number of nodes, we don't need to verify them
-            if (sigFiles == null || !Utility.greaterThanSuperMajorityNum(sigFiles.size(), nodeAccountIds.size())) {
-                log.warn("Signature file count does not exceed 2/3 of nodes");
-                continue;
-            }
-
-            // validSigFiles are signed by node'key and contains the same Hash which has been agreed by more than 2/3
-            // nodes
-            Pair<byte[], List<File>> hashAndValidSigFiles = verifier.verifySignatureFiles(sigFiles);
-            byte[] validHash = hashAndValidSigFiles.getLeft();
-            for (File validSigFileName : hashAndValidSigFiles.getRight()) {
+            for (FileStreamSignature signature : signatures) {
                 if (ShutdownHelper.isStopping()) {
                     return;
                 }
-                log.debug("Verified signature file matches at least 2/3 of nodes: {}", sigFileName);
+
+                // Ignore signatures that didn't validate or weren't in the majority
+                if (signature.getStatus() != FileStreamSignature.SignatureStatus.CONSENSUS_REACHED) {
+                    continue;
+                }
 
                 try {
-                    File signedDataFile = downloadSignedDataFile(validSigFileName);
-                    if (signedDataFile != null && Utility.hashMatch(validHash, signedDataFile)) {
+                    File signedDataFile = downloadSignedDataFile(signature.getFile());
+                    if (signedDataFile != null && Utility.hashMatch(signature.getHash(), signedDataFile)) {
                         log.debug("Downloaded data file {} corresponding to verified hash", signedDataFile.getName());
                         // Check that file is newer than last valid downloaded file.
                         // Additionally, if the file type uses prevFileHash based linking, verify that new file is
@@ -318,7 +310,7 @@ public abstract class Downloader {
                                 log.debug("Successfully moved file from {} to {}", signedDataFile, destination);
                                 if (getLastValidDownloadedFileHashKey() != null) {
                                     applicationStatusRepository.updateStatusValue(getLastValidDownloadedFileHashKey(),
-                                            Utility.bytesToHex(validHash));
+                                            signature.getHashAsHex());
                                 }
                                 applicationStatusRepository
                                         .updateStatusValue(getLastValidDownloadedFileKey(), destination.getName());
@@ -371,7 +363,7 @@ public abstract class Downloader {
         String fileName = sigFile.getName().replace("_sig", "");
         String s3Prefix = downloaderProperties.getPrefix();
 
-        String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile.getPath());
+        String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile);
         String s3ObjectKey = s3Prefix + nodeAccountId + "/" + fileName;
 
         Path localFile = downloaderProperties.getTempPath().resolve(fileName);
