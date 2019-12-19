@@ -27,7 +27,7 @@ process.env.CONFIG_NAME = 'perfTestConfig';
 process.env.CONFIG_PATH = __dirname;
 const config = require('../config');
 
-const mustLoadYaml = function(fileName) {
+const mustLoadYaml = fileName => {
   try {
     console.log(`Loading yaml file ${fileName}`);
     return yaml.safeLoad(fs.readFileSync(fileName, 'utf8'));

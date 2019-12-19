@@ -36,20 +36,20 @@ const pool = new pg.Pool({
   port: config.db.port
 });
 
-const loadTests = function() {
+const loadTests = () => {
   let fileName = path.join(__dirname, 'tests.yml');
   console.log(`Loading tests from ${fileName}`);
   return utils.mustLoadYaml(fileName);
 };
 
-const getRowValueAsInt = function(row) {
+const getRowValueAsInt = row => {
   return parseInt(row.value);
 };
 
 /**
  * Gets 'n' randomly sampled entity_num from t_entities table.
  */
-const sampleEntityIds = function(n) {
+const sampleEntityIds = n => {
   return pool.query(`select entity_num as value from t_entities order by RANDOM() limit ${n};`, null).then(result => {
     return result.rows.map(getRowValueAsInt);
   });
@@ -58,7 +58,7 @@ const sampleEntityIds = function(n) {
 /**
  * Gets 'n' randomly sampled consensus timestamps from t_transactions table.
  */
-const sampleConsensusTimestamps = function(n) {
+const sampleConsensusTimestamps = n => {
   return pool
     .query(`select consensus_ns as value from t_transactions order by RANDOM() limit ${n};`, null)
     .then(result => {
@@ -69,7 +69,7 @@ const sampleConsensusTimestamps = function(n) {
 /**
  * Gets 'n' randomly sampled balances from account_balances table.
  */
-const sampleBalanceValues = function(n) {
+const sampleBalanceValues = n => {
   return pool
     .query(`select balance as value from account_balances order by RANDOM() limit ${n};`, null)
     .then(result => {
@@ -80,7 +80,7 @@ const sampleBalanceValues = function(n) {
 /**
  * Converts integer timestamp format accepted by query param. For eg. 1577904152141445600 -> '1577904152.141445600'
  */
-const timestampToParamValue = function(timestamp) {
+const timestampToParamValue = timestamp => {
   let timestampStr = '' + timestamp;
   return timestampStr.substr(0, 10) + '.' + timestampStr.substr(10);
 };
@@ -88,7 +88,7 @@ const timestampToParamValue = function(timestamp) {
 /**
  * Given a test, generates and returns query set which contains query, values for url params, etc.
  */
-const makeQuerySet = async function(test) {
+const makeQuerySet = async test => {
   let paramValues = [];
   let paramName;
   let isRangeQuery = false;
@@ -96,7 +96,7 @@ const makeQuerySet = async function(test) {
     paramName = 'account.balance';
     isRangeQuery = 'rangeTinyHbars' in test;
     let samples = await sampleBalanceValues(test.count);
-    samples.forEach(function(balance) {
+    samples.forEach(balance => {
       if (isRangeQuery) {
         paramValues.push(['' + balance, '' + (balance + test.rangeTinyHbars)]);
       } else {
@@ -107,7 +107,7 @@ const makeQuerySet = async function(test) {
     paramName = 'timestamp';
     isRangeQuery = 'rangeDurationNanos' in test;
     let samples = await sampleConsensusTimestamps(test.count);
-    samples.forEach(function(timestamp) {
+    samples.forEach(timestamp => {
       if (isRangeQuery) {
         paramValues.push([
           timestampToParamValue(timestamp),
@@ -121,7 +121,7 @@ const makeQuerySet = async function(test) {
     paramName = 'account.id';
     isRangeQuery = 'rangeNumAccounts' in test;
     let samples = await sampleEntityIds(test.count);
-    samples.forEach(function(accountId) {
+    samples.forEach(accountId => {
       if (isRangeQuery) {
         paramValues.push(['' + accountId, '' + (accountId + test.rangeNumAccounts)]);
       } else {
@@ -152,20 +152,20 @@ const makeQuerySet = async function(test) {
   };
 };
 
-const generateQuerySets = function() {
+const generateQuerySets = () => {
   let promises = [];
   let tests = loadTests();
   let querySets = {
     timeoutInSec: tests.timeoutInSec,
     querySets: []
   };
-  tests.tests.forEach(function(test) {
-    let promise = makeQuerySet(test).then(function(t) {
+  tests.tests.forEach(test => {
+    let promise = makeQuerySet(test).then(t => {
       querySets.querySets.push(t);
     });
     promises.push(promise);
   });
-  return Promise.all(promises).then(function() {
+  return Promise.all(promises).then(() => {
     let querySetsFile = config.querySetsFile;
     try {
       console.log(`Writing query sets to ${querySetsFile}`);

@@ -34,7 +34,7 @@ let config = utils.config;
 /**
  * Returns average and standard deviation of numerical values in the given array.
  */
-const getAvgAndStdDev = function(arr) {
+const getAvgAndStdDev = arr => {
   const n = arr.length;
   const average = arr.reduce((a, b) => a + b) / n;
   const stddev = Math.sqrt(arr.map(x => Math.pow(x - average, 2)).reduce((a, b) => a + b) / n);
@@ -49,7 +49,7 @@ const getAvgAndStdDev = function(arr) {
  * 2. Collects stats: time taken, response size
  * In the end, dumps the results into a file.
  */
-const executeQueries = async function() {
+const executeQueries = async () => {
   let hrstart = process.hrtime();
   console.log('Executing queries');
   console.log(`Loading query sets from ${config.querySetsFile}`);
@@ -70,12 +70,12 @@ const executeQueries = async function() {
       let hrstart = process.hrtime();
       await axios
         .get(query)
-        .then(function(response) {
+        .then(response => {
           let hrend = process.hrtime(hrstart);
           querySetResult.elapsedTimesMs.push(hrend[0] * 1000 + hrend[1] / 1000000);
           querySetResult.responseSizes.push(response.data.length);
         })
-        .catch(function(error) {
+        .catch(error => {
           console.log(`Error when querying ${query} : ${error}`);
         });
     }
@@ -106,7 +106,7 @@ const executeQueries = async function() {
   }
 };
 
-const generateQuerySetsIfNeeded = async function() {
+const generateQuerySetsIfNeeded = async () => {
   // If querySetsFile already exists, no need to generate queries again.
   if (fs.existsSync(config.querySetsFile)) {
     console.log(`Using existing query sets from '${config.querySetsFile}'`);

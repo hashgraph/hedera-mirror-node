@@ -43,17 +43,43 @@ import com.hedera.mirror.importer.util.Utility;
  * <p>
  * Generated data:
  * <p>
- * Fake data for tables: - t_transactions - t_file_data - t_cryptotransferlists - t_entities - account_balances
- * <p>
- * Fake 'constant' data for tables: - t_record_files : single row with id 0.
- * <p>
- * Tables already setup by migrations: - t_transaction_types - t_transaction_results - t_entity_types
- * <p>
- * Tables left empty: - t_contract_result (empty until contract transaction generator is added) - t_events (events are
- * disabled in production) - t_livehashes (crypto claims not implemented in services,
- * https://github.com/swirlds/services-hedera/issues/1706) - account_balance_sets - t_application_status
- * <p>
- * Don't care tables: - entity_types - flyway_schema_history
+ *
+ * Fake data for tables: <br/>
+ * <ul>
+ *   <li>t_transactions</li>
+ *   <li>t_file_data</li>
+ *   <li>t_cryptotransferlists</li>
+ *   <li>t_entities</li>
+ *   <li>account_balances</li>
+ * </ul>
+ *
+ * Fake 'constant' data for tables:
+ * <ul>
+ *   <li>t_record_files : single row with id 0</li>
+ * </ul>
+ *
+ * Tables already setup by migrations:
+ * <ul>
+ *   <li>t_transaction_types</li>
+ *   <li>t_transaction_results</li>
+ *   <li>t_entity_types</li>
+ * </ul>
+ *
+ * Tables left empty:
+ * <ul>
+ *   <li>t_contract_result (empty until contract transaction generator is added)</li>
+ *   <li>t_events (events are disabled in production)</li>
+ *   <li>t_livehashes (crypto claims not implemented in services,
+ *     https://github.com/swirlds/services-hedera/issues/1706)</li>
+ *   <li>account_balance_sets</li>
+ *   <li>t_application_status</li>
+ * </ul>
+ *
+ * Don't care tables:
+ * <ul>
+ *   <li>entity_types</li>
+ *   <li>flyway_schema_history</li>
+ * </ul>
  */
 @Named
 @Log4j2

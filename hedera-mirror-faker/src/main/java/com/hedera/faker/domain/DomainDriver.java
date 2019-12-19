@@ -62,6 +62,11 @@ public class DomainDriver implements ApplicationRunner {
         consensusNanoAdjustmentsDistribution = new RandomDistributionFromRange(0, 1000000000);
     }
 
+    /**
+     *  Top level runner for generating fake data.
+     *  Iterates from start time (from configuration) to end time and generates fake transactions for intermediate
+     *  seconds based on transactions-per-second configuration.
+     */
     @Override
     public void run(ApplicationArguments args) throws Exception {
         long currentFakeTime = properties.getStartTimeSec();
@@ -70,11 +75,13 @@ public class DomainDriver implements ApplicationRunner {
         log.info("Simulation time from {} to {} (time period: {}sec)", currentFakeTime, endTime, totalTimeSec);
         int numTransactionsGenerated = 0;
         Stopwatch stopwatch = Stopwatch.createStarted();
+        // Iterate from start time to end time.
         while (currentFakeTime < endTime) {
             int numTransactions = properties.getTransactionsPerSecond().sample().intValue();
             log.debug("Generating {} transactions for time {}", numTransactions, currentFakeTime);
             List<Long> consensusNanoAdjustments = consensusNanoAdjustmentsDistribution.sampleDistinct(numTransactions);
             Collections.sort(consensusNanoAdjustments);
+            // Generate transactions, one for each sampled nano adjustment (within the "current" simulated second)
             for (long nanoAdjustment : consensusNanoAdjustments) {
                 long consensusTimestampNs = Utility.convertToNanos(currentFakeTime, nanoAdjustment);
                 domainTransactionGenerator.generateTransaction(consensusTimestampNs);
@@ -95,6 +102,7 @@ public class DomainDriver implements ApplicationRunner {
         log.info("Total time taken: {}", stopwatch);
     }
 
+    // Writes account balances stream
     private void writeBalances(long consensusNs) {
         for (Map.Entry<Long, Long> entry : entityManager.getBalances().entrySet()) {
             domainWriter.addAccountBalances(consensusNs, entry.getValue(), entry.getKey());
