@@ -53,8 +53,8 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
+import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.NodeAddress;
-import com.hedera.mirror.importer.domain.SignatureStream;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
@@ -107,12 +107,13 @@ public abstract class Downloader {
      *
      * @return key: sig file name value: a list of sig files with the same name and from different nodes folder;
      */
-    private Multimap<String, SignatureStream> downloadSigFiles() throws InterruptedException {
+    private Multimap<String, FileStreamSignature> downloadSigFiles() throws InterruptedException {
         String lastValidFileName = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
         // foo.rcd < foo.rcd_sig. If we read foo.rcd from application stats, we have to start listing from
         // next to 'foo.rcd_sig'.
         String lastValidSigFileName = lastValidFileName.isEmpty() ? "" : lastValidFileName + "_sig";
-        Multimap<String, SignatureStream> sigFilesMap = Multimaps.synchronizedSortedSetMultimap(TreeMultimap.create());
+        Multimap<String, FileStreamSignature> sigFilesMap = Multimaps
+                .synchronizedSortedSetMultimap(TreeMultimap.create());
 
         // refresh node account ids
         nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toSet());
@@ -178,10 +179,10 @@ public abstract class Downloader {
                             if (pd.waitForCompletion()) {
                                 ref.count++;
                                 File sigFile = pd.getFile();
-                                SignatureStream signatureStream = new SignatureStream();
-                                signatureStream.setFile(sigFile);
-                                signatureStream.setNode(Utility.getAccountIDStringFromFilePath(sigFile));
-                                sigFilesMap.put(sigFile.getName(), signatureStream);
+                                FileStreamSignature fileStreamSignature = new FileStreamSignature();
+                                fileStreamSignature.setFile(sigFile);
+                                fileStreamSignature.setNode(Utility.getAccountIDStringFromFilePath(sigFile));
+                                sigFilesMap.put(sigFile.getName(), fileStreamSignature);
                             }
                         } catch (InterruptedException ex) {
                             log.warn("Failed downloading {} in {}", pd.getS3key(), pd.getStopwatch(), ex);
@@ -270,7 +271,7 @@ public abstract class Downloader {
      *
      * @param sigFilesMap
      */
-    private void verifySigsAndDownloadDataFiles(Multimap<String, SignatureStream> sigFilesMap) {
+    private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
         // reload address book and keys in case it has been updated by RecordFileLogger
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(networkAddressBook);
         Path validPath = downloaderProperties.getValidPath();
@@ -280,17 +281,17 @@ public abstract class Downloader {
                 return;
             }
 
-            Collection<SignatureStream> signatures = sigFilesMap.get(sigFileName);
+            Collection<FileStreamSignature> signatures = sigFilesMap.get(sigFileName);
             nodeSignatureVerifier.verify(signatures);
             boolean valid = false;
 
-            for (SignatureStream signature : signatures) {
+            for (FileStreamSignature signature : signatures) {
                 if (ShutdownHelper.isStopping()) {
                     return;
                 }
 
-                // One of the 1/3 that didn't validate, so skip
-                if (!signature.isValid()) {
+                // Ignore signatures that didn't validate or weren't in the majority
+                if (signature.getStatus() != FileStreamSignature.SignatureStatus.CONSENSUS_REACHED) {
                     continue;
                 }
 
