@@ -66,8 +66,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
         TopicMessageFilter filter = topicContext.getFilter();
         TopicMessage last = topicContext.getLastTopicMessage();
-        Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
         long limit = filter.hasLimit() ? filter.getLimit() - topicContext.getCount().longValue() : 0;
+        Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
 
         TopicMessageFilter newFilter = TopicMessageFilter.builder()
                 .endTime(filter.getEndTime())

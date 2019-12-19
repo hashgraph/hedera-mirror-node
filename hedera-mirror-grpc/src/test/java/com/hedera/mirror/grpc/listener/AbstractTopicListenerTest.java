@@ -37,10 +37,10 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
     @Resource
-    protected DomainBuilder domainBuilder;
+    protected DatabaseClient databaseClient;
 
     @Resource
-    protected DatabaseClient databaseClient;
+    protected DomainBuilder domainBuilder;
 
     protected abstract TopicListener getTopicListener();
 

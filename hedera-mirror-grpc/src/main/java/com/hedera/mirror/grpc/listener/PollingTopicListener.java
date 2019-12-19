@@ -74,7 +74,7 @@ public class PollingTopicListener implements TopicListener {
     private class PollingContext {
 
         private final TopicMessageFilter filter;
-        private AtomicLong count = new AtomicLong(0L);
+        private final AtomicLong count = new AtomicLong(0L);
         private volatile TopicMessage last;
 
         void onNext(TopicMessage topicMessage) {

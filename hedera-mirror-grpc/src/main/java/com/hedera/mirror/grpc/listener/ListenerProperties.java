@@ -32,7 +32,7 @@ import org.springframework.validation.annotation.Validated;
 public class ListenerProperties {
 
     @NotNull
-    private Duration pollingFrequency = Duration.ofSeconds(1);
+    private Duration pollingFrequency = Duration.ofSeconds(2);
 
     @NotNull
     private ListenerType type = ListenerType.POLLING;
