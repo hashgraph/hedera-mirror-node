@@ -51,7 +51,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         TopicContext topicContext = new TopicContext(filter);
         return topicMessageRepository.findByFilter(filter)
                 .doOnComplete(topicContext::onComplete)
-                .concatWith(incomingMessages(topicContext))
+                .concatWith(Flux.defer(() -> incomingMessages(topicContext)))
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
                 .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
@@ -60,8 +60,24 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     }
 
     private Flux<TopicMessage> incomingMessages(TopicContext topicContext) {
-        return topicListener.listen(topicContext.getFilter())
-                .as(t -> topicContext.shouldListen() ? t : Flux.<TopicMessage>empty())
+        if (!topicContext.shouldListen()) {
+            return Flux.empty();
+        }
+
+        TopicMessageFilter filter = topicContext.getFilter();
+        TopicMessage last = topicContext.getLastTopicMessage();
+        Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
+        long limit = filter.hasLimit() ? filter.getLimit() - topicContext.getCount().longValue() : 0;
+
+        TopicMessageFilter newFilter = TopicMessageFilter.builder()
+                .endTime(filter.getEndTime())
+                .limit(limit)
+                .realmNum(filter.getRealmNum())
+                .startTime(startTime)
+                .topicNum(filter.getTopicNum())
+                .build();
+
+        return topicListener.listen(newFilter)
                 .flatMap(t -> missingMessages(topicContext, t));
     }
 
