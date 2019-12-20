@@ -1,7 +1,5 @@
 package com.hedera.mirror.importer.util;
 
-
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -33,7 +31,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -52,7 +49,6 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
-
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
@@ -514,8 +510,9 @@ public class Utility {
         }
     }
 
-    public static String getAccountIDStringFromFilePath(String path) {
+    public static String getAccountIDStringFromFilePath(File file) {
         String regex;
+        String path = file.getPath();
         if (isRecordFile(path) || isRecordSigFile(path)) {
             regex = "record([\\d]+[.][\\d]+[.][\\d]+)";
         } else if (isEventStreamFile(path) || isEventStreamSigFile(path)) {
@@ -583,10 +580,6 @@ public class Utility {
         }
     }
 
-    public static boolean greaterThanSuperMajorityNum(long n, long N) {
-        return n > N * 2 / 3.0;
-    }
-
     /**
      * Convert an Instant to a Long type timestampInNanos
      */
@@ -607,9 +600,9 @@ public class Utility {
     }
 
     /**
-     * Converts time in (second, nanos) to time in only nanos, with a fallback if overflow:
-     * If positive overflow, return the max time in the future (Long.MAX_VALUE).
-     * If negative overflow, return the max time in the past (Long.MIN_VALUE).
+     * Converts time in (second, nanos) to time in only nanos, with a fallback if overflow: If positive overflow, return
+     * the max time in the future (Long.MAX_VALUE). If negative overflow, return the max time in the past
+     * (Long.MIN_VALUE).
      */
     public static Long convertToNanosMax(long second, long nanos) {
         try {

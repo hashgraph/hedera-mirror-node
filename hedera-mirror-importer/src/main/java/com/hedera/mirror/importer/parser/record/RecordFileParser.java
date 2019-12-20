@@ -173,7 +173,7 @@ public class RecordFileParser implements FileParser {
                                 dis.readFully(rawBytes);
 
                                 TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
-                                RecordFileLogger.storeRecord(transaction, txRecord);
+                                RecordFileLogger.storeRecord(transaction, txRecord, rawBytes);
 
                                 if (log.isTraceEnabled()) {
                                     log.trace("Transaction = {}, Record = {}", Utility
@@ -285,7 +285,7 @@ public class RecordFileParser implements FileParser {
                         log.debug("No files to parse");
                     }
                 } else {
-                    log.error("Input parameter {} is not a folder", path);
+                    log.error("Input parameter is not a folder: {}", path);
                 }
                 RecordFileLogger.finish();
             }

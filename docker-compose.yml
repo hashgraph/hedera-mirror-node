@@ -31,9 +31,10 @@ services:
     environment:
       HEDERA_MIRROR_DATAPATH: /var/lib/hedera-mirror-importer
       HEDERA_MIRROR_DB_HOST: db
-      HEDERA_MIRROR_DOWNLOADER_BUCKETNAME: ${BUCKET_NAME}
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-importer/
     volumes:
       - ./data:/var/lib/hedera-mirror-importer
+      #- ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
 
   rest:
     image: docker.pkg.github.com/hashgraph/hedera-mirror-node/hedera-mirror-rest-hcs

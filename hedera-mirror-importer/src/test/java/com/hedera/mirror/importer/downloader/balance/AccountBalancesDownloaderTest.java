@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verify;
 
 import java.nio.file.Path;
 import java.util.List;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,6 +59,18 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     @DisplayName("Download and verify signatures")
     void downloadAndVerify() throws Exception {
         fileCopier.copy();
+        downloader.download();
+        verify(applicationStatusRepository).updateStatusValue(
+                ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, "2019-08-30T18_30_00.010147001Z_Balances" +
+                        ".csv");
+        assertValidFiles(List
+                .of("2019-08-30T18_15_00.016002001Z_Balances.csv", "2019-08-30T18_30_00.010147001Z_Balances.csv"));
+    }
+
+    @Test
+    @DisplayName("More than 2/3 but less than 100% signatures")
+    void moreThanTwoThirdSignatures() throws Exception {
+        fileCopier.filterDirectories("*0.0.3").filterDirectories("*0.0.4").filterDirectories("*0.0.5").copy();
         downloader.download();
         verify(applicationStatusRepository).updateStatusValue(
                 ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, "2019-08-30T18_30_00.010147001Z_Balances" +

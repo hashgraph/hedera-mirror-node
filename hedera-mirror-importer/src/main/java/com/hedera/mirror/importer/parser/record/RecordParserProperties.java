@@ -54,6 +54,10 @@ public class RecordParserProperties implements ParserProperties {
 
     private boolean persistSystemFiles = true;
 
+    // If configured the mirror node will store the raw transaction
+    // bytes on the t_transaction table
+    private boolean persistTransactionBytes = false;
+
     @Override
     public Path getStreamPath() {
         return mirrorProperties.getDataPath().resolve(getStreamType().getPath());

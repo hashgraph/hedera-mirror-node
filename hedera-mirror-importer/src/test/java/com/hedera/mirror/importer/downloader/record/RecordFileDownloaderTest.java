@@ -29,7 +29,6 @@ import static org.mockito.Mockito.verify;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -89,6 +88,20 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
     @DisplayName("Download and verify V2 files")
     void downloadV2() throws Exception {
         fileCopier.copy();
+        downloader.download();
+        verify(applicationStatusRepository).updateStatusValue(
+                ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_00.419072Z.rcd");
+        verify(applicationStatusRepository).updateStatusValue(
+                ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_05.249678Z.rcd");
+        verify(applicationStatusRepository, times(2)).updateStatusValue(
+                eq(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH), any());
+        assertValidFiles(List.of("2019-08-30T18_10_05.249678Z.rcd", "2019-08-30T18_10_00.419072Z.rcd"));
+    }
+
+    @Test
+    @DisplayName("More than 2/3 but less than 100% signatures")
+    void moreThanTwoThirdSignatures() throws Exception {
+        fileCopier.filterDirectories("*0.0.3").filterDirectories("*0.0.4").filterDirectories("*0.0.5").copy();
         downloader.download();
         verify(applicationStatusRepository).updateStatusValue(
                 ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-08-30T18_10_00.419072Z.rcd");

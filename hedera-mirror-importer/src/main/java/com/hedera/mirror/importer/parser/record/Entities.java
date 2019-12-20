@@ -32,6 +32,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.time.DateTimeException;
 import java.util.HashMap;
 
 import com.hederahashgraph.api.proto.java.TopicID;
