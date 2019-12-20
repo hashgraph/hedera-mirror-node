@@ -20,14 +20,15 @@ package com.hedera.faker.common;
  */
 
 import javax.inject.Named;
-
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
 @Named
+@RequiredArgsConstructor
 @ConfigurationProperties("faker.transaction")
 public class TransactionGeneratorProperties {
-    private int cryptoTransactionsFrequency;
-    private int fileTransactionsFrequency;
+    final private CryptoTransactionProperties crypto;
+    final private FileTransactionProperties file;
 }

@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # Runs scalability tests for REST API. Does following in order:
 # 1. Generates fake data using Faker
-# 2. Loads generated fake data into PostgresSQL database
-# 3. Runs REST API performance tests
-
-# Note:
-# Command to generate jar with Faker as start class: ./mvnw package -DskipTests -Dstart-class=com.hedera.faker.Faker
+# 2. Loads generated fake data into PostgreSQL database
 
 set -e
+
+# Directory containing this bash file
+BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 PG_HOST=127.0.0.1
 PG_PORT=5432
@@ -16,18 +15,16 @@ PG_PASSWORD=mirror_node_pass
 PG_DBNAME=mirror_node
 PG_API_USERNAME=mirror_api
 PG_API_PASSWORD=mirror_api_pass
-FAKER_JAR=./target/hedera-mirror-faker-*.jar
-GOLDEN_DIR=
-# Directory containing this bash file
-BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+FAKER_JAR=${BASE_DIR}/../target/hedera-mirror-faker-*.jar
+IMPORT_DIR=
 TMP_DIR=$(mktemp -d)
 
 function display_help() {
     echo "Usage: $0 [options...]"
     echo
     echo "    -h, --help                         Prints this help message"
-    echo "    -g, --golden DIR                   Directory containing pre-generated csv files. If specified, fake data"
-    echo "                                       generation step is skipped."
+    echo "    -d, --import-dir DIR               Directory containing pre-generated csv files which can be imported"
+         "                                       directly. If specified, data generation step will be skipped."
     echo "    -pgh, --pg-host HOSTNAME           Postgres database server host (default: '${PG_HOST}')"
     echo "    -pgp, --pg-port PORT               Postgres database server port (default: '${PG_PORT}'"
     echo "    -pgu, --pg-username USERNAME       Postgres database user name (default: '${PG_USERNAME}')"
@@ -44,8 +41,8 @@ while(( "$#" )); do
             display_help
             exit 0
             ;;
-        -g | --golden)
-            GOLDEN_DIR=$2
+        -d | --import-dir)
+            IMPORT_DIR=$2
             shift 2
             ;;
         -pgh | --pg-host)
@@ -85,7 +82,7 @@ done
 export PGPASSWORD=${PG_PASSWORD}
 
 CSV_DIR=""
-if [[ "${GOLDEN_DIR}" == "" ]]; then
+if [[ "${IMPORT_DIR}" == "" ]]; then
     # Run Faker to generate data
     echo "********************************************"
     echo "Generating fake data files in dir ${TMP_DIR}"
@@ -104,20 +101,25 @@ else
     echo "********************************"
     echo "Skipping generation of fake data"
     echo "********************************"
-    CSV_DIR=${GOLDEN_DIR}
+    CSV_DIR=${IMPORT_DIR}
 fi
 echo
 echo
 
 execute_sql_file() {
-    SQL_FILE=$1
-    # psql variable substitution does not work for \copy command, hence the sed workaround.
-    sed "s#%%TMP_DIR%%#${CSV_DIR}#g" ${BASE_DIR}/${SQL_FILE} > "${TMP_DIR}/${SQL_FILE}"
-    psql -h ${PG_HOST} -U ${PG_USERNAME} -d ${PG_DBNAME} -f "${TMP_DIR}/${SQL_FILE}"
+    psql -h ${PG_HOST} -U ${PG_USERNAME} -d ${PG_DBNAME} -f $1
 }
 
+echo "***********************************************"
+echo "Loading helper functions into PostgreSQL Server"
+echo "***********************************************"
+execute_sql_file \
+    "${BASE_DIR}/../../hedera-mirror-importer/src/main/resources/db/scripts/manage_constraints_and_indexes.sql"
+
 # Load generate data into Postgres
-echo "***********************************************"
-echo "Loading fake data files into PostgresSQL Server"
-echo "***********************************************"
-time execute_sql_file "load_data.sql"
+echo "***********************************"
+echo "Loading data into PostgreSQL Server"
+echo "***********************************"
+# psql variable substitution does not work for \copy command, hence the sed workaround.
+sed "s#%%TMP_DIR%%#${CSV_DIR}#g" ${BASE_DIR}/load_data.sql > ${TMP_DIR}/load_data.sql
+time execute_sql_file ${TMP_DIR}/load_data.sql

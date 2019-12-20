@@ -20,12 +20,10 @@ package com.hedera.faker.domain;
  */
 
 import com.google.common.base.Stopwatch;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Named;
-
 import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -58,21 +56,19 @@ public class DomainDriver implements ApplicationRunner {
         this.domainTransactionGenerator = domainTransactionGenerator;
         this.entityManager = entityManager;
         this.domainWriter = domainWriter;
-
         consensusNanoAdjustmentsDistribution = new RandomDistributionFromRange(0, 1000000000);
     }
 
     /**
-     *  Top level runner for generating fake data.
-     *  Iterates from start time (from configuration) to end time and generates fake transactions for intermediate
-     *  seconds based on transactions-per-second configuration.
+     * Top level runner for generating fake data. Iterates from start time (from configuration) to end time and
+     * generates fake transactions for intermediate seconds based on transactions-per-second configuration.
      */
     @Override
-    public void run(ApplicationArguments args) throws Exception {
+    public void run(ApplicationArguments args) {
         long currentFakeTime = properties.getStartTimeSec();
-        long totalTimeSec = properties.getTotalTimeSec();
-        long endTime = currentFakeTime + totalTimeSec;
-        log.info("Simulation time from {} to {} (time period: {}sec)", currentFakeTime, endTime, totalTimeSec);
+        long totalDurationSec = properties.getTotalDuration().toSeconds();
+        long endTime = currentFakeTime + totalDurationSec;
+        log.info("Simulation time from {} to {} (time period: {}sec)", currentFakeTime, endTime, totalDurationSec);
         int numTransactionsGenerated = 0;
         Stopwatch stopwatch = Stopwatch.createStarted();
         // Iterate from start time to end time.
@@ -90,7 +86,7 @@ public class DomainDriver implements ApplicationRunner {
                     log.info("Generated {} transactions in {}", numTransactionsGenerated, stopwatch);
                 }
             }
-            if (currentFakeTime % properties.getBalancesFileDurationSec() == 0) {
+            if (currentFakeTime % properties.getBalancesFileDuration().getSeconds() == 0) {
                 long lastConsensusNanoAdjustment = consensusNanoAdjustments.get(consensusNanoAdjustments.size() - 1);
                 writeBalances(Utility.convertToNanos(currentFakeTime, lastConsensusNanoAdjustment));
             }
@@ -98,7 +94,6 @@ public class DomainDriver implements ApplicationRunner {
         }
         log.info("Generated {} transactions in {}", numTransactionsGenerated, stopwatch);
         new EntityGenerator().generateAndWriteEntities(entityManager, domainWriter);
-        domainWriter.close();
         log.info("Total time taken: {}", stopwatch);
     }
 

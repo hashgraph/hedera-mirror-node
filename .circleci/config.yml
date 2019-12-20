@@ -70,6 +70,7 @@ jobs:
       - run:
           name: Collecting assets
           command: |
+            set -x
             NAME=hedera-mirror-importer-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
             WORKSPACE=/tmp/workspace
             mkdir -p ${WORKSPACE}/${NAME}
@@ -122,6 +123,7 @@ jobs:
           working_directory: "hedera-mirror-rest"
           name: Collecting assets
           command: |
+            set -x
             NAME=hedera-mirror-rest-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
             npm pack
             mkdir -p /tmp/workspace/artifacts

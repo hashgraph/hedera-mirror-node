@@ -1,4 +1,4 @@
--- Loads data from CSV files to PostgresSQL
+-- Loads data from CSV files to PostgreSQL
 
 SELECT cleanup();
 SELECT drop_constraints_and_indexes();

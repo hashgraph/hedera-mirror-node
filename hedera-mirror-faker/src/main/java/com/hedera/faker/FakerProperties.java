@@ -19,12 +19,14 @@ package com.hedera.faker;
  * ‍
  */
 
-import com.hedera.faker.sampling.NumberDistributionConfig;
-
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import java.time.Duration;
+import java.time.Instant;
 import javax.annotation.PostConstruct;
 import javax.inject.Named;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import com.hedera.faker.sampling.NumberDistributionConfig;
 
 /**
  * Set of common properties between 'domain' and 'proto' drivers.
@@ -33,15 +35,19 @@ import javax.inject.Named;
 @Named
 @ConfigurationProperties("faker")
 public class FakerProperties {
+    /**
+     * Start time for the fake transactions. Used for consensus timestamp field.
+     */
+    private long startTimeSec = Instant.now().getEpochSecond();
+
+    /**
+     * Fake transactions will be generated for time period from startTimeSec to startTimeSec + totalDuration.
+     */
+    private Duration totalDuration = Duration.ofHours(1);
+
     private NumberDistributionConfig transactionsPerSecond = new NumberDistributionConfig();
 
-    /** Start time for the fake transactions. Used for consensus timestamp field. */
-    private int startTimeSec = 1577836800;  // 1 Jan 2020, 00:00:00
-
-    /** Fake transactions will be generated for time period from startTimeSec to startTimeSec + totalTimeSec. */
-    private int totalTimeSec = 3600 * 24;  // 1 hr
-
-    private int balancesFileDurationSec = 15 * 60;  // 15 min
+    private Duration balancesFileDuration = Duration.ofMinutes(15);
 
     @PostConstruct
     void initDistributions() {

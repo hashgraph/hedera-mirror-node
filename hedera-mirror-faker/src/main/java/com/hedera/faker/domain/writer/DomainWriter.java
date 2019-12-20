@@ -24,7 +24,9 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.Transaction;
 
-public interface DomainWriter {
+import java.io.Closeable;
+
+public interface DomainWriter extends Closeable {
     void addTransaction(Transaction transaction);
 
     void addEntity(Entities entity);
@@ -34,6 +36,4 @@ public interface DomainWriter {
     void addFileData(FileData fileData);
 
     void addAccountBalances(long consensusNs, long balance, long accountNum);
-
-    void close() throws Exception;
 }

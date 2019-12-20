@@ -21,9 +21,7 @@ package com.hedera.faker.common;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Named;
-
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.hedera.faker.sampling.NumberDistributionConfig;
@@ -32,12 +30,15 @@ import com.hedera.faker.sampling.NumberDistributionConfig;
  * Fields' generators and properties used by CryptoTransactionGenerator.
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
 @Named
-@ConfigurationProperties("faker.transaction.crypto")
 public class CryptoTransactionProperties {
 
     private final NumberDistributionConfig numTransferLists = new NumberDistributionConfig();
+
+    /**
+     * Relative frequency of crypto type transactions among all generated transactions.
+     */
+    private int frequency;
 
     /**
      * Relative frequency of CRYPTOCREATEACCOUNT transactions

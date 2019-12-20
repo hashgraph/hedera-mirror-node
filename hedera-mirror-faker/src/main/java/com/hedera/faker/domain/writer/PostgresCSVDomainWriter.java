@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.inject.Named;
-
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
@@ -39,11 +38,11 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.util.Utility;
 
 /**
- * Generates CSV files to load into PostgresSQL using COPY command.
+ * Generates CSV files to load into PostgreSQL using COPY command.
  * <p>
  * Generated data:
  * <p>
- *
+ * <p>
  * Fake data for tables: <br/>
  * <ul>
  *   <li>t_transactions</li>
@@ -52,19 +51,19 @@ import com.hedera.mirror.importer.util.Utility;
  *   <li>t_entities</li>
  *   <li>account_balances</li>
  * </ul>
- *
+ * <p>
  * Fake 'constant' data for tables:
  * <ul>
  *   <li>t_record_files : single row with id 0</li>
  * </ul>
- *
+ * <p>
  * Tables already setup by migrations:
  * <ul>
  *   <li>t_transaction_types</li>
  *   <li>t_transaction_results</li>
  *   <li>t_entity_types</li>
  * </ul>
- *
+ * <p>
  * Tables left empty:
  * <ul>
  *   <li>t_contract_result (empty until contract transaction generator is added)</li>
@@ -74,7 +73,7 @@ import com.hedera.mirror.importer.util.Utility;
  *   <li>account_balance_sets</li>
  *   <li>t_application_status</li>
  * </ul>
- *
+ * <p>
  * Don't care tables:
  * <ul>
  *   <li>entity_types</li>
@@ -195,7 +194,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         try {
             cryptoTransferListsWriter.printRecord(
                     cryptoTransfer.getConsensusTimestamp(), cryptoTransfer.getRealmNum(), cryptoTransfer.getEntityNum(),
-                    cryptoTransfer.getAmount() );
+                    cryptoTransfer.getAmount());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -222,7 +221,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         }
     }
 
-    private String toHex(byte[] data) {
+    private static String toHex(byte[] data) {
         if (data == null) {
             return null;
         } else {

@@ -21,25 +21,18 @@ package com.hedera.faker.common;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Named;
-
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.hedera.faker.sampling.NumberDistributionConfig;
 
 @Data
-@EqualsAndHashCode(callSuper = false)
 @Named
-@ConfigurationProperties("faker.transaction.file")
 public class FileTransactionProperties {
 
-    private final NumberDistributionConfig fileDataSize = new NumberDistributionConfig();
-
     /**
-     * Max size of file data
+     * Relative frequency of file type transactions among all generated transactions.
      */
-    private int maxFileDataSize;
+    private int frequency;
 
     /**
      * Relative frequency of FILECREATE transactions
@@ -67,6 +60,8 @@ public class FileTransactionProperties {
      * on.
      */
     private int numSeedFiles;
+
+    private final NumberDistributionConfig fileDataSize = new NumberDistributionConfig();
 
     @PostConstruct
     void initDistributions() {

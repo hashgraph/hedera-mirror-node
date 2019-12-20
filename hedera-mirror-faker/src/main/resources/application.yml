@@ -1,12 +1,11 @@
 faker:
-  totalTimeSec: 86400
+  totalDuration: 1d
   transactionsPerSecond: # 3-8 txns per second
     rangeMin: 3
     rangeMax: 8
   transaction:
-    cryptoTransactionsFrequency: 990
-    fileTransactionsFrequency: 10
     crypto:
+      frequency: 990
       createsFrequency: 10
       transfersFrequency: 988
       updatesFrequency: 1
@@ -16,6 +15,7 @@ faker:
         rangeMin: 1
         rangeMax: 10
     file:
+      frequency: 10
       createsFrequency: 800
       appendsFrequency: 100
       updatesFrequency: 80

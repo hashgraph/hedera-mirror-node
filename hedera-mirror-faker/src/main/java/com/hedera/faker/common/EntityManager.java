@@ -23,10 +23,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import javax.inject.Named;
-
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
@@ -35,22 +33,18 @@ import com.hedera.faker.sampling.RandomDistributionFromRange;
 
 @Log4j2
 @Named
+@Getter
 public class EntityManager {
 
-    @Getter
     private final long nodeAccountId;
 
-    @Getter
     private final EntitySet accounts;
 
-    @Getter
     private final EntitySet files;
 
     // Keeps track of entities' balances.
-    @Getter
     private final Map<Long, Long> balances;
 
-    @Getter
     private final long portalEntity;  // Used to create crypto accounts
 
     public EntityManager() {
@@ -69,25 +63,24 @@ public class EntityManager {
     }
 
     public void addBalance(long accountId, long value) {
-        balances.put(accountId, balances.get(accountId) + value);
+        long oldBalance = balances.getOrDefault(accountId, 0L);
+        balances.put(accountId, oldBalance + value);
     }
 
     /**
-     * Represents set of entities for a specific entity type.
-     * Only keeps track of entity ids ever created. Does not keep track of active/deleted entity ids
-     * since mirror node does not do rigorous validations like - no update transaction should be done on deleted entity.
+     * Represents set of entities for a specific entity type. Only keeps track of entity ids ever created. Does not keep
+     * track of active/deleted entity ids since mirror node does not do rigorous validations like - no update
+     * transaction should be done on deleted entity.
      */
-    public class EntitySet {
-        @Getter
-        Long startEntityId;
+    @Getter
+    public static class EntitySet {
+        private long startEntityId;
 
-        @Getter
-        Long nextEntityId;
+        private long nextEntityId;
 
-        Distribution<Long> entitySampler;
+        private Distribution<Long> entitySampler;
 
-        @Getter
-        final Set<Long> deleted = new HashSet<>();
+        private final Set<Long> deleted = new HashSet<>();
 
         EntitySet(Long startEntityId) {
             this.startEntityId = startEntityId;
@@ -107,7 +100,6 @@ public class EntityManager {
             long newEntityId = nextEntityId;
             nextEntityId++;
             entitySampler = new RandomDistributionFromRange(startEntityId, nextEntityId);
-            balances.put(newEntityId, 0L);  // initial balance
             log.trace("New entity {}", newEntityId);
             return newEntityId;
         }
