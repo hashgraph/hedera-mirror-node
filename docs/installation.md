@@ -40,16 +40,6 @@ java -jar hedera-mirror-importer/target/hedera-mirror-importer-*.jar
 Additionally, there is a Systemd unit file located in the `hedera-mirror-importer/scripts/` directory that can be used to
 manage the process. See the [operations](operations.md) documentation for more information.
 
-### REST API
-
-To start the REST API ensure you have the necessary [configuration](configuration.md) populated and run:
-
-```console
-cd hedera-mirror-rest
-npm install
-npm start
-```
-
 ### GRPC API
 
 To run the GRPC API, first populate the configuration at one of the supported
@@ -61,6 +51,16 @@ java -jar hedera-mirror-grpc/target/hedera-mirror-grpc-*.jar
 
 Additionally, there is a Systemd unit file located in the `hedera-mirror-grpc/scripts/` directory that can be used to
 manage the process. See the [operations](operations.md) documentation for more information.
+
+### REST API
+
+To start the REST API ensure you have the necessary [configuration](configuration.md) populated and run:
+
+```console
+cd hedera-mirror-rest
+npm install
+npm start
+```
 
 #### Unit Tests
 
@@ -103,10 +103,19 @@ Containers use the following persisted volumes:
 ### Starting
 
 Before starting, [configure](configuration.md) the application by preparing an `application.yml` with the desired custom
-values. This file can then be passed to Docker compose by uncommenting the following line in the `docker-compose.yml`
+values. This file can then be passed to Docker compose by uncommenting the following lines in the `docker-compose.yml`
 and setting it to the path of the local file:
 
-`- ./application.yml:/usr/etc/hedera-mirror-importer/application.yml`
+```
+volumes:
+- ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
+```
+
+and
+
+```
+- ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
+```
 
 Finally, run the commands to build and startup:
 

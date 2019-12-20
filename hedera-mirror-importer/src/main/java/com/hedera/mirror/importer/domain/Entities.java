@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
-
 import java.time.Instant;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -29,7 +27,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-
 import lombok.Data;
 
 import com.hedera.mirror.importer.util.Utility;
@@ -83,7 +80,7 @@ public class Entities {
         try {
             this.key = key;
             ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
-        } catch (InvalidProtocolBufferException e) {
+        } catch (Exception e) {
             ed25519PublicKeyHex = null;
         }
     }

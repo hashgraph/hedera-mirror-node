@@ -373,54 +373,10 @@ public class Utility {
     }
 
     /**
-     * print a Transaction's content to a String
-     *
-     * @param transaction
-     * @return
-     * @throws InvalidProtocolBufferException
-     */
-    public static String printTransaction(Transaction transaction) throws InvalidProtocolBufferException {
-        StringBuilder stringBuilder = new StringBuilder();
-        if (transaction.hasSigs()) {
-            stringBuilder.append(TextFormat.shortDebugString(transaction.getSigs()) + "\n");
-        }
-        if (transaction.hasSigMap()) {
-            stringBuilder.append(TextFormat.shortDebugString(transaction.getSigMap()) + "\n");
-        }
-
-        stringBuilder.append(TextFormat.shortDebugString(
-                getTransactionBody(transaction)) + "\n");
-        return stringBuilder.toString();
-    }
-
-    /**
-     * print a Transaction's content to a formatted (Readable) String
-     *
-     * @param transaction
-     * @return
-     * @throws InvalidProtocolBufferException
-     */
-    public static String printTransactionNice(Transaction transaction) throws InvalidProtocolBufferException {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append(TextFormat.printToString(
-                getTransactionBody(transaction)));
-        if (transaction.hasSigs()) {
-            stringBuilder.append(TextFormat.printToString(transaction.getSigs()) + "\n");
-        }
-        if (transaction.hasSigMap()) {
-            stringBuilder.append(TextFormat.printToString(transaction.getSigMap()) + "\n");
-        }
-
-        return stringBuilder.toString();
-    }
-
-    /**
      * print a protobuf Message's content to a String
      *
      * @param message
      * @return
-     * @throws InvalidProtocolBufferException
      */
     public static String printProtoMessage(GeneratedMessageV3 message) {
         return TextFormat.shortDebugString(message);
