@@ -42,8 +42,19 @@ public class CompositeTopicListener implements TopicListener {
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
+        return getTopicListener().listen(filter);
+    }
+
+    private TopicListener getTopicListener() {
         ListenerType type = listenerProperties.getType();
-        TopicListener topicListener = type == ListenerType.NOTIFYING ? notifyingTopicListener : pollingTopicListener;
-        return topicListener.listen(filter);
+
+        switch (type) {
+            case NOTIFYING:
+                return notifyingTopicListener;
+            case POLLING:
+                return pollingTopicListener;
+            default:
+                throw new UnsupportedOperationException("Unknown listener type: " + type);
+        }
     }
 }

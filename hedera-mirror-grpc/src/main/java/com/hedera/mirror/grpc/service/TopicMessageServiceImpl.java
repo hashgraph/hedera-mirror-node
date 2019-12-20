@@ -51,7 +51,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         TopicContext topicContext = new TopicContext(filter);
         return topicMessageRepository.findByFilter(filter)
                 .doOnComplete(topicContext::onComplete)
-                .concatWith(Flux.defer(() -> incomingMessages(topicContext)))
+                .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
                 .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
