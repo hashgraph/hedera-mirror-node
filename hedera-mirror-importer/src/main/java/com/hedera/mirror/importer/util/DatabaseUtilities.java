@@ -21,13 +21,11 @@ package com.hedera.mirror.importer.util;
  */
 
 import com.google.common.util.concurrent.Uninterruptibles;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.sql.DataSource;
-
 import lombok.extern.log4j.Log4j2;
 
 /**

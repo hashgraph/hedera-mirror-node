@@ -32,13 +32,11 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Instant;
-
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Triple;
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -156,10 +154,9 @@ public class UtilityTest {
 
     @Test
     @DisplayName("protobufKeyToHexIfEd25519OrNull valid ED25519 key")
-    public void protobufKeyToHexIfEd25519OrNull_Valid() throws InvalidProtocolBufferException, SQLException {
+    public void protobufKeyToHexIfEd25519OrNull_Valid() throws Exception {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-        var input = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decode(instr))).build();
-
+        var input = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build();
         var result = getCut().protobufKeyToHexIfEd25519OrNull(input.toByteArray());
 
         assertThat(result).isEqualTo(instr);
@@ -167,9 +164,9 @@ public class UtilityTest {
 
     @Test
     @DisplayName("protobufKeyToHexIfEd25519OrNull threshold key")
-    public void protobufKeyToHexIfEd25519OrNull_ThresholdKey() throws InvalidProtocolBufferException, SQLException {
+    public void protobufKeyToHexIfEd25519OrNull_ThresholdKey() throws Exception {
         var ks = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decode(ks))).build();
+        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ks))).build();
         var keyList = KeyList.newBuilder().addKeys(key).build();
         var tk = ThresholdKey.newBuilder().setThreshold(1).setKeys(keyList).build();
         var input = Key.newBuilder().setThresholdKey(tk).build();
