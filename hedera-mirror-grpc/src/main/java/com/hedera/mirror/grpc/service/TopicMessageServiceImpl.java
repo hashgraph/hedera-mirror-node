@@ -29,7 +29,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -49,6 +48,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     public Flux<TopicMessage> subscribeTopic(TopicMessageFilter filter) {
         log.info("Subscribing to topic: {}", filter);
         TopicContext topicContext = new TopicContext(filter);
+
         return topicMessageRepository.findByFilter(filter)
                 .doOnComplete(topicContext::onComplete)
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
@@ -78,7 +78,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .build();
 
         return topicListener.listen(newFilter)
-                .flatMap(t -> missingMessages(topicContext, t));
+                .flatMapSequential(t -> missingMessages(topicContext, t));
     }
 
     private Flux<TopicMessage> missingMessages(TopicContext topicContext, TopicMessage current) {
@@ -100,7 +100,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 topicContext.getTopicId(), last.getSequenceNumber(), current.getSequenceNumber());
 
         return topicMessageRepository.findByFilter(newFilter)
-                .concatWith(Mono.just(current));
+                .concatWithValues(current);
     }
 
     private enum Mode {

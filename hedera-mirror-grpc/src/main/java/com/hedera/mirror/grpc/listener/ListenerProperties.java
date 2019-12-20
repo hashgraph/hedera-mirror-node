@@ -35,10 +35,10 @@ public class ListenerProperties {
     private Duration pollingFrequency = Duration.ofSeconds(2);
 
     @NotNull
-    private ListenerType type = ListenerType.POLLING;
+    private ListenerType type = ListenerType.POLL;
 
     public enum ListenerType {
-        NOTIFYING,
-        POLLING
+        NOTIFY,
+        POLL
     }
 }

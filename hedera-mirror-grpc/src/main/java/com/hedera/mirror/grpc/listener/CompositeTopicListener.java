@@ -49,9 +49,9 @@ public class CompositeTopicListener implements TopicListener {
         ListenerType type = listenerProperties.getType();
 
         switch (type) {
-            case NOTIFYING:
+            case NOTIFY:
                 return notifyingTopicListener;
-            case POLLING:
+            case POLL:
                 return pollingTopicListener;
             default:
                 throw new UnsupportedOperationException("Unknown listener type: " + type);

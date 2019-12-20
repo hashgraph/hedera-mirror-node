@@ -47,7 +47,8 @@ public class PollingTopicListener implements TopicListener {
         Duration frequency = listenerProperties.getPollingFrequency();
 
         return Flux.interval(frequency)
-                .flatMap(t -> poll(context))
+                .filter(i -> !context.isRunning()) // Discard polling requests while querying
+                .flatMap(i -> poll(context))
                 .doOnNext(context::onNext)
                 .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", frequency.toMillis(), filter));
     }
@@ -67,7 +68,9 @@ public class PollingTopicListener implements TopicListener {
                 .build();
 
         log.debug("Polling for messages: {}", newFilter);
-        return topicMessageRepository.findByFilter(newFilter);
+        return topicMessageRepository.findByFilter(newFilter)
+                .doOnSubscribe(s -> context.setRunning(true))
+                .doOnComplete(() -> context.setRunning(false));
     }
 
     @Data
@@ -76,6 +79,7 @@ public class PollingTopicListener implements TopicListener {
         private final TopicMessageFilter filter;
         private final AtomicLong count = new AtomicLong(0L);
         private volatile TopicMessage last;
+        private volatile boolean running = false;
 
         void onNext(TopicMessage topicMessage) {
             last = topicMessage;
