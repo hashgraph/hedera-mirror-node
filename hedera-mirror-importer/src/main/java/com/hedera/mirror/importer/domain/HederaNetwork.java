@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.domain;
 
 public enum HederaNetwork {
 
+    DEMO,
     MAINNET,
     TESTNET
 }

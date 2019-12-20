@@ -60,6 +60,7 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.util.Utility;
+import java.util.Arrays;
 
 // Class manually commits so have to manually cleanup tables
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
@@ -1282,5 +1283,62 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
             assertEquals(accountId.getRealmNum(), tempDbCryptoTransfer.getRealmNum());
             assertEquals(accountId.getAccountNum(), tempDbCryptoTransfer.getEntityNum());
         }
+    }
+
+    @Test
+    void cryptoTransferPersistRawBytesDefault() throws Exception {
+        // Use the default properties for record parsing - the raw bytes
+        // should NOT be stored in the db
+        Transaction transaction = cryptoTransferTransaction();
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        byte[] rawBytes = transaction.getBodyBytes().toByteArray();
+
+        RecordFileLogger.storeRecord(transaction, record, rawBytes);
+
+        RecordFileLogger.completeFile("", "");
+
+        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
+                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+
+        assertEquals(null, dbTransaction.getTransactionBytes());
+    }
+
+    @Test
+    void cryptoTransferPersistRawBytesTrue() throws Exception {
+        // Explicitly persist the transaction bytes
+        parserProperties.setPersistTransactionBytes(true);
+        Transaction transaction = cryptoTransferTransaction();
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        byte[] rawBytes = transaction.getBodyBytes().toByteArray();
+
+        RecordFileLogger.storeRecord(transaction, record, rawBytes);
+
+        RecordFileLogger.completeFile("", "");
+
+        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
+                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+
+        assertEquals(0, java.util.Arrays.compare(dbTransaction.getTransactionBytes(), rawBytes));
+    }
+
+    @Test
+    void cryptoTransferPersistRawBytesFalse() throws Exception {
+        // Explicitly DO NOT persist the transaction bytes
+        parserProperties.setPersistTransactionBytes(false);
+        Transaction transaction = cryptoTransferTransaction();
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        byte[] rawBytes = transaction.getBodyBytes().toByteArray();
+
+        RecordFileLogger.storeRecord(transaction, record, rawBytes);
+
+        RecordFileLogger.completeFile("", "");
+
+        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
+                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+
+        assertEquals(null, dbTransaction.getTransactionBytes());
     }
 }

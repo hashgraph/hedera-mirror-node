@@ -66,11 +66,11 @@ class PendingDownload {
             log.debug("Finished downloading {} in {}", s3key, stopwatch);
             downloadSuccessful = true;
         } catch (InterruptedException e) {
-            log.error("Failed downloading {} after {}", s3key, stopwatch, e);
+            log.warn("Failed downloading {} after {}", s3key, stopwatch, e);
             downloadSuccessful = false;
             throw e;
         } catch (Exception ex) {
-            log.error("Failed downloading {} after {}", s3key, stopwatch, ex);
+            log.warn("Failed downloading {} after {}", s3key, stopwatch, ex);
             downloadSuccessful = false;
         }
         return downloadSuccessful;

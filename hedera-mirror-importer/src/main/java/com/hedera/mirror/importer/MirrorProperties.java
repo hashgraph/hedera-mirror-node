@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -45,7 +44,7 @@ public class MirrorProperties {
     private Path dataPath = Paths.get(".", "data");
 
     @NotNull
-    private HederaNetwork network = HederaNetwork.MAINNET;
+    private HederaNetwork network = HederaNetwork.DEMO;
 
     @Min(0)
     private long shard = 0L;

@@ -20,22 +20,11 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-/**
- * Invalid dataset such as an account balances dataset.
- */
-public class InvalidDatasetException extends ImporterException {
+public class SignatureVerificationException extends ImporterException {
 
-    private static final long serialVersionUID = 3679395824341309905L;
+    private static final long serialVersionUID = 4830495870121480440L;
 
-    public InvalidDatasetException(String message) {
+    public SignatureVerificationException(String message) {
         super(message);
-    }
-
-    public InvalidDatasetException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public InvalidDatasetException(String message, Throwable throwable) {
-        super(message, throwable);
     }
 }

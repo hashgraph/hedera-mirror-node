@@ -64,4 +64,6 @@ public class Transaction {
     private Long maxFee;
 
     private byte[] transactionHash;
+
+    private byte[] transactionBytes;
 }
