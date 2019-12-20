@@ -94,8 +94,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         topicMessageService.subscribeTopic(filter)
                 .as(StepVerifier::create)
-                .expectNextCount(0L)
                 .thenAwait(Duration.ofMillis(100))
+                .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
     }
@@ -325,10 +325,10 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         topicMessageService.subscribeTopic(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
+                .thenAwait(Duration.ofMillis(300))
                 .then(() -> generator.blockLast())
                 .expectNext(1L, 2L, 3L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofMillis(700));
     }
 }

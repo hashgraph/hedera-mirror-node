@@ -29,7 +29,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -49,9 +48,10 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     public Flux<TopicMessage> subscribeTopic(TopicMessageFilter filter) {
         log.info("Subscribing to topic: {}", filter);
         TopicContext topicContext = new TopicContext(filter);
+
         return topicMessageRepository.findByFilter(filter)
                 .doOnComplete(topicContext::onComplete)
-                .concatWith(incomingMessages(topicContext))
+                .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
                 .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
@@ -60,9 +60,25 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     }
 
     private Flux<TopicMessage> incomingMessages(TopicContext topicContext) {
-        return topicListener.listen(topicContext.getFilter())
-                .as(t -> topicContext.shouldListen() ? t : Flux.<TopicMessage>empty())
-                .flatMap(t -> missingMessages(topicContext, t));
+        if (!topicContext.shouldListen()) {
+            return Flux.empty();
+        }
+
+        TopicMessageFilter filter = topicContext.getFilter();
+        TopicMessage last = topicContext.getLastTopicMessage();
+        long limit = filter.hasLimit() ? filter.getLimit() - topicContext.getCount().longValue() : 0;
+        Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
+
+        TopicMessageFilter newFilter = TopicMessageFilter.builder()
+                .endTime(filter.getEndTime())
+                .limit(limit)
+                .realmNum(filter.getRealmNum())
+                .startTime(startTime)
+                .topicNum(filter.getTopicNum())
+                .build();
+
+        return topicListener.listen(newFilter)
+                .flatMapSequential(t -> missingMessages(topicContext, t));
     }
 
     private Flux<TopicMessage> missingMessages(TopicContext topicContext, TopicMessage current) {
@@ -84,7 +100,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 topicContext.getTopicId(), last.getSequenceNumber(), current.getSequenceNumber());
 
         return topicMessageRepository.findByFilter(newFilter)
-                .concatWith(Mono.just(current));
+                .concatWithValues(current);
     }
 
     private enum Mode {
