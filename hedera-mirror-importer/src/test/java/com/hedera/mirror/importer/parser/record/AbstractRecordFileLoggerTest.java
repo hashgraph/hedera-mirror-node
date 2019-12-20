@@ -165,6 +165,8 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
                 , () -> assertEquals(transactionBody.getTransactionValidDuration().getSeconds(), dbTransaction
                         .getValidDurationSeconds())
                 , () -> assertEquals(transactionBody.getTransactionFee(), dbTransaction.getMaxFee())
+                // By default the raw bytes are not stored
+                , () -> assertEquals(null, dbTransaction.getTransactionBytes())
         );
     }
 

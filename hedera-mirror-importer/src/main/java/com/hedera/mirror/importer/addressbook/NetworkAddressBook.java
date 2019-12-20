@@ -67,7 +67,7 @@ public class NetworkAddressBook {
                 log.info("Copied default address book {} to {}", resource, path);
             }
         } catch (Exception e) {
-            log.error("Unable to copy {} address book to {}", mirrorProperties.getNetwork(), path, e);
+            log.error("Unable to copy address book from {} to {}", mirrorProperties.getNetwork(), path, e);
         }
     }
 

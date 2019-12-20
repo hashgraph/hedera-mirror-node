@@ -51,7 +51,7 @@ public class ShutdownHelper {
         try {
             Thread.sleep(10 * 1000);
         } catch (InterruptedException e) {
-            log.error("Interrupted when waiting for shutdown...", e);
+            log.warn("Interrupted when waiting for shutdown...", e);
         }
     }
 }
