@@ -36,6 +36,8 @@
         <module>hedera-mirror-importer</module>
         <module>hedera-mirror-protobuf</module>
         <module>hedera-mirror-rest</module>
+        <module>hedera-mirror-grpc-sampler</module>
+        <module>hedera-mirror-perf</module>
     </modules>
 
     <organization>
