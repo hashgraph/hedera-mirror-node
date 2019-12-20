@@ -12,6 +12,7 @@ services:
       POSTGRES_USER: mirror_node
     volumes:
       - ./db:/var/lib/postgresql/data
+      - ./hedera-mirror-grpc/scripts/db/:/docker-entrypoint-initdb.d/
     ports:
       - 5432:5432
 
@@ -20,12 +21,9 @@ services:
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_GRPC_DB_HOST: db
-      HEDERA_MIRROR_GRPC_DB_PASSWORD: mirror_node_pass
-      HEDERA_MIRROR_GRPC_DB_USERNAME: mirror_node
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-grpc/
-    volumes:
-      - ./hedera-mirror-grpc/scripts/init-pg-users.sh:/docker-entrypoint-initdb.d/10-init-pg-users.sh
-      #- ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
+    #volumes:
+    #- ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
     ports:
       - 5600:5600
 

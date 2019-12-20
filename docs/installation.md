@@ -107,7 +107,13 @@ values. This file can then be passed to Docker compose by uncommenting the follo
 and setting it to the path of the local file:
 
 ```
+volumes:
 - ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
+```
+
+and
+
+```
 - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
 ```
 
