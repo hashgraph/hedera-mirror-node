@@ -38,9 +38,9 @@ DECLARE
 BEGIN
     ALTER TABLE t_cryptotransferlists
         DROP CONSTRAINT fk__t_transactions;
-    DROP INDEX idx__t_cryptotransferlists__ts_then_acct;
+    DROP INDEX idx__t_cryptotransferlists__realm_and_num_and_consensus;
     DROP INDEX idx__t_cryptotransferlists__consensus_and_realm_and_num;
-    DROP INDEX idx_t_cryptotransferlist_amount;
+    DROP INDEX idx__t_cryptotransferlist_amount;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -50,9 +50,9 @@ DECLARE
 BEGIN
     ALTER TABLE t_cryptotransferlists
         ADD CONSTRAINT fk__t_transactions FOREIGN KEY (consensus_timestamp) REFERENCES t_transactions (consensus_ns);
-    CREATE INDEX idx__t_cryptotransferlists__ts_then_acct ON t_cryptotransferlists (consensus_timestamp, realm_num, entity_num);
+    CREATE INDEX idx__t_cryptotransferlists__realm_and_num_and_consensus ON t_cryptotransferlists (realm_num, entity_num, consensus_timestamp);
     CREATE INDEX idx__t_cryptotransferlists__consensus_and_realm_and_num ON t_cryptotransferlists (consensus_timestamp, realm_num, entity_num);
-    CREATE INDEX idx_t_cryptotransferlist_amount ON t_cryptotransferlists (amount);
+    CREATE INDEX idx__t_cryptotransferlist_amount ON t_cryptotransferlists (amount);
 END;
 $$ LANGUAGE plpgsql;
 

@@ -125,7 +125,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
     private static CSVPrinter getCryptoTransferListsCSVPrinter(String outputDir) throws IOException {
         return new CSVPrinter(
                 Files.newBufferedWriter(Paths.get(outputDir, "t_cryptotransferlists")),
-                CSVFormat.DEFAULT.withHeader("amount", "consensus_timestamp", "realm_num", "entity_num"));
+                CSVFormat.DEFAULT.withHeader("consensus_timestamp", "realm_num", "entity_num", "amount"));
     }
 
     private static CSVPrinter getFileDataCSVPrinter(String outputDir) throws IOException {
@@ -194,8 +194,8 @@ public class PostgresCSVDomainWriter implements DomainWriter {
     public void addCryptoTransfer(CryptoTransfer cryptoTransfer) {
         try {
             cryptoTransferListsWriter.printRecord(
-                    cryptoTransfer.getAmount(), cryptoTransfer.getConsensusTimestamp(), cryptoTransfer.getRealmNum(),
-                    cryptoTransfer.getEntityNum());
+                    cryptoTransfer.getConsensusTimestamp(), cryptoTransfer.getRealmNum(), cryptoTransfer.getEntityNum(),
+                    cryptoTransfer.getAmount() );
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

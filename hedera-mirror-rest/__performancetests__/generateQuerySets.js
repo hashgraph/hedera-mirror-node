@@ -85,6 +85,20 @@ const timestampToParamValue = timestamp => {
   return timestampStr.substr(0, 10) + '.' + timestampStr.substr(10);
 };
 
+const populateParamValues = async (test, paramName, rangeFieldName, getSamples, convertToParam) => {
+  let paramValues = [];
+  let isRangeQuery = rangeFieldName in test;
+  let samples = await getSamples(test.count);
+  samples.forEach(sample => {
+    if (isRangeQuery) {
+      paramValues.push([convertToParam(sample), convertToParam(sample + test[rangeFieldName])]);
+    } else {
+      paramValues.push([convertToParam(sample)]);
+    }
+  });
+  return paramValues;
+};
+
 /**
  * Given a test, generates and returns query set which contains query, values for url params, etc.
  */
@@ -94,45 +108,30 @@ const makeQuerySet = async test => {
   let isRangeQuery = false;
   if (test.filterAxis === 'BALANCE') {
     paramName = 'account.balance';
-    isRangeQuery = 'rangeTinyHbars' in test;
-    let samples = await sampleBalanceValues(test.count);
-    samples.forEach(balance => {
-      if (isRangeQuery) {
-        paramValues.push(['' + balance, '' + (balance + test.rangeTinyHbars)]);
-      } else {
-        paramValues.push(['' + balance]);
-      }
+    paramValues = await populateParamValues(test, paramName, 'rangeTinyHbars', sampleBalanceValues, sample => {
+      return '' + sample;
     });
   } else if (test.filterAxis === 'CONSENSUS_TIMESTAMP') {
     paramName = 'timestamp';
-    isRangeQuery = 'rangeDurationNanos' in test;
-    let samples = await sampleConsensusTimestamps(test.count);
-    samples.forEach(timestamp => {
-      if (isRangeQuery) {
-        paramValues.push([
-          timestampToParamValue(timestamp),
-          timestampToParamValue(timestamp + test.rangeDurationNanos)
-        ]);
-      } else {
-        paramValues.push([timestampToParamValue(timestamp)]);
+    paramValues = await populateParamValues(
+      test,
+      paramName,
+      'rangeDurationNanos',
+      sampleConsensusTimestamps,
+      sample => {
+        return timestampToParamValue(sample);
       }
-    });
+    );
   } else if (test.filterAxis === 'ACCOUNTID') {
     paramName = 'account.id';
-    isRangeQuery = 'rangeNumAccounts' in test;
-    let samples = await sampleEntityIds(test.count);
-    samples.forEach(accountId => {
-      if (isRangeQuery) {
-        paramValues.push(['' + accountId, '' + (accountId + test.rangeNumAccounts)]);
-      } else {
-        paramValues.push(['' + accountId]);
-      }
+    paramValues = await populateParamValues(test, 'account.id', 'rangeNumAccounts', sampleEntityIds, sample => {
+      return '' + sample;
     });
   } else {
     throw `Unexpected filterAxis '${test.filterAxis}'`;
   }
 
-  let querySuffix = '';
+  let querySuffix;
   if (isRangeQuery) {
     querySuffix = paramName + '=gt:%s&' + paramName + '=lt:%s';
   } else {
