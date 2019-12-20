@@ -13,6 +13,8 @@ hedera:
         name: mirror_node_test
         password: mirror_node_pass
         username: mirror_node
+      listener:
+        pollingFrequency: 50ms
 spring:
   datasource:
     name: ${hedera.mirror.grpc.db.name}
