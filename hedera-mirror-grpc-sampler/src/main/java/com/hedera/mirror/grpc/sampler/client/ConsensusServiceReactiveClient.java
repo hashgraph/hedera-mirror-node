@@ -24,6 +24,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.stub.StreamObserver;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -37,26 +39,26 @@ import com.hedera.mirror.api.proto.ConsensusTopicResponse;
  */
 @Log4j2
 @RequiredArgsConstructor
-public class ConsensusServiceClient {
-
+public class ConsensusServiceReactiveClient {
     private final ManagedChannel channel;
-    private final ConsensusServiceGrpc.ConsensusServiceBlockingStub blockingStub;
+    private final ConsensusServiceGrpc.ConsensusServiceStub asyncStub;
     private final long topicNum;
     private final long realmNum;
     private final long startTimeSecs;
     private final long endTimeSecs;
     private final long limit;
 
-    public ConsensusServiceClient(String host, int port, long topic, long realm, long startTime,
-                                  long endTime, long lmt) {
+    public ConsensusServiceReactiveClient(String host, int port, long topic, long realm, long startTime,
+                                          long endTime, long lmt) {
         this(ManagedChannelBuilder.forAddress(host, port)
                 .usePlaintext(true), topic, realm, startTime, endTime, lmt);
     }
 
-    public ConsensusServiceClient(ManagedChannelBuilder<?> channelBuilder, long topic, long realm, long startTime,
-                                  long endTime, long lmt) {
+    public ConsensusServiceReactiveClient(ManagedChannelBuilder<?> channelBuilder, long topic, long realm,
+                                          long startTime,
+                                          long endTime, long lmt) {
         channel = channelBuilder.build();
-        blockingStub = ConsensusServiceGrpc.newBlockingStub(channel);
+        asyncStub = ConsensusServiceGrpc.newStub(channel);
         topicNum = topic;
         realmNum = realm;
         startTimeSecs = startTime;
@@ -80,16 +82,39 @@ public class ConsensusServiceClient {
         }
 
         ConsensusTopicQuery request = builder.build();
-        ConsensusTopicResponse response = null;
+
+        StreamObserver<ConsensusTopicResponse> responseObserver = new StreamObserver<>() {
+            final CountDownLatch finishLatch = new CountDownLatch(1);
+            int topics = 0;
+
+            @Override
+            public void onNext(ConsensusTopicResponse response) {
+                topics++;
+                log.info("ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", topics, response
+                        .getConsensusTimestamp(), response.getSequenceNumber(), response.getMessage());
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                log.error("error in ConsensusTopicResponse StreamObserver", t);
+            }
+
+            @Override
+            public void onCompleted() {
+                finishLatch.countDown();
+            }
+        };
 
         try {
-            response = blockingStub.subscribeTopic(request).next();
+            asyncStub.subscribeTopic(request, responseObserver);
+
+            responseObserver.onCompleted();
         } catch (Exception ex) {
             log.warn("RCP failed: {}", ex);
             throw ex;
         }
 
-        log.info("Consensus service response has a next item {}", response);
-        return response.toString();
+        log.info("Consensus service response observer", responseObserver.toString());
+        return responseObserver.toString();
     }
 }
