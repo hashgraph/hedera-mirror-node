@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>hedera-mirror-node-hcs</artifactId>
@@ -11,6 +11,17 @@
 
     <artifactId>hedera-mirror-perf</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.hedera</groupId>
+            <artifactId>hedera-mirror-grpc-hcs</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <extensions>
             <extension>
@@ -20,6 +31,28 @@
             </extension>
         </extensions>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <configuration>
+                    <groupId>com.hedera</groupId>
+                    <artifactId>hedera-mirror-grpc-hcs</artifactId>
+                    <version>${project.version}</version>
+                    <packaging>jar</packaging>
+                    <file>${project.basedir}/../hedera-mirror-grpc/target/hedera-mirror-grpc-hcs-0.1.0-rc1-tests.jar
+                    </file>
+                    <generatePom>true</generatePom>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-jar-lib</id>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>
@@ -54,21 +87,33 @@
                 </executions>
                 <configuration>
                     <generateReports>true</generateReports>
-                    <errorRateThresholdInPercent>60</errorRateThresholdInPercent>
+                    <errorRateThresholdInPercent>25</errorRateThresholdInPercent>
                     <jmeterExtensions>
                         <artifact>kg.apc:jmeter-plugins-json:jar:2.6</artifact>
                         <artifact>kg.apc:jmeter-plugins-manager:0.19</artifact>
                         <artifact>kg.apc:jmeter-plugins-extras-libs:1.4.0</artifact>
                         <artifact>kg.apc:jmeter-plugins-casutg:2.6</artifact>
-                        <artifact>com.hedera:hedera-mirror-grpc-sampler:0.1.0-rc1</artifact>
                         <artifact>io.opencensus:opencensus-api:0.24.0</artifact>
-                        <artifact>io.grpc:grpc-core:1.25.0</artifact>
+                        <artifact>io.opencensus:opencensus-contrib-grpc-metrics:0.24.0</artifact>
+                        <artifact>io.grpc:grpc-core:${grpc.version}</artifact>
+                        <artifact>io.grpc:grpc-api:${grpc.version}</artifact>
+                        <artifact>io.grpc:grpc-netty:${grpc.version}</artifact>
+                        <artifact>io.grpc:grpc-protobuf:${grpc.version}</artifact>
+                        <artifact>io.grpc:grpc-stub:${grpc.version}</artifact>
+                        <artifact>io.grpc:grpc-protobuf-lite:${grpc.version}</artifact>
+                        <artifact>io.grpc:grpc-context:${grpc.version}</artifact>
+                        <artifact>io.netty:netty-all:4.1.25.Final</artifact>
+                        <artifact>com.google.guava:guava:28.1-jre</artifact>
+                        <artifact>com.google.protobuf:protobuf-java:3.11.1</artifact>
                         <artifact>org.apache.jmeter:ApacheJMeter_core:5.2.1</artifact>
                         <artifact>io.perfmark:perfmark-api:0.20.1</artifact>
+                        <artifact>org.reactivestreams:reactive-streams:1.0.3</artifact>
+                        <artifact>org.projectlombok:lombok:1.18.10</artifact>
+                        <artifact>com.github.hashgraph:hedera-protobuf:${hedera-protobuf.version}</artifact>
+                        <artifact>com.hedera:hedera-mirror-protobuf-hcs:${project.version}</artifact>
+                        <artifact>com.hedera:hedera-mirror-grpc-hcs:${project.version}</artifact>
+                        <artifact>com.hedera:hedera-mirror-grpc-sampler:${project.version}</artifact>
                     </jmeterExtensions>
-                    <testPlanLibraries>
-                        <artifact>com.hedera:hedera-mirror-grpc-sampler:0.1.0-rc1</artifact>
-                    </testPlanLibraries>
                     <downloadExtensionDependencies>false</downloadExtensionDependencies>
                     <excludedArtifacts>
                         <exclusion>org.slf4j:slf4j-nop</exclusion>
