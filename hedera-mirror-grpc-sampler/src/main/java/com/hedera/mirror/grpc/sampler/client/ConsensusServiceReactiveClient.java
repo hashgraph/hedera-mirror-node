@@ -25,20 +25,26 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
+import com.hedera.mirror.grpc.sampler.domain.DomainBuilder;
+import com.hedera.mirror.grpc.sampler.domain.TopicMessage;
 
 /**
  * A test client that will make requests of the Consensus service from the Consensus server
  */
 @Log4j2
 @RequiredArgsConstructor
+//@Named
 public class ConsensusServiceReactiveClient {
     private final ManagedChannel channel;
     private final ConsensusServiceGrpc.ConsensusServiceStub asyncStub;
@@ -47,16 +53,22 @@ public class ConsensusServiceReactiveClient {
     private final long startTimeSecs;
     private final long endTimeSecs;
     private final long limit;
+    private final TopicMessagePopulator topicMessagePopulator;
+
+    @Resource
+    private DomainBuilder domainBuilder;
 
     public ConsensusServiceReactiveClient(String host, int port, long topic, long realm, long startTime,
-                                          long endTime, long lmt) {
+                                          long endTime, long lmt, TopicMessagePopulator topicMssgPopulator,
+                                          DomainBuilder dmnBuilder) {
         this(ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext(true), topic, realm, startTime, endTime, lmt);
+                .usePlaintext(true), topic, realm, startTime, endTime, lmt, topicMssgPopulator, dmnBuilder);
     }
 
     public ConsensusServiceReactiveClient(ManagedChannelBuilder<?> channelBuilder, long topic, long realm,
                                           long startTime,
-                                          long endTime, long lmt) {
+                                          long endTime, long lmt, TopicMessagePopulator topicMssgPopulator,
+                                          DomainBuilder dmnBuilder) {
         channel = channelBuilder.build();
         asyncStub = ConsensusServiceGrpc.newStub(channel);
         topicNum = topic;
@@ -64,6 +76,8 @@ public class ConsensusServiceReactiveClient {
         startTimeSecs = startTime;
         endTimeSecs = endTime;
         limit = lmt;
+        topicMessagePopulator = topicMssgPopulator;
+        domainBuilder = dmnBuilder;
     }
 
     public void shutdown() throws InterruptedException {
@@ -92,6 +106,20 @@ public class ConsensusServiceReactiveClient {
                 topics++;
                 log.info("ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", topics, response
                         .getConsensusTimestamp(), response.getSequenceNumber(), response.getMessage());
+
+                if (topics == 1) {
+                    // insert some new messages
+                    Instant endTime = Instant.now().plusSeconds(10);
+                    Flux<TopicMessage> generator = Flux.concat(
+                            domainBuilder.topicMessage(t -> t.topicNum((int) topicNum)
+                                    .consensusTimestamp(endTime.minusNanos(2))),
+                            domainBuilder.topicMessage(t -> t.topicNum((int) topicNum)
+                                    .consensusTimestamp(endTime.minusNanos(1))),
+                            domainBuilder.topicMessage(t -> t.topicNum((int) topicNum).consensusTimestamp(endTime))
+                    );
+
+                    generator.blockLast();
+                }
             }
 
             @Override
@@ -108,6 +136,7 @@ public class ConsensusServiceReactiveClient {
         try {
             asyncStub.subscribeTopic(request, responseObserver);
 
+            topicMessagePopulator.AddTopicMessages(topicNum, 0, 0);
             responseObserver.onCompleted();
         } catch (Exception ex) {
             log.warn("RCP failed: {}", ex);

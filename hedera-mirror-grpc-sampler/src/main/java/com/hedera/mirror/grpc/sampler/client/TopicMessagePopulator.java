@@ -20,7 +20,11 @@ package com.hedera.mirror.grpc.sampler.client;
  * ‍
  */
 
+import io.r2dbc.pool.ConnectionPool;
+import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.spi.ConnectionFactory;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
@@ -29,10 +33,28 @@ import lombok.extern.log4j.Log4j2;
 public class TopicMessagePopulator {
 
     private final PostgresqlConnectionFactory postgressqlConnectionFactory;
+    private final Instant now = Instant.now();
 
     public TopicMessagePopulator(ConnectionFactory connectionFactory) {
         ConnectionPool connectionPool = (ConnectionPool) connectionFactory;
         postgressqlConnectionFactory = (PostgresqlConnectionFactory) connectionPool
                 .unwrap();
+    }
+
+    public void AddTopicMessages(long topicNum, int seqStart, int messages) {
+        String topicMessageInsertSql = "insert into topic_message "
+                + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
+                + " values ({}, {}, {}, {}, {})";
+
+        postgressqlConnectionFactory.create().flatMapMany(it -> {
+            for (int i = seqStart; i < messages + seqStart; i++) {
+                return it.createStatement(String
+                        .format(topicMessageInsertSql, now
+                                .plus(i, ChronoUnit.NANOS), 0, topicNum, new byte[] {0, 1, 2}, new byte[] {4, 5, 6}, i))
+                        .execute();
+            }
+
+            return null;
+        });
     }
 }

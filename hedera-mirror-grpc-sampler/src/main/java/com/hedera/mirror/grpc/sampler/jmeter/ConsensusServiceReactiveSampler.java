@@ -23,15 +23,21 @@ package com.hedera.mirror.grpc.sampler.jmeter;
 import io.grpc.StatusRuntimeException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import lombok.RequiredArgsConstructor;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 
 import com.hedera.mirror.grpc.sampler.client.ConsensusServiceReactiveClient;
+import com.hedera.mirror.grpc.sampler.client.TopicMessagePopulator;
+import com.hedera.mirror.grpc.sampler.domain.DomainBuilder;
 
+@RequiredArgsConstructor
 public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
+    private final TopicMessagePopulator topicMessagePopulator;
     ConsensusServiceReactiveClient csclient = null;
+    DomainBuilder domainBuilder = null;
 
     @Override
     public void setupTest(JavaSamplerContext context) {
@@ -50,7 +56,9 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
                 Long.parseLong(realmNum),
                 Long.parseLong(consensusStartTimeSeconds),
                 Long.parseLong(consensusEndTimeSeconds),
-                Long.parseLong(limit));
+                Long.parseLong(limit),
+                topicMessagePopulator,
+                domainBuilder);
 
         super.setupTest(context);
     }

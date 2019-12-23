@@ -18,6 +18,12 @@
     <dependencies>
         <dependency>
             <groupId>com.hedera</groupId>
+            <artifactId>hedera-mirror-grpc-hcs</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.hedera</groupId>
             <artifactId>hedera-mirror-protobuf-hcs</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -55,5 +61,54 @@
             <artifactId>grpc-stub</artifactId>
             <version>${grpc.version}</version>
         </dependency>
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+            <version>1</version>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.boot.experimental</groupId>-->
+<!--            <artifactId>spring-boot-starter-data-r2dbc</artifactId>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>org.springframework.boot</groupId>-->
+<!--                    <artifactId>spring-boot-starter-logging</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--            <version>0.1.0.M1</version>-->
+<!--        </dependency>-->
+        <dependency>
+            <groupId>io.r2dbc</groupId>
+            <artifactId>r2dbc-postgresql</artifactId>
+            <version>0.8.0.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>io.r2dbc</groupId>
+            <artifactId>r2dbc-pool</artifactId>
+            <version>0.8.0.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>io.r2dbc</groupId>
+            <artifactId>r2dbc-spi</artifactId>
+            <version>0.8.0.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-r2dbc</artifactId>
+            <version>1.0.0.RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot.experimental</groupId>
+                <artifactId>spring-boot-bom-r2dbc</artifactId>
+                <version>0.1.0.M3</version>
+<!--                <type>pom</type>-->
+<!--                <scope>import</scope>-->
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>
