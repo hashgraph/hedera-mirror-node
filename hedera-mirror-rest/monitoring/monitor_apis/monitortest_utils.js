@@ -28,7 +28,7 @@ const classResults = {
   testResults: [],
   numPassedTests: 0,
   numFailedTests: 0,
-  success: false,
+  success: true,
   message: ''
 };
 
@@ -102,6 +102,10 @@ const getAPIResponse = url => {
 
   return fetch(url)
     .then(response => {
+      if (response.status !== 200) {
+        console.log(`Non success HTTP code of ${response.status} for call to '${url}'`);
+      }
+
       return response.json();
     })
     .catch(error => {
@@ -138,6 +142,11 @@ const getMonitorTestResult = () => {
 const addTestResult = (clssRes, res, passed) => {
   clssRes.testResults.push(res);
   passed ? clssRes.numPassedTests++ : clssRes.numFailedTests++;
+
+  // set class results to failure if any tests failed
+  if (!passed) {
+    clssRes.success = false;
+  }
 };
 
 module.exports = {
