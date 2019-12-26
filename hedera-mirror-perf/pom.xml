@@ -16,9 +16,6 @@
             <groupId>com.hedera</groupId>
             <artifactId>hedera-mirror-grpc-hcs</artifactId>
             <version>${project.version}</version>
-            <classifier>tests</classifier>
-            <type>test-jar</type>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -36,7 +33,7 @@
                 <artifactId>maven-install-plugin</artifactId>
                 <configuration>
                     <groupId>com.hedera</groupId>
-                    <artifactId>hedera-mirror-grpc-hcs</artifactId>
+                    <artifactId>hedera-mirror-grpc-hcs-sampler</artifactId>
                     <version>${project.version}</version>
                     <packaging>jar</packaging>
                     <file>${project.basedir}/../hedera-mirror-grpc/target/hedera-mirror-grpc-hcs-0.1.0-rc1-tests.jar
@@ -112,6 +109,7 @@
                         <artifact>com.github.hashgraph:hedera-protobuf:${hedera-protobuf.version}</artifact>
                         <artifact>com.hedera:hedera-mirror-protobuf-hcs:${project.version}</artifact>
                         <artifact>com.hedera:hedera-mirror-grpc-hcs:${project.version}</artifact>
+                        <artifact>com.hedera:hedera-mirror-grpc-hcs-sampler:${project.version}</artifact>
                         <artifact>com.hedera:hedera-mirror-grpc-sampler:${project.version}</artifact>
                     </jmeterExtensions>
                     <downloadExtensionDependencies>false</downloadExtensionDependencies>
