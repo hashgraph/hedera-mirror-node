@@ -65,6 +65,7 @@ docker-compose up
 -   [Configuration](docs/configuration.md)
 -   [Database](docs/database.md)
 -   [Operations](docs/operations.md)
+-   [Testing](docs/testing.md)
 -   [Troubleshooting](docs/troubleshooting.md)
 
 ## Contributing
