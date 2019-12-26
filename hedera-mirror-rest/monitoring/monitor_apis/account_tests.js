@@ -282,7 +282,7 @@ const runAccountTests = async (server, classResults) => {
   tests.push(getAccountsWithTimeAndLimitParams(server, classResults));
   tests.push(getSingleAccount(server, classResults));
 
-  Promise.all(tests);
+  return Promise.all(tests);
 };
 
 module.exports = {

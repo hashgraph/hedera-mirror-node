@@ -168,7 +168,7 @@ const fetchAndDisplay = () => {
       if (data.length === 0) {
         html = `No data received.
             <p />
-            If you have started the backend server recently, 
+            If you have started the backend server recently,
             please wait for a couple of minutes and refresh this page
             <p />`;
       } else {

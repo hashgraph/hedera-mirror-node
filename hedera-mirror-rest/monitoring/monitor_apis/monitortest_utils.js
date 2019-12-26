@@ -104,6 +104,7 @@ const getAPIResponse = url => {
     .then(response => {
       if (response.status !== 200) {
         console.log(`Non success HTTP code of ${response.status} for call to '${url}'`);
+        return;
       }
 
       return response.json();

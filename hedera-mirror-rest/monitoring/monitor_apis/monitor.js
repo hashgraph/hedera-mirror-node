@@ -52,6 +52,7 @@ const runEverything = async servers => {
 
           common.deleteProcess(server);
           common.saveResults(server, results);
+          console.log(`Completed tests run at: ${new Date()} with ${results.testResults.length} tests run`);
         });
 
         common.saveProcess(server, server.name);
