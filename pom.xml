@@ -32,7 +32,7 @@
 
     <modules>
         <module>hedera-mirror-coverage</module>
-        <module>hedera-mirror-faker</module>
+        <module>hedera-mirror-datagenerator</module>
         <module>hedera-mirror-importer</module>
         <module>hedera-mirror-rest</module>
     </modules>

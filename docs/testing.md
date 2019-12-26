@@ -18,16 +18,16 @@ Code for REST API performance tests is in `hedera-mirror-rest/__performancetests
 
 Configure database, REST server, etc in `__performancetests__/perfTestConfig.yml`. It supports following configurations.
 
-| Name                           | Default                  | Description                                                                                                                                                           |
-| ------------------------------ | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `hedera.mirror.db.host`        | 127.0.0.1                | The IP or hostname used to connect to the database                                                                                                                    |
-| `hedera.mirror.db.port`        | 5432                     | The port used to connect to the database                                                                                                                              |
-| `hedera.mirror.db.name`        | mirror_node              | The name of the database                                                                                                                                              |
-| `hedera.mirror.db.apiPassword` | mirror_api_pass          | The database password REST Server uses to connect                                                                                                                     |
-| `hedera.mirror.db.apiUsername` | mirror_api               | The username REST Server uses to connect to the database                                                                                                              |
-| `hedera.mirror.apiServer`      | 127.0.0.1:5551           | `host:port` of REST server to send queries                                                                                                                            |
-| `hedera.mirror.querySetsFile`  | /tmp/faker/querySets.yml | File containing query sets. If it does not exist, new query sets will be generated and written to the file. If it exists, then query sets from the file will be used. |
-| `hedera.mirror.resultsDir`     | /tmp/faker/              | Dir to output results. Result files will be named `apiResults-<timestamp>.yml`.                                                                                       |
+| Name                           | Default                     | Description                                                                                                                                                           |
+| ------------------------------ | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hedera.mirror.db.host`        | 127.0.0.1                   | The IP or hostname used to connect to the database                                                                                                                    |
+| `hedera.mirror.db.port`        | 5432                        | The port used to connect to the database                                                                                                                              |
+| `hedera.mirror.db.name`        | mirror_node                 | The name of the database                                                                                                                                              |
+| `hedera.mirror.db.apiPassword` | mirror_api_pass             | The database password REST Server uses to connect                                                                                                                     |
+| `hedera.mirror.db.apiUsername` | mirror_api                  | The username REST Server uses to connect to the database                                                                                                              |
+| `hedera.mirror.apiServer`      | 127.0.0.1:5551              | `host:port` of REST server to send queries                                                                                                                            |
+| `hedera.mirror.querySetsFile`  | /tmp/perftest/querySets.yml | File containing query sets. If it does not exist, new query sets will be generated and written to the file. If it exists, then query sets from the file will be used. |
+| `hedera.mirror.resultsDir`     | /tmp/perftest/              | Dir to output results. Result files will be named `apiResults-<timestamp>.yml`.                                                                                       |
 
 ### Tests
 
@@ -88,7 +88,8 @@ For example, the query set generated for above test definition is
 ### Setup Postgres and REST Server
 
 Follow steps in [Installation](./installation.md) to start a local Postgres database and REST server. \
-Then follow the steps in [Faker](./../faker/docs/README.md) to load fake data into the database.
+Then follow the steps in [Data Generator](./../hedera-mirror-datagenerator/docs/README.md) to load test data into the
+database.
 
 ### How test works
 
