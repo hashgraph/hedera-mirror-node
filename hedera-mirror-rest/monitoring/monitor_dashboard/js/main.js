@@ -111,7 +111,9 @@ const makeCard = (data, server) => {
   h += `
         <div class="card my-card">
           <div class="card-body" data-toggle="modal" data-target="#modal-${server}">
-            <div class="card-title">Network: ${server}
+            <div class="card-title">Network: ${server}, ${new Date(
+    Number(data.results.startTime)
+  ).toISOString()} - ${new Date(Number(data.results.endTime)).toISOString()}
             </div>
             <div class="ip-addr"> (${data.ip}:${data.port})</div>
             <div class="card-text">

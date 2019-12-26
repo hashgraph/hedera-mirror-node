@@ -29,7 +29,9 @@ const classResults = {
   numPassedTests: 0,
   numFailedTests: 0,
   success: true,
-  message: ''
+  message: '',
+  startTime: '',
+  endTime: ''
 };
 
 // monitoring single test result template
@@ -102,9 +104,9 @@ const getAPIResponse = url => {
 
   return fetch(url)
     .then(response => {
-      if (response.status !== 200) {
-        console.log(`Non success HTTP code of ${response.status} for call to '${url}'`);
-        return;
+      if (!response.ok) {
+        console.log(`Non success response for call to '${url}'`);
+        throw Error(response.statusText);
       }
 
       return response.json();
@@ -121,6 +123,7 @@ const getAPIResponse = url => {
  */
 const getMonitorClassResult = () => {
   var newClassResult = cloneObject(classResults);
+  newClassResult.startTime = Date.now();
   return newClassResult;
 };
 
