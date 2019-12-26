@@ -6,6 +6,7 @@
   "scripts": {
     "test": "jest --testPathPattern='__tests__/*'",
     "acceptancetest": "__acceptancetests__/acceptancetests",
+    "perftest": "__performancetests__/perfTest.js",
     "dev": "nodemon app.js"
   },
   "author": "Atul Mahamuni",
