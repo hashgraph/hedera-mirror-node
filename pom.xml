@@ -32,6 +32,7 @@
 
     <modules>
         <module>hedera-mirror-coverage</module>
+        <module>hedera-mirror-datagenerator</module>
         <module>hedera-mirror-importer</module>
         <module>hedera-mirror-rest</module>
     </modules>
@@ -52,6 +53,7 @@
         <docker.repository>docker.pkg.github.com/hashgraph/hedera-mirror-node</docker.repository>
         <jacoco.version>0.8.5</jacoco.version>
         <java.version>11</java.version>
+        <javax.version>1</javax.version>
         <jib.version>1.8.0</jib.version>
     </properties>
 
