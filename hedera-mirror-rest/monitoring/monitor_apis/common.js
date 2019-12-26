@@ -66,12 +66,6 @@ const getStatus = () => {
   let results = Object.keys(currentResults).map(net => {
     currentResults[net].name = net;
 
-    // Set success based off of test performance.
-    currentResults[net].results.success =
-      currentResults[net].results.testResults.length > 0 && currentResults[net].results.numFailedTests == 0
-        ? true
-        : false;
-
     return currentResults[net];
   });
   return {

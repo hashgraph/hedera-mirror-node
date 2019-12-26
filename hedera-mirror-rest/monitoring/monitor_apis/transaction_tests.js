@@ -406,7 +406,7 @@ const runTransactionTests = async (server, classResults) => {
   tests.push(getSingleTransactionsById(server, classResults));
   tests.push(checkTransactionFreshness(server, classResults));
 
-  Promise.all(tests);
+  return Promise.all(tests);
 };
 
 module.exports = {

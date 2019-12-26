@@ -28,8 +28,10 @@ const classResults = {
   testResults: [],
   numPassedTests: 0,
   numFailedTests: 0,
-  success: false,
-  message: ''
+  success: true,
+  message: '',
+  startTime: '',
+  endTime: ''
 };
 
 // monitoring single test result template
@@ -102,6 +104,11 @@ const getAPIResponse = url => {
 
   return fetch(url)
     .then(response => {
+      if (!response.ok) {
+        console.log(`Non success response for call to '${url}'`);
+        throw Error(response.statusText);
+      }
+
       return response.json();
     })
     .catch(error => {
@@ -116,6 +123,7 @@ const getAPIResponse = url => {
  */
 const getMonitorClassResult = () => {
   var newClassResult = cloneObject(classResults);
+  newClassResult.startTime = Date.now();
   return newClassResult;
 };
 
@@ -138,6 +146,11 @@ const getMonitorTestResult = () => {
 const addTestResult = (clssRes, res, passed) => {
   clssRes.testResults.push(res);
   passed ? clssRes.numPassedTests++ : clssRes.numFailedTests++;
+
+  // set class results to failure if any tests failed
+  if (!passed) {
+    clssRes.success = false;
+  }
 };
 
 module.exports = {

@@ -43,11 +43,15 @@ const runEverything = async servers => {
           let results = {};
           if (outJson.hasOwnProperty('testResults')) {
             results = outJson;
+            console.log(
+              `Completed tests run for ${server.name} at: ${new Date()} with ${results.testResults.length} tests run`
+            );
           } else {
             results = createFailedResultJson(
               `Test result unavailable`,
               `Test results not available for: ${server.name}`
             );
+            console.log(`Incomplete tests for ${server.name} at: ${new Date()}`);
           }
 
           common.deleteProcess(server);
@@ -61,6 +65,7 @@ const runEverything = async servers => {
           `Previous tests are still running for: ${server.name}`
         );
         common.saveResults(server, results);
+        console.log(`Incomplete tests for ${server.name} at: ${new Date()}`);
       }
     }
   } catch (err) {

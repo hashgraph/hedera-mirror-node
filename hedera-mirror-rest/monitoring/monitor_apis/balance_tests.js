@@ -280,7 +280,7 @@ const runBalanceTests = async (server, classResults) => {
   tests.push(getSingleBalanceById(server, classResults));
   tests.push(checkBalanceFreshness(server, classResults));
 
-  Promise.all(tests);
+  return Promise.all(tests);
 };
 
 module.exports = {

@@ -48,6 +48,8 @@ const runTests = server => {
   var balanceResults = balanceTests.runBalanceTests(server, results);
 
   return Promise.all([transactionResults, accountResults, balanceResults]).then(() => {
+    // set class results endTime
+    results.endTime = Date.now();
     return results;
   });
 };
