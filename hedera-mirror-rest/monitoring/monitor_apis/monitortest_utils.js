@@ -20,6 +20,7 @@
 const math = require('mathjs');
 const config = require('../../config.js');
 const fetch = require('node-fetch');
+const AbortController = require('abort-controller');
 
 const apiPrefix = '/api/v1';
 
@@ -102,7 +103,15 @@ const getAPIResponse = url => {
     url = getUrl(url);
   }
 
-  return fetch(url)
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => {
+      controller.abort();
+    },
+    60 * 1000 // in ms
+  );
+
+  return fetch(url, {signal: controller.signal})
     .then(response => {
       if (!response.ok) {
         console.log(`Non success response for call to '${url}'`);
@@ -115,6 +124,9 @@ const getAPIResponse = url => {
       var message = `Fetch error, url : ${url}, error : ${error}`;
       console.log(message);
       throw message;
+    })
+    .finally(() => {
+      clearTimeout(timeout);
     });
 };
 
