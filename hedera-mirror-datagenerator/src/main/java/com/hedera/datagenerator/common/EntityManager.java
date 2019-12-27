@@ -30,6 +30,7 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.RandomDistributionFromRange;
+import com.hedera.mirror.importer.domain.Entities;
 
 @Log4j2
 @Named
@@ -53,11 +54,11 @@ public class EntityManager {
         balances = new HashMap<>();
 
         // Create one node account with id = 0.
-        nodeAccountId = accounts.newEntity();
+        nodeAccountId = accounts.newEntity().getId();
         balances.put(nodeAccountId, 0L);  // balance of nodeAccountId
 
         // Create portal account with id = 1 which can fund other accounts on creation.
-        portalEntity = accounts.newEntity();
+        portalEntity = accounts.newEntity().getId();
         // Source of all hbars for couple 100 million transactions.
         balances.put(portalEntity, 1000_000_000_000_000_000L);  // balance of nodeAccountId
     }
@@ -75,12 +76,9 @@ public class EntityManager {
     @Getter
     public static class EntitySet {
         private final long startEntityId;
-
-        private long nextEntityId;
-
-        private Distribution<Long> entitySampler;
-
         private final Set<Long> deleted = new HashSet<>();
+        private long nextEntityId;
+        private Distribution<Long> entitySampler;
 
         EntitySet(Long startEntityId) {
             this.startEntityId = startEntityId;
@@ -96,12 +94,14 @@ public class EntityManager {
             return entitySampler.sampleDistinct(n);
         }
 
-        public Long newEntity() {
+        public Entities newEntity() {
             long newEntityId = nextEntityId;
             nextEntityId++;
             entitySampler = new RandomDistributionFromRange(startEntityId, nextEntityId);
             log.trace("New entity {}", newEntityId);
-            return newEntityId;
+            Entities entities = new Entities();
+            entities.setId(newEntityId);
+            return entities;
         }
 
         public void delete(Long entityId) {

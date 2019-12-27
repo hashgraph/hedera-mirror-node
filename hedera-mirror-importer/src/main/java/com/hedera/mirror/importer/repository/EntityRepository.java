@@ -21,16 +21,23 @@ package com.hedera.mirror.importer.repository;
  */
 
 import java.util.Optional;
-
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.query.Param;
 
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.Entities;
 
+@CacheConfig(cacheNames = "entities", cacheManager = CacheConfiguration.EXPIRE_AFTER_30M)
 public interface EntityRepository extends CrudRepository<Entities, Long> {
-    @Query("from Entities where entityShard = :entity_shard and entityRealm = :entity_realm and entityNum = " +
-            ":entity_num")
-    Optional<Entities> findByPrimaryKey(@Param("entity_shard") Long entityShard,
-                                        @Param("entity_realm") Long entityRealm, @Param("entity_num") Long entityNum);
+
+    @Cacheable(key = "{#p0, #p1, #p2}", sync = true)
+    @Query("from Entities where entityShard = ?1 and entityRealm = ?2 and entityNum = ?3")
+    Optional<Entities> findByPrimaryKey(long entityShard, long entityRealm, long entityNum);
+
+    @CachePut(key = "{#p0.entityShard, #p0.entityRealm, #p0.entityNum}")
+    @Override
+    <S extends Entities> S save(S entity);
 }

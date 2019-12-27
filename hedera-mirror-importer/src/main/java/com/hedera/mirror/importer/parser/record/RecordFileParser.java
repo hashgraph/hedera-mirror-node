@@ -176,8 +176,8 @@ public class RecordFileParser implements FileParser {
                                     log.trace("Transaction = {}, Record = {}", Utility
                                             .printProtoMessage(transaction), Utility.printProtoMessage(txRecord));
                                 } else {
-                                    log.debug("Stored transaction with consensus timestamp {}", txRecord
-                                            .getConsensusTimestamp());
+                                    log.debug("Stored transaction with consensus timestamp {}", () -> Utility
+                                            .printProtoMessage(txRecord.getConsensusTimestamp()));
                                 }
                                 break;
                             case FileDelimiter.RECORD_TYPE_SIGNATURE:

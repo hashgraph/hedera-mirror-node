@@ -37,14 +37,10 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.KeyConverter;
 import com.hedera.mirror.importer.TestUtils;
@@ -54,25 +50,12 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.util.Utility;
 
-// Class manually commits so have to manually cleanup tables
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
+
     static final String TRANSACTION_MEMO = "transaction memo";
     static final int TOPIC_ENTITY_TYPE_ID = 4;
     static final String NODE_ID = "0.0.3";
     static final String TRANSACTION_ID = "0.0.9999-123456789";
-
-    @BeforeEach
-    void before() throws Exception {
-        assertTrue(RecordFileLogger.start());
-        Assertions.assertEquals(RecordFileLogger.INIT_RESULT.OK, RecordFileLogger.initFile("TopicTest"));
-    }
-
-    @AfterEach
-    void after() {
-        RecordFileLogger.finish();
-    }
 
     @ParameterizedTest
     @CsvSource({
@@ -126,6 +109,23 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
                 .returns("", from(Entities::getMemo))
                 .returns(false, from(Entities::isDeleted))
                 .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
+    }
+
+    @Test
+    void createTopicTestFiltered() throws Exception {
+        var topicId = 999L;
+        var consensusTimestamp = 2_000_000L;
+        var responseCode = ResponseCodeEnum.SUCCESS;
+        var transaction = createCreateTopicTransaction(10, 20, null, null,
+                30, null);
+        var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
+                .build(), null, null, consensusTimestamp, responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        assertEquals(0L, entityRepository.count());
+        assertEquals(0L, transactionRepository.count());
     }
 
     @Test
@@ -196,7 +196,7 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
         var topic = createTopicEntity(topicId, 10L, 20, adminKey, submitKey, 30L, "memo");
         entityRepository.save(topic);
 
-        var transaction = createUpdateTopicTransaction(topicId, 11, 21, updatedAdminKey, updatedSubmitKey, 31,
+        var transaction = createUpdateTopicTransaction(topicId, 11L, 21, updatedAdminKey, updatedSubmitKey, 31L,
                 "updated-memo");
         var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
                 responseCode);
@@ -242,31 +242,32 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
     @ParameterizedTest
     @CsvSource({
             "0.0.1500, 10, 20, admin-key, submit-key, 30, memo, 5000000,   0, 0, , , 0,",
+            "0.0.1500, 10, 20, admin-key, submit-key, 30, memo, 5000000,   , , , , ,",
             "0.0.1501, 0, 0, '', '', 0, '', 5000001,   0, 0, , , 0,",
-            "0.0.1502, 10, 20, admin-key, submit-key, 30, memo, 5000002,   0, 0, updated-admin-key, " +
+            "0.0.1502, , , admin-key, submit-key, 30, memo, 5000002,   10, 20, updated-admin-key, " +
                     "updated-submit-key, 0, updated-memo",
             "0.0.1503, 10, 20, admin-key, submit-key, 30, memo, 5000003,   11, 21, , , 31,"
     })
-    void updateTopicTestPartialUpdates(@ConvertWith(TopicIdConverter.class) TopicID topicId, long expirationTimeSeconds,
-                                       int expirationTimeNanos, @ConvertWith(KeyConverter.class) Key adminKey,
-                                       @ConvertWith(KeyConverter.class) Key submitKey, long validStartTime, String memo,
-                                       long consensusTimestamp, long updatedExpirationTimeSeconds,
-                                       int updatedExpirationTimeNanos,
+    void updateTopicTestPartialUpdates(@ConvertWith(TopicIdConverter.class) TopicID topicId, Long expirationTimeSeconds,
+                                       Integer expirationTimeNanos, @ConvertWith(KeyConverter.class) Key adminKey,
+                                       @ConvertWith(KeyConverter.class) Key submitKey, Long validStartTime, String memo,
+                                       long consensusTimestamp, Long updatedExpirationTimeSeconds,
+                                       Integer updatedExpirationTimeNanos,
                                        @ConvertWith(KeyConverter.class) Key updatedAdminKey,
                                        @ConvertWith(KeyConverter.class) Key updatedSubmitKey,
-                                       long updatedValidStartTime, String updatedMemo) throws Exception {
+                                       Long updatedValidStartTime, String updatedMemo) throws Exception {
         // Store topic to be updated.
         var topic = createTopicEntity(topicId, expirationTimeSeconds, expirationTimeNanos, adminKey, submitKey,
                 validStartTime, memo);
         entityRepository.save(topic);
 
         // Setup the expected entity.
-        if (updatedExpirationTimeSeconds != 0 && updatedExpirationTimeNanos != 0) {
+        if (updatedExpirationTimeSeconds != null && updatedExpirationTimeNanos != null) {
             topic.setExpiryTimeNs(Utility.convertToNanosMax(updatedExpirationTimeSeconds, updatedExpirationTimeNanos));
             topic.setExpiryTimeSeconds(updatedExpirationTimeSeconds);
             topic.setExpiryTimeNanos((long) updatedExpirationTimeNanos);
         }
-        if (updatedValidStartTime != 0) {
+        if (updatedValidStartTime != null) {
             topic.setTopicValidStartTime(updatedValidStartTime);
         }
         if (updatedAdminKey != null) {
@@ -439,6 +440,27 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
+    void submitMessageTestFiltered() throws Exception {
+        var responseCode = ResponseCodeEnum.SUCCESS;
+        var topicId = (TopicID) new TopicIdConverter().convert("0.0.999", null);
+        var consensusTimestamp = 10_000_000L;
+        var message = "message";
+        var sequenceNumber = 10_000L;
+        var runningHash = "running-hash";
+
+        var topic = createTopicEntity(topicId, null, null, null, null, null, null);
+        var transaction = createSubmitMessageTransaction(topicId, message);
+        var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
+                .getBytes(), consensusTimestamp, responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        assertEquals(0L, entityRepository.count());
+        assertEquals(0L, topicMessageRepository.count());
+    }
+
+    @Test
     void submitMessageTestTopicError() throws Exception {
         var responseCode = ResponseCodeEnum.INVALID_TOPIC_ID;
         var topicId = (TopicID) new TopicIdConverter().convert("0.0.11000", null);
@@ -551,15 +573,19 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
     }
 
     private com.hederahashgraph.api.proto.java.Transaction createUpdateTopicTransaction(TopicID topicId,
-                                                                                        long expirationTimeSeconds,
-                                                                                        int expirationTimeNanos,
+                                                                                        Long expirationTimeSeconds,
+                                                                                        Integer expirationTimeNanos,
                                                                                         Key adminKey, Key submitKey,
-                                                                                        long validStartTime,
+                                                                                        Long validStartTime,
                                                                                         String memo) {
-        var innerBody = ConsensusUpdateTopicTransactionBody.newBuilder()
-                .setTopicID(topicId)
-                .setExpirationTime(TestUtils.toTimestamp(expirationTimeSeconds, expirationTimeNanos))
-                .setValidStartTime(TestUtils.toTimestamp(validStartTime));
+        var innerBody = ConsensusUpdateTopicTransactionBody.newBuilder().setTopicID(topicId);
+
+        if (expirationTimeSeconds != null && expirationTimeNanos != null) {
+            innerBody.setExpirationTime(TestUtils.toTimestamp(expirationTimeSeconds, expirationTimeNanos));
+        }
+        if (validStartTime != null) {
+            innerBody.setValidStartTime(TestUtils.toTimestamp(validStartTime));
+        }
         if (adminKey != null) {
             innerBody.setAdminKey(adminKey);
         }
