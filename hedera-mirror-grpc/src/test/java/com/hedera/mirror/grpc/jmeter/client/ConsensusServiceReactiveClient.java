@@ -25,25 +25,25 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import io.r2dbc.postgresql.api.PostgresqlConnection;
+import io.r2dbc.postgresql.api.PostgresqlStatement;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Resource;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import reactor.core.publisher.Flux;
+import org.springframework.data.r2dbc.core.DatabaseClient;
 
 import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
-import com.hedera.mirror.grpc.domain.TopicMessage;
 
 /**
  * A test client that will make requests of the Consensus service from the Consensus server
  */
 @Log4j2
-@RequiredArgsConstructor
 public class ConsensusServiceReactiveClient {
     private final ManagedChannel channel;
     private final ConsensusServiceGrpc.ConsensusServiceStub asyncStub;
@@ -54,17 +54,19 @@ public class ConsensusServiceReactiveClient {
     private final long limit;
 
     @Resource
-    private DomainBuilder domainBuilder;
+    private final DomainBuilder domainBuilder;
+    private final DatabaseClient databasebClient;
+    private final PostgresqlConnection connection;
 
     public ConsensusServiceReactiveClient(String host, int port, long topic, long realm, long startTime,
-                                          long endTime, long lmt) {
+                                          long endTime, long lmt, DatabaseClient dbClient, PostgresqlConnection conn) {
         this(ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext(true), topic, realm, startTime, endTime, lmt);
+                .usePlaintext(true), topic, realm, startTime, endTime, lmt, dbClient, conn);
     }
 
     public ConsensusServiceReactiveClient(ManagedChannelBuilder<?> channelBuilder, long topic, long realm,
                                           long startTime,
-                                          long endTime, long lmt) {
+                                          long endTime, long lmt, DatabaseClient dbClient, PostgresqlConnection conn) {
         channel = channelBuilder.build();
         asyncStub = ConsensusServiceGrpc.newStub(channel);
         topicNum = topic;
@@ -72,6 +74,10 @@ public class ConsensusServiceReactiveClient {
         startTimeSecs = startTime;
         endTimeSecs = endTime;
         limit = lmt;
+
+        databasebClient = dbClient;
+        domainBuilder = new DomainBuilder(dbClient);
+        connection = conn;
     }
 
     public void shutdown() throws InterruptedException {
@@ -98,21 +104,63 @@ public class ConsensusServiceReactiveClient {
             @Override
             public void onNext(ConsensusTopicResponse response) {
                 topics++;
-                log.info("ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", topics, response
+                log.info("Observed ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", topics, response
                         .getConsensusTimestamp(), response.getSequenceNumber(), response.getMessage());
 
+                int newTopicsMessageCount = 2;
                 if (topics == 1) {
                     // insert some new messages
                     Instant endTime = Instant.now().plusSeconds(10);
-                    Flux<TopicMessage> generator = Flux.concat(
-                            domainBuilder.topicMessage(t -> t.topicNum((int) topicNum)
-                                    .consensusTimestamp(endTime.minusNanos(2))),
-                            domainBuilder.topicMessage(t -> t.topicNum((int) topicNum)
-                                    .consensusTimestamp(endTime.minusNanos(1))),
-                            domainBuilder.topicMessage(t -> t.topicNum((int) topicNum).consensusTimestamp(endTime))
-                    );
+                    for (int i = 0; i < newTopicsMessageCount; i++) {
+                        Instant temp = endTime.plus(i, ChronoUnit.NANOS);
+                        String instastring = "" + temp.getEpochSecond() + temp.getNano();
+                        log.info("Emitting new topic message for topicNum {}, Time: {}, count: {}", topicNum,
+                                instastring, i);
 
-                    generator.blockLast();
+                        int finalI = i;
+                        domainBuilder.topicMessage(t -> t.topicNum((int) topicNum)
+                                .consensusTimestamp(endTime.minus(finalI, ChronoUnit.NANOS))).block();
+
+//                        TopicMessage topicMessage = TopicMessage.builder()
+//                                .consensusTimestamp(endTime.plus(i, ChronoUnit.NANOS))
+//                                .realmNum(0)
+//                                .message(new byte[] {0, 1, 2})
+//                                .runningHash(new byte[] {3, 4, 5})
+//                                .sequenceNumber(0)
+//                                .topicNum((int) topicNum).build();
+
+                        String topicMessageInsertSql = "insert into topic_message "
+                                + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
+                                + " values ({}, {}, {}, {}, {}, {})";
+
+                        log.warn("Store TopicMessage {}, Time: {}, count: {}", topicNum, instastring, i);
+//                        databasebClient
+//                                .execute(String
+//                                        .format(topicMessageInsertSql, instastring, 0, topicNum, new byte[] {0, 1, 2}
+//                                                , new byte[] {3,
+//                                                        4, 5}, 0))
+////                                .insert()
+////                                .into((Class<TopicMessage>) topicMessage.getClass())
+////                                .using(topicMessage)
+//                                .fetch()
+//                                .first()
+//                                .doOnNext(d -> log.info("Inserted: topicmessage"));
+
+                        PostgresqlStatement statement = connection.createStatement(String
+                                .format(topicMessageInsertSql, instastring, 0, topicNum, new byte[] {0, 1, 2}
+                                        , new byte[] {3,
+                                                4, 5}, 0));
+                        statement.execute().blockLast();
+                    }
+//                    Flux<TopicMessage> generator = Flux.concat(
+//                            domainBuilder.topicMessage(t -> t.topicNum((int) topicNum)
+//                                    .consensusTimestamp(endTime.minusNanos(2))),
+//                            domainBuilder.topicMessage(t -> t.topicNum((int) topicNum)
+//                                    .consensusTimestamp(endTime.minusNanos(1))),
+//                            domainBuilder.topicMessage(t -> t.topicNum((int) topicNum).consensusTimestamp(endTime))
+//                    );
+//
+//                    generator.blockLast();
                 }
             }
 

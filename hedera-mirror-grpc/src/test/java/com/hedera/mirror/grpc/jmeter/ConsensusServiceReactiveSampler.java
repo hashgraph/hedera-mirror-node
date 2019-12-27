@@ -21,15 +21,23 @@ package com.hedera.mirror.grpc.jmeter;
  */
 
 import io.grpc.StatusRuntimeException;
+import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
+import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.postgresql.api.PostgresqlConnection;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import lombok.extern.log4j.Log4j2;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
+import org.springframework.data.r2dbc.core.DatabaseClient;
+import org.springframework.data.r2dbc.core.DefaultReactiveDataAccessStrategy;
+import org.springframework.data.r2dbc.dialect.PostgresDialect;
 
 import com.hedera.mirror.grpc.jmeter.client.ConsensusServiceReactiveClient;
 
+@Log4j2
 public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
     ConsensusServiceReactiveClient csclient = null;
 
@@ -43,6 +51,9 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
         String topicID = context.getParameter("topicID");
         String realmNum = context.getParameter("realmNum");
 
+        DatabaseClient dbClient = getDatabaseClient();
+        PostgresqlConnection connection = getConnection();
+
         csclient = new ConsensusServiceReactiveClient(
                 host,
                 Integer.parseInt(port),
@@ -50,7 +61,9 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
                 Long.parseLong(realmNum),
                 Long.parseLong(consensusStartTimeSeconds),
                 Long.parseLong(consensusEndTimeSeconds),
-                Long.parseLong(limit));
+                Long.parseLong(limit),
+                dbClient,
+                connection);
 
         super.setupTest(context);
     }
@@ -66,6 +79,37 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
         defaultParameters.addArgument("topicID", "0");
         defaultParameters.addArgument("realmNum", "0");
         return defaultParameters;
+    }
+
+    public DatabaseClient getDatabaseClient() {
+
+        log.info("Initialize connectionFactory and databaseClient");
+        PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(
+                PostgresqlConnectionConfiguration.builder()
+                        .host("localhost")
+                        .port(5432)
+                        .username("mirror_grpc")
+                        .password("mirror_grpc_pass")
+                        .database("mirror_node")
+                        .build());
+
+        return DatabaseClient.builder()
+                .connectionFactory(connectionFactory)
+                .dataAccessStrategy(new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE))
+                .build();
+    }
+
+    public PostgresqlConnection getConnection() {
+        PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(
+                PostgresqlConnectionConfiguration.builder()
+                        .host("localhost")
+                        .port(5432)
+                        .username("mirror_grpc")
+                        .password("mirror_grpc_pass")
+                        .database("mirror_node")
+                        .build());
+
+        return connectionFactory.create().block();
     }
 
     @Override
