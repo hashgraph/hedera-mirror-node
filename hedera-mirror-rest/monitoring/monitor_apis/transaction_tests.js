@@ -32,14 +32,14 @@ const recordsFileUpdateRefreshTime = 5;
  * @param {String} pathandquery
  * @return {Object} Transactions object from response
  */
-const getTransactions = pathandquery => {
+const getTransactions = (pathandquery, currentTestResult) => {
   return acctestutils
     .getAPIResponse(pathandquery)
     .then(json => {
       return json.transactions;
     })
     .catch(error => {
-      testResult.failureMessages.push(error);
+      currentTestResult.failureMessages.push(error);
     });
 };
 

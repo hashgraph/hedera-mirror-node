@@ -32,14 +32,14 @@ const balanceFileUpdateRefreshTime = 900;
  * @param {String} pathandquery
  * @return {Object} Transactions object from response
  */
-const getBalances = pathandquery => {
+const getBalances = (pathandquery, currentTestResult) => {
   return acctestutils
     .getAPIResponse(pathandquery)
     .then(json => {
       return json.balances;
     })
     .catch(error => {
-      testResult.failureMessages.push(error);
+      currentTestResult.failureMessages.push(error);
     });
 };
 
