@@ -129,6 +129,13 @@ const getTransactionsWithAccountCheck = async (server, classResults) => {
   currentTestResult.url = url;
 
   let accTransactions = await getTransactions(url, currentTestResult);
+  if (undefined === accTransactions) {
+    var message = `transactions is undefined`;
+    currentTestResult.failureMessages.push(message);
+    acctestutils.addTestResult(classResults, currentTestResult, false);
+    return;
+  }
+
   if (accTransactions.length !== 1) {
     var message = `accTransactions.length of ${transactions.length} is not 1`;
     currentTestResult.failureMessages.push(message);

@@ -30,8 +30,8 @@ const classResults = {
   numFailedTests: 0,
   success: true,
   message: '',
-  startTime: '',
-  endTime: ''
+  startTime: 0,
+  endTime: 0
 };
 
 // monitoring single test result template
