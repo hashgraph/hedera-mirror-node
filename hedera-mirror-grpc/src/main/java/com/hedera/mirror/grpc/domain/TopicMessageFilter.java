@@ -28,9 +28,11 @@ import lombok.Value;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.grpc.validation.EndTime;
+import com.hedera.mirror.grpc.validation.StartTime;
 
 @Builder
 @EndTime
+@StartTime
 @Validated
 @Value
 public class TopicMessageFilter {

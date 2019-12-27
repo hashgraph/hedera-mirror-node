@@ -56,6 +56,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .doOnNext(topicContext::onNext)
+                .doOnCancel(topicContext::onComplete)
                 .doOnComplete(topicContext::onComplete);
     }
 
@@ -66,7 +67,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
         TopicMessageFilter filter = topicContext.getFilter();
         TopicMessage last = topicContext.getLastTopicMessage();
-        long limit = filter.hasLimit() ? filter.getLimit() - topicContext.getCount().longValue() : 0;
+        long limit = filter.hasLimit() ? filter.getLimit() - topicContext.getCount().get() : 0;
         Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
 
         TopicMessageFilter newFilter = TopicMessageFilter.builder()
