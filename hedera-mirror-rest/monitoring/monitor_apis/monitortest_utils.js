@@ -153,6 +153,38 @@ const addTestResult = (clssRes, res, passed) => {
   }
 };
 
+/**
+ * Helper function to create a json object for failed test results
+ * @param {String} title Title in the jest output
+ * @param {String} msg Message in the jest output
+ * @return {Object} Constructed failed result object
+ */
+const createFailedResultJson = (title, msg) => {
+  const failedResultJson = getMonitorClassResult();
+  failedResultJson.numFailedTests = 1;
+  failedResultJson.success = false;
+  failedResultJson.message = 'Prerequisite tests failed';
+  failedResultJson.testResults = [
+    {
+      at: (new Date().getTime() / 1000).toFixed(3),
+      message: `${title}: ${msg}`,
+      result: 'failed',
+      assertionResults: [
+        {
+          ancestorTitles: title,
+          failureMessages: [],
+          fullName: `${title}: ${msg}`,
+          location: null,
+          status: 'failed',
+          title: msg
+        }
+      ]
+    }
+  ];
+
+  return failedResultJson;
+};
+
 module.exports = {
   toAccNum: toAccNum,
   fromAccNum: fromAccNum,
@@ -162,5 +194,6 @@ module.exports = {
   getAPIResponse: getAPIResponse,
   getMonitorClassResult: getMonitorClassResult,
   getMonitorTestResult: getMonitorTestResult,
-  addTestResult: addTestResult
+  addTestResult: addTestResult,
+  createFailedResultJson: createFailedResultJson
 };
