@@ -147,9 +147,14 @@ const getProcess = server => {
  * @param {Object} server the server for which the pid needs to be stored
  * @return {} None
  */
-const saveProcess = (server, pid) => {
+const saveProcess = (server, count) => {
   const key = `${server.ip}_${server.port}`;
-  pids[key] = pid;
+  const processObject = {
+    id: server.name,
+    encountered: count
+  };
+
+  pids[key] = processObject;
 };
 
 /**

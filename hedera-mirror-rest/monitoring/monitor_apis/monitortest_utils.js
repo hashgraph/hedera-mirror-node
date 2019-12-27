@@ -20,6 +20,7 @@
 const math = require('mathjs');
 const config = require('../../config.js');
 const fetch = require('node-fetch');
+const AbortController = require('abort-controller');
 
 const apiPrefix = '/api/v1';
 
@@ -30,8 +31,8 @@ const classResults = {
   numFailedTests: 0,
   success: true,
   message: '',
-  startTime: '',
-  endTime: ''
+  startTime: 0,
+  endTime: 0
 };
 
 // monitoring single test result template
@@ -102,7 +103,15 @@ const getAPIResponse = url => {
     url = getUrl(url);
   }
 
-  return fetch(url)
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => {
+      controller.abort();
+    },
+    60 * 1000 // in ms
+  );
+
+  return fetch(url, {signal: controller.signal})
     .then(response => {
       if (!response.ok) {
         console.log(`Non success response for call to '${url}'`);
@@ -115,6 +124,9 @@ const getAPIResponse = url => {
       var message = `Fetch error, url : ${url}, error : ${error}`;
       console.log(message);
       throw message;
+    })
+    .finally(() => {
+      clearTimeout(timeout);
     });
 };
 
@@ -153,6 +165,38 @@ const addTestResult = (clssRes, res, passed) => {
   }
 };
 
+/**
+ * Helper function to create a json object for failed test results
+ * @param {String} title Title in the jest output
+ * @param {String} msg Message in the jest output
+ * @return {Object} Constructed failed result object
+ */
+const createFailedResultJson = (title, msg) => {
+  const failedResultJson = getMonitorClassResult();
+  failedResultJson.numFailedTests = 1;
+  failedResultJson.success = false;
+  failedResultJson.message = 'Prerequisite tests failed';
+  failedResultJson.testResults = [
+    {
+      at: (new Date().getTime() / 1000).toFixed(3),
+      message: `${title}: ${msg}`,
+      result: 'failed',
+      assertionResults: [
+        {
+          ancestorTitles: title,
+          failureMessages: [],
+          fullName: `${title}: ${msg}`,
+          location: null,
+          status: 'failed',
+          title: msg
+        }
+      ]
+    }
+  ];
+
+  return failedResultJson;
+};
+
 module.exports = {
   toAccNum: toAccNum,
   fromAccNum: fromAccNum,
@@ -162,5 +206,6 @@ module.exports = {
   getAPIResponse: getAPIResponse,
   getMonitorClassResult: getMonitorClassResult,
   getMonitorTestResult: getMonitorTestResult,
-  addTestResult: addTestResult
+  addTestResult: addTestResult,
+  createFailedResultJson: createFailedResultJson
 };
