@@ -48,7 +48,9 @@ const runEverything = async servers => {
           if (outJson.hasOwnProperty('testResults')) {
             results = outJson;
             console.log(
-              `Completed tests run for ${server.name} at: ${new Date()} with ${results.testResults.length} tests run`
+              `Completed tests run for ${server.name} at: ${new Date()} with ${results.numPassedTests}/${
+                results.testResults.length
+              } tests passed`
             );
           } else {
             results = monitorTestutils.createFailedResultJson(
