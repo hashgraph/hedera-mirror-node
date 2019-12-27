@@ -205,7 +205,7 @@ const getSingleBalanceById = async (server, classResults) => {
   currentTestResult.url = url;
   let singleBalance = await getBalances(url, currentTestResult);
 
-  if (undefined === singleBalance) {
+  if (undefined === singleBalance || undefined === singleBalance[0]) {
     var message = `singleBalance is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
