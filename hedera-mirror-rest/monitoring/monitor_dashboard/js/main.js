@@ -51,6 +51,10 @@ const init = () => {
  * @return {HTML} HTML for the table
  */
 const makeTable = (data, server) => {
+  if (data.results.testResults === undefined) {
+    return 'No result yet to display';
+  }
+
   let h = '';
   h += `
         <table border="1px">
