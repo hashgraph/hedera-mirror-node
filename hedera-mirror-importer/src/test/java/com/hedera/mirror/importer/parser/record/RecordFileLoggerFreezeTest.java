@@ -33,36 +33,21 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-
 import java.time.Instant;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.util.Utility;
 
-//Class manually commits so have to manually cleanup tables
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
 
     private static final String memo = "File test memo";
 
     @BeforeEach
-    void before() throws Exception {
-        assertTrue(RecordFileLogger.start());
-        Assertions.assertEquals(RecordFileLogger.INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
+    void before() {
         parserProperties.setPersistFiles(true);
         parserProperties.setPersistSystemFiles(true);
         parserProperties.setPersistCryptoTransferAmounts(true);
-    }
-
-    @AfterEach
-    void after() {
-        RecordFileLogger.finish();
     }
 
     @Test

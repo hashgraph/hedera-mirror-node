@@ -573,10 +573,20 @@ public class Utility {
      */
     public static Long timeStampInNanos(Timestamp timestamp) {
         try {
+            if (timestamp == null) {
+                return null;
+            }
             return Math.addExact(Math.multiplyExact(timestamp.getSeconds(), SCALAR), timestamp.getNanos());
         } catch (ArithmeticException e) {
             throw new ArithmeticException("Long overflow when converting Timestamp to nanos timestamp: " + timestamp);
         }
+    }
+
+    public static Long timestampInNanosMax(Timestamp timestamp) {
+        if (timestamp == null) {
+            return null;
+        }
+        return convertToNanosMax(timestamp.getSeconds(), timestamp.getNanos());
     }
 
     public static boolean hashIsEmpty(String hash) {

@@ -20,36 +20,42 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.jdbc.Sql;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.Transaction;
 
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-// Class manually commits so have to manually cleanup tables
 public class TransactionRepositoryTest extends AbstractRepositoryTest {
 
     @Test
-    void insert() {
+    void save() {
         Transaction transaction = transactionRepository.save(transaction());
-        Assertions.assertThat(transactionRepository.findById(transaction.getConsensusNs()).get())
-                .isNotNull()
+        assertThat(transactionRepository.findById(transaction.getConsensusNs()))
+                .get()
                 .isEqualTo(transaction);
+        assertThat(entityRepository.findById(transaction.getEntity().getId()))
+                .get()
+                .isEqualTo(transaction.getEntity());
     }
 
     private Transaction transaction() {
         Long recordFileId = insertRecordFile().getId();
-        Long txEntityId = insertAccountEntity().getId();
         Long nodeAccountId = insertAccountEntity().getId();
         Long payerAccountId = insertAccountEntity().getId();
+        Entities entity = new Entities();
+        entity.setEntityRealm(5L);
+        entity.setEntityShard(0L);
+        entity.setEntityNum(27L);
+        entity.setEntityTypeId(1);
 
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
         transaction.setConsensusNs(10L);
-        transaction.setEntityId(txEntityId);
+        transaction.setEntity(entity);
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
         transaction.setNodeAccountId(nodeAccountId);

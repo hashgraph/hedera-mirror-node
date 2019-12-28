@@ -44,20 +44,15 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-
 import java.nio.file.Path;
 import java.time.Instant;
 import javax.annotation.Resource;
-
 import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
@@ -65,9 +60,6 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.util.Utility;
 
-// Class manually commits so have to manually cleanup tables
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
     //TODO: The following are not yet saved to the mirror node database
@@ -98,14 +90,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         parserProperties.setPersistSystemFiles(true);
         parserProperties.setPersistCryptoTransferAmounts(true);
         parserProperties.init();
-
-        assertTrue(RecordFileLogger.start());
-        Assertions.assertEquals(RecordFileLogger.INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-    }
-
-    @AfterEach
-    void after() {
-        RecordFileLogger.finish();
     }
 
     @Test
@@ -333,14 +317,15 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
             "-1000000000000000000, -9223372036854775808"
     })
     void fileCreateExpirationTimeOverflow(long seconds, long expectedNanosTimestamp) throws Exception {
-        final Transaction transaction = fileCreateTransaction(Timestamp.newBuilder().setSeconds(seconds).build());
-        final TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        final TransactionRecord record = transactionRecord(transactionBody);
+        Transaction transaction = fileCreateTransaction(Timestamp.newBuilder().setSeconds(seconds).build());
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionRecord record = transactionRecord(transactionBody);
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
 
-        var dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+        var dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp()))
+                .get();
         var dbAccountEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
         assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpiryTimeNs());
     }
@@ -1677,7 +1662,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         // Build a transaction
         fileCreate.setContents(ByteString.copyFromUtf8(fileData));
         fileCreate.setExpirationTime(expirationTime);
-        final KeyList.Builder keyList = KeyList.newBuilder();
+        KeyList.Builder keyList = KeyList.newBuilder();
         keyList.addKeys(keyFromString(key));
         fileCreate.setKeys(keyList);
         fileCreate.setNewRealmAdminKey(keyFromString(realmAdminKey));

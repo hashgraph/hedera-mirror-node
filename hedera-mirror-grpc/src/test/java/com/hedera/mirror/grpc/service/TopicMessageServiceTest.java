@@ -87,6 +87,18 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     }
 
     @Test
+    void startTimeAfterNow() {
+        Instant now = Instant.now();
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(now.plusSeconds(10L))
+                .build();
+
+        assertThatThrownBy(() -> topicMessageService.subscribeTopic(filter))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("Start time must be before the current time");
+    }
+
+    @Test
     void noMessages() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .topicNum(1)

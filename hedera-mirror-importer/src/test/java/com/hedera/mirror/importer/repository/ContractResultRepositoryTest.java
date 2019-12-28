@@ -34,7 +34,7 @@ public class ContractResultRepositoryTest extends AbstractRepositoryTest {
     void insert() {
         RecordFile recordfile = insertRecordFile();
         Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CONTRACTCALL");
+        Transaction transaction = insertTransaction(recordfile.getId(), entity, "CONTRACTCALL");
 
         ContractResult contractResult = new ContractResult();
         contractResult.setCallResult("CallResult".getBytes());

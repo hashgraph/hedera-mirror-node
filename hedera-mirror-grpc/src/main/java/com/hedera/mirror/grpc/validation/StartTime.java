@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.grpc.validation;
 
 /*-
  * ‌
@@ -20,11 +20,21 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.repository.CrudRepository;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.validation.Constraint;
+import javax.validation.Payload;
 
-import com.hedera.mirror.importer.domain.TransactionType;
+@Constraint(validatedBy = StartTimeValidator.class)
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface StartTime {
 
-public interface TransactionTypeRepository extends CrudRepository<TransactionType, Integer> {
-    Optional<TransactionType> findByName(String name);
+    String message() default "Start time must be before the current time";
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
 }
