@@ -28,12 +28,16 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import lombok.Data;
+import lombok.ToString;
+import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
 @Entity
+@Log4j2
 @Table(name = "t_entities")
+@ToString(exclude = {"key", "submitKey"})
 public class Entities {
 
     @Id
@@ -81,6 +85,8 @@ public class Entities {
             this.key = key;
             ed25519PublicKeyHex = Utility.protobufKeyToHexIfEd25519OrNull(key);
         } catch (Exception e) {
+            log.error("Invalid ED25519 key could not be translated to hex text for entity {}.{}.{}. Field " +
+                    "will be nulled", entityShard, entityRealm, entityNum, e);
             ed25519PublicKeyHex = null;
         }
     }
@@ -90,5 +96,9 @@ public class Entities {
         Instant instant = Instant.ofEpochSecond(0, expiryTimeNs);
         setExpiryTimeSeconds(instant.getEpochSecond());
         setExpiryTimeNanos((long) instant.getNano());
+    }
+
+    public String getDisplayId() {
+        return String.format("%d.%d.%d", entityShard, entityRealm, entityNum);
     }
 }

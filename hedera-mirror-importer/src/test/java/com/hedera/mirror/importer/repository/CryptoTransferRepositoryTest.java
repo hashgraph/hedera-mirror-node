@@ -34,7 +34,7 @@ public class CryptoTransferRepositoryTest extends AbstractRepositoryTest {
     void findByConsensusTimestampAndEntityNum() {
         RecordFile recordfile = insertRecordFile();
         Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CRYPTOTRANSFER");
+        Transaction transaction = insertTransaction(recordfile.getId(), entity, "CRYPTOTRANSFER");
 
         long consensusNs = transaction.getConsensusNs();
         long accountNum = 2;

@@ -22,10 +22,8 @@ package com.hedera.mirror.importer.repository;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.Random;
 import javax.annotation.Resource;
-
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -92,7 +90,7 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
         return insertEntity(EntityType.contract);
     }
 
-    protected final Transaction insertTransaction(long recordFileId, long entityId, String type) {
+    protected final Transaction insertTransaction(long recordFileId, Entities entity, String type) {
         long chargedTxFee = 100;
         long consensusNs = 10;
         long validStartNs = 20;
@@ -101,9 +99,9 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
         transaction.setRecordFileId(recordFileId);
         transaction.setChargedTxFee(chargedTxFee);
         transaction.setConsensusNs(consensusNs);
-        transaction.setEntityId(entityId);
-        transaction.setNodeAccountId(entityId);
-        transaction.setPayerAccountId(entityId);
+        transaction.setEntity(entity);
+        transaction.setNodeAccountId(entity.getId());
+        transaction.setPayerAccountId(entity.getId());
         transaction.setResult(ResponseCodeEnum.SUCCESS.getNumber());
         transaction.setType(TransactionBody.DataCase.valueOf(type).getNumber());
         transaction.setValidStartNs(validStartNs);

@@ -5,11 +5,17 @@ hedera:
     downloader:
       bucketName: test
       cloudProvider: LOCAL
+    importer:
+      parser:
+        exclude:
+          - entity: 0.0.999
     network: TESTNET
     parser:
       balance:
         enabled: false
 spring:
+  cache:
+    enabled: false
   task:
     scheduling:
       enabled: false

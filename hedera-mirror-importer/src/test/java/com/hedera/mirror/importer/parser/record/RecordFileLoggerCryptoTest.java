@@ -43,28 +43,19 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-
 import java.time.Instant;
-
 import org.apache.commons.codec.binary.Hex;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.util.Utility;
-import java.util.Arrays;
 
-// Class manually commits so have to manually cleanup tables
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
     //TODO: These transaction data items are not saved to the database
@@ -87,16 +78,9 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
     private static final long[] transferAmounts = {1000, -2000, 20};
 
     @BeforeEach
-    void before() throws Exception {
+    void before() {
         parserProperties.setPersistClaims(true);
         parserProperties.setPersistCryptoTransferAmounts(true);
-        assertTrue(RecordFileLogger.start());
-        Assertions.assertEquals(RecordFileLogger.INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-    }
-
-    @AfterEach
-    void after() {
-        RecordFileLogger.finish();
     }
 
     @Test

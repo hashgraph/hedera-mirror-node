@@ -81,9 +81,15 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.db.password`                           | mirror_grpc_pass        | The database password the GRPC API uses to connect. **Should be changed from default**         |
 | `hedera.mirror.grpc.db.port`                               | 5432                    | The port used to connect to the database                                                       |
 | `hedera.mirror.grpc.db.username`                           | mirror_grpc             | The username the GRPC API uses to connect to the database                                      |
-| `hedera.mirror.grpc.listener.pollingFrequency`             | 1s                      | How often to polling for new topic messages. Can accept duration units like `50ms`, `10s` etc. |
+| `hedera.mirror.grpc.listener.pollingFrequency`             | 2s                      | How often to polling for new topic messages. Can accept duration units like `50ms`, `10s` etc. |
 | `hedera.mirror.grpc.listener.type`                         | POLL                    | The type of listener to use for incoming messages. Accepts either NOTIFY or POLL               |
 | `hedera.mirror.grpc.port`                                  | 5600                    | The GRPC API port                                                                              |
+| `hedera.mirror.importer.parser.exclude`                    | []                      | A list of filters that determine which transactions are ignored. Takes precedence over include |
+| `hedera.mirror.importer.parser.exclude.entity`             | []                      | A list of entity IDs to ignore in shard.realm.num (e.g. 0.0.3) format                          |
+| `hedera.mirror.importer.parser.exclude.transaction`        | []                      | A list of transaction types to ignore. See `TransactionTypeEnum.java` for possible values      |
+| `hedera.mirror.importer.parser.include`                    | []                      | A list of filters that determine which transactions are stored                                 |
+| `hedera.mirror.importer.parser.include.entity`             | []                      | A list of entity IDs to store in shard.realm.num (e.g. 0.0.3) format                           |
+| `hedera.mirror.importer.parser.include.transaction`        | []                      | A list of transaction types to store. See `TransactionTypeEnum.java` for possible values       |
 | `hedera.mirror.network`                                    | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET` or `TESTNET`                      |
 | `hedera.mirror.parser.balance.batchSize`                   | 2000                    | The number of balances to insert before committing                                             |
 | `hedera.mirror.parser.balance.enabled`                     | true                    | Whether to enable balance file parsing                                                         |

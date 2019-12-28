@@ -20,17 +20,22 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-
 import lombok.Data;
+import lombok.ToString;
+import org.springframework.data.domain.Persistable;
 
 @Data
 @Entity
 @Table(name = "t_transactions")
-public class Transaction {
+@ToString(exclude = {"memo", "transactionHash", "transactionBytes"})
+public class Transaction implements Persistable<Long> {
 
     @Id
     private Long consensusNs;
@@ -51,8 +56,9 @@ public class Transaction {
 
     private Long initialBalance;
 
-    @Column(name = "fk_cud_entity_id")
-    private Long entityId;
+    @JoinColumn(name = "fk_cud_entity_id")
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    private Entities entity;
 
     @Column(name = "fk_rec_file_id")
     private Long recordFileId;
@@ -66,4 +72,23 @@ public class Transaction {
     private byte[] transactionHash;
 
     private byte[] transactionBytes;
+
+    // Helper to avoid having to update a 100 places in tests
+    public Long getEntityId() {
+        return entity != null ? entity.getId() : null;
+    }
+
+    public TransactionTypeEnum getTypeEnum() {
+        return TransactionTypeEnum.of(type);
+    }
+
+    @Override
+    public Long getId() {
+        return getConsensusNs();
+    }
+
+    @Override
+    public boolean isNew() {
+        return true; // Since we never update transactions and use a natural ID, avoid Hibernate querying before insert
+    }
 }

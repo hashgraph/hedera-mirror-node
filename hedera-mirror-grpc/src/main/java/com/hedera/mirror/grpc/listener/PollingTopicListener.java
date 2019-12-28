@@ -48,7 +48,7 @@ public class PollingTopicListener implements TopicListener {
 
         return Flux.interval(frequency)
                 .filter(i -> !context.isRunning()) // Discard polling requests while querying
-                .flatMap(i -> poll(context))
+                .concatMap(i -> poll(context))
                 .doOnNext(context::onNext)
                 .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", frequency.toMillis(), filter));
     }
@@ -56,7 +56,7 @@ public class PollingTopicListener implements TopicListener {
     private Flux<TopicMessage> poll(PollingContext context) {
         TopicMessageFilter filter = context.getFilter();
         TopicMessage last = context.getLast();
-        long limit = filter.hasLimit() ? filter.getLimit() - context.getCount().longValue() : 0;
+        long limit = filter.hasLimit() ? filter.getLimit() - context.getCount().get() : 0;
         Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
 
         TopicMessageFilter newFilter = TopicMessageFilter.builder()

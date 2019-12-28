@@ -43,24 +43,16 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-
 import java.time.Instant;
 import java.util.Optional;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.util.Utility;
 
-//Class manually commits so have to manually cleanup tables
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
 
     private static final ContractID contractId = ContractID.newBuilder().setShardNum(0).setRealmNum(0)
@@ -72,17 +64,10 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
 
     @BeforeEach
     void before() throws Exception {
-        assertTrue(RecordFileLogger.start());
-        Assertions.assertEquals(RecordFileLogger.INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
         parserProperties.setPersistFiles(true);
         parserProperties.setPersistSystemFiles(true);
         parserProperties.setPersistContracts(true);
         parserProperties.setPersistCryptoTransferAmounts(true);
-    }
-
-    @AfterEach
-    void after() {
-        RecordFileLogger.finish();
     }
 
     @Test

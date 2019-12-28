@@ -33,6 +33,7 @@ import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.FrequencyDistribution;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.Transaction;
 
 /**
@@ -67,21 +68,23 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
         final long value = 1_000_000_000L;
         transaction.setInitialBalance(value);
         transaction.setType(11);  // 11 = CRYPTOCREATEACCOUNT
-        Long newAccountId = entityManager.getAccounts().newEntity();
-        transaction.setEntityId(newAccountId);
+        Entities newAccount = entityManager.getAccounts().newEntity();
+        transaction.setEntity(newAccount);
         transaction.setPayerAccountId(entityManager.getPortalEntity());
         domainWriter.addCryptoTransfer(createCryptoTransfer(
                 transaction.getConsensusNs(), entityManager.getPortalEntity(), -value));
         domainWriter.addCryptoTransfer(createCryptoTransfer(
-                transaction.getConsensusNs(), newAccountId, value));
-        log.trace("CRYPTOCREATEACCOUNT transaction: entity {}", newAccountId);
+                transaction.getConsensusNs(), newAccount.getId(), value));
+        log.trace("CRYPTOCREATEACCOUNT transaction: entity {}", newAccount.getId());
     }
 
     private void updateAccount(Transaction transaction) {
         transaction.setInitialBalance(0L);
         transaction.setType(15);  // 15 = CRYPTOUPDATEACCOUNT
         Long accountId = entityManager.getAccounts().getRandom();
-        transaction.setEntityId(accountId);
+        Entities entities = new Entities();
+        entities.setId(accountId);
+        transaction.setEntity(entities);
         transaction.setPayerAccountId(accountId);
         log.trace("CRYPTOUPDATEACCOUNT transaction: entity {}", accountId);
     }
@@ -112,7 +115,9 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
         transaction.setType(12);  // 12 = CRYPTODELETE
         Long accountId = entityManager.getAccounts().getRandom();
         entityManager.getAccounts().delete(accountId);
-        transaction.setEntityId(accountId);
+        Entities entities = new Entities();
+        entities.setId(accountId);
+        transaction.setEntity(entities);
         transaction.setPayerAccountId(accountId); // TODO: is payer account different or same as entity being deleted?
         log.trace("CRYPTODELETE transaction: entity {}", accountId);
     }
