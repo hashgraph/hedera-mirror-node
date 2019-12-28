@@ -20,6 +20,10 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -49,14 +53,12 @@ public enum TransactionTypeEnum {
     CONSENSUSDELETETOPIC(26),
     CONSENSUSSUBMITMESSAGE(27);
 
+    private static final Map<Integer, TransactionTypeEnum> idMap = Arrays.stream(values())
+            .collect(Collectors.toMap(TransactionTypeEnum::getProtoId, Function.identity()));
+
     private final int protoId;
 
     public static TransactionTypeEnum of(int protoId) {
-        for (TransactionTypeEnum transactionTypeEnum : values()) {
-            if (transactionTypeEnum.getProtoId() == protoId) {
-                return transactionTypeEnum;
-            }
-        }
-        return null;
+        return idMap.get(protoId);
     }
 }
