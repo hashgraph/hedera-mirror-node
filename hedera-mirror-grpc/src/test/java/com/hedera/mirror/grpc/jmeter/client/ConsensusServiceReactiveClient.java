@@ -32,12 +32,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Resource;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.r2dbc.core.DatabaseClient;
 
 import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
+import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 
 /**
@@ -57,6 +59,8 @@ public class ConsensusServiceReactiveClient {
     private final DomainBuilder domainBuilder;
     private final DatabaseClient databasebClient;
     private final PostgresqlConnection connection;
+
+    InstantToLongConverter itlc = new InstantToLongConverter();
 
     public ConsensusServiceReactiveClient(String host, int port, long topic, long realm, long startTime,
                                           long endTime, long lmt, DatabaseClient dbClient, PostgresqlConnection conn) {
@@ -83,11 +87,13 @@ public class ConsensusServiceReactiveClient {
     public void shutdown() throws InterruptedException {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
-    
-    public String subscribeTopic() {
-        log.info("Running Consensus Client subscribeTopic");
+
+    public String subscribeTopic(int newTopicsMessageCount) {
+        log.info("Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs : {},limit :" +
+                        " {}",
+                topicNum, startTimeSecs, endTimeSecs, limit);
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
-                .setLimit(limit)
+                .setLimit(100)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(startTimeSecs).build())
                 .setTopicID(TopicID.newBuilder().setRealmNum(realmNum).setTopicNum(topicNum).build());
 
@@ -96,52 +102,38 @@ public class ConsensusServiceReactiveClient {
         }
 
         ConsensusTopicQuery request = builder.build();
+        Instant observerStart = Instant.now();
+        log.info("Observer instant : {}", itlc.convert(observerStart));
 
         int[] topics = {0};
         StreamObserver<ConsensusTopicResponse> responseObserver = new StreamObserver<>() {
-            final CountDownLatch finishLatch = new CountDownLatch(1);
+            final CountDownLatch finishLatch = new CountDownLatch(newTopicsMessageCount);
 
+            @SneakyThrows
             @Override
             public void onNext(ConsensusTopicResponse response) {
                 topics[0]++;
-                log.info("Observed ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", topics[0], response
-                        .getConsensusTimestamp(), response.getSequenceNumber(), response.getMessage());
-
-                int newTopicsMessageCount = 2;
-                if (topics[0] == 1) {
-                    // insert some new messages
-                    Instant endTime = Instant.now().plusSeconds(10);
-                    for (int i = 0; i < newTopicsMessageCount; i++) {
-                        Instant temp = endTime.plus(i, ChronoUnit.NANOS);
-                        String instastring = "" + temp.getEpochSecond() + temp.getNano();
-                        log.info("Emitting new topic message for topicNum {}, Time: {}, count: {}", topicNum,
-                                instastring, i);
-
-                        String topicMessageInsertSql = "insert into topic_message"
-                                + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
-                                + " values ($1, $2, $3, $4, $5, $6)";
-
-                        PostgresqlStatement statement = connection.createStatement(topicMessageInsertSql)
-                                .bind("$1", Long.valueOf(instastring))
-                                .bind("$2", 0)
-                                .bind("$3", topicNum)
-                                .bind("$4", new byte[] {0, 1, 2})
-                                .bind("$5", new byte[] {3, 4, 5})
-                                .bind("$6", 0);
-                        statement.execute().blockLast();
-
-                        log.info("Stored TopicMessage {}, Time: {}, count: {}", topicNum, instastring, i);
-                    }
-                }
+                Instant respInstant = Instant
+                        .ofEpochSecond(response.getConsensusTimestamp().getSeconds(), response.getConsensusTimestamp()
+                                .getNanos());
+                String messageType = observerStart.isBefore(respInstant) ? "Future" : "Historic";
+                log
+                        .info("Observed {} ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", messageType
+                                , topics[0],
+                                response
+                                        .getConsensusTimestamp(), response.getSequenceNumber(), response.getMessage()
+                                        .isValidUtf8() ? response.getMessage().toStringUtf8() : response.getMessage()
+                                        .toString("US-ASCII"));
             }
 
             @Override
             public void onError(Throwable t) {
-                log.error("error in ConsensusTopicResponse StreamObserver", t);
+                log.error("Error in ConsensusTopicResponse StreamObserver : " + t.toString(), t);
             }
 
             @Override
             public void onCompleted() {
+                log.info("Running responseObserver onCompleted()");
                 finishLatch.countDown();
             }
         };
@@ -149,14 +141,44 @@ public class ConsensusServiceReactiveClient {
         try {
             asyncStub.subscribeTopic(request, responseObserver);
 
+            // insert some new messages
+            EmitFutureMessages(newTopicsMessageCount, topicNum, observerStart);
+
             responseObserver.onCompleted();
         } catch (Exception ex) {
             log.warn("RCP failed: {}", ex);
             throw ex;
         }
 
-        String response = String.format("{} topics encountered", topics[0]);
+        String response = String.format("%d topics encountered", topics[0]);
         log.info("Consensus service response observer: {}", response);
         return response;
+    }
+
+    private void EmitFutureMessages(int newTopicsMessageCount, long tpcnm, Instant instantref) {
+        // insert some new messages
+        for (int i = 0; i < newTopicsMessageCount; i++) {
+            Instant temp = instantref.plus(i, ChronoUnit.SECONDS);
+//            String instastring = "" + temp.getEpochSecond() + temp.getNano();
+            Long instalong = itlc.convert(temp);
+            log.info("Emitting new topic message for topicNum {}, Time: {}, count: {}", tpcnm,
+                    instalong, i);
+
+            String topicMessageInsertSql = "insert into topic_message"
+                    + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
+                    + " values ($1, $2, $3, $4, $5, $6)";
+
+            PostgresqlStatement statement = connection.createStatement(topicMessageInsertSql)
+                    .bind("$1", instalong)
+                    .bind("$2", 0)
+                    .bind("$3", tpcnm)
+                    .bind("$4", new byte[] {22, 33, 44})
+                    .bind("$5", new byte[] {55, 66, 77})
+                    .bind("$6", i + 5);
+            statement.execute().blockLast();
+
+            log.info("Stored TopicMessage {}, Time: {}, count: {}", tpcnm,
+                    instalong, i);
+        }
     }
 }

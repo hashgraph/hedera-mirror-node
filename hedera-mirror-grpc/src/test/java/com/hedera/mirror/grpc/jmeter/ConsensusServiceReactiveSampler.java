@@ -40,6 +40,8 @@ import com.hedera.mirror.grpc.jmeter.client.ConsensusServiceReactiveClient;
 @Log4j2
 public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
     ConsensusServiceReactiveClient csclient = null;
+    int futureMessagesCount = 2;
+    long topicNum;
 
     @Override
     public void setupTest(JavaSamplerContext context) {
@@ -50,6 +52,8 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
         String consensusEndTimeSeconds = context.getParameter("consensusEndTimeSeconds");
         String topicID = context.getParameter("topicID");
         String realmNum = context.getParameter("realmNum");
+//        futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
+        topicNum = Long.parseLong(topicID);
 
         DatabaseClient dbClient = getDatabaseClient();
         PostgresqlConnection connection = getConnection();
@@ -57,7 +61,7 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
         csclient = new ConsensusServiceReactiveClient(
                 host,
                 Integer.parseInt(port),
-                Long.parseLong(topicID),
+                topicNum,
                 Long.parseLong(realmNum),
                 Long.parseLong(consensusStartTimeSeconds),
                 Long.parseLong(consensusEndTimeSeconds),
@@ -78,12 +82,11 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
         defaultParameters.addArgument("consensusEndTimeSeconds", "0");
         defaultParameters.addArgument("topicID", "0");
         defaultParameters.addArgument("realmNum", "0");
+//        defaultParameters.addArgument("newTopicsMessageCount", "0");
         return defaultParameters;
     }
 
-    public DatabaseClient getDatabaseClient() {
-
-        log.info("Initialize connectionFactory and databaseClient");
+    public PostgresqlConnectionFactory getConnectionFactory() {
         PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(
                 PostgresqlConnectionConfiguration.builder()
                         .host("localhost")
@@ -92,6 +95,14 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
                         .password("mirror_grpc_pass")
                         .database("mirror_node")
                         .build());
+
+        return connectionFactory;
+    }
+
+    public DatabaseClient getDatabaseClient() {
+
+        log.info("Initialize connectionFactory and databaseClient");
+        PostgresqlConnectionFactory connectionFactory = getConnectionFactory();
 
         return DatabaseClient.builder()
                 .connectionFactory(connectionFactory)
@@ -100,14 +111,7 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
     }
 
     public PostgresqlConnection getConnection() {
-        PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(
-                PostgresqlConnectionConfiguration.builder()
-                        .host("localhost")
-                        .port(5432)
-                        .username("mirror_grpc")
-                        .password("mirror_grpc_pass")
-                        .database("mirror_node")
-                        .build());
+        PostgresqlConnectionFactory connectionFactory = getConnectionFactory();
 
         return connectionFactory.create().block();
     }
@@ -120,7 +124,10 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
         result.sampleStart();
 
         try {
-            response = csclient.subscribeTopic();
+            response = csclient.subscribeTopic(futureMessagesCount);
+
+            // To:do - add conditional logic based on response to check success criteria
+
             result.sampleEnd();
             result.setResponseData(response.getBytes());
             result.setResponseMessage("Successfully performed subscribe topic test");
