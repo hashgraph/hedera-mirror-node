@@ -19,7 +19,8 @@ compile a runnable Mirror Node JAR file in the `target` directory.
 In addition to OpenJDK 11, you will need to install [PostgreSQL](https://postgresql.org) 9.6 and initialize it. The only
 setup required is to create the initial database and owner since [Flyway](https://flywaydb.org) manages the
 database schema. The SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init.sql` can be used to
-accomplish this. Edit the file and change the `db_name`, `db_user`, `db_password` or `db_owner` as appropriate.
+accomplish this. Edit the file and change the `db_name`, `db_user`, `db_password` `db_owner`, `grpc_user`, or
+`grpc_password` as appropriate.
 Make sure the application [configuration](configuration.md) matches the values in the script. Run the script as a DB
 admin user and check the output carefully to ensure no errors occurred.
 
@@ -37,6 +38,18 @@ java -jar hedera-mirror-importer/target/hedera-mirror-importer-*.jar
 ```
 
 Additionally, there is a Systemd unit file located in the `hedera-mirror-importer/scripts/` directory that can be used to
+manage the process. See the [operations](operations.md) documentation for more information.
+
+### GRPC API
+
+To run the GRPC API, first populate the configuration at one of the supported
+[configuration](configuration.md) paths, then run:
+
+```console
+java -jar hedera-mirror-grpc/target/hedera-mirror-grpc-*.jar
+```
+
+Additionally, there is a Systemd unit file located in the `hedera-mirror-grpc/scripts/` directory that can be used to
 manage the process. See the [operations](operations.md) documentation for more information.
 
 ### REST API
@@ -74,6 +87,7 @@ Docker Compose scripts are provided and run all the mirror node components:
 -   PostgreSQL database
 -   Importer
 -   REST API
+-   GRPC API
 
 Containers use the following persisted volumes:
 
@@ -89,10 +103,19 @@ Containers use the following persisted volumes:
 ### Starting
 
 Before starting, [configure](configuration.md) the application by preparing an `application.yml` with the desired custom
-values. This file can then be passed to Docker compose by uncommenting the following line in the `docker-compose.yml`
+values. This file can then be passed to Docker compose by uncommenting the following lines in the `docker-compose.yml`
 and setting it to the path of the local file:
 
-`- ./application.yml:/usr/etc/hedera-mirror-importer/application.yml`
+```
+volumes:
+- ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
+```
+
+and
+
+```
+- ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
+```
 
 Finally, run the commands to build and startup:
 

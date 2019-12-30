@@ -23,12 +23,9 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.domain.Entities;
 
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-// Class manually commits so have to manually cleanup tables
 public class EntityRepositoryTest extends AbstractRepositoryTest {
 
     @Test
@@ -45,7 +42,7 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
         Entities entity = new Entities();
         entity.setAutoRenewPeriod(100L);
         entity.setDeleted(true);
-        entity.setEd25519PublicKeyHex("ed25519publickeyhex");
+        entity.setEd25519PublicKeyHex("0123456789abcdef");
         entity.setEntityNum(5L);
         entity.setEntityRealm(4L);
         entity.setEntityShard(3L);
@@ -55,11 +52,21 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
         entity.setExpiryTimeSeconds(400L);
         entity.setKey("key".getBytes());
         entity.setProxyAccountId(proxyEntity.getId());
+        entity.setSubmitKey("SubmitKey".getBytes());
+        entity.setTopicValidStartTime(700L);
         entity = entityRepository.save(entity);
 
         assertThat(entityRepository
-                .findByPrimaryKey(entity.getEntityShard(), entity.getEntityRealm(), entity.getEntityNum()).get())
-                .isNotNull()
+                .findByPrimaryKey(entity.getEntityShard(), entity.getEntityRealm(), entity.getEntityNum()))
+                .get()
+                .isEqualTo(entity);
+
+        entity.setTopicValidStartTime(600L);
+        entity = entityRepository.save(entity);
+
+        assertThat(entityRepository
+                .findByPrimaryKey(entity.getEntityShard(), entity.getEntityRealm(), entity.getEntityNum()))
+                .get()
                 .isEqualTo(entity);
     }
 }

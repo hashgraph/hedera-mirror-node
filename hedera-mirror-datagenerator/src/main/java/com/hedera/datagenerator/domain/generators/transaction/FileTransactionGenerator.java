@@ -32,6 +32,7 @@ import com.hedera.datagenerator.common.TransactionGenerator;
 import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.FrequencyDistribution;
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.Transaction;
 
@@ -65,16 +66,18 @@ public class FileTransactionGenerator extends TransactionGenerator {
 
     private void createFile(Transaction transaction) {
         transaction.setType(17);  // 17 = FILECREATE
-        Long newFileId = entityManager.getFiles().newEntity();
-        transaction.setEntityId(newFileId);
+        Entities newFile = entityManager.getFiles().newEntity();
+        transaction.setEntity(newFile);
         createFileData(transaction.getConsensusNs());
-        log.trace("FILECREATE transaction: fileId {}", newFileId);
+        log.trace("FILECREATE transaction: fileId {}", newFile.getId());
     }
 
     private void appendFile(Transaction transaction) {
         transaction.setType(16);  // 16 = FILEAPPEND
         Long fileId = entityManager.getFiles().getRandom();
-        transaction.setEntityId(fileId);
+        Entities entities = new Entities();
+        entities.setId(fileId);
+        transaction.setEntity(entities);
         createFileData(transaction.getConsensusNs());
         log.trace("FILEAPPEND transaction: fileId {}", fileId);
     }
@@ -82,7 +85,9 @@ public class FileTransactionGenerator extends TransactionGenerator {
     private void updateFile(Transaction transaction) {
         transaction.setType(19);  // 19 = FILEUPDATE
         Long fileId = entityManager.getFiles().getRandom();
-        transaction.setEntityId(fileId);
+        Entities entities = new Entities();
+        entities.setId(fileId);
+        transaction.setEntity(entities);
         createFileData(transaction.getConsensusNs());
         log.trace("FILEUPDATE transaction: fileId {}", fileId);
     }
@@ -91,7 +96,9 @@ public class FileTransactionGenerator extends TransactionGenerator {
         transaction.setType(18);  // 18 = FILEDELETE
         Long fileId = entityManager.getFiles().getRandom();
         entityManager.getFiles().delete(fileId);
-        transaction.setEntityId(fileId);
+        Entities entities = new Entities();
+        entities.setId(fileId);
+        transaction.setEntity(entities);
         log.trace("FILEDELETE transaction: fileId {}", fileId);
     }
 

@@ -38,7 +38,7 @@ public class LiveHashRepositoryTest extends AbstractRepositoryTest {
     void insert() {
         RecordFile recordfile = insertRecordFile();
         Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "CRYPTOADDCLAIM");
+        Transaction transaction = insertTransaction(recordfile.getId(), entity, "CRYPTOADDCLAIM");
 
         LiveHash liveHash = new LiveHash();
         liveHash.setConsensusTimestamp(transaction.getConsensusNs());

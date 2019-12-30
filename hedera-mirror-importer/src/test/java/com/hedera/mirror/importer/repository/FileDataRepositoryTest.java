@@ -37,7 +37,7 @@ public class FileDataRepositoryTest extends AbstractRepositoryTest {
     void insert() {
         RecordFile recordfile = insertRecordFile();
         Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(recordfile.getId(), entity.getId(), "FILECREATE");
+        Transaction transaction = insertTransaction(recordfile.getId(), entity, "FILECREATE");
 
         FileData fileData = new FileData();
         fileData.setConsensusTimestamp(transaction.getConsensusNs());

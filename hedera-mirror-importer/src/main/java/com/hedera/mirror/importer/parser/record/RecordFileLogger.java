@@ -21,8 +21,10 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddClaimTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -32,12 +34,13 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-
 import java.io.IOException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -45,11 +48,16 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Set;
+import java.util.function.Predicate;
 import javax.inject.Named;
-
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.importer.parser.CommonParserProperties;
+import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.EntityTypeRepository;
 import com.hedera.mirror.importer.util.DatabaseUtilities;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -57,9 +65,11 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 public class RecordFileLogger {
     public static Connection connect = null;
-    private static Entities entities = null;
-    private static RecordParserProperties parserProperties = null;
-    private static NetworkAddressBook networkAddressBook = null;
+    private static RecordParserProperties parserProperties;
+    private static NetworkAddressBook networkAddressBook;
+    private static EntityRepository entityRepository;
+    private static EntityTypeRepository entityTypeRepository;
+    private static Predicate<com.hedera.mirror.importer.domain.Transaction> transactionFilter;
 
     private static long fileId = 0;
     private static long BATCH_SIZE = 100;
@@ -70,10 +80,16 @@ public class RecordFileLogger {
     private static PreparedStatement sqlInsertFileData;
     private static PreparedStatement sqlInsertContractCall;
     private static PreparedStatement sqlInsertClaimData;
+    private static PreparedStatement sqlInsertTopicMessage;
 
-    public RecordFileLogger(RecordParserProperties parserProperties, NetworkAddressBook networkAddressBook) {
+    public RecordFileLogger(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
+                            NetworkAddressBook networkAddressBook,
+                            EntityRepository entityRepository, EntityTypeRepository entityTypeRepository) {
         RecordFileLogger.parserProperties = parserProperties;
         RecordFileLogger.networkAddressBook = networkAddressBook;
+        RecordFileLogger.entityRepository = entityRepository;
+        RecordFileLogger.entityTypeRepository = entityTypeRepository;
+        transactionFilter = commonParserProperties.getFilter();
     }
 
     static long getFileId() {
@@ -100,12 +116,6 @@ public class RecordFileLogger {
             log.error("Unable to set connection to not auto commit", e);
             return false;
         }
-        try {
-            entities = new Entities(connect);
-        } catch (SQLException e) {
-            log.error("Unable to fetch entity types", e);
-            return false;
-        }
 
         try {
             sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
@@ -130,6 +140,10 @@ public class RecordFileLogger {
             sqlInsertClaimData = connect.prepareStatement("INSERT INTO t_livehashes"
                     + " (consensus_timestamp, livehash)"
                     + " VALUES (?, ?)");
+
+            sqlInsertTopicMessage = connect.prepareStatement("insert into topic_message"
+                    + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
+                    + " values (?, ?, ?, ?, ?, ?)");
         } catch (SQLException e) {
             log.error("Unable to prepare SQL statements", e);
             return false;
@@ -145,6 +159,7 @@ public class RecordFileLogger {
             sqlInsertTransaction.close();
             sqlInsertContractCall.close();
             sqlInsertClaimData.close();
+            sqlInsertTopicMessage.close();
 
             connect = DatabaseUtilities.closeDatabase(connect);
             return false;
@@ -222,7 +237,6 @@ public class RecordFileLogger {
     }
 
     public static void storeRecord(Transaction transaction, TransactionRecord txRecord, byte[] rawBytes) throws Exception {
-        long createdAccountId = 0;
         TransactionBody body;
 
         if (transaction.hasBody()) {
@@ -230,40 +244,10 @@ public class RecordFileLogger {
         } else {
             body = TransactionBody.parseFrom(transaction.getBodyBytes());
         }
-        long fkNodeAccountId = entities.createOrGetEntity(body.getNodeAccountID());
-        TransactionID transactionID = body.getTransactionID();
-        long validDurationSeconds = body.hasTransactionValidDuration() ? body.getTransactionValidDuration()
-                .getSeconds() : null;
 
-        var vs = transactionID.getTransactionValidStart();
-        long validStartNs = Utility.convertToNanos(vs.getSeconds(), vs.getNanos());
-        var c = txRecord.getConsensusTimestamp();
-        long consensusNs = Utility.convertToNanos(c.getSeconds(), c.getNanos());
-
-        sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), fkNodeAccountId);
-        sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), body.getMemo().getBytes());
-        sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), validStartNs);
-        sqlInsertTransaction.setInt(F_TRANSACTION.TYPE.ordinal(), getTransactionType(body));
-        sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), fileId);
-        sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION_SECONDS.ordinal(), validDurationSeconds);
-
-        AccountID fkPayerAccountId = transactionID.getAccountID();
-
-        sqlInsertTransaction
-                .setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), entities.createOrGetEntity(fkPayerAccountId));
-        sqlInsertTransaction.setLong(F_TRANSACTION.RESULT.ordinal(), txRecord.getReceipt().getStatusValue());
-        sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), consensusNs);
-        sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), txRecord.getTransactionFee());
-        sqlInsertTransaction.setLong(F_TRANSACTION.MAX_FEE.ordinal(), body.getTransactionFee());
-        sqlInsertTransaction
-                .setBytes(F_TRANSACTION.TRANSACTION_HASH.ordinal(), txRecord.getTransactionHash().toByteArray());
-        // Store the raw bytes only if configured - otherwise null
-        sqlInsertTransaction
-                .setBytes(F_TRANSACTION.TRANSACTION_BYTES.ordinal(),
-                        parserProperties.isPersistTransactionBytes() ? rawBytes : null);
-
-        long entityId = 0;
         long initialBalance = 0;
+        Entities entity = null;
+        Entities proxyEntity = null;
 
         /**
          * If the transaction wasn't successful don't update the entity.
@@ -276,235 +260,247 @@ public class RecordFileLogger {
 
         if (body.hasContractCall()) {
             if (body.getContractCall().hasContractID()) {
-                entityId = entities.createOrGetEntity(body.getContractCall().getContractID());
+                entity = getEntity(body.getContractCall().getContractID());
             }
         } else if (body.hasContractCreateInstance()) {
             if (txRecord.getReceipt().hasContractID()) { // implies SUCCESS
-                var contractId = txRecord.getReceipt().getContractID();
                 ContractCreateTransactionBody txMessage = body.getContractCreateInstance();
-                long expiration_time_sec = 0;
-                long expiration_time_nanos = 0;
-                long auto_renew_period = 0;
-                if (txMessage.hasAutoRenewPeriod()) {
-                    auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
-                }
-                byte[] key = null;
-                if (txMessage.hasAdminKey()) {
-                    key = txMessage.getAdminKey().toByteArray();
-                }
-                long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
+                entity = getEntity(txRecord.getReceipt().getContractID());
+                proxyEntity = getEntity(txMessage.getProxyAccountID());
 
-                entityId = entities
-                        .createEntity(contractId, expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
-                                proxy_account_id);
+                if (txMessage.hasAutoRenewPeriod()) {
+                    entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
+                }
+
+                // Can't clear memo on contracts. 0 length indicates no change
+                if (txMessage.getMemo() != null && txMessage.getMemo().length() > 0) {
+                    entity.setMemo(txMessage.getMemo());
+                }
+
+                if (txMessage.hasAdminKey()) {
+                    entity.setKey(txMessage.getAdminKey().toByteArray());
+                }
             }
 
             initialBalance = body.getContractCreateInstance().getInitialBalance();
         } else if (body.hasContractDeleteInstance()) {
             if (body.getContractDeleteInstance().hasContractID()) {
-                var contractId = body.getContractDeleteInstance().getContractID();
+                entity = getEntity(body.getContractDeleteInstance().getContractID());
                 if (doUpdateEntity) {
-                    entityId = entities.deleteEntity(contractId);
-                } else {
-                    entityId = entities.createOrGetEntity(contractId);
+                    entity.setDeleted(true);
                 }
             }
         } else if (body.hasContractUpdateInstance()) {
             ContractUpdateTransactionBody txMessage = body.getContractUpdateInstance();
-            var contractId = txMessage.getContractID();
-            long expiration_time_sec = 0;
-            long expiration_time_nanos = 0;
-            if (txMessage.hasExpirationTime()) {
-                expiration_time_sec = txMessage.getExpirationTime().getSeconds();
-                expiration_time_nanos = txMessage.getExpirationTime().getNanos();
-            }
-            long auto_renew_period = 0;
-            if (txMessage.hasAutoRenewPeriod()) {
-                auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
-            }
-
-            byte[] key = null;
-            if (txMessage.hasAdminKey()) {
-                key = txMessage.getAdminKey().toByteArray();
-            }
+            entity = getEntity(txMessage.getContractID());
 
             if (doUpdateEntity) {
-                long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
-                entityId = entities.updateEntity(contractId, expiration_time_sec,
-                        expiration_time_nanos, auto_renew_period, key, proxy_account_id);
-            } else {
-                entityId = entities.createOrGetEntity(contractId);
+                proxyEntity = getEntity(txMessage.getProxyAccountID());
+
+                if (txMessage.hasExpirationTime()) {
+                    entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
+                }
+
+                if (txMessage.hasAutoRenewPeriod()) {
+                    entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
+                }
+
+                if (txMessage.hasAdminKey()) {
+                    entity.setKey(txMessage.getAdminKey().toByteArray());
+                }
+
+                // Can't clear memo on contracts. 0 length indicates no change
+                if (txMessage.getMemo() != null && txMessage.getMemo().length() > 0) {
+                    entity.setMemo(txMessage.getMemo());
+                }
             }
         } else if (body.hasCryptoAddClaim()) {
             if (body.getCryptoAddClaim().hasClaim()) {
                 if (body.getCryptoAddClaim().getClaim().hasAccountID()) {
-                    entityId = entities.createOrGetEntity(body.getCryptoAddClaim().getClaim().getAccountID());
+                    entity = getEntity(body.getCryptoAddClaim().getClaim().getAccountID());
                 }
             }
         } else if (body.hasCryptoCreateAccount()) {
             if (txRecord.getReceipt().hasAccountID()) { // Implies SUCCESS
                 CryptoCreateTransactionBody txMessage = body.getCryptoCreateAccount();
-                long expiration_time_sec = 0;
-                long expiration_time_nanos = 0;
-                long auto_renew_period = 0;
-                if (txMessage.hasAutoRenewPeriod()) {
-                    auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
-                }
-                byte[] key = null;
-                if (txMessage.hasKey()) {
-                    key = txMessage.getKey().toByteArray();
-                }
-                long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
+                proxyEntity = getEntity(txMessage.getProxyAccountID());
+                entity = getEntity(txRecord.getReceipt().getAccountID());
 
-                entityId = entities.createEntity(txRecord.getReceipt()
-                                .getAccountID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
-                        proxy_account_id);
+                if (txMessage.hasAutoRenewPeriod()) {
+                    entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
+                }
+
+                if (txMessage.hasKey()) {
+                    entity.setKey(txMessage.getKey().toByteArray());
+                }
             }
 
             initialBalance = body.getCryptoCreateAccount().getInitialBalance();
         } else if (body.hasCryptoDelete()) {
             if (body.getCryptoDelete().hasDeleteAccountID()) {
-                var accountId = body.getCryptoDelete().getDeleteAccountID();
+                entity = getEntity(body.getCryptoDelete().getDeleteAccountID());
                 if (doUpdateEntity) {
-                    entityId = entities.deleteEntity(accountId);
-                } else {
-                    entityId = entities.createOrGetEntity(accountId);
+                    entity.setDeleted(true);
                 }
             }
         } else if (body.hasCryptoDeleteClaim()) {
             if (body.getCryptoDeleteClaim().hasAccountIDToDeleteFrom()) {
-                entityId = entities.createOrGetEntity(body.getCryptoDeleteClaim().getAccountIDToDeleteFrom());
+                entity = getEntity(body.getCryptoDeleteClaim().getAccountIDToDeleteFrom());
             }
         } else if (body.hasCryptoUpdateAccount()) {
             CryptoUpdateTransactionBody txMessage = body.getCryptoUpdateAccount();
-            var accountId = txMessage.getAccountIDToUpdate();
-            long expiration_time_sec = 0;
-            long expiration_time_nanos = 0;
-            if (txMessage.hasExpirationTime()) {
-                expiration_time_sec = txMessage.getExpirationTime().getSeconds();
-                expiration_time_nanos = txMessage.getExpirationTime().getNanos();
-            }
-            long auto_renew_period = 0;
-            if (txMessage.hasAutoRenewPeriod()) {
-                auto_renew_period = txMessage.getAutoRenewPeriod().getSeconds();
-            }
-
-            byte[] key = null;
-            if (txMessage.hasKey()) {
-                key = txMessage.getKey().toByteArray();
-            }
-
+            entity = getEntity(txMessage.getAccountIDToUpdate());
             if (doUpdateEntity) {
-                long proxy_account_id = entities.createOrGetEntity(txMessage.getProxyAccountID());
-                entityId = entities.updateEntity(accountId, expiration_time_sec, expiration_time_nanos,
-                        auto_renew_period, key, proxy_account_id);
-            } else {
-                entityId = entities.createOrGetEntity(accountId);
+                proxyEntity = getEntity(txMessage.getProxyAccountID());
+
+                if (txMessage.hasExpirationTime()) {
+                    entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
+                }
+
+                if (txMessage.hasAutoRenewPeriod()) {
+                    entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
+                }
+
+                if (txMessage.hasKey()) {
+                    entity.setKey(txMessage.getKey().toByteArray());
+                }
             }
         } else if (body.hasFileCreate()) {
             if (txRecord.getReceipt().hasFileID()) { // Implies SUCCESS
                 FileCreateTransactionBody txMessage = body.getFileCreate();
-                long expiration_time_sec = 0;
-                long expiration_time_nanos = 0;
+                entity = getEntity(txRecord.getReceipt().getFileID());
+
                 if (txMessage.hasExpirationTime()) {
-                    expiration_time_sec = txMessage.getExpirationTime().getSeconds();
-                    expiration_time_nanos = txMessage.getExpirationTime().getNanos();
+                    entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
                 }
-                long auto_renew_period = 0;
-                byte[] key = null;
+
                 if (txMessage.hasKeys()) {
-                    key = txMessage.getKeys().toByteArray();
+                    entity.setKey(txMessage.getKeys().toByteArray());
                 }
-                long proxy_account_id = 0;
-                entityId = entities.createEntity(txRecord.getReceipt()
-                                .getFileID(), expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
-                        proxy_account_id);
             }
         } else if (body.hasFileAppend()) {
             if (body.getFileAppend().hasFileID()) {
-                entityId = entities.createOrGetEntity(body.getFileAppend().getFileID());
+                entity = getEntity(body.getFileAppend().getFileID());
             }
         } else if (body.hasFileDelete()) {
             if (body.getFileDelete().hasFileID()) {
-                var fileId = body.getFileDelete().getFileID();
+                entity = getEntity(body.getFileDelete().getFileID());
                 if (doUpdateEntity) {
-                    entityId = entities.deleteEntity(fileId);
-                } else {
-                    entityId = entities.createOrGetEntity(fileId);
+                    entity.setDeleted(true);
                 }
             }
         } else if (body.hasFileUpdate()) {
             FileUpdateTransactionBody txMessage = body.getFileUpdate();
-            var fileId = txMessage.getFileID();
-            long expiration_time_sec = 0;
-            long expiration_time_nanos = 0;
-            if (txMessage.hasExpirationTime()) {
-                expiration_time_sec = txMessage.getExpirationTime().getSeconds();
-                expiration_time_nanos = txMessage.getExpirationTime().getNanos();
-            }
-            long auto_renew_period = 0;
-
-            byte[] key = null;
-            if (txMessage.hasKeys()) {
-                key = txMessage.getKeys().toByteArray();
-            }
+            entity = getEntity(txMessage.getFileID());
 
             if (doUpdateEntity) {
-                long proxy_account_id = 0;
-                entityId = entities
-                        .updateEntity(fileId, expiration_time_sec, expiration_time_nanos, auto_renew_period, key,
-                                proxy_account_id);
-            } else {
-                entityId = entities.createOrGetEntity(fileId);
+                if (txMessage.hasExpirationTime()) {
+                    entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
+                }
+
+                if (txMessage.hasKeys()) {
+                    entity.setKey(txMessage.getKeys().toByteArray());
+                }
             }
         } else if (body.hasSystemDelete()) {
             if (body.getSystemDelete().hasContractID()) {
-                var contractId = body.getSystemDelete().getContractID();
+                entity = getEntity(body.getSystemDelete().getContractID());
                 if (doUpdateEntity) {
-                    entityId = entities.deleteEntity(contractId);
-                } else {
-                    entityId = entities.createOrGetEntity(contractId);
+                    entity.setDeleted(true);
                 }
             } else if (body.getSystemDelete().hasFileID()) {
-                var fileId = body.getSystemDelete().getFileID();
-
+                entity = getEntity(body.getSystemDelete().getFileID());
                 if (doUpdateEntity) {
-                    entityId = entities.deleteEntity(fileId);
-                } else {
-                    entities.createOrGetEntity(fileId);
+                    entity.setDeleted(true);
                 }
             }
         } else if (body.hasSystemUndelete()) {
             if (body.getSystemUndelete().hasContractID()) {
-                var contractId = body.getSystemUndelete().getContractID();
+                entity = getEntity(body.getSystemUndelete().getContractID());
                 if (doUpdateEntity) {
-                    entityId = entities.unDeleteEntity(contractId);
-                } else {
-                    entityId = entities.createOrGetEntity(contractId);
+                    entity.setDeleted(false);
                 }
             } else if (body.getSystemUndelete().hasFileID()) {
-                var fileId = body.getSystemUndelete().getFileID();
+                entity = getEntity(body.getSystemUndelete().getFileID());
                 if (doUpdateEntity) {
-                    entityId = entities.unDeleteEntity(fileId);
-                } else {
-                    entityId = entities.createOrGetEntity(fileId);
+                    entity.setDeleted(false);
                 }
             }
+        } else if (body.hasConsensusCreateTopic()) {
+            entity = storeConsensusCreateTopic(body, txRecord);
+        } else if (body.hasConsensusUpdateTopic()) {
+            entity = storeConsensusUpdateTopic(body, txRecord);
+        } else if (body.hasConsensusDeleteTopic()) {
+            entity = storeConsensusDeleteTopic(body, txRecord);
+        } else if (body.hasConsensusSubmitMessage()) {
+            entity = storeConsensusSubmitMessage(body, txRecord);
         }
 
-        if (entityId == 0) {
-            // insert null
-            sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), null);
-        } else {
-            sqlInsertTransaction.setLong(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), entityId);
+        TransactionID transactionID = body.getTransactionID();
+        long validDurationSeconds = body.hasTransactionValidDuration() ? body.getTransactionValidDuration()
+                .getSeconds() : null;
+        long validStartNs = Utility.timeStampInNanos(transactionID.getTransactionValidStart());
+        long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
+        AccountID payerAccountId = transactionID.getAccountID();
+
+        com.hedera.mirror.importer.domain.Transaction tx = new com.hedera.mirror.importer.domain.Transaction();
+        tx.setChargedTxFee(txRecord.getTransactionFee());
+        tx.setConsensusNs(consensusNs);
+        tx.setEntity(entity);
+        tx.setInitialBalance(initialBalance);
+        tx.setMemo(body.getMemo().getBytes());
+        tx.setMaxFee(body.getTransactionFee());
+        tx.setRecordFileId(fileId);
+        tx.setResult(txRecord.getReceipt().getStatusValue());
+        tx.setType(getTransactionType(body));
+        tx.setTransactionBytes(parserProperties.isPersistTransactionBytes() ? rawBytes : null);
+        tx.setTransactionHash(txRecord.getTransactionHash().toByteArray());
+        tx.setValidDurationSeconds(validDurationSeconds);
+        tx.setValidStartNs(validStartNs);
+
+        if (!transactionFilter.test(tx)) {
+            log.debug("Ignoring transaction {}", tx);
+            return;
         }
-        sqlInsertTransaction.setLong(F_TRANSACTION.INITIAL_BALANCE.ordinal(), initialBalance);
+
+        proxyEntity = createEntity(proxyEntity);
+        Entities payerEntity = createEntity(getEntity(payerAccountId));
+        Entities nodeEntity = createEntity(getEntity(body.getNodeAccountID()));
+        tx.setNodeAccountId(nodeEntity.getId());
+        tx.setPayerAccountId(payerEntity.getId());
+
+        if (entity != null) {
+            if (proxyEntity != null) {
+                entity.setProxyAccountId(proxyEntity.getId());
+            }
+            entity = entityRepository.save(entity);
+            sqlInsertTransaction.setLong(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), entity.getId());
+        } else {
+            sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), null);
+        }
+
+        log.debug("Storing transaction: {}", tx);
+        // Temporary until we convert SQL statements to repository invocations
+        sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), tx.getNodeAccountId());
+        sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), tx.getMemo());
+        sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), tx.getValidStartNs());
+        sqlInsertTransaction.setInt(F_TRANSACTION.TYPE.ordinal(), tx.getType());
+        sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), tx.getRecordFileId());
+        sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION_SECONDS.ordinal(), tx.getValidDurationSeconds());
+        sqlInsertTransaction.setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), tx.getPayerAccountId());
+        sqlInsertTransaction.setLong(F_TRANSACTION.RESULT.ordinal(), tx.getResult());
+        sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), tx.getConsensusNs());
+        sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), tx.getChargedTxFee());
+        sqlInsertTransaction.setLong(F_TRANSACTION.MAX_FEE.ordinal(), tx.getMaxFee());
+        sqlInsertTransaction.setBytes(F_TRANSACTION.TRANSACTION_HASH.ordinal(), tx.getTransactionHash());
+        sqlInsertTransaction.setBytes(F_TRANSACTION.TRANSACTION_BYTES.ordinal(), tx.getTransactionBytes());
+        sqlInsertTransaction.setLong(F_TRANSACTION.INITIAL_BALANCE.ordinal(), tx.getInitialBalance());
         sqlInsertTransaction.addBatch();
 
         if ((txRecord.hasTransferList()) && parserProperties.isPersistCryptoTransferAmounts()) {
             if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
                 insertCryptoCreateTransferList(consensusNs, txRecord, body, txRecord.getReceipt()
-                        .getAccountID(), fkPayerAccountId);
+                        .getAccountID(), payerAccountId);
             } else {
                 insertTransferList(consensusNs, txRecord.getTransferList());
             }
@@ -518,7 +514,9 @@ public class RecordFileLogger {
             insertContractCreateInstance(consensusNs, body.getContractCreateInstance(), txRecord);
         }
         if (doUpdateEntity) {
-            if (body.hasCryptoAddClaim()) {
+            if (body.hasConsensusSubmitMessage()) {
+                insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
+            } else if (body.hasCryptoAddClaim()) {
                 insertCryptoAddClaim(consensusNs, body.getCryptoAddClaim());
             } else if (body.hasFileAppend()) {
                 insertFileAppend(consensusNs, body.getFileAppend());
@@ -536,6 +534,170 @@ public class RecordFileLogger {
         } else {
             batch_count += 1;
         }
+    }
+
+    /**
+     * Store ConsensusCreateTopic transaction in the database.
+     *
+     * @param body
+     * @param transactionRecord
+     * @return Entity ID of the newly created topic, or 0 if no topic was created
+     * @throws SQLException
+     * @throws IllegalArgumentException
+     */
+    private static Entities storeConsensusCreateTopic(TransactionBody body,
+                                                      TransactionRecord transactionRecord) {
+        if (!body.hasConsensusCreateTopic()) {
+            throw new IllegalArgumentException("transaction is not a ConsensusCreateTopic");
+        }
+
+        if (!transactionRecord.getReceipt().hasTopicID()) {
+            return null;
+        }
+
+        Entities entity = getEntity(transactionRecord.getReceipt().getTopicID());
+        var transactionBody = body.getConsensusCreateTopic();
+
+        if (transactionBody.hasExpirationTime()) {
+            Timestamp expirationTime = transactionBody.getExpirationTime();
+            entity.setExpiryTimeNs(Utility.timestampInNanosMax(expirationTime));
+            entity.setExpiryTimeSeconds(expirationTime.getSeconds());
+            entity.setExpiryTimeNanos((long) expirationTime.getNanos());
+        }
+
+        // If either key is empty, they should end up as empty bytea in the DB to indicate that there is
+        // explicitly no value, as opposed to null which has been used to indicate the value is unknown.
+        var adminKey = transactionBody.hasAdminKey() ? transactionBody.getAdminKey()
+                .toByteArray() : new byte[0];
+        var submitKey = transactionBody.hasSubmitKey() ? transactionBody.getSubmitKey()
+                .toByteArray() : new byte[0];
+
+        if (transactionBody.hasValidStartTime()) {
+            entity.setTopicValidStartTime(Utility.timestampInNanosMax(transactionBody.getValidStartTime()));
+        }
+
+        entity.setMemo(transactionBody.getMemo());
+        entity.setKey(adminKey);
+        entity.setSubmitKey(submitKey);
+        return entity;
+    }
+
+    /**
+     * Store ConsensusUpdateTopic transaction in the database.
+     *
+     * @param body
+     * @param transactionRecord
+     * @return Entity ID of the updated topic, or 0 if no topic was updated
+     * @throws SQLException
+     * @throws IllegalArgumentException
+     */
+    private static Entities storeConsensusUpdateTopic(TransactionBody body,
+                                                      TransactionRecord transactionRecord) {
+        if (!body.hasConsensusUpdateTopic()) {
+            throw new IllegalArgumentException("transaction is not a ConsensusUpdateTopic");
+        }
+
+        var transactionBody = body.getConsensusUpdateTopic();
+        if (!transactionBody.hasTopicID()) {
+            log.warn("Encountered a ConsensusUpdateTopic transaction without topic ID: {}", body);
+            return null;
+        }
+
+        Entities entity = getEntity(transactionBody.getTopicID());
+
+        if (isSuccessful(transactionRecord)) {
+            if (transactionBody.hasExpirationTime()) {
+                Timestamp expirationTime = transactionBody.getExpirationTime();
+                entity.setExpiryTimeNs(Utility.timestampInNanosMax(expirationTime));
+                entity.setExpiryTimeSeconds(expirationTime.getSeconds());
+                entity.setExpiryTimeNanos((long) expirationTime.getNanos());
+            }
+
+            if (transactionBody.hasAdminKey()) {
+                entity.setKey(transactionBody.getAdminKey().toByteArray());
+            }
+
+            if (transactionBody.hasSubmitKey()) {
+                entity.setSubmitKey(transactionBody.getSubmitKey().toByteArray());
+            }
+
+            if (transactionBody.hasValidStartTime()) {
+                entity.setTopicValidStartTime(Utility.timestampInNanosMax(transactionBody.getValidStartTime()));
+            }
+
+            if (transactionBody.hasMemo()) {
+                entity.setMemo(transactionBody.getMemo().getValue());
+            }
+        }
+
+        return entity;
+    }
+
+    /**
+     * Store ConsensusDeleteTopic transaction in the database.
+     *
+     * @param body
+     * @param transactionRecord
+     * @return Entity ID of the deleted topic, or 0 if no topic was deleted
+     * @throws SQLException
+     * @throws IllegalArgumentException
+     */
+    private static Entities storeConsensusDeleteTopic(TransactionBody body,
+                                                      TransactionRecord transactionRecord) {
+        if (!body.hasConsensusDeleteTopic()) {
+            throw new IllegalArgumentException("transaction is not a ConsensusDeleteTopic");
+        }
+
+        var transactionBody = body.getConsensusDeleteTopic();
+        if (!transactionBody.hasTopicID()) {
+            log.warn("Encountered a ConsensusDeleteTopic transaction without topic ID: {}", body);
+            return null;
+        }
+
+        Entities entity = getEntity(transactionBody.getTopicID());
+        if (isSuccessful(transactionRecord)) {
+            entity.setDeleted(true);
+        }
+
+        return entity;
+    }
+
+    /**
+     * Store ConsensusSubmitMessage transaction in the database.
+     *
+     * @param body
+     * @param transactionRecord
+     * @return Entity ID of the topic, or 0 if no topic was deleted
+     * @throws SQLException
+     * @throws IllegalArgumentException
+     */
+    private static Entities storeConsensusSubmitMessage(TransactionBody body,
+                                                        TransactionRecord transactionRecord) {
+        if (!body.hasConsensusSubmitMessage()) {
+            throw new IllegalArgumentException("transaction is not a ConsensusSubmitMessage");
+        }
+
+        var transactionBody = body.getConsensusSubmitMessage();
+        if (!transactionBody.hasTopicID()) {
+            log.warn("Encountered a ConsensusSubmitMessage transaction without topic ID: {}", body);
+            return null;
+        }
+
+        return getEntity(transactionBody.getTopicID());
+    }
+
+    private static void insertConsensusTopicMessage(ConsensusSubmitMessageTransactionBody transactionBody,
+                                                    TransactionRecord transactionRecord) throws SQLException {
+        var receipt = transactionRecord.getReceipt();
+        var ts = transactionRecord.getConsensusTimestamp();
+        var topicId = transactionBody.getTopicID();
+        sqlInsertTopicMessage.setLong(1, Utility.timeStampInNanos(ts));
+        sqlInsertTopicMessage.setShort(2, (short) topicId.getRealmNum());
+        sqlInsertTopicMessage.setInt(3, (int) topicId.getTopicNum());
+        sqlInsertTopicMessage.setBytes(4, transactionBody.getMessage().toByteArray());
+        sqlInsertTopicMessage.setBytes(5, receipt.getTopicRunningHash().toByteArray());
+        sqlInsertTopicMessage.setLong(6, receipt.getTopicSequenceNumber());
+        sqlInsertTopicMessage.addBatch();
     }
 
     private static void insertFileCreate(long consensusTimestamp, FileCreateTransactionBody transactionBody,
@@ -621,7 +783,7 @@ public class RecordFileLogger {
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
             var aa = transferList.getAccountAmounts(i);
             var accountId = aa.getAccountID();
-            entities.createOrGetEntity(accountId);
+            createEntity(getEntity(aa.getAccountID()));
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), aa.getAmount());
             sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
                     accountId.getRealmNum());
@@ -656,7 +818,7 @@ public class RecordFileLogger {
             long amount = aa.getAmount();
             var accountId = aa.getAccountID();
             long accountNum = accountId.getAccountNum();
-            entities.createOrGetEntity(accountId);
+            createEntity(getEntity(accountId));
 
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
@@ -671,7 +833,7 @@ public class RecordFileLogger {
         }
 
         if (addInitialBalance) {
-            entities.createOrGetEntity(payerAccountId);
+            createEntity(getEntity(payerAccountId));
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), -initialBalance);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
@@ -681,7 +843,7 @@ public class RecordFileLogger {
 
             sqlInsertTransferList.addBatch();
 
-            entities.createOrGetEntity(createdAccountId);
+            createEntity(getEntity(createdAccountId));
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
             sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
                     createdAccountId.getRealmNum());
@@ -753,11 +915,50 @@ public class RecordFileLogger {
     }
 
     private static void executeBatches() throws SQLException {
-        sqlInsertTransaction.executeBatch();
-        sqlInsertTransferList.executeBatch();
-        sqlInsertFileData.executeBatch();
-        sqlInsertContractCall.executeBatch();
-        sqlInsertClaimData.executeBatch();
+        int[] transactions = sqlInsertTransaction.executeBatch();
+        int[] transferLists = sqlInsertTransferList.executeBatch();
+        int[] fileData = sqlInsertFileData.executeBatch();
+        int[] contractCalls = sqlInsertContractCall.executeBatch();
+        int[] claimData = sqlInsertClaimData.executeBatch();
+        int[] topicMessages = sqlInsertTopicMessage.executeBatch();
+        log.info("Inserted {} transactions, {} transfer lists, {} files, {} contracts, {} claims, {} topic messages",
+                transactions.length, transferLists.length, fileData.length, contractCalls.length, claimData.length,
+                topicMessages.length);
+    }
+
+    public static Entities getEntity(AccountID accountID) {
+        return getEntity(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum(), "account");
+    }
+
+    public static Entities getEntity(ContractID cid) {
+        return getEntity(cid.getShardNum(), cid.getRealmNum(), cid.getContractNum(), "contract");
+    }
+
+    public static Entities getEntity(FileID fileId) {
+        return getEntity(fileId.getShardNum(), fileId.getRealmNum(), fileId.getFileNum(), "file");
+    }
+
+    public static Entities getEntity(TopicID topicId) {
+        return getEntity(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum(), "topic");
+    }
+
+    private static Entities getEntity(long shardNum, long realmNum, long entityNum, String type) {
+        return entityRepository.findByPrimaryKey(shardNum, realmNum, entityNum).orElseGet(() -> {
+            Entities entity = new Entities();
+            entity.setEntityNum(entityNum);
+            entity.setEntityRealm(realmNum);
+            entity.setEntityShard(shardNum);
+            entity.setEntityTypeId(entityTypeRepository.findByName(type).map(EntityType::getId).get());
+            return entity;
+        });
+    }
+
+    private static Entities createEntity(Entities entity) {
+        if (entity != null && entity.getId() == null) {
+            log.debug("Creating entity: {}", () -> entity.getDisplayId());
+            return entityRepository.save(entity);
+        }
+        return entity;
     }
 
     public enum INIT_RESULT {

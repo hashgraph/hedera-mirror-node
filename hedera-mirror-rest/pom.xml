@@ -2,16 +2,16 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <artifactId>hedera-mirror-rest</artifactId>
+    <artifactId>hedera-mirror-rest-hcs</artifactId>
     <description>REST API for Hedera Hashgraph Mirror Nodes</description>
     <modelVersion>4.0.0</modelVersion>
-    <name>Hedera Mirror Node REST API</name>
+    <name>Hedera Mirror Node REST API (HCS)</name>
     <packaging>pom</packaging>
 
     <parent>
         <groupId>com.hedera</groupId>
-        <artifactId>hedera-mirror-node</artifactId>
-        <version>0.5.0-rc1</version>
+        <artifactId>hedera-mirror-node-hcs</artifactId>
+        <version>0.1.0-rc1</version>
     </parent>
 
     <build>

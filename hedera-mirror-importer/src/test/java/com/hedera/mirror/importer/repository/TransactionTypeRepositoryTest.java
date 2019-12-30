@@ -20,19 +20,39 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.assertj.core.api.Assertions;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.TransactionType;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
 public class TransactionTypeRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void findByName() {
-        Assertions.assertThat(transactionTypeRepository.findByName("CRYPTOADDCLAIM"))
+        assertThat(transactionTypeRepository.findByName("CRYPTOADDCLAIM"))
                 .isPresent()
                 .get()
                 .extracting(TransactionType::getProtoId)
                 .isEqualTo(10);
+    }
+
+    @Test
+    void enumInSync() {
+        Iterable<TransactionType> transactionTypes = transactionTypeRepository.findAll();
+
+        for (TransactionTypeEnum transactionTypeEnum : TransactionTypeEnum.values()) {
+            assertThat(transactionTypes)
+                    .extracting(TransactionType::getName)
+                    .contains(transactionTypeEnum.name());
+        }
+
+        for (TransactionType transactionType : transactionTypes) {
+            assertThat(TransactionTypeEnum.valueOf(transactionType.getName()))
+                    .isNotNull()
+                    .extracting(TransactionTypeEnum::getProtoId)
+                    .isEqualTo(transactionType.getProtoId());
+        }
     }
 }

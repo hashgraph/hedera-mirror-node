@@ -30,7 +30,7 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /^v.*/
+              only: /^.*\/v.*/
 
 jobs:
   build_maven:
@@ -38,7 +38,7 @@ jobs:
       - image: adoptopenjdk:11-jdk-hotspot
       - image: postgres:9.6-alpine
         environment:
-          POSTGRES_DB: mirror_node
+          POSTGRES_DB: mirror_node_test
           POSTGRES_PASSWORD: mirror_node_pass
           POSTGRES_USER: mirror_node
     steps:
@@ -68,10 +68,23 @@ jobs:
           name: Upload Code Coverage
           command: bash <(curl -s https://codecov.io/bash)
       - run:
-          name: Collecting assets
+          name: Collecting assets for hedera-mirror-grpc
           command: |
             set -x
-            NAME=hedera-mirror-importer-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
+            VERSION_TAG=${CIRCLE_TAG/*\//}
+            NAME=hedera-mirror-grpc-hcs-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
+            WORKSPACE=/tmp/workspace
+            mkdir -p ${WORKSPACE}/${NAME}
+            mv hedera-mirror-grpc/target/hedera-mirror-grpc-*.jar ${WORKSPACE}/${NAME}
+            mv hedera-mirror-grpc/scripts ${WORKSPACE}/${NAME}
+            mkdir -p ${WORKSPACE}/artifacts
+            tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}
+      - run:
+          name: Collecting assets for hedera-mirror-importer
+          command: |
+            set -x
+            VERSION_TAG=${CIRCLE_TAG/*\//}
+            NAME=hedera-mirror-importer-hcs-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
             WORKSPACE=/tmp/workspace
             mkdir -p ${WORKSPACE}/${NAME}
             # Truncate '-exec' from jar name
@@ -124,7 +137,8 @@ jobs:
           name: Collecting assets
           command: |
             set -x
-            NAME=hedera-mirror-rest-${CIRCLE_TAG:-b$CIRCLE_BUILD_NUM}
+            VERSION_TAG=${CIRCLE_TAG/*\//}
+            NAME=hedera-mirror-rest-hcs-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
             npm pack
             mkdir -p /tmp/workspace/artifacts
             mv hedera-mirror-rest*.tgz /tmp/workspace/artifacts/${NAME}.tgz

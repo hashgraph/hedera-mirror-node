@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.repository;
  */
 
 import java.util.Optional;
-
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.TransactionType;

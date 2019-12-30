@@ -21,10 +21,8 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import com.google.common.base.Stopwatch;
-import com.google.protobuf.TextFormat;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,7 +32,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Named;
-
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -177,10 +174,10 @@ public class RecordFileParser implements FileParser {
 
                                 if (log.isTraceEnabled()) {
                                     log.trace("Transaction = {}, Record = {}", Utility
-                                            .printTransaction(transaction), TextFormat.shortDebugString(txRecord));
+                                            .printProtoMessage(transaction), Utility.printProtoMessage(txRecord));
                                 } else {
-                                    log.debug("Stored transaction with consensus timestamp {}", txRecord
-                                            .getConsensusTimestamp());
+                                    log.debug("Stored transaction with consensus timestamp {}", () -> Utility
+                                            .printProtoMessage(txRecord.getConsensusTimestamp()));
                                 }
                                 break;
                             case FileDelimiter.RECORD_TYPE_SIGNATURE:
