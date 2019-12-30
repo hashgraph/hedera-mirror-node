@@ -125,10 +125,12 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
             result.setResponseData(response.getBytes());
             result.setResponseMessage("Successfully performed subscribe topic test");
             result.setResponseCodeOK();
+            log.info("Successfully performed subscribe topic test");
         } catch (StatusRuntimeException ex) {
             result.sampleEnd();
             success = false;
             result.setResponseMessage("Exception: " + ex);
+            log.error("Error subscribing to topic: " + ex);
 
             StringWriter stringWriter = new StringWriter();
             ex.printStackTrace(new PrintWriter(stringWriter));
