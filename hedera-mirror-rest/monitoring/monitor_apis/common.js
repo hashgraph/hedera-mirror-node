@@ -66,12 +66,6 @@ const getStatus = () => {
   let results = Object.keys(currentResults).map(net => {
     currentResults[net].name = net;
 
-    // Set success based off of test performance.
-    currentResults[net].results.success =
-      currentResults[net].results.testResults.length > 0 && currentResults[net].results.numFailedTests == 0
-        ? true
-        : false;
-
     return currentResults[net];
   });
   return {
@@ -153,9 +147,14 @@ const getProcess = server => {
  * @param {Object} server the server for which the pid needs to be stored
  * @return {} None
  */
-const saveProcess = (server, pid) => {
+const saveProcess = (server, count) => {
   const key = `${server.ip}_${server.port}`;
-  pids[key] = pid;
+  const processObject = {
+    id: server.name,
+    encountered: count
+  };
+
+  pids[key] = processObject;
 };
 
 /**
