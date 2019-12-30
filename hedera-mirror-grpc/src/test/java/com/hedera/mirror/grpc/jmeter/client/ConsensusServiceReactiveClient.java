@@ -31,16 +31,13 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Resource;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.data.r2dbc.core.DatabaseClient;
 
 import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.domain.DomainBuilder;
 
 /**
  * A test client that will make requests of the Consensus service from the Consensus server
@@ -55,22 +52,19 @@ public class ConsensusServiceReactiveClient {
     private final long endTimeSecs;
     private final long limit;
 
-    @Resource
-    private final DomainBuilder domainBuilder;
-    private final DatabaseClient databasebClient;
     private final PostgresqlConnection connection;
 
-    InstantToLongConverter itlc = new InstantToLongConverter();
+    private final InstantToLongConverter itlc = new InstantToLongConverter();
 
     public ConsensusServiceReactiveClient(String host, int port, long topic, long realm, long startTime,
-                                          long endTime, long lmt, DatabaseClient dbClient, PostgresqlConnection conn) {
+                                          long endTime, long lmt, PostgresqlConnection conn) {
         this(ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext(true), topic, realm, startTime, endTime, lmt, dbClient, conn);
+                .usePlaintext(true), topic, realm, startTime, endTime, lmt, conn);
     }
 
     public ConsensusServiceReactiveClient(ManagedChannelBuilder<?> channelBuilder, long topic, long realm,
                                           long startTime,
-                                          long endTime, long lmt, DatabaseClient dbClient, PostgresqlConnection conn) {
+                                          long endTime, long lmt, PostgresqlConnection conn) {
         channel = channelBuilder.build();
         asyncStub = ConsensusServiceGrpc.newStub(channel);
         topicNum = topic;
@@ -79,8 +73,6 @@ public class ConsensusServiceReactiveClient {
         endTimeSecs = endTime;
         limit = lmt;
 
-        databasebClient = dbClient;
-        domainBuilder = new DomainBuilder(dbClient);
         connection = conn;
     }
 
@@ -92,6 +84,8 @@ public class ConsensusServiceReactiveClient {
         log.info("Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs : {},limit :" +
                         " {}",
                 topicNum, startTimeSecs, endTimeSecs, limit);
+        Instant observerStart = Instant.now();
+
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
                 .setLimit(100)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(startTimeSecs).build())
@@ -102,9 +96,8 @@ public class ConsensusServiceReactiveClient {
         }
 
         ConsensusTopicQuery request = builder.build();
-        Instant observerStart = Instant.now();
-        log.info("Observer instant : {}", itlc.convert(observerStart));
 
+        // configure StreamObserver
         int[] topics = {0};
         StreamObserver<ConsensusTopicResponse> responseObserver = new StreamObserver<>() {
             final CountDownLatch finishLatch = new CountDownLatch(newTopicsMessageCount);
@@ -117,18 +110,14 @@ public class ConsensusServiceReactiveClient {
                         .ofEpochSecond(response.getConsensusTimestamp().getSeconds(), response.getConsensusTimestamp()
                                 .getNanos());
                 String messageType = observerStart.isBefore(respInstant) ? "Future" : "Historic";
-                log
-                        .info("Observed {} ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", messageType
-                                , topics[0],
-                                response
-                                        .getConsensusTimestamp(), response.getSequenceNumber(), response.getMessage()
-                                        .isValidUtf8() ? response.getMessage().toStringUtf8() : response.getMessage()
-                                        .toString("US-ASCII"));
+                log.info("Observed {} ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", messageType,
+                        topics[0], response.getConsensusTimestamp(), response.getSequenceNumber(), response
+                                .getMessage());
             }
 
             @Override
             public void onError(Throwable t) {
-                log.error("Error in ConsensusTopicResponse StreamObserver : " + t.toString(), t);
+                log.error("Error in ConsensusTopicResponse StreamObserver", t);
             }
 
             @Override
@@ -159,7 +148,6 @@ public class ConsensusServiceReactiveClient {
         // insert some new messages
         for (int i = 0; i < newTopicsMessageCount; i++) {
             Instant temp = instantref.plus(i, ChronoUnit.SECONDS);
-//            String instastring = "" + temp.getEpochSecond() + temp.getNano();
             Long instalong = itlc.convert(temp);
             log.info("Emitting new topic message for topicNum {}, Time: {}, count: {}", tpcnm,
                     instalong, i);

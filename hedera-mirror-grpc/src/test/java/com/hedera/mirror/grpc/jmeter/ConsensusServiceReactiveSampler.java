@@ -55,7 +55,6 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
 //        futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
         topicNum = Long.parseLong(topicID);
 
-        DatabaseClient dbClient = getDatabaseClient();
         PostgresqlConnection connection = getConnection();
 
         csclient = new ConsensusServiceReactiveClient(
@@ -66,9 +65,10 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
                 Long.parseLong(consensusStartTimeSeconds),
                 Long.parseLong(consensusEndTimeSeconds),
                 Long.parseLong(limit),
-                dbClient,
                 connection);
 
+        // to:do - explore a setup that gets the db in the desired state, with a useful historical data and cleared
+        // references to future messages from previous runs
         super.setupTest(context);
     }
 
@@ -87,6 +87,7 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
     }
 
     public PostgresqlConnectionFactory getConnectionFactory() {
+        // to:do - move db conneciton info to params file
         PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(
                 PostgresqlConnectionConfiguration.builder()
                         .host("localhost")
