@@ -51,6 +51,10 @@ const init = () => {
  * @return {HTML} HTML for the table
  */
 const makeTable = (data, server) => {
+  if (data.results.testResults === undefined) {
+    return 'No result yet to display';
+  }
+
   let h = '';
   h += `
         <table border="1px">
@@ -65,7 +69,7 @@ const makeTable = (data, server) => {
       return;
     }
     const failureMsg =
-      result.failureMessages == undefined ? '' : result.failureMessages.join('<br>').replace('\n', '<br>');
+      result.failureMessages == undefined ? '' : result.failureMessages.join('<br>,').replace('\n', '<br>');
 
     h +=
       '<tr>' +
@@ -105,13 +109,17 @@ const makeCard = (data, server) => {
 
   const cntTotal = data.results.numPassedTests + data.results.numFailedTests;
   const dotcolor = data.results.success ? 'green' : 'red';
+  const startTime = data.results.startTime ? data.results.startTime : 0;
+  const endTime = data.results.endTime ? data.results.endTime : 0;
 
   let h = '';
   // Create a summary card
   h += `
         <div class="card my-card">
           <div class="card-body" data-toggle="modal" data-target="#modal-${server}">
-            <div class="card-title">Network: ${server}
+            <div class="card-title">Network: ${server}, ${new Date(Number(startTime)).toISOString()} - ${new Date(
+    Number(endTime)
+  ).toISOString()}
             </div>
             <div class="ip-addr"> (${data.ip}:${data.port})</div>
             <div class="card-text">
@@ -168,7 +176,7 @@ const fetchAndDisplay = () => {
       if (data.length === 0) {
         html = `No data received.
             <p />
-            If you have started the backend server recently, 
+            If you have started the backend server recently,
             please wait for a couple of minutes and refresh this page
             <p />`;
       } else {

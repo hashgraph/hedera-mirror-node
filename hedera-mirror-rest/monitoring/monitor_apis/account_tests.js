@@ -31,14 +31,14 @@ const maxLimit = config.api.maxLimit;
  * @param {String} pathandquery
  * @return {Object} Accounts object from response
  */
-const getAccounts = pathandquery => {
+const getAccounts = (pathandquery, currentTestResult) => {
   return acctestutils
     .getAPIResponse(pathandquery)
     .then(json => {
       return json.accounts;
     })
     .catch(error => {
-      testResult.failureMessages.push(error);
+      currentTestResult.failureMessages.push(error);
     });
 };
 
@@ -282,7 +282,7 @@ const runAccountTests = async (server, classResults) => {
   tests.push(getAccountsWithTimeAndLimitParams(server, classResults));
   tests.push(getSingleAccount(server, classResults));
 
-  Promise.all(tests);
+  return Promise.all(tests);
 };
 
 module.exports = {

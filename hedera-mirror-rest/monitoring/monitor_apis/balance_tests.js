@@ -32,14 +32,14 @@ const balanceFileUpdateRefreshTime = 900;
  * @param {String} pathandquery
  * @return {Object} Transactions object from response
  */
-const getBalances = pathandquery => {
+const getBalances = (pathandquery, currentTestResult) => {
   return acctestutils
     .getAPIResponse(pathandquery)
     .then(json => {
       return json.balances;
     })
     .catch(error => {
-      testResult.failureMessages.push(error);
+      currentTestResult.failureMessages.push(error);
     });
 };
 
@@ -205,7 +205,7 @@ const getSingleBalanceById = async (server, classResults) => {
   currentTestResult.url = url;
   let singleBalance = await getBalances(url, currentTestResult);
 
-  if (undefined === singleBalance) {
+  if (undefined === singleBalance || undefined === singleBalance[0]) {
     var message = `singleBalance is undefined`;
     currentTestResult.failureMessages.push(message);
     acctestutils.addTestResult(classResults, currentTestResult, false);
@@ -280,7 +280,7 @@ const runBalanceTests = async (server, classResults) => {
   tests.push(getSingleBalanceById(server, classResults));
   tests.push(checkBalanceFreshness(server, classResults));
 
-  Promise.all(tests);
+  return Promise.all(tests);
 };
 
 module.exports = {
