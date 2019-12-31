@@ -49,10 +49,6 @@ public class MirrorProperties {
     @Min(0)
     private long shard = 0L;
 
-    public MirrorProperties() {
-        Utility.ensureDirectory(dataPath);
-    }
-
     public Path getAddressBookPath() {
         return addressBookPath != null ? addressBookPath : dataPath.resolve(ADDRESS_BOOK_FILE);
     }

@@ -1,21 +1,15 @@
 #!/usr/bin/env bash
 set -ex
 
+cd "$(dirname $0)/.."
+
 # name of the service and directories
 name=hedera-mirror-grpc
 usretc="/usr/etc/${name}"
 usrlib="/usr/lib/${name}"
+jarname="$(ls -1 ${name}-*.jar)"
 
-# CD to parent directory
-cd "$(dirname $0)/.."
-version=$(ls -1 -d "../"${name}-[vb]* | tr '\n' '\0' | xargs -0 -n 1 basename | tail -1 | sed -e "s/${name}-//")
-if [ -z "${version}" ]; then
-    echo "Can't find ${name}-[vb]* versioned parent directory. Unrecognized layout. Aborting"
-    exit 1
-fi
-
-jarname="${name}-${version:1}.jar"
-if [ ! -f "${jarname}" ]; then
+if [[ ! -f "${jarname}" ]]; then
     echo "Can't find ${jarname}. Aborting"
     exit 1
 fi
@@ -23,7 +17,7 @@ fi
 mkdir -p "${usretc}" "${usrlib}"
 systemctl stop "${name}.service" || true
 
-if [ ! -f "${usretc}/application.yml" ]; then
+if [[ ! -f "${usretc}/application.yml" ]]; then
     echo "Fresh install of ${version}"
     read -p "Database hostname: " dbHost
     read -p "Database password: " dbPassword
