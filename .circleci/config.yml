@@ -30,7 +30,7 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /^.*\/v.*/
+              only: /^v.*/
 
 jobs:
   build_maven:
