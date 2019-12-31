@@ -3,12 +3,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <groupId>com.hedera</groupId>
-    <artifactId>hedera-mirror-node-hcs</artifactId>
-    <version>0.1.0-rc1</version>
+    <artifactId>hedera-mirror-node</artifactId>
+    <version>0.5.0-beta1</version>
     <description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
     <inceptionYear>2019</inceptionYear>
     <modelVersion>4.0.0</modelVersion>
-    <name>Hedera Mirror Node (HCS)</name>
+    <name>Hedera Mirror Node</name>
     <packaging>pom</packaging>
     <url>https://github.com/hashgraph/hedera-mirror-node</url>
 

@@ -72,7 +72,7 @@ jobs:
           command: |
             set -x
             VERSION_TAG=${CIRCLE_TAG/*\//}
-            NAME=hedera-mirror-grpc-hcs-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
+            NAME=hedera-mirror-grpc-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
             WORKSPACE=/tmp/workspace
             mkdir -p ${WORKSPACE}/${NAME}
             mv hedera-mirror-grpc/target/hedera-mirror-grpc-*.jar ${WORKSPACE}/${NAME}
@@ -84,7 +84,7 @@ jobs:
           command: |
             set -x
             VERSION_TAG=${CIRCLE_TAG/*\//}
-            NAME=hedera-mirror-importer-hcs-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
+            NAME=hedera-mirror-importer-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
             WORKSPACE=/tmp/workspace
             mkdir -p ${WORKSPACE}/${NAME}
             # Truncate '-exec' from jar name
@@ -138,7 +138,7 @@ jobs:
           command: |
             set -x
             VERSION_TAG=${CIRCLE_TAG/*\//}
-            NAME=hedera-mirror-rest-hcs-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
+            NAME=hedera-mirror-rest-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
             npm pack
             mkdir -p /tmp/workspace/artifacts
             mv hedera-mirror-rest*.tgz /tmp/workspace/artifacts/${NAME}.tgz
