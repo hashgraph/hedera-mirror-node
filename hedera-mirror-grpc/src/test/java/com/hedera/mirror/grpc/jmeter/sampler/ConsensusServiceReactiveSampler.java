@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.jmeter;
+package com.hedera.mirror.grpc.jmeter.sampler;
 
 /*-
  * ‌
@@ -21,9 +21,6 @@ package com.hedera.mirror.grpc.jmeter;
  */
 
 import io.grpc.StatusRuntimeException;
-import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
-import io.r2dbc.postgresql.PostgresqlConnectionFactory;
-import io.r2dbc.postgresql.api.PostgresqlConnection;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import lombok.extern.log4j.Log4j2;
@@ -31,10 +28,8 @@ import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
-import org.springframework.data.r2dbc.core.DatabaseClient;
-import org.springframework.data.r2dbc.core.DefaultReactiveDataAccessStrategy;
-import org.springframework.data.r2dbc.dialect.PostgresDialect;
 
+import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
 import com.hedera.mirror.grpc.jmeter.client.ConsensusServiceReactiveClient;
 
 @Log4j2
@@ -55,7 +50,7 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
         futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
         topicNum = Long.parseLong(topicID);
 
-        PostgresqlConnection connection = getConnection();
+        ConnectionHandler connHandl = new ConnectionHandler();
 
         csclient = new ConsensusServiceReactiveClient(
                 host,
@@ -65,7 +60,7 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
                 Long.parseLong(consensusStartTimeSeconds),
                 Long.parseLong(consensusEndTimeSeconds),
                 Long.parseLong(limit),
-                connection);
+                connHandl);
 
         // to:do - explore a setup that gets the db in the desired state, with a useful historical data and cleared
         // references to future messages from previous runs
@@ -84,37 +79,6 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
         defaultParameters.addArgument("realmNum", "0");
         defaultParameters.addArgument("newTopicsMessageCount", "0");
         return defaultParameters;
-    }
-
-    public PostgresqlConnectionFactory getConnectionFactory() {
-        // to:do - move db conneciton info to params file
-        PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(
-                PostgresqlConnectionConfiguration.builder()
-                        .host("localhost")
-                        .port(5432)
-                        .username("mirror_grpc")
-                        .password("mirror_grpc_pass")
-                        .database("mirror_node")
-                        .build());
-
-        return connectionFactory;
-    }
-
-    public DatabaseClient getDatabaseClient() {
-
-        log.info("Initialize connectionFactory and databaseClient");
-        PostgresqlConnectionFactory connectionFactory = getConnectionFactory();
-
-        return DatabaseClient.builder()
-                .connectionFactory(connectionFactory)
-                .dataAccessStrategy(new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE))
-                .build();
-    }
-
-    public PostgresqlConnection getConnection() {
-        PostgresqlConnectionFactory connectionFactory = getConnectionFactory();
-
-        return connectionFactory.create().block();
     }
 
     @Override
