@@ -52,7 +52,7 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
         String consensusEndTimeSeconds = context.getParameter("consensusEndTimeSeconds");
         String topicID = context.getParameter("topicID");
         String realmNum = context.getParameter("realmNum");
-//        futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
+        futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
         topicNum = Long.parseLong(topicID);
 
         PostgresqlConnection connection = getConnection();
@@ -77,12 +77,12 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
         Arguments defaultParameters = new Arguments();
         defaultParameters.addArgument("host", "localhost");
         defaultParameters.addArgument("port", "5600");
-        defaultParameters.addArgument("limit", "5");
+        defaultParameters.addArgument("limit", "100");
         defaultParameters.addArgument("consensusStartTimeSeconds", "0");
         defaultParameters.addArgument("consensusEndTimeSeconds", "0");
         defaultParameters.addArgument("topicID", "0");
         defaultParameters.addArgument("realmNum", "0");
-//        defaultParameters.addArgument("newTopicsMessageCount", "0");
+        defaultParameters.addArgument("newTopicsMessageCount", "0");
         return defaultParameters;
     }
 

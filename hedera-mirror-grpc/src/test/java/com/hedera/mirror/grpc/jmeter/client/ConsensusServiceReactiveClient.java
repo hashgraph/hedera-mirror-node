@@ -29,9 +29,7 @@ import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlStatement;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
@@ -77,6 +75,7 @@ public class ConsensusServiceReactiveClient {
     }
 
     public void shutdown() throws InterruptedException {
+        log.info("Client shutdown called");
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
@@ -100,9 +99,7 @@ public class ConsensusServiceReactiveClient {
         // configure StreamObserver
         int[] topics = {0};
         StreamObserver<ConsensusTopicResponse> responseObserver = new StreamObserver<>() {
-            final CountDownLatch finishLatch = new CountDownLatch(newTopicsMessageCount);
 
-            @SneakyThrows
             @Override
             public void onNext(ConsensusTopicResponse response) {
                 topics[0]++;
@@ -123,7 +120,6 @@ public class ConsensusServiceReactiveClient {
             @Override
             public void onCompleted() {
                 log.info("Running responseObserver onCompleted()");
-                finishLatch.countDown();
             }
         };
 
@@ -146,6 +142,7 @@ public class ConsensusServiceReactiveClient {
 
     private void EmitFutureMessages(int newTopicsMessageCount, long tpcnm, Instant instantref) {
         // insert some new messages
+        int instantnano = instantref.getNano();
         for (int i = 0; i < newTopicsMessageCount; i++) {
             Instant temp = instantref.plus(i, ChronoUnit.SECONDS);
             Long instalong = itlc.convert(temp);
@@ -162,7 +159,7 @@ public class ConsensusServiceReactiveClient {
                     .bind("$3", tpcnm)
                     .bind("$4", new byte[] {22, 33, 44})
                     .bind("$5", new byte[] {55, 66, 77})
-                    .bind("$6", i + 5);
+                    .bind("$6", i + instantnano);
             statement.execute().blockLast();
 
             log.info("Stored TopicMessage {}, Time: {}, count: {}", tpcnm,
