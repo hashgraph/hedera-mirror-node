@@ -29,7 +29,9 @@ import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlStatement;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
@@ -79,7 +81,7 @@ public class ConsensusServiceReactiveClient {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    public String subscribeTopic(int newTopicsMessageCount) {
+    public String subscribeTopic(int newTopicsMessageCount) throws InterruptedException {
         log.info("Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs : {},limit :" +
                         " {}",
                 topicNum, startTimeSecs, endTimeSecs, limit);
@@ -98,6 +100,9 @@ public class ConsensusServiceReactiveClient {
 
         // configure StreamObserver
         int[] topics = {0};
+        CountDownLatch finishLatch = new CountDownLatch(newTopicsMessageCount);
+        ClientResult result = new ClientResult(topicNum, realmNum);
+
         StreamObserver<ConsensusTopicResponse> responseObserver = new StreamObserver<>() {
 
             @Override
@@ -110,6 +115,15 @@ public class ConsensusServiceReactiveClient {
                 log.info("Observed {} ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", messageType,
                         topics[0], response.getConsensusTimestamp(), response.getSequenceNumber(), response
                                 .getMessage());
+
+                if (messageType.equalsIgnoreCase("Future")) {
+                    log.info("Decrement latch count, currently : {}", finishLatch.getCount());
+                    finishLatch.countDown();
+                    result.incomingMessageCount++;
+                    log.info("Latch count now : {}", finishLatch.getCount());
+                } else {
+                    result.historicalMessageCount++;
+                }
             }
 
             @Override
@@ -123,11 +137,16 @@ public class ConsensusServiceReactiveClient {
             }
         };
 
+        boolean success = true;
         try {
             asyncStub.subscribeTopic(request, responseObserver);
 
             // insert some new messages
-            EmitFutureMessages(newTopicsMessageCount, topicNum, observerStart);
+            EmitFutureMessages(newTopicsMessageCount, topicNum, observerStart, finishLatch);
+//            if (!finishLatch.await(2, TimeUnit.MINUTES)) {
+//                // latch count wasn't zero
+//                result.success = false;
+//            }
 
             responseObserver.onCompleted();
         } catch (Exception ex) {
@@ -135,19 +154,18 @@ public class ConsensusServiceReactiveClient {
             throw ex;
         }
 
-        String response = String.format("%d topics encountered", topics[0]);
-        log.info("Consensus service response observer: {}", response);
-        return response;
+        log.info("Consensus service response observer: {}", result);
+        return result.toString();
     }
 
-    private void EmitFutureMessages(int newTopicsMessageCount, long tpcnm, Instant instantref) {
+    private void EmitFutureMessages(int newTopicsMessageCount, long tpcnm, Instant instantref, CountDownLatch latch) {
         // insert some new messages
-        int instantnano = instantref.getNano();
         for (int i = 0; i < newTopicsMessageCount; i++) {
             Instant temp = instantref.plus(i, ChronoUnit.SECONDS);
             Long instalong = itlc.convert(temp);
-            log.info("Emitting new topic message for topicNum {}, Time: {}, count: {}", tpcnm,
-                    instalong, i);
+            int instantnano = instantref.getNano() + i;
+            log.info("Emitting new topic message for topicNum {}, Time: {}, count: {}, seq : {}", tpcnm,
+                    instalong, i, instantnano);
 
             String topicMessageInsertSql = "insert into topic_message"
                     + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
@@ -159,11 +177,28 @@ public class ConsensusServiceReactiveClient {
                     .bind("$3", tpcnm)
                     .bind("$4", new byte[] {22, 33, 44})
                     .bind("$5", new byte[] {55, 66, 77})
-                    .bind("$6", i + instantnano);
+                    .bind("$6", instantnano);
             statement.execute().blockLast();
 
-            log.info("Stored TopicMessage {}, Time: {}, count: {}", tpcnm,
-                    instalong, i);
+            log.info("Stored TopicMessage {}, Time: {}, count: {}, seq : {}", tpcnm,
+                    instalong, i, instantnano);
+        }
+    }
+
+    @ToString
+    private class ClientResult {
+        private final long topicNum;
+        private final long realmId;
+        private final boolean success;
+        private int historicalMessageCount;
+        private int incomingMessageCount;
+
+        public ClientResult(long topicnm, long realnm) {
+            topicNum = topicnm;
+            realmId = realnm;
+            historicalMessageCount = 0;
+            incomingMessageCount = 0;
+            success = true;
         }
     }
 }

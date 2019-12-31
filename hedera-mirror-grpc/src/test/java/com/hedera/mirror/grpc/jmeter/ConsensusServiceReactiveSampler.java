@@ -134,6 +134,8 @@ public class ConsensusServiceReactiveSampler extends AbstractJavaSamplerClient {
             result.setResponseMessage("Successfully performed subscribe topic test");
             result.setResponseCodeOK();
             log.info("Successfully performed subscribe topic test");
+        } catch (InterruptedException intEx) {
+            log.warn("RCP failed relating to CountDownLatch: {}", intEx);
         } catch (StatusRuntimeException ex) {
             result.sampleEnd();
             success = false;
