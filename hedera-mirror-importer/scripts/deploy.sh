@@ -1,6 +1,5 @@
-#!/bin/sh -ex
-
-artifactname=hedera-mirror-importer-hcs
+#!/usr/bin/env bash
+set -ex
 
 # name of the service and directories
 name=hedera-mirror-importer
@@ -10,24 +9,23 @@ varlib="/var/lib/${name}"
 
 # CD to parent directory
 cd "$(dirname $0)/.."
-version=$(ls -1 -d "../"${artifactname}-[vb]* | tr '\n' '\0' | xargs -0 -n 1 basename | tail -1 | sed -e "s/${artifactname}-//")
+version=$(ls -1 -d "../"${name}-[vb]* | tr '\n' '\0' | xargs -0 -n 1 basename | tail -1 | sed -e "s/${name}-//")
 if [ -z "${version}" ]; then
-    echo "Can't find ${artifactname}-[vb]* versioned parent directory. Unrecognized layout. Aborting"
+    echo "Can't find ${name}-[vb]* versioned parent directory. Unrecognized layout. Aborting"
     exit 1
 fi
-jarname="${artifactname}-${version:1}.jar"
+
+jarname="${name}-${version:1}.jar"
 if [ ! -f "${jarname}" ]; then
     echo "Can't find ${jarname}. Aborting"
     exit 1
 fi
 
 mkdir -p "${usretc}" "${usrlib}" "${varlib}"
+systemctl stop "${name}.service" || true
 
 if [ -f "/usr/lib/mirror-node/mirror-node.jar" ] || [ -f "${usrlib}/${name}.jar" ]; then
     echo "Upgrading to ${version}"
-
-    echo "Stopping ${name} service"
-    systemctl stop "${name}.service" || true
 
     # Migrate from mirror-node directory structure
     if [ -f "/usr/lib/mirror-node/mirror-node.jar" ]; then
@@ -41,28 +39,19 @@ if [ -f "/usr/lib/mirror-node/mirror-node.jar" ] || [ -f "${usrlib}/${name}.jar"
         rm /etc/systemd/system/mirror-node.service
         sed -i "s#dataPath: .*#dataPath: ${varlib}#" "${usretc}/application.yml"
     fi
+fi
 
-    # Migrate the address book from the old location
-    if [ -f "${usretc}/0.0.102" ] && [ ! -f "${varlib}/addressbook.bin" ]; then
-        cp "${usretc}/0.0.102" "${varlib}/addressbook.bin"
-    fi
-
-    # Migrate from config.json to application.yml
-    if [ -f "${usretc}/config.json" ] && [ ! -f  "${usretc}/application.yml" ]; then
-        network="MAINNET"
-        if (grep "bucketName.*testnet" "${usretc}/config.json"); then
-            network="TESTNET"
-        fi
-
-        apiPassword=$(grep -oP '"apiPassword": "\K[^"]+' "${usretc}/config.json")
-        bucketName=$(grep -oP '"bucketName": "\K[^"]+' "${usretc}/config.json")
-        dbHost=$(grep -oP '"dbUrl": "jdbc:postgresql://\K[^:]+' "${usretc}/config.json")
-        dbPassword=$(grep -oP '"dbPassword": "\K[^"]+' "${usretc}/config.json")
-        downloadToDir=$(grep -oP '"downloadToDir": "\K[^"]+' "${usretc}/config.json")
-        cat > "${usretc}/application.yml" <<EOF
+if [ ! -f "${usretc}/application.yml" ]; then
+    echo "Fresh install of ${version}"
+    read -p "Bucket name: " bucketName
+    read -p "Hedera network: " network
+    read -p "Database hostname: " dbHost
+    read -p "Database password: " dbPassword
+    read -p "API user database password: " apiPassword
+    cat > "${usretc}/application.yml" <<EOF
 hedera:
   mirror:
-    dataPath: ${downloadToDir}
+    dataPath: ${varlib}
     db:
       apiPassword: ${apiPassword}
       host: ${dbHost}
@@ -70,21 +59,6 @@ hedera:
     downloader:
       bucketName: ${bucketName}
     network: ${network}
-EOF
-    fi
-else
-    echo "Fresh install of ${version}"
-    echo "Creating empty config (will need to be edited)"
-    cat > "${usretc}/application.yml" <<EOF
-hedera:
-  mirror:
-    dataPath: ${varlib}
-    db:
-      apiPassword:
-      host:
-      password:
-    downloader:
-      bucketName:
 EOF
 fi
 

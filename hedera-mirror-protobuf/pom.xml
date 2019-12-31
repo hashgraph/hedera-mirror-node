@@ -2,16 +2,16 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <artifactId>hedera-mirror-protobuf-hcs</artifactId>
+    <artifactId>hedera-mirror-protobuf</artifactId>
     <description>Protobuf definitions for the Hedera Hashgraph Mirror Node API (MAPI)</description>
     <modelVersion>4.0.0</modelVersion>
-    <name>Hedera Mirror Node Protobuf (HCS)</name>
+    <name>Hedera Mirror Node Protobuf</name>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>com.hedera</groupId>
-        <artifactId>hedera-mirror-node-hcs</artifactId>
-        <version>0.1.0-rc1</version>
+        <artifactId>hedera-mirror-node</artifactId>
+        <version>0.5.0-beta1</version>
     </parent>
 
     <properties>
