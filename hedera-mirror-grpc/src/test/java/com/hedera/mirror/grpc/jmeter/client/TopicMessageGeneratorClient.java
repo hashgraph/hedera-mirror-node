@@ -20,7 +20,6 @@ package com.hedera.mirror.grpc.jmeter.client;
  * ‍
  */
 
-import io.grpc.StatusRuntimeException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import lombok.extern.log4j.Log4j2;
@@ -30,53 +29,46 @@ import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 
 import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
+import com.hedera.mirror.grpc.jmeter.sampler.TopicMessageGeneratorSampler;
 
 @Log4j2
-public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
-    com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler csclient = null;
-    int futureMessagesCount = 2;
+public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
+
     long topicNum;
+    int historicMessagesCount = 2;
+    int futureMessagesCount = 2;
+    long newTopicsMessageDelay = 0;
+    long delTopicNum;
+    long delSeqFrom;
+    TopicMessageGeneratorSampler sampler;
+    ConnectionHandler connHandl;
 
     @Override
     public void setupTest(JavaSamplerContext context) {
-        String host = context.getParameter("host");
-        String port = context.getParameter("port");
-        String limit = context.getParameter("limit");
-        String consensusStartTimeSeconds = context.getParameter("consensusStartTimeSeconds");
-        String consensusEndTimeSeconds = context.getParameter("consensusEndTimeSeconds");
-        String topicID = context.getParameter("topicID");
-        String realmNum = context.getParameter("realmNum");
+        topicNum = context.getLongParameter("topicID");
+        historicMessagesCount = context.getIntParameter("historicMessagesCount");
         futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
-        topicNum = Long.parseLong(topicID);
+        newTopicsMessageDelay = context.getLongParameter("newTopicsMessageDelay");
+        delTopicNum = context.getLongParameter("delTopicNum");
+        delSeqFrom = context.getLongParameter("delSeqFrom");
 
-        ConnectionHandler connHandl = new ConnectionHandler();
+        connHandl = new ConnectionHandler();
 
-        csclient = new com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler(
-                host,
-                Integer.parseInt(port),
-                topicNum,
-                Long.parseLong(realmNum),
-                Long.parseLong(consensusStartTimeSeconds),
-                Long.parseLong(consensusEndTimeSeconds),
-                Long.parseLong(limit),
-                connHandl);
+        sampler = new TopicMessageGeneratorSampler(connHandl);
 
-        // to:do - explore a setup that gets the db in the desired state, with a useful historical data and cleared
-        // references to future messages from previous runs
         super.setupTest(context);
     }
 
     @Override
     public Arguments getDefaultParameters() {
         Arguments defaultParameters = new Arguments();
-        defaultParameters.addArgument("host", "localhost");
-        defaultParameters.addArgument("port", "5600");
-        defaultParameters.addArgument("limit", "100");
-        defaultParameters.addArgument("consensusStartTimeSeconds", "0");
-        defaultParameters.addArgument("consensusEndTimeSeconds", "0");
         defaultParameters.addArgument("topicID", "0");
         defaultParameters.addArgument("realmNum", "0");
+        defaultParameters.addArgument("historicMessagesCount", "0");
         defaultParameters.addArgument("newTopicsMessageCount", "0");
+        defaultParameters.addArgument("newTopicsMessageDelay", "0");
+        defaultParameters.addArgument("delTopicNum", "-1");
+        defaultParameters.addArgument("delSeqFrom", "-1");
         return defaultParameters;
     }
 
@@ -86,26 +78,26 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
         boolean success = true;
         String response = "";
         result.sampleStart();
-
         int threadNum = context.getJMeterContext().getThreadNum();
+
         try {
-            log.info("Thread {} : Kicking off subscribeTopic", threadNum);
-            response = csclient.subscribeTopic(futureMessagesCount);
+            log.info("Thread {} : Kicking off populateTopicMessages", threadNum);
+            response = sampler
+                    .populateTopicMessages(topicNum, historicMessagesCount, futureMessagesCount,
+                            newTopicsMessageDelay, delTopicNum, delSeqFrom);
 
             // To:do - add conditional logic based on response to check success criteria
 
             result.sampleEnd();
             result.setResponseData(response.getBytes());
-            result.setResponseMessage("Successfully performed subscribe topic test");
+            result.setResponseMessage("Successfully performed populateTopicMessages");
             result.setResponseCodeOK();
-            log.info("Successfully performed subscribe topic test");
-        } catch (InterruptedException intEx) {
-            log.warn("RCP failed relating to CountDownLatch: {}", intEx);
-        } catch (StatusRuntimeException ex) {
+            log.info("Successfully performed populateTopicMessages");
+        } catch (Exception ex) {
             result.sampleEnd();
             success = false;
             result.setResponseMessage("Exception: " + ex);
-            log.error("Error subscribing to topic: " + ex);
+            log.error("Error populating topics: " + ex);
 
             StringWriter stringWriter = new StringWriter();
             ex.printStackTrace(new PrintWriter(stringWriter));
@@ -116,17 +108,15 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
 
         result.setSuccessful(success);
 
-        // shutdown test and avoid notifying waiting for signal - saves run time
-//        teardownTest(context);
-
         return result;
     }
 
     @Override
     public void teardownTest(JavaSamplerContext context) {
         try {
-            csclient.shutdown();
-        } catch (InterruptedException ex) {
+            log.info("Connection Handler close called");
+            connHandl.close();
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
 

@@ -19,7 +19,7 @@
           <stringProp name="LoopController.loops">3</stringProp>
         </elementProp>
         <stringProp name="ThreadGroup.num_threads">85</stringProp>
-        <stringProp name="ThreadGroup.ramp_time">85</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">2</stringProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
         <stringProp name="ThreadGroup.duration"></stringProp>
         <stringProp name="ThreadGroup.delay"></stringProp>
@@ -66,12 +66,12 @@
               </elementProp>
               <elementProp name="newTopicsMessageCount" elementType="Argument">
                 <stringProp name="Argument.name">newTopicsMessageCount</stringProp>
-                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.value">1</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler</stringProp>
+          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.ConsensusServiceReactiveClient</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>

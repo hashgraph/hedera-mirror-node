@@ -77,8 +77,14 @@ public class ConnectionHandler {
 
     public void InsertTopicMessage(int newTopicsMessageCount, long tpcnm, Instant instantref, CountDownLatch latch,
                                    long seqStart) {
+
+        if (newTopicsMessageCount == 0) {
+            // no messages to create, abort and db logic
+            return;
+        }
+
         // insert some new messages
-        long nextSequenceNum = seqStart == 0 ? getNextAvailableSequenceNumber(tpcnm) : seqStart;
+        long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(tpcnm) : seqStart;
         for (int i = 0; i < newTopicsMessageCount; i++) {
             Instant temp = instantref.plus(i, ChronoUnit.SECONDS);
             Long instalong = itlc.convert(temp);
@@ -120,6 +126,7 @@ public class ConnectionHandler {
                             return topicNum;
                         })).blockFirst();
 
+        log.info("Determined next available topid id number from table is {}", nextTopicId + 1);
         return nextTopicId + 1;
     }
 
@@ -134,12 +141,30 @@ public class ConnectionHandler {
                             Long max = row.get(0, Long.class);
 
                             if (max == null) {
-                                throw new IllegalStateException("Max sequence num query failed");
+                                max = -1L;
+                                log.trace("Max sequence num query failed, setting max to -1 as likely not messages " +
+                                        "for this topic exist");
                             }
 
                             return max;
                         })).blockFirst();
 
+        log.info("Determined next available sequence number from table is {}", nextSeqNum + 1);
         return nextSeqNum + 1;
+    }
+
+    public void clearTopicMessages(long topicId, long seqNumFrom) {
+        String delTopicMsgsSql = "delete from topic_message where topic_num = $1 and sequence_number >= $2";
+        PostgresqlStatement statement = connection.createStatement(delTopicMsgsSql)
+                .bind("$1", topicId)
+                .bind("$2", seqNumFrom);
+
+        statement.execute().blockLast();
+
+        log.info("Cleared Topic Messages for TopicID {}, from Sequence {}", topicId, seqNumFrom);
+    }
+
+    public void close() {
+        connection.close().block();
     }
 }

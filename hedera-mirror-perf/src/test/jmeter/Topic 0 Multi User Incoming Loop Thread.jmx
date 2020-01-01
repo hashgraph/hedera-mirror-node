@@ -71,7 +71,7 @@
               </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler</stringProp>
+          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.ConsensusServiceReactiveClient</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>
