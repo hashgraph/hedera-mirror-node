@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.service;
+package com.hedera.mirror.grpc.controller;
 
 /*-
  * ‌
@@ -35,12 +35,19 @@ import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
+/**
+ * GRPC calls their protocol adapter layer a service, but most of the industry calls this layer the controller layer.
+ * See the Front Controller pattern or Model-View-Controller (MVC) pattern. The service layer is generally reserved for
+ * non-protocol specific business logic so to avoid confusion with our TopicMessageService we'll name this GRPC layer as
+ * controller.
+ */
 @GrpcService
 @Log4j2
 @RequiredArgsConstructor
-public class ConsensusService extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
+public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
 
     private final TopicMessageService topicMessageService;
 
@@ -94,7 +101,7 @@ public class ConsensusService extends ReactorConsensusServiceGrpc.ConsensusServi
             return t;
         }
 
-        log.error("Error", t);
+        log.error("Unknown error subscribing to topic", t);
         return Status.INTERNAL.augmentDescription(t.getMessage()).asRuntimeException();
     }
 }
