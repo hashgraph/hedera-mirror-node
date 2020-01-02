@@ -74,32 +74,26 @@ public class FileTransactionGenerator extends TransactionGenerator {
 
     private void appendFile(Transaction transaction) {
         transaction.setType(16);  // 16 = FILEAPPEND
-        Long fileId = entityManager.getFiles().getRandom();
-        Entities entities = new Entities();
-        entities.setId(fileId);
-        transaction.setEntity(entities);
+        Entities file = entityManager.getFiles().getRandom();
+        transaction.setEntity(file);
         createFileData(transaction.getConsensusNs());
-        log.trace("FILEAPPEND transaction: fileId {}", fileId);
+        log.trace("FILEAPPEND transaction: fileId {}", file.getId());
     }
 
     private void updateFile(Transaction transaction) {
         transaction.setType(19);  // 19 = FILEUPDATE
-        Long fileId = entityManager.getFiles().getRandom();
-        Entities entities = new Entities();
-        entities.setId(fileId);
-        transaction.setEntity(entities);
+        Entities file = entityManager.getFiles().getRandom();
+        transaction.setEntity(file);
         createFileData(transaction.getConsensusNs());
-        log.trace("FILEUPDATE transaction: fileId {}", fileId);
+        log.trace("FILEUPDATE transaction: fileId {}", file.getId());
     }
 
     private void deleteFile(Transaction transaction) {
         transaction.setType(18);  // 18 = FILEDELETE
-        Long fileId = entityManager.getFiles().getRandom();
-        entityManager.getFiles().delete(fileId);
-        Entities entities = new Entities();
-        entities.setId(fileId);
-        transaction.setEntity(entities);
-        log.trace("FILEDELETE transaction: fileId {}", fileId);
+        Entities file = entityManager.getFiles().getRandom();
+        entityManager.getFiles().delete(file);
+        transaction.setEntity(file);
+        log.trace("FILEDELETE transaction: fileId {}", file.getId());
     }
 
     private void createFileData(long consensusNs) {

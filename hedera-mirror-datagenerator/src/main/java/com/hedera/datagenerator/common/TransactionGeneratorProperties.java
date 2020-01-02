@@ -19,6 +19,7 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
+import javax.annotation.PostConstruct;
 import javax.inject.Named;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -31,4 +32,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class TransactionGeneratorProperties {
     final private CryptoTransactionProperties crypto;
     final private FileTransactionProperties file;
+    final private TopicTransactionProperties topic;
+
+
+    @PostConstruct
+    void initDistributions() {
+        crypto.initDistributions();
+        file.initDistributions();
+        topic.initDistributions();
+    }
 }

@@ -20,12 +20,12 @@ package com.hedera.datagenerator.domain.generators.entity;
  */
 
 import com.google.common.base.Stopwatch;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.util.function.Function;
 import javax.inject.Named;
+import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Key;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.datagenerator.common.EntityManager;
 import com.hedera.datagenerator.domain.writer.DomainWriter;
@@ -41,12 +41,12 @@ public class EntityGenerator {
 
     public EntityGenerator() {
         try {
-            // KeyPair generation is an expensive operation, so for test data purposes, we use same value for all
-            // entities.
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            KeyPair fixedKeyPair = keyPairGenerator.generateKeyPair();
-            fixedKey = fixedKeyPair.getPublic().getEncoded();
-        } catch (NoSuchAlgorithmException e) {
+            fixedKey = Key.newBuilder()
+                    .setEd25519(ByteString.copyFrom(
+                            Hex.decodeHex("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f")))
+                    .build()
+                    .toByteArray();
+        } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
     }
@@ -58,6 +58,7 @@ public class EntityGenerator {
         Stopwatch stopwatch = Stopwatch.createStarted();
         generateAndWriteEntityType(entityManager.getAccounts(), domainWriter, this::generateAccountEntity, "account");
         generateAndWriteEntityType(entityManager.getFiles(), domainWriter, this::generateFileEntity, "file");
+        generateAndWriteEntityType(entityManager.getTopics(), domainWriter, this::generateTopicEntity, "topic");
         log.info("Generated all entities in {}", stopwatch);
     }
 
@@ -99,6 +100,12 @@ public class EntityGenerator {
     private Entities generateFileEntity(long id) {
         Entities entity = createBaseEntity(id);
         entity.setEntityTypeId(3); // 3 = file
+        return entity;
+    }
+
+    private Entities generateTopicEntity(long id) {
+        Entities entity = createBaseEntity(id);
+        entity.setEntityTypeId(4); // 4 = topic
         return entity;
     }
 }
