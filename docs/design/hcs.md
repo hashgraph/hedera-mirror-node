@@ -191,9 +191,8 @@ public class TransactionEvent {
 ## Database
 
 -   Add new `t_entity_types` row with name `topic`
--   Add new columns to `t_entities`:
+-   Add new column to `t_entities`:
     -   `submit_key bytea`
-    -   `topic_valid_start_time nanos_timestamp`
 -   Add new `t_transaction_types`:
     -   `CONSENSUSCREATETOPIC=24`
     -   `CONSENSUSUPDATETOPIC=25`
@@ -236,6 +235,5 @@ See GitHub issue [374](https://github.com/hashgraph/hedera-mirror-node/issues/37
 
 ## Open Questions
 
-1. Should filter properties not apply to some tables or apply to all tables?
-2. Will `pg_notify` be able to handle the scale of data and clients required? See [Alternatives](#alternatives) section
-3. How will we optimize for multiple clients requesting the same topic ID?
+1. Will `pg_notify` be able to handle the scale of data and clients required? See [Alternatives](#alternatives) section
+2. How will we optimize for multiple clients requesting the same topic ID?

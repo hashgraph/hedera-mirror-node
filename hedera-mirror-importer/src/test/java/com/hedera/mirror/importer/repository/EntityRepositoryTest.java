@@ -53,7 +53,6 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
         entity.setKey("key".getBytes());
         entity.setProxyAccountId(proxyEntity.getId());
         entity.setSubmitKey("SubmitKey".getBytes());
-        entity.setTopicValidStartTime(700L);
         entity = entityRepository.save(entity);
 
         assertThat(entityRepository
@@ -61,7 +60,7 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
                 .get()
                 .isEqualTo(entity);
 
-        entity.setTopicValidStartTime(600L);
+        entity.setExpiryTimeNs(600L);
         entity = entityRepository.save(entity);
 
         assertThat(entityRepository

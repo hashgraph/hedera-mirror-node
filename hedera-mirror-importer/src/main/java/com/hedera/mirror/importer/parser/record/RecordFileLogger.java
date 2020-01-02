@@ -572,10 +572,6 @@ public class RecordFileLogger {
         var submitKey = transactionBody.hasSubmitKey() ? transactionBody.getSubmitKey()
                 .toByteArray() : new byte[0];
 
-        if (transactionBody.hasValidStartTime()) {
-            entity.setTopicValidStartTime(Utility.timestampInNanosMax(transactionBody.getValidStartTime()));
-        }
-
         entity.setMemo(transactionBody.getMemo());
         entity.setKey(adminKey);
         entity.setSubmitKey(submitKey);
@@ -619,10 +615,6 @@ public class RecordFileLogger {
 
             if (transactionBody.hasSubmitKey()) {
                 entity.setSubmitKey(transactionBody.getSubmitKey().toByteArray());
-            }
-
-            if (transactionBody.hasValidStartTime()) {
-                entity.setTopicValidStartTime(Utility.timestampInNanosMax(transactionBody.getValidStartTime()));
             }
 
             if (transactionBody.hasMemo()) {

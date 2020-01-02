@@ -76,8 +76,6 @@ public class Entities {
 
     private byte[] submitKey;
 
-    private Long topicValidStartTime;
-
     private String memo;
 
     public void setKey(byte[] key) {
