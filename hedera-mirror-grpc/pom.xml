@@ -119,6 +119,18 @@
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.jmeter</groupId>
+            <artifactId>ApacheJMeter_core</artifactId>
+            <version>5.1.1</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jmeter</groupId>
+            <artifactId>ApacheJMeter_java</artifactId>
+            <version>5.1.1</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
@@ -146,7 +158,53 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>repackage</id>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>exec</classifier>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
+            <!-- Create test case jar to allow jmeter to utilize samplers -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        <!-- Use to gather dependency files that may need to be copied to jMeter -->
+        <!--            <plugin>-->
+        <!--                <groupId>org.apache.maven.plugins</groupId>-->
+        <!--                <artifactId>maven-dependency-plugin</artifactId>-->
+        <!--                <version>3.1.1</version>-->
+        <!--                <executions>-->
+        <!--                    <execution>-->
+        <!--                        <id>copy-dependencies</id>-->
+        <!--                        <phase>package</phase>-->
+        <!--                        <goals>-->
+        <!--                            <goal>copy-dependencies</goal>-->
+        <!--                        </goals>-->
+        <!--                        <configuration>-->
+        <!--                            <includeScope>test</includeScope>-->
+        <!--                            <outputDirectory>${project.build.directory}/lib</outputDirectory>-->
+        <!--                            <overWriteIfNewer>true</overWriteIfNewer>-->
+        <!--                            <overWriteReleases>false</overWriteReleases>-->
+        <!--                            <overWriteSnapshots>true</overWriteSnapshots>-->
+        <!--                        </configuration>-->
+        <!--                    </execution>-->
+        <!--                </executions>-->
+        <!--            </plugin>-->
         </plugins>
     </build>
 
