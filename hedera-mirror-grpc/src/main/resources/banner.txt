@@ -13,5 +13,5 @@
    :G@@@@@@@1 1@@@@@@@@@1 1@@@@@@@8;             ;@1        :@i    ;@@@@@i.    :t@@@@;tL;   ,i@@@@t;.  i@1        ,1@@@L;1@i
     :G@@@@@@@@@@@@@@@@@@@@@@@@@@@8i
      .f8@@@@@@@@@@@@@@@@@@@@@@@@L,
-        ,L8@@@@@@@@@@@@@@@@@@0C:                                          Mirror Importer ${application.formatted-version}
+        ,L8@@@@@@@@@@@@@@@@@@0C:                                          Mirror GRPC ${application.formatted-version}
            ':if0@@@@@@@0fi:'
