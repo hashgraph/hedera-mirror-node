@@ -30,17 +30,21 @@ import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
 @Log4j2
 public class TopicMessageGeneratorSampler {
     private final ConnectionHandler connectionHandler;
+    private final int threadNum;
 
-    public TopicMessageGeneratorSampler(ConnectionHandler connectionHndler) {
+    public TopicMessageGeneratorSampler(ConnectionHandler connectionHndler, int thrdNum) {
         connectionHandler = connectionHndler;
+        threadNum = thrdNum;
     }
 
     public String populateTopicMessages(long topicNum, int historicalMessageCount, int futureMessageCount,
                                         long newTopicsMessageDelay, long delTopicNum, long delSeqFrom) throws InterruptedException {
-        log.info("Running TopicMessageGenerator Sampler populateTopicMessages topicNum : {}, historicalMessageCount :" +
+        log.info("THRD {} : Running TopicMessageGenerator Sampler populateTopicMessages topicNum : {}, " +
+                        "historicalMessageCount :" +
                         " {}, futureMessageCount : {}, " +
                         "newTopicsMessageDelay : {}, delTopicNum : {}, delSeqFrom : {}",
-                topicNum, historicalMessageCount, futureMessageCount, newTopicsMessageDelay, delTopicNum, delSeqFrom);
+                threadNum, topicNum, historicalMessageCount, futureMessageCount, newTopicsMessageDelay, delTopicNum,
+                delSeqFrom);
 
         CountDownLatch historicMessagesLatch = new CountDownLatch(historicalMessageCount);
         CountDownLatch incomingMessagesLatch = new CountDownLatch(futureMessageCount);

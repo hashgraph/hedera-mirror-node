@@ -35,13 +35,14 @@ import com.hedera.mirror.grpc.jmeter.sampler.TopicMessageGeneratorSampler;
 public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
 
     long topicNum;
-    int historicMessagesCount = 2;
-    int futureMessagesCount = 2;
-    long newTopicsMessageDelay = 0;
+    int historicMessagesCount;
+    int futureMessagesCount;
+    long newTopicsMessageDelay;
     long delTopicNum;
     long delSeqFrom;
     TopicMessageGeneratorSampler sampler;
     ConnectionHandler connHandl;
+    int threadNum;
 
     @Override
     public void setupTest(JavaSamplerContext context) {
@@ -54,7 +55,8 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
 
         connHandl = new ConnectionHandler();
 
-        sampler = new TopicMessageGeneratorSampler(connHandl);
+        threadNum = context.getJMeterContext().getThreadNum();
+        sampler = new TopicMessageGeneratorSampler(connHandl, threadNum);
 
         super.setupTest(context);
     }
@@ -108,6 +110,8 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
 
         result.setSuccessful(success);
 
+        // shutdown test and avoid notifying waiting for signal - saves run time
+        teardownTest(context);
         return result;
     }
 

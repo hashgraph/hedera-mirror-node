@@ -35,7 +35,6 @@ import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
 
 /**
  * A test client that will make requests of the Consensus service from the Consensus server
@@ -50,19 +49,19 @@ public class ConsensusServiceReactiveSampler {
     private final long endTimeSecs;
     private final long limit;
 
-    private final ConnectionHandler connectionHandler;
-
     private final InstantToLongConverter itlc = new InstantToLongConverter();
 
+    private final int threadNum;
+
     public ConsensusServiceReactiveSampler(String host, int port, long topic, long realm, long startTime,
-                                           long endTime, long lmt, ConnectionHandler connHandl) {
+                                           long endTime, long lmt, int thrdNum) {
         this(ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext(true), topic, realm, startTime, endTime, lmt, connHandl);
+                .usePlaintext(true), topic, realm, startTime, endTime, lmt, thrdNum);
     }
 
     public ConsensusServiceReactiveSampler(ManagedChannelBuilder<?> channelBuilder, long topic, long realm,
                                            long startTime,
-                                           long endTime, long lmt, ConnectionHandler connHandl) {
+                                           long endTime, long lmt, int thrdNum) {
         channel = channelBuilder.build();
         asyncStub = ConsensusServiceGrpc.newStub(channel);
         topicNum = topic;
@@ -70,20 +69,19 @@ public class ConsensusServiceReactiveSampler {
         startTimeSecs = startTime;
         endTimeSecs = endTime;
         limit = lmt;
-
-        connectionHandler = connHandl;
+        threadNum = thrdNum;
     }
 
     public void shutdown() throws InterruptedException {
-        log.info("Managed Channel shutdown called");
+        log.info("THRD {} : Managed Channel shutdown called", threadNum);
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    public String subscribeTopic(int newTopicsMessageCount) throws InterruptedException {
-        log.info("Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs : {},limit :" +
-                        " {}",
-                topicNum, startTimeSecs, endTimeSecs, limit);
-        Instant observerStart = Instant.now();
+    public String subscribeTopic(int historicMessagesCount, int futureMessagesCount, Instant observerStart) throws InterruptedException {
+        log.info("THRD {} : Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs : " +
+                        "{},limit :" +
+                        " {}, historicMessagesCount : {}, futureMessagesCount : {}, observerStart : {}",
+                threadNum, topicNum, startTimeSecs, endTimeSecs, limit, futureMessagesCount, observerStart);
 
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
                 .setLimit(100)
@@ -98,10 +96,11 @@ public class ConsensusServiceReactiveSampler {
 
         // configure StreamObserver
         int[] topics = {0};
-        CountDownLatch incomingMessagesLatch = new CountDownLatch(newTopicsMessageCount);
+        CountDownLatch historicMessagesLatch = new CountDownLatch(historicMessagesCount);
+        CountDownLatch incomingMessagesLatch = new CountDownLatch(futureMessagesCount);
         ClientResult result = new ClientResult(topicNum, realmNum);
-        long sequenceStart = newTopicsMessageCount == 0 ? -1 : connectionHandler
-                .getNextAvailableSequenceNumber(topicNum);
+        boolean awaitHistoricMessages = historicMessagesCount > 0;
+        boolean awaitNewMessages = futureMessagesCount > 0;
 
         StreamObserver<ConsensusTopicResponse> responseObserver = new StreamObserver<>() {
 
@@ -113,32 +112,36 @@ public class ConsensusServiceReactiveSampler {
                 Instant respInstant = Instant
                         .ofEpochSecond(responseTimeStamp.getSeconds(), responseTimeStamp.getNanos());
                 String messageType = observerStart.isBefore(respInstant) ? "Future" : "Historic";
-                log.info("Observed {} ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", messageType,
+                log.info("THRD {} : Observed {} ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}",
+                        threadNum, messageType,
                         topics[0], responseTimeStamp, responseSequenceNum, response
                                 .getMessage());
 
                 if (messageType.equalsIgnoreCase("Future")) {
-//                    if (responseSequenceNum == sequenceStart + result.incomingMessageCount) {
-//                        log.info("Matching message , decrement latch count, currently : {}", incomingMessagesLatch
-//                        .getCount());
-//                        incomingMessagesLatch.countDown();
-//                        log.info("Latch count now : {}", incomingMessagesLatch.getCount());
-//                    }
+                    if (awaitNewMessages) {
+                        // decrement latch count
+                        incomingMessagesLatch.countDown();
+                    }
 
                     result.incomingMessageCount++;
                 } else {
+                    if (awaitHistoricMessages) {
+                        // decrement latch count
+                        historicMessagesLatch.countDown();
+                    }
+
                     result.historicalMessageCount++;
                 }
             }
 
             @Override
             public void onError(Throwable t) {
-                log.error("Error in ConsensusTopicResponse StreamObserver", t);
+                log.error(String.format("THRD {} : Error in ConsensusTopicResponse StreamObserver", threadNum), t);
             }
 
             @Override
             public void onCompleted() {
-                log.info("Running responseObserver onCompleted()");
+                log.info("THRD {} : Running responseObserver onCompleted()", threadNum);
             }
         };
 
@@ -146,34 +149,38 @@ public class ConsensusServiceReactiveSampler {
         try {
             asyncStub.subscribeTopic(request, responseObserver);
 
-            // insert some new messages
-            EmitFutureMessages(newTopicsMessageCount, topicNum, observerStart, incomingMessagesLatch, sequenceStart);
-//            if (!incomingMessagesLatch.await(1, TimeUnit.MINUTES)) {
-//                // latch count wasn't zero
-//                log.error("Latch count did not reach zero");
-//                result.success = false;
-//            }
+            // await some new messages
+            if (!historicMessagesLatch.await(1, TimeUnit.MINUTES)) {
+                // latch count wasn't zero
+                log.error("THRD {} : historicMessagesLatch count is {}, did not reach zero", threadNum,
+                        historicMessagesLatch
+                        .getCount());
+                result.success = false;
+            }
+
+            if (!incomingMessagesLatch.await(1, TimeUnit.MINUTES)) {
+                // latch count wasn't zero
+                log.error("THRD {} : incomingMessagesLatch count is {}, did not reach zero", threadNum,
+                        incomingMessagesLatch
+                        .getCount());
+                result.success = false;
+            }
 
             responseObserver.onCompleted();
         } catch (Exception ex) {
-            log.warn("RCP failed: {}", ex);
+            log.warn(String.format("THRD {} : RCP failed", threadNum), ex);
             throw ex;
         }
 
-        log.info("Consensus service response observer: {}", result);
+        log.info("THRD {} : Consensus service response observer: {}", threadNum, result);
         return result.toString();
-    }
-
-    private void EmitFutureMessages(int newTopicsMessageCount, long tpcnm, Instant instantref, CountDownLatch latch,
-                                    long seqStart) {
-        connectionHandler.InsertTopicMessage(newTopicsMessageCount, tpcnm, instantref, latch, seqStart);
     }
 
     @ToString
     private class ClientResult {
         private final long topicNum;
         private final long realmId;
-        private final boolean success;
+        private boolean success;
         private int historicalMessageCount;
         private int incomingMessageCount;
 

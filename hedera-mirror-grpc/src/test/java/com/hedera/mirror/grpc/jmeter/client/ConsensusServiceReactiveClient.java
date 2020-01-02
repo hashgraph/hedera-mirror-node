@@ -23,22 +23,25 @@ package com.hedera.mirror.grpc.jmeter.client;
 import io.grpc.StatusRuntimeException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Instant;
 import lombok.extern.log4j.Log4j2;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 
-import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
-
 @Log4j2
 public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
     com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler csclient = null;
-    int futureMessagesCount = 2;
+    int historicMessagesCount;
+    int futureMessagesCount;
     long topicNum;
+    Instant testStart;
+    int threadNum;
 
     @Override
     public void setupTest(JavaSamplerContext context) {
+        testStart = Instant.now();
         String host = context.getParameter("host");
         String port = context.getParameter("port");
         String limit = context.getParameter("limit");
@@ -46,10 +49,11 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
         String consensusEndTimeSeconds = context.getParameter("consensusEndTimeSeconds");
         String topicID = context.getParameter("topicID");
         String realmNum = context.getParameter("realmNum");
+        historicMessagesCount = context.getIntParameter("historicMessagesCount");
         futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
         topicNum = Long.parseLong(topicID);
 
-        ConnectionHandler connHandl = new ConnectionHandler();
+        threadNum = context.getJMeterContext().getThreadNum();
 
         csclient = new com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler(
                 host,
@@ -59,10 +63,8 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
                 Long.parseLong(consensusStartTimeSeconds),
                 Long.parseLong(consensusEndTimeSeconds),
                 Long.parseLong(limit),
-                connHandl);
+                threadNum);
 
-        // to:do - explore a setup that gets the db in the desired state, with a useful historical data and cleared
-        // references to future messages from previous runs
         super.setupTest(context);
     }
 
@@ -76,6 +78,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
         defaultParameters.addArgument("consensusEndTimeSeconds", "0");
         defaultParameters.addArgument("topicID", "0");
         defaultParameters.addArgument("realmNum", "0");
+        defaultParameters.addArgument("historicMessagesCount", "0");
         defaultParameters.addArgument("newTopicsMessageCount", "0");
         return defaultParameters;
     }
@@ -87,10 +90,9 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
         String response = "";
         result.sampleStart();
 
-        int threadNum = context.getJMeterContext().getThreadNum();
         try {
             log.info("Thread {} : Kicking off subscribeTopic", threadNum);
-            response = csclient.subscribeTopic(futureMessagesCount);
+            response = csclient.subscribeTopic(historicMessagesCount, futureMessagesCount, testStart);
 
             // To:do - add conditional logic based on response to check success criteria
 
@@ -117,7 +119,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
         result.setSuccessful(success);
 
         // shutdown test and avoid notifying waiting for signal - saves run time
-//        teardownTest(context);
+        teardownTest(context);
 
         return result;
     }
