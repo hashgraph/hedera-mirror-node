@@ -200,15 +200,15 @@ public class TransactionEvent {
     -   `CONSENSUSDELETETOPIC=26`
     -   `CONSENSUSSUBMITMESSAGE=27`
 -   Add new `t_transaction_result`:
-    -   INVALID_TOPIC_ID = 150`
-    -   INVALID_ADMIN_KEY = 155`
-    -   INVALID_SUBMIT_KEY = 156`
-    -   UNAUTHORIZED = 157`
-    -   INVALID_TOPIC_MESSAGE = 158`
-    -   INVALID_AUTORENEW_ACCOUNT = 159`
-    -   AUTORENEW_ACCOUNT_NOT_ALLOWED = 160`
-    -   AUTORENEW_ACCOUNT_SIGNATURE_MISSING = 161`
-    -   TOPIC_EXPIRED = 162`
+    -   `INVALID_TOPIC_ID = 150`
+    -   `INVALID_ADMIN_KEY = 155`
+    -   `INVALID_SUBMIT_KEY = 156`
+    -   `UNAUTHORIZED = 157`
+    -   `INVALID_TOPIC_MESSAGE = 158`
+    -   `INVALID_AUTORENEW_ACCOUNT = 159`
+    -   `AUTORENEW_ACCOUNT_NOT_ALLOWED = 160`
+    -   `AUTORENEW_ACCOUNT_SIGNATURE_MISSING = 161`
+    -   `TOPIC_EXPIRED = 162`
 -   Add new table `topic_message`:
 
 ```postgres-sql
