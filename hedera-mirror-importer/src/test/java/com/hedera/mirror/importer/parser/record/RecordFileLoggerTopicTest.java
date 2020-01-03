@@ -223,11 +223,11 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
         var consensusTimestamp = 6_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
 
-        var topic = createTopicEntity(topicId, 11L, 21, adminKey, submitKey, "updated-memo", 1L, 30L);
+        var topic = createTopicEntity(topicId, 11L, 0, adminKey, submitKey, "updated-memo", 1L, 30L);
         // Topic does not get stored in the repository beforehand.
 
-        var transaction = createUpdateTopicTransaction(topicId, topic.getExpiryTimeSeconds(), topic.getExpiryTimeNanos()
-                .intValue(), adminKey, submitKey, topic.getMemo(), 1L, 30L);
+        var transaction = createUpdateTopicTransaction(topicId, 11L, 0, adminKey, submitKey, topic
+                .getMemo(), 1L, 30L);
         var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
                 responseCode);
 
@@ -281,8 +281,6 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
         }
         if (updatedExpirationTimeSeconds != null && updatedExpirationTimeNanos != null) {
             topic.setExpiryTimeNs(Utility.convertToNanosMax(updatedExpirationTimeSeconds, updatedExpirationTimeNanos));
-            topic.setExpiryTimeSeconds(updatedExpirationTimeSeconds);
-            topic.setExpiryTimeNanos((long) updatedExpirationTimeNanos);
         }
         if (updatedAdminKey != null) {
             topic.setKey(updatedAdminKey.toByteArray());
@@ -582,10 +580,7 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
             topic.setAutoRenewPeriod(autoRenewPeriod);
         }
         if (expirationTimeSeconds != null && expirationTimeNanos != null) {
-            topic.setExpiryTimeNs(Utility
-                    .convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
-            topic.setExpiryTimeSeconds(expirationTimeSeconds);
-            topic.setExpiryTimeNanos(expirationTimeNanos.longValue());
+            topic.setExpiryTimeNs(Utility.convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
         }
         if (null != adminKey) {
             topic.setKey(adminKey.toByteArray());

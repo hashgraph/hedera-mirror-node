@@ -605,8 +605,6 @@ public class RecordFileLogger {
             if (transactionBody.hasExpirationTime()) {
                 Timestamp expirationTime = transactionBody.getExpirationTime();
                 entity.setExpiryTimeNs(Utility.timestampInNanosMax(expirationTime));
-                entity.setExpiryTimeSeconds(expirationTime.getSeconds());
-                entity.setExpiryTimeNanos((long) expirationTime.getNanos());
             }
 
             if (transactionBody.hasAutoRenewAccount()) {

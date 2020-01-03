@@ -120,10 +120,9 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         return new CSVPrinter(
                 Files.newBufferedWriter(Paths.get(outputDir, "t_entities")),
                 CSVFormat.DEFAULT.withHeader(
-                        "id", "entity_num", "entity_realm", "entity_shard", "fk_entity_type_id", "exp_time_seconds",
-                        "exp_time_nanos", "auto_renew_period", "admin_key__deprecated", "key", "fk_prox_acc_id",
-                        "deleted", "exp_time_ns", "ed25519_public_key_hex", "submit_key", "topic_valid_start_time",
-                        "memo"));
+                        "id", "entity_num", "entity_realm", "entity_shard", "fk_entity_type_id", "auto_renew_period",
+                        "key", "fk_prox_acc_id", "deleted", "exp_time_ns", "ed25519_public_key_hex", "submit_key",
+                        "memo", "auto_renew_account_id"));
     }
 
     private static CSVPrinter getCryptoTransferListsCSVPrinter(String outputDir) throws IOException {
@@ -162,6 +161,14 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         recordFilesWriter.close();
     }
 
+    private static String toHex(byte[] data) {
+        if (data == null) {
+            return null;
+        } else {
+            return "\\x" + Hex.encodeHexString(data);
+        }
+    }
+
     @Override
     public void close() throws IOException {
         transactionsWriter.close();
@@ -193,10 +200,10 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         try {
             entitiesWriter.printRecord(
                     entity.getId(), entity.getEntityNum(), entity.getEntityRealm(), entity.getEntityShard(),
-                    entity.getEntityTypeId(), entity.getExpiryTimeSeconds(), entity.getExpiryTimeNanos(),
-                    entity.getAutoRenewPeriod(), null, toHex(entity.getKey()), entity.getProxyAccountId(),
-                    entity.isDeleted(), entity.getExpiryTimeNs(), entity.getEd25519PublicKeyHex(),
-                    toHex(entity.getSubmitKey()), entity.getTopicValidStartTime(), entity.getMemo());
+                    entity.getEntityTypeId(), entity.getAutoRenewPeriod(), toHex(entity.getKey()), entity
+                            .getProxyAccountId(), entity.isDeleted(), entity.getExpiryTimeNs(), entity
+                            .getEd25519PublicKeyHex(), toHex(entity.getSubmitKey()), entity.getMemo(),
+                            entity.getAutoRenewAccount() != null ? entity.getAutoRenewAccount().getId() : null);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -243,14 +250,6 @@ public class PostgresCSVDomainWriter implements DomainWriter {
             accountBalancesWriter.printRecord(consensusNs, balance, 0, accountNum);
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private static String toHex(byte[] data) {
-        if (data == null) {
-            return null;
-        } else {
-            return "\\x" + Hex.encodeHexString(data);
         }
     }
 

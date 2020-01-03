@@ -55,7 +55,6 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.util.Utility;
-import java.util.Arrays;
 
 public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
@@ -134,8 +133,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertFalse(dbNewAccountEntity.isDeleted())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeNanos())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
         );
 
@@ -221,8 +218,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertFalse(dbNewAccountEntity.isDeleted())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeNanos())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
 
                 // Crypto transfer list
@@ -287,8 +282,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertFalse(dbNewAccountEntity.isDeleted())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeNanos())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
         );
 
@@ -356,8 +349,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertFalse(dbNewAccountEntity.isDeleted())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeNanos())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
         );
 
@@ -421,8 +412,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertFalse(dbNewAccountEntity.isDeleted())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeNanos())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeSeconds())
                 , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
         );
 
@@ -486,10 +475,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertEquals(Utility
                         .timeStampInNanos(cryptoUpdateTransactionBody.getExpirationTime()), dbAccountEntity
                         .getExpiryTimeNs())
-                , () -> assertEquals(cryptoUpdateTransactionBody.getExpirationTime().getSeconds(), dbAccountEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(cryptoUpdateTransactionBody.getExpirationTime().getNanos(), dbAccountEntity
-                        .getExpiryTimeNanos())
 
                 // Additional entity checks
                 , () -> assertFalse(dbAccountEntity.isDeleted())
@@ -654,8 +639,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertNotNull(dbAccountEntity.getAutoRenewPeriod())
                 , () -> assertNotNull(dbProxyAccountId)
                 , () -> assertNull(dbAccountEntity.getExpiryTimeNs())
-                , () -> assertNull(dbAccountEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbAccountEntity.getExpiryTimeNanos())
         );
 
         // Crypto transfer list
@@ -717,8 +700,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 , () -> assertNotNull(dbAccountEntity.getAutoRenewPeriod())
                 , () -> assertNotNull(dbProxyAccountId)
                 , () -> assertNull(dbAccountEntity.getExpiryTimeNs())
-                , () -> assertNull(dbAccountEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbAccountEntity.getExpiryTimeNanos())
         );
 
         // Crypto transfer list

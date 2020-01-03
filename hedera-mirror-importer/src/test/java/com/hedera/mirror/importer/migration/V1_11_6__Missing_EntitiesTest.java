@@ -29,14 +29,12 @@ import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.time.Instant;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
-
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.api.Assertions;
@@ -68,7 +66,7 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
 
     @TempDir
     Path tempDir;
-    private AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build();
+    private final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build();
     @Resource
     private V1_11_6__Missing_Entities migration;
     @Resource
@@ -100,8 +98,6 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entities::getAutoRenewPeriod))
                 .returns(Utility.protobufKeyToHexIfEd25519OrNull(accountInfo.getKey()
                         .toByteArray()), from(Entities::getEd25519PublicKeyHex))
-                .returns(accountInfo.getExpirationTime().getSeconds(), from(Entities::getExpiryTimeSeconds))
-                .returns(Long.valueOf(accountInfo.getExpirationTime().getNanos()), from(Entities::getExpiryTimeNanos))
                 .returns(Utility.timeStampInNanos(accountInfo.getExpirationTime()), from(Entities::getExpiryTimeNs))
                 .returns(accountInfo.getKey().toByteArray(), from(Entities::getKey));
     }
@@ -115,8 +111,6 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
                 .get()
                 .returns(null, from(Entities::getAutoRenewPeriod))
                 .returns(null, from(Entities::getEd25519PublicKeyHex))
-                .returns(null, from(Entities::getExpiryTimeSeconds))
-                .returns(null, from(Entities::getExpiryTimeNanos))
                 .returns(null, from(Entities::getExpiryTimeNs))
                 .returns(null, from(Entities::getKey));
     }
@@ -167,8 +161,6 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entities::getAutoRenewPeriod))
                 .returns(Utility.protobufKeyToHexIfEd25519OrNull(accountInfo.getKey()
                         .toByteArray()), from(Entities::getEd25519PublicKeyHex))
-                .returns(accountInfo.getExpirationTime().getSeconds(), from(Entities::getExpiryTimeSeconds))
-                .returns(Long.valueOf(accountInfo.getExpirationTime().getNanos()), from(Entities::getExpiryTimeNanos))
                 .returns(Utility.timeStampInNanos(accountInfo.getExpirationTime()), from(Entities::getExpiryTimeNs))
                 .returns(accountInfo.getKey().toByteArray(), from(Entities::getKey));
     }

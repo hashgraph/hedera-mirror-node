@@ -54,9 +54,7 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
         entity.setEntityRealm(4L);
         entity.setEntityShard(3L);
         entity.setEntityTypeId(entityTypeId);
-        entity.setExpiryTimeNanos(200L);
         entity.setExpiryTimeNs(300L);
-        entity.setExpiryTimeSeconds(400L);
         entity.setKey("key".getBytes());
         entity.setProxyAccountId(proxyEntity.getId());
         entity.setSubmitKey("SubmitKey".getBytes());
