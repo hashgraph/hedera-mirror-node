@@ -141,7 +141,7 @@
                             <argument>-Xms1024m</argument>
                         </arguments>
                     </jMeterProcessJVMSettings>
-
+                    <testFilesIncluded>E2E Topic 0 Single User Historic and Incoming Messages.jmx</testFilesIncluded>
                 </configuration>
             </plugin>
         </plugins>
