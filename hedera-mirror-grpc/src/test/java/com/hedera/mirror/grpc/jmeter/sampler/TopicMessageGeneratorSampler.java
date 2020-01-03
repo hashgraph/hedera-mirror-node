@@ -38,12 +38,12 @@ public class TopicMessageGeneratorSampler {
     }
 
     public String populateTopicMessages(long topicNum, int historicalMessageCount, int futureMessageCount,
-                                        long newTopicsMessageDelay, long delTopicNum, long delSeqFrom) throws InterruptedException {
+                                        long newTopicsMessageDelay, long delSeqFrom) throws InterruptedException {
         log.info("THRD {} : Running TopicMessageGenerator Sampler populateTopicMessages topicNum : {}, " +
                         "historicalMessageCount :" +
                         " {}, futureMessageCount : {}, " +
-                        "newTopicsMessageDelay : {}, delTopicNum : {}, delSeqFrom : {}",
-                threadNum, topicNum, historicalMessageCount, futureMessageCount, newTopicsMessageDelay, delTopicNum,
+                        "newTopicsMessageDelay : {}, delSeqFrom : {}",
+                threadNum, topicNum, historicalMessageCount, futureMessageCount, newTopicsMessageDelay,
                 delSeqFrom);
 
         CountDownLatch historicMessagesLatch = new CountDownLatch(historicalMessageCount);
@@ -55,7 +55,7 @@ public class TopicMessageGeneratorSampler {
 
         generateIncomingMessages(topicNum, futureMessageCount, incomingMessagesLatch, newTopicsMessageDelay);
 
-        deleteMessagesFromTopic(delTopicNum, delSeqFrom);
+        deleteMessagesFromTopic(topicNum, delSeqFrom);
 
         return "Success";
     }

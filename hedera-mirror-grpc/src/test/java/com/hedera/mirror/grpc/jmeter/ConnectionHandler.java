@@ -38,21 +38,31 @@ import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 public class ConnectionHandler {
     private final InstantToLongConverter itlc = new InstantToLongConverter();
     private final PostgresqlConnection connection;
+    private final String host;
+    private final int port;
+    private final String dbName;
+    private final String dbUser;
+    private final String dbPassword;
 
-    public ConnectionHandler() {
+    public ConnectionHandler(String hst, int prt, String dbn, String dbu, String dbp) {
+        host = hst;
+        port = prt;
+        dbName = dbn;
+        dbUser = dbu;
+        dbPassword = dbp;
+
         connection = getConnection();
     }
 
     public PostgresqlConnectionFactory getConnectionFactory() {
-        // to:do - move db connection info to params file
         log.trace("Initialize connectionFactory");
         PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(
                 PostgresqlConnectionConfiguration.builder()
-                        .host("localhost")
-                        .port(5432)
-                        .username("mirror_grpc")
-                        .password("mirror_grpc_pass")
-                        .database("mirror_node")
+                        .host(host)
+                        .port(port)
+                        .username(dbUser)
+                        .password(dbPassword)
+                        .database(dbName)
                         .build());
 
         return connectionFactory;

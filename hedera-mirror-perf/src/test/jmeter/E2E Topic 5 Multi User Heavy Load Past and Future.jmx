@@ -31,6 +31,31 @@
           <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Populate 5 Historical Topic 7 Messages Request" enabled="true">
             <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
               <collectionProp name="Arguments.arguments">
+                <elementProp name="host" elementType="Argument">
+                  <stringProp name="Argument.name">host</stringProp>
+                  <stringProp name="Argument.value">localhost</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="port" elementType="Argument">
+                  <stringProp name="Argument.name">port</stringProp>
+                  <stringProp name="Argument.value">5432</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="host" elementType="Argument">
+                  <stringProp name="Argument.name">dbUser</stringProp>
+                  <stringProp name="Argument.value">mirror_node</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="port" elementType="Argument">
+                  <stringProp name="Argument.name">dbPassword</stringProp>
+                  <stringProp name="Argument.value">mirror_node_pass</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="host" elementType="Argument">
+                  <stringProp name="Argument.name">dbName</stringProp>
+                  <stringProp name="Argument.value">mirror_node</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
                 <elementProp name="topicID" elementType="Argument">
                   <stringProp name="Argument.name">topicID</stringProp>
                   <stringProp name="Argument.value">5</stringProp>
@@ -54,11 +79,6 @@
                 <elementProp name="newTopicsMessageDelay" elementType="Argument">
                   <stringProp name="Argument.name">newTopicsMessageDelay</stringProp>
                   <stringProp name="Argument.value">0</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="delTopicNum" elementType="Argument">
-                  <stringProp name="Argument.name">delTopicNum</stringProp>
-                  <stringProp name="Argument.value">-1</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
                 <elementProp name="delSeqFrom" elementType="Argument">
@@ -90,6 +110,31 @@
         <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Generate Incoming Messages Request" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
             <collectionProp name="Arguments.arguments">
+              <elementProp name="host" elementType="Argument">
+                <stringProp name="Argument.name">host</stringProp>
+                <stringProp name="Argument.value">localhost</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="port" elementType="Argument">
+                <stringProp name="Argument.name">port</stringProp>
+                <stringProp name="Argument.value">5432</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="host" elementType="Argument">
+                <stringProp name="Argument.name">dbUser</stringProp>
+                <stringProp name="Argument.value">mirror_node</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="port" elementType="Argument">
+                <stringProp name="Argument.name">dbPassword</stringProp>
+                <stringProp name="Argument.value">mirror_node_pass</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="host" elementType="Argument">
+                <stringProp name="Argument.name">dbName</stringProp>
+                <stringProp name="Argument.value">mirror_node</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
                 <stringProp name="Argument.value">5</stringProp>
@@ -113,11 +158,6 @@
               <elementProp name="newTopicsMessageDelay" elementType="Argument">
                 <stringProp name="Argument.name">newTopicsMessageDelay</stringProp>
                 <stringProp name="Argument.value">1</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-              <elementProp name="delTopicNum" elementType="Argument">
-                <stringProp name="Argument.name">delTopicNum</stringProp>
-                <stringProp name="Argument.value">-1</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="delSeqFrom" elementType="Argument">
@@ -216,6 +256,31 @@
         <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="Clean up Topic Messages Request" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
             <collectionProp name="Arguments.arguments">
+              <elementProp name="host" elementType="Argument">
+                <stringProp name="Argument.name">host</stringProp>
+                <stringProp name="Argument.value">localhost</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="port" elementType="Argument">
+                <stringProp name="Argument.name">port</stringProp>
+                <stringProp name="Argument.value">5432</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="host" elementType="Argument">
+                <stringProp name="Argument.name">dbUser</stringProp>
+                <stringProp name="Argument.value">mirror_node</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="port" elementType="Argument">
+                <stringProp name="Argument.name">dbPassword</stringProp>
+                <stringProp name="Argument.value">mirror_node_pass</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="host" elementType="Argument">
+                <stringProp name="Argument.name">dbName</stringProp>
+                <stringProp name="Argument.value">mirror_node</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
                 <stringProp name="Argument.value">5</stringProp>
@@ -239,11 +304,6 @@
               <elementProp name="newTopicsMessageDelay" elementType="Argument">
                 <stringProp name="Argument.name">newTopicsMessageDelay</stringProp>
                 <stringProp name="Argument.value">0</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-              <elementProp name="delTopicNum" elementType="Argument">
-                <stringProp name="Argument.name">delTopicNum</stringProp>
-                <stringProp name="Argument.value">5</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="delSeqFrom" elementType="Argument">

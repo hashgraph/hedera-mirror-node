@@ -77,7 +77,7 @@ public class ConsensusServiceReactiveSampler {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    public String subscribeTopic(int historicMessagesCount, int futureMessagesCount, Instant observerStart) throws InterruptedException {
+    public SamplerResult subscribeTopic(int historicMessagesCount, int futureMessagesCount, Instant observerStart) throws InterruptedException {
         log.info("THRD {} : Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs : " +
                         "{},limit :" +
                         " {}, historicMessagesCount : {}, futureMessagesCount : {}, observerStart : {}",
@@ -98,7 +98,7 @@ public class ConsensusServiceReactiveSampler {
         int[] topics = {0};
         CountDownLatch historicMessagesLatch = new CountDownLatch(historicMessagesCount);
         CountDownLatch incomingMessagesLatch = new CountDownLatch(futureMessagesCount);
-        ClientResult result = new ClientResult(topicNum, realmNum);
+        SamplerResult result = new SamplerResult(topicNum, realmNum);
         boolean awaitHistoricMessages = historicMessagesCount > 0;
         boolean awaitNewMessages = futureMessagesCount > 0;
 
@@ -165,26 +165,26 @@ public class ConsensusServiceReactiveSampler {
                                 .getCount());
                 result.success = false;
             }
-
-            responseObserver.onCompleted();
         } catch (Exception ex) {
             log.warn(String.format("THRD {} : RCP failed", threadNum), ex);
             throw ex;
+        } finally {
+            responseObserver.onCompleted();
         }
 
         log.info("THRD {} : Consensus service response observer: {}", threadNum, result);
-        return result.toString();
+        return result;
     }
 
     @ToString
-    private class ClientResult {
+    public class SamplerResult {
         private final long topicNum;
         private final long realmId;
-        private boolean success;
+        public boolean success;
         private int historicalMessageCount;
         private int incomingMessageCount;
 
-        public ClientResult(long topicnm, long realnm) {
+        public SamplerResult(long topicnm, long realnm) {
             topicNum = topicnm;
             realmId = realnm;
             historicalMessageCount = 0;

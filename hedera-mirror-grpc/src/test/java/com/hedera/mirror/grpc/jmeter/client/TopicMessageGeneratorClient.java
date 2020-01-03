@@ -38,22 +38,33 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
     int historicMessagesCount;
     int futureMessagesCount;
     long newTopicsMessageDelay;
-    long delTopicNum;
     long delSeqFrom;
     TopicMessageGeneratorSampler sampler;
     ConnectionHandler connHandl;
     int threadNum;
+    String host;
+    int port;
+    String dbName;
+    String dbUser;
+    String dbPassword;
 
     @Override
     public void setupTest(JavaSamplerContext context) {
+        // db props
+        host = context.getParameter("host");
+        port = context.getIntParameter("port");
+        dbName = context.getParameter("dbName");
+        dbUser = context.getParameter("dbUser");
+        dbPassword = context.getParameter("dbPassword");
+
+        // testcase props
         topicNum = context.getLongParameter("topicID");
         historicMessagesCount = context.getIntParameter("historicMessagesCount");
         futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
         newTopicsMessageDelay = context.getLongParameter("newTopicsMessageDelay");
-        delTopicNum = context.getLongParameter("delTopicNum");
         delSeqFrom = context.getLongParameter("delSeqFrom");
 
-        connHandl = new ConnectionHandler();
+        connHandl = new ConnectionHandler(host, port, dbName, dbUser, dbPassword);
 
         threadNum = context.getJMeterContext().getThreadNum();
         sampler = new TopicMessageGeneratorSampler(connHandl, threadNum);
@@ -64,6 +75,11 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
     @Override
     public Arguments getDefaultParameters() {
         Arguments defaultParameters = new Arguments();
+        defaultParameters.addArgument("host", "localhost");
+        defaultParameters.addArgument("port", "5432");
+        defaultParameters.addArgument("dbName", "mirror_node");
+        defaultParameters.addArgument("dbUser", "mirror_grpc");
+        defaultParameters.addArgument("dbPassword", "mirror_grpc_pass");
         defaultParameters.addArgument("topicID", "0");
         defaultParameters.addArgument("realmNum", "0");
         defaultParameters.addArgument("historicMessagesCount", "0");
@@ -86,9 +102,12 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
             log.info("Thread {} : Kicking off populateTopicMessages", threadNum);
             response = sampler
                     .populateTopicMessages(topicNum, historicMessagesCount, futureMessagesCount,
-                            newTopicsMessageDelay, delTopicNum, delSeqFrom);
+                            newTopicsMessageDelay, delSeqFrom);
 
             // To:do - add conditional logic based on response to check success criteria
+            if (response != "Success") {
+                throw new Exception("TopicMessageGeneratorSampler response was not successful");
+            }
 
             result.sampleEnd();
             result.setResponseData(response.getBytes());

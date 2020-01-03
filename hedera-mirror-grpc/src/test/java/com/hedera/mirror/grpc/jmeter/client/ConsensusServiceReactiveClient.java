@@ -20,7 +20,6 @@ package com.hedera.mirror.grpc.jmeter.client;
  * ‍
  */
 
-import io.grpc.StatusRuntimeException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
@@ -29,6 +28,8 @@ import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
+
+import com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler;
 
 @Log4j2
 public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
@@ -87,7 +88,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();
         boolean success = true;
-        String response = "";
+        ConsensusServiceReactiveSampler.SamplerResult response = null;
         result.sampleStart();
 
         try {
@@ -95,15 +96,18 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
             response = csclient.subscribeTopic(historicMessagesCount, futureMessagesCount, testStart);
 
             // To:do - add conditional logic based on response to check success criteria
+            if (response == null || !response.success) {
+                throw new Exception("ConsensusServiceReactiveSampler response was not successful");
+            }
 
             result.sampleEnd();
-            result.setResponseData(response.getBytes());
+            result.setResponseData(response.toString().getBytes());
             result.setResponseMessage("Successfully performed subscribe topic test");
             result.setResponseCodeOK();
             log.info("Successfully performed subscribe topic test");
         } catch (InterruptedException intEx) {
             log.warn("RCP failed relating to CountDownLatch: {}", intEx);
-        } catch (StatusRuntimeException ex) {
+        } catch (Exception ex) {
             result.sampleEnd();
             success = false;
             result.setResponseMessage("Exception: " + ex);
