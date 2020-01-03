@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.service;
+package com.hedera.mirror.grpc.controller;
 
 /*-
  * ‌
@@ -44,7 +44,7 @@ import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
-public class ConsensusServiceTest extends GrpcIntegrationTest {
+public class ConsensusControllerTest extends GrpcIntegrationTest {
 
     @GrpcClient("local")
     private ReactorConsensusServiceGrpc.ReactorConsensusServiceStub grpcConsensusService;

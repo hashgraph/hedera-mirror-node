@@ -20,10 +20,10 @@ package com.hedera.datagenerator.domain.generators.entity;
  */
 
 import com.google.common.base.Stopwatch;
-import java.util.function.Function;
-import javax.inject.Named;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import java.util.function.Function;
+import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 
@@ -51,17 +51,6 @@ public class EntityGenerator {
         }
     }
 
-    /**
-     * Generate entities and write them out to the DomainWriter.
-     */
-    public void generateAndWriteEntities(EntityManager entityManager, DomainWriter domainWriter) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        generateAndWriteEntityType(entityManager.getAccounts(), domainWriter, this::generateAccountEntity, "account");
-        generateAndWriteEntityType(entityManager.getFiles(), domainWriter, this::generateFileEntity, "file");
-        generateAndWriteEntityType(entityManager.getTopics(), domainWriter, this::generateTopicEntity, "topic");
-        log.info("Generated all entities in {}", stopwatch);
-    }
-
     private static void generateAndWriteEntityType(EntityManager.EntitySet entitySet, DomainWriter domainWriter,
                                                    Function<Long, Entities> generateFn, String type) {
         int count = 0;
@@ -78,6 +67,17 @@ public class EntityGenerator {
         log.info("Wrote {} entities, containing {} marked deleted", count, deleted);
     }
 
+    /**
+     * Generate entities and write them out to the DomainWriter.
+     */
+    public void generateAndWriteEntities(EntityManager entityManager, DomainWriter domainWriter) {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        generateAndWriteEntityType(entityManager.getAccounts(), domainWriter, this::generateAccountEntity, "account");
+        generateAndWriteEntityType(entityManager.getFiles(), domainWriter, this::generateFileEntity, "file");
+        generateAndWriteEntityType(entityManager.getTopics(), domainWriter, this::generateTopicEntity, "topic");
+        log.info("Generated all entities in {}", stopwatch);
+    }
+
     private Entities createBaseEntity(Long id) {
         Entities entity = new Entities();
         entity.setId(id);
@@ -85,9 +85,6 @@ public class EntityGenerator {
         entity.setEntityRealm(0L);
         entity.setEntityNum(id);
         entity.setKey(fixedKey);
-        // Following fields are left null: exp_time_seconds, exp_time_nanos, exp_time_ns
-        entity.setAutoRenewPeriod(null);
-        entity.setProxyAccountId(null);
         return entity;
     }
 

@@ -193,7 +193,7 @@ public class TransactionEvent {
 -   Add new `t_entity_types` row with name `topic`
 -   Add new columns to `t_entities`:
     -   `submit_key bytea`
-    -   `topic_valid_start_time nanos_timestamp`
+    -   `auto_renew_account_id bigint`
 -   Add new `t_transaction_types`:
     -   `CONSENSUSCREATETOPIC=24`
     -   `CONSENSUSUPDATETOPIC=25`
@@ -201,15 +201,14 @@ public class TransactionEvent {
     -   `CONSENSUSSUBMITMESSAGE=27`
 -   Add new `t_transaction_result`:
     -   `INVALID_TOPIC_ID = 150`
-    -   `TOPIC_DELETED = 151`
-    -   `MESSAGE_TOO_LONG = 152`
-    -   `TOPIC_NOT_ENABLED = 153`
-    -   `INVALID_TOPIC_VALID_START_TIME = 154`
-    -   `INVALID_TOPIC_EXPIRATION_TIME = 155`
-    -   `INVALID_TOPIC_ADMIN_KEY = 156`
-    -   `INVALID_TOPIC_SUBMIT_KEY = 157`
-    -   `UNAUTHORIZED = 158`
-    -   `INVALID_TOPIC_MESSAGE = 159`
+    -   `INVALID_ADMIN_KEY = 155`
+    -   `INVALID_SUBMIT_KEY = 156`
+    -   `UNAUTHORIZED = 157`
+    -   `INVALID_TOPIC_MESSAGE = 158`
+    -   `INVALID_AUTORENEW_ACCOUNT = 159`
+    -   `AUTORENEW_ACCOUNT_NOT_ALLOWED = 160`
+    -   `AUTORENEW_ACCOUNT_SIGNATURE_MISSING = 161`
+    -   `TOPIC_EXPIRED = 162`
 -   Add new table `topic_message`:
 
 ```postgres-sql
@@ -236,6 +235,5 @@ See GitHub issue [374](https://github.com/hashgraph/hedera-mirror-node/issues/37
 
 ## Open Questions
 
-1. Should filter properties not apply to some tables or apply to all tables?
-2. Will `pg_notify` be able to handle the scale of data and clients required? See [Alternatives](#alternatives) section
-3. How will we optimize for multiple clients requesting the same topic ID?
+1. Will `pg_notify` be able to handle the scale of data and clients required? See [Alternatives](#alternatives) section
+2. How will we optimize for multiple clients requesting the same topic ID?

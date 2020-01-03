@@ -132,10 +132,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertEquals(fileCreateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(fileCreateTransactionBody.getExpirationTime().getNanos(), dbFileEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(fileCreateTransactionBody.getExpirationTime()), dbFileEntity
                         .getExpiryTimeNs())
@@ -233,10 +229,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertEquals(fileCreateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(fileCreateTransactionBody.getExpirationTime().getNanos(), dbFileEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(fileCreateTransactionBody.getExpirationTime()), dbFileEntity
                         .getExpiryTimeNs())
@@ -293,10 +285,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertEquals(fileCreateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(fileCreateTransactionBody.getExpirationTime().getNanos(), dbFileEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(fileCreateTransactionBody.getExpirationTime()), dbFileEntity
                         .getExpiryTimeNs())
@@ -383,8 +371,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                         .getFileData())
 
                 // Additional entity checks
-                , () -> assertNotNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNotNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNotNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
@@ -437,8 +423,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                         .getFileData())
 
                 // Additional entity checks
-                , () -> assertNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
@@ -496,8 +480,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                         .getFileData())
 
                 // Additional entity checks
-                , () -> assertNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
@@ -554,10 +536,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity
                         .getExpiryTimeNs())
@@ -623,10 +601,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertEquals(fileCreateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(fileCreateTransactionBody.getExpirationTime().getNanos(), dbFileEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(fileCreateTransactionBody.getExpirationTime()), dbFileEntity
                         .getExpiryTimeNs())
@@ -695,8 +669,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 )
 
                 // Additional entity checks
-                , () -> assertNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
@@ -745,10 +717,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity
                         .getExpiryTimeNs())
@@ -814,8 +782,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertNotNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNotNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNotNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNotNull(dbFileEntity.getKey())
 
@@ -871,8 +837,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNull(dbFileEntity.getKey())
 
@@ -936,10 +900,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity
                         .getExpiryTimeNs())
@@ -993,10 +953,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity
                         .getExpiryTimeNs())
@@ -1058,8 +1014,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertNotNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNotNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNotNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
 
@@ -1111,8 +1065,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
 
@@ -1169,10 +1121,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity
                         .getExpiryTimeNs())
@@ -1235,10 +1183,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getSeconds(), dbFileEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(fileUpdateTransactionBody.getExpirationTime().getNanos(), dbFileEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity
                         .getExpiryTimeNs())
@@ -1310,8 +1254,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertNotNull(dbFileEntity.getKey())
-                , () -> assertNotNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNotNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNotNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
@@ -1361,8 +1303,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertNull(dbFileEntity.getKey())
-                , () -> assertNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
@@ -1413,8 +1353,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertNull(dbFileEntity.getKey())
-                , () -> assertNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
@@ -1464,8 +1402,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertNull(dbFileEntity.getKey())
-                , () -> assertNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
@@ -1514,8 +1450,6 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertNull(dbFileEntity.getKey())
-                , () -> assertNull(dbFileEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbFileEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbFileEntity.getProxyAccountId())
