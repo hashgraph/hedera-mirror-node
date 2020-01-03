@@ -32,6 +32,12 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
     void findByPrimaryKey() {
         int entityTypeId = entityTypeRepository.findByName("account").get().getId();
 
+        Entities autoRenewAccount = new Entities();
+        autoRenewAccount.setEntityTypeId(entityTypeId);
+        autoRenewAccount.setEntityShard(0L);
+        autoRenewAccount.setEntityRealm(0L);
+        autoRenewAccount.setEntityNum(101L);
+
         Entities proxyEntity = new Entities();
         proxyEntity.setEntityTypeId(entityTypeId);
         proxyEntity.setEntityShard(0L);
@@ -41,6 +47,7 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
 
         Entities entity = new Entities();
         entity.setAutoRenewPeriod(100L);
+        entity.setAutoRenewAccount(autoRenewAccount);
         entity.setDeleted(true);
         entity.setEd25519PublicKeyHex("0123456789abcdef");
         entity.setEntityNum(5L);
@@ -54,6 +61,11 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
         entity.setProxyAccountId(proxyEntity.getId());
         entity.setSubmitKey("SubmitKey".getBytes());
         entity = entityRepository.save(entity);
+
+        assertThat(entityRepository.findByPrimaryKey(autoRenewAccount.getEntityShard(),
+                autoRenewAccount.getEntityRealm(), autoRenewAccount.getEntityNum()))
+                .get()
+                .isEqualToIgnoringGivenFields(autoRenewAccount, "id");
 
         assertThat(entityRepository
                 .findByPrimaryKey(entity.getEntityShard(), entity.getEntityRealm(), entity.getEntityNum()))

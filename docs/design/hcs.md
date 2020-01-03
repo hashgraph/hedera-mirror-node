@@ -191,8 +191,9 @@ public class TransactionEvent {
 ## Database
 
 -   Add new `t_entity_types` row with name `topic`
--   Add new column to `t_entities`:
+-   Add new columns to `t_entities`:
     -   `submit_key bytea`
+    -   `auto_renew_account_id bigint`
 -   Add new `t_transaction_types`:
     -   `CONSENSUSCREATETOPIC=24`
     -   `CONSENSUSUPDATETOPIC=25`

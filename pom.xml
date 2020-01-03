@@ -56,7 +56,7 @@
         <docker.repository>docker.pkg.github.com/hashgraph/hedera-mirror-node</docker.repository>
         <grpc.version>1.25.0</grpc.version>
         <guava.version>28.1-jre</guava.version>
-        <hedera-protobuf.version>hcs-11c0d9176b-1</hedera-protobuf.version>
+        <hedera-protobuf.version>hcs-4e1dd97dc6-1</hedera-protobuf.version>
         <jacoco.version>0.8.5</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
