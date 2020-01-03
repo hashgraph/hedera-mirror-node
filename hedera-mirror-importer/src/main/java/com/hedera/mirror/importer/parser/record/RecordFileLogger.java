@@ -464,10 +464,6 @@ public class RecordFileLogger {
         }
 
         proxyEntity = createEntity(proxyEntity);
-        Entities payerEntity = createEntity(getEntity(payerAccountId));
-        Entities nodeEntity = createEntity(getEntity(body.getNodeAccountID()));
-        tx.setNodeAccountId(nodeEntity.getId());
-        tx.setPayerAccountId(payerEntity.getId());
 
         if (entity != null) {
             if (proxyEntity != null) {
@@ -479,7 +475,11 @@ public class RecordFileLogger {
             sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), null);
         }
 
-        log.debug("Storing transaction: {}", tx);
+        Entities payerEntity = createEntity(getEntity(payerAccountId));
+        Entities nodeEntity = createEntity(getEntity(body.getNodeAccountID()));
+        tx.setNodeAccountId(nodeEntity.getId());
+        tx.setPayerAccountId(payerEntity.getId());
+
         // Temporary until we convert SQL statements to repository invocations
         sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), tx.getNodeAccountId());
         sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), tx.getMemo());
@@ -496,6 +496,7 @@ public class RecordFileLogger {
         sqlInsertTransaction.setBytes(F_TRANSACTION.TRANSACTION_BYTES.ordinal(), tx.getTransactionBytes());
         sqlInsertTransaction.setLong(F_TRANSACTION.INITIAL_BALANCE.ordinal(), tx.getInitialBalance());
         sqlInsertTransaction.addBatch();
+        log.debug("Storing transaction: {}", tx);
 
         if ((txRecord.hasTransferList()) && parserProperties.isPersistCryptoTransferAmounts()) {
             if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {

@@ -484,6 +484,25 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         verifyRepoCryptoTransferList(record);
     }
 
+    /**
+     * Github issue #483
+     */
+    @Test
+    void samePayerAndUpdateAccount() throws Exception {
+        Transaction transaction = cryptoUpdateTransaction();
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        transactionBody = TransactionBody.newBuilder()
+                .mergeFrom(transactionBody)
+                .setTransactionID(Utility.getTransactionId(accountId))
+                .build();
+        transaction = Transaction.newBuilder().setBodyBytes(transactionBody.toByteString()).build();
+        CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
+        TransactionRecord record = transactionRecordSuccess(transactionBody);
+
+        RecordFileLogger.storeRecord(transaction, record);
+        RecordFileLogger.completeFile("", "");
+    }
+
     @DisplayName("update account such that expiration timestamp overflows nanos_timestamp")
     @ParameterizedTest(name = "with seconds {0} and expectedNanosTimestamp {1}")
     @CsvSource({
