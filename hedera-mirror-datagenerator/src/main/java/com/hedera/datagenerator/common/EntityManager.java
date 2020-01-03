@@ -43,6 +43,8 @@ public class EntityManager {
 
     private final EntitySet files;
 
+    private final EntitySet topics;
+
     // Keeps track of entities' balances.
     private final Map<Long, Long> balances;
 
@@ -51,6 +53,7 @@ public class EntityManager {
     public EntityManager() {
         accounts = new EntitySet(0L);  // Account entities start from 0
         files = new EntitySet(100_000_000L);
+        topics = new EntitySet(200_000_000L);
         balances = new HashMap<>();
 
         // Create one node account with id = 0.
@@ -86,11 +89,13 @@ public class EntityManager {
             entitySampler = new RandomDistributionFromRange(startEntityId, nextEntityId);
         }
 
-        public Long getRandom() {
-            return entitySampler.sample(1).get(0);
+        public Entities getRandom() {
+            Entities entity = new Entities();
+            entity.setId(entitySampler.sample(1).get(0));
+            return entity;
         }
 
-        public List<Long> getRandom(int n) {
+        public List<Long> getRandomIds(int n) {
             return entitySampler.sampleDistinct(n);
         }
 
@@ -104,8 +109,8 @@ public class EntityManager {
             return entities;
         }
 
-        public void delete(Long entityId) {
-            deleted.add(entityId);
+        public void delete(Entities entity) {
+            deleted.add(entity.getId());
         }
     }
 }

@@ -19,52 +19,50 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
+import javax.annotation.PostConstruct;
 import javax.inject.Named;
 import lombok.Data;
 
 import com.hedera.datagenerator.sampling.NumberDistributionConfig;
 
-/**
- * Fields' generators and properties used by CryptoTransactionGenerator.
- */
 @Data
 @Named
-public class CryptoTransactionProperties {
-
-    private final NumberDistributionConfig numTransferLists = new NumberDistributionConfig();
+public class TopicTransactionProperties {
 
     /**
-     * Relative frequency of crypto type transactions among all generated transactions.
+     * Relative frequency of topic type transactions among all generated transactions.
      */
     private int frequency;
 
     /**
-     * Relative frequency of CRYPTOCREATEACCOUNT transactions
+     * Relative frequency of CONSENSUSCREATETOPIC transactions
      */
     private int createsFrequency;
 
     /**
-     * Relative frequency of CRYPTOTRANSFER transactions
-     */
-    private int transfersFrequency;
-
-    /**
-     * Relative frequency of CRYPTOUPDATEACCOUNT transactions
-     */
-    private int updatesFrequency;
-
-    /**
-     * Relative frequency of CRYPTODELETE transactions
+     * Relative frequency of CONSENSUSDELETETOPIC transactions
      */
     private int deletesFrequency;
 
     /**
-     * When generating transactions, first 'numSeedAccounts' number of transactions will be of type CRYPTOCREATEACCOUNT
-     * only. This is to seed the system with some accounts so crypto transfer lists can sample receiver accounts ids.
+     * Relative frequency of CONSENSUSUPDATETOPIC transactions
      */
-    private int numSeedAccounts;
+    private int updatesFrequency;
+
+    /**
+     * Relative frequency of CONSENSUSSUBMITMESSAGE transactions
+     */
+    private int submitMessageFrequency;
+
+    /**
+     * When generating transactions, first 'numSeedTopics' number of transactions will be of type CONSENSUSCREATETOPIC
+     * only. This is to seed the system with some topics for deletes/updates/submitMessage.
+     */
+    private int numSeedTopics;
+
+    private final NumberDistributionConfig messageSize = new NumberDistributionConfig();
 
     void initDistributions() {
-        numTransferLists.initDistribution();
+        messageSize.initDistribution();
     }
 }

@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 
 import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.Transaction;
 
 public abstract class TransactionGenerator {
@@ -54,8 +55,7 @@ public abstract class TransactionGenerator {
         transaction.setValidDurationSeconds(120L);
         transaction.setMaxFee(1_000_000L);
         transaction.setInitialBalance(0L);
-        Long payerAccountId = entityManager.getAccounts().getRandom();
-        transaction.setPayerAccountId(payerAccountId);
+        transaction.setPayerAccountId(entityManager.getAccounts().getRandom().getId());
         transaction.setMemo(MEMO);
 
         if (numTransactionsGenerated < numSeedEntities) {

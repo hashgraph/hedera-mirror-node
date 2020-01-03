@@ -81,12 +81,10 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
     private void updateAccount(Transaction transaction) {
         transaction.setInitialBalance(0L);
         transaction.setType(15);  // 15 = CRYPTOUPDATEACCOUNT
-        Long accountId = entityManager.getAccounts().getRandom();
-        Entities entities = new Entities();
-        entities.setId(accountId);
-        transaction.setEntity(entities);
-        transaction.setPayerAccountId(accountId);
-        log.trace("CRYPTOUPDATEACCOUNT transaction: entity {}", accountId);
+        Entities account = entityManager.getAccounts().getRandom();
+        transaction.setEntity(account);
+        transaction.setPayerAccountId(account.getId());
+        log.trace("CRYPTOUPDATEACCOUNT transaction: entity {}", account);
     }
 
     private void transfer(Transaction transaction) {
@@ -95,17 +93,15 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
 
         long numTransferLists = properties.getNumTransferLists().sample();
         // first account is sender, rest are receivers
-        List<Long> accountIds = entityManager.getAccounts().getRandom((int) numTransferLists + 1);
+        List<Long> accountIds = entityManager.getAccounts().getRandomIds((int) numTransferLists + 1);
 
-        long totalValue = 0;
-        final int singleTransferAmount = 1000;
+        final long singleTransferAmount = 1_000L;
         for (int i = 0; i < numTransferLists; i++) {
             domainWriter.addCryptoTransfer(createCryptoTransfer(
                     transaction.getConsensusNs(), accountIds.get(i + 1), singleTransferAmount));
-            totalValue += singleTransferAmount;
         }
         domainWriter.addCryptoTransfer(createCryptoTransfer(
-                transaction.getConsensusNs(), accountIds.get(0), -totalValue));
+                transaction.getConsensusNs(), accountIds.get(0), -1 * singleTransferAmount * numTransferLists));
         transaction.setPayerAccountId(accountIds.get(0));
         log.trace("CRYPTOTRANSFER transaction: num transfer lists {}", numTransferLists);
     }
@@ -113,13 +109,12 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
     private void deleteAccount(Transaction transaction) {
         transaction.setInitialBalance(0L);
         transaction.setType(12);  // 12 = CRYPTODELETE
-        Long accountId = entityManager.getAccounts().getRandom();
-        entityManager.getAccounts().delete(accountId);
-        Entities entities = new Entities();
-        entities.setId(accountId);
-        transaction.setEntity(entities);
-        transaction.setPayerAccountId(accountId); // TODO: is payer account different or same as entity being deleted?
-        log.trace("CRYPTODELETE transaction: entity {}", accountId);
+        Entities account = entityManager.getAccounts().getRandom();
+        entityManager.getAccounts().delete(account);
+        transaction.setEntity(account);
+        transaction.setPayerAccountId(account
+                .getId()); // TODO: is payer account different or same as entity being deleted?
+        log.trace("CRYPTODELETE transaction: entity {}", account.getId());
     }
 
     private CryptoTransfer createCryptoTransfer(long consensusNs, long accountId, long value) {
