@@ -25,9 +25,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Consumer;
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.domain.Entities;
-
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
@@ -37,6 +34,7 @@ import com.hedera.datagenerator.common.TransactionGenerator;
 import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.FrequencyDistribution;
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 
@@ -79,6 +77,7 @@ public class TopicTransactionGenerator extends TransactionGenerator {
         Entities newTopic = entityManager.getTopics().newEntity();
         transaction.setEntity(newTopic);
         topicToNextSequenceNumber.put(newTopic.getId(), 0);
+        createTopicMessage(transaction.getConsensusNs(), newTopic.getId());
         log.trace("CONSENSUSCREATETOPIC transaction: topicId {}", newTopic);
     }
 
@@ -94,6 +93,7 @@ public class TopicTransactionGenerator extends TransactionGenerator {
         transaction.setType(25);  // 25 = CONSENSUSUPDATETOPIC
         Entities topic = entityManager.getTopics().getRandom();
         transaction.setEntity(topic);
+        createTopicMessage(transaction.getConsensusNs(), topic.getId());
         log.trace("CONSENSUSUPDATETOPIC transaction: topicId {}", topic.getId());
     }
 

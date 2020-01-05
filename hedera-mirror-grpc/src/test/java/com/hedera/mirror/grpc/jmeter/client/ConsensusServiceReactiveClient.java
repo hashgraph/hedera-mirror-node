@@ -95,16 +95,18 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
             log.info("Thread {} : Kicking off subscribeTopic", threadNum);
             response = csclient.subscribeTopic(historicMessagesCount, futureMessagesCount, testStart);
 
-            // To:do - add conditional logic based on response to check success criteria
-            if (response == null || !response.success) {
-                throw new Exception("ConsensusServiceReactiveSampler response was not successful");
-            }
-
             result.sampleEnd();
             result.setResponseData(response.toString().getBytes());
-            result.setResponseMessage("Successfully performed subscribe topic test");
-            result.setResponseCodeOK();
-            log.info("Successfully performed subscribe topic test");
+            log.info("ConsensusServiceReactiveSampler response Success : {}", response.success);
+            if (response == null || !response.success) {
+                result.setResponseMessage("Failure in subscribe topic test");
+                result.setResponseCode("500");
+            } else {
+                result.setResponseMessage("Successfully performed subscribe topic test");
+                result.setResponseCodeOK();
+            }
+
+            log.info("Completed subscribe topic test");
         } catch (InterruptedException intEx) {
             log.warn("RCP failed relating to CountDownLatch: {}", intEx);
         } catch (Exception ex) {
@@ -120,7 +122,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
             result.setResponseCode("500");
         }
 
-        result.setSuccessful(success);
+        result.setSuccessful(response.success);
 
         // shutdown test and avoid notifying waiting for signal - saves run time
         teardownTest(context);

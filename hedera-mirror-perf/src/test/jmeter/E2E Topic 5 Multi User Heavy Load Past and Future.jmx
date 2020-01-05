@@ -58,7 +58,7 @@
                 </elementProp>
                 <elementProp name="topicID" elementType="Argument">
                   <stringProp name="Argument.name">topicID</stringProp>
-                  <stringProp name="Argument.value">5</stringProp>
+                  <stringProp name="Argument.value">200002152</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
                 <elementProp name="realmNum" elementType="Argument">
@@ -102,7 +102,7 @@
         <stringProp name="ThreadGroup.num_threads">1</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
-        <stringProp name="ThreadGroup.duration">25</stringProp>
+        <stringProp name="ThreadGroup.duration">5</stringProp>
         <stringProp name="ThreadGroup.delay">6</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
       </ThreadGroup>
@@ -137,7 +137,7 @@
               </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
-                <stringProp name="Argument.value">5</stringProp>
+                <stringProp name="Argument.value">200002152</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="realmNum" elementType="Argument">
@@ -152,12 +152,12 @@
               </elementProp>
               <elementProp name="newTopicsMessageCount" elementType="Argument">
                 <stringProp name="Argument.name">newTopicsMessageCount</stringProp>
-                <stringProp name="Argument.value">50</stringProp>
+                <stringProp name="Argument.value">20</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="newTopicsMessageDelay" elementType="Argument">
                 <stringProp name="Argument.name">newTopicsMessageDelay</stringProp>
-                <stringProp name="Argument.value">1</stringProp>
+                <stringProp name="Argument.value">500</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="delSeqFrom" elementType="Argument">
@@ -215,7 +215,7 @@
               </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
-                <stringProp name="Argument.value">5</stringProp>
+                <stringProp name="Argument.value">200002152</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="realmNum" elementType="Argument">
@@ -283,7 +283,7 @@
               </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
-                <stringProp name="Argument.value">5</stringProp>
+                <stringProp name="Argument.value">200002152</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="realmNum" elementType="Argument">
@@ -308,7 +308,7 @@
               </elementProp>
               <elementProp name="delSeqFrom" elementType="Argument">
                 <stringProp name="Argument.name">delSeqFrom</stringProp>
-                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.value">1</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>

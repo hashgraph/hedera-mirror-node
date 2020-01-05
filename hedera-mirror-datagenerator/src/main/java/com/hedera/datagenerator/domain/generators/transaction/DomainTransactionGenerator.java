@@ -27,7 +27,8 @@ import com.hedera.datagenerator.common.TransactionGeneratorProperties;
 import com.hedera.datagenerator.sampling.FrequencyDistribution;
 
 /**
- * Generates mixed types of transactions. Uses CryptoTransactionGenerator and FileTransactionGenerator.
+ * Generates mixed types of transactions. Uses CryptoTransactionGenerator, FileTransactionGenerator and
+ * TopicTransactionGenerator.
  */
 @Named
 public class DomainTransactionGenerator {

@@ -72,23 +72,27 @@ public class TopicMessageGeneratorSampler {
     private void generateIncomingMessages(long topicNum, int futureMessageCount, CountDownLatch incomingMessagesLatch
             , long delay) throws InterruptedException {
         if (futureMessageCount > 0) {
+            Instant start = Instant.now();
+            int maxRunSeconds = 60;
             Instant incomingInstant;
             if (delay == 0) {
                 incomingInstant = Instant.now();
                 connectionHandler
                         .InsertTopicMessage(futureMessageCount, topicNum, incomingInstant, incomingMessagesLatch, -1);
             } else {
-                // prevent sleep of more than 10 secs
-                if (delay > 10) {
-                    log.warn("Capping delay to 10 seconds. We don't want long living threads.");
-                    delay = 10;
-                }
-
-                for (int i = 0; i < futureMessageCount; i++) {
+                while (true) {
                     incomingInstant = Instant.now();
+
+                    if (incomingInstant.isAfter(start.plusSeconds(maxRunSeconds))) {
+                        log.warn("Breaking out of loop. We don't want long living threads beyond {} seconds.",
+                                maxRunSeconds);
+                        break;
+                    }
+
                     connectionHandler
-                            .InsertTopicMessage(1, topicNum, incomingInstant, incomingMessagesLatch, -1);
-                    Thread.sleep(delay * 1000);
+                            .InsertTopicMessage(futureMessageCount, topicNum, incomingInstant, incomingMessagesLatch,
+                                    -1);
+                    Thread.sleep(delay);
                 }
             }
         }

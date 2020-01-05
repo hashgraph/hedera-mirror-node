@@ -85,7 +85,6 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
         defaultParameters.addArgument("historicMessagesCount", "0");
         defaultParameters.addArgument("newTopicsMessageCount", "0");
         defaultParameters.addArgument("newTopicsMessageDelay", "0");
-        defaultParameters.addArgument("delTopicNum", "-1");
         defaultParameters.addArgument("delSeqFrom", "-1");
         return defaultParameters;
     }
