@@ -75,8 +75,6 @@ jobs:
             NAME=hedera-mirror-grpc-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
             WORKSPACE=/tmp/workspace
             mkdir -p ${WORKSPACE}/${NAME}
-            # Truncate '-exec' from jar name
-            jarname=jarname=$(ls hedera-mirror-grpc/target/hedera-mirror-grpc-*-exec.jar | sed -E "s:.*target/(.*)-exec.jar:\1:")
             mv hedera-mirror-grpc/target/hedera-mirror-grpc-*-exec.jar ${WORKSPACE}/${NAME}/${NAME}.jar
             mv hedera-mirror-grpc/scripts ${WORKSPACE}/${NAME}
             mkdir -p ${WORKSPACE}/artifacts

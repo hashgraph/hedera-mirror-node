@@ -63,7 +63,7 @@ public class TopicMessageGeneratorSampler {
         if (historicalMessageCount > 0) {
             Instant pastInstant = Instant.now().minus(7, ChronoUnit.DAYS);
             connectionHandler
-                    .InsertTopicMessage(historicalMessageCount, topicNum, pastInstant, historicMessagesLatch, -1);
+                    .insertTopicMessage(historicalMessageCount, topicNum, pastInstant, historicMessagesLatch, -1);
         }
     }
 
@@ -76,7 +76,7 @@ public class TopicMessageGeneratorSampler {
             if (delay == 0) {
                 incomingInstant = Instant.now();
                 connectionHandler
-                        .InsertTopicMessage(futureMessageCount, topicNum, incomingInstant, incomingMessagesLatch, -1);
+                        .insertTopicMessage(futureMessageCount, topicNum, incomingInstant, incomingMessagesLatch, -1);
             } else {
                 while (true) {
                     incomingInstant = Instant.now();
@@ -88,7 +88,7 @@ public class TopicMessageGeneratorSampler {
                     }
 
                     connectionHandler
-                            .InsertTopicMessage(futureMessageCount, topicNum, incomingInstant, incomingMessagesLatch,
+                            .insertTopicMessage(futureMessageCount, topicNum, incomingInstant, incomingMessagesLatch,
                                     -1);
                     Thread.sleep(delay);
                 }

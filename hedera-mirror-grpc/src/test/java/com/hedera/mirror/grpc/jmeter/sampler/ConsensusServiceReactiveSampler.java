@@ -83,7 +83,8 @@ public class ConsensusServiceReactiveSampler {
                         " : " +
                         "{},limit :" +
                         " {}, historicMessagesCount : {}, futureMessagesCount : {}, observerStart : {}",
-                threadNum, topicNum, startTimeSecs, endTimeSecs, limit, futureMessagesCount, observerStart);
+                threadNum, topicNum, startTimeSecs, endTimeSecs, limit, historicMessagesCount, futureMessagesCount,
+                observerStart);
 
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
                 .setLimit(limit)

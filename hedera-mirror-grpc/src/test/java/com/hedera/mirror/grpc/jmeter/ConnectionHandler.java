@@ -85,7 +85,7 @@ public class ConnectionHandler {
         return connectionFactory.create().block();
     }
 
-    public void InsertTopicMessage(int newTopicsMessageCount, long tpcnm, Instant instantref, CountDownLatch latch,
+    public void insertTopicMessage(int newTopicsMessageCount, long tpcnm, Instant instantref, CountDownLatch latch,
                                    long seqStart) {
 
         if (newTopicsMessageCount == 0) {
@@ -138,7 +138,7 @@ public class ConnectionHandler {
                             return topicNum;
                         })).blockFirst();
 
-        log.info("Determined next available topid id number from table is {}", nextTopicId + 1);
+        log.trace("Determined next available topid id number from table is {}", nextTopicId + 1);
         return nextTopicId + 1;
     }
 
@@ -161,7 +161,7 @@ public class ConnectionHandler {
                             return max;
                         })).blockFirst();
 
-        log.info("Determined next available sequence number from table is {}", nextSeqNum + 1);
+        log.trace("Determined next available sequence number from table is {}", nextSeqNum + 1);
         return nextSeqNum + 1;
     }
 
