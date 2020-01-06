@@ -44,12 +44,12 @@ public class ConnectionHandler {
     private final String dbUser;
     private final String dbPassword;
 
-    public ConnectionHandler(String hst, int prt, String dbn, String dbu, String dbp) {
-        host = hst;
-        port = prt;
-        dbName = dbn;
-        dbUser = dbu;
-        dbPassword = dbp;
+    public ConnectionHandler(String host, int port, String dbName, String dbUser, String dbPassword) {
+        this.host = host;
+        this.port = port;
+        this.dbName = dbName;
+        this.dbUser = dbUser;
+        this.dbPassword = dbPassword;
 
         connection = getConnection();
     }
@@ -115,9 +115,11 @@ public class ConnectionHandler {
                     .bind("$6", sequenceNum);
             statement.execute().blockLast();
 
-            log.info("Stored TopicMessage {}, Time: {}, count: {}, seq : {}", tpcnm,
+            log.trace("Stored TopicMessage {}, Time: {}, count: {}, seq : {}", tpcnm,
                     instalong, i, sequenceNum);
         }
+
+        log.info("Successfully inserted {} topic messages", newTopicsMessageCount);
     }
 
     public long getNextAvailableTopicID() {
@@ -164,6 +166,12 @@ public class ConnectionHandler {
     }
 
     public void clearTopicMessages(long topicId, long seqNumFrom) {
+        if (topicId < 0 || seqNumFrom < 0) {
+            log.warn("TopicId : {} or SeqNum : {} are outside of acceptable range. clearTopicMessages() will be " +
+                    "skipped.", topicId, seqNumFrom);
+            return;
+        }
+
         String delTopicMsgsSql = "delete from topic_message where topic_num = $1 and sequence_number >= $2";
         PostgresqlStatement statement = connection.createStatement(delTopicMsgsSql)
                 .bind("$1", topicId)

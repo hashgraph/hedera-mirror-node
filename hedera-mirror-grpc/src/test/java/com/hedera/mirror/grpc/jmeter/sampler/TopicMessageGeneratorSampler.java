@@ -30,20 +30,18 @@ import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
 @Log4j2
 public class TopicMessageGeneratorSampler {
     private final ConnectionHandler connectionHandler;
-    private final int threadNum;
 
-    public TopicMessageGeneratorSampler(ConnectionHandler connectionHndler, int thrdNum) {
-        connectionHandler = connectionHndler;
-        threadNum = thrdNum;
+    public TopicMessageGeneratorSampler(ConnectionHandler connectionHandler) {
+        this.connectionHandler = connectionHandler;
     }
 
     public String populateTopicMessages(long topicNum, int historicalMessageCount, int futureMessageCount,
                                         long newTopicsMessageDelay, long delSeqFrom) throws InterruptedException {
-        log.info("THRD {} : Running TopicMessageGenerator Sampler populateTopicMessages topicNum : {}, " +
+        log.info("Running TopicMessageGenerator Sampler populateTopicMessages topicNum : {}, " +
                         "historicalMessageCount :" +
                         " {}, futureMessageCount : {}, " +
                         "newTopicsMessageDelay : {}, delSeqFrom : {}",
-                threadNum, topicNum, historicalMessageCount, futureMessageCount, newTopicsMessageDelay,
+                topicNum, historicalMessageCount, futureMessageCount, newTopicsMessageDelay,
                 delSeqFrom);
 
         CountDownLatch historicMessagesLatch = new CountDownLatch(historicalMessageCount);
@@ -55,7 +53,7 @@ public class TopicMessageGeneratorSampler {
 
         generateIncomingMessages(topicNum, futureMessageCount, incomingMessagesLatch, newTopicsMessageDelay);
 
-        deleteMessagesFromTopic(topicNum, delSeqFrom);
+        connectionHandler.clearTopicMessages(topicNum, delSeqFrom);
 
         return "Success";
     }
@@ -95,12 +93,6 @@ public class TopicMessageGeneratorSampler {
                     Thread.sleep(delay);
                 }
             }
-        }
-    }
-
-    private void deleteMessagesFromTopic(long topicId, long seqNumFrom) {
-        if (topicId >= 0 && seqNumFrom >= 0) {
-            connectionHandler.clearTopicMessages(topicId, seqNumFrom);
         }
     }
 }

@@ -233,6 +233,11 @@
                 <stringProp name="Argument.value">3</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
+              <elementProp name="messagesLatchWaitSeconds" elementType="Argument">
+                <stringProp name="Argument.name">messagesLatchWaitSeconds</stringProp>
+                <stringProp name="Argument.value">60</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
             </collectionProp>
           </elementProp>
           <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.ConsensusServiceReactiveClient</stringProp>

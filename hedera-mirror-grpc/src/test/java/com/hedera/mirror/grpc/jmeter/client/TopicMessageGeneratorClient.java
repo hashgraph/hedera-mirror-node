@@ -64,11 +64,6 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
         newTopicsMessageDelay = context.getLongParameter("newTopicsMessageDelay");
         delSeqFrom = context.getLongParameter("delSeqFrom");
 
-        connHandl = new ConnectionHandler(host, port, dbName, dbUser, dbPassword);
-
-        threadNum = context.getJMeterContext().getThreadNum();
-        sampler = new TopicMessageGeneratorSampler(connHandl, threadNum);
-
         super.setupTest(context);
     }
 
@@ -95,10 +90,13 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
         boolean success = true;
         String response = "";
         result.sampleStart();
-        int threadNum = context.getJMeterContext().getThreadNum();
 
         try {
-            log.info("Thread {} : Kicking off populateTopicMessages", threadNum);
+            // establish db connection in test to ensure failures are reported
+            connHandl = new ConnectionHandler(host, port, dbName, dbUser, dbPassword);
+            sampler = new TopicMessageGeneratorSampler(connHandl);
+
+            log.info("Kicking off populateTopicMessages");
             response = sampler
                     .populateTopicMessages(topicNum, historicMessagesCount, futureMessagesCount,
                             newTopicsMessageDelay, delSeqFrom);

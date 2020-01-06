@@ -73,12 +73,14 @@ public class ConsensusServiceReactiveSampler {
     }
 
     public void shutdown() throws InterruptedException {
-        log.info("THRD {} : Managed Channel shutdown called", threadNum);
+        log.info("[thread-{}] Managed Channel shutdown called", threadNum);
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    public SamplerResult subscribeTopic(int historicMessagesCount, int futureMessagesCount, Instant observerStart) throws InterruptedException {
-        log.info("THRD {} : Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs : " +
+    public SamplerResult subscribeTopic(int historicMessagesCount, int futureMessagesCount, Instant observerStart,
+                                        int messagesLatchWaitSeconds) throws InterruptedException {
+        log.info("[thread-{}] Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs" +
+                        " : " +
                         "{},limit :" +
                         " {}, historicMessagesCount : {}, futureMessagesCount : {}, observerStart : {}",
                 threadNum, topicNum, startTimeSecs, endTimeSecs, limit, futureMessagesCount, observerStart);
@@ -112,7 +114,7 @@ public class ConsensusServiceReactiveSampler {
                 Instant respInstant = Instant
                         .ofEpochSecond(responseTimeStamp.getSeconds(), responseTimeStamp.getNanos());
                 String messageType = observerStart.isBefore(respInstant) ? "Future" : "Historic";
-                log.info("THRD {} : Observed {} ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}",
+                log.trace("[thread-{}] Observed {} ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}",
                         threadNum, messageType,
                         topics[0], responseTimeStamp, responseSequenceNum, response
                                 .getMessage());
@@ -136,12 +138,13 @@ public class ConsensusServiceReactiveSampler {
 
             @Override
             public void onError(Throwable t) {
-                log.error(String.format("THRD {} : Error in ConsensusTopicResponse StreamObserver", threadNum), t);
+                log.error(String.format("[thread-{}] Error in ConsensusTopicResponse StreamObserver", threadNum), t);
             }
 
             @Override
             public void onCompleted() {
-                log.info("THRD {} : Running responseObserver onCompleted()", threadNum);
+                log.info("[thread-{}] Running responseObserver onCompleted(). Observed {} historic and {} incoming " +
+                        "messages", threadNum, result.historicalMessageCount, result.incomingMessageCount);
             }
         };
 
@@ -150,29 +153,27 @@ public class ConsensusServiceReactiveSampler {
             asyncStub.subscribeTopic(request, responseObserver);
 
             // await some new messages
-            if (!historicMessagesLatch.await(1, TimeUnit.MINUTES)) {
-                // latch count wasn't zero
-                log.error("THRD {} : historicMessagesLatch count is {}, did not reach zero", threadNum,
+            if (!historicMessagesLatch.await(messagesLatchWaitSeconds, TimeUnit.SECONDS)) {
+                log.error("[thread-{}] historicMessagesLatch count is {}, did not reach zero", threadNum,
                         historicMessagesLatch
                                 .getCount());
                 result.success = false;
             }
 
-            if (!incomingMessagesLatch.await(1, TimeUnit.MINUTES)) {
-                // latch count wasn't zero
-                log.error("THRD {} : incomingMessagesLatch count is {}, did not reach zero", threadNum,
+            if (!incomingMessagesLatch.await(messagesLatchWaitSeconds, TimeUnit.SECONDS)) {
+                log.error("[thread-{}] incomingMessagesLatch count is {}, did not reach zero", threadNum,
                         incomingMessagesLatch
                                 .getCount());
                 result.success = false;
             }
         } catch (Exception ex) {
-            log.warn(String.format("THRD {} : RCP failed", threadNum), ex);
+            log.warn(String.format("[thread-{}] RCP failed", threadNum), ex);
             throw ex;
         } finally {
             responseObserver.onCompleted();
         }
 
-        log.info("THRD {} : Consensus service response observer: {}", threadNum, result);
+        log.info("[thread-{}] Consensus service response observer: {}", threadNum, result);
         return result;
     }
 

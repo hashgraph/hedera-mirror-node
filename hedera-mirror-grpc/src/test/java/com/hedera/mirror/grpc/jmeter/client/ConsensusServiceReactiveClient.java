@@ -39,6 +39,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
     long topicNum;
     Instant testStart;
     int threadNum;
+    int messagesLatchWaitSeconds;
 
     @Override
     public void setupTest(JavaSamplerContext context) {
@@ -53,6 +54,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
         historicMessagesCount = context.getIntParameter("historicMessagesCount");
         futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
         topicNum = Long.parseLong(topicID);
+        messagesLatchWaitSeconds = context.getIntParameter("messagesLatchWaitSeconds");
 
         threadNum = context.getJMeterContext().getThreadNum();
 
@@ -81,6 +83,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
         defaultParameters.addArgument("realmNum", "0");
         defaultParameters.addArgument("historicMessagesCount", "0");
         defaultParameters.addArgument("newTopicsMessageCount", "0");
+        defaultParameters.addArgument("messagesLatchWaitSeconds", "60");
         return defaultParameters;
     }
 
@@ -93,7 +96,8 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
 
         try {
             log.info("Thread {} : Kicking off subscribeTopic", threadNum);
-            response = csclient.subscribeTopic(historicMessagesCount, futureMessagesCount, testStart);
+            response = csclient
+                    .subscribeTopic(historicMessagesCount, futureMessagesCount, testStart, messagesLatchWaitSeconds);
 
             result.sampleEnd();
             result.setResponseData(response.toString().getBytes());
