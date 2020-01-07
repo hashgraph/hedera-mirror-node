@@ -47,6 +47,6 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
         DOWNLOADED,        // Signature has been downloaded but not verified
         PARSED,            // Extracted hash and signature data from file
         VERIFIED,          // Signature has been verified against the node's public key
-        CONSENSUS_REACHED; // More than 2/3 of all nodes have been verified
+        CONSENSUS_REACHED  // At least 1/3 of all nodes have been verified
     }
 }

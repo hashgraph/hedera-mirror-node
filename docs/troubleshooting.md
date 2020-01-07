@@ -109,7 +109,7 @@ Following is list of error messages and how to begin handling issues when they a
     -   There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise
         next morning).
 
--   `File could not be verified by more than 2/3 of nodes`
+-   `File could not be verified by at least 1/3 of nodes`
     This can happen if
 
     1. Some mainnet nodes are still in the process of uploading their signatures for the latest file (benign case).
@@ -248,41 +248,41 @@ Response: Requires human action at some point.
 
 #### Log-based alerts
 
-| Log Message                                                              | Default Priority | Conditional Priority            |
-| ------------------------------------------------------------------------ | ---------------- | ------------------------------- |
-| `Error parsing record file`                                              | HIGH             |                                 |
-| `Error starting watch service`                                           | HIGH             |                                 |
-| `ERRORS processing account balances file`                                | HIGH             |                                 |
-| `Expecting previous file hash, but found file delimiter`                 | HIGH             |                                 |
-| `Failed to parse NodeAddressBook from`                                   | HIGH             |                                 |
-| `Hash mismatch for file`                                                 | HIGH             |                                 |
-| `Long overflow when converting time to nanos timestamp`                  | HIGH             |                                 |
-| `Previous file hash not available`                                       | HIGH             |                                 |
-| `Unable to copy address book from`                                       | HIGH             |                                 |
-| `Unable to extract hash and signature from file`                         | HIGH             |                                 |
-| `Unable to guess correct transaction type since there's not exactly one` | HIGH             |                                 |
-| `Unknown file delimiter`                                                 | HIGH             |                                 |
-| `Unknown record file delimiter`                                          | HIGH             |                                 |
-| `Error processing balances files after`                                  | MEDIUM           |                                 |
-| `Exception processing account balances file`                             | MEDIUM           |                                 |
-| `Encountered unknown transaction type`                                   | LOW              | HIGH (if 10 entries over 10 min |
-| `Error closing connection`                                               | LOW              | HIGH (if 10 entries over 10 min |
-| `Account balance dataset timestamp mismatch!`                            | LOW              |                                 |
-| `Error decoding hex string`                                              | LOW              |                                 |
-| `Error reading previous file hash`                                       | LOW              |                                 |
-| `Failed to verify`                                                       | LOW              |                                 |
-| `Input parameter is not a folder`                                        | LOW              |                                 |
-| `Failed to verify signature with public key`                             | LOW              |                                 |
-| `Missing signature for file`                                             | LOW              |                                 |
-| `Error saving file in database`                                          | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Failed downloading`                                                     | NONE             | HIGH (if 30 entries in 1 min)   |
-| `File could not be verified by more than 2/3 of nodes`                   | NONE             | HIGH (if 30 entries in 1 min)   |
-| `File watching events may have been lost or discarded`                   | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Signature verification failed`                                          | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Unable to connect to database`                                          | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Unable to fetch entity types`                                           | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Unable to prepare SQL statements`                                       | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Unable to set connection to not auto commit`                            | NONE             | HIGH (if 30 entries in 1 min)   |
+| Log Message                                                                                 | Default Priority | Conditional Priority            |
+| ------------------------------------------------------------------------------------------- | ---------------- | ------------------------------- |
+| `Error parsing record file`                                                                 | HIGH             |                                 |
+| `Error starting watch service`                                                              | HIGH             |                                 |
+| `ERRORS processing account balances file`                                                   | HIGH             |                                 |
+| `Expecting previous file hash, but found file delimiter`                                    | HIGH             |                                 |
+| `Failed to parse NodeAddressBook from`                                                      | HIGH             |                                 |
+| `Hash mismatch for file`                                                                    | HIGH             |                                 |
+| `Long overflow when converting time to nanos timestamp`                                     | HIGH             |                                 |
+| `Previous file hash not available`                                                          | HIGH             |                                 |
+| `Unable to copy address book from`                                                          | HIGH             |                                 |
+| `Unable to extract hash and signature from file`                                            | HIGH             |                                 |
+| `Unable to guess correct transaction type since there's not exactly one`                    | HIGH             |                                 |
+| `Unknown file delimiter`                                                                    | HIGH             |                                 |
+| `Unknown record file delimiter`                                                             | HIGH             |                                 |
+| `Error processing balances files after`                                                     | MEDIUM           |                                 |
+| `Exception processing account balances file`                                                | MEDIUM           |                                 |
+| `Encountered unknown transaction type`                                                      | LOW              | HIGH (if 10 entries over 10 min |
+| `Error closing connection`                                                                  | LOW              | HIGH (if 10 entries over 10 min |
+| `Account balance dataset timestamp mismatch!`                                               | LOW              |                                 |
+| `Error decoding hex string`                                                                 | LOW              |                                 |
+| `Error reading previous file hash`                                                          | LOW              |                                 |
+| `Failed to verify`                                                                          | LOW              |                                 |
+| `Input parameter is not a folder`                                                           | LOW              |                                 |
+| `Failed to verify signature with public key`                                                | LOW              |                                 |
+| `Missing signature for file`                                                                | LOW              |                                 |
+| `Error saving file in database`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Failed downloading`                                                                        | NONE             | HIGH (if 30 entries in 1 min)   |
+| `File could not be verified by at least 1/3 of nodes | NONE | HIGH (if 30 entries in 1 min) |
+| `File watching events may have been lost or discarded`                                      | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Signature verification failed`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to connect to database`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to fetch entity types`                                                              | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to prepare SQL statements`                                                          | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to set connection to not auto commit`                                               | NONE             | HIGH (if 30 entries in 1 min)   |
 
 Anything that wakes up a human in the middle of the night should be immediately actionable. For all `HIGH` priority
 alerts, there should be a section in the guide above listing immediate actionable steps someone can take to reduce

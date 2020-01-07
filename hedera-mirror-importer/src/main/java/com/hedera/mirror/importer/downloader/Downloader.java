@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -152,7 +153,7 @@ public abstract class Downloader {
                             .maxKeys(listSize)
                             .build();
                     CompletableFuture<ListObjectsResponse> response = s3Client.listObjects(listRequest);
-                    var pendingDownloads = new ArrayList<PendingDownload>(downloaderProperties.getBatchSize());
+                    Collection<PendingDownload> pendingDownloads = new ArrayList<>(downloaderProperties.getBatchSize());
                     // Loop through the list of remote files beginning a download for each relevant sig file
                     // Note:
                     // lastValidSigFileName specified as marker above is not returned in these results by AWS S3.
@@ -171,13 +172,11 @@ public abstract class Downloader {
                      * With the list of pending downloads - wait for them to complete and add them to the list
                      * of downloaded signature files.
                      */
-                    var ref = new Object() {
-                        int count = 0;
-                    };
+                    AtomicLong count = new AtomicLong();
                     pendingDownloads.forEach((pd) -> {
                         try {
                             if (pd.waitForCompletion()) {
-                                ref.count++;
+                                count.incrementAndGet();
                                 File sigFile = pd.getFile();
                                 FileStreamSignature fileStreamSignature = new FileStreamSignature();
                                 fileStreamSignature.setFile(sigFile);
@@ -188,8 +187,8 @@ public abstract class Downloader {
                             log.warn("Failed downloading {} in {}", pd.getS3key(), pd.getStopwatch(), ex);
                         }
                     });
-                    if (ref.count > 0) {
-                        log.info("Downloaded {} signatures for node {} in {}", ref.count, nodeAccountId, stopwatch);
+                    if (count.get() > 0) {
+                        log.info("Downloaded {} signatures for node {} in {}", count.get(), nodeAccountId, stopwatch);
                     }
                 } catch (Exception e) {
                     log.error("Error downloading signature files for node {} after {}", nodeAccountId, stopwatch, e);
@@ -262,12 +261,12 @@ public abstract class Downloader {
     }
 
     /**
-     * For each group of signature Files with the same file name: (1) verify that the signature files are signed by
-     * corresponding node's PublicKey; (2) For valid signature files, we compare their Hashes to see if more than 2/3
-     * Hashes matches. If more than 2/3 Hashes matches, we download the corresponding data file from a node folder which
-     * has valid signature file. (3) compare the Hash of data file with Hash which has been agreed on by valid
-     * signatures, if match, move the data file into `valid` directory; else download the data file from other valid
-     * node folder, and compare the Hash until find a match one
+     * For each group of signature files with the same file name: (1) verify that the signature files are signed by
+     * corresponding node's PublicKey; (2) For valid signature files, we compare their Hashes to see if at least 1/3 of
+     * hashes match. If they do, we download the corresponding data file from a node folder which has valid signature
+     * file. (3) compare the hash of data file with Hash which has been agreed on by valid signatures, if match, move
+     * the data file into `valid` directory; else download the data file from other valid node folder and compare the
+     * hash until we find a match.
      *
      * @param sigFilesMap
      */
@@ -299,10 +298,8 @@ public abstract class Downloader {
                     File signedDataFile = downloadSignedDataFile(signature.getFile());
                     if (signedDataFile != null && Utility.hashMatch(signature.getHash(), signedDataFile)) {
                         log.debug("Downloaded data file {} corresponding to verified hash", signedDataFile.getName());
-                        // Check that file is newer than last valid downloaded file.
-                        // Additionally, if the file type uses prevFileHash based linking, verify that new file is
-                        // next in
-                        // the sequence.
+                        // Check that file is newer than last valid downloaded file. Additionally, if the file type
+                        // uses prevFileHash based linking, verify that new file is next in the sequence.
                         if (verifyHashChain(signedDataFile)) {
                             // move the file to the valid directory
                             File destination = validPath.resolve(signedDataFile.getName()).toFile();
@@ -328,7 +325,7 @@ public abstract class Downloader {
             }
 
             if (!valid) {
-                log.error("File could not be verified by more than 2/3 of nodes: {}", sigFileName);
+                log.error("File could not be verified by at least 1/3 of nodes: {}", sigFileName);
             }
         }
     }
