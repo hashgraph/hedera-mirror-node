@@ -58,6 +58,8 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
                 .orderBy(Sort.by("consensus_timestamp"))
                 .fetch()
                 .all()
-                .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t);
+                .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
+                .name("findByFilter")
+                .metrics();
     }
 }

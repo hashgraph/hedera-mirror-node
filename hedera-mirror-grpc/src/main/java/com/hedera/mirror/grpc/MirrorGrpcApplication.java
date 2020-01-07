@@ -23,12 +23,14 @@ package com.hedera.mirror.grpc;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import reactor.core.scheduler.Schedulers;
 
 @ConfigurationPropertiesScan
 @SpringBootApplication
 public class MirrorGrpcApplication {
 
     public static void main(String[] args) {
+        Schedulers.enableMetrics();
         SpringApplication.run(MirrorGrpcApplication.class, args);
     }
 }

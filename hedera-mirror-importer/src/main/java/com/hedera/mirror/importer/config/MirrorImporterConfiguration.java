@@ -43,7 +43,7 @@ import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 @Configuration
 @EnableAsync
 @Log4j2
-public class MirrorNodeConfiguration {
+public class MirrorImporterConfiguration {
 
     @Bean
     public S3AsyncClient s3AsyncClient(CommonDownloaderProperties downloaderProperties) {
@@ -52,9 +52,23 @@ public class MirrorNodeConfiguration {
                 .connectionMaxIdleTime(Duration.ofSeconds(5))  // https://github.com/aws/aws-sdk-java-v2/issues/1122
                 .build();
 
+        log.info("Configured to download from {} in region {} with bucket name '{}'", downloaderProperties
+                .getCloudProvider(), downloaderProperties.getRegion(), downloaderProperties.getBucketName());
+
+        return S3AsyncClient.builder()
+                .credentialsProvider(awsCredentialsProvider(downloaderProperties))
+                .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()))
+                .region(Region.of(downloaderProperties.getRegion()))
+                .httpClient(httpClient)
+                .build();
+    }
+
+    @Bean
+    AwsCredentialsProvider awsCredentialsProvider(CommonDownloaderProperties downloaderProperties) {
         AwsCredentialsProvider awsCredentials;
         String accessKey = downloaderProperties.getAccessKey();
         String secretKey = downloaderProperties.getSecretKey();
+
         if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
             log.info("Setting up S3 async client using provided access/secret key");
             awsCredentials = StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
@@ -63,15 +77,7 @@ public class MirrorNodeConfiguration {
             awsCredentials = AnonymousCredentialsProvider.create();
         }
 
-        log.info("Configured to download from {} in region {} with bucket name '{}'", downloaderProperties
-                .getCloudProvider(), downloaderProperties.getRegion(), downloaderProperties.getBucketName());
-
-        return S3AsyncClient.builder()
-                .credentialsProvider(awsCredentials)
-                .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()))
-                .region(Region.of(downloaderProperties.getRegion()))
-                .httpClient(httpClient)
-                .build();
+        return awsCredentials;
     }
 
     @Configuration

@@ -44,7 +44,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
-import com.hedera.mirror.importer.config.MirrorNodeConfiguration;
+import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.HederaNetwork;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -96,7 +96,7 @@ public abstract class AbstractDownloaderTest {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
-        s3AsyncClient = (new MirrorNodeConfiguration()).s3AsyncClient(commonDownloaderProperties);
+        s3AsyncClient = (new MirrorImporterConfiguration()).s3AsyncClient(commonDownloaderProperties);
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
         downloader = getDownloader();
 

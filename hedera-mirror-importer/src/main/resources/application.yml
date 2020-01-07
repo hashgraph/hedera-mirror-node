@@ -15,6 +15,11 @@ logging:
     org.flywaydb.core.internal.command.DbMigrate: info
     #org.hibernate.SQL: debug
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
+management:
+  metrics:
+    export:
+      elastic:
+        enabled: false
 spring:
   application:
     name: hedera-mirror-importer
@@ -33,6 +38,10 @@ spring:
       api-user: ${hedera.mirror.db.api-username}
       db-name: ${hedera.mirror.db.name}
       db-user: ${hedera.mirror.db.username}
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: true
   task:
     scheduling:
       pool:
