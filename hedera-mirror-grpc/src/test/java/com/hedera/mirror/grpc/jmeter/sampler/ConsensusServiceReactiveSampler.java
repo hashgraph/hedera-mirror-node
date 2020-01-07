@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc.jmeter.sampler;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.ManagedChannel;
@@ -104,7 +105,7 @@ public class ConsensusServiceReactiveSampler {
         SamplerResult result = new SamplerResult(topicNum, realmNum);
         boolean awaitHistoricMessages = historicMessagesCount > 0;
         boolean awaitNewMessages = futureMessagesCount > 0;
-
+        ConsensusTopicResponse[] lastresponse = {null};
         StreamObserver<ConsensusTopicResponse> responseObserver = new StreamObserver<>() {
 
             @Override
@@ -119,6 +120,20 @@ public class ConsensusServiceReactiveSampler {
                         threadNum, messageType,
                         topics[0], responseTimeStamp, responseSequenceNum, response
                                 .getMessage());
+
+                if (lastresponse[0] != null) {
+                    Instant lastRespInstant = Instant
+                            .ofEpochSecond(lastresponse[0].getConsensusTimestamp().getSeconds(), lastresponse[0]
+                                    .getConsensusTimestamp().getNanos());
+                    if (lastresponse[0].getSequenceNumber() > responseSequenceNum || lastRespInstant
+                            .isAfter(respInstant)) {
+                        log.error("[thread-{}] last response has a ConsensusTimestamp or SequenceNum greater than " +
+                                "current" +
+                                " response. " +
+                                "Last : {} Current {}", threadNum, lastresponse[0], response);
+                    }
+                }
+                lastresponse[0] = response;
 
                 if (messageType.equalsIgnoreCase("Future")) {
                     if (awaitNewMessages) {
@@ -139,7 +154,7 @@ public class ConsensusServiceReactiveSampler {
 
             @Override
             public void onError(Throwable t) {
-                log.error(String.format("[thread-{}] Error in ConsensusTopicResponse StreamObserver", threadNum), t);
+                log.error(String.format("[thread-%s] Error in ConsensusTopicResponse StreamObserver", threadNum), t);
             }
 
             @Override
@@ -151,6 +166,7 @@ public class ConsensusServiceReactiveSampler {
 
         boolean success = true;
         try {
+            Stopwatch messageStopwatch = Stopwatch.createStarted();
             asyncStub.subscribeTopic(request, responseObserver);
 
             // await some new messages
@@ -160,6 +176,8 @@ public class ConsensusServiceReactiveSampler {
                                 .getCount());
                 result.success = false;
             }
+            log.info("[thread-{}] {} Historic messages obtained in {}", threadNum, result.historicalMessageCount,
+                    messageStopwatch);
 
             if (!incomingMessagesLatch.await(messagesLatchWaitSeconds, TimeUnit.SECONDS)) {
                 log.error("[thread-{}] incomingMessagesLatch count is {}, did not reach zero", threadNum,
@@ -167,6 +185,8 @@ public class ConsensusServiceReactiveSampler {
                                 .getCount());
                 result.success = false;
             }
+            log.info("[thread-{}] {} total messages obtained in {}", threadNum, result
+                    .getTotalMessageCount(), messageStopwatch);
         } catch (Exception ex) {
             log.warn(String.format("[thread-{}] RCP failed", threadNum), ex);
             throw ex;
@@ -192,6 +212,10 @@ public class ConsensusServiceReactiveSampler {
             historicalMessageCount = 0;
             incomingMessageCount = 0;
             success = true;
+        }
+
+        public int getTotalMessageCount() {
+            return historicalMessageCount + incomingMessageCount;
         }
     }
 }

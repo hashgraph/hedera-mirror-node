@@ -96,11 +96,11 @@ public class ConnectionHandler {
         // insert some new messages
 
         long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(tpcnm) : seqStart;
-        log.info("Insert {} topic messages starting from seqNum {}", newTopicsMessageCount, nextSequenceNum);
+        log.trace("Insert {} topic messages starting from seqNum {}", newTopicsMessageCount, nextSequenceNum);
         for (int i = 0; i < newTopicsMessageCount; i++) {
-            Instant temp = instantref.plus(i, ChronoUnit.SECONDS);
-            Long instalong = itlc.convert(temp);
             long sequenceNum = nextSequenceNum + i;
+            Instant temp = instantref.plus(sequenceNum, ChronoUnit.NANOS);
+            Long instalong = itlc.convert(temp);
 
             String topicMessageInsertSql = "insert into topic_message"
                     + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
@@ -119,7 +119,7 @@ public class ConnectionHandler {
                     instalong, i, sequenceNum);
         }
 
-        log.info("Successfully inserted {} topic messages", newTopicsMessageCount);
+        log.trace("Successfully inserted {} topic messages", newTopicsMessageCount);
     }
 
     public long getNextAvailableTopicID() {
