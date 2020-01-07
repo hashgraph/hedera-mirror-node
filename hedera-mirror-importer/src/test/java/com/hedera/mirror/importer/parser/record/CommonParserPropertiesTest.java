@@ -64,13 +64,13 @@ public class CommonParserPropertiesTest {
             "0.0.2, CONSENSUSSUBMITMESSAGE, false",
             "0.0.4, FREEZE, false",
             ", CONSENSUSSUBMITMESSAGE, false",
-            "0.0.1, , false",
-            ", , false"
+            "0.0.1, UNKNOWN, false",
+            ", UNKNOWN, false"
     })
     void filterInclude(String entityId, TransactionTypeEnum type, boolean result) {
         Transaction transaction = new Transaction();
         transaction.setEntity(entity(entityId));
-        transaction.setType(type != null ? type.getProtoId() : -1); // null simulates unknown transaction type
+        transaction.setType(type.getProtoId());
 
         commonParserProperties.getInclude().add(filter("0.0.1", TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
         commonParserProperties.getInclude().add(filter("0.0.2", TransactionTypeEnum.CRYPTOCREATEACCOUNT));
@@ -91,13 +91,13 @@ public class CommonParserPropertiesTest {
             "0.0.2, CONSENSUSSUBMITMESSAGE, true",
             "0.0.4, FREEZE, true",
             ", CONSENSUSSUBMITMESSAGE, true",
-            "0.0.1, , true",
-            ", , true"
+            "0.0.1, UNKNOWN, true",
+            ", UNKNOWN, true"
     })
     void filterExclude(String entityId, TransactionTypeEnum type, boolean result) {
         Transaction transaction = new Transaction();
         transaction.setEntity(entity(entityId));
-        transaction.setType(type != null ? type.getProtoId() : -1);
+        transaction.setType(type.getProtoId());
 
         commonParserProperties.getExclude().add(filter("0.0.1", TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
         commonParserProperties.getExclude().add(filter("0.0.2", TransactionTypeEnum.CRYPTOCREATEACCOUNT));
@@ -122,7 +122,7 @@ public class CommonParserPropertiesTest {
     void filterBoth(String entityId, TransactionTypeEnum type, boolean result) {
         Transaction transaction = new Transaction();
         transaction.setEntity(entity(entityId));
-        transaction.setType(type != null ? type.getProtoId() : -1);
+        transaction.setType(type.getProtoId());
 
         commonParserProperties.getInclude().add(filter("0.0.1", TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
         commonParserProperties.getInclude().add(filter("0.0.2", TransactionTypeEnum.CRYPTOCREATEACCOUNT));

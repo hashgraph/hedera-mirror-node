@@ -43,9 +43,11 @@ public class TransactionTypeRepositoryTest extends AbstractRepositoryTest {
         Iterable<TransactionType> transactionTypes = transactionTypeRepository.findAll();
 
         for (TransactionTypeEnum transactionTypeEnum : TransactionTypeEnum.values()) {
-            assertThat(transactionTypes)
-                    .extracting(TransactionType::getName)
-                    .contains(transactionTypeEnum.name());
+            if (transactionTypeEnum != TransactionTypeEnum.UNKNOWN) {
+                assertThat(transactionTypes)
+                        .extracting(TransactionType::getName)
+                        .contains(transactionTypeEnum.name());
+            }
         }
 
         for (TransactionType transactionType : transactionTypes) {
