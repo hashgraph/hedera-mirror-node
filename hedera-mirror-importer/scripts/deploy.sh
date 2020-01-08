@@ -35,6 +35,9 @@ if [[ -f "/usr/lib/mirror-node/mirror-node.jar" || -f "${usrlib}/${name}.jar" ]]
     fi
 fi
 
+# One time removal of address book since it changed from 10 to 13 nodes. Remove in next release
+rm -f "${varlib}/addressbook.bin"
+
 if [[ ! -f "${usretc}/application.yml" ]]; then
     echo "Fresh install of ${jarname}"
     read -p "Bucket name: " bucketName

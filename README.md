@@ -36,7 +36,7 @@ The beta mirror node works as follows:
 -   The signature and record files are then uploaded from the nodes to Amazon S3 and Google File Storage.
 
 -   This mirror node software downloads signature files from either S3 or Google File Storage.
--   The signature files are validated to ensure more than 2/3 of the nodes in the address book (stored in a `0.0.102` file) have the same signature.
+-   The signature files are validated to ensure at least 1/3 of the nodes in the address book (stored in a `0.0.102` file) have the same signature.
 -   For each valid signature file, the corresponding record file is then downloaded from the cloud.
 -   Record files can then be processed and transactions and records processed for long term storage.
 
@@ -44,7 +44,7 @@ The beta mirror node works as follows:
 
 -   In addition, nodes regularly generate a balance file which contains the list of Hedera accounts and their corresponding balance which is also uploaded to S3 and Google File Storage.
 -   The files are also signed by the nodes.
--   This mirror node software can download the balance files, validate 2/3rd of nodes have signed and then process the balance files for long term storage.
+-   This mirror node software can download the balance files, validate at least 1/3 of nodes have signed and then process the balance files for long term storage.
 
 ## Getting Started
 

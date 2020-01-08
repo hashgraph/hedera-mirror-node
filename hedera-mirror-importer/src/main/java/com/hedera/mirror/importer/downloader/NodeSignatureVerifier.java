@@ -52,14 +52,14 @@ public class NodeSignatureVerifier {
                 .collect(Collectors.toMap(NodeAddress::getId, NodeAddress::getPublicKeyAsObject));
     }
 
-    private static boolean consensusReached(long n, long N) {
-        return n > N * 2 / 3.0;
+    private static boolean consensusReached(long actualNodes, long expectedNodes) {
+        return actualNodes >= Math.ceil(expectedNodes / 3.0);
     }
 
     /**
      * Verifies that the signature files are signed by corresponding node's PublicKey. For valid signature files, we
-     * compare their hashes to see if more than 2/3 Hashes match. If a signature is valid, we put the hash in its
-     * content and its file to the map, to see if more than 2/3 valid signatures have the same hash.
+     * compare their hashes to see if at least 1/3 hashes match. If a signature is valid, we put the hash in its content
+     * and its file to the map, to see if at least 1/3 valid signatures have the same hash.
      *
      * @param signatures a list of a sig files which have the same timestamp
      * @throws SignatureVerificationException

@@ -197,9 +197,9 @@ public abstract class AbstractDownloaderTest {
     }
 
     @Test
-    @DisplayName("Less than 2/3 signatures")
-    void lessThanTwoThirdSignatures() throws Exception {
-        fileCopier.filterDirectories("*0.0.3").filterDirectories("*0.0.4").copy();
+    @DisplayName("Less than 1/3 signatures")
+    void lessThanOneThirdSignatures() throws Exception {
+        fileCopier.filterDirectories("*0.0.3").copy();
         downloader.download();
         assertNoFilesinValidPath();
     }
