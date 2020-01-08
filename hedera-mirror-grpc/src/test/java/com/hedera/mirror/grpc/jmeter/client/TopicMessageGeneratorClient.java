@@ -101,7 +101,6 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
                     .populateTopicMessages(topicNum, historicMessagesCount, futureMessagesCount,
                             newTopicsMessageDelay, delSeqFrom);
 
-            // To:do - add conditional logic based on response to check success criteria
             if (response != "Success") {
                 throw new Exception("TopicMessageGeneratorSampler response was not successful");
             }

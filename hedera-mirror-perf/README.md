@@ -1,4 +1,4 @@
-# Load Testing of Hedera Mirror Node
+# Performance Testing of Hedera Mirror Node
 
 This code runs performance load tests against Mirror Node Modules.
 
@@ -32,7 +32,7 @@ Then using the jmeter maven plugin (https://github.com/jmeter-maven-plugin/jmete
 
 gRPC External Dependencies to copy to /lib/ext
 
--             whatalokation-grpc-client.jar, r2dbc-spi-0.8.0.RELEASE.jar, spring-data-r2dbc-1.0.0.RELEASE.jar, spring-data-relational-1.1.1.RELEASE.jar
+-               whatalokation-grpc-client.jar, r2dbc-spi-0.8.0.RELEASE.jar, spring-data-r2dbc-1.0.0.RELEASE.jar, spring-data-relational-1.1.1.RELEASE.jar
 
 ## Test Execution
 

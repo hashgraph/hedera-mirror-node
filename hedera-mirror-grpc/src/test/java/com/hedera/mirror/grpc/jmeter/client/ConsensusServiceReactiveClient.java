@@ -90,7 +90,6 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();
-        boolean success = true;
         ConsensusServiceReactiveSampler.SamplerResult response = null;
         result.sampleStart();
 
@@ -111,11 +110,8 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
             }
 
             log.info("Completed subscribe topic test");
-        } catch (InterruptedException intEx) {
-            log.warn("RCP failed relating to CountDownLatch: {}", intEx);
         } catch (Exception ex) {
             result.sampleEnd();
-            success = false;
             result.setResponseMessage("Exception: " + ex);
             log.error("Error subscribing to topic: " + ex);
 

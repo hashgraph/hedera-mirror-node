@@ -69,7 +69,7 @@ public class ConnectionHandler {
     }
 
     public DatabaseClient getDatabaseClient() {
-        log.trace("InitializedatabaseClient");
+        log.trace("Obtain databaseClient");
         PostgresqlConnectionFactory connectionFactory = getConnectionFactory();
 
         return DatabaseClient.builder()
@@ -79,7 +79,7 @@ public class ConnectionHandler {
     }
 
     public PostgresqlConnection getConnection() {
-        log.info("Initialize PostgresqlConnection");
+        log.info("Obtain PostgresqlConnection");
         PostgresqlConnectionFactory connectionFactory = getConnectionFactory();
 
         return connectionFactory.create().block();
