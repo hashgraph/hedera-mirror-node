@@ -4,7 +4,7 @@
 
     <groupId>com.hedera</groupId>
     <artifactId>hedera-mirror-node</artifactId>
-    <version>0.5.0</version>
+    <version>0.5.1-rc1</version>
     <description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
     <inceptionYear>2019</inceptionYear>
     <modelVersion>4.0.0</modelVersion>
@@ -56,7 +56,7 @@
         <docker.repository>docker.pkg.github.com/hashgraph/hedera-mirror-node</docker.repository>
         <grpc.version>1.25.0</grpc.version>
         <guava.version>28.1-jre</guava.version>
-        <hedera-protobuf.version>hcs-4e1dd97dc6-1</hedera-protobuf.version>
+        <hedera-protobuf.version>0.4.0</hedera-protobuf.version>
         <jacoco.version>0.8.5</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
@@ -154,10 +154,4 @@
             </plugins>
         </pluginManagement>
     </build>
-    <repositories>
-        <repository>
-            <id>jitpack.io</id> <!-- Used for the com.github.hashgraph:hedera-protobuf HCS snapshots -->
-            <url>https://jitpack.io</url>
-        </repository>
-    </repositories>
 </project>
