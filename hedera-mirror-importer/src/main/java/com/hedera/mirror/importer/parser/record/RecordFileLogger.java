@@ -464,10 +464,6 @@ public class RecordFileLogger {
         }
 
         proxyEntity = createEntity(proxyEntity);
-        Entities payerEntity = createEntity(getEntity(payerAccountId));
-        Entities nodeEntity = createEntity(getEntity(body.getNodeAccountID()));
-        tx.setNodeAccountId(nodeEntity.getId());
-        tx.setPayerAccountId(payerEntity.getId());
 
         if (entity != null) {
             if (proxyEntity != null) {
@@ -479,7 +475,11 @@ public class RecordFileLogger {
             sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), null);
         }
 
-        log.debug("Storing transaction: {}", tx);
+        Entities payerEntity = createEntity(getEntity(payerAccountId));
+        Entities nodeEntity = createEntity(getEntity(body.getNodeAccountID()));
+        tx.setNodeAccountId(nodeEntity.getId());
+        tx.setPayerAccountId(payerEntity.getId());
+
         // Temporary until we convert SQL statements to repository invocations
         sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), tx.getNodeAccountId());
         sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), tx.getMemo());
@@ -496,6 +496,7 @@ public class RecordFileLogger {
         sqlInsertTransaction.setBytes(F_TRANSACTION.TRANSACTION_BYTES.ordinal(), tx.getTransactionBytes());
         sqlInsertTransaction.setLong(F_TRANSACTION.INITIAL_BALANCE.ordinal(), tx.getInitialBalance());
         sqlInsertTransaction.addBatch();
+        log.debug("Storing transaction: {}", tx);
 
         if ((txRecord.hasTransferList()) && parserProperties.isPersistCryptoTransferAmounts()) {
             if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
@@ -558,23 +559,19 @@ public class RecordFileLogger {
         Entities entity = getEntity(transactionRecord.getReceipt().getTopicID());
         var transactionBody = body.getConsensusCreateTopic();
 
-        if (transactionBody.hasExpirationTime()) {
-            Timestamp expirationTime = transactionBody.getExpirationTime();
-            entity.setExpiryTimeNs(Utility.timestampInNanosMax(expirationTime));
-            entity.setExpiryTimeSeconds(expirationTime.getSeconds());
-            entity.setExpiryTimeNanos((long) expirationTime.getNanos());
+        if (transactionBody.hasAutoRenewAccount()) {
+            Entities autoRenewAccount = getEntity(transactionBody.getAutoRenewAccount());
+            entity.setAutoRenewAccount(autoRenewAccount);
+        }
+
+        if (transactionBody.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
         }
 
         // If either key is empty, they should end up as empty bytea in the DB to indicate that there is
         // explicitly no value, as opposed to null which has been used to indicate the value is unknown.
-        var adminKey = transactionBody.hasAdminKey() ? transactionBody.getAdminKey()
-                .toByteArray() : new byte[0];
-        var submitKey = transactionBody.hasSubmitKey() ? transactionBody.getSubmitKey()
-                .toByteArray() : new byte[0];
-
-        if (transactionBody.hasValidStartTime()) {
-            entity.setTopicValidStartTime(Utility.timestampInNanosMax(transactionBody.getValidStartTime()));
-        }
+        var adminKey = transactionBody.hasAdminKey() ? transactionBody.getAdminKey().toByteArray() : new byte[0];
+        var submitKey = transactionBody.hasSubmitKey() ? transactionBody.getSubmitKey().toByteArray() : new byte[0];
 
         entity.setMemo(transactionBody.getMemo());
         entity.setKey(adminKey);
@@ -609,8 +606,15 @@ public class RecordFileLogger {
             if (transactionBody.hasExpirationTime()) {
                 Timestamp expirationTime = transactionBody.getExpirationTime();
                 entity.setExpiryTimeNs(Utility.timestampInNanosMax(expirationTime));
-                entity.setExpiryTimeSeconds(expirationTime.getSeconds());
-                entity.setExpiryTimeNanos((long) expirationTime.getNanos());
+            }
+
+            if (transactionBody.hasAutoRenewAccount()) {
+                Entities autoRenewAccount = getEntity(transactionBody.getAutoRenewAccount());
+                entity.setAutoRenewAccount(autoRenewAccount);
+            }
+
+            if (transactionBody.hasAutoRenewPeriod()) {
+                entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
             }
 
             if (transactionBody.hasAdminKey()) {
@@ -619,10 +623,6 @@ public class RecordFileLogger {
 
             if (transactionBody.hasSubmitKey()) {
                 entity.setSubmitKey(transactionBody.getSubmitKey().toByteArray());
-            }
-
-            if (transactionBody.hasValidStartTime()) {
-                entity.setTopicValidStartTime(Utility.timestampInNanosMax(transactionBody.getValidStartTime()));
             }
 
             if (transactionBody.hasMemo()) {

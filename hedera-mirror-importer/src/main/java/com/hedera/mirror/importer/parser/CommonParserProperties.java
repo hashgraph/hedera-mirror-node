@@ -85,8 +85,7 @@ public class CommonParserProperties {
                 return true;
             }
 
-            TransactionTypeEnum transactionType = t.getTypeEnum();
-            return transactionType != null && transaction.contains(transactionType);
+            return transaction.contains(t.getTypeEnum());
         }
 
         private boolean matches(Entities e) {
@@ -94,8 +93,7 @@ public class CommonParserProperties {
                 return true;
             }
 
-            String entityId = e != null ? e.getDisplayId() : null;
-            return entityId != null && entity.contains(entityId);
+            return e != null && entity.contains(e.getDisplayId());
         }
     }
 }

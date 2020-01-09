@@ -22,7 +22,10 @@ package com.hedera.mirror.importer.downloader.balance;
 
 import static org.mockito.Mockito.verify;
 
+import com.google.common.primitives.Bytes;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -68,9 +71,27 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     }
 
     @Test
-    @DisplayName("More than 2/3 but less than 100% signatures")
-    void moreThanTwoThirdSignatures() throws Exception {
+    @DisplayName("Non-unanimous consensus reached")
+    void partialConsensus() throws Exception {
         fileCopier.filterDirectories("*0.0.3").filterDirectories("*0.0.4").filterDirectories("*0.0.5").copy();
+        downloader.download();
+        verify(applicationStatusRepository).updateStatusValue(
+                ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, "2019-08-30T18_30_00.010147001Z_Balances" +
+                        ".csv");
+        assertValidFiles(List
+                .of("2019-08-30T18_15_00.016002001Z_Balances.csv", "2019-08-30T18_30_00.010147001Z_Balances.csv"));
+    }
+
+    @Test
+    @DisplayName("Exactly 1/3 consensus")
+    void oneThirdConsensus() throws Exception {
+        // Remove last node from current 4 node address book
+        byte[] addressBook = Files.readAllBytes(mirrorProperties.getAddressBookPath());
+        int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
+        addressBook = Arrays.copyOfRange(addressBook, 0, index);
+        Files.write(mirrorProperties.getAddressBookPath(), addressBook);
+
+        fileCopier.filterDirectories("*0.0.3").copy();
         downloader.download();
         verify(applicationStatusRepository).updateStatusValue(
                 ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, "2019-08-30T18_30_00.010147001Z_Balances" +

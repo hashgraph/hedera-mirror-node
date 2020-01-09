@@ -22,11 +22,17 @@ package com.hedera.mirror.importer.parser.record;
 
 import com.google.common.base.Stopwatch;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -52,11 +58,29 @@ public class RecordFileParser implements FileParser {
 
     private final ApplicationStatusRepository applicationStatusRepository;
     private final RecordParserProperties parserProperties;
+    private final MeterRegistry meterRegistry;
+
+    // Metrics
+    private final Timer.Builder parseDurationMetric;
+    private final Timer.Builder transactionLatencyMetric;
+    private final DistributionSummary.Builder transactionSizeMetric;
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
-                            RecordParserProperties parserProperties) {
+                            RecordParserProperties parserProperties, MeterRegistry meterRegistry) {
         this.applicationStatusRepository = applicationStatusRepository;
         this.parserProperties = parserProperties;
+        this.meterRegistry = meterRegistry;
+
+        parseDurationMetric = Timer.builder("hedera.mirror.parse.duration")
+                .description("The duration in ms it took to parse the file and store it in the database");
+
+        transactionSizeMetric = DistributionSummary.builder("hedera.mirror.transaction.size")
+                .description("The size of the transaction in bytes")
+                .baseUnit("bytes");
+
+        transactionLatencyMetric = Timer.builder("hedera.mirror.transaction.latency")
+                .description("The difference in ms between the time consensus was achieved and the mirror node " +
+                        "processed the transaction");
     }
 
     /**
@@ -118,13 +142,15 @@ public class RecordFileParser implements FileParser {
         byte[] readFileHash = new byte[48];
         RecordFileLogger.INIT_RESULT initFileResult = RecordFileLogger.initFile(fileName);
         Stopwatch stopwatch = Stopwatch.createStarted();
+        Integer recordFileVersion = 0;
+        Boolean success = false;
 
         if (initFileResult == RecordFileLogger.INIT_RESULT.OK) {
             try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
-                int record_format_version = dis.readInt();
+                recordFileVersion = dis.readInt();
                 int version = dis.readInt();
 
-                log.info("Loading version {} record file: {}", record_format_version, file.getName());
+                log.info("Loading version {} record file: {}", recordFileVersion, file.getName());
 
                 while (dis.available() != 0) {
 
@@ -168,16 +194,31 @@ public class RecordFileParser implements FileParser {
                                 byteLength = dis.readInt();
                                 rawBytes = new byte[byteLength];
                                 dis.readFully(rawBytes);
-
                                 TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
-                                RecordFileLogger.storeRecord(transaction, txRecord, rawBytes);
 
-                                if (log.isTraceEnabled()) {
-                                    log.trace("Transaction = {}, Record = {}", Utility
-                                            .printProtoMessage(transaction), Utility.printProtoMessage(txRecord));
-                                } else {
-                                    log.debug("Stored transaction with consensus timestamp {}", () -> Utility
-                                            .printProtoMessage(txRecord.getConsensusTimestamp()));
+                                try {
+                                    RecordFileLogger.storeRecord(transaction, txRecord, rawBytes);
+
+                                    if (log.isTraceEnabled()) {
+                                        log.trace("Transaction = {}, Record = {}", Utility
+                                                .printProtoMessage(transaction), Utility.printProtoMessage(txRecord));
+                                    } else {
+                                        log.debug("Stored transaction with consensus timestamp {}", () -> Utility
+                                                .printProtoMessage(txRecord.getConsensusTimestamp()));
+                                    }
+                                } finally {
+                                    // TODO: Refactor to not parse TransactionBody twice
+                                    DataCase dc = Utility.getTransactionBody(transaction).getDataCase();
+                                    String type = dc != null && dc != DataCase.DATA_NOT_SET ? dc.name() : "UNKNOWN";
+                                    transactionSizeMetric.tag("type", type)
+                                            .register(meterRegistry)
+                                            .record(rawBytes.length);
+
+                                    Instant consensusTimestamp = Utility
+                                            .convertToInstant(txRecord.getConsensusTimestamp());
+                                    transactionLatencyMetric.tag("type", type)
+                                            .register(meterRegistry)
+                                            .record(Duration.between(consensusTimestamp, Instant.now()));
                                 }
                                 break;
                             case FileDelimiter.RECORD_TYPE_SIGNATURE:
@@ -200,20 +241,29 @@ public class RecordFileParser implements FileParser {
                 }
 
                 log.trace("Calculated file hash for the current file {}", thisFileHash);
-
                 RecordFileLogger.completeFile(thisFileHash, previousFileHash);
+
+                if (!Utility.hashIsEmpty(thisFileHash)) {
+                    applicationStatusRepository
+                            .updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, thisFileHash);
+                }
+
+                success = true;
             } catch (Exception e) {
                 log.error("Error parsing record file {} after {}", file, stopwatch, e);
                 RecordFileLogger.rollback();
-                return false;
+            } finally {
+                log.info("Finished parsing {} transactions from record file {} in {}", counter, file
+                        .getName(), stopwatch);
+
+                parseDurationMetric.tag("type", "record")
+                        .tag("success", success.toString())
+                        .tag("version", recordFileVersion.toString())
+                        .register(meterRegistry)
+                        .record(stopwatch.elapsed());
             }
 
-            log.info("Finished parsing {} transactions from record file {} in {}", counter, file.getName(), stopwatch);
-            if (!Utility.hashIsEmpty(thisFileHash)) {
-                applicationStatusRepository
-                        .updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, thisFileHash);
-            }
-            return true;
+            return success;
         } else if (initFileResult == RecordFileLogger.INIT_RESULT.SKIP) {
             return true;
         } else {

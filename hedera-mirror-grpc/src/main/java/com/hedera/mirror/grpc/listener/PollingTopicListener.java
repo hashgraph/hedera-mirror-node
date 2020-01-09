@@ -49,6 +49,8 @@ public class PollingTopicListener implements TopicListener {
         return Flux.interval(frequency)
                 .filter(i -> !context.isRunning()) // Discard polling requests while querying
                 .concatMap(i -> poll(context))
+                .name("poll")
+                .metrics()
                 .doOnNext(context::onNext)
                 .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", frequency.toMillis(), filter));
     }

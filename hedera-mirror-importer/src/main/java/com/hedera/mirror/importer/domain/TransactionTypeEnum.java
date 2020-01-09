@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum TransactionTypeEnum {
 
+    UNKNOWN(-1),
     CONTRACTCALL(7),
     CONTRACTCREATEINSTANCE(8),
     CONTRACTUPDATEINSTANCE(9),
@@ -59,6 +60,6 @@ public enum TransactionTypeEnum {
     private final int protoId;
 
     public static TransactionTypeEnum of(int protoId) {
-        return idMap.get(protoId);
+        return idMap.getOrDefault(protoId, UNKNOWN);
     }
 }

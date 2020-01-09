@@ -306,10 +306,6 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
                         .getKey())
                 , () -> assertEquals(contractUpdateTransactionBody.getMemo(), dbContractEntity.getMemo())
                 , () -> assertAccount(contractUpdateTransactionBody.getProxyAccountID(), dbProxyAccountId)
-                , () -> assertEquals(contractUpdateTransactionBody.getExpirationTime().getSeconds(), dbContractEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(contractUpdateTransactionBody.getExpirationTime().getNanos(), dbContractEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(contractUpdateTransactionBody.getExpirationTime()), dbContractEntity
                         .getExpiryTimeNs())
@@ -367,10 +363,6 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
                 , () -> assertArrayEquals(contractUpdateTransactionBody.getAdminKey().toByteArray(), dbContractEntity
                         .getKey())
                 , () -> assertAccount(contractUpdateTransactionBody.getProxyAccountID(), dbProxyAccountId)
-                , () -> assertEquals(contractUpdateTransactionBody.getExpirationTime().getSeconds(), dbContractEntity
-                        .getExpiryTimeSeconds())
-                , () -> assertEquals(contractUpdateTransactionBody.getExpirationTime().getNanos(), dbContractEntity
-                        .getExpiryTimeNanos())
                 , () -> assertEquals(Utility
                         .timeStampInNanos(contractUpdateTransactionBody.getExpirationTime()), dbContractEntity
                         .getExpiryTimeNs())
@@ -441,8 +433,6 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertFalse(dbContractEntity.isDeleted())
-                , () -> assertNull(dbContractEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbContractEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbContractEntity.getExpiryTimeNs())
         );
     }
@@ -499,8 +489,6 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertNotNull(dbContractEntity.getKey())
-                , () -> assertNull(dbContractEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbContractEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbContractEntity.getExpiryTimeNs())
                 , () -> assertNotNull(dbContractEntity.getAutoRenewPeriod())
                 , () -> assertNotNull(dbContractEntity.getProxyAccountId())
@@ -551,8 +539,6 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertNull(dbContractEntity.getKey())
-                , () -> assertNull(dbContractEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbContractEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbContractEntity.getExpiryTimeNs())
                 , () -> assertNull(dbContractEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbContractEntity.getProxyAccountId())
@@ -604,8 +590,6 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
 
                 // Additional entity checks
                 , () -> assertNull(dbContractEntity.getKey())
-                , () -> assertNull(dbContractEntity.getExpiryTimeSeconds())
-                , () -> assertNull(dbContractEntity.getExpiryTimeNanos())
                 , () -> assertNull(dbContractEntity.getExpiryTimeNs())
                 , () -> assertNull(dbContractEntity.getAutoRenewPeriod())
                 , () -> assertNull(dbContractEntity.getProxyAccountId())

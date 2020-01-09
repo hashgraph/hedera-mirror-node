@@ -15,6 +15,11 @@ logging:
   level:
     root: warn
     com.hedera.mirror.grpc: info
+management:
+  metrics:
+    export:
+      elastic:
+        enabled: false
 spring:
   application:
     name: hedera-mirror-grpc

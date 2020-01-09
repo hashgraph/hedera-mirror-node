@@ -20,12 +20,13 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import java.time.Instant;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import lombok.Data;
 import lombok.ToString;
@@ -53,11 +54,8 @@ public class Entities {
     @Column(name = "fk_entity_type_id")
     private Integer entityTypeId;
 
-    @Column(name = "exp_time_seconds")
-    private Long expiryTimeSeconds;
-
-    @Column(name = "exp_time_nanos")
-    private Long expiryTimeNanos;
+    @ManyToOne(cascade = CascadeType.ALL)
+    private Entities autoRenewAccount;
 
     private Long autoRenewPeriod;
 
@@ -76,8 +74,6 @@ public class Entities {
 
     private byte[] submitKey;
 
-    private Long topicValidStartTime;
-
     private String memo;
 
     public void setKey(byte[] key) {
@@ -89,13 +85,6 @@ public class Entities {
                     "will be nulled", entityShard, entityRealm, entityNum, e);
             ed25519PublicKeyHex = null;
         }
-    }
-
-    public void setExpiryTimeNs(Long expiryTimeNs) {
-        this.expiryTimeNs = expiryTimeNs;
-        Instant instant = Instant.ofEpochSecond(0, expiryTimeNs);
-        setExpiryTimeSeconds(instant.getEpochSecond());
-        setExpiryTimeNanos((long) instant.getNano());
     }
 
     public String getDisplayId() {

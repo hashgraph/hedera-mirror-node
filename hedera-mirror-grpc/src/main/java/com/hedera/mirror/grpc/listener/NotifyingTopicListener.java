@@ -44,15 +44,18 @@ public class NotifyingTopicListener implements TopicListener {
 
     public NotifyingTopicListener(ConnectionFactory connectionFactory) {
         ConnectionPool connectionPool = (ConnectionPool) connectionFactory;
-        PostgresqlConnectionFactory postgressqlConnectionFactory = (PostgresqlConnectionFactory) connectionPool
+        PostgresqlConnectionFactory postgresqlConnectionFactory = (PostgresqlConnectionFactory) connectionPool
                 .unwrap();
 
-        topicMessages = postgressqlConnectionFactory.create().flatMapMany(it -> {
+        topicMessages = postgresqlConnectionFactory.create().flatMapMany(it -> {
             return it.createStatement("LISTEN topic_message")
                     .execute()
                     .thenMany(it.getNotifications())
                     .map(this::toTopicMessage);
-        }).share();
+        })
+                .share()
+                .name("notify")
+                .metrics();
     }
 
     @Override
