@@ -24,18 +24,17 @@ import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlStatement;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.data.r2dbc.core.DatabaseClient;
-import org.springframework.data.r2dbc.core.DefaultReactiveDataAccessStrategy;
-import org.springframework.data.r2dbc.dialect.PostgresDialect;
 
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 
 @Log4j2
 public class ConnectionHandler {
-    private final InstantToLongConverter itlc = new InstantToLongConverter();
+
+    private final InstantToLongConverter converter = new InstantToLongConverter();
     private final PostgresqlConnection connection;
     private final String host;
     private final int port;
@@ -53,7 +52,7 @@ public class ConnectionHandler {
         connection = getConnection();
     }
 
-    public PostgresqlConnectionFactory getConnectionFactory() {
+    private PostgresqlConnectionFactory getConnectionFactory() {
         log.trace("Initialize connectionFactory");
         PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(
                 PostgresqlConnectionConfiguration.builder()
@@ -67,25 +66,12 @@ public class ConnectionHandler {
         return connectionFactory;
     }
 
-    public DatabaseClient getDatabaseClient() {
-        log.trace("Obtain databaseClient");
-        PostgresqlConnectionFactory connectionFactory = getConnectionFactory();
-
-        return DatabaseClient.builder()
-                .connectionFactory(connectionFactory)
-                .dataAccessStrategy(new DefaultReactiveDataAccessStrategy(PostgresDialect.INSTANCE))
-                .build();
-    }
-
-    public PostgresqlConnection getConnection() {
+    private PostgresqlConnection getConnection() {
         log.info("Obtain PostgresqlConnection");
-        PostgresqlConnectionFactory connectionFactory = getConnectionFactory();
-
-        return connectionFactory.create().block();
+        return getConnectionFactory().create().block(Duration.ofMillis(500));
     }
 
     public void insertTopicMessage(int newTopicsMessageCount, long topicNum, Instant startTime, long seqStart) {
-
         if (newTopicsMessageCount == 0) {
             // no messages to create, abort and db logic
             return;
@@ -93,17 +79,18 @@ public class ConnectionHandler {
 
         long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(topicNum) : seqStart;
         log.info("Insert {} topic messages starting from seqNum {}", newTopicsMessageCount, nextSequenceNum);
+
         for (int i = 0; i < newTopicsMessageCount; i++) {
             long sequenceNum = nextSequenceNum + i;
             Instant temp = startTime.plus(sequenceNum, ChronoUnit.NANOS);
-            Long instalong = itlc.convert(temp);
+            Long consensusTimestamp = converter.convert(temp);
 
             String topicMessageInsertSql = "insert into topic_message"
                     + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
                     + " values ($1, $2, $3, $4, $5, $6)";
 
             PostgresqlStatement statement = connection.createStatement(topicMessageInsertSql)
-                    .bind("$1", instalong)
+                    .bind("$1", consensusTimestamp)
                     .bind("$2", 0)
                     .bind("$3", topicNum)
                     .bind("$4", new byte[] {22, 33, 44})
@@ -111,8 +98,8 @@ public class ConnectionHandler {
                     .bind("$6", sequenceNum);
             statement.execute().blockLast();
 
-            log.trace("Stored TopicMessage {}, Time: {}, count: {}, seq : {}", topicNum,
-                    instalong, i, sequenceNum);
+            log.trace("Stored TopicMessage {}, Time: {}, count: {}, seq : {}", topicNum, consensusTimestamp, i,
+                    sequenceNum);
         }
 
         log.trace("Successfully inserted {} topic messages", newTopicsMessageCount);
@@ -122,7 +109,7 @@ public class ConnectionHandler {
         String nextTopicIdSql = "SELECT MAX(topic_num) FROM topic_message";
         PostgresqlStatement statement = connection.createStatement(nextTopicIdSql);
 
-        long nextTopicId = statement.execute()
+        long nextTopicId = 1 + statement.execute()
                 .flatMap(result ->
                         result.map((row, metadata) -> {
                             Long topicNum = row.get(0, Long.class);
@@ -134,16 +121,15 @@ public class ConnectionHandler {
                             return topicNum;
                         })).blockFirst();
 
-        log.trace("Determined next available topid id number from table is {}", nextTopicId + 1);
-        return nextTopicId + 1;
+        log.trace("Next available topic ID number is {}", nextTopicId);
+        return nextTopicId;
     }
 
     public long getNextAvailableSequenceNumber(long topicId) {
         String nextSeqSql = "SELECT MAX(sequence_number) FROM topic_message WHERE topic_num = $1";
-        PostgresqlStatement statement = connection.createStatement(nextSeqSql)
-                .bind("$1", topicId);
+        PostgresqlStatement statement = connection.createStatement(nextSeqSql).bind("$1", topicId);
 
-        long nextSeqNum = statement.execute()
+        long nextSeqNum = 1 + statement.execute()
                 .flatMap(result ->
                         result.map((row, metadata) -> {
                             Long max = row.get(0, Long.class);
@@ -157,8 +143,8 @@ public class ConnectionHandler {
                             return max;
                         })).blockFirst();
 
-        log.trace("Determined next available sequence number from table is {}", nextSeqNum + 1);
-        return nextSeqNum + 1;
+        log.trace("Next available topic ID sequence number is {}", nextSeqNum);
+        return nextSeqNum;
     }
 
     public void clearTopicMessages(long topicId, long seqNumFrom) {
@@ -174,11 +160,11 @@ public class ConnectionHandler {
                 .bind("$2", seqNumFrom);
 
         statement.execute().blockLast();
-
-        log.info("Cleared Topic Messages for TopicID {}, from Sequence {}", topicId, seqNumFrom);
+        log.info("Cleared topic messages for topic ID {} after sequence {}", topicId, seqNumFrom);
     }
 
     public void close() {
-        connection.close().block();
+        log.info("Closing connection");
+        connection.close().block(Duration.ofMillis(500));
     }
 }

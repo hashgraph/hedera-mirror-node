@@ -35,7 +35,6 @@ import lombok.extern.log4j.Log4j2;
 import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
-import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 
 /**
  * A test client that will make requests of the Consensus service from the Consensus server
@@ -49,10 +48,6 @@ public class ConsensusServiceReactiveSampler {
     private final long startTimeSecs;
     private final long endTimeSecs;
     private final long limit;
-
-    private final InstantToLongConverter itlc = new InstantToLongConverter();
-
-    private final int threadNum;
 
     public ConsensusServiceReactiveSampler(String host, int port, long topic, long realm, long startTime,
                                            long endTime, long lmt, int thrdNum) {
@@ -70,11 +65,10 @@ public class ConsensusServiceReactiveSampler {
         startTimeSecs = startTime;
         endTimeSecs = endTime;
         limit = lmt;
-        threadNum = thrdNum;
     }
 
     public void shutdown() throws InterruptedException {
-        log.info("[thread-{}] Managed Channel shutdown called", threadNum);
+        log.info("Managed Channel shutdown called");
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
@@ -91,11 +85,11 @@ public class ConsensusServiceReactiveSampler {
      */
     public SamplerResult subscribeTopic(int historicMessagesCount, int futureMessagesCount, Instant observerStart,
                                         int messagesLatchWaitSeconds) throws InterruptedException {
-        log.info("[thread-{}] Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs" +
+        log.info("Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs" +
                         " : " +
                         "{},limit :" +
                         " {}, historicMessagesCount : {}, futureMessagesCount : {}, observerStart : {}",
-                threadNum, topicNum, startTimeSecs, endTimeSecs, limit, historicMessagesCount, futureMessagesCount,
+                topicNum, startTimeSecs, endTimeSecs, limit, historicMessagesCount, futureMessagesCount,
                 observerStart);
 
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
@@ -127,8 +121,7 @@ public class ConsensusServiceReactiveSampler {
                 Instant respInstant = Instant
                         .ofEpochSecond(responseTimeStamp.getSeconds(), responseTimeStamp.getNanos());
                 String messageType = observerStart.isBefore(respInstant) ? "Future" : "Historic";
-                log.trace("[thread-{}] Observed {} ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}",
-                        threadNum, messageType,
+                log.trace("Observed {} ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", messageType,
                         topics[0], responseTimeStamp, responseSequenceNum, response
                                 .getMessage());
 
@@ -138,10 +131,8 @@ public class ConsensusServiceReactiveSampler {
                                     .getConsensusTimestamp().getNanos());
                     if (lastresponse[0].getSequenceNumber() > responseSequenceNum || lastRespInstant
                             .isAfter(respInstant)) {
-                        log.error("[thread-{}] last response has a ConsensusTimestamp or SequenceNum greater than " +
-                                "current" +
-                                " response. " +
-                                "Last : {} Current {}", threadNum, lastresponse[0], response);
+                        log.error("Last response has a consensus timestamp or sequence num greater than current " +
+                                "response. Last: {}, current: {}", lastresponse[0], response);
                     }
                 }
                 lastresponse[0] = response;
@@ -165,13 +156,13 @@ public class ConsensusServiceReactiveSampler {
 
             @Override
             public void onError(Throwable t) {
-                log.error(String.format("[thread-%s] Error in ConsensusTopicResponse StreamObserver", threadNum), t);
+                log.error("Error in ConsensusTopicResponse StreamObserver", t);
             }
 
             @Override
             public void onCompleted() {
-                log.info("[thread-{}] Running responseObserver onCompleted(). Observed {} historic and {} incoming " +
-                        "messages", threadNum, result.historicalMessageCount, result.incomingMessageCount);
+                log.info("Running responseObserver onCompleted(). Observed {} historic and {} incoming messages",
+                        result.historicalMessageCount, result.incomingMessageCount);
             }
         };
 
@@ -182,30 +173,24 @@ public class ConsensusServiceReactiveSampler {
 
             // await some new messages
             if (!historicMessagesLatch.await(messagesLatchWaitSeconds, TimeUnit.SECONDS)) {
-                log.error("[thread-{}] historicMessagesLatch count is {}, did not reach zero", threadNum,
-                        historicMessagesLatch
-                                .getCount());
+                log.error("Historic messages latch count is {}, did not reach zero", historicMessagesLatch.getCount());
                 result.success = false;
             }
-            log.info("[thread-{}] {} Historic messages obtained in {}", threadNum, result.historicalMessageCount,
-                    messageStopwatch);
+            log.info("{} Historic messages obtained in {}", result.historicalMessageCount, messageStopwatch);
 
             if (!incomingMessagesLatch.await(messagesLatchWaitSeconds, TimeUnit.SECONDS)) {
-                log.error("[thread-{}] incomingMessagesLatch count is {}, did not reach zero", threadNum,
-                        incomingMessagesLatch
-                                .getCount());
+                log.error("incomingMessagesLatch count is {}, did not reach zero", incomingMessagesLatch.getCount());
                 result.success = false;
             }
-            log.info("[thread-{}] {} total messages obtained in {}", threadNum, result
-                    .getTotalMessageCount(), messageStopwatch);
+            log.info("{} total messages obtained in {}", result.getTotalMessageCount(), messageStopwatch);
         } catch (Exception ex) {
-            log.warn(String.format("[thread-{}] RCP failed", threadNum), ex);
+            log.warn(String.format("RCP failed"), ex);
             throw ex;
         } finally {
             responseObserver.onCompleted();
         }
 
-        log.info("[thread-{}] Consensus service response observer: {}", threadNum, result);
+        log.info("Consensus service response observer: {}", result);
         return result;
     }
 

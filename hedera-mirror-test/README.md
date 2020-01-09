@@ -1,65 +1,57 @@
-# Performance Testing of Hedera Mirror Node
+# Performance Testing
 
 This code runs performance load tests against Mirror Node Modules.
 
 ## Overview
 
 For many of our scenarios we have goals to support a high number of transactions and users.
-In additional we want to incorporate testing especially of the load/stress kind early on in the development cycle.
+In addition, we want to incorporate load testing early on in the development cycle.
 As such this module aims to build customizable code that allows for easy runs of complex scenarios testing the extents of our services and underlying architecture components.
 
-## JMeter
+## Apache JMeter
 
-JMeter is an Apache developed load testing tool. It is now open source and java based and boasts over 15 of development and community contribution and usage.
-Is support HTTP, Web services, JDBC and other process and connection testing. It also provides plugin extensibility to support more complex application e.g. gRPC service testing.
+[JMeter](https://jmeter.apache.org) is an Apache developed load testing tool. It is open source and java based and boasts over 15 years of development and community contribution and usage.
+It supports HTTP, Web services, JDBC and other process and connection testing. It also provides plugin extensibility to support more complex application (e.g. gRPC service testing).
 It thus provides one option for a single load testing framework. Another comparable option is Gatling.
 
-The basis of the flow utilizes the JavaSampler Client API.
+The basis of the testing flow utilizes the JavaSampler Client API.
 Each module will implement a Client that extends the AbstractJavaSamplerClient class to setup load tests.
-It then calls a Sampler that contains business logic to make requests out to desired service e.g. http request, sql script
-jMeter is then abel to take the built versions of this and orchestrate them in any number of combination of threads and loops to simulate stress testing scenarios for user behaviour.
-Then using the jmeter maven plugin (https://github.com/jmeter-maven-plugin/jmeter-maven-plugin) we are able to incorporate the jMeter tests into the build flow.
+It then calls a Sampler that contains business logic to make requests out to desired service (e.g. HTTP request, SQL script).
+JMeter is then able to take the built versions of these and orchestrate them in any number of combination of threads and loops to simulate stress testing scenarios for user behaviour.
+Then using the [JMeter Maven Plugin](https://github.com/jmeter-maven-plugin/jmeter-maven-plugin) we are able to incorporate the JMeter tests into the build flow.
 
 ### Test Creation
 
--   Build module for testing
+#### Requirements
 
-`../mvnw clean package -DskipTests`
+-   [JMeter](https://jmeter.apache.org/download_jmeter.cgi): (On macOS `brew install jmeter`)
 
--   Copy test jar to JMeter /lib/ext folder. If JMeter was installed using brew (recommend for OSX) /lib/ext folder can be found under /usr/local/Cellar/jmeter/<version>/libexec/lib/ext
+### Setup
 
-`cp target/hedera-mirror-grpc-0.5.0-tests.jar /usr/local/Cellar/jmeter/5.2.1/libexec/lib/ext/`
+-   Build module for testing:
 
--   Copy necessary module external dependencies to /lib/ext also (See individual module sections for list)
+    `../mvnw clean package -DskipTests`
 
-`cp <dependency jar path> /usr/local/Cellar/jmeter/5.2.1/libexec/lib/ext/`
+-   Copy test jar to JMeter `/lib/ext` folder:
 
--   Open jMeter with 'open /usr/local/bin/jmeter' from terminal
+    `cp target/hedera-mirror-grpc-*-tests.jar /usr/local/Cellar/jmeter/5.2.1/libexec/lib/ext/`
 
-`open /usr/local/bin/jmeter`
+-   Copy necessary module external dependencies:
 
--   Add a Thread Group and then a Java Request in JMeter. Following this select the test jar loaded and specify desired test params. Logic follows - https://jmeter.apache.org/usermanual/component_reference.html#Java_Request
--   Fill in client properties as appropriate for run e.g. host
--   Save test .jmx file to hedera-mirror-perf/src/test/jmeter/ location
+    `cp whatalokation-grpc-client.jar r2dbc-spi-0.8.0.RELEASE.jar spring-data-r2dbc-1.0.0.RELEASE.jar spring-data-relational-1.1.1.RELEASE.jar /usr/local/Cellar/jmeter/5.2.1/libexec/lib/ext/`
 
-gRPC External Dependencies to copy to /lib/ext
+-   Start JMeter GUI:
 
--                 whatalokation-grpc-client.jar, r2dbc-spi-0.8.0.RELEASE.jar, spring-data-r2dbc-1.0.0.RELEASE.jar, spring-data-relational-1.1.1.RELEASE.jar
+    `open /usr/local/bin/jmeter`
+
+-   Fill in client properties as appropriate for run (e.g. host)
+
+-   Save test JMX file to `hedera-mirror-test/src/test/jmeter`
 
 ## Test Execution
 
--   Ensure desired .jmx file(s) are under hedera-mirror-test/src/test/jmeter/
--   Startup database and necessary module grpc/restapi modules, either through docker-compose or through spring-boot
--   Run 'mvn -U clean verify' under hedera-mirror-test/ module to kickoff the verify stage in the perf module where the performance tests are run
+-   Ensure desired JMX file(s) are under `hedera-mirror-test/src/test/jmeter/`
+-   Startup database and module, either through Docker Compose or through Spring Boot
+-   Start the tests:
 
-## Requirements
-
--   [ ] JMeter - https://jmeter.apache.org/download_jmeter.cgi (onMac OSX install with brew - `brew install jmeter`)
-
-## Contributing
-
-Refer to [CONTRIBUTING.md](CONTRIBUTING.md)
-
-## License
-
-Apache License 2.0, see [LICENSE](LICENSE).
+    `./mvnw clean verify --projects hedera-mirror-test`

@@ -23,7 +23,6 @@ package com.hedera.mirror.grpc.jmeter.client;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import lombok.extern.log4j.Log4j2;
-import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
@@ -34,19 +33,19 @@ import com.hedera.mirror.grpc.jmeter.sampler.TopicMessageGeneratorSampler;
 @Log4j2
 public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
 
-    long topicNum;
-    int historicMessagesCount;
-    int futureMessagesCount;
-    long newTopicsMessageDelay;
-    long delSeqFrom;
-    TopicMessageGeneratorSampler sampler;
-    ConnectionHandler connHandl;
-    int topicMessageEmitCycles;
-    String host;
-    int port;
-    String dbName;
-    String dbUser;
-    String dbPassword;
+    private long topicNum;
+    private int historicMessagesCount;
+    private int futureMessagesCount;
+    private long newTopicsMessageDelay;
+    private long delSeqFrom;
+    private TopicMessageGeneratorSampler sampler;
+    private ConnectionHandler connHandl;
+    private int topicMessageEmitCycles;
+    private String host;
+    private int port;
+    private String dbName;
+    private String dbUser;
+    private String dbPassword;
 
     /**
      * Setup test by instantiating client using user defined test properties
@@ -54,39 +53,21 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
     @Override
     public void setupTest(JavaSamplerContext context) {
         // db props
-        host = context.getParameter("host");
-        port = context.getIntParameter("port");
-        dbName = context.getParameter("dbName");
-        dbUser = context.getParameter("dbUser");
-        dbPassword = context.getParameter("dbPassword");
+        host = context.getParameter("host", "localhost");
+        port = context.getIntParameter("port", 5432);
+        dbName = context.getParameter("dbName", "mirror_node");
+        dbUser = context.getParameter("dbUser", "mirror_node");
+        dbPassword = context.getParameter("dbPassword", "mirror_node_pass");
 
         // testcase props
-        topicNum = context.getLongParameter("topicID");
-        historicMessagesCount = context.getIntParameter("historicMessagesCount");
-        futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
-        topicMessageEmitCycles = context.getIntParameter("topicMessageEmitCycles");
-        newTopicsMessageDelay = context.getLongParameter("newTopicsMessageDelay");
-        delSeqFrom = context.getLongParameter("delSeqFrom");
+        topicNum = context.getLongParameter("topicID", 0);
+        historicMessagesCount = context.getIntParameter("historicMessagesCount", 0);
+        futureMessagesCount = context.getIntParameter("newTopicsMessageCount", 0);
+        topicMessageEmitCycles = context.getIntParameter("topicMessageEmitCycles", 0);
+        newTopicsMessageDelay = context.getLongParameter("newTopicsMessageDelay", 0L);
+        delSeqFrom = context.getLongParameter("delSeqFrom", -1L);
 
         super.setupTest(context);
-    }
-
-    @Override
-    public Arguments getDefaultParameters() {
-        Arguments defaultParameters = new Arguments();
-        defaultParameters.addArgument("host", "localhost");
-        defaultParameters.addArgument("port", "5432");
-        defaultParameters.addArgument("dbName", "mirror_node");
-        defaultParameters.addArgument("dbUser", "mirror_node");
-        defaultParameters.addArgument("dbPassword", "mirror_node_pass");
-        defaultParameters.addArgument("topicID", "0");
-        defaultParameters.addArgument("realmNum", "0");
-        defaultParameters.addArgument("historicMessagesCount", "0");
-        defaultParameters.addArgument("newTopicsMessageCount", "0");
-        defaultParameters.addArgument("topicMessageEmitCycles", "0");
-        defaultParameters.addArgument("newTopicsMessageDelay", "0");
-        defaultParameters.addArgument("delSeqFrom", "-1");
-        return defaultParameters;
     }
 
     /**
@@ -141,10 +122,11 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
     @Override
     public void teardownTest(JavaSamplerContext context) {
         try {
-            log.info("Connection Handler close called");
-            connHandl.close();
+            if (connHandl != null) {
+                connHandl.close();
+            }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("Unable to close connection", ex);
         }
 
         super.teardownTest(context);
