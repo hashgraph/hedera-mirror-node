@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>hedera-mirror-perf</artifactId>
+    <artifactId>hedera-mirror-test</artifactId>
 
     <dependencies>
         <dependency>
@@ -20,13 +20,6 @@
     </dependencies>
 
     <build>
-        <extensions>
-            <extension>
-                <groupId>kr.motd.maven</groupId>
-                <artifactId>os-maven-plugin</artifactId>
-                <version>1.6.2</version>
-            </extension>
-        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -81,7 +74,7 @@
                 </executions>
                 <configuration>
                     <generateReports>true</generateReports>
-                    <errorRateThresholdInPercent>25</errorRateThresholdInPercent>
+                    <errorRateThresholdInPercent>5</errorRateThresholdInPercent>
                     <jmeterExtensions>
                         <artifact>kg.apc:jmeter-plugins-json:jar:2.6</artifact>
                         <artifact>kg.apc:jmeter-plugins-manager:0.19</artifact>

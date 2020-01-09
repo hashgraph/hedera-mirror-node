@@ -26,7 +26,6 @@ import io.r2dbc.postgresql.api.PostgresqlConnection;
 import io.r2dbc.postgresql.api.PostgresqlStatement;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.CountDownLatch;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.springframework.data.r2dbc.core.DefaultReactiveDataAccessStrategy;
@@ -85,21 +84,18 @@ public class ConnectionHandler {
         return connectionFactory.create().block();
     }
 
-    public void insertTopicMessage(int newTopicsMessageCount, long tpcnm, Instant instantref, CountDownLatch latch,
-                                   long seqStart) {
+    public void insertTopicMessage(int newTopicsMessageCount, long topicNum, Instant startTime, long seqStart) {
 
         if (newTopicsMessageCount == 0) {
             // no messages to create, abort and db logic
             return;
         }
 
-        // insert some new messages
-
-        long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(tpcnm) : seqStart;
+        long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(topicNum) : seqStart;
         log.trace("Insert {} topic messages starting from seqNum {}", newTopicsMessageCount, nextSequenceNum);
         for (int i = 0; i < newTopicsMessageCount; i++) {
             long sequenceNum = nextSequenceNum + i;
-            Instant temp = instantref.plus(sequenceNum, ChronoUnit.NANOS);
+            Instant temp = startTime.plus(sequenceNum, ChronoUnit.NANOS);
             Long instalong = itlc.convert(temp);
 
             String topicMessageInsertSql = "insert into topic_message"
@@ -109,13 +105,13 @@ public class ConnectionHandler {
             PostgresqlStatement statement = connection.createStatement(topicMessageInsertSql)
                     .bind("$1", instalong)
                     .bind("$2", 0)
-                    .bind("$3", tpcnm)
+                    .bind("$3", topicNum)
                     .bind("$4", new byte[] {22, 33, 44})
                     .bind("$5", new byte[] {55, 66, 77})
                     .bind("$6", sequenceNum);
             statement.execute().blockLast();
 
-            log.trace("Stored TopicMessage {}, Time: {}, count: {}, seq : {}", tpcnm,
+            log.trace("Stored TopicMessage {}, Time: {}, count: {}, seq : {}", topicNum,
                     instalong, i, sequenceNum);
         }
 
