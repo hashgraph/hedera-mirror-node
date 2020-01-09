@@ -28,3 +28,5 @@ spring:
     password: ${hedera.mirror.grpc.db.password}
     url: r2dbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}?useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     username: ${hedera.mirror.grpc.db.username}
+    pool:
+      max-size: 25

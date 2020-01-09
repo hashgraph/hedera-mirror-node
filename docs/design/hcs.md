@@ -64,7 +64,7 @@ message ConsensusTopicQuery {
 
 message ConsensusTopicResponse {
     .proto.Timestamp consensusTimestamp = 1; // The time at which the transaction reached consensus
-    bytes message = 2; // The message body originally in the ConsensusSubmitMessageTransactionBody. Message size will be less than 4K.
+    bytes message = 2; // The message body originally in the ConsensusSubmitMessageTransactionBody. Message size will be less than 6KiB.
     bytes runningHash = 3; // The running hash (SHA384) of every message.
     uint64 sequenceNumber = 4; // Starts at 1 for first submitted message. Incremented on each submitted message.
 }
@@ -207,7 +207,6 @@ public class TransactionEvent {
     -   `INVALID_TOPIC_MESSAGE = 158`
     -   `INVALID_AUTORENEW_ACCOUNT = 159`
     -   `AUTORENEW_ACCOUNT_NOT_ALLOWED = 160`
-    -   `AUTORENEW_ACCOUNT_SIGNATURE_MISSING = 161`
     -   `TOPIC_EXPIRED = 162`
 -   Add new table `topic_message`:
 
