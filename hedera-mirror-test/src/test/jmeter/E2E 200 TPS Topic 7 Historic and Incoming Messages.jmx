@@ -81,6 +81,11 @@
                   <stringProp name="Argument.value">0</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
+                <elementProp name="topicMessageEmitCycles" elementType="Argument">
+                  <stringProp name="Argument.name">topicMessageEmitCycles</stringProp>
+                  <stringProp name="Argument.value">0</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
                 <elementProp name="delSeqFrom" elementType="Argument">
                   <stringProp name="Argument.name">delSeqFrom</stringProp>
                   <stringProp name="Argument.value">-1</stringProp>
@@ -157,7 +162,12 @@
               </elementProp>
               <elementProp name="newTopicsMessageDelay" elementType="Argument">
                 <stringProp name="Argument.name">newTopicsMessageDelay</stringProp>
-                <stringProp name="Argument.value">1</stringProp>
+                <stringProp name="Argument.value">500</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="topicMessageEmitCycles" elementType="Argument">
+                <stringProp name="Argument.name">topicMessageEmitCycles</stringProp>
+                <stringProp name="Argument.value">2</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="delSeqFrom" elementType="Argument">
@@ -311,9 +321,14 @@
                 <stringProp name="Argument.value">0</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
+              <elementProp name="topicMessageEmitCycles" elementType="Argument">
+                <stringProp name="Argument.name">topicMessageEmitCycles</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
               <elementProp name="delSeqFrom" elementType="Argument">
                 <stringProp name="Argument.name">delSeqFrom</stringProp>
-                <stringProp name="Argument.value">1</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>

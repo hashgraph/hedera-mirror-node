@@ -41,7 +41,7 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
     long delSeqFrom;
     TopicMessageGeneratorSampler sampler;
     ConnectionHandler connHandl;
-    int threadNum;
+    int topicMessageEmitCycles;
     String host;
     int port;
     String dbName;
@@ -64,6 +64,7 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
         topicNum = context.getLongParameter("topicID");
         historicMessagesCount = context.getIntParameter("historicMessagesCount");
         futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
+        topicMessageEmitCycles = context.getIntParameter("topicMessageEmitCycles");
         newTopicsMessageDelay = context.getLongParameter("newTopicsMessageDelay");
         delSeqFrom = context.getLongParameter("delSeqFrom");
 
@@ -76,12 +77,13 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
         defaultParameters.addArgument("host", "localhost");
         defaultParameters.addArgument("port", "5432");
         defaultParameters.addArgument("dbName", "mirror_node");
-        defaultParameters.addArgument("dbUser", "mirror_grpc");
-        defaultParameters.addArgument("dbPassword", "mirror_grpc_pass");
+        defaultParameters.addArgument("dbUser", "mirror_node");
+        defaultParameters.addArgument("dbPassword", "mirror_node_pass");
         defaultParameters.addArgument("topicID", "0");
         defaultParameters.addArgument("realmNum", "0");
         defaultParameters.addArgument("historicMessagesCount", "0");
         defaultParameters.addArgument("newTopicsMessageCount", "0");
+        defaultParameters.addArgument("topicMessageEmitCycles", "0");
         defaultParameters.addArgument("newTopicsMessageDelay", "0");
         defaultParameters.addArgument("delSeqFrom", "-1");
         return defaultParameters;
@@ -105,7 +107,7 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
             log.info("Kicking off populateTopicMessages");
             response = sampler
                     .populateTopicMessages(topicNum, historicMessagesCount, futureMessagesCount,
-                            newTopicsMessageDelay, delSeqFrom);
+                            newTopicsMessageDelay, topicMessageEmitCycles, delSeqFrom);
 
             if (response != "Success") {
                 throw new Exception("TopicMessageGeneratorSampler response was not successful");

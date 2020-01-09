@@ -22,6 +22,7 @@ package com.hedera.mirror.grpc.jmeter.sampler;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
@@ -43,11 +44,12 @@ public class TopicMessageGeneratorSampler {
      * @param historicalMessageCount the expected number of historic messages present
      * @param futureMessageCount     the minimum number of incoming messages to wait on
      * @param newTopicsMessageDelay  the period of time to wait between inserting messages
+     * @param topicMessageEmitCycles the number of cycles for which incoming messages should be emitted
      * @param delSeqFrom             the sequence num from messages should be removed from topic
      * @return Success flag
      */
     public String populateTopicMessages(long topicNum, int historicalMessageCount, int futureMessageCount,
-                                        long newTopicsMessageDelay, long delSeqFrom) throws InterruptedException {
+                                        long newTopicsMessageDelay, int topicMessageEmitCycles, long delSeqFrom) throws InterruptedException {
         log.info("Running TopicMessageGenerator Sampler populateTopicMessages topicNum : {}, " +
                         "historicalMessageCount :" +
                         " {}, futureMessageCount : {}, " +
@@ -59,7 +61,7 @@ public class TopicMessageGeneratorSampler {
 
         populateHistoricalMessages(topicNum, historicalMessageCount);
 
-        generateIncomingMessages(topicNum, futureMessageCount, newTopicsMessageDelay);
+        generateIncomingMessages(topicNum, futureMessageCount, newTopicsMessageDelay, topicMessageEmitCycles);
 
         connectionHandler.clearTopicMessages(topicNum, delSeqFrom);
 
@@ -74,17 +76,19 @@ public class TopicMessageGeneratorSampler {
         }
     }
 
-    private void generateIncomingMessages(long topicNum, int futureMessageCount, long delay) throws InterruptedException {
+    private void generateIncomingMessages(long topicNum, int futureMessageCount, long delay,
+                                          int topicMessageEmitCycles) throws InterruptedException {
         if (futureMessageCount > 0) {
             Instant start = Instant.now();
             int maxRunSeconds = 60;
             Instant incomingInstant;
+            AtomicInteger cycleCount = new AtomicInteger(0);
             if (delay == 0) {
                 incomingInstant = Instant.now();
                 connectionHandler
                         .insertTopicMessage(futureMessageCount, topicNum, incomingInstant, -1);
             } else {
-                while (true) {
+                while (cycleCount.get() < topicMessageEmitCycles) {
                     incomingInstant = Instant.now();
 
                     if (incomingInstant.isAfter(start.plusSeconds(maxRunSeconds))) {
@@ -95,6 +99,7 @@ public class TopicMessageGeneratorSampler {
 
                     connectionHandler
                             .insertTopicMessage(futureMessageCount, topicNum, incomingInstant, -1);
+                    cycleCount.incrementAndGet();
                     Thread.sleep(delay);
                 }
             }

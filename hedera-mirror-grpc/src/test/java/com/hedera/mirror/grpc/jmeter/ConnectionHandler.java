@@ -92,7 +92,7 @@ public class ConnectionHandler {
         }
 
         long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(topicNum) : seqStart;
-        log.trace("Insert {} topic messages starting from seqNum {}", newTopicsMessageCount, nextSequenceNum);
+        log.info("Insert {} topic messages starting from seqNum {}", newTopicsMessageCount, nextSequenceNum);
         for (int i = 0; i < newTopicsMessageCount; i++) {
             long sequenceNum = nextSequenceNum + i;
             Instant temp = startTime.plus(sequenceNum, ChronoUnit.NANOS);
