@@ -41,6 +41,9 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
     int threadNum;
     int messagesLatchWaitSeconds;
 
+    /**
+     * Setup test by instantiating client using user defined test properties
+     */
     @Override
     public void setupTest(JavaSamplerContext context) {
         testStart = Instant.now();
@@ -87,6 +90,9 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
         return defaultParameters;
     }
 
+    /**
+     * Runs test by calling sampler subcribeTopic. Reports success based on call response from sampler
+     */
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();

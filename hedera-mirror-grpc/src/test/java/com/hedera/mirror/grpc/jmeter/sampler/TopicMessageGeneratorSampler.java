@@ -22,7 +22,6 @@ package com.hedera.mirror.grpc.jmeter.sampler;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.CountDownLatch;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
@@ -35,6 +34,18 @@ public class TopicMessageGeneratorSampler {
         this.connectionHandler = connectionHandler;
     }
 
+    /**
+     * Performs db operations necessary to simulate population of topic_message table Inserts messages into table for
+     * given topic message for historic messages Continuously inserts messages into table to simulate incoming messages
+     * Removes messages from table to restore original state of table for each test
+     *
+     * @param topicNum               topic num to perform operations on
+     * @param historicalMessageCount the expected number of historic messages present
+     * @param futureMessageCount     the minimum number of incoming messages to wait on
+     * @param newTopicsMessageDelay  the period of time to wait between inserting messages
+     * @param delSeqFrom             the sequence num from messages should be removed from topic
+     * @return Success flag
+     */
     public String populateTopicMessages(long topicNum, int historicalMessageCount, int futureMessageCount,
                                         long newTopicsMessageDelay, long delSeqFrom) throws InterruptedException {
         log.info("Running TopicMessageGenerator Sampler populateTopicMessages topicNum : {}, " +
@@ -44,31 +55,26 @@ public class TopicMessageGeneratorSampler {
                 topicNum, historicalMessageCount, futureMessageCount, newTopicsMessageDelay,
                 delSeqFrom);
 
-        CountDownLatch historicMessagesLatch = new CountDownLatch(historicalMessageCount);
-        CountDownLatch incomingMessagesLatch = new CountDownLatch(futureMessageCount);
-
         topicNum = topicNum == -1 ? connectionHandler.getNextAvailableTopicID() : topicNum;
 
-        populateHistoricalMessages(topicNum, historicalMessageCount, historicMessagesLatch);
+        populateHistoricalMessages(topicNum, historicalMessageCount);
 
-        generateIncomingMessages(topicNum, futureMessageCount, incomingMessagesLatch, newTopicsMessageDelay);
+        generateIncomingMessages(topicNum, futureMessageCount, newTopicsMessageDelay);
 
         connectionHandler.clearTopicMessages(topicNum, delSeqFrom);
 
         return "Success";
     }
 
-    private void populateHistoricalMessages(long topicNum, int historicalMessageCount,
-                                            CountDownLatch historicMessagesLatch) {
+    private void populateHistoricalMessages(long topicNum, int historicalMessageCount) {
         if (historicalMessageCount > 0) {
             Instant pastInstant = Instant.now().minus(7, ChronoUnit.DAYS);
             connectionHandler
-                    .insertTopicMessage(historicalMessageCount, topicNum, pastInstant, historicMessagesLatch, -1);
+                    .insertTopicMessage(historicalMessageCount, topicNum, pastInstant, -1);
         }
     }
 
-    private void generateIncomingMessages(long topicNum, int futureMessageCount, CountDownLatch incomingMessagesLatch
-            , long delay) throws InterruptedException {
+    private void generateIncomingMessages(long topicNum, int futureMessageCount, long delay) throws InterruptedException {
         if (futureMessageCount > 0) {
             Instant start = Instant.now();
             int maxRunSeconds = 60;
@@ -76,7 +82,7 @@ public class TopicMessageGeneratorSampler {
             if (delay == 0) {
                 incomingInstant = Instant.now();
                 connectionHandler
-                        .insertTopicMessage(futureMessageCount, topicNum, incomingInstant, incomingMessagesLatch, -1);
+                        .insertTopicMessage(futureMessageCount, topicNum, incomingInstant, -1);
             } else {
                 while (true) {
                     incomingInstant = Instant.now();
@@ -88,8 +94,7 @@ public class TopicMessageGeneratorSampler {
                     }
 
                     connectionHandler
-                            .insertTopicMessage(futureMessageCount, topicNum, incomingInstant, incomingMessagesLatch,
-                                    -1);
+                            .insertTopicMessage(futureMessageCount, topicNum, incomingInstant, -1);
                     Thread.sleep(delay);
                 }
             }

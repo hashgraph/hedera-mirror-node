@@ -37,7 +37,7 @@
         <module>hedera-mirror-importer</module>
         <module>hedera-mirror-protobuf</module>
         <module>hedera-mirror-rest</module>
-        <module>hedera-mirror-perf</module>
+        <module>hedera-mirror-test</module>
     </modules>
 
     <organization>

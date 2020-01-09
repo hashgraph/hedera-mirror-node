@@ -78,6 +78,17 @@ public class ConsensusServiceReactiveSampler {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
+    /**
+     * Runs single load test thread by calling gRPC Consensus service subscribeTopic endpoint. Success is dependant on
+     * StreamObserver observing the expected count for historic and incoming messages in the allotted time Returns
+     * SamplerResult to client
+     *
+     * @param historicMessagesCount    the expected number of historic messages present
+     * @param futureMessagesCount      the minimum number of incoming messages to wait on
+     * @param observerStart            the test start time
+     * @param messagesLatchWaitSeconds the max period of time for the latches to wait on messages for
+     * @return Sampler result representing success and observed message counts
+     */
     public SamplerResult subscribeTopic(int historicMessagesCount, int futureMessagesCount, Instant observerStart,
                                         int messagesLatchWaitSeconds) throws InterruptedException {
         log.info("[thread-{}] Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs" +

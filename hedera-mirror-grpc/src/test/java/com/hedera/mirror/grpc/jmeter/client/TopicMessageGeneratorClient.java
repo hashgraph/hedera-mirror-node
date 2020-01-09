@@ -48,6 +48,9 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
     String dbUser;
     String dbPassword;
 
+    /**
+     * Setup test by instantiating client using user defined test properties
+     */
     @Override
     public void setupTest(JavaSamplerContext context) {
         // db props
@@ -84,6 +87,9 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
         return defaultParameters;
     }
 
+    /**
+     * Runs test by calling sampler to manage topic message table. Reports success based on successful db operations
+     */
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();
