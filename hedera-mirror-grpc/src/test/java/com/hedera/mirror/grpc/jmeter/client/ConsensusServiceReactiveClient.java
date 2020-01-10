@@ -22,7 +22,6 @@ package com.hedera.mirror.grpc.jmeter.client;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.time.Instant;
 import lombok.extern.log4j.Log4j2;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
@@ -37,7 +36,6 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
     int historicMessagesCount;
     int futureMessagesCount;
     long topicNum;
-    Instant testStart;
     int threadNum;
     int messagesLatchWaitSeconds;
 
@@ -46,7 +44,6 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
      */
     @Override
     public void setupTest(JavaSamplerContext context) {
-        testStart = Instant.now();
         String host = context.getParameter("host");
         String port = context.getParameter("port");
         String limit = context.getParameter("limit");
@@ -102,7 +99,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
         try {
             log.info("Thread {} : Kicking off subscribeTopic", threadNum);
             response = csclient
-                    .subscribeTopic(historicMessagesCount, futureMessagesCount, testStart, messagesLatchWaitSeconds);
+                    .subscribeTopic(historicMessagesCount, futureMessagesCount, messagesLatchWaitSeconds);
 
             result.sampleEnd();
             result.setResponseData(response.toString().getBytes());

@@ -58,7 +58,7 @@
                 </elementProp>
                 <elementProp name="topicID" elementType="Argument">
                   <stringProp name="Argument.name">topicID</stringProp>
-                  <stringProp name="Argument.value">7</stringProp>
+                  <stringProp name="Argument.value">5</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
                 <elementProp name="realmNum" elementType="Argument">
@@ -142,7 +142,7 @@
               </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
-                <stringProp name="Argument.value">7</stringProp>
+                <stringProp name="Argument.value">5</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="realmNum" elementType="Argument">
@@ -210,7 +210,7 @@
               </elementProp>
               <elementProp name="limit" elementType="Argument">
                 <stringProp name="Argument.name">limit</stringProp>
-                <stringProp name="Argument.value">2500</stringProp>
+                <stringProp name="Argument.value">3000</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="consensusStartTimeSeconds" elementType="Argument">
@@ -225,7 +225,7 @@
               </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
-                <stringProp name="Argument.value">7</stringProp>
+                <stringProp name="Argument.value">5</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="realmNum" elementType="Argument">
@@ -298,7 +298,7 @@
               </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
-                <stringProp name="Argument.value">7</stringProp>
+                <stringProp name="Argument.value">5</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="realmNum" elementType="Argument">

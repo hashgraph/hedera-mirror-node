@@ -80,19 +80,16 @@ public class ConsensusServiceReactiveSampler {
      *
      * @param historicMessagesCount    the expected number of historic messages present
      * @param futureMessagesCount      the minimum number of incoming messages to wait on
-     * @param observerStart            the test start time
      * @param messagesLatchWaitSeconds the max period of time for the latches to wait on messages for
      * @return Sampler result representing success and observed message counts
      */
-    public SamplerResult subscribeTopic(int historicMessagesCount, int futureMessagesCount, Instant observerStart,
+    public SamplerResult subscribeTopic(int historicMessagesCount, int futureMessagesCount,
                                         int messagesLatchWaitSeconds) throws InterruptedException {
         log.info("Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs" +
-                        " : " +
-                        "{},limit :" +
-                        " {}, historicMessagesCount : {}, futureMessagesCount : {}, observerStart : {}, " +
+                        " : {},limit : {}, historicMessagesCount : {}, futureMessagesCount : {}, " +
                         "messagesLatchWaitSeconds : {}",
                 topicNum, startTimeSecs, endTimeSecs, limit, historicMessagesCount, futureMessagesCount,
-                observerStart, messagesLatchWaitSeconds);
+                messagesLatchWaitSeconds);
 
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
                 .setLimit(limit)
@@ -106,6 +103,7 @@ public class ConsensusServiceReactiveSampler {
         ConsensusTopicQuery request = builder.build();
 
         // configure StreamObserver
+        Instant observerStart = Instant.parse("2020-01-01T00:00:00.00Z");
         int[] topics = {0};
         CountDownLatch historicMessagesLatch = new CountDownLatch(historicMessagesCount);
         CountDownLatch incomingMessagesLatch = new CountDownLatch(futureMessagesCount);

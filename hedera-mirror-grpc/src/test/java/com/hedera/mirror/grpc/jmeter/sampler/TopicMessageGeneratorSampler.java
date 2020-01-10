@@ -21,7 +21,6 @@ package com.hedera.mirror.grpc.jmeter.sampler;
  */
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.log4j.Log4j2;
 
@@ -72,7 +71,7 @@ public class TopicMessageGeneratorSampler {
 
     private void populateHistoricalMessages(long topicNum, int historicalMessageCount) {
         if (historicalMessageCount > 0) {
-            Instant pastInstant = Instant.now().minus(7, ChronoUnit.DAYS);
+            Instant pastInstant = Instant.EPOCH;
             connectionHandler
                     .insertTopicMessage(historicalMessageCount, topicNum, pastInstant, -1);
         }
@@ -81,26 +80,16 @@ public class TopicMessageGeneratorSampler {
     private void generateIncomingMessages(long topicNum, int futureMessageCount, long delay,
                                           int topicMessageEmitCycles) throws InterruptedException {
         if (futureMessageCount > 0) {
-            Instant start = Instant.now();
+            Instant start = Instant.parse("2020-01-01T00:00:00.00Z");
             int maxRunSeconds = 60;
-            Instant incomingInstant;
             AtomicInteger cycleCount = new AtomicInteger(0);
             if (delay == 0) {
-                incomingInstant = Instant.now();
                 connectionHandler
-                        .insertTopicMessage(futureMessageCount, topicNum, incomingInstant, -1);
+                        .insertTopicMessage(futureMessageCount, topicNum, start, -1);
             } else {
                 while (cycleCount.get() < topicMessageEmitCycles) {
-                    incomingInstant = Instant.now();
-
-                    if (incomingInstant.isAfter(start.plusSeconds(maxRunSeconds))) {
-                        log.warn("Breaking out of loop. We don't want long living threads beyond {} seconds.",
-                                maxRunSeconds);
-                        break;
-                    }
-
                     connectionHandler
-                            .insertTopicMessage(futureMessageCount, topicNum, incomingInstant, -1);
+                            .insertTopicMessage(futureMessageCount, topicNum, start, -1);
                     cycleCount.incrementAndGet();
                     Thread.sleep(delay);
                 }
