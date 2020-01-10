@@ -80,8 +80,8 @@ public class TopicMessageGeneratorSampler {
     private void generateIncomingMessages(long topicNum, int futureMessageCount, long delay,
                                           int topicMessageEmitCycles) throws InterruptedException {
         if (futureMessageCount > 0) {
-            Instant start = Instant.parse("2020-01-01T00:00:00.00Z");
-            int maxRunSeconds = 60;
+            // ensure all incoming messages occur after 2020-01-01T00:00:00.00Z as sampler uses said time to distinguish
+            Instant start = Instant.parse("2020-01-10T00:00:00.00Z");
             AtomicInteger cycleCount = new AtomicInteger(0);
             if (delay == 0) {
                 connectionHandler

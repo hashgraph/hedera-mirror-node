@@ -29,6 +29,7 @@ import io.grpc.stub.StreamObserver;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
@@ -143,14 +144,14 @@ public class ConsensusServiceReactiveSampler {
                         incomingMessagesLatch.countDown();
                     }
 
-                    result.incomingMessageCount++;
+                    result.incomingMessageCount.incrementAndGet();
                 } else {
                     if (awaitHistoricMessages) {
                         // decrement latch count
                         historicMessagesLatch.countDown();
                     }
 
-                    result.historicalMessageCount++;
+                    result.historicalMessageCount.incrementAndGet();
                 }
             }
 
@@ -203,19 +204,19 @@ public class ConsensusServiceReactiveSampler {
         private final long topicNum;
         private final long realmId;
         public boolean success;
-        private int historicalMessageCount;
-        private int incomingMessageCount;
+        private final AtomicInteger historicalMessageCount;
+        private final AtomicInteger incomingMessageCount;
 
         public SamplerResult(long topicnm, long realnm) {
             topicNum = topicnm;
             realmId = realnm;
-            historicalMessageCount = 0;
-            incomingMessageCount = 0;
+            historicalMessageCount = new AtomicInteger(0);
+            incomingMessageCount = new AtomicInteger(0);
             success = true;
         }
 
         public int getTotalMessageCount() {
-            return historicalMessageCount + incomingMessageCount;
+            return historicalMessageCount.get() + incomingMessageCount.get();
         }
     }
 }
