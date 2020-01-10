@@ -114,8 +114,6 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
 
         result.setSuccessful(success);
 
-        // shutdown test and avoid notifying waiting for signal - saves run time
-        teardownTest(context);
         return result;
     }
 

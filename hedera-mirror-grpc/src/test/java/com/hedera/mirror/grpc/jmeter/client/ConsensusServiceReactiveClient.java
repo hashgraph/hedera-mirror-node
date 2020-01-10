@@ -130,20 +130,6 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
 
         result.setSuccessful(response.success);
 
-        // shutdown test and avoid notifying waiting for signal - saves run time
-        teardownTest(context);
-
         return result;
-    }
-
-    @Override
-    public void teardownTest(JavaSamplerContext context) {
-        try {
-            csclient.shutdown();
-        } catch (InterruptedException ex) {
-            ex.printStackTrace();
-        }
-
-        super.teardownTest(context);
     }
 }

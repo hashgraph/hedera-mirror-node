@@ -65,6 +65,8 @@ public class TopicMessageGeneratorSampler {
 
         connectionHandler.clearTopicMessages(topicNum, delSeqFrom);
 
+        connectionHandler.close();
+
         return "Success";
     }
 

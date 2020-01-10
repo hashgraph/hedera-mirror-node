@@ -29,6 +29,7 @@ import io.grpc.stub.StreamObserver;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
 
@@ -88,9 +89,10 @@ public class ConsensusServiceReactiveSampler {
         log.info("Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs" +
                         " : " +
                         "{},limit :" +
-                        " {}, historicMessagesCount : {}, futureMessagesCount : {}, observerStart : {}",
+                        " {}, historicMessagesCount : {}, futureMessagesCount : {}, observerStart : {}, " +
+                        "messagesLatchWaitSeconds : {}",
                 topicNum, startTimeSecs, endTimeSecs, limit, historicMessagesCount, futureMessagesCount,
-                observerStart);
+                observerStart, messagesLatchWaitSeconds);
 
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
                 .setLimit(limit)
@@ -154,9 +156,11 @@ public class ConsensusServiceReactiveSampler {
                 }
             }
 
+            @SneakyThrows
             @Override
             public void onError(Throwable t) {
                 log.error("Error in ConsensusTopicResponse StreamObserver", t);
+                throw t;
             }
 
             @Override
@@ -166,9 +170,8 @@ public class ConsensusServiceReactiveSampler {
             }
         };
 
-        boolean success = true;
+        Stopwatch messageStopwatch = Stopwatch.createStarted();
         try {
-            Stopwatch messageStopwatch = Stopwatch.createStarted();
             asyncStub.subscribeTopic(request, responseObserver);
 
             // await some new messages
@@ -176,22 +179,25 @@ public class ConsensusServiceReactiveSampler {
                 log.error("Historic messages latch count is {}, did not reach zero", historicMessagesLatch.getCount());
                 result.success = false;
             }
-            log.info("{} Historic messages obtained in {}", result.historicalMessageCount, messageStopwatch);
+            log.trace("{} Historic messages obtained in {}", result.historicalMessageCount, messageStopwatch);
 
-            if (!incomingMessagesLatch.await(messagesLatchWaitSeconds, TimeUnit.SECONDS)) {
+            if (historicMessagesLatch.getCount() == 0 && !incomingMessagesLatch
+                    .await(messagesLatchWaitSeconds, TimeUnit.SECONDS)) {
                 log.error("incomingMessagesLatch count is {}, did not reach zero", incomingMessagesLatch.getCount());
                 result.success = false;
             }
-            log.info("{} total messages obtained in {}", result.getTotalMessageCount(), messageStopwatch);
         } catch (Exception ex) {
             log.warn(String.format("RCP failed"), ex);
             throw ex;
         } finally {
-            responseObserver.onCompleted();
-        }
+            log.info("{} total messages obtained in {}", result.getTotalMessageCount(), messageStopwatch);
 
-        log.info("Consensus service response observer: {}", result);
-        return result;
+            responseObserver.onCompleted();
+            shutdown();
+
+            log.info("Consensus service response observer: {}", result);
+            return result;
+        }
     }
 
     @ToString
