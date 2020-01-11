@@ -21,6 +21,7 @@ package com.hedera.mirror.grpc.jmeter.sampler;
  */
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.log4j.Log4j2;
 
@@ -71,7 +72,7 @@ public class TopicMessageGeneratorSampler {
 
     private void populateHistoricalMessages(long topicNum, int historicalMessageCount) {
         if (historicalMessageCount > 0) {
-            Instant pastInstant = Instant.EPOCH;
+            Instant pastInstant = Instant.EPOCH.plus(7, ChronoUnit.DAYS);
             connectionHandler
                     .insertTopicMessage(historicalMessageCount, topicNum, pastInstant, -1);
         }
