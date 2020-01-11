@@ -108,7 +108,7 @@
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.duration">5</stringProp>
-        <stringProp name="ThreadGroup.delay">6</stringProp>
+        <stringProp name="ThreadGroup.delay">7</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
       </ThreadGroup>
       <hashTree>

@@ -271,6 +271,31 @@
         <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="DB_Cleanup_Sampler" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
             <collectionProp name="Arguments.arguments">
+            <elementProp name="host" elementType="Argument">
+                <stringProp name="Argument.name">host</stringProp>
+                <stringProp name="Argument.value">localhost</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="port" elementType="Argument">
+                <stringProp name="Argument.name">port</stringProp>
+                <stringProp name="Argument.value">5432</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="host" elementType="Argument">
+                <stringProp name="Argument.name">dbUser</stringProp>
+                <stringProp name="Argument.value">mirror_node</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="port" elementType="Argument">
+                <stringProp name="Argument.name">dbPassword</stringProp>
+                <stringProp name="Argument.value">mirror_node_pass</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="host" elementType="Argument">
+                <stringProp name="Argument.name">dbName</stringProp>
+                <stringProp name="Argument.value">mirror_node</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
                 <stringProp name="Argument.value">0</stringProp>

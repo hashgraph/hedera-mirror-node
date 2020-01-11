@@ -51,7 +51,47 @@ Then using the [JMeter Maven Plugin](https://github.com/jmeter-maven-plugin/jmet
 ## Test Execution
 
 -   Ensure desired JMX file(s) are under `hedera-mirror-test/src/test/jmeter/`
--   Startup database and module, either through Docker Compose or through Spring Boot
+-   Startup database and module, either through Docker Compose or through Spring Boot:
+
+    `'docker-compose [-f composefile.yml] up' or '../mvnw spring-boot:run'`
+
 -   Start the tests:
 
     `./mvnw clean verify --projects hedera-mirror-test`
+
+## Test Configuration
+
+Using the initial basic test plan, load tests can be configured to achieve many number of scenarios concerned with historical, future messages and their combination within a given topic ID.
+Historical messages are populated, and incoming future messages are simulated over times whiles a connection is established to the gRPC server to subscribe to a topic.
+At the end the db is cleared to ensure each test can run independently and the db state is not altered.
+
+The initial jmx test plan files under `hedera-mirror-test/src/test/jmeter/` follow the below structure
+
+1.  DB_Setup_Sampler - Populates historic data into the db
+    -   host (db host)
+    -   port (db port)
+    -   dbUser (db user)
+    -   dbPassword (db password)
+    -   dbName (db name)
+    -   topicID (HCS topic message id)
+    -   realmNum (HCS topic realm num)
+    -   historicMessagesCount (number of historical messages to populate)
+    -   newTopicsMessageCount (number of future messages to emit per cycle)
+    -   newTopicsMessageDelay (delay between message cycle emission)
+    -   topicMessageEmitCycles (number of cycle to emit messages)
+    -   delSeqFrom (sequence number to delete messages in a topic from)
+2.  DB_Future_Sampler - Simulates incoming messages
+    -   (See DB_Setup_Sampler options)
+3.  Subcribe_Sampler - Subscribes and listens for messages
+    -   host
+    -   port
+    -   limit
+    -   consensusStartTimeSeconds
+    -   consensusEndTimeSeconds
+    -   topicID
+    -   realmNum
+    -   historicMessagesCount
+    -   newTopicsMessageCount
+    -   messagesLatchWaitSeconds
+4.  DB_Cleanup_Sampler - Cleans up the db
+    -   (See DB_Setup_Sampler options)
