@@ -25,6 +25,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.grpc.validation.EndTime;
@@ -48,6 +49,9 @@ public class TopicMessageFilter {
     @NotNull
     @Builder.Default
     private Instant startTime = Instant.now();
+
+    @Builder.Default
+    private String subscriberId = RandomStringUtils.randomAlphanumeric(8);
 
     @Min(0)
     private int topicNum;

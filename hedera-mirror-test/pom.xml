@@ -15,6 +15,19 @@
         <version>0.5.0</version>
     </parent>
 
+    <properties>
+        <jmeter.test>E2E Topic 0 Single User Historic and Incoming Messages.jmx</jmeter.test>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.hedera</groupId>
+            <artifactId>hedera-mirror-grpc</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -52,7 +65,7 @@
                         </arguments>
                     </jMeterProcessJVMSettings>
                     <selectedConfiguration>default</selectedConfiguration>
-                    <testFilesIncluded>E2E Topic 0 Single User Historic and Incoming Messages.jmx</testFilesIncluded>
+                    <testFilesIncluded>${jmeter.test}</testFilesIncluded>
                 </configuration>
             </plugin>
         </plugins>

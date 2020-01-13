@@ -75,6 +75,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .limit(limit)
                 .realmNum(filter.getRealmNum())
                 .startTime(startTime)
+                .subscriberId(filter.getSubscriberId())
                 .topicNum(filter.getTopicNum())
                 .build();
 
@@ -93,12 +94,14 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .endTime(current.getConsensusTimestamp())
                 .limit(current.getSequenceNumber() - last.getSequenceNumber() - 1)
                 .realmNum(filter.getRealmNum())
+                .subscriberId(filter.getSubscriberId())
                 .startTime(last.getConsensusTimestamp().plusNanos(1))
                 .topicNum(filter.getTopicNum())
                 .build();
 
-        log.info("Querying topic {} for missing messages between sequence {} and {}",
-                topicContext.getTopicId(), last.getSequenceNumber(), current.getSequenceNumber());
+        log.info("[{}] Querying topic {} for missing messages between sequence {} and {}",
+                filter.getSubscriberId(), topicContext.getTopicId(), last.getSequenceNumber(),
+                current.getSequenceNumber());
 
         return topicMessageRepository.findByFilter(newFilter)
                 .concatWithValues(current);
@@ -141,7 +144,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         void onNext(TopicMessage topicMessage) {
             lastTopicMessage = topicMessage;
             count.incrementAndGet();
-            log.trace("Topic {} received message #{}: {}", topicId, count, topicMessage);
+            log.trace("[{}] Topic {} received message #{}: {}", filter.getSubscriberId(), topicId, count, topicMessage);
         }
 
         boolean shouldListen() {
@@ -154,7 +157,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         void onComplete() {
-            log.info("Topic {} {} complete with {} messages in {}", topicId, mode, count, stopwatch);
+            log.info("[{}] Topic {} {} complete with {} messages in {}", filter
+                    .getSubscriberId(), topicId, mode, count, stopwatch);
             mode = mode.next();
         }
     }
