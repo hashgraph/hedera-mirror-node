@@ -28,6 +28,7 @@ import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 
 import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
+import com.hedera.mirror.grpc.jmeter.props.MessageGenerator;
 import com.hedera.mirror.grpc.jmeter.sampler.TopicMessageGeneratorSampler;
 
 @Log4j2
@@ -59,14 +60,6 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
         dbUser = context.getParameter("dbUser", "mirror_node");
         dbPassword = context.getParameter("dbPassword", "mirror_node_pass");
 
-        // testcase props
-        topicNum = context.getLongParameter("topicID", 0);
-        historicMessagesCount = context.getIntParameter("historicMessagesCount", 0);
-        futureMessagesCount = context.getIntParameter("newTopicsMessageCount", 0);
-        topicMessageEmitCycles = context.getIntParameter("topicMessageEmitCycles", 0);
-        newTopicsMessageDelay = context.getLongParameter("newTopicsMessageDelay", 0L);
-        delSeqFrom = context.getLongParameter("delSeqFrom", -1L);
-
         super.setupTest(context);
     }
 
@@ -77,7 +70,6 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();
         boolean success = true;
-        String response = "";
         result.sampleStart();
 
         try {
@@ -85,17 +77,20 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
             connHandl = new ConnectionHandler(host, port, dbName, dbUser, dbPassword);
             sampler = new TopicMessageGeneratorSampler(connHandl);
 
-            log.info("Kicking off populateTopicMessages");
-            response = sampler
-                    .populateTopicMessages(topicNum, historicMessagesCount, futureMessagesCount,
-                            newTopicsMessageDelay, topicMessageEmitCycles, delSeqFrom);
+            MessageGenerator messageGen = MessageGenerator.builder()
+                    .topicNum(context.getLongParameter("topicID", 0))
+                    .historicMessagesCount(context.getIntParameter("historicMessagesCount", 0))
+                    .futureMessagesCount(context.getIntParameter("newTopicsMessageCount", 0))
+                    .topicMessageEmitCycles(context.getIntParameter("topicMessageEmitCycles", 0))
+                    .newTopicsMessageDelay(context.getLongParameter("newTopicsMessageDelay", 0L))
+                    .deleteFromSequence(context.getLongParameter("delSeqFrom", -1L))
+                    .build();
 
-            if (response != "Success") {
-                throw new Exception("TopicMessageGeneratorSampler response was not successful");
-            }
+            log.info("Kicking off populateTopicMessages");
+            sampler
+                    .populateTopicMessages(messageGen);
 
             result.sampleEnd();
-            result.setResponseData(response.getBytes());
             result.setResponseMessage("Successfully performed populateTopicMessages");
             result.setResponseCodeOK();
             log.info("Successfully performed populateTopicMessages");

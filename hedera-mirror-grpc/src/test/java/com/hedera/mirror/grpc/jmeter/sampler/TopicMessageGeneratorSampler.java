@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
+import com.hedera.mirror.grpc.jmeter.props.MessageGenerator;
 
 @Log4j2
 public class TopicMessageGeneratorSampler {
@@ -40,34 +41,23 @@ public class TopicMessageGeneratorSampler {
      * given topic message for historic messages Continuously inserts messages into table to simulate incoming messages
      * Removes messages from table to restore original state of table for each test
      *
-     * @param topicNum               topic num to perform operations on
-     * @param historicalMessageCount the expected number of historic messages present
-     * @param futureMessageCount     the minimum number of incoming messages to wait on
-     * @param newTopicsMessageDelay  the period of time to wait between inserting messages
-     * @param topicMessageEmitCycles the number of cycles for which incoming messages should be emitted
-     * @param delSeqFrom             the sequence num from messages should be removed from topic
+     * @param messageGen messageGen object containing properties for message generation
      * @return Success flag
      */
-    public String populateTopicMessages(long topicNum, int historicalMessageCount, int futureMessageCount,
-                                        long newTopicsMessageDelay, int topicMessageEmitCycles, long delSeqFrom) throws InterruptedException {
-        log.info("Running TopicMessageGenerator Sampler populateTopicMessages topicNum : {}, " +
-                        "historicalMessageCount :" +
-                        " {}, futureMessageCount : {}, " +
-                        "newTopicsMessageDelay : {}, delSeqFrom : {}",
-                topicNum, historicalMessageCount, futureMessageCount, newTopicsMessageDelay,
-                delSeqFrom);
+    public void populateTopicMessages(MessageGenerator messageGen) throws InterruptedException {
+        log.info("Running TopicMessageGenerator Sampler, messageGen : {}", messageGen);
 
-        topicNum = topicNum == -1 ? connectionHandler.getNextAvailableTopicID() : topicNum;
+        long topicNum = messageGen.getTopicNum() == -1 ? connectionHandler.getNextAvailableTopicID() : messageGen
+                .getTopicNum();
 
-        populateHistoricalMessages(topicNum, historicalMessageCount);
+        populateHistoricalMessages(topicNum, messageGen.getHistoricMessagesCount());
 
-        generateIncomingMessages(topicNum, futureMessageCount, newTopicsMessageDelay, topicMessageEmitCycles);
+        generateIncomingMessages(topicNum, messageGen.getFutureMessagesCount(), messageGen
+                .getNewTopicsMessageDelay(), messageGen.getTopicMessageEmitCycles());
 
-        connectionHandler.clearTopicMessages(topicNum, delSeqFrom);
+        connectionHandler.clearTopicMessages(topicNum, messageGen.getDeleteFromSequence());
 
         connectionHandler.close();
-
-        return "Success";
     }
 
     private void populateHistoricalMessages(long topicNum, int historicalMessageCount) {

@@ -20,6 +20,8 @@ package com.hedera.mirror.grpc.jmeter.client;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TopicID;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import lombok.extern.log4j.Log4j2;
@@ -28,16 +30,13 @@ import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 
+import com.hedera.mirror.api.proto.ConsensusTopicQuery;
+import com.hedera.mirror.grpc.jmeter.props.MessageListener;
 import com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler;
 
 @Log4j2
 public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
     com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler csclient = null;
-    int historicMessagesCount;
-    int futureMessagesCount;
-    long topicNum;
-    int threadNum;
-    int messagesLatchWaitSeconds;
 
     /**
      * Setup test by instantiating client using user defined test properties
@@ -46,27 +45,29 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
     public void setupTest(JavaSamplerContext context) {
         String host = context.getParameter("host");
         String port = context.getParameter("port");
-        String limit = context.getParameter("limit");
-        String consensusStartTimeSeconds = context.getParameter("consensusStartTimeSeconds");
-        String consensusEndTimeSeconds = context.getParameter("consensusEndTimeSeconds");
-        String topicID = context.getParameter("topicID");
-        String realmNum = context.getParameter("realmNum");
-        historicMessagesCount = context.getIntParameter("historicMessagesCount");
-        futureMessagesCount = context.getIntParameter("newTopicsMessageCount");
-        topicNum = Long.parseLong(topicID);
-        messagesLatchWaitSeconds = context.getIntParameter("messagesLatchWaitSeconds");
 
-        threadNum = context.getJMeterContext().getThreadNum();
+        ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
+                .setLimit(context.getLongParameter("limit", 0))
+                .setConsensusStartTime(Timestamp.newBuilder()
+                        .setSeconds(context.getLongParameter("consensusStartTimeSeconds", 0)).build())
+                .setTopicID(
+                        TopicID.newBuilder()
+                                .setRealmNum(context.getLongParameter("realmNum"))
+                                .setTopicNum(context.getLongParameter("topicID"))
+                                .build());
+
+        long endTimeSecs = context.getLongParameter("consensusEndTimeSeconds", 0);
+        if (endTimeSecs != 0) {
+            builder.setConsensusEndTime(Timestamp.newBuilder()
+                    .setSeconds(endTimeSecs).build());
+        }
+
+        ConsensusTopicQuery request = builder.build();
 
         csclient = new com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler(
                 host,
                 Integer.parseInt(port),
-                topicNum,
-                Long.parseLong(realmNum),
-                Long.parseLong(consensusStartTimeSeconds),
-                Long.parseLong(consensusEndTimeSeconds),
-                Long.parseLong(limit),
-                threadNum);
+                request);
 
         super.setupTest(context);
     }
@@ -97,9 +98,14 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
         result.sampleStart();
 
         try {
-            log.info("Thread {} : Kicking off subscribeTopic", threadNum);
+            MessageListener listener = MessageListener.builder()
+                    .historicMessagesCount(context.getIntParameter("historicMessagesCount"))
+                    .futureMessagesCount(context.getIntParameter("newTopicsMessageCount"))
+                    .messagesLatchWaitSeconds(context.getIntParameter("messagesLatchWaitSeconds"))
+                    .build();
+
             response = csclient
-                    .subscribeTopic(historicMessagesCount, futureMessagesCount, messagesLatchWaitSeconds);
+                    .subscribeTopic(listener);
 
             result.sampleEnd();
             result.setResponseData(response.toString().getBytes());

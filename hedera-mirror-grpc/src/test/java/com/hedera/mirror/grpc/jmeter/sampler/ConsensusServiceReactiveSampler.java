@@ -37,6 +37,7 @@ import lombok.extern.log4j.Log4j2;
 import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
+import com.hedera.mirror.grpc.jmeter.props.MessageListener;
 
 /**
  * A test client that will make requests of the Consensus service from the Consensus server
@@ -45,28 +46,17 @@ import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 public class ConsensusServiceReactiveSampler {
     private final ManagedChannel channel;
     private final ConsensusServiceGrpc.ConsensusServiceStub asyncStub;
-    private final long topicNum;
-    private final long realmNum;
-    private final long startTimeSecs;
-    private final long endTimeSecs;
-    private final long limit;
+    private final ConsensusTopicQuery request;
 
-    public ConsensusServiceReactiveSampler(String host, int port, long topic, long realm, long startTime,
-                                           long endTime, long lmt, int thrdNum) {
+    public ConsensusServiceReactiveSampler(String host, int port, ConsensusTopicQuery request) {
         this(ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext(true), topic, realm, startTime, endTime, lmt, thrdNum);
+                .usePlaintext(true), request);
     }
 
-    public ConsensusServiceReactiveSampler(ManagedChannelBuilder<?> channelBuilder, long topic, long realm,
-                                           long startTime,
-                                           long endTime, long lmt, int thrdNum) {
+    public ConsensusServiceReactiveSampler(ManagedChannelBuilder<?> channelBuilder, ConsensusTopicQuery request) {
         channel = channelBuilder.build();
         asyncStub = ConsensusServiceGrpc.newStub(channel);
-        topicNum = topic;
-        realmNum = realm;
-        startTimeSecs = startTime;
-        endTimeSecs = endTime;
-        limit = lmt;
+        this.request = request;
     }
 
     public void shutdown() throws InterruptedException {
@@ -79,38 +69,22 @@ public class ConsensusServiceReactiveSampler {
      * StreamObserver observing the expected count for historic and incoming messages in the allotted time Returns
      * SamplerResult to client
      *
-     * @param historicMessagesCount    the expected number of historic messages present
-     * @param futureMessagesCount      the minimum number of incoming messages to wait on
-     * @param messagesLatchWaitSeconds the max period of time for the latches to wait on messages for
+     * @param messageListener listener properties
      * @return Sampler result representing success and observed message counts
      */
-    public SamplerResult subscribeTopic(int historicMessagesCount, int futureMessagesCount,
-                                        int messagesLatchWaitSeconds) throws InterruptedException {
-        log.info("Running Consensus Client subscribeTopic topicNum : {}, startTimeSecs : {}, endTimeSecs" +
-                        " : {},limit : {}, historicMessagesCount : {}, futureMessagesCount : {}, " +
-                        "messagesLatchWaitSeconds : {}",
-                topicNum, startTimeSecs, endTimeSecs, limit, historicMessagesCount, futureMessagesCount,
-                messagesLatchWaitSeconds);
-
-        ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
-                .setLimit(limit)
-                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(startTimeSecs).build())
-                .setTopicID(TopicID.newBuilder().setRealmNum(realmNum).setTopicNum(topicNum).build());
-
-        if (endTimeSecs != 0) {
-            builder.setConsensusEndTime(Timestamp.newBuilder().setSeconds(endTimeSecs).build());
-        }
-
-        ConsensusTopicQuery request = builder.build();
+    public SamplerResult subscribeTopic(MessageListener messageListener) throws InterruptedException {
+        log.info("Running Consensus Client subscribeRequest : {}, messageListener : {}", request.toString()
+                .replaceAll("\n", ""), messageListener);
 
         // configure StreamObserver
         Instant observerStart = Instant.parse("2020-01-01T00:00:00.00Z");
         int[] topics = {0};
-        CountDownLatch historicMessagesLatch = new CountDownLatch(historicMessagesCount);
-        CountDownLatch incomingMessagesLatch = new CountDownLatch(futureMessagesCount);
-        SamplerResult result = new SamplerResult(topicNum, realmNum);
-        boolean awaitHistoricMessages = historicMessagesCount > 0;
-        boolean awaitNewMessages = futureMessagesCount > 0;
+        CountDownLatch historicMessagesLatch = new CountDownLatch(messageListener.getHistoricMessagesCount());
+        CountDownLatch incomingMessagesLatch = new CountDownLatch(messageListener.getFutureMessagesCount());
+        TopicID topicId = request.getTopicID();
+        SamplerResult result = new SamplerResult(topicId.getTopicNum(), topicId.getRealmNum());
+        boolean awaitHistoricMessages = historicMessagesLatch.getCount() > 0;
+        boolean awaitNewMessages = incomingMessagesLatch.getCount() > 0;
         ConsensusTopicResponse[] lastresponse = {null};
         StreamObserver<ConsensusTopicResponse> responseObserver = new StreamObserver<>() {
 
@@ -174,14 +148,14 @@ public class ConsensusServiceReactiveSampler {
             asyncStub.subscribeTopic(request, responseObserver);
 
             // await some new messages
-            if (!historicMessagesLatch.await(messagesLatchWaitSeconds, TimeUnit.SECONDS)) {
+            if (!historicMessagesLatch.await(messageListener.getMessagesLatchWaitSeconds(), TimeUnit.SECONDS)) {
                 log.error("Historic messages latch count is {}, did not reach zero", historicMessagesLatch.getCount());
                 result.success = false;
             }
-            log.trace("{} Historic messages obtained in {}", result.historicalMessageCount, messageStopwatch);
+            log.info("{} Historic messages obtained in {}", result.historicalMessageCount, messageStopwatch);
 
             if (historicMessagesLatch.getCount() == 0 && !incomingMessagesLatch
-                    .await(messagesLatchWaitSeconds, TimeUnit.SECONDS)) {
+                    .await(messageListener.getMessagesLatchWaitSeconds(), TimeUnit.SECONDS)) {
                 log.error("incomingMessagesLatch count is {}, did not reach zero", incomingMessagesLatch.getCount());
                 result.success = false;
             }
@@ -203,9 +177,9 @@ public class ConsensusServiceReactiveSampler {
     public class SamplerResult {
         private final long topicNum;
         private final long realmId;
-        public boolean success;
         private final AtomicInteger historicalMessageCount;
         private final AtomicInteger incomingMessageCount;
+        public boolean success;
 
         public SamplerResult(long topicnm, long realnm) {
             topicNum = topicnm;
