@@ -12,7 +12,7 @@
     <parent>
         <artifactId>hedera-mirror-node</artifactId>
         <groupId>com.hedera</groupId>
-        <version>0.5.0</version>
+        <version>0.5.1-rc1</version>
     </parent>
 
     <properties>
@@ -45,7 +45,7 @@
                 </executions>
                 <configuration>
                     <generateReports>true</generateReports>
-                    <errorRateThresholdInPercent>5</errorRateThresholdInPercent>
+                    <errorRateThresholdInPercent>0</errorRateThresholdInPercent>
                     <excludedArtifacts>
                         <excludedArtifact>ch.qos.logback:logback-classic</excludedArtifact>
                         <excludedArtifact>log4j:log4j</excludedArtifact>

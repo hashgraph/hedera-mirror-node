@@ -13,5 +13,4 @@ insert into t_transaction_results (proto_id, result) values (157, 'UNAUTHORIZED'
 insert into t_transaction_results (proto_id, result) values (158, 'INVALID_TOPIC_MESSAGE');
 insert into t_transaction_results (proto_id, result) values (159, 'INVALID_AUTORENEW_ACCOUNT');
 insert into t_transaction_results (proto_id, result) values (160, 'AUTORENEW_ACCOUNT_NOT_ALLOWED');
-insert into t_transaction_results (proto_id, result) values (161, 'AUTORENEW_ACCOUNT_SIGNATURE_MISSING');
 insert into t_transaction_results (proto_id, result) values (162, 'TOPIC_EXPIRED');

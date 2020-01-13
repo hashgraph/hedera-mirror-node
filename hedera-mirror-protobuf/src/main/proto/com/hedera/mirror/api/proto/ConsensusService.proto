@@ -45,7 +45,7 @@ message ConsensusTopicQuery {
 message ConsensusTopicResponse {
     .proto.Timestamp consensusTimestamp = 1; // The time at which the transaction reached consensus
 
-    // The message body originally in the ConsensusSubmitMessageTransactionBody. Message size will be less than 4K.
+    // The message body originally in the ConsensusSubmitMessageTransactionBody. Message size will be less than 6KiB.
     bytes message = 2;
 
     bytes runningHash = 3; // The running hash (SHA384) of every message.
