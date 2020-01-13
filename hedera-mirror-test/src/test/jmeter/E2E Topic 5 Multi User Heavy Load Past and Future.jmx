@@ -88,7 +88,7 @@
                 </elementProp>
                 <elementProp name="delSeqFrom" elementType="Argument">
                   <stringProp name="Argument.name">delSeqFrom</stringProp>
-                  <stringProp name="Argument.value">-1</stringProp>
+                  <stringProp name="Argument.value">0</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
               </collectionProp>

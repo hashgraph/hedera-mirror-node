@@ -47,15 +47,16 @@ public class TopicMessageGeneratorSampler {
     public void populateTopicMessages(MessageGenerator messageGen) throws InterruptedException {
         log.info("Running TopicMessageGenerator Sampler, messageGen : {}", messageGen);
 
-        long topicNum = messageGen.getTopicNum() == -1 ? connectionHandler.getNextAvailableTopicID() : messageGen
-                .getTopicNum();
+        long topicNum = messageGen.getTopicNum();
+
+        connectionHandler.clearTopicMessages(topicNum, messageGen.getDeleteFromSequence());
+
+        topicNum = topicNum == -1 ? connectionHandler.getNextAvailableTopicID() : topicNum;
 
         populateHistoricalMessages(topicNum, messageGen.getHistoricMessagesCount());
 
         generateIncomingMessages(topicNum, messageGen.getFutureMessagesCount(), messageGen
                 .getNewTopicsMessageDelay(), messageGen.getTopicMessageEmitCycles());
-
-        connectionHandler.clearTopicMessages(topicNum, messageGen.getDeleteFromSequence());
 
         connectionHandler.close();
     }
