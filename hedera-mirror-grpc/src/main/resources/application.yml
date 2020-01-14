@@ -10,6 +10,7 @@ hedera:
       port: 5600
 grpc:
   server:
+    max-inbound-message-size: 6144
     port: ${hedera.mirror.grpc.port}
 logging:
   level:
@@ -29,4 +30,4 @@ spring:
     url: r2dbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}?useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     username: ${hedera.mirror.grpc.db.username}
     pool:
-      max-size: 25
+      max-size: 100
