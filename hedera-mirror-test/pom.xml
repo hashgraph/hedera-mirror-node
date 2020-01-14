@@ -17,6 +17,7 @@
 
     <properties>
         <jmeter.test>E2E_Single_User_All_Messages.jmx</jmeter.test>
+        <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
     </properties>
 
     <build>
@@ -57,6 +58,9 @@
                     </jMeterProcessJVMSettings>
                     <selectedConfiguration>default</selectedConfiguration>
                     <testFilesIncluded>${jmeter.test}</testFilesIncluded>
+                    <propertiesUser>
+                        <subscribeThreadCount>${jmeter.subscribeThreadCount}</subscribeThreadCount>
+                    </propertiesUser>
                 </configuration>
             </plugin>
         </plugins>
