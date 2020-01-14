@@ -12,7 +12,7 @@
     <parent>
         <artifactId>hedera-mirror-node</artifactId>
         <groupId>com.hedera</groupId>
-        <version>0.5.1-rc1</version>
+        <version>0.5.1</version>
     </parent>
 
     <properties>
