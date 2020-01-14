@@ -30,7 +30,7 @@ Then using the [JMeter Maven Plugin](https://github.com/jmeter-maven-plugin/jmet
 
 -   Build module for testing:
 
-    `../mvnw clean package -DskipTests`
+    `../mvnw clean install -DskipTests`
 
 -   Copy test jar to JMeter `/lib/ext` folder:
 
@@ -58,6 +58,11 @@ Then using the [JMeter Maven Plugin](https://github.com/jmeter-maven-plugin/jmet
 -   Start the tests:
 
     `./mvnw clean verify --projects hedera-mirror-test`
+
+    Optional properties follow the 'Modifying Properties' logic (https://github.com/jmeter-maven-plugin/jmeter-maven-plugin/wiki/Modifying-Properties) and include the following
+
+    -   jmeter.test e.g. `-Djmeter.test="E2E_200_TPS_All_Messages.jmx"`
+    -   jmeter.subscribeThreadCount e.g.`-Djmeter.subscribeThreadCount=17`
 
 ## Test Configuration
 

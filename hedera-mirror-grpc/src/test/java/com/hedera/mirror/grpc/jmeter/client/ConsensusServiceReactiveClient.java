@@ -71,7 +71,12 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
 
         super.setupTest(context);
     }
-
+    
+    /**
+     * Specifies and makes available parameters and their defaults to the jMeter GUI when editing Test Plans
+     *
+     * @return Sampler arguments
+     */
     @Override
     public Arguments getDefaultParameters() {
         Arguments defaultParameters = new Arguments();

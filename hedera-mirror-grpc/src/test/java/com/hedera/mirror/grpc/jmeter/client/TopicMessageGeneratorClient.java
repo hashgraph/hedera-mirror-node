@@ -23,6 +23,7 @@ package com.hedera.mirror.grpc.jmeter.client;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import lombok.extern.log4j.Log4j2;
+import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
@@ -54,17 +55,41 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
     @Override
     public void setupTest(JavaSamplerContext context) {
         // db props
-        host = context.getParameter("host", "localhost");
-        port = context.getIntParameter("port", 5432);
-        dbName = context.getParameter("dbName", "mirror_node");
-        dbUser = context.getParameter("dbUser", "mirror_node");
-        dbPassword = context.getParameter("dbPassword", "mirror_node_pass");
+        host = context.getParameter("host");
+        port = context.getIntParameter("port");
+        dbName = context.getParameter("dbName");
+        dbUser = context.getParameter("dbUser");
+        dbPassword = context.getParameter("dbPassword");
 
         super.setupTest(context);
     }
 
     /**
+     * Specifies and makes available parameters and their defaults to the jMeter GUI when editing Test Plans
+     *
+     * @return Sampler arguments
+     */
+    @Override
+    public Arguments getDefaultParameters() {
+        Arguments defaultParameters = new Arguments();
+        defaultParameters.addArgument("host", "localhost");
+        defaultParameters.addArgument("port", "5432");
+        defaultParameters.addArgument("dbName", "mirror_node");
+        defaultParameters.addArgument("dbUser", "mirror_node");
+        defaultParameters.addArgument("dbPassword", "mirror_node_pass");
+        defaultParameters.addArgument("topicID", "0");
+        defaultParameters.addArgument("historicMessagesCount", "0");
+        defaultParameters.addArgument("newTopicsMessageCount", "0");
+        defaultParameters.addArgument("topicMessageEmitCycles", "0");
+        defaultParameters.addArgument("newTopicsMessageDelay", "0");
+        defaultParameters.addArgument("delSeqFrom", "-1");
+        return defaultParameters;
+    }
+
+    /**
      * Runs test by calling sampler to manage topic message table. Reports success based on successful db operations
+     *
+     * @return Sample result
      */
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
