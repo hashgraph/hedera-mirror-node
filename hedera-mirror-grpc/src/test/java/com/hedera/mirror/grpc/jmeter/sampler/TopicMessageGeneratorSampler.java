@@ -20,21 +20,22 @@ package com.hedera.mirror.grpc.jmeter.sampler;
  * ‍
  */
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
 import com.hedera.mirror.grpc.jmeter.props.MessageGenerator;
 
 @Log4j2
+@RequiredArgsConstructor
 public class TopicMessageGeneratorSampler {
-    private final ConnectionHandler connectionHandler;
 
-    public TopicMessageGeneratorSampler(ConnectionHandler connectionHandler) {
-        this.connectionHandler = connectionHandler;
-    }
+    public static final Instant INCOMING_START = Instant.parse("2020-01-01T00:00:00.00Z");
+    private final ConnectionHandler connectionHandler;
 
     /**
      * Performs db operations necessary to simulate population of topic_message table Inserts messages into table for
@@ -45,45 +46,42 @@ public class TopicMessageGeneratorSampler {
      * @return Success flag
      */
     public void populateTopicMessages(MessageGenerator messageGen) throws InterruptedException {
-        log.info("Running TopicMessageGenerator Sampler, messageGen : {}", messageGen);
+        log.info("Populating topic messages: {}", messageGen);
 
         long topicNum = messageGen.getTopicNum();
-
         connectionHandler.clearTopicMessages(topicNum, messageGen.getDeleteFromSequence());
-
         topicNum = topicNum == -1 ? connectionHandler.getNextAvailableTopicID() : topicNum;
 
-        populateHistoricalMessages(topicNum, messageGen.getHistoricMessagesCount());
-
-        generateIncomingMessages(topicNum, messageGen.getFutureMessagesCount(), messageGen
-                .getNewTopicsMessageDelay(), messageGen.getTopicMessageEmitCycles());
+        populateHistoricalMessages(messageGen);
+        generateIncomingMessages(messageGen);
 
         connectionHandler.close();
+        log.debug("Successfully populated topic messages");
     }
 
-    private void populateHistoricalMessages(long topicNum, int historicalMessageCount) {
-        if (historicalMessageCount > 0) {
+    private void populateHistoricalMessages(MessageGenerator messageGenerator) {
+        if (messageGenerator.getHistoricMessagesCount() > 0) {
             Instant pastInstant = Instant.EPOCH.plus(7, ChronoUnit.DAYS);
-            connectionHandler
-                    .insertTopicMessage(historicalMessageCount, topicNum, pastInstant, -1);
+            connectionHandler.insertTopicMessage(messageGenerator.getHistoricMessagesCount(), messageGenerator
+                    .getTopicNum(), pastInstant, -1);
         }
     }
 
-    private void generateIncomingMessages(long topicNum, int futureMessageCount, long delay,
-                                          int topicMessageEmitCycles) throws InterruptedException {
-        if (futureMessageCount > 0) {
-            // ensure all incoming messages occur after 2020-01-01T00:00:00.00Z as sampler uses said time to distinguish
-            Instant start = Instant.parse("2020-01-10T00:00:00.00Z");
-            AtomicInteger cycleCount = new AtomicInteger(0);
-            if (delay == 0) {
-                connectionHandler
-                        .insertTopicMessage(futureMessageCount, topicNum, start, -1);
+    private void generateIncomingMessages(MessageGenerator messageGenerator) {
+        if (messageGenerator.getFutureMessagesCount() > 0) {
+            // ensure all incoming messages occur after INCOMING_START as sampler uses said time to distinguish
+            long cycleCount = 0;
+
+            if (messageGenerator.getNewTopicsMessageDelay() <= 0) {
+                connectionHandler.insertTopicMessage(messageGenerator.getFutureMessagesCount(), messageGenerator
+                        .getTopicNum(), INCOMING_START, -1);
             } else {
-                while (cycleCount.get() < topicMessageEmitCycles) {
-                    connectionHandler
-                            .insertTopicMessage(futureMessageCount, topicNum, start, -1);
-                    cycleCount.incrementAndGet();
-                    Thread.sleep(delay);
+                while (cycleCount < messageGenerator.getTopicMessageEmitCycles()) {
+                    connectionHandler.insertTopicMessage(messageGenerator.getFutureMessagesCount(), messageGenerator
+                            .getTopicNum(), INCOMING_START, -1);
+                    ++cycleCount;
+                    Uninterruptibles
+                            .sleepUninterruptibly(messageGenerator.getNewTopicsMessageDelay(), TimeUnit.MILLISECONDS);
                 }
             }
         }

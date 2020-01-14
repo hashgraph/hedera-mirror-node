@@ -67,7 +67,7 @@ public class ConnectionHandler {
     }
 
     private PostgresqlConnection getConnection() {
-        log.info("Obtain PostgresqlConnection");
+        log.debug("Obtain PostgresqlConnection");
         return getConnectionFactory().create().block(Duration.ofMillis(500));
     }
 
@@ -78,7 +78,8 @@ public class ConnectionHandler {
         }
 
         long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(topicNum) : seqStart;
-        log.info("Insert {} topic messages starting from seqNum {}", newTopicsMessageCount, nextSequenceNum);
+        log.info("Inserting {} topic messages starting from sequence number {}", newTopicsMessageCount,
+                nextSequenceNum);
 
         for (int i = 0; i < newTopicsMessageCount; i++) {
             long sequenceNum = nextSequenceNum + i;
@@ -164,7 +165,7 @@ public class ConnectionHandler {
     }
 
     public void close() {
-        log.info("Closing connection");
+        log.debug("Closing connection");
         connection.close().block(Duration.ofMillis(500));
     }
 }

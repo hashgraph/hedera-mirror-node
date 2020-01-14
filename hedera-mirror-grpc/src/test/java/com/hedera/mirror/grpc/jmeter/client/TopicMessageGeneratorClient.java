@@ -34,14 +34,8 @@ import com.hedera.mirror.grpc.jmeter.sampler.TopicMessageGeneratorSampler;
 @Log4j2
 public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
 
-    private long topicNum;
-    private int historicMessagesCount;
-    private int futureMessagesCount;
-    private long newTopicsMessageDelay;
-    private long delSeqFrom;
     private TopicMessageGeneratorSampler sampler;
-    private ConnectionHandler connHandl;
-    private int topicMessageEmitCycles;
+    private ConnectionHandler connectionHandler;
     private String host;
     private int port;
     private String dbName;
@@ -53,7 +47,6 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
      */
     @Override
     public void setupTest(JavaSamplerContext context) {
-        // db props
         host = context.getParameter("host", "localhost");
         port = context.getIntParameter("port", 5432);
         dbName = context.getParameter("dbName", "mirror_node");
@@ -69,13 +62,11 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();
-        boolean success = true;
-        result.sampleStart();
 
         try {
             // establish db connection in test to ensure failures are reported
-            connHandl = new ConnectionHandler(host, port, dbName, dbUser, dbPassword);
-            sampler = new TopicMessageGeneratorSampler(connHandl);
+            connectionHandler = new ConnectionHandler(host, port, dbName, dbUser, dbPassword);
+            sampler = new TopicMessageGeneratorSampler(connectionHandler);
 
             MessageGenerator messageGen = MessageGenerator.builder()
                     .topicNum(context.getLongParameter("topicID", 0))
@@ -86,28 +77,22 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
                     .deleteFromSequence(context.getLongParameter("delSeqFrom", -1L))
                     .build();
 
-            log.info("Kicking off populateTopicMessages");
-            sampler
-                    .populateTopicMessages(messageGen);
-
+            result.sampleStart();
+            sampler.populateTopicMessages(messageGen);
             result.sampleEnd();
             result.setResponseMessage("Successfully performed populateTopicMessages");
             result.setResponseCodeOK();
-            log.info("Successfully performed populateTopicMessages");
+            result.setSuccessful(true);
         } catch (Exception ex) {
-            result.sampleEnd();
-            success = false;
-            result.setResponseMessage("Exception: " + ex);
-            log.error("Error populating topics: " + ex);
-
+            log.error("Error populating topic messages", ex);
             StringWriter stringWriter = new StringWriter();
             ex.printStackTrace(new PrintWriter(stringWriter));
+            result.sampleEnd();
+            result.setResponseMessage("Exception: " + ex);
             result.setResponseData(stringWriter.toString().getBytes());
             result.setDataType(SampleResult.TEXT);
             result.setResponseCode("500");
         }
-
-        result.setSuccessful(success);
 
         return result;
     }
@@ -115,8 +100,8 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
     @Override
     public void teardownTest(JavaSamplerContext context) {
         try {
-            if (connHandl != null) {
-                connHandl.close();
+            if (connectionHandler != null) {
+                connectionHandler.close();
             }
         } catch (Exception ex) {
             log.error("Unable to close connection", ex);

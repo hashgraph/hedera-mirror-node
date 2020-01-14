@@ -19,15 +19,6 @@
         <jmeter.test>E2E_Single_User_All_Messages.jmx</jmeter.test>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>com.hedera</groupId>
-            <artifactId>hedera-mirror-grpc</artifactId>
-            <version>${project.version}</version>
-            <classifier>tests</classifier>
-        </dependency>
-    </dependencies>
-
     <build>
         <plugins>
             <plugin>

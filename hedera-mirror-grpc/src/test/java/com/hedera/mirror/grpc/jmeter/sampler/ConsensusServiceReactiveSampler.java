@@ -21,6 +21,7 @@ package com.hedera.mirror.grpc.jmeter.sampler;
  */
 
 import com.google.common.base.Stopwatch;
+import com.google.protobuf.TextFormat;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.ManagedChannel;
@@ -29,9 +30,8 @@ import io.grpc.stub.StreamObserver;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Data;
 import lombok.SneakyThrows;
-import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.api.proto.ConsensusServiceGrpc;
@@ -44,24 +44,19 @@ import com.hedera.mirror.grpc.jmeter.props.MessageListener;
  */
 @Log4j2
 public class ConsensusServiceReactiveSampler {
+
     private final ManagedChannel channel;
     private final ConsensusServiceGrpc.ConsensusServiceStub asyncStub;
     private final ConsensusTopicQuery request;
 
     public ConsensusServiceReactiveSampler(String host, int port, ConsensusTopicQuery request) {
-        this(ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext(true), request);
+        this(ManagedChannelBuilder.forAddress(host, port).usePlaintext(true), request);
     }
 
     public ConsensusServiceReactiveSampler(ManagedChannelBuilder<?> channelBuilder, ConsensusTopicQuery request) {
         channel = channelBuilder.build();
         asyncStub = ConsensusServiceGrpc.newStub(channel);
         this.request = request;
-    }
-
-    public void shutdown() throws InterruptedException {
-        log.info("Managed Channel shutdown called");
-        channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
     /**
@@ -73,59 +68,22 @@ public class ConsensusServiceReactiveSampler {
      * @return Sampler result representing success and observed message counts
      */
     public SamplerResult subscribeTopic(MessageListener messageListener) throws InterruptedException {
-        log.info("Running Consensus Client subscribeRequest : {}, messageListener : {}", request.toString()
-                .replaceAll("\n", ""), messageListener);
+        log.info("Subscribing to topic with {}, {}", () -> TextFormat.shortDebugString(request), () -> messageListener);
 
-        // configure StreamObserver
-        Instant observerStart = Instant.parse("2020-01-01T00:00:00.00Z");
-        int[] topics = {0};
         CountDownLatch historicMessagesLatch = new CountDownLatch(messageListener.getHistoricMessagesCount());
         CountDownLatch incomingMessagesLatch = new CountDownLatch(messageListener.getFutureMessagesCount());
         TopicID topicId = request.getTopicID();
-        SamplerResult result = new SamplerResult(topicId.getTopicNum(), topicId.getRealmNum());
-        boolean awaitHistoricMessages = historicMessagesLatch.getCount() > 0;
-        boolean awaitNewMessages = incomingMessagesLatch.getCount() > 0;
-        ConsensusTopicResponse[] lastresponse = {null};
+        SamplerResult result = new SamplerResult(topicId.getRealmNum(), topicId.getTopicNum());
         StreamObserver<ConsensusTopicResponse> responseObserver = new StreamObserver<>() {
 
             @Override
             public void onNext(ConsensusTopicResponse response) {
-                topics[0]++;
-                long responseSequenceNum = response.getSequenceNumber();
-                Timestamp responseTimeStamp = response.getConsensusTimestamp();
-                Instant respInstant = Instant
-                        .ofEpochSecond(responseTimeStamp.getSeconds(), responseTimeStamp.getNanos());
-                String messageType = observerStart.isBefore(respInstant) ? "Future" : "Historic";
-                log.trace("Observed {} ConsensusTopicResponse {}, Time: {}, SeqNum: {}, Message: {}", messageType,
-                        topics[0], responseTimeStamp, responseSequenceNum, response
-                                .getMessage());
+                result.onNext(response);
 
-                if (lastresponse[0] != null) {
-                    Instant lastRespInstant = Instant
-                            .ofEpochSecond(lastresponse[0].getConsensusTimestamp().getSeconds(), lastresponse[0]
-                                    .getConsensusTimestamp().getNanos());
-                    if (lastresponse[0].getSequenceNumber() > responseSequenceNum || lastRespInstant
-                            .isAfter(respInstant)) {
-                        log.error("Last response has a consensus timestamp or sequence num greater than current " +
-                                "response. Last: {}, current: {}", lastresponse[0], response);
-                    }
-                }
-                lastresponse[0] = response;
-
-                if (messageType.equalsIgnoreCase("Future")) {
-                    if (awaitNewMessages) {
-                        // decrement latch count
-                        incomingMessagesLatch.countDown();
-                    }
-
-                    result.incomingMessageCount.incrementAndGet();
+                if (result.isHistorical()) {
+                    historicMessagesLatch.countDown();
                 } else {
-                    if (awaitHistoricMessages) {
-                        // decrement latch count
-                        historicMessagesLatch.countDown();
-                    }
-
-                    result.historicalMessageCount.incrementAndGet();
+                    incomingMessagesLatch.countDown();
                 }
             }
 
@@ -138,12 +96,12 @@ public class ConsensusServiceReactiveSampler {
 
             @Override
             public void onCompleted() {
-                log.info("Running responseObserver onCompleted(). Observed {} historic and {} incoming messages",
-                        result.historicalMessageCount, result.incomingMessageCount);
+                log.info("Observed {} historic and {} incoming messages in {} ({}/s): {}", result
+                        .getHistoricalMessageCount(), result.getIncomingMessageCount(), result.getStopwatch(), result
+                        .getMessageRate(), result.isSuccess() ? "success" : "failed");
             }
         };
 
-        Stopwatch messageStopwatch = Stopwatch.createStarted();
         try {
             asyncStub.subscribeTopic(request, responseObserver);
 
@@ -152,7 +110,9 @@ public class ConsensusServiceReactiveSampler {
                 log.error("Historic messages latch count is {}, did not reach zero", historicMessagesLatch.getCount());
                 result.success = false;
             }
-            log.info("{} Historic messages obtained in {}", result.historicalMessageCount, messageStopwatch);
+
+            log.info("{} Historic messages obtained in {} ({}/s)", result.getTotalMessageCount(), result
+                    .getStopwatch(), result.getMessageRate());
 
             if (historicMessagesLatch.getCount() == 0 && !incomingMessagesLatch
                     .await(messageListener.getMessagesLatchWaitSeconds(), TimeUnit.SECONDS)) {
@@ -160,37 +120,75 @@ public class ConsensusServiceReactiveSampler {
                 result.success = false;
             }
         } catch (Exception ex) {
-            log.warn(String.format("RCP failed"), ex);
+            log.error("Error subscribing to topic", ex);
             throw ex;
         } finally {
-            log.info("{} total messages obtained in {}", result.getTotalMessageCount(), messageStopwatch);
-
             responseObserver.onCompleted();
             shutdown();
-
-            log.info("Consensus service response observer: {}", result);
             return result;
         }
     }
 
-    @ToString
-    public class SamplerResult {
-        private final long topicNum;
-        private final long realmId;
-        private final AtomicInteger historicalMessageCount;
-        private final AtomicInteger incomingMessageCount;
-        public boolean success;
+    public void shutdown() throws InterruptedException {
+        log.debug("Stopping sampler");
+        channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+    }
 
-        public SamplerResult(long topicnm, long realnm) {
-            topicNum = topicnm;
-            realmId = realnm;
-            historicalMessageCount = new AtomicInteger(0);
-            incomingMessageCount = new AtomicInteger(0);
-            success = true;
+    private Instant toInstant(Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
+    }
+
+    @Data
+    public class SamplerResult {
+
+        private final long realmNum;
+        private final long topicNum;
+        private final Stopwatch stopwatch = Stopwatch.createStarted();
+
+        private long historicalMessageCount = 0L;
+        private long incomingMessageCount = 0L;
+        private boolean success = true;
+        private ConsensusTopicResponse last;
+        private boolean historical = true;
+
+        public long getTotalMessageCount() {
+            return historicalMessageCount + incomingMessageCount;
         }
 
-        public int getTotalMessageCount() {
-            return historicalMessageCount.get() + incomingMessageCount.get();
+        public double getMessageRate() {
+            long milliseconds = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+            if (milliseconds <= 0) {
+                return 0.0;
+            }
+
+            return 1000 * (double) getTotalMessageCount() / milliseconds;
+        }
+
+        public void onNext(ConsensusTopicResponse response) {
+            log.trace("Observed {}", () -> TextFormat.shortDebugString(response));
+            Instant currentTime = toInstant(response.getConsensusTimestamp());
+
+            if (last != null) {
+                if (response.getSequenceNumber() != last.getSequenceNumber() + 1) {
+                    throw new IllegalArgumentException("Out of order message sequence. Expected " + (last
+                            .getSequenceNumber() + 1) + " got " + response.getSequenceNumber());
+                }
+
+                Instant lastTime = toInstant(last.getConsensusTimestamp());
+                if (!currentTime.isAfter(lastTime)) {
+                    throw new IllegalArgumentException("Out of order message timestamp. Expected " + currentTime +
+                            " to be after " + lastTime);
+                }
+            }
+
+            if (currentTime.isBefore(TopicMessageGeneratorSampler.INCOMING_START)) {
+                ++historicalMessageCount;
+            } else {
+                historical = false;
+                ++incomingMessageCount;
+            }
+
+            last = response;
         }
     }
 }

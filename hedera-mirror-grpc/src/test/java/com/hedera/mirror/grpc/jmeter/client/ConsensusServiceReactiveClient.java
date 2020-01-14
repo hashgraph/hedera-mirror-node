@@ -36,38 +36,33 @@ import com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler;
 
 @Log4j2
 public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
-    com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler csclient = null;
+
+    private ConsensusServiceReactiveSampler consensusServiceReactiveSampler;
 
     /**
      * Setup test by instantiating client using user defined test properties
      */
     @Override
     public void setupTest(JavaSamplerContext context) {
-        String host = context.getParameter("host");
-        String port = context.getParameter("port");
+        String host = context.getParameter("host", "localhost");
+        int port = context.getIntParameter("port", 5600);
+        long startTime = context.getLongParameter("consensusStartTimeSeconds", 0);
+        long endTimeSecs = context.getLongParameter("consensusEndTimeSeconds", 0);
 
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
-                .setLimit(context.getLongParameter("limit", 0))
-                .setConsensusStartTime(Timestamp.newBuilder()
-                        .setSeconds(context.getLongParameter("consensusStartTimeSeconds", 0)).build())
+                .setLimit(context.getLongParameter("limit", 100))
+                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(startTime).build())
                 .setTopicID(
                         TopicID.newBuilder()
                                 .setRealmNum(context.getLongParameter("realmNum"))
                                 .setTopicNum(context.getLongParameter("topicID"))
                                 .build());
 
-        long endTimeSecs = context.getLongParameter("consensusEndTimeSeconds", 0);
         if (endTimeSecs != 0) {
-            builder.setConsensusEndTime(Timestamp.newBuilder()
-                    .setSeconds(endTimeSecs).build());
+            builder.setConsensusEndTime(Timestamp.newBuilder().setSeconds(endTimeSecs).build());
         }
 
-        ConsensusTopicQuery request = builder.build();
-
-        csclient = new com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler(
-                host,
-                Integer.parseInt(port),
-                request);
+        consensusServiceReactiveSampler = new ConsensusServiceReactiveSampler(host, port, builder.build());
 
         super.setupTest(context);
     }
@@ -89,7 +84,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
     }
 
     /**
-     * Runs test by calling sampler subcribeTopic. Reports success based on call response from sampler
+     * Runs test by calling sampler subscribeTopic. Reports success based on call response from sampler
      */
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
@@ -99,39 +94,35 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
 
         try {
             MessageListener listener = MessageListener.builder()
-                    .historicMessagesCount(context.getIntParameter("historicMessagesCount"))
-                    .futureMessagesCount(context.getIntParameter("newTopicsMessageCount"))
-                    .messagesLatchWaitSeconds(context.getIntParameter("messagesLatchWaitSeconds"))
+                    .historicMessagesCount(context.getIntParameter("historicMessagesCount", 0))
+                    .futureMessagesCount(context.getIntParameter("newTopicsMessageCount", 0))
+                    .messagesLatchWaitSeconds(context.getIntParameter("messagesLatchWaitSeconds", 60))
                     .build();
 
-            response = csclient
-                    .subscribeTopic(listener);
+            response = consensusServiceReactiveSampler.subscribeTopic(listener);
 
             result.sampleEnd();
             result.setResponseData(response.toString().getBytes());
-            log.info("ConsensusServiceReactiveSampler response Success : {}", response.success);
-            if (response == null || !response.success) {
+            result.setSuccessful(response.isSuccess());
+
+            if (!response.isSuccess()) {
                 result.setResponseMessage("Failure in subscribe topic test");
                 result.setResponseCode("500");
             } else {
                 result.setResponseMessage("Successfully performed subscribe topic test");
                 result.setResponseCodeOK();
             }
-
-            log.info("Completed subscribe topic test");
         } catch (Exception ex) {
-            result.sampleEnd();
-            result.setResponseMessage("Exception: " + ex);
-            log.error("Error subscribing to topic: " + ex);
+            log.error("Error subscribing to topic", ex);
 
             StringWriter stringWriter = new StringWriter();
             ex.printStackTrace(new PrintWriter(stringWriter));
+            result.sampleEnd();
+            result.setResponseMessage("Exception: " + ex);
             result.setResponseData(stringWriter.toString().getBytes());
             result.setDataType(SampleResult.TEXT);
             result.setResponseCode("500");
         }
-
-        result.setSuccessful(response.success);
 
         return result;
     }
