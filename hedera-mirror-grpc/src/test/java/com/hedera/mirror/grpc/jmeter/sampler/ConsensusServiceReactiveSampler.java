@@ -155,13 +155,9 @@ public class ConsensusServiceReactiveSampler {
             return historicalMessageCount + incomingMessageCount;
         }
 
-        public double getMessageRate() {
-            long milliseconds = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-            if (milliseconds <= 0) {
-                return 0.0;
-            }
-
-            return 1000 * (double) getTotalMessageCount() / milliseconds;
+        public long getMessageRate() {
+            long seconds = stopwatch.elapsed(TimeUnit.SECONDS);
+            return seconds > 0 ? getTotalMessageCount() / seconds : 0;
         }
 
         public void onNext(ConsensusTopicResponse response) {
