@@ -16,7 +16,7 @@
     </parent>
 
     <properties>
-        <jmeter.test>E2E Topic 0 Single User Historic and Incoming Messages.jmx</jmeter.test>
+        <jmeter.test>E2E_Single_User_All_Messages.jmx</jmeter.test>
     </properties>
 
     <dependencies>

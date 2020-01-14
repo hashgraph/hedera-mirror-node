@@ -12,7 +12,7 @@
       <stringProp name="TestPlan.user_define_classpath"></stringProp>
     </TestPlan>
     <hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="DB_Setup_TG" enabled="true">
+      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="DB_Setup_TG" enabled="true">
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
@@ -24,79 +24,76 @@
         <stringProp name="ThreadGroup.duration"></stringProp>
         <stringProp name="ThreadGroup.delay"></stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
-      </ThreadGroup>
+      </SetupThreadGroup>
       <hashTree>
-        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller" enabled="true"/>
-        <hashTree>
-          <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="DB_Setup_Sampler" enabled="true">
-            <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
-              <collectionProp name="Arguments.arguments">
-                <elementProp name="host" elementType="Argument">
-                  <stringProp name="Argument.name">host</stringProp>
-                  <stringProp name="Argument.value">localhost</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="port" elementType="Argument">
-                  <stringProp name="Argument.name">port</stringProp>
-                  <stringProp name="Argument.value">5432</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="host" elementType="Argument">
-                  <stringProp name="Argument.name">dbUser</stringProp>
-                  <stringProp name="Argument.value">mirror_node</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="port" elementType="Argument">
-                  <stringProp name="Argument.name">dbPassword</stringProp>
-                  <stringProp name="Argument.value">mirror_node_pass</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="host" elementType="Argument">
-                  <stringProp name="Argument.name">dbName</stringProp>
-                  <stringProp name="Argument.value">mirror_node</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="topicID" elementType="Argument">
-                  <stringProp name="Argument.name">topicID</stringProp>
-                  <stringProp name="Argument.value">5</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="realmNum" elementType="Argument">
-                  <stringProp name="Argument.name">realmNum</stringProp>
-                  <stringProp name="Argument.value">0</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="historicMessagesCount" elementType="Argument">
-                  <stringProp name="Argument.name">historicMessagesCount</stringProp>
-                  <stringProp name="Argument.value">2500</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="newTopicsMessageCount" elementType="Argument">
-                  <stringProp name="Argument.name">newTopicsMessageCount</stringProp>
-                  <stringProp name="Argument.value">0</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="newTopicsMessageDelay" elementType="Argument">
-                  <stringProp name="Argument.name">newTopicsMessageDelay</stringProp>
-                  <stringProp name="Argument.value">0</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="topicMessageEmitCycles" elementType="Argument">
-                  <stringProp name="Argument.name">topicMessageEmitCycles</stringProp>
-                  <stringProp name="Argument.value">0</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-                <elementProp name="delSeqFrom" elementType="Argument">
-                  <stringProp name="Argument.name">delSeqFrom</stringProp>
-                  <stringProp name="Argument.value">0</stringProp>
-                  <stringProp name="Argument.metadata">=</stringProp>
-                </elementProp>
-              </collectionProp>
-            </elementProp>
-            <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.TopicMessageGeneratorClient</stringProp>
-          </JavaSampler>
-          <hashTree/>
-        </hashTree>
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="DB_Setup_Sampler" enabled="true">
+          <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="host" elementType="Argument">
+                <stringProp name="Argument.name">host</stringProp>
+                <stringProp name="Argument.value">localhost</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="port" elementType="Argument">
+                <stringProp name="Argument.name">port</stringProp>
+                <stringProp name="Argument.value">5432</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="dbName" elementType="Argument">
+                <stringProp name="Argument.name">dbName</stringProp>
+                <stringProp name="Argument.value">mirror_node</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="dbUser" elementType="Argument">
+                <stringProp name="Argument.name">dbUser</stringProp>
+                <stringProp name="Argument.value">mirror_node</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="dbPassword" elementType="Argument">
+                <stringProp name="Argument.name">dbPassword</stringProp>
+                <stringProp name="Argument.value">mirror_node_pass</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="topicID" elementType="Argument">
+                <stringProp name="Argument.name">topicID</stringProp>
+                <stringProp name="Argument.value">5</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="realmNum" elementType="Argument">
+                <stringProp name="Argument.name">realmNum</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="historicMessagesCount" elementType="Argument">
+                <stringProp name="Argument.name">historicMessagesCount</stringProp>
+                <stringProp name="Argument.value">2500</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="newTopicsMessageCount" elementType="Argument">
+                <stringProp name="Argument.name">newTopicsMessageCount</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="newTopicsMessageDelay" elementType="Argument">
+                <stringProp name="Argument.name">newTopicsMessageDelay</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="topicMessageEmitCycles" elementType="Argument">
+                <stringProp name="Argument.name">topicMessageEmitCycles</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="delSeqFrom" elementType="Argument">
+                <stringProp name="Argument.name">delSeqFrom</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.TopicMessageGeneratorClient</stringProp>
+        </JavaSampler>
+        <hashTree/>
       </hashTree>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="DB_Future_TG" enabled="true">
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
@@ -108,7 +105,7 @@
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.duration">5</stringProp>
-        <stringProp name="ThreadGroup.delay">7</stringProp>
+        <stringProp name="ThreadGroup.delay">2</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
       </ThreadGroup>
       <hashTree>
@@ -125,19 +122,19 @@
                 <stringProp name="Argument.value">5432</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
-              <elementProp name="host" elementType="Argument">
+              <elementProp name="dbName" elementType="Argument">
+                <stringProp name="Argument.name">dbName</stringProp>
+                <stringProp name="Argument.value">mirror_node</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="dbUser" elementType="Argument">
                 <stringProp name="Argument.name">dbUser</stringProp>
                 <stringProp name="Argument.value">mirror_node</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
-              <elementProp name="port" elementType="Argument">
+              <elementProp name="dbPassword" elementType="Argument">
                 <stringProp name="Argument.name">dbPassword</stringProp>
                 <stringProp name="Argument.value">mirror_node_pass</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-              <elementProp name="host" elementType="Argument">
-                <stringProp name="Argument.name">dbName</stringProp>
-                <stringProp name="Argument.value">mirror_node</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="topicID" elementType="Argument">
@@ -167,7 +164,7 @@
               </elementProp>
               <elementProp name="topicMessageEmitCycles" elementType="Argument">
                 <stringProp name="Argument.name">topicMessageEmitCycles</stringProp>
-                <stringProp name="Argument.value">5</stringProp>
+                <stringProp name="Argument.value">3</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="delSeqFrom" elementType="Argument">
@@ -189,9 +186,9 @@
         </elementProp>
         <stringProp name="ThreadGroup.num_threads">200</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
-        <boolProp name="ThreadGroup.scheduler">true</boolProp>
-        <stringProp name="ThreadGroup.duration">55</stringProp>
-        <stringProp name="ThreadGroup.delay">5</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
       </ThreadGroup>
       <hashTree>
@@ -254,7 +251,7 @@
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="DB_Cleanup_TG" enabled="true">
+      <PostThreadGroup guiclass="PostThreadGroupGui" testclass="PostThreadGroup" testname="DB_Cleanup_TG" enabled="true">
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
@@ -262,11 +259,11 @@
         </elementProp>
         <stringProp name="ThreadGroup.num_threads">1</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
-        <boolProp name="ThreadGroup.scheduler">true</boolProp>
-        <stringProp name="ThreadGroup.duration">20</stringProp>
-        <stringProp name="ThreadGroup.delay">90</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
-      </ThreadGroup>
+      </PostThreadGroup>
       <hashTree>
         <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="DB_Cleanup_Sampler" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" enabled="true">
@@ -281,19 +278,19 @@
                 <stringProp name="Argument.value">5432</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
-              <elementProp name="host" elementType="Argument">
+              <elementProp name="dbName" elementType="Argument">
+                <stringProp name="Argument.name">dbName</stringProp>
+                <stringProp name="Argument.value">mirror_node</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="dbUser" elementType="Argument">
                 <stringProp name="Argument.name">dbUser</stringProp>
                 <stringProp name="Argument.value">mirror_node</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
-              <elementProp name="port" elementType="Argument">
+              <elementProp name="dbPassword" elementType="Argument">
                 <stringProp name="Argument.name">dbPassword</stringProp>
                 <stringProp name="Argument.value">mirror_node_pass</stringProp>
-                <stringProp name="Argument.metadata">=</stringProp>
-              </elementProp>
-              <elementProp name="host" elementType="Argument">
-                <stringProp name="Argument.name">dbName</stringProp>
-                <stringProp name="Argument.value">mirror_node</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="topicID" elementType="Argument">
