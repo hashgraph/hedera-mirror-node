@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn" strict="true">
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d %-5p [%-5t] %c{1.} %m%n"/>
+        </Console>
+        <File name="file" fileName="../logs/jmeter.log">
+            <PatternLayout pattern="%d %-5p [%-5t] %c{1.} %m%n"/>
+        </File>
+    </Appenders>
+    <Loggers>
+        <Logger name="com.hedera.mirror" level="info" additivity="false">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="file"/>
+        </Logger>
+        <Root level="warn">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="file"/>
+        </Root>
+    </Loggers>
+</Configuration>

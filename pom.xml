@@ -37,6 +37,7 @@
         <module>hedera-mirror-importer</module>
         <module>hedera-mirror-protobuf</module>
         <module>hedera-mirror-rest</module>
+        <module>hedera-mirror-test</module>
     </modules>
 
     <organization>
@@ -154,4 +155,16 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
+            <id>spring-milestone</id>
+            <url>https://repo.spring.io/milestone</url>
+        </repository>
+    </repositories>
 </project>

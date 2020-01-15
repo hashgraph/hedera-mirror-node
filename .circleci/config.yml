@@ -75,7 +75,7 @@ jobs:
             NAME=hedera-mirror-grpc-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
             WORKSPACE=/tmp/workspace
             mkdir -p ${WORKSPACE}/${NAME}
-            mv hedera-mirror-grpc/target/hedera-mirror-grpc-*.jar ${WORKSPACE}/${NAME}/${NAME}.jar
+            mv hedera-mirror-grpc/target/hedera-mirror-grpc-*-exec.jar ${WORKSPACE}/${NAME}/${NAME}.jar
             mv hedera-mirror-grpc/scripts ${WORKSPACE}/${NAME}
             mkdir -p ${WORKSPACE}/artifacts
             tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}

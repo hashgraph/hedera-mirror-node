@@ -22,6 +22,7 @@ package com.hedera.mirror.grpc.repository;
 
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.springframework.data.r2dbc.query.Criteria;
@@ -31,6 +32,7 @@ import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
+@Log4j2
 @Named
 @RequiredArgsConstructor
 public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryCustom {
@@ -60,6 +62,7 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
                 .all()
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .name("findByFilter")
-                .metrics();
+                .metrics()
+                .doOnSubscribe(s -> log.debug("Executing query: {}", filter));
     }
 }

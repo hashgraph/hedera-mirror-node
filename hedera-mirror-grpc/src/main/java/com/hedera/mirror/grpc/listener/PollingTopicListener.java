@@ -65,6 +65,7 @@ public class PollingTopicListener implements TopicListener {
                 .endTime(filter.getEndTime())
                 .limit(limit)
                 .realmNum(filter.getRealmNum())
+                .subscriberId(filter.getSubscriberId())
                 .startTime(startTime)
                 .topicNum(filter.getTopicNum())
                 .build();

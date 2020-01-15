@@ -25,6 +25,12 @@
             <groupId>com.salesforce.servicelibs</groupId>
             <artifactId>reactor-grpc-stub</artifactId>
             <version>${reactor-grpc.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
