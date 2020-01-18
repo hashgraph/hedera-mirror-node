@@ -245,6 +245,7 @@ public class RecordFileLogger {
             body = TransactionBody.parseFrom(transaction.getBodyBytes());
         }
 
+        log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
         long initialBalance = 0;
         Entities entity = null;
         Entities proxyEntity = null;
@@ -469,6 +470,7 @@ public class RecordFileLogger {
             if (proxyEntity != null) {
                 entity.setProxyAccountId(proxyEntity.getId());
             }
+            entity.setAutoRenewAccount(createEntity(entity.getAutoRenewAccount()));
             entity = entityRepository.save(entity);
             sqlInsertTransaction.setLong(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), entity.getId());
         } else {

@@ -47,6 +47,7 @@ import com.hedera.mirror.importer.KeyConverter;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.TopicIdConverter;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.util.Utility;
@@ -54,7 +55,6 @@ import com.hedera.mirror.importer.util.Utility;
 public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
 
     static final String TRANSACTION_MEMO = "transaction memo";
-    static final int TOPIC_ENTITY_TYPE_ID = 4;
     static final String NODE_ID = "0.0.3";
     static final String TRANSACTION_ID = "0.0.9999-123456789";
 
@@ -110,7 +110,33 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
                 .returns("".getBytes(), from(Entities::getSubmitKey))
                 .returns("", from(Entities::getMemo))
                 .returns(false, from(Entities::isDeleted))
-                .returns(TOPIC_ENTITY_TYPE_ID, from(Entities::getEntityTypeId));
+                .returns(EntityTypeEnum.TOPIC.getId(), from(Entities::getEntityTypeId));
+    }
+
+    // https://github.com/hashgraph/hedera-mirror-node/issues/501
+    @Test
+    void createTopicTestExistingAutoRenewAccount() throws Exception {
+        Entities autoRenewAccount = createEntity(100L, EntityTypeEnum.ACCOUNT);
+        var topicId = 200L;
+        var consensusTimestamp = 2_000_000L;
+        var responseCode = ResponseCodeEnum.SUCCESS;
+        var transaction = createCreateTopicTransaction(null, null, null, autoRenewAccount.getEntityNum(), null);
+        var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
+                .build(), null, null, consensusTimestamp, responseCode);
+
+        RecordFileLogger.storeRecord(transaction, transactionRecord);
+        RecordFileLogger.completeFile("", "");
+
+        var entity = entityRepository.findByPrimaryKey(0L, 0L, topicId).get();
+        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertEquals(4L, entityRepository.count()); // Node, payer, topic, autorenew
+        assertThat(entity)
+                .returns("".getBytes(), from(Entities::getKey))
+                .returns("".getBytes(), from(Entities::getSubmitKey))
+                .returns("", from(Entities::getMemo))
+                .returns(false, from(Entities::isDeleted))
+                .returns(EntityTypeEnum.TOPIC.getId(), from(Entities::getEntityTypeId))
+                .returns(autoRenewAccount, from(Entities::getAutoRenewAccount));
     }
 
     @Test
@@ -160,6 +186,9 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
         // Store topic to be updated.
         var topic = createTopicEntity(topicId, expirationTimeSeconds, expirationTimeNanos, adminKey, submitKey, memo,
                 autoRenewAccount, autoRenewPeriod);
+        if (topic.getAutoRenewAccount() != null) {
+            topic.setAutoRenewAccount(entityRepository.save(topic.getAutoRenewAccount()));
+        }
         entityRepository.save(topic);
 
         var responseCode = ResponseCodeEnum.SUCCESS;
@@ -265,6 +294,9 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
         // Store topic to be updated.
         var topic = createTopicEntity(topicId, expirationTimeSeconds, expirationTimeNanos, adminKey, submitKey, memo,
                 autoRenewAccount, autoRenewPeriod);
+        if (topic.getAutoRenewAccount() != null) {
+            topic.setAutoRenewAccount(entityRepository.save(topic.getAutoRenewAccount()));
+        }
         entityRepository.save(topic);
 
         // Setup the expected entity.
@@ -561,6 +593,15 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
                 .setMemo(TRANSACTION_MEMO);
     }
 
+    private Entities createEntity(long num, EntityTypeEnum entityType) {
+        Entities entities = new Entities();
+        entities.setEntityShard(0L);
+        entities.setEntityRealm(0L);
+        entities.setEntityNum(num);
+        entities.setEntityTypeId(entityType.getId());
+        return entityRepository.save(entities);
+    }
+
     private Entities createTopicEntity(TopicID topicId, Long expirationTimeSeconds, Integer expirationTimeNanos,
                                        Key adminKey, Key submitKey, String memo, Long autoRenewAccount,
                                        Long autoRenewPeriod) {
@@ -573,7 +614,7 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
             autoRenewEntity.setEntityShard(topic.getEntityShard());
             autoRenewEntity.setEntityRealm(topic.getEntityRealm());
             autoRenewEntity.setEntityNum(autoRenewAccount);
-            autoRenewEntity.setEntityTypeId(1);
+            autoRenewEntity.setEntityTypeId(EntityTypeEnum.ACCOUNT.getId());
             topic.setAutoRenewAccount(autoRenewEntity);
         }
         if (autoRenewPeriod != null) {
@@ -589,7 +630,7 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
             topic.setSubmitKey(submitKey.toByteArray());
         }
         topic.setMemo(memo);
-        topic.setEntityTypeId(TOPIC_ENTITY_TYPE_ID);
+        topic.setEntityTypeId(EntityTypeEnum.TOPIC.getId());
         return topic;
     }
 
