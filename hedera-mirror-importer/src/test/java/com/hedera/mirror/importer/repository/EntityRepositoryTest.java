@@ -37,6 +37,7 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
         autoRenewAccount.setEntityShard(0L);
         autoRenewAccount.setEntityRealm(0L);
         autoRenewAccount.setEntityNum(101L);
+        autoRenewAccount = entityRepository.save(autoRenewAccount);
 
         Entities proxyEntity = new Entities();
         proxyEntity.setEntityTypeId(entityTypeId);
@@ -59,11 +60,6 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
         entity.setProxyAccountId(proxyEntity.getId());
         entity.setSubmitKey("SubmitKey".getBytes());
         entity = entityRepository.save(entity);
-
-        assertThat(entityRepository.findByPrimaryKey(autoRenewAccount.getEntityShard(),
-                autoRenewAccount.getEntityRealm(), autoRenewAccount.getEntityNum()))
-                .get()
-                .isEqualToIgnoringGivenFields(autoRenewAccount, "id");
 
         assertThat(entityRepository
                 .findByPrimaryKey(entity.getEntityShard(), entity.getEntityRealm(), entity.getEntityNum()))
