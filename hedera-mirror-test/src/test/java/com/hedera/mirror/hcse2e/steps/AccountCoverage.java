@@ -48,7 +48,7 @@ public class AccountCoverage {
         balance = AccountHelper.getBalance(client, accountId);
     }
 
-    @Then("the result should be grater than or equal to {long}")
+    @Then("the result should be greater than or equal to {long}")
     public void isGreaterOrEqualThan(long threshold) {
         Assert.assertTrue(balance >= threshold);
     }
