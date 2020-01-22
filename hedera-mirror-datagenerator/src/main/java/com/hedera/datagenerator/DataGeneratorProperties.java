@@ -38,7 +38,7 @@ public class DataGeneratorProperties {
     /**
      * Start time for the transactions. Used for consensus timestamp field.
      */
-    private long startTimeSec = Instant.now().getEpochSecond();
+    private long startTimeSec = Instant.EPOCH.getEpochSecond();
 
     /**
      * Transactions will be generated for time period from startTimeSec to startTimeSec + totalDuration.
