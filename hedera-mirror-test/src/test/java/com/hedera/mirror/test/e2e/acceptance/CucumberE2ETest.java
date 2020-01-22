@@ -1,4 +1,4 @@
-package com.hedera.mirror.hcse2e;
+package com.hedera.mirror.test.e2e.acceptance;
 
 /*-
  * ‌
@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
 @RunWith(Cucumber.class)
 @CucumberOptions(
         features = "src/test/resources",
-        glue = "com.hedera.mirror.hcse2e"
+        glue = "com.hedera.mirror.test.e2e.acceptance"
 )
 public class CucumberE2ETest {
 }

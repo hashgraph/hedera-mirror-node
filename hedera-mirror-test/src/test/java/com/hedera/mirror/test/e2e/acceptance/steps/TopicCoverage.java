@@ -1,4 +1,4 @@
-package com.hedera.mirror.hcse2e.steps;
+package com.hedera.mirror.test.e2e.acceptance.steps;
 /*-
  * ‌
  * Hedera Mirror Node
@@ -38,9 +38,9 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.consensus.ConsensusClient;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
-import com.hedera.mirror.hcse2e.util.MirrorNodeClient;
-import com.hedera.mirror.hcse2e.util.SDKClient;
-import com.hedera.mirror.hcse2e.util.TopicHelper;
+import com.hedera.mirror.test.e2e.acceptance.util.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.util.SDKClient;
+import com.hedera.mirror.test.e2e.acceptance.util.TopicHelper;
 
 @Log4j2
 public class TopicCoverage {

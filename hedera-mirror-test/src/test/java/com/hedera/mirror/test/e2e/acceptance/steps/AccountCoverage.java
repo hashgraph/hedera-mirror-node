@@ -1,4 +1,4 @@
-package com.hedera.mirror.hcse2e.steps;
+package com.hedera.mirror.test.e2e.acceptance.steps;
 
 /*-
  * ‌
@@ -29,8 +29,8 @@ import org.junit.Assert;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.account.AccountId;
-import com.hedera.mirror.hcse2e.util.AccountHelper;
-import com.hedera.mirror.hcse2e.util.SDKClient;
+import com.hedera.mirror.test.e2e.acceptance.util.AccountHelper;
+import com.hedera.mirror.test.e2e.acceptance.util.SDKClient;
 
 @Log4j2
 public class AccountCoverage {
