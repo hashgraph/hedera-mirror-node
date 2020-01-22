@@ -53,6 +53,8 @@ app.use(cors());
 
 let apiPrefix = '/api/v1';
 
+common.initResults();
+
 // routes
 app.get(apiPrefix + '/status', (req, res) => {
   let status = common.getStatus();
@@ -76,20 +78,15 @@ if (!(serverlist.hasOwnProperty('interval') && serverlist.hasOwnProperty('server
   process.exit(1);
 }
 
-let interval = serverlist.interval;
-common.initResults();
-
-let servers = serverlist.servers;
-
 const runMonitorTests = () => {
   console.log('Running the tests at: ' + new Date());
-  monitor.runEverything(servers);
+  monitor.runEverything(serverlist.servers);
 };
 
 runMonitorTests();
 setInterval(() => {
   // Run all the tests periodically
   runMonitorTests();
-}, interval * 1000);
+}, serverlist.interval * 1000);
 
 module.exports = app;

@@ -197,15 +197,15 @@ public class RecordFileParser implements FileParser {
                                 TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
 
                                 try {
-                                    RecordFileLogger.storeRecord(transaction, txRecord, rawBytes);
-
                                     if (log.isTraceEnabled()) {
                                         log.trace("Transaction = {}, Record = {}", Utility
                                                 .printProtoMessage(transaction), Utility.printProtoMessage(txRecord));
                                     } else {
-                                        log.debug("Stored transaction with consensus timestamp {}", () -> Utility
+                                        log.debug("Storing transaction with consensus timestamp {}", () -> Utility
                                                 .printProtoMessage(txRecord.getConsensusTimestamp()));
                                     }
+
+                                    RecordFileLogger.storeRecord(transaction, txRecord, rawBytes);
                                 } finally {
                                     // TODO: Refactor to not parse TransactionBody twice
                                     DataCase dc = Utility.getTransactionBody(transaction).getDataCase();

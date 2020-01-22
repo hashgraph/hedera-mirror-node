@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -54,7 +53,7 @@ public class Entities {
     @Column(name = "fk_entity_type_id")
     private Integer entityTypeId;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     private Entities autoRenewAccount;
 
     private Long autoRenewPeriod;

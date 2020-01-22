@@ -71,7 +71,7 @@ const getBalancesCheck = async (server, classResults) => {
   if (undefined === balances) {
     var message = `balances is undefined`;
     currentTestResult.failureMessages.push(message);
-    acctestutils.addTestResult(classResults, classResults, currentTestResult, false);
+    acctestutils.addTestResult(classResults, currentTestResult, false);
     return;
   }
 

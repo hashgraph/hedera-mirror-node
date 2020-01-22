@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.Instant;
 import java.util.Comparator;
 import lombok.Builder;
+import lombok.ToString;
 import lombok.Value;
 import org.springframework.data.annotation.Id;
 
@@ -37,10 +38,12 @@ public class TopicMessage implements Comparable<TopicMessage> {
     @JsonDeserialize(using = LongToInstantDeserializer.class)
     private Instant consensusTimestamp;
 
+    @ToString.Exclude
     private byte[] message;
 
     private int realmNum;
 
+    @ToString.Exclude
     private byte[] runningHash;
 
     private long sequenceNumber;

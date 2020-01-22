@@ -35,6 +35,7 @@ const initResults = () => {
   for (const server of restservers) {
     currentResults[server.name] = {
       ip: server.ip,
+      name: server.name,
       port: server.port,
       results: []
     };
@@ -51,6 +52,7 @@ const saveResults = (server, results) => {
   if (server.name != undefined && server.name != null) {
     currentResults[server.name] = {
       ip: server.ip,
+      name: server.name,
       port: server.port,
       results: results
     };
@@ -64,8 +66,6 @@ const saveResults = (server, results) => {
  */
 const getStatus = () => {
   let results = Object.keys(currentResults).map(net => {
-    currentResults[net].name = net;
-
     return currentResults[net];
   });
   return {
