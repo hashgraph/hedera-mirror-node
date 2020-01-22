@@ -96,7 +96,7 @@ public abstract class AbstractDownloaderTest {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
-        s3AsyncClient = (new MirrorImporterConfiguration()).s3AsyncClient(commonDownloaderProperties);
+        s3AsyncClient = new MirrorImporterConfiguration(commonDownloaderProperties).s3AsyncClient();
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
         downloader = getDownloader();
 
