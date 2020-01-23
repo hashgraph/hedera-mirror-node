@@ -91,12 +91,14 @@ public class MirrorNodeClient {
                 log.error("{} messages were expected within {} seconds. {} messages left", numMessages, latency,
                         messageLatch
                                 .getCount());
+                validLatency = false;
             }
         } else {
             if (!messageLatch.await(1, TimeUnit.MINUTES)) {
                 log.error("{} messages were expected within default of 1 min. {} messages left", numMessages,
                         messageLatch
                                 .getCount());
+                validLatency = false;
             }
         }
 
