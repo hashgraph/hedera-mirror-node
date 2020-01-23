@@ -7,24 +7,24 @@ Feature: HCS Coverage Feature
         Then all clients are established
 
 #Verified
-    Scenario Outline: Validate topic creation scenarios
-        Given I provide a memo <memo> and a max transaction fee of <maxFee>
-        When I attempt to create a new topic id
-        Then the network should confirm valid transaction receipts for this operation
-        Examples:
-            | memo          | maxFee   |
-            | "HCS topic 1" | 10000000 |
-            | "HCS topic 2" | 20000000 |
+#    Scenario Outline: Validate topic creation scenarios
+#        Given I provide a memo <memo> and a max transaction fee of <maxFee>
+#        When I attempt to create a new topic id
+#        Then the network should confirm valid transaction receipts for this operation
+#        Examples:
+#            | memo          | maxFee   |
+#            | "HCS topic 1" | 10000000 |
+#            | "HCS topic 2" | 20000000 |
 
-#Verified, then unauthoried
-    Scenario Outline: Validate Topic Updates
-        Given I provide a topic id <topicId>, memo <memo> and an auto renew period of <renewPeriod>
-        When I attempt to update an existing topic
-        Then the network should confirm valid transaction receipts for this operation
-        Examples:
-            | topicId | memo                    | renewPeriod |
-            | 1304    | "HCS topic 1 - updated" | 30          |
-            | 1305    | "HCS topic 2 - updated" | 60          |
+#Verified, then unauthorized
+#    Scenario Outline: Validate Topic Updates
+#        Given I provide a topic id <topicId>, memo <memo> and an auto renew period of <renewPeriod>
+#        When I attempt to update an existing topic
+#        Then the network should confirm valid transaction receipts for this operation
+#        Examples:
+#            | topicId | memo                    | renewPeriod |
+#            | 1175    | "HCS topic 1 - updated" | 30          |
+#            | 1176    | "HCS topic 2 - updated" | 60          |
 
 #    #Verified
     Scenario Outline: Validate Topic subscription
@@ -33,7 +33,7 @@ Feature: HCS Coverage Feature
         Then the network should successfully establish a channel to this topic
         Examples:
             | topicId |
-            | 1304    |
+            | 1175    |
 
 #    #Verified
     Scenario Outline: Validate Topic message submission
@@ -42,9 +42,9 @@ Feature: HCS Coverage Feature
         Then the network should confirm valid transaction receipts for this operation
         Examples:
             | topicId | numMessages | sleepBetweenMessages |
-            | 1304    | 0           | 500                  |
-            | 1304    | 1           | 500                  |
-            | 1304    | 7           | 500                  |
+            | 1175    | 0           | 500                  |
+            | 1175    | 1           | 500                  |
+            | 1175    | 7           | 500                  |
 
         #Verified
     Scenario Outline: Validate Topic message listener
@@ -53,9 +53,9 @@ Feature: HCS Coverage Feature
         Then the network should successfully observe these messages
         Examples:
             | topicId | numMessages | latency |
-            | 1304    | 0           | 5       |
-            | 1304    | 2           | 0       |
-            | 1304    | 5           | 5       |
+            | 1175    | 0           | 5       |
+            | 1175    | 2           | 2       |
+            | 1175    | 5           | 5       |
 
     #Verified
     Scenario Outline: Validate topic filtering with past date and get X previous
@@ -64,8 +64,8 @@ Feature: HCS Coverage Feature
         Then the network should successfully observe these messages
         Examples:
             | topicId | startDate                 | numMessages |
-            | 1304    | "1970-01-01T00:00:00.00Z" | 0           |
-            | 1304    | "2000-01-01T00:00:00.00Z" | 5           |
+            | 1175    | "1970-01-01T00:00:00.00Z" | 0           |
+            | 1175    | "2000-01-01T00:00:00.00Z" | 5           |
 
     #Verified
     Scenario Outline: Validate resubscribe topic filtering
@@ -76,8 +76,8 @@ Feature: HCS Coverage Feature
         Then the network should successfully observe these messages
         Examples:
             | topicId | startDate                 | numMessages |
-            | 1304    | "1970-01-01T00:00:00.00Z" | 0           |
-            | 1304    | "2000-01-01T00:00:00.00Z" | 5           |
+            | 1175    | "1970-01-01T00:00:00.00Z" | 0           |
+            | 1175    | "2000-01-01T00:00:00.00Z" | 5           |
 
 #   Unsupported w SDK right now
 #    Scenario Outline: Validate topic filtering with start and end time in between min and max messages (e.g. if 100 messages get 25-30)
@@ -85,7 +85,7 @@ Feature: HCS Coverage Feature
 #        Then the network should successfully observe these messages
 #        Examples:
 #            | topicId | startDate                 | endDate                   | numMessages |
-#            | 1304       | "2020-01-01T00:00:00.00Z" | "2020-02-01T00:00:00.00Z" | 5           |
+#            | 1175       | "2020-01-01T00:00:00.00Z" | "2020-02-01T00:00:00.00Z" | 5           |
 #
 #   Unsupported w SDK right now
 #    Scenario Outline: Validate topic filtering with past date and limit of 10
@@ -93,7 +93,7 @@ Feature: HCS Coverage Feature
 #        Then the network should successfully observe these messages
 #        Examples:
 #            | topicId | startDate                 | limit |
-#            | 1304       | "2020-01-01T00:00:00.00Z" | 5     |
+#            | 1175       | "2020-01-01T00:00:00.00Z" | 5     |
 #
 #   Discussions still out on this
 #    Scenario Outline: Validate topic filtering with missing topic id
@@ -101,27 +101,27 @@ Feature: HCS Coverage Feature
 #        Then the network should successfully connect
 #        Examples:
 #            | topicId |
-#            | 1304       |
+#            | 1175       |
 #
 
 # Potential bug
-    Scenario Outline: Validate Re-subscribe with invalid topic id
-        Given I provide a topic id <topicId>
-        Then the network should successfully establish a channel to this topic
-        Examples:
-            | topicId |
-            | 0       |
-            | -1      |
-            | -11     |
+#    Scenario Outline: Validate Re-subscribe with invalid topic id
+#        Given I provide a topic id <topicId>
+#        Then the network should successfully establish a channel to this topic
+#        Examples:
+#            | topicId |
+#            | 0       |
+#            | -1      |
+#            | -11     |
 
 # Unauthorized
-    Scenario Outline: Validate topic deletion
-        Given I provide a memo <memo> and a max transaction fee of <maxFee>
-        When I attempt to create a new topic id
-        And I attempt to delete the topic
-        Then the network should confirm valid transaction receipts for this operation
-        Examples:
-            | memo              | maxFee   |
-            | "HCS Del topic 1" | 10000000 |
-            | "HCS Del topic 2" | 20000000 |
+#    Scenario Outline: Validate topic deletion
+#        Given I provide a memo <memo> and a max transaction fee of <maxFee>
+#        When I attempt to create a new topic id
+#        And I attempt to delete the topic
+#        Then the network should confirm valid transaction receipts for this operation
+#        Examples:
+#            | memo              | maxFee   |
+#            | "HCS Del topic 1" | 10000000 |
+#            | "HCS Del topic 2" | 20000000 |
 

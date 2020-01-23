@@ -6,7 +6,7 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="com.hedera.mirror.hcse2e" level="debug" additivity="false">
+        <Logger name="com.hedera.mirror.test.e2e.acceptance" level="debug" additivity="false">
             <AppenderRef ref="console"/>
         </Logger>
         <Root level="warn">
