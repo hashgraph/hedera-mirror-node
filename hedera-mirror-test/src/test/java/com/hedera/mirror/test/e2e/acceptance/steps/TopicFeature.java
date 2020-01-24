@@ -36,6 +36,7 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 import com.hedera.mirror.test.e2e.acceptance.util.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.util.SDKClient;
@@ -45,7 +46,7 @@ import com.hedera.mirror.test.e2e.acceptance.util.TopicHelper;
 public class TopicFeature {
     int numMessages;
     int latency;
-    Instant startDate = Instant.EPOCH;
+    MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
     Client sdkClient;
     MirrorNodeClient mirrorClient;
     ConsensusTopicId consensusTopicId;
@@ -79,6 +80,10 @@ public class TopicFeature {
 
             TransactionReceipt receipt = topicHelper.createTopic(submitPublicKey);
             consensusTopicId = receipt.getConsensusTopicId();
+            mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
+                    .setTopicId(consensusTopicId)
+                    .setStartTime(Instant.EPOCH);
+
             transactionReceipts.add(receipt);
             assertNotNull(consensusTopicId);
         }
@@ -87,6 +92,8 @@ public class TopicFeature {
     @Given("I provide a topic id {long}")
     public void setTopicIdParam(Long topicId) {
         consensusTopicId = new ConsensusTopicId(0, 0, topicId);
+        mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
+                .setTopicId(consensusTopicId);
     }
 
     @Given("I provide a number of messages {int} I want to receive")
@@ -103,7 +110,7 @@ public class TopicFeature {
     @Given("I provide a date {string} and a number of messages {int} I want to receive")
     public void setTopicListenParams(String startDate, int numMessages) {
         this.numMessages = numMessages;
-        this.startDate = Instant.parse(startDate);
+        mirrorConsensusTopicQuery.setStartTime(Instant.parse(startDate));
     }
 
     @When("I attempt to update an existing topic")
@@ -115,7 +122,7 @@ public class TopicFeature {
 
     @When("I subscribe to the topic")
     public void verifySubscriptionChannelConnection() {
-        subscription = mirrorClient.subscribeToTopic(consensusTopicId, Instant.now());
+        subscription = mirrorClient.subscribeToTopic(mirrorConsensusTopicQuery);
         assertNotNull(subscription);
     }
 
@@ -158,11 +165,9 @@ public class TopicFeature {
     @Then("I subscribe with a filter to retrieve messages")
     public void retrieveTopicMessages() throws Exception {
         assertNotNull(consensusTopicId, "consensusTopicId null");
-        assertNotNull(startDate, "startDate null");
-        assertNotNull(numMessages, "numMessages null");
-        assertNotNull(latency, "latency null");
+        assertNotNull(mirrorConsensusTopicQuery, "mirrorConsensusTopicQuery null");
         subscription = mirrorClient
-                .subscribeToTopicAndRetrieveMessages(consensusTopicId, startDate, numMessages, latency);
+                .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, numMessages, latency);
         assertNotNull(subscription, "subscription is null");
     }
 

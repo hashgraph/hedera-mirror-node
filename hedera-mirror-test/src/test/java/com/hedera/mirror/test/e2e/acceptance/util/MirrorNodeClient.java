@@ -22,15 +22,14 @@ package com.hedera.mirror.test.e2e.acceptance.util;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.mirror.MirrorClient;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
@@ -46,10 +45,9 @@ public class MirrorNodeClient {
         mirrorClient = new MirrorClient(Objects.requireNonNull(mirrorNodeAddress));
     }
 
-    public MirrorSubscriptionHandle subscribeToTopic(ConsensusTopicId topicId, Instant startTime) {
-        log.debug("Subscribing to topicId : {} with startTime : {}", topicId, startTime);
-        return new MirrorConsensusTopicQuery()
-                .setTopicId(topicId)
+    public MirrorSubscriptionHandle subscribeToTopic(MirrorConsensusTopicQuery mirrorConsensusTopicQuery) {
+        log.debug("Subscribing to topic with query: {}", mirrorConsensusTopicQuery);
+        return mirrorConsensusTopicQuery
                 .subscribe(mirrorClient, resp -> {
                             String messageAsString = new String(resp.message, StandardCharsets.UTF_8);
                             log.info("Received message: " + messageAsString
@@ -60,23 +58,29 @@ public class MirrorNodeClient {
                         Throwable::printStackTrace);
     }
 
-    public MirrorSubscriptionHandle subscribeToTopicAndRetrieveMessages(ConsensusTopicId topicId,
-                                                                        Instant startTime,
+    public MirrorSubscriptionHandle subscribeToTopicAndRetrieveMessages(MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
                                                                         int numMessages,
                                                                         int latency) throws Exception {
-        log.debug("Subscribe to topic: {} from {}, expecting {} within {} seconds", topicId, startTime, numMessages,
+        log.debug("Subscribing to topic with query: {}, expecting {} within {} seconds", mirrorConsensusTopicQuery,
+                numMessages,
                 latency);
         CountDownLatch messageLatch = new CountDownLatch(numMessages);
         List<MirrorConsensusTopicResponse> messages = new ArrayList<>();
-        MirrorSubscriptionHandle subscription = new MirrorConsensusTopicQuery()
-                .setTopicId(topicId)
+        AtomicReference<MirrorConsensusTopicResponse> lastResponse = null;
+        MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
                 .subscribe(mirrorClient, resp -> {
                             messages.add(resp);
                             String messageAsString = new String(resp.message, StandardCharsets.UTF_8);
                             log.info("Received message: " + messageAsString
                                     + " consensus timestamp: " + resp.consensusTimestamp
                                     + " topic sequence number: " + resp.sequenceNumber);
+
+//                            if (lastResponse != null) {
+//                                validateResponse(lastResponse.get(), resp);
+//                            }
+
                             messageLatch.countDown();
+                            lastResponse.set(resp);
                         },
                         // On gRPC error, print the stack trace
                         Throwable::printStackTrace);
@@ -107,5 +111,26 @@ public class MirrorNodeClient {
 
     public void close() throws InterruptedException {
         mirrorClient.close();
+    }
+
+    private void validateResponse(MirrorConsensusTopicResponse previousResponse,
+                                  MirrorConsensusTopicResponse currentResponse) throws Exception {
+        boolean validResponse = true;
+
+        if (previousResponse.consensusTimestamp.isAfter(currentResponse.consensusTimestamp)) {
+            log.error("Previous message {}, has a timestamp greater than current message {}",
+                    previousResponse.consensusTimestamp, currentResponse.consensusTimestamp);
+            validResponse = false;
+        }
+
+        if (previousResponse.sequenceNumber > currentResponse.sequenceNumber) {
+            log.error("Previous message {}, has a sequenceNumber greater than current message {}",
+                    previousResponse.sequenceNumber, currentResponse.sequenceNumber);
+            validResponse = false;
+        }
+
+        if (!validResponse) {
+            throw new Exception("Invalid message response received");
+        }
     }
 }
