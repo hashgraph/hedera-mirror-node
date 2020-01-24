@@ -48,14 +48,11 @@ public class TopicHelper {
 
     public TransactionReceipt createTopic(Ed25519PublicKey submitPublicKey) throws HederaStatusException {
 
-        int refNanos = Instant.now().getNano();
+        Instant refInstant = Instant.now();
         TransactionReceipt transactionReceipt = new ConsensusTopicCreateTransaction()
-//                .setAdminKey(submitPublicKey) // INVALID_SIGNATURE when any of above keys are used
                 .setSubmitKey(submitPublicKey)
-//                .setAutoRenewAccountId(AccountId.fromString("0.0.2")) // AUTORENEW_ACCOUNT_NOT_ALLOWED
-                .setMaxTransactionFee(10000000)
-                .setTopicMemo("HCS Topic_" + refNanos)
-//                .setAutoRenewPeriod(Duration.ofDays(5)) // AUTORENEW_DURATION_NOT_IN_RANGE
+                .setMaxTransactionFee(1_000_000_000)
+                .setTopicMemo("HCS Topic_" + refInstant)
                 .execute(client)
                 .getReceipt(client);
 

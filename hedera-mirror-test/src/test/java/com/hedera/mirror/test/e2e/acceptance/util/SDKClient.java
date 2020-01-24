@@ -22,12 +22,14 @@ package com.hedera.mirror.test.e2e.acceptance.util;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import java.util.Map;
+import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 
+@Log4j2
 public class SDKClient {
 
     private final Client client;
@@ -45,13 +47,21 @@ public class SDKClient {
         // Grab configuration variables from the .env file
         var operatorId = AccountId.fromString(Dotenv.load().get("OPERATOR_ID"));
         var operatorKey = Ed25519PrivateKey.fromString(Dotenv.load().get("OPERATOR_KEY"));
-        var nodeId = AccountId.fromString(Dotenv.load().get("NODE_ID"));
-        var nodeAddress = Dotenv.load().get("NODE_ADDRESS");
 
-        // Build client
-        var client = new Client(Map.of(nodeId, nodeAddress));
+        Client client;
+        Boolean useTestNet = Boolean.parseBoolean(Dotenv.load().get("USE_TESTNET"));
+        if (useTestNet) {
+            log.debug("Creating SDK client for TestNet");
+            client = Client.forTestnet();
+        } else {
+            var nodeId = AccountId.fromString(Dotenv.load().get("NODE_ID"));
+            var nodeAddress = Dotenv.load().get("NODE_ADDRESS");
+            log.debug("Creating SDK client for node {} at {}", nodeId, nodeAddress);
 
-//        Client client = Client.forTestnet();
+            // Build client
+            client = new Client(Map.of(nodeId, nodeAddress));
+        }
+
         client.setOperator(operatorId, operatorKey);
 
         return client;

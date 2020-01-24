@@ -71,7 +71,7 @@ public class AccountHelper {
                 .setAccountId(accountId)
                 .execute(client);
 
-        log.debug("balance = " + balance);
+        log.debug("{} balance is {}", accountId, balance);
 
         return balance.asTinybar();
     }
