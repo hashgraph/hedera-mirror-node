@@ -53,6 +53,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .doOnComplete(topicContext::onComplete)
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
+                .concatMap(t -> missingMessages(topicContext, t))
                 .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .doOnNext(topicContext::onNext)
@@ -79,8 +80,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .topicNum(filter.getTopicNum())
                 .build();
 
-        return topicListener.listen(newFilter)
-                .flatMapSequential(t -> missingMessages(topicContext, t));
+        return topicListener.listen(newFilter);
     }
 
     private Flux<TopicMessage> missingMessages(TopicContext topicContext, TopicMessage current) {

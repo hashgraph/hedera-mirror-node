@@ -28,6 +28,8 @@ import java.time.temporal.ChronoUnit;
 import javax.annotation.Resource;
 import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -35,6 +37,8 @@ import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import com.hedera.mirror.grpc.listener.TopicListener;
+import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 
 public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
@@ -322,25 +326,42 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void messageOutOfOrder() {
-        Instant now = Instant.now();
-        Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.sequenceNumber(1).consensusTimestamp(now)),
-                domainBuilder.topicMessage(t -> t.sequenceNumber(3).consensusTimestamp(now.plusSeconds(2))),
-                domainBuilder.topicMessage(t -> t.sequenceNumber(2).consensusTimestamp(now.plusSeconds(1)))
-        );
+    void missingMessages() {
+        TopicListener topicListener = Mockito.mock(TopicListener.class);
+        TopicMessageRepository topicMessageRepository = Mockito.mock(TopicMessageRepository.class);
+        topicMessageService = new TopicMessageServiceImpl(topicListener, topicMessageRepository);
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .build();
 
+        TopicMessage beforeMissing = topicMessage(1);
+        TopicMessage afterMissing = topicMessage(4);
+
+        Mockito.when(topicListener.listen(filter)).thenReturn(Flux.just(beforeMissing, afterMissing));
+        Mockito.when(topicMessageRepository.findByFilter(filter)).thenReturn(Flux.empty());
+        Mockito.when(topicMessageRepository.findByFilter(ArgumentMatchers
+                .argThat(t -> t.getLimit() == 2 &&
+                        t.getStartTime().equals(beforeMissing.getConsensusTimestamp().plusNanos(1)) &&
+                        t.getEndTime().equals(afterMissing.getConsensusTimestamp()))))
+                .thenReturn(Flux.just(
+                        topicMessage(2),
+                        topicMessage(3)
+                ));
+
         topicMessageService.subscribeTopic(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(300))
-                .then(() -> generator.blockLast())
-                .expectNext(1L, 2L, 3L)
+                .expectNext(1L, 2L, 3L, 4L)
                 .thenCancel()
                 .verify(Duration.ofMillis(700));
+    }
+
+    private TopicMessage topicMessage(long sequenceNumber) {
+        return TopicMessage.builder()
+                .consensusTimestamp(Instant.EPOCH.plus(sequenceNumber, ChronoUnit.NANOS))
+                .realmNum(0)
+                .sequenceNumber(sequenceNumber)
+                .build();
     }
 }
