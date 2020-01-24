@@ -46,38 +46,37 @@ public class TopicHelper {
         this.client = client;
     }
 
-    public TransactionReceipt createTopic(String memo, long maxTransFee) throws HederaStatusException {
-        Ed25519PrivateKey submitKey = Ed25519PrivateKey.generate();
-        Ed25519PublicKey submitPublicKey = submitKey.publicKey;
-        log.debug("Topic creation key : {}", submitKey);
+    public TransactionReceipt createTopic(Ed25519PublicKey submitPublicKey) throws HederaStatusException {
 
+        int refNanos = Instant.now().getNano();
         TransactionReceipt transactionReceipt = new ConsensusTopicCreateTransaction()
-                .setMaxTransactionFee(maxTransFee)
-                .setTopicMemo(memo)
-//                .setSubmitKey(submitPublicKey)
+//                .setAdminKey(submitPublicKey) // INVALID_SIGNATURE when any of above keys are used
+                .setSubmitKey(submitPublicKey)
+//                .setAutoRenewAccountId(AccountId.fromString("0.0.2")) // AUTORENEW_ACCOUNT_NOT_ALLOWED
+                .setMaxTransactionFee(10000000)
+                .setTopicMemo("HCS Topic_" + refNanos)
+//                .setAutoRenewPeriod(Duration.ofDays(5)) // AUTORENEW_DURATION_NOT_IN_RANGE
                 .execute(client)
                 .getReceipt(client);
 
         ConsensusTopicId topicId = transactionReceipt.getConsensusTopicId();
-        log.debug("Created new topic {}, with ED25519 submitKey of {}. TransactionReceipt : {}", topicId,
-                submitPublicKey,
-                transactionReceipt);
+        log.debug("Created new topic {}, with TransactionReceipt : {}", topicId, transactionReceipt);
 
         return transactionReceipt;
     }
 
-    public TransactionReceipt updateTopic(ConsensusTopicId topicId, String memo, long duration) throws HederaStatusException {
-        String newMemo = memo + "_" + Instant.now().getNano();
+    public TransactionReceipt updateTopic(ConsensusTopicId topicId, Ed25519PrivateKey submitKey) throws HederaStatusException {
+        String newMemo = "HCS UpdatedTopic__" + Instant.now().getNano();
         TransactionReceipt transactionReceipt = new ConsensusTopicUpdateTransaction()
                 .setTopicId(topicId)
                 .setTopicMemo(newMemo)
-                .setAutoRenewPeriod(Duration.ofDays(duration))
+                .setAutoRenewPeriod(Duration.ofDays(12))
+                .build(client)
+                .sign(submitKey)
                 .execute(client)
                 .getReceipt(client);
 
-        log.debug("Updated topic with new memo : '{}' and auto renew period '{}'. Received transactionReceipt : {} ",
-                newMemo
-                , duration, transactionReceipt);
+        log.debug("Updated topic '{}'. Received transactionReceipt : {} ", topicId, transactionReceipt);
         return transactionReceipt;
     }
 
@@ -94,16 +93,15 @@ public class TopicHelper {
 
     public List<TransactionReceipt> publishMessagesToTopic(ConsensusTopicId topicId, String baseMessage,
                                                            Ed25519PrivateKey submitKey,
-                                                           int numMessages, long sleepMillisBetweenMessages) throws HederaStatusException
+                                                           int numMessages) throws HederaStatusException
             , InterruptedException {
-        log.debug("Publishing {} messages to topicId : {}, will wait {} ns between messages", numMessages, topicId,
-                sleepMillisBetweenMessages);
-        int refNanos = Instant.now().getNano();
+        log.debug("Publishing {} messages to topicId : {}.", numMessages, topicId);
+        Instant refInstant = Instant.now();
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
-            String message = baseMessage + "_" + refNanos + "_" + i;
+            String message = baseMessage + "_" + refInstant + "_" + i;
             transactionReceiptList.add(publishMessageToTopic(topicId, message, submitKey));
-            Thread.sleep(sleepMillisBetweenMessages, 0);
+            Thread.sleep(500, 0);
         }
 
         return transactionReceiptList;
@@ -115,16 +113,14 @@ public class TopicHelper {
                 .setTopicId(topicId)
                 .setMessage(message)
                 .build(client)
-
                 // The transaction is automatically signed by the payer.
                 // Due to the topic having a submitKey requirement, additionally sign the transaction with that key.
                 .sign(submitKey)
-
                 .execute(client)
                 .getReceipt(client);
 
-        log.debug("Published message : '{}' to topicId : {}. Obtained receipt : {}", message, topicId,
-                transactionReceipt);
+        log.debug("Published message : '{}' to topicId : {} with sequence number : {}", message, topicId,
+                transactionReceipt.getConsensusTopicSequenceNumber());
 
         return transactionReceipt;
     }

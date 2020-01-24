@@ -7,7 +7,7 @@
     <description>Cross module system and performance tests for the Hedera Mirror Node</description>
     <modelVersion>4.0.0</modelVersion>
     <name>Hedera Mirror Node Test</name>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
     <parent>
         <artifactId>hedera-mirror-node</artifactId>
@@ -35,18 +35,18 @@
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
-            <version>1.24.0</version>
+            <version>${grpc.version}</version>
         </dependency>
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-java</artifactId>
-            <version>4.8.0</version>
+            <version>5.0.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-junit</artifactId>
-            <version>4.8.0</version>
+            <version>5.0.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -64,6 +64,11 @@
             <artifactId>spring-boot-starter-log4j2</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -71,20 +76,23 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M4</version>
                 <configuration>
                     <parallel>classes</parallel>
                     <threadCount>10</threadCount>
-                    <argLine>-Xmx1024m -Xms1024m -XX:MaxPermSize=512m</argLine>
+                    <argLine>-Xmx1024m -Xms1024m</argLine>
                     <skipTests>${skipTests}</skipTests>
+                    <systemPropertyVariables>
+                        <log4j.configurationFile>${project.basedir}/src/test/resources/log4j2.xml</log4j.configurationFile>
+                    </systemPropertyVariables>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-junit47</artifactId>
-                        <version>3.0.0-M4</version>
-                    </dependency>
-                </dependencies>
+                <executions>
+                    <execution>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>com.lazerycode.jmeter</groupId>

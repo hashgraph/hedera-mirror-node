@@ -22,14 +22,16 @@ package com.hedera.mirror.test.e2e.acceptance.util;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.tuple.Pair;
 import org.spongycastle.util.encoders.Hex;
 
 import com.hedera.hashgraph.sdk.consensus.ConsensusClient;
+import com.hedera.hashgraph.sdk.consensus.ConsensusMessage;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 
 @Log4j2
@@ -40,12 +42,10 @@ public class MirrorNodeClient {
         String mirrorNodeAddress = Dotenv.load().get("MIRROR_NODE_ADDRESS");
         log.debug("Creating Mirror Node client for {}", mirrorNodeAddress);
         consensusClient = new ConsensusClient(Objects.requireNonNull(mirrorNodeAddress))
-//                .setErrorHandler(err -> log.error("Error instantiating ConsensusClient : {}", err))
+                .setErrorHandler(err -> {
+                    log.error("Error instantiating ConsensusClient : {}", err);
+                })
         ;
-    }
-
-    public ConsensusClient.Subscription subscribeToTopic(long topicId, Instant startTime) {
-        return subscribeToTopic(new ConsensusTopicId(0, 0, topicId), startTime);
     }
 
     public ConsensusClient.Subscription subscribeToTopic(ConsensusTopicId topicId, Instant startTime) {
@@ -61,48 +61,40 @@ public class MirrorNodeClient {
         return subscription;
     }
 
-    public Pair<ConsensusClient.Subscription, Boolean> subscribeToTopicAndRetrieveMessages(long topicId,
-                                                                                           Instant startTime,
-                                                                                           int numMessages,
-                                                                                           int latency) throws InterruptedException {
-        return subscribeToTopicAndRetrieveMessages(new ConsensusTopicId(0, 0, topicId), startTime, numMessages,
-                latency);
-    }
-
-    public Pair<ConsensusClient.Subscription, Boolean> subscribeToTopicAndRetrieveMessages(ConsensusTopicId topicId,
-                                                                                           Instant startTime,
-                                                                                           int numMessages,
-                                                                                           int latency) throws InterruptedException {
+    public ConsensusClient.Subscription subscribeToTopicAndRetrieveMessages(ConsensusTopicId topicId,
+                                                                            Instant startTime,
+                                                                            int numMessages,
+                                                                            int latency) throws Exception {
         log.debug("Subscribe to topic: {} from {}, expecting {} within {} seconds", topicId, startTime, numMessages,
                 latency);
         CountDownLatch messageLatch = new CountDownLatch(numMessages);
+        List<ConsensusMessage> messages = new ArrayList<>();
         ConsensusClient.Subscription subscription = consensusClient
                 .subscribe(topicId, startTime, message -> {
+                    messages.add(message);
+                    log.info("Received message: {}, consensus timestamp: {}, topic sequence number: {}",
+                            message
+                                    .getMessageString(), message.consensusTimestamp,
+                            message.sequenceNumber);
                     messageLatch.countDown();
-                    log.info("Received message: {}, consensus timestamp: {}, topic sequence number: {}, topic running" +
-                                    " hash: {}", message.getMessageString(), message.consensusTimestamp,
-                            message.sequenceNumber,
-                            Hex.toHexString(message.runningHash));
                 });
 
-        boolean validLatency = true;
-        if (latency > 0) {
-            if (!messageLatch.await(latency, TimeUnit.SECONDS)) {
-                log.error("{} messages were expected within {} seconds. {} messages left", numMessages, latency,
-                        messageLatch
-                                .getCount());
-                validLatency = false;
+        latency = latency <= 0 ? 60 : latency;
+        if (!messageLatch.await(latency, TimeUnit.SECONDS)) {
+            log.error("{} messages were expected within {} seconds. {} not yet received", numMessages, latency,
+                    messageLatch.getCount());
+
+            for (ConsensusMessage m : messages) {
+                log.info("Received message: {}, consensus timestamp: {}, topic sequence number: {}",
+                        m.getMessageString(), m.consensusTimestamp, m.sequenceNumber);
             }
-        } else {
-            if (!messageLatch.await(1, TimeUnit.MINUTES)) {
-                log.error("{} messages were expected within default of 1 min. {} messages left", numMessages,
-                        messageLatch
-                                .getCount());
-                validLatency = false;
-            }
+
+            throw new Exception("Mirror client failed to retrieve all messages within " + latency + " s");
         }
 
-        return Pair.of(subscription, validLatency);
+        log.info("Success, received {} out of {} messages received.", numMessages - messageLatch
+                .getCount(), numMessages);
+        return subscription;
     }
 
     public void unSubscribeFromTopic(ConsensusClient.Subscription subscription) {

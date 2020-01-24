@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -33,9 +34,17 @@ import com.hedera.mirror.test.e2e.acceptance.util.AccountHelper;
 import com.hedera.mirror.test.e2e.acceptance.util.SDKClient;
 
 @Log4j2
-public class AccountCoverage {
+public class AccountFeature {
     private AccountId accountId;
     private long balance;
+    private Client sdkClient;
+
+    @Given("User obtained SDK client for account feature")
+    public void getSDKClient() throws HederaStatusException {
+        if (sdkClient == null) {
+            sdkClient = SDKClient.hederaClient();
+        }
+    }
 
     @Given("I provided an account string of {string}")
     public void retrieveAccount(String targetAccount) {
@@ -44,12 +53,23 @@ public class AccountCoverage {
 
     @When("I request balance info for this account")
     public void getAccountBalance() throws HederaStatusException {
-        Client client = SDKClient.hederaClient();
-        balance = AccountHelper.getBalance(client, accountId);
+        balance = AccountHelper.getBalance(sdkClient, accountId);
     }
 
     @Then("the result should be greater than or equal to {long}")
     public void isGreaterOrEqualThan(long threshold) {
         Assert.assertTrue(balance >= threshold);
+    }
+
+    @After("@ClientClose")
+    public void closeClients() {
+
+        if (sdkClient != null) {
+            try {
+                sdkClient.close();
+            } catch (Exception ex) {
+                log.warn("Error closing SDK client : {}", ex);
+            }
+        }
     }
 }

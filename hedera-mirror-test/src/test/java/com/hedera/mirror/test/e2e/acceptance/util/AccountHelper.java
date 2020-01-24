@@ -37,23 +37,18 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 @Log4j2
 public class AccountHelper {
 
-    public AccountHelper() {
-    }
-
-    public static AccountId createDummyAccount(Client client) throws HederaStatusException {
+    public static AccountId createNewAccount(Client client) throws HederaStatusException {
         // 1. Generate a Ed25519 private, public key pair
         Ed25519PrivateKey newKey = Ed25519PrivateKey.generate();
         Ed25519PublicKey newPublicKey = newKey.publicKey;
 
-        System.out.println("Private key = " + newKey);
-        System.out.println("Public key = " + newPublicKey);
-//        System.out.println("My balance = " + client.getAccountBalance(client.ge));
+        log.info("Private key = {}", newKey);
+        log.info("Public key = {}", newPublicKey);
 
         Transaction tx = new AccountCreateTransaction()
                 // The only _required_ property here is `key`
                 .setKey(newKey.publicKey)
                 .setInitialBalance(Hbar.from(1, HbarUnit.Tinybar))
-//                .setMaxTransactionFee(10000000)
                 .build(client);
 
         tx.execute(client);
@@ -63,7 +58,7 @@ public class AccountHelper {
 
         AccountId newAccountId = receipt.getAccountId();
 
-        log.debug("account = " + newAccountId);
+        log.trace("account = {}", newAccountId);
         return newAccountId;
     }
 
