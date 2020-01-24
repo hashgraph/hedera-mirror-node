@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.util;
  * ‍
  */
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicUpdateTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 
 @Log4j2
 public class TopicHelper {
@@ -50,9 +52,16 @@ public class TopicHelper {
 
         Instant refInstant = Instant.now();
         TransactionReceipt transactionReceipt = new ConsensusTopicCreateTransaction()
+//                .setAdminKey(submitPublicKey) // INVALID_SIGNATURE when of above keys are used
                 .setSubmitKey(submitPublicKey)
+//                .setAutoRenewAccountId(AccountId.fromString("0.0.2")) // AUTORENEW_ACCOUNT_NOT_ALLOWED
                 .setMaxTransactionFee(1_000_000_000)
                 .setTopicMemo("HCS Topic_" + refInstant)
+//                .setAutoRenewPeriod(Duration.ofDays(5)) // AUTORENEW_DURATION_NOT_IN_RANGE - 30 * 86400L
+//                .setNodeAccountId()
+//                .setTransactionId()
+//                .setTransactionMemo("HCS Topic Creation_" + refInstant)
+//                .setTransactionValidDuration(Duration.ofDays(1))
                 .execute(client)
                 .getReceipt(client);
 
@@ -96,7 +105,7 @@ public class TopicHelper {
         Instant refInstant = Instant.now();
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
-            String message = baseMessage + "_" + refInstant + "_" + i;
+            String message = baseMessage + "_" + refInstant + "_" + i + 1;
             transactionReceiptList.add(publishMessageToTopic(topicId, message, submitKey));
             Thread.sleep(500, 0);
         }
@@ -120,5 +129,49 @@ public class TopicHelper {
                 transactionReceipt.getConsensusTopicSequenceNumber());
 
         return transactionReceipt;
+    }
+
+    public void processReceivedMessages(List<MirrorConsensusTopicResponse> messages) throws Exception {
+        int invalidMessages = 0;
+        MirrorConsensusTopicResponse lastMirrorConsensusTopicResponse = null;
+        for (MirrorConsensusTopicResponse mirrorConsensusTopicResponse : messages) {
+            String messageAsString = new String(mirrorConsensusTopicResponse.message, StandardCharsets.UTF_8);
+            log.info("Received message: {}, consensus timestamp: {}, topic sequence number: {}",
+                    messageAsString, mirrorConsensusTopicResponse.consensusTimestamp,
+                    mirrorConsensusTopicResponse.sequenceNumber);
+
+            if (!validateResponse(lastMirrorConsensusTopicResponse, mirrorConsensusTopicResponse)) {
+                invalidMessages++;
+            }
+
+            lastMirrorConsensusTopicResponse = mirrorConsensusTopicResponse;
+        }
+
+        if (invalidMessages > 0) {
+            throw new Exception("Retrieved {} invalid messages in response");
+        }
+
+        log.info("{} messages were successfully validated", messages.size());
+    }
+
+    public boolean validateResponse(MirrorConsensusTopicResponse previousResponse,
+                                    MirrorConsensusTopicResponse currentResponse) {
+        boolean validResponse = true;
+
+        if (previousResponse != null && currentResponse != null) {
+            if (previousResponse.consensusTimestamp.isAfter(currentResponse.consensusTimestamp)) {
+                log.error("Previous message {}, has a timestamp greater than current message {}",
+                        previousResponse.consensusTimestamp, currentResponse.consensusTimestamp);
+                validResponse = false;
+            }
+
+            if (previousResponse.sequenceNumber + 1 != currentResponse.sequenceNumber) {
+                log.error("Previous message {}, has a sequenceNumber greater than current message {}",
+                        previousResponse.sequenceNumber, currentResponse.sequenceNumber);
+                validResponse = false;
+            }
+        }
+
+        return validResponse;
     }
 }

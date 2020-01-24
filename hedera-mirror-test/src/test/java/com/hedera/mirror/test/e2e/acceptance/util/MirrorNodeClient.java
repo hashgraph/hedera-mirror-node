@@ -58,26 +58,21 @@ public class MirrorNodeClient {
                         Throwable::printStackTrace);
     }
 
-    public MirrorSubscriptionHandle subscribeToTopicAndRetrieveMessages(MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
-                                                                        int numMessages,
-                                                                        int latency) throws Exception {
-        log.debug("Subscribing to topic with query: {}, expecting {} within {} seconds", mirrorConsensusTopicQuery,
-                numMessages,
-                latency);
+    public List<MirrorConsensusTopicResponse> subscribeToTopicAndRetrieveMessages(MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
+                                                                                  int numMessages,
+                                                                                  int latency) throws Exception {
+        log.debug("Subscribing to topic, expecting {} within {} seconds", numMessages, latency);
         CountDownLatch messageLatch = new CountDownLatch(numMessages);
         List<MirrorConsensusTopicResponse> messages = new ArrayList<>();
-        AtomicReference<MirrorConsensusTopicResponse> lastResponse = null;
+        AtomicReference<MirrorConsensusTopicResponse> lastResponse = new AtomicReference<>();
+
         MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
                 .subscribe(mirrorClient, resp -> {
                             messages.add(resp);
                             String messageAsString = new String(resp.message, StandardCharsets.UTF_8);
-                            log.info("Received message: " + messageAsString
+                            log.trace("Received message: " + messageAsString
                                     + " consensus timestamp: " + resp.consensusTimestamp
                                     + " topic sequence number: " + resp.sequenceNumber);
-
-//                            if (lastResponse != null) {
-//                                validateResponse(lastResponse.get(), resp);
-//                            }
 
                             messageLatch.countDown();
                             lastResponse.set(resp);
@@ -90,18 +85,15 @@ public class MirrorNodeClient {
             log.error("{} messages were expected within {} seconds. {} not yet received", numMessages, latency,
                     messageLatch.getCount());
 
-            for (MirrorConsensusTopicResponse m : messages) {
-                String messageAsString = new String(m.message, StandardCharsets.UTF_8);
-                log.info("Received message: {}, consensus timestamp: {}, topic sequence number: {}",
-                        messageAsString, m.consensusTimestamp, m.sequenceNumber);
-            }
-
             throw new Exception("Mirror client failed to retrieve all messages within " + latency + " s");
         }
 
         log.info("Success, received {} out of {} messages received.", numMessages - messageLatch
                 .getCount(), numMessages);
-        return subscription;
+
+        unSubscribeFromTopic(subscription);
+
+        return messages;
     }
 
     public void unSubscribeFromTopic(MirrorSubscriptionHandle subscription) {
@@ -111,26 +103,5 @@ public class MirrorNodeClient {
 
     public void close() throws InterruptedException {
         mirrorClient.close();
-    }
-
-    private void validateResponse(MirrorConsensusTopicResponse previousResponse,
-                                  MirrorConsensusTopicResponse currentResponse) throws Exception {
-        boolean validResponse = true;
-
-        if (previousResponse.consensusTimestamp.isAfter(currentResponse.consensusTimestamp)) {
-            log.error("Previous message {}, has a timestamp greater than current message {}",
-                    previousResponse.consensusTimestamp, currentResponse.consensusTimestamp);
-            validResponse = false;
-        }
-
-        if (previousResponse.sequenceNumber > currentResponse.sequenceNumber) {
-            log.error("Previous message {}, has a sequenceNumber greater than current message {}",
-                    previousResponse.sequenceNumber, currentResponse.sequenceNumber);
-            validResponse = false;
-        }
-
-        if (!validResponse) {
-            throw new Exception("Invalid message response received");
-        }
     }
 }

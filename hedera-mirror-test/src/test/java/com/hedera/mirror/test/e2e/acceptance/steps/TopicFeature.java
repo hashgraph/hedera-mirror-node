@@ -37,6 +37,7 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
+import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 import com.hedera.mirror.test.e2e.acceptance.util.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.util.SDKClient;
@@ -49,10 +50,12 @@ public class TopicFeature {
     MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
     Client sdkClient;
     MirrorNodeClient mirrorClient;
+    TopicHelper topicHelper;
     ConsensusTopicId consensusTopicId;
     MirrorSubscriptionHandle subscription;
     List<TransactionReceipt> transactionReceipts;
     Ed25519PrivateKey submitKey;
+    List<MirrorConsensusTopicResponse> mirrorConsensusTopicResponses;
 
     @Given("User obtained SDK client")
     public void getSDKClient() throws HederaStatusException {
@@ -71,7 +74,7 @@ public class TopicFeature {
     @Given("I attempt to create a new topic id")
     public void createNewTopic() throws HederaStatusException {
         if (consensusTopicId == null) {
-            TopicHelper topicHelper = new TopicHelper(sdkClient);
+            topicHelper = new TopicHelper(sdkClient);
             transactionReceipts = new ArrayList();
 
             submitKey = Ed25519PrivateKey.generate();
@@ -85,7 +88,6 @@ public class TopicFeature {
                     .setStartTime(Instant.EPOCH);
 
             transactionReceipts.add(receipt);
-            assertNotNull(consensusTopicId);
         }
     }
 
@@ -166,15 +168,13 @@ public class TopicFeature {
     public void retrieveTopicMessages() throws Exception {
         assertNotNull(consensusTopicId, "consensusTopicId null");
         assertNotNull(mirrorConsensusTopicQuery, "mirrorConsensusTopicQuery null");
-        subscription = mirrorClient
+        mirrorConsensusTopicResponses = mirrorClient
                 .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, numMessages, latency);
-        assertNotNull(subscription, "subscription is null");
     }
 
     @Then("the network should successfully observe these messages")
-    public void verifyTopicMessageSubscription() {
-        assertNotNull(subscription, "subscription is null");
-        mirrorClient.unSubscribeFromTopic(subscription);
+    public void verifyTopicMessageSubscription() throws Exception {
+        assertNotNull(mirrorConsensusTopicResponses, "mirrorConsensusTopicResponses is null");
     }
 
     @Then("the network should confirm valid transaction receipts for this operation")
@@ -182,6 +182,11 @@ public class TopicFeature {
         for (TransactionReceipt receipt : transactionReceipts) {
             assertNotNull(receipt);
         }
+    }
+
+    @Then("the network should confirm valid topic messages were received")
+    public void verifyTopicMessages() throws Exception {
+        topicHelper.processReceivedMessages(mirrorConsensusTopicResponses);
     }
 
     @After("@TopicClientClose")
