@@ -33,10 +33,10 @@ import lombok.extern.log4j.Log4j2;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
-import com.hedera.hashgraph.sdk.consensus.ConsensusClient;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 import com.hedera.mirror.test.e2e.acceptance.util.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.util.SDKClient;
 import com.hedera.mirror.test.e2e.acceptance.util.TopicHelper;
@@ -49,7 +49,7 @@ public class TopicFeature {
     Client sdkClient;
     MirrorNodeClient mirrorClient;
     ConsensusTopicId consensusTopicId;
-    ConsensusClient.Subscription subscription;
+    MirrorSubscriptionHandle subscription;
     List<TransactionReceipt> transactionReceipts;
     Ed25519PrivateKey submitKey;
 
