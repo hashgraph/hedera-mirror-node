@@ -20,12 +20,13 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import lombok.extern.log4j.Log4j2;
-import org.junit.Assert;
 
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
@@ -58,7 +59,7 @@ public class AccountFeature {
 
     @Then("the result should be greater than or equal to {long}")
     public void isGreaterOrEqualThan(long threshold) {
-        Assert.assertTrue(balance >= threshold);
+        assertTrue(balance >= threshold);
     }
 
     @After("@ClientClose")

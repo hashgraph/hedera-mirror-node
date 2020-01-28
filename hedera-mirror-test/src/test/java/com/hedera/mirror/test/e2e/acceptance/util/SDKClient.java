@@ -31,17 +31,6 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 
 @Log4j2
 public class SDKClient {
-
-    private final Client client;
-
-    public SDKClient(String operatorid, String operatorkey) {
-        var operatorId = AccountId.fromString(operatorid);
-        var operatorKey = Ed25519PrivateKey.fromString(operatorkey);
-
-        client = Client.forTestnet();
-        client.setOperator(operatorId, operatorKey);
-    }
-
     public static Client hederaClient() throws HederaStatusException {
 
         // Grab configuration variables from the .env file
@@ -49,13 +38,15 @@ public class SDKClient {
         var operatorKey = Ed25519PrivateKey.fromString(Dotenv.load().get("OPERATOR_KEY"));
 
         Client client;
-        Boolean useTestNet = Boolean.parseBoolean(Dotenv.load().get("USE_TESTNET"));
-        if (useTestNet) {
+        var nodeAddress = Dotenv.load().get("NODE_ADDRESS");
+        if (nodeAddress.equalsIgnoreCase("testnet")) {
             log.debug("Creating SDK client for TestNet");
             client = Client.forTestnet();
+        } else if (nodeAddress.equalsIgnoreCase("mainnet")) {
+            log.debug("Creating SDK client for MainNet");
+            client = Client.forMainnet();
         } else {
             var nodeId = AccountId.fromString(Dotenv.load().get("NODE_ID"));
-            var nodeAddress = Dotenv.load().get("NODE_ADDRESS");
             log.debug("Creating SDK client for node {} at {}", nodeId, nodeAddress);
 
             // Build client
