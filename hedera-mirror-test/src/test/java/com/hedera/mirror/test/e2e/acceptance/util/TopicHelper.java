@@ -21,7 +21,6 @@ package com.hedera.mirror.test.e2e.acceptance.util;
  */
 
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,12 +47,12 @@ public class TopicHelper {
         this.client = client;
     }
 
-    public TransactionReceipt createTopic(Ed25519PublicKey submitPublicKey) throws HederaStatusException {
+    public TransactionReceipt createTopic(Ed25519PublicKey adminKey, Ed25519PublicKey submitKey) throws HederaStatusException {
 
         Instant refInstant = Instant.now();
         TransactionReceipt transactionReceipt = new ConsensusTopicCreateTransaction()
-//                .setAdminKey(submitPublicKey) // INVALID_SIGNATURE when of above keys are used
-                .setSubmitKey(submitPublicKey)
+                .setAdminKey(adminKey)
+                .setSubmitKey(submitKey)
 //                .setAutoRenewAccountId(AccountId.fromString("0.0.2")) // AUTORENEW_ACCOUNT_NOT_ALLOWED
                 .setMaxTransactionFee(1_000_000_000)
                 .setTopicMemo("HCS Topic_" + refInstant)
@@ -71,14 +70,13 @@ public class TopicHelper {
         return transactionReceipt;
     }
 
-    public TransactionReceipt updateTopic(ConsensusTopicId topicId, Ed25519PrivateKey submitKey) throws HederaStatusException {
+    public TransactionReceipt updateTopic(ConsensusTopicId topicId) throws HederaStatusException {
         String newMemo = "HCS UpdatedTopic__" + Instant.now().getNano();
         TransactionReceipt transactionReceipt = new ConsensusTopicUpdateTransaction()
                 .setTopicId(topicId)
                 .setTopicMemo(newMemo)
-                .setAutoRenewPeriod(Duration.ofDays(12))
+//                .setAutoRenewPeriod(Duration.ofDays(12))
                 .build(client)
-                .sign(submitKey)
                 .execute(client)
                 .getReceipt(client);
 

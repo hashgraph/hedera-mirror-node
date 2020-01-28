@@ -22,20 +22,30 @@ package com.hedera.mirror.test.e2e.acceptance.util;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
+import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
 @Log4j2
+@Value
 public class SDKClient {
-    public static Client hederaClient() throws HederaStatusException {
+    private final Client client;
+    private final Ed25519PublicKey payerPublicKey;
+    private final AccountId operatorId;
+
+    public SDKClient() throws HederaStatusException {
 
         // Grab configuration variables from the .env file
-        var operatorId = AccountId.fromString(Dotenv.load().get("OPERATOR_ID"));
+        operatorId = AccountId.fromString(Dotenv.load().get("OPERATOR_ID"));
         var operatorKey = Ed25519PrivateKey.fromString(Dotenv.load().get("OPERATOR_KEY"));
+        payerPublicKey = operatorKey.publicKey;
 
         Client client;
         var nodeAddress = Dotenv.load().get("NODE_ADDRESS");
@@ -55,6 +65,10 @@ public class SDKClient {
 
         client.setOperator(operatorId, operatorKey);
 
-        return client;
+        this.client = client;
+    }
+
+    public void close() throws TimeoutException, InterruptedException {
+        client.close(10, TimeUnit.SECONDS);
     }
 }

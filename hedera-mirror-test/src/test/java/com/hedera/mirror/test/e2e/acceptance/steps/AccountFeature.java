@@ -28,7 +28,6 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.mirror.test.e2e.acceptance.util.AccountHelper;
@@ -38,23 +37,28 @@ import com.hedera.mirror.test.e2e.acceptance.util.SDKClient;
 public class AccountFeature {
     private AccountId accountId;
     private long balance;
-    private Client sdkClient;
+    private SDKClient sdkClient;
 
     @Given("User obtained SDK client for account feature")
     public void getSDKClient() throws HederaStatusException {
         if (sdkClient == null) {
-            sdkClient = SDKClient.hederaClient();
+            sdkClient = new SDKClient();
         }
     }
 
     @Given("I provided an account string of {string}")
     public void retrieveAccount(String targetAccount) {
-        accountId = AccountId.fromString(targetAccount);
+        // if no account specified check operator balance
+        if (targetAccount.isEmpty()) {
+            accountId = sdkClient.getOperatorId();
+        } else {
+            accountId = AccountId.fromString(targetAccount);
+        }
     }
 
     @When("I request balance info for this account")
     public void getAccountBalance() throws HederaStatusException {
-        balance = AccountHelper.getBalance(sdkClient, accountId);
+        balance = AccountHelper.getBalance(sdkClient.getClient(), accountId);
     }
 
     @Then("the result should be greater than or equal to {long}")

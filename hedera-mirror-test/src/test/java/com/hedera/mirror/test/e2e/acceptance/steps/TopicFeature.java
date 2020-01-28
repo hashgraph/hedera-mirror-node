@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
@@ -48,7 +47,7 @@ public class TopicFeature {
     int numMessages;
     int latency;
     MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
-    Client sdkClient;
+    SDKClient sdkClient;
     MirrorNodeClient mirrorClient;
     TopicHelper topicHelper;
     ConsensusTopicId consensusTopicId;
@@ -60,7 +59,7 @@ public class TopicFeature {
     @Given("User obtained SDK client")
     public void getSDKClient() throws HederaStatusException {
         if (sdkClient == null) {
-            sdkClient = SDKClient.hederaClient();
+            sdkClient = new SDKClient();
         }
     }
 
@@ -74,14 +73,14 @@ public class TopicFeature {
     @Given("I attempt to create a new topic id")
     public void createNewTopic() throws HederaStatusException {
         if (consensusTopicId == null) {
-            topicHelper = new TopicHelper(sdkClient);
+            topicHelper = new TopicHelper(sdkClient.getClient());
             transactionReceipts = new ArrayList();
 
             submitKey = Ed25519PrivateKey.generate();
             Ed25519PublicKey submitPublicKey = submitKey.publicKey;
             log.debug("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 
-            TransactionReceipt receipt = topicHelper.createTopic(submitPublicKey);
+            TransactionReceipt receipt = topicHelper.createTopic(sdkClient.getPayerPublicKey(), submitPublicKey);
             consensusTopicId = receipt.getConsensusTopicId();
             mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
                     .setTopicId(consensusTopicId)
@@ -94,6 +93,7 @@ public class TopicFeature {
     @Given("I provide a topic id {long}")
     public void setTopicIdParam(Long topicId) {
         consensusTopicId = new ConsensusTopicId(0, 0, topicId);
+        numMessages = 0;
         mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
                 .setTopicId(consensusTopicId);
     }
@@ -115,11 +115,28 @@ public class TopicFeature {
         mirrorConsensusTopicQuery.setStartTime(Instant.parse(startDate));
     }
 
+    @Given("I provide a startDate {string} and endDate {string} and a number of messages {int} I want to receive")
+    public void setTopicListenParams(String startDate, String endDate, int numMessages) {
+        this.numMessages = numMessages;
+        mirrorConsensusTopicQuery
+                .setStartTime(Instant.parse(startDate))
+                .setEndTime(Instant.parse(endDate));
+    }
+
+    @Given("I provide a startDate {string} and endDate {string} and a limit of {int} messages I want to receive")
+    public void setTopicListenParamswLimit(String startDate, String endDate, int limit) {
+        numMessages = limit;
+        mirrorConsensusTopicQuery
+                .setStartTime(Instant.parse(startDate))
+                .setEndTime(Instant.parse(endDate))
+                .setLimit(limit);
+    }
+
     @When("I attempt to update an existing topic")
     public void updateTopic() throws HederaStatusException {
-        TopicHelper topicHelper = new TopicHelper(sdkClient);
+        TopicHelper topicHelper = new TopicHelper(sdkClient.getClient());
         transactionReceipts = new ArrayList();
-        transactionReceipts.add(topicHelper.updateTopic(consensusTopicId, submitKey));
+        transactionReceipts.add(topicHelper.updateTopic(consensusTopicId));
     }
 
     @When("I subscribe to the topic")
@@ -130,16 +147,24 @@ public class TopicFeature {
 
     @When("I publish random messages")
     public void verifyTopicMessagePublish() throws InterruptedException, HederaStatusException {
-        TopicHelper topicHelper = new TopicHelper(sdkClient);
+        TopicHelper topicHelper = new TopicHelper(sdkClient.getClient());
         transactionReceipts = topicHelper
                 .publishMessagesToTopic(consensusTopicId, "New message", submitKey, numMessages);
+        assertEquals(numMessages, transactionReceipts.size());
+    }
+
+    @When("I publish {int} messages")
+    public void verifyTopicMessagePublish(int messageCount) throws InterruptedException, HederaStatusException {
+        TopicHelper topicHelper = new TopicHelper(sdkClient.getClient());
+        transactionReceipts = topicHelper
+                .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount);
         assertEquals(numMessages, transactionReceipts.size());
     }
 
     @When("I attempt to delete the topic")
     public void deleteTopic() throws HederaStatusException {
 
-        TopicHelper topicHelper = new TopicHelper(sdkClient);
+        TopicHelper topicHelper = new TopicHelper(sdkClient.getClient());
         transactionReceipts = new ArrayList();
         transactionReceipts.add(topicHelper.deleteTopic(consensusTopicId));
     }
