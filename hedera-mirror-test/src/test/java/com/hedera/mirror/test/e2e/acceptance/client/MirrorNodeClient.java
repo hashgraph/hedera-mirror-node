@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.util;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 /*-
  * ‌

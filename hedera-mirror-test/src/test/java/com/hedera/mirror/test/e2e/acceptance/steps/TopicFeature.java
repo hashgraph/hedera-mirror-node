@@ -38,11 +38,12 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
-import com.hedera.mirror.test.e2e.acceptance.util.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.util.SDKClient;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
 import com.hedera.mirror.test.e2e.acceptance.util.TopicHelper;
 
 @Log4j2
+//@Cucumber
 public class TopicFeature {
     int numMessages;
     int latency;

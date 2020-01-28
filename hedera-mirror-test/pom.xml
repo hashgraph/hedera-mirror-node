@@ -19,6 +19,7 @@
         <jmeter.test>E2E_Single_User_All_Messages.jmx</jmeter.test>
         <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
         <skipTests>true</skipTests>
+        <cucumber.version>5.0.0</cucumber.version>
     </properties>
 
     <dependencies>
@@ -40,13 +41,13 @@
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-java</artifactId>
-            <version>5.0.0</version>
+            <version>${cucumber.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-junit</artifactId>
-            <version>5.0.0</version>
+            <version>${cucumber.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
