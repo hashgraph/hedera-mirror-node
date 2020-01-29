@@ -65,73 +65,134 @@
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>io.cucumber</groupId>-->
+        <!--            <artifactId>cucumber-junit-platform-engine</artifactId>-->
+        <!--            <version>${cucumber.version}</version>-->
+        <!--            <scope>test</scope>-->
+        <!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.junit.jupiter</groupId>-->
+        <!--            <artifactId>junit-jupiter-api</artifactId>-->
+        <!--            <version>5.5.2</version>-->
+        <!--            <scope>test</scope>-->
+        <!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.junit.platform</groupId>-->
+        <!--            <artifactId>junit-platform-console</artifactId>-->
+        <!--            <version>1.5.2</version>-->
+        <!--            <scope>test</scope>-->
+        <!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.junit.platform</groupId>-->
+        <!--            <artifactId>junit-platform-launcher</artifactId>-->
+        <!--            <version>1.5.2</version>-->
+        <!--            <scope>test</scope>-->
+        <!--        </dependency>-->
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <parallel>classes</parallel>
-                    <threadCount>10</threadCount>
-                    <argLine>-Xmx1024m -Xms1024m</argLine>
-                    <skipTests>${skipTests}</skipTests>
-                    <systemPropertyVariables>
-                        <log4j.configurationFile>${project.basedir}/src/test/resources/log4j2.xml</log4j.configurationFile>
-                    </systemPropertyVariables>
-                </configuration>
+                <artifactId>maven-help-plugin</artifactId>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
-                        <phase>test</phase>
+                        <id>show-profiles</id>
+                        <phase>compile</phase>
                         <goals>
-                            <goal>test</goal>
+                            <goal>active-profiles</goal>
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>com.lazerycode.jmeter</groupId>
-                <artifactId>jmeter-maven-plugin</artifactId>
-                <version>3.0.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>configure</goal>
-                            <goal>jmeter</goal>
-                            <goal>results</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <generateReports>true</generateReports>
-                    <errorRateThresholdInPercent>0</errorRateThresholdInPercent>
-                    <excludedArtifacts>
-                        <excludedArtifact>ch.qos.logback:logback-classic</excludedArtifact>
-                        <excludedArtifact>log4j:log4j</excludedArtifact>
-                        <excludedArtifact>org.apache.logging.log4j:log4j-to-slf4j</excludedArtifact>
-                    </excludedArtifacts>
-                    <jmeterExtensions>
-                        <jmeterExtension>io.perfmark:perfmark-api:0.20.1</jmeterExtension>
-                        <jmeterExtension>io.opencensus:opencensus-api:0.24.0</jmeterExtension>
-                        <jmeterExtension>com.hedera:hedera-mirror-grpc:${project.version}</jmeterExtension>
-                        <jmeterExtension>com.hedera:hedera-mirror-grpc:jar:tests:${project.version}</jmeterExtension>
-                    </jmeterExtensions>
-                    <jMeterProcessJVMSettings>
-                        <arguments>
-                            <argument>-XX:MaxMetaspaceSize=256m</argument>
-                            <argument>-Xmx1024m</argument>
-                            <argument>-Xms1024m</argument>
-                        </arguments>
-                    </jMeterProcessJVMSettings>
-                    <selectedConfiguration>default</selectedConfiguration>
-                    <testFilesIncluded>${jmeter.test}</testFilesIncluded>
-                    <propertiesUser>
-                        <subscribeThreadCount>${jmeter.subscribeThreadCount}</subscribeThreadCount>
-                    </propertiesUser>
-                </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>acceptance-tests</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <parallel>classes</parallel>
+                            <threadCount>10</threadCount>
+                            <argLine>-Xmx1024m -Xms1024m</argLine>
+                            <skipTests>${skipTests}</skipTests>
+                            <systemPropertyVariables>
+                                <log4j.configurationFile>${project.basedir}/src/test/resources/log4j2.xml
+                                </log4j.configurationFile>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+
+        </profile>
+        <profile>
+            <id>integration-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.lazerycode.jmeter</groupId>
+                        <artifactId>jmeter-maven-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <executions>
+                            <execution>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>configure</goal>
+                                    <goal>jmeter</goal>
+                                    <goal>results</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <generateReports>true</generateReports>
+                            <errorRateThresholdInPercent>0</errorRateThresholdInPercent>
+                            <excludedArtifacts>
+                                <excludedArtifact>ch.qos.logback:logback-classic</excludedArtifact>
+                                <excludedArtifact>log4j:log4j</excludedArtifact>
+                                <excludedArtifact>org.apache.logging.log4j:log4j-to-slf4j</excludedArtifact>
+                            </excludedArtifacts>
+                            <jmeterExtensions>
+                                <jmeterExtension>io.perfmark:perfmark-api:0.20.1</jmeterExtension>
+                                <jmeterExtension>io.opencensus:opencensus-api:0.24.0</jmeterExtension>
+                                <jmeterExtension>com.hedera:hedera-mirror-grpc:${project.version}</jmeterExtension>
+                                <jmeterExtension>com.hedera:hedera-mirror-grpc:jar:tests:${project.version}</jmeterExtension>
+                            </jmeterExtensions>
+                            <jMeterProcessJVMSettings>
+                                <arguments>
+                                    <argument>-XX:MaxMetaspaceSize=256m</argument>
+                                    <argument>-Xmx1024m</argument>
+                                    <argument>-Xms1024m</argument>
+                                </arguments>
+                            </jMeterProcessJVMSettings>
+                            <selectedConfiguration>default</selectedConfiguration>
+                            <testFilesIncluded>${jmeter.test}</testFilesIncluded>
+                            <propertiesUser>
+                                <subscribeThreadCount>${jmeter.subscribeThreadCount}</subscribeThreadCount>
+                            </propertiesUser>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
