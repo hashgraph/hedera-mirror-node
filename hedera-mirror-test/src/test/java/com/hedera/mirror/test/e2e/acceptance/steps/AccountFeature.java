@@ -30,11 +30,10 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.account.AccountId;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
-import com.hedera.mirror.test.e2e.acceptance.util.AccountHelper;
 
 @Log4j2
-//@Cucumber
 public class AccountFeature {
     private AccountId accountId;
     private long balance;
@@ -59,7 +58,7 @@ public class AccountFeature {
 
     @When("I request balance info for this account")
     public void getAccountBalance() throws HederaStatusException {
-        balance = AccountHelper.getBalance(sdkClient.getClient(), accountId);
+        balance = AccountClient.getBalance(sdkClient.getClient(), accountId);
     }
 
     @Then("the result should be greater than or equal to {long}")

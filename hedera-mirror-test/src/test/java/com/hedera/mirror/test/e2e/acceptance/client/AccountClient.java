@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.util;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 /*-
  * ‌
@@ -35,7 +35,7 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
 @Log4j2
-public class AccountHelper {
+public class AccountClient {
 
     public static AccountId createNewAccount(Client client) throws HederaStatusException {
         // 1. Generate a Ed25519 private, public key pair

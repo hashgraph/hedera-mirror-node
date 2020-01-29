@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.util;
+package com.hedera.mirror.test.e2e.acceptance.client;
 
 /*-
  * ‌
@@ -20,7 +20,6 @@ package com.hedera.mirror.test.e2e.acceptance.util;
  * ‍
  */
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,14 +35,13 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicUpdateTransaction;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
-import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 
 @Log4j2
-public class TopicHelper {
+public class TopicClient {
 
     private final Client client;
 
-    public TopicHelper(Client client) {
+    public TopicClient(Client client) {
         this.client = client;
     }
 
@@ -123,53 +121,9 @@ public class TopicHelper {
                 .execute(client)
                 .getReceipt(client);
 
-        log.debug("Published message : '{}' to topicId : {} with sequence number : {}", message, topicId,
+        log.trace("Published message : '{}' to topicId : {} with sequence number : {}", message, topicId,
                 transactionReceipt.getConsensusTopicSequenceNumber());
 
         return transactionReceipt;
-    }
-
-    public void processReceivedMessages(List<MirrorConsensusTopicResponse> messages) throws Exception {
-        int invalidMessages = 0;
-        MirrorConsensusTopicResponse lastMirrorConsensusTopicResponse = null;
-        for (MirrorConsensusTopicResponse mirrorConsensusTopicResponse : messages) {
-            String messageAsString = new String(mirrorConsensusTopicResponse.message, StandardCharsets.UTF_8);
-            log.info("Received message: {}, consensus timestamp: {}, topic sequence number: {}",
-                    messageAsString, mirrorConsensusTopicResponse.consensusTimestamp,
-                    mirrorConsensusTopicResponse.sequenceNumber);
-
-            if (!validateResponse(lastMirrorConsensusTopicResponse, mirrorConsensusTopicResponse)) {
-                invalidMessages++;
-            }
-
-            lastMirrorConsensusTopicResponse = mirrorConsensusTopicResponse;
-        }
-
-        if (invalidMessages > 0) {
-            throw new Exception("Retrieved {} invalid messages in response");
-        }
-
-        log.info("{} messages were successfully validated", messages.size());
-    }
-
-    public boolean validateResponse(MirrorConsensusTopicResponse previousResponse,
-                                    MirrorConsensusTopicResponse currentResponse) {
-        boolean validResponse = true;
-
-        if (previousResponse != null && currentResponse != null) {
-            if (previousResponse.consensusTimestamp.isAfter(currentResponse.consensusTimestamp)) {
-                log.error("Previous message {}, has a timestamp greater than current message {}",
-                        previousResponse.consensusTimestamp, currentResponse.consensusTimestamp);
-                validResponse = false;
-            }
-
-            if (previousResponse.sequenceNumber + 1 != currentResponse.sequenceNumber) {
-                log.error("Previous message {}, has a sequenceNumber greater than current message {}",
-                        previousResponse.sequenceNumber, currentResponse.sequenceNumber);
-                validResponse = false;
-            }
-        }
-
-        return validResponse;
     }
 }

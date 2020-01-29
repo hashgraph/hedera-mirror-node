@@ -20,14 +20,13 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import io.github.cdimascio.dotenv.Dotenv;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.mirror.MirrorClient;
@@ -45,55 +44,55 @@ public class MirrorNodeClient {
         mirrorClient = new MirrorClient(Objects.requireNonNull(mirrorNodeAddress));
     }
 
-    public MirrorSubscriptionHandle subscribeToTopic(MirrorConsensusTopicQuery mirrorConsensusTopicQuery) {
-        log.debug("Subscribing to topic with query: {}", mirrorConsensusTopicQuery);
-        return mirrorConsensusTopicQuery
-                .subscribe(mirrorClient, resp -> {
-                            String messageAsString = new String(resp.message, StandardCharsets.UTF_8);
-                            log.info("Received message: " + messageAsString
-                                    + " consensus timestamp: " + resp.consensusTimestamp
-                                    + " topic sequence number: " + resp.sequenceNumber);
-                        },
-                        // On gRPC error, print the stack trace
-                        Throwable::printStackTrace);
+    public SubscriptionResponse subscribeToTopic(MirrorConsensusTopicQuery mirrorConsensusTopicQuery) throws Throwable {
+        log.debug("Subscribing to topic");
+        SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
+        MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
+                .subscribe(mirrorClient,
+                        subscriptionResponse::handleMirrorConsensusTopicResponse,
+                        subscriptionResponse::handleThrowable);
+
+        subscriptionResponse.setSubscription(subscription);
+
+        // allow time for connection to be made and error to be caught
+        Thread.sleep(5000, 0);
+
+        return subscriptionResponse;
     }
 
-    public List<MirrorConsensusTopicResponse> subscribeToTopicAndRetrieveMessages(MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
-                                                                                  int numMessages,
-                                                                                  int latency) throws Exception {
+    public SubscriptionResponse subscribeToTopicAndRetrieveMessages(MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
+                                                                    int numMessages,
+                                                                    int latency) throws Exception {
+        latency = latency <= 0 ? 20 : latency;
         log.debug("Subscribing to topic, expecting {} within {} seconds", numMessages, latency);
+
         CountDownLatch messageLatch = new CountDownLatch(numMessages);
+        SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         List<MirrorConsensusTopicResponse> messages = new ArrayList<>();
-        AtomicReference<MirrorConsensusTopicResponse> lastResponse = new AtomicReference<>();
 
         MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
                 .subscribe(mirrorClient, resp -> {
                             messages.add(resp);
-                            String messageAsString = new String(resp.message, StandardCharsets.UTF_8);
-                            log.trace("Received message: " + messageAsString
-                                    + " consensus timestamp: " + resp.consensusTimestamp
-                                    + " topic sequence number: " + resp.sequenceNumber);
-
                             messageLatch.countDown();
-                            lastResponse.set(resp);
                         },
-                        // On gRPC error, print the stack trace
-                        Throwable::printStackTrace);
+                        subscriptionResponse::handleThrowable);
 
-        latency = latency <= 0 ? 60 : latency;
+        subscriptionResponse.setSubscription(subscription);
+
         if (!messageLatch.await(latency, TimeUnit.SECONDS)) {
-            log.error("{} messages were expected within {} seconds. {} not yet received", numMessages, latency,
-                    messageLatch.getCount());
-
-            throw new Exception("Mirror client failed to retrieve all messages within " + latency + " s");
+            stopwatch.stop();
+            log.error("{} messages were expected within {} s. {} not yet received after {}", numMessages, latency,
+                    messageLatch.getCount(), stopwatch);
+        } else {
+            stopwatch.stop();
+            log.info("Success, received {} out of {} messages received in {}.", numMessages - messageLatch
+                    .getCount(), numMessages, stopwatch);
         }
 
-        log.info("Success, received {} out of {} messages received.", numMessages - messageLatch
-                .getCount(), numMessages);
-
-        unSubscribeFromTopic(subscription);
-
-        return messages;
+        subscriptionResponse.setElapsedTime(stopwatch);
+        subscriptionResponse.setMessages(messages);
+        return subscriptionResponse;
     }
 
     public void unSubscribeFromTopic(MirrorSubscriptionHandle subscription) {

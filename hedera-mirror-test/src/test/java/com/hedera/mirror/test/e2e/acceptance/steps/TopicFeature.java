@@ -1,4 +1,5 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -37,22 +38,21 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
-import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
-import com.hedera.mirror.test.e2e.acceptance.util.TopicHelper;
+import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
+import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 
 @Log4j2
-//@Cucumber
 public class TopicFeature {
     int numMessages;
     int latency;
     MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
     SDKClient sdkClient;
     MirrorNodeClient mirrorClient;
-    TopicHelper topicHelper;
+    TopicClient topicClient;
     ConsensusTopicId consensusTopicId;
-    MirrorSubscriptionHandle subscription;
+    SubscriptionResponse subscriptionResponse;
     List<TransactionReceipt> transactionReceipts;
     Ed25519PrivateKey submitKey;
     List<MirrorConsensusTopicResponse> mirrorConsensusTopicResponses;
@@ -74,14 +74,14 @@ public class TopicFeature {
     @Given("I attempt to create a new topic id")
     public void createNewTopic() throws HederaStatusException {
         if (consensusTopicId == null) {
-            topicHelper = new TopicHelper(sdkClient.getClient());
+            topicClient = new TopicClient(sdkClient.getClient());
             transactionReceipts = new ArrayList();
 
             submitKey = Ed25519PrivateKey.generate();
             Ed25519PublicKey submitPublicKey = submitKey.publicKey;
             log.debug("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 
-            TransactionReceipt receipt = topicHelper.createTopic(sdkClient.getPayerPublicKey(), submitPublicKey);
+            TransactionReceipt receipt = topicClient.createTopic(sdkClient.getPayerPublicKey(), submitPublicKey);
             consensusTopicId = receipt.getConsensusTopicId();
             mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
                     .setTopicId(consensusTopicId)
@@ -91,12 +91,15 @@ public class TopicFeature {
         }
     }
 
-    @Given("I provide a topic id {long}")
-    public void setTopicIdParam(Long topicId) {
-        consensusTopicId = new ConsensusTopicId(0, 0, topicId);
+    @Given("I provide a topic id {string}")
+    public void setTopicIdParam(String topicId) {
+        mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery();
+        if (!topicId.isEmpty()) {
+            consensusTopicId = new ConsensusTopicId(0, 0, Long.parseLong(topicId));
+            mirrorConsensusTopicQuery.setTopicId(consensusTopicId);
+        }
+
         numMessages = 0;
-        mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
-                .setTopicId(consensusTopicId);
     }
 
     @Given("I provide a number of messages {int} I want to receive")
@@ -135,29 +138,29 @@ public class TopicFeature {
 
     @When("I attempt to update an existing topic")
     public void updateTopic() throws HederaStatusException {
-        TopicHelper topicHelper = new TopicHelper(sdkClient.getClient());
+        TopicClient topicClient = new TopicClient(sdkClient.getClient());
         transactionReceipts = new ArrayList();
-        transactionReceipts.add(topicHelper.updateTopic(consensusTopicId));
+        transactionReceipts.add(topicClient.updateTopic(consensusTopicId));
     }
 
     @When("I subscribe to the topic")
-    public void verifySubscriptionChannelConnection() {
-        subscription = mirrorClient.subscribeToTopic(mirrorConsensusTopicQuery);
-        assertNotNull(subscription);
+    public void verifySubscriptionChannelConnection() throws Throwable {
+        subscriptionResponse = mirrorClient.subscribeToTopic(mirrorConsensusTopicQuery);
+        assertNotNull(subscriptionResponse);
     }
 
     @When("I publish random messages")
     public void verifyTopicMessagePublish() throws InterruptedException, HederaStatusException {
-        TopicHelper topicHelper = new TopicHelper(sdkClient.getClient());
-        transactionReceipts = topicHelper
+        TopicClient topicClient = new TopicClient(sdkClient.getClient());
+        transactionReceipts = topicClient
                 .publishMessagesToTopic(consensusTopicId, "New message", submitKey, numMessages);
         assertEquals(numMessages, transactionReceipts.size());
     }
 
     @When("I publish {int} messages")
     public void verifyTopicMessagePublish(int messageCount) throws InterruptedException, HederaStatusException {
-        TopicHelper topicHelper = new TopicHelper(sdkClient.getClient());
-        transactionReceipts = topicHelper
+        TopicClient topicClient = new TopicClient(sdkClient.getClient());
+        transactionReceipts = topicClient
                 .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount);
         assertEquals(numMessages, transactionReceipts.size());
     }
@@ -165,42 +168,61 @@ public class TopicFeature {
     @When("I attempt to delete the topic")
     public void deleteTopic() throws HederaStatusException {
 
-        TopicHelper topicHelper = new TopicHelper(sdkClient.getClient());
+        TopicClient topicClient = new TopicClient(sdkClient.getClient());
         transactionReceipts = new ArrayList();
-        transactionReceipts.add(topicHelper.deleteTopic(consensusTopicId));
+        transactionReceipts.add(topicClient.deleteTopic(consensusTopicId));
     }
 
     @Then("all setup items were configured")
     public void verifySetup() {
         assertNotNull(sdkClient);
         assertNotNull(mirrorClient);
-        assertNotNull(consensusTopicId);
         log.trace("Verified non null setup items");
     }
 
     @Then("I unsubscribe from a topic")
     public void verifyUnSubscribeFromChannelConnection() {
-        mirrorClient.unSubscribeFromTopic(subscription);
+        mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
     }
 
     @Then("the network should successfully establish a channel to this topic")
-    public void verifySubscribeAndUnsubscribeChannelConnection() {
+    public void verifySubscribeAndUnsubscribeChannelConnection() throws Throwable {
         verifySubscriptionChannelConnection();
 
         verifyUnSubscribeFromChannelConnection();
+    }
+
+    @Then("the network should observe an error {string}")
+    public void verifySubscribeAndUnsubscribeChannelConnection(String errorCode) throws Throwable {
+        try {
+            verifySubscriptionChannelConnection();
+        } catch (Exception ex) {
+            if (!ex.getMessage().contains(errorCode)) {
+                log.info("Exception mismatch : {}", ex.getMessage());
+                throw new Exception("Unexpected error code returned");
+            } else {
+                log.warn("Expected error found");
+            }
+        }
     }
 
     @Then("I subscribe with a filter to retrieve messages")
     public void retrieveTopicMessages() throws Exception {
         assertNotNull(consensusTopicId, "consensusTopicId null");
         assertNotNull(mirrorConsensusTopicQuery, "mirrorConsensusTopicQuery null");
-        mirrorConsensusTopicResponses = mirrorClient
+
+        subscriptionResponse = mirrorClient
                 .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, numMessages, latency);
     }
 
     @Then("the network should successfully observe these messages")
     public void verifyTopicMessageSubscription() throws Exception {
-        assertNotNull(mirrorConsensusTopicResponses, "mirrorConsensusTopicResponses is null");
+        assertNotNull(subscriptionResponse, "subscriptionResponse is null");
+        assertFalse(subscriptionResponse.errorEncountered(), "Error encountered");
+
+        assertEquals(numMessages, subscriptionResponse.getMessages().size());
+        subscriptionResponse.validateReceivedMessages();
+        mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
     }
 
     @Then("the network should confirm valid transaction receipts for this operation")
@@ -212,7 +234,7 @@ public class TopicFeature {
 
     @Then("the network should confirm valid topic messages were received")
     public void verifyTopicMessages() throws Exception {
-        topicHelper.processReceivedMessages(mirrorConsensusTopicResponses);
+        subscriptionResponse.validateReceivedMessages();
     }
 
     @After("@TopicClientClose")

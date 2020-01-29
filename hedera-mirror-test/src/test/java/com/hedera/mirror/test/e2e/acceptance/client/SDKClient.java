@@ -39,6 +39,7 @@ public class SDKClient {
     private final Client client;
     private final Ed25519PublicKey payerPublicKey;
     private final AccountId operatorId;
+    private final boolean testNet;
 
     public SDKClient() throws HederaStatusException {
 
@@ -49,7 +50,8 @@ public class SDKClient {
 
         Client client;
         var nodeAddress = Dotenv.load().get("NODE_ADDRESS");
-        if (nodeAddress.equalsIgnoreCase("testnet")) {
+        testNet = nodeAddress.equalsIgnoreCase("testnet");
+        if (isTestNet()) {
             log.debug("Creating SDK client for TestNet");
             client = Client.forTestnet();
         } else if (nodeAddress.equalsIgnoreCase("mainnet")) {
