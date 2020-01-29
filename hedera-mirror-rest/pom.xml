@@ -22,9 +22,22 @@
                 <version>0.31.0</version>
                 <executions>
                     <execution>
+                        <id>dockerBuild</id>
                         <goals>
                             <goal>build</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>dockerPush</id>
+                        <goals>
+                            <goal>push</goal>
+                        </goals>
+                        <configuration>
+                            <authConfig>
+                                <username>${docker.push.username}</username>
+                                <password>${docker.push.password}</password>
+                            </authConfig>
+                        </configuration>
                     </execution>
                 </executions>
                 <configuration>
@@ -37,7 +50,7 @@
                                     <tag>${project.version}</tag>
                                 </tags>
                             </build>
-                            <name>${docker.repository}/${project.artifactId}</name>
+                            <name>${docker.push.repository}/${project.artifactId}</name>
                         </image>
                     </images>
                 </configuration>
