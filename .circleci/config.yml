@@ -165,12 +165,15 @@ jobs:
           path: /tmp/workspace/artifacts
 
   release_docker_images:
+    #    machine: true
     docker:
       - image: adoptopenjdk:11-jdk-hotspot
     steps:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
+      - run: |
+          docker version
       - run:
           name: Calculate checksum of all pom.xml
           command: find . -type f -name "pom.xml" | sort -u | xargs sha512sum > pom.xml.checksum
