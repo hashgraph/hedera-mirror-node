@@ -83,7 +83,7 @@ Feature: HCS Coverage Feature
             | startDate                 | endDate                   | limit |
             | "2020-01-01T00:00:00.00Z" | "2020-02-01T00:00:00.00Z" | 5     |
 
-
+    @Negative @Sanity
     Scenario Outline: Validate topic subscription with missing topic id
         Given I provide a topic id <topicId>
         Then the network should observe an error <errorCode>
@@ -91,7 +91,7 @@ Feature: HCS Coverage Feature
             | topicId | errorCode                  |
             | ""      | "Missing required topicID" |
 
-
+    @Negative @Sanity
     Scenario Outline: Validate topic subscription with invalid topic id
         Given I provide a topic id <topicId>
         Then the network should observe an error <errorCode>

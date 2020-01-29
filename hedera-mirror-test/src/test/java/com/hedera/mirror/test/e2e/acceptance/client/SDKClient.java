@@ -28,7 +28,6 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Client;
-import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
@@ -41,7 +40,7 @@ public class SDKClient {
     private final AccountId operatorId;
     private final boolean testNet;
 
-    public SDKClient() throws HederaStatusException {
+    public SDKClient() {
 
         // Grab configuration variables from the .env file
         operatorId = AccountId.fromString(Dotenv.load().get("OPERATOR_ID"));

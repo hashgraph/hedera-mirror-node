@@ -34,13 +34,14 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
 
 @Log4j2
+@io.cucumber.junit.platform.engine.Cucumber
 public class AccountFeature {
     private AccountId accountId;
     private long balance;
     private SDKClient sdkClient;
 
     @Given("User obtained SDK client for account feature")
-    public void getSDKClient() throws HederaStatusException {
+    public void getSDKClient() {
         if (sdkClient == null) {
             sdkClient = new SDKClient();
         }

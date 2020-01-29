@@ -51,9 +51,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit-platform-engine</artifactId>
+            <version>${cucumber.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <scope>test</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -65,30 +71,6 @@
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>io.cucumber</groupId>-->
-        <!--            <artifactId>cucumber-junit-platform-engine</artifactId>-->
-        <!--            <version>${cucumber.version}</version>-->
-        <!--            <scope>test</scope>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.junit.jupiter</groupId>-->
-        <!--            <artifactId>junit-jupiter-api</artifactId>-->
-        <!--            <version>5.5.2</version>-->
-        <!--            <scope>test</scope>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.junit.platform</groupId>-->
-        <!--            <artifactId>junit-platform-console</artifactId>-->
-        <!--            <version>1.5.2</version>-->
-        <!--            <scope>test</scope>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.junit.platform</groupId>-->
-        <!--            <artifactId>junit-platform-launcher</artifactId>-->
-        <!--            <version>1.5.2</version>-->
-        <!--            <scope>test</scope>-->
-        <!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -121,6 +103,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.21.0</version>
                         <configuration>
                             <parallel>classes</parallel>
                             <threadCount>10</threadCount>
@@ -174,7 +157,8 @@
                                 <jmeterExtension>io.perfmark:perfmark-api:0.20.1</jmeterExtension>
                                 <jmeterExtension>io.opencensus:opencensus-api:0.24.0</jmeterExtension>
                                 <jmeterExtension>com.hedera:hedera-mirror-grpc:${project.version}</jmeterExtension>
-                                <jmeterExtension>com.hedera:hedera-mirror-grpc:jar:tests:${project.version}</jmeterExtension>
+                                <jmeterExtension>com.hedera:hedera-mirror-grpc:jar:tests:${project.version}
+                                </jmeterExtension>
                             </jmeterExtensions>
                             <jMeterProcessJVMSettings>
                                 <arguments>

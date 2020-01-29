@@ -26,6 +26,7 @@ import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.cucumber.junit.platform.engine.Cucumber;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +45,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 
 @Log4j2
+@Cucumber
 public class TopicFeature {
     int numMessages;
     int latency;
@@ -58,7 +60,7 @@ public class TopicFeature {
     List<MirrorConsensusTopicResponse> mirrorConsensusTopicResponses;
 
     @Given("User obtained SDK client")
-    public void getSDKClient() throws HederaStatusException {
+    public void getSDKClient() {
         if (sdkClient == null) {
             sdkClient = new SDKClient();
         }
