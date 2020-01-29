@@ -22,8 +22,15 @@
                 <version>0.31.0</version>
                 <executions>
                     <execution>
+                        <id>dockerBuild</id>
                         <goals>
                             <goal>build</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>dockerPush</id>
+                        <goals>
+                            <goal>push</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -40,6 +47,7 @@
                             <name>${docker.repository}/${project.artifactId}</name>
                         </image>
                     </images>
+                    <!-- Auth for docker:push is setup using system properties docker.username and docker.password -->
                 </configuration>
             </plugin>
         </plugins>

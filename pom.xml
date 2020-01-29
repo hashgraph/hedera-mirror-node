@@ -111,18 +111,38 @@
                         <to>
                             <image>${docker.repository}/${project.artifactId}</image>
                             <tags>
+                                <tag>latest</tag>
                                 <tag>${project.version}</tag>
                             </tags>
+                            <auth>
+                                <username>${docker.username}</username>
+                                <password>${docker.password}</password>
+                            </auth>
                         </to>
                     </configuration>
                     <executions>
                         <execution>
+                            <id>dockerBuild</id>
                             <phase>install</phase>
                             <goals>
                                 <goal>dockerBuild</goal>
                             </goals>
                         </execution>
+                        <execution>
+                            <id>dockerPush</id>
+                            <phase>deploy</phase>
+                            <goals>
+                                <goal>build</goal>
+                            </goals>
+                        </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <!-- To update license headers: ./mvnw license:update-file-header -N -->
