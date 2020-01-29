@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
+import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -37,6 +38,9 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Resource
     private DomainBuilder domainBuilder;
+
+    @Resource
+    private InstantToLongConverter instantToLongConverter;
 
     @Test
     void findByFilterEmpty() {
@@ -149,6 +153,19 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
         topicMessageRepository.findByFilter(filter)
                 .as(StepVerifier::create)
                 .expectNext(topicMessage1)
+                .verifyComplete();
+    }
+
+    @Test
+    void findByConsensusTimestampGreaterThan() {
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+        long consensusTimestamp = instantToLongConverter.convert(topicMessage1.getConsensusTimestamp());
+
+        topicMessageRepository.findByConsensusTimestampGreaterThan(consensusTimestamp)
+                .as(StepVerifier::create)
+                .expectNext(topicMessage2, topicMessage3)
                 .verifyComplete();
     }
 }
