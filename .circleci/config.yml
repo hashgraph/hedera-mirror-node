@@ -10,32 +10,31 @@ workflows:
   version: 2
   main:
     jobs:
-      - build_maven:
-          filters: # required since `release_artifacts` has tag filters AND requires `this`
-            branches:
-              only: /.*/
-            tags:
-              only: /.*/
-      - build_rest:
-          filters: # required since `release_artifacts` has tag filters AND requires `this`
-            branches:
-              only: /.*/
-            tags:
-              only: /.*/
-      - release_artifacts:
-          requires:
-            - build_maven
-            - build_rest
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
+      #      - build_maven:
+      #          filters: # required since `release_artifacts` has tag filters AND requires `this`
+      #            branches:
+      #              only: /.*/
+      #            tags:
+      #              only: /.*/
+      #      - build_rest:
+      #          filters: # required since `release_artifacts` has tag filters AND requires `this`
+      #            branches:
+      #              only: /.*/
+      #            tags:
+      #              only: /.*/
+      #      - release_artifacts:
+      #          requires:
+      #            - build_maven
+      #            - build_rest
+      #          filters:
+      #            branches:
+      #              ignore: /.*/
+      #            tags:
+      #              only: /^v.*/
       - release_docker_images:
-          requires:
-            - build_maven
-            - build_rest
-            - release_artifacts
+          #          requires:
+          #            - build_maven
+          #            - build_rest
           filters:
             branches:
               ignore: /.*/
@@ -73,7 +72,7 @@ jobs:
             - ~/.m2
       - run:
           name: Running maven (validate, compile, test, package)
-          command: ./mvnw ${MAVEN_CLI_OPTS} package -DskipTests # TODO: remove. added for faster iterations
+          command: ./mvnw ${MAVEN_CLI_OPTS} package
       - store_test_results:
           path: hedera-mirror-importer/target/surefire-reports
       - run:
@@ -133,15 +132,15 @@ jobs:
             - node_modules
             - .node-flywaydb
             - ~/.npm
-      #      - run:
-      #          working_directory: "hedera-mirror-rest"
-      #          name: Run npm test
-      #          command: npm test
-      #          environment:
-      #            TEST_DB_HOST: "127.0.0.1"
-      #            TEST_DB_NAME: "mirror_node_integration"
-      #      - store_test_results:
-      #          path: hedera-mirror-rest/target/jest-junit
+            - run:
+                working_directory: "hedera-mirror-rest"
+                name: Run npm test
+                command: npm test
+                environment:
+                  TEST_DB_HOST: "127.0.0.1"
+                  TEST_DB_NAME: "mirror_node_integration"
+            - store_test_results:
+                path: hedera-mirror-rest/target/jest-junit
       - run:
           working_directory: "hedera-mirror-rest"
           name: Collecting assets
@@ -169,8 +168,25 @@ jobs:
     docker:
       - image: adoptopenjdk:11-jdk-hotspot
     steps:
-      - *attach_workspace
+      - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-      - run: |
-          mvn deploy -Ddocker.username=apeksharma -Ddocker.password=4d6da625badf5cf175261737d55e5d7014268992 -DskipTests
+      - run:
+          name: Calculate checksum of all pom.xml
+          command: find . -type f -name "pom.xml" | sort -u | xargs sha512sum > pom.xml.checksum
+      - restore_cache:
+          keys:
+            - maven-v2-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
+            - maven-v2-{{ .Branch }}
+            - maven-v2-
+      - run:
+          name: Resolve dependencies
+          # See https://issues.apache.org/jira/browse/MDEP-516 for why we don't use maven-dependency-plugin
+          command: ./mvnw ${MAVEN_CLI_OPTS} de.qaware.maven:go-offline-maven-plugin:resolve-dependencies
+      - save_cache:
+          key: maven-v2-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
+          paths:
+            - ~/.m2
+      - run:
+          name: Running maven deploy
+          command: ./mvnw deploy -Ddocker.username=apeksharma -Ddocker.password=4d6da625badf5cf175261737d55e5d7014268992 -DskipTests
