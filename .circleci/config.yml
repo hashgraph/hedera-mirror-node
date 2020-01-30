@@ -187,5 +187,5 @@ jobs:
       - *restore_maven_cache
       - run:
           name: Running maven deploy
-          command: ./mvnw ${MAVEN_CLI_OPTS} deploy -Ddocker.push.username={TODO} -Ddocker.push.password=${TODO} -DskipTests
+          command: ./mvnw ${MAVEN_CLI_OPTS} deploy -Ddocker.push.username=_json_key -Ddocker.push.password=${GCR_JSON_KEY_FILE} -DskipTests
       - *save_maven_cache
