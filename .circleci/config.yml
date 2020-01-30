@@ -188,7 +188,7 @@ jobs:
           command: |
             VERSION=2.0.0
             curl -fsSL "https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${VERSION}/docker-credential-gcr_linux_amd64-${VERSION}.tar.gz" \
-              | tar xz > docker-credential-gcr \
+              | tar xz > docker-credential-gcr
             sudo mv docker-credential-gcr /usr/bin/docker-credential-gcr
             chmod +x /usr/bin/docker-credential-gcr
             echo ${GCR_JSON_KEY_FILE} > json_key_file
