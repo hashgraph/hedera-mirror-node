@@ -1,7 +1,14 @@
 # Installation
 
 The Mirror Node can be ran [locally](#running-locally) or via [Docker](#running-via-docker-compose).
-Either way, it will first need to be built using Java locally.
+To run locally, it'll first need to be built using Java. To run via Docker, either build locally, or pull latest images
+from GCR.
+
+```console
+docker pull gcr.io/mirrornode/hedera-mirror-importer:latest
+docker pull gcr.io/mirrornode/hedera-mirror-rest:latest
+docker pull gcr.io/mirrornode/hedera-mirror-grpc:latest
+```
 
 ## Building
 
