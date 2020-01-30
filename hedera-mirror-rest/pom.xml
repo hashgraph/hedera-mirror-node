@@ -32,12 +32,6 @@
                         <goals>
                             <goal>push</goal>
                         </goals>
-                        <configuration>
-                            <authConfig>
-                                <username>${docker.push.username}</username>
-                                <password>${docker.push.password}</password>
-                            </authConfig>
-                        </configuration>
                     </execution>
                 </executions>
                 <configuration>

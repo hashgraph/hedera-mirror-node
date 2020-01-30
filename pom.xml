@@ -114,10 +114,6 @@
                                 <tag>latest</tag>
                                 <tag>${project.version}</tag>
                             </tags>
-                            <auth>
-                                <username>${docker.push.username}</username>
-                                <password>${docker.push.password}</password>
-                            </auth>
                         </to>
                     </configuration>
                     <executions>

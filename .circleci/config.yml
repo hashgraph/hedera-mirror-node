@@ -183,9 +183,19 @@ jobs:
             sudo add-apt-repository ppa:openjdk-r/ppa \
             && sudo apt-get update -q \
             && sudo apt install -y openjdk-11-jdk
+      - run:
+          name: Setup docker-credential-gcr
+          command: |
+            VERSION=2.0.0
+            curl -fsSL "https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${VERSION}/docker-credential-gcr_linux_amd64-${VERSION}.tar.gz" \
+              | tar xz > docker-credential-gcr \
+            sudo mv docker-credential-gcr /usr/bin/docker-credential-gcr
+            chmod +x /usr/bin/docker-credential-gcr
+            echo ${GCR_JSON_KEY_FILE} > json_key_file
+            export GOOGLE_APPLICATION_CREDENTIALS=`pwd`/json_key_file
       - *pom_checksum
       - *restore_maven_cache
       - run:
           name: Running maven deploy
-          command: ./mvnw ${MAVEN_CLI_OPTS} deploy -Ddocker.push.username=_json_key -Ddocker.push.password="${GCR_JSON_KEY_FILE}" -DskipTests
+          command: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests
       - *save_maven_cache
