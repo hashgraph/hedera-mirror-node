@@ -58,8 +58,8 @@ public class SharedPollingTopicListener implements TopicListener {
                 .metrics()
                 .doOnNext(context::onNext)
                 .doOnSubscribe(s -> log.info("Starting to poll every {}ms", frequency.toMillis()))
-                .doOnComplete(() -> log.info("Stopped polling"))
-                .doOnCancel(() -> log.info("Stopped polling"))
+                .doOnComplete(() -> log.info("Completed polling"))
+                .doOnCancel(() -> log.info("Cancelled polling"))
                 .share();
     }
 
