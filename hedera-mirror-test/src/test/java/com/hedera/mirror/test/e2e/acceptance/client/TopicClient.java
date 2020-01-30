@@ -23,10 +23,12 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
+import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicCreateTransaction;
@@ -37,12 +39,15 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
 @Log4j2
+@Value
 public class TopicClient {
 
     private final Client client;
+    private final List<Instant> recordPublishInstants;
 
     public TopicClient(Client client) {
         this.client = client;
+        recordPublishInstants = new ArrayList<>();
     }
 
     public TransactionReceipt createTopic(Ed25519PublicKey adminKey, Ed25519PublicKey submitKey) throws HederaStatusException {
@@ -103,7 +108,6 @@ public class TopicClient {
         for (int i = 0; i < numMessages; i++) {
             String message = baseMessage + "_" + refInstant + "_" + i + 1;
             transactionReceiptList.add(publishMessageToTopic(topicId, message, submitKey));
-            Thread.sleep(500, 0);
         }
 
         return transactionReceiptList;
@@ -111,19 +115,27 @@ public class TopicClient {
 
     public TransactionReceipt publishMessageToTopic(ConsensusTopicId topicId, String message,
                                                     Ed25519PrivateKey submitKey) throws HederaStatusException {
-        TransactionReceipt transactionReceipt = new ConsensusMessageSubmitTransaction()
+        TransactionId transactionId = new ConsensusMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(message)
                 .build(client)
                 // The transaction is automatically signed by the payer.
                 // Due to the topic having a submitKey requirement, additionally sign the transaction with that key.
                 .sign(submitKey)
-                .execute(client)
-                .getReceipt(client);
+                .execute(client);
+
+        // note time stamp
+        recordPublishInstants.add(transactionId.getRecord(client).consensusTimestamp);
+
+        TransactionReceipt transactionReceipt = transactionId.getReceipt(client);
 
         log.trace("Published message : '{}' to topicId : {} with sequence number : {}", message, topicId,
                 transactionReceipt.getConsensusTopicSequenceNumber());
 
         return transactionReceipt;
+    }
+
+    public Instant getInstantOfPublishedMessage(int sequenceNumber) {
+        return recordPublishInstants.get(sequenceNumber);
     }
 }

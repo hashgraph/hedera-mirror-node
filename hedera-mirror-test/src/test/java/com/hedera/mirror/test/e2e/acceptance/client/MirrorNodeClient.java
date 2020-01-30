@@ -73,7 +73,10 @@ public class MirrorNodeClient {
 
         MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
                 .subscribe(mirrorClient, resp -> {
-                            messages.add(resp);
+                            // add expected messages only to messages list
+                            if (messages.size() < numMessages) {
+                                messages.add(resp);
+                            }
                             messageLatch.countDown();
                         },
                         subscriptionResponse::handleThrowable);

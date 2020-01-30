@@ -38,11 +38,11 @@ import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
-import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
+import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
 @Log4j2
 @Cucumber
@@ -57,12 +57,12 @@ public class TopicFeature {
     SubscriptionResponse subscriptionResponse;
     List<TransactionReceipt> transactionReceipts;
     Ed25519PrivateKey submitKey;
-    List<MirrorConsensusTopicResponse> mirrorConsensusTopicResponses;
 
     @Given("User obtained SDK client")
     public void getSDKClient() {
         if (sdkClient == null) {
             sdkClient = new SDKClient();
+            topicClient = new TopicClient(sdkClient.getClient());
         }
     }
 
@@ -118,24 +118,44 @@ public class TopicFeature {
     @Given("I provide a date {string} and a number of messages {int} I want to receive")
     public void setTopicListenParams(String startDate, int numMessages) {
         this.numMessages = numMessages;
-        mirrorConsensusTopicQuery.setStartTime(Instant.parse(startDate));
+        mirrorConsensusTopicQuery.setStartTime(FeatureInputHandler.messageQueryDateStringToInstant(startDate));
     }
 
     @Given("I provide a startDate {string} and endDate {string} and a number of messages {int} I want to receive")
     public void setTopicListenParams(String startDate, String endDate, int numMessages) {
         this.numMessages = numMessages;
         mirrorConsensusTopicQuery
-                .setStartTime(Instant.parse(startDate))
-                .setEndTime(Instant.parse(endDate));
+                .setStartTime(FeatureInputHandler.messageQueryDateStringToInstant(startDate))
+                .setEndTime(FeatureInputHandler.messageQueryDateStringToInstant(endDate));
+    }
+
+    @Given("I provide a startSequence {int} and endSequence {int} and a number of messages {int} I want to receive")
+    public void setTopicListenParams(int startSequence, int endSequence, int numMessages) {
+        this.numMessages = numMessages;
+
+        Instant startTime = topicClient.getInstantOfPublishedMessage(startSequence - 1).minusMillis(10);
+        Instant endTime = topicClient.getInstantOfPublishedMessage(endSequence - 1).plusMillis(10);
+        log.info("Subscribe mirrorConsensusTopicQuery : StartTime : {}. EndTime : {}, Limit : {}", startTime, endTime);
+
+        mirrorConsensusTopicQuery
+                .setStartTime(startTime)
+                .setEndTime(endTime);
     }
 
     @Given("I provide a startDate {string} and endDate {string} and a limit of {int} messages I want to receive")
     public void setTopicListenParamswLimit(String startDate, String endDate, int limit) {
         numMessages = limit;
+
         mirrorConsensusTopicQuery
-                .setStartTime(Instant.parse(startDate))
-                .setEndTime(Instant.parse(endDate))
+                .setStartTime(FeatureInputHandler.messageQueryDateStringToInstant(startDate))
+                .setEndTime(FeatureInputHandler.messageQueryDateStringToInstant(endDate))
                 .setLimit(limit);
+    }
+
+    @When("{long} milliseconds pass by")
+    public void waitSeconds(long milliSecs) throws InterruptedException {
+        log.trace("Waiting {} seconds", milliSecs);
+        Thread.sleep(milliSecs, 0);
     }
 
     @When("I attempt to update an existing topic")
@@ -151,20 +171,12 @@ public class TopicFeature {
         assertNotNull(subscriptionResponse);
     }
 
-    @When("I publish random messages")
-    public void verifyTopicMessagePublish() throws InterruptedException, HederaStatusException {
-        TopicClient topicClient = new TopicClient(sdkClient.getClient());
-        transactionReceipts = topicClient
-                .publishMessagesToTopic(consensusTopicId, "New message", submitKey, numMessages);
-        assertEquals(numMessages, transactionReceipts.size());
-    }
-
     @When("I publish {int} messages")
     public void verifyTopicMessagePublish(int messageCount) throws InterruptedException, HederaStatusException {
-        TopicClient topicClient = new TopicClient(sdkClient.getClient());
+        numMessages = messageCount;
         transactionReceipts = topicClient
                 .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount);
-        assertEquals(numMessages, transactionReceipts.size());
+        assertEquals(messageCount, transactionReceipts.size());
     }
 
     @When("I attempt to delete the topic")
@@ -227,8 +239,19 @@ public class TopicFeature {
         mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
     }
 
+    @Then("the network should successfully observe {long} messages")
+    public void verifyTopicMessageSubscription(long expectedMessageCount) throws Exception {
+        assertNotNull(subscriptionResponse, "subscriptionResponse is null");
+        assertFalse(subscriptionResponse.errorEncountered(), "Error encountered");
+
+        assertEquals(expectedMessageCount, subscriptionResponse.getMessages().size());
+        subscriptionResponse.validateReceivedMessages();
+        mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
+    }
+
     @Then("the network should confirm valid transaction receipts for this operation")
     public void verifyTransactionReceipts() {
+        assertFalse(transactionReceipts.isEmpty());
         for (TransactionReceipt receipt : transactionReceipts) {
             assertNotNull(receipt);
         }

@@ -1,0 +1,17 @@
+package com.hedera.mirror.test.e2e.acceptance.util;
+
+import java.time.DateTimeException;
+import java.time.Instant;
+
+public class FeatureInputHandler {
+    public static Instant messageQueryDateStringToInstant(String date) {
+        Instant refDate;
+        try {
+            refDate = Instant.parse(date);
+        } catch (DateTimeException dtex) {
+            refDate = Instant.now().plusSeconds(Long.parseLong(date));
+        }
+
+        return refDate;
+    }
+}
