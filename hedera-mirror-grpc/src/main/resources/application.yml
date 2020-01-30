@@ -21,6 +21,10 @@ management:
     export:
       elastic:
         enabled: false
+        index: mirror
+        step: 30s
+server:
+  port: 8081
 spring:
   application:
     name: hedera-mirror-grpc
