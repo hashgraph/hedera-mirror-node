@@ -175,6 +175,7 @@ jobs:
     environment:
       MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
       JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+      GOOGLE_APPLICATION_CREDENTIALS: json_key_file
     steps:
       - checkout
       - run:
@@ -192,7 +193,6 @@ jobs:
             sudo mv docker-credential-gcr /usr/bin/docker-credential-gcr
             chmod +x /usr/bin/docker-credential-gcr
             echo ${GCR_JSON_KEY_FILE} > json_key_file
-            export GOOGLE_APPLICATION_CREDENTIALS=`pwd`/json_key_file
             docker-credential-gcr configure-docker
       - *pom_checksum
       - *restore_maven_cache
