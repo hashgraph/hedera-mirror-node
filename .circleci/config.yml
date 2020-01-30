@@ -59,7 +59,7 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /^v.\d*.\d*.\d*/ # Do not push docker images to registry for rc, alpha, beta, etc.
+              only: /^v.*/
 
 jobs:
   build_maven:
@@ -193,6 +193,7 @@ jobs:
             chmod +x /usr/bin/docker-credential-gcr
             echo ${GCR_JSON_KEY_FILE} > json_key_file
             export GOOGLE_APPLICATION_CREDENTIALS=`pwd`/json_key_file
+            docker-credential-gcr configure-docker
       - *pom_checksum
       - *restore_maven_cache
       - run:
