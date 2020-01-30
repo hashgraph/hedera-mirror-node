@@ -39,6 +39,7 @@ public class CompositeTopicListener implements TopicListener {
     private final ListenerProperties listenerProperties;
     private final NotifyingTopicListener notifyingTopicListener;
     private final PollingTopicListener pollingTopicListener;
+    private final SharedPollingTopicListener sharedPollingTopicListener;
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
@@ -53,6 +54,8 @@ public class CompositeTopicListener implements TopicListener {
                 return notifyingTopicListener;
             case POLL:
                 return pollingTopicListener;
+            case SHARED_POLL:
+                return sharedPollingTopicListener;
             default:
                 throw new UnsupportedOperationException("Unknown listener type: " + type);
         }
