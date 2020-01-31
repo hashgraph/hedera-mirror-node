@@ -5,6 +5,27 @@ references:
   attach_workspace: &attach_workspace
     attach_workspace:
       at: *workspace_root
+  persist_artifacts: &persist_artifacts
+    persist_to_workspace:
+      root: *workspace_root
+      paths:
+        - artifacts
+  pom_checksum: &pom_checksum
+    run:
+      name: Calculate checksum of all pom.xml
+      command: find . -type f -name "pom.xml" | sort -u | xargs sha512sum > pom.xml.checksum
+  restore_maven_cache: &restore_maven_cache
+    restore_cache:
+      keys:
+        #  Perms on ~/.m2 differ by executor (docker/machine), so {{ arch }} is needed.
+        - maven-v2-{{ arch }}-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
+        - maven-v2-{{ arch }}-{{ .Branch }}
+        - maven-v2-{{ arch }}-
+  save_maven_cache: &save_maven_cache
+    save_cache:
+      key: maven-v2-{{ arch }}-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
+      paths:
+        - ~/.m2
 
 workflows:
   version: 2
@@ -31,6 +52,15 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v.*/
+      - publish_images:
+          requires:
+            - build_maven
+            - build_rest
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^.*/
 
 jobs:
   build_maven:
@@ -45,22 +75,13 @@ jobs:
           POSTGRES_USER: mirror_node
     steps:
       - checkout
-      - run:
-          name: Calculate checksum of all pom.xml
-          command: find . -type f -name "pom.xml" | sort -u | xargs sha512sum > pom.xml.checksum
-      - restore_cache:
-          keys:
-            - maven-v2-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
-            - maven-v2-{{ .Branch }}
-            - maven-v2-
+      - *pom_checksum
+      - *restore_maven_cache
       - run:
           name: Resolve dependencies
           # See https://issues.apache.org/jira/browse/MDEP-516 for why we don't use maven-dependency-plugin
           command: ./mvnw ${MAVEN_CLI_OPTS} de.qaware.maven:go-offline-maven-plugin:resolve-dependencies
-      - save_cache:
-          key: maven-v2-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
-          paths:
-            - ~/.m2
+      - *save_maven_cache
       - run:
           name: Running maven (validate, compile, test, package)
           command: ./mvnw ${MAVEN_CLI_OPTS} package
@@ -93,10 +114,7 @@ jobs:
             mv hedera-mirror-importer/scripts ${WORKSPACE}/${NAME}
             mkdir -p ${WORKSPACE}/artifacts
             tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}
-      - persist_to_workspace:
-          root: *workspace_root
-          paths:
-            - artifacts
+      - *persist_artifacts
 
   build_rest:
     docker:
@@ -142,10 +160,7 @@ jobs:
             npm pack
             mkdir -p /tmp/workspace/artifacts
             mv hedera-mirror-rest*.tgz /tmp/workspace/artifacts/${NAME}.tgz
-      - persist_to_workspace:
-          root: *workspace_root
-          paths:
-            - artifacts
+      - *persist_artifacts
 
   release_artifacts:
     docker:
@@ -154,3 +169,35 @@ jobs:
       - *attach_workspace
       - store_artifacts:
           path: /tmp/workspace/artifacts
+
+  publish_images:
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+      JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+      GOOGLE_APPLICATION_CREDENTIALS: json_key_file
+    steps:
+      - checkout
+      - run:
+          name: Install OpenJDK 11
+          command: |
+            sudo add-apt-repository ppa:openjdk-r/ppa \
+            && sudo apt-get update -q \
+            && sudo apt install -y openjdk-11-jdk
+      - run:
+          name: Setup docker-credential-gcr
+          command: |
+            VERSION=2.0.0
+            curl -fsSL "https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${VERSION}/docker-credential-gcr_linux_amd64-${VERSION}.tar.gz" \
+              | tar xz > docker-credential-gcr
+            sudo mv docker-credential-gcr /usr/bin/docker-credential-gcr
+            chmod +x /usr/bin/docker-credential-gcr
+            echo ${GCR_JSON_KEY_FILE} > json_key_file
+            docker-credential-gcr configure-docker
+      - *pom_checksum
+      - *restore_maven_cache
+      - run:
+          name: Running maven deploy
+          command: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests
+      - *save_maven_cache
