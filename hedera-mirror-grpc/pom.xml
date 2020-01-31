@@ -11,7 +11,7 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.5.2</version>
+        <version>0.5.3</version>
     </parent>
 
     <dependencies>
@@ -40,6 +40,7 @@
         <dependency>
             <groupId>io.r2dbc</groupId>
             <artifactId>r2dbc-postgresql</artifactId>
+            <version>0.8.1.BUILD-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
@@ -93,6 +94,10 @@
                     <artifactId>spring-boot-starter-logging</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
         <!-- Test -->
         <dependency>
@@ -178,6 +183,11 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <executions>
                     <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                    <execution>
                         <id>repackage</id>
                         <goals>
                             <goal>repackage</goal>
@@ -187,6 +197,10 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
             </plugin>
             <!-- Create test case jar to allow jmeter to utilize samplers -->
             <plugin>
@@ -203,4 +217,12 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>spring-libs-snapshot</id>
+            <name>Spring Snapshot Repository</name>
+            <url>https://repo.spring.io/libs-snapshot</url>
+        </repository>
+    </repositories>
 </project>

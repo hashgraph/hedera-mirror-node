@@ -21,10 +21,15 @@ package com.hedera.mirror.grpc.repository;
  */
 
 import java.time.Instant;
+import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 
 public interface TopicMessageRepository extends ReactiveCrudRepository<TopicMessage, Instant>,
         TopicMessageRepositoryCustom {
+
+    @Query("select * from topic_message where consensus_timestamp > :? order by consensus_timestamp asc")
+    Flux<TopicMessage> findByConsensusTimestampGreaterThan(long consensusTimestamp);
 }

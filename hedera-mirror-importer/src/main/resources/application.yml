@@ -20,6 +20,8 @@ management:
     export:
       elastic:
         enabled: false
+        index: mirror
+        step: 30s
 spring:
   application:
     name: hedera-mirror-importer
