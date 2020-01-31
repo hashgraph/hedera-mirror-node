@@ -29,7 +29,8 @@ import org.junit.runner.RunWith;
         features = "src/test/resources",
         glue = "com.hedera.mirror.test.e2e.acceptance",
         plugin = {"pretty", "de.monochromata.cucumber.report.PrettyReports:target/cucumber"},
-        tags = "@Sanity"
+        tags = "@Sanity",
+        strict = true
 )
 public class AcceptanceTest {
 }

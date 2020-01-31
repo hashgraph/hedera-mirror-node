@@ -1,4 +1,62 @@
-# Performance Testing
+# 1. E2E Acceptance Testing
+
+This section covers the E2E testing strategy deployed by the mirror node for key scenarios
+
+## Overview
+
+In an effort to quickly confirm product capability during deployment windows we desired to have E2E test that would allow us to confirm functionality on core scenarios that spanned the main and mirror networks.
+HCS specifically is a a key scenario where transactions are submitted to the main network and the mirror node GRCP endpoint is subscribed to to obtain messages verifying transactions.
+This E2E suite gives us the ability to cover scenarios as external users would and gain the required confidence during development cycles.
+
+## Cucumber
+
+A BDD approach was desired for our E2E test strategy as it would ensure we more closely tracked valid customer scenarios.
+Cucumber is one framework that provides tools to follow this methodology. One benefit being that tests can be written in human readable text. This allows developers, PM's and designers to formulate tests that have connected code to run valid customer scenarios.
+Cucumber use the Gherkin plain language parser to describe tests.
+Further details may be explored at https://cucumber.io/. Additionally cucumbers BDD approach is explained here https://cucumber.io/docs/bdd/
+
+### Test Execution
+
+Tests can be compiled and run by running the following command from the root folder
+
+    `./mvnw clean install integration-test --projects hedera-mirror-test/`
+
+### Test Configuration
+
+-   Test run Config Properties: Config properties are set in the application.yml file located under /src/test/resources. Properties include
+
+    -   messagewaitsla - number of seconds to wait on messages representing transactions (default is 20)
+    -   nodeid - main node id to submit transactions to in 'x.y.z' format (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book)
+    -   nodeaddress - node domain or IP address (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book or set to 'testnet' or 'mainnet' for automatic sdk handling)
+    -   mirrornodeaddress - mirror node grpc server (refer to https://docs.hedera.com/guides/docs/mirror-node-api/hedera-consensus-service-api-1)
+    -   operatorid - account id on network 'x.y.z' format
+    -   operatorkey - account private key, to be used for signing transaction and client identification #Be careful with showing this, do not check this value in.
+
+-   Tags : Tags allow you to filter which cucumber scenarios and file are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
+    -   All test cases
+
+*         `./mvnw clean integration-test --projects hedera-mirror-test/ -Dcucumber.filter.tags="@FullSuite"`
+    -   Negative cases
+*         `./mvnw clean integration-test --projects hedera-mirror-test/ -Dcucumber.filter.tags="@Negative"`
+    -   Edge cases
+*         `./mvnw clean integration-test --projects hedera-mirror-test/ -Dcucumber.filter.tags="@Edge"`
+
+### Test Layout
+
+The project layout utilizes the Cucumber Feature files, the Runner file and the Step files
+
+-   Feature Files : These are located under 'src/test/resources/features/' folder and are files of the \*.feature format. These files contain the Gherkin based language that describes teh test scenario
+-   Step Files : These are java classes located under 'src/test/java/com/hedera/mirror/test/e2e/acceptance/steps'. Every Given, When, And, and Then keyword line in the .feature file has a matching step method that implements its logic
+-   Runner Files : Currently a single Runner file is used at 'src/test/java/com/hedera/mirror/test/e2e/acceptance/AcceptanceTest.java'. This file also specifies the CucumberOptions such as features, glue, plugin that are used to connect all teh files together.
+
+### Test Creation
+
+To create a new test/scenario follow these steps
+
+1. Update an existing .feature file or create a new .feature file with your desired scenario. the 'When' and 'Then' steps would be the expected minimum for a successful scenario.
+2. Update an existing step file or create a new step file with the corresponding java method that will be run.
+
+# 2. Performance Testing
 
 This code runs performance load tests against Mirror Node Modules.
 

@@ -1,7 +1,7 @@
 hedera:
   test:
     acceptance:
-      messagewaitsla: 23
+      messagewaitsla: 20
       nodeid: 0.0.3
       nodeaddress: testnet
       mirrornodeaddress: hcs.testnet.mirrornode.hedera.com:5600
