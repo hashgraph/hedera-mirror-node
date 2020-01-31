@@ -54,7 +54,7 @@
 
     <properties>
         <disruptor.version>3.4.2</disruptor.version> <!-- Used for asynchronous logging -->
-        <docker.repository>docker.pkg.github.com/hashgraph/hedera-mirror-node</docker.repository>
+        <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <grpc.version>1.25.0</grpc.version>
         <guava.version>28.1-jre</guava.version>
         <hedera-protobuf.version>0.4.0</hedera-protobuf.version>
@@ -109,20 +109,36 @@
                     <version>${jib.version}</version>
                     <configuration>
                         <to>
-                            <image>${docker.repository}/${project.artifactId}</image>
+                            <image>${docker.push.repository}/${project.artifactId}</image>
                             <tags>
+                                <tag>latest</tag>
                                 <tag>${project.version}</tag>
                             </tags>
                         </to>
                     </configuration>
                     <executions>
                         <execution>
+                            <id>dockerBuild</id>
                             <phase>install</phase>
                             <goals>
                                 <goal>dockerBuild</goal>
                             </goals>
                         </execution>
+                        <execution>
+                            <id>dockerPush</id>
+                            <phase>deploy</phase>
+                            <goals>
+                                <goal>build</goal>
+                            </goals>
+                        </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <!-- To update license headers: ./mvnw license:update-file-header -N -->
