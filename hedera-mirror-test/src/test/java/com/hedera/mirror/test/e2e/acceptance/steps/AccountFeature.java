@@ -75,7 +75,7 @@ public class AccountFeature {
         assertTrue(balance >= threshold);
     }
 
-    @After("@ClientClose")
+    @After
     public void closeClients() {
 
         if (sdkClient != null) {

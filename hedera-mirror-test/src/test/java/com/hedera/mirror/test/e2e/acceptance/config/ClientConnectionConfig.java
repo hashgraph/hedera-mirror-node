@@ -33,4 +33,5 @@ public class ClientConnectionConfig {
     private String mirrorNodeAddress;
     private String operatorId;
     private String operatorKey;
+    private int messageWaitSLA;
 }

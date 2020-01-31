@@ -70,6 +70,7 @@ public class SDKClient {
     }
 
     public void close() throws TimeoutException, InterruptedException {
+        log.debug("Closing SDK client, waits up to 10 s for valid close");
         client.close(10, TimeUnit.SECONDS);
     }
 }

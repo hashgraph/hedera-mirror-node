@@ -18,7 +18,6 @@
     <properties>
         <jmeter.test>E2E_Single_User_All_Messages.jmx</jmeter.test>
         <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
-        <skipTests>true</skipTests>
         <cucumber.version>5.0.0</cucumber.version>
     </properties>
 
@@ -91,6 +90,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot</artifactId>
         </dependency>
+        <dependency>
+            <groupId>de.monochromata.cucumber</groupId>
+            <artifactId>reporting-plugin</artifactId>
+            <version>4.0.15</version>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -109,7 +113,6 @@
                             <parallel>methods</parallel>
                             <threadCount>10</threadCount>
                             <argLine>-Xmx1024m -Xms1024m</argLine>
-                            <skipTests>${skipTests}</skipTests>
                             <systemPropertyVariables>
                                 <log4j.configurationFile>${project.basedir}/src/test/resources/log4j2.xml
                                 </log4j.configurationFile>

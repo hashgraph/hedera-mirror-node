@@ -1,4 +1,4 @@
-@Accounts
+@Accounts @FullSuite
 Feature: Account Coverage Feature
 
     Background: User has sdk client
@@ -6,7 +6,6 @@ Feature: Account Coverage Feature
         And User obtained SDK client for account feature
 
     @BalanceCheck @Sanity
-    # To check operator balance, set accountId to empty string
     Scenario Outline: Validate account balance check scenario
         Given I provided an account string of <accountId>
         When I request balance info for this account
@@ -14,7 +13,3 @@ Feature: Account Coverage Feature
         Examples:
             | accountId | threshold |
             | ""        | 1000000   |
-
-    # Must be last scenario in file
-    @ClientClose
-    Scenario: Client close place holder

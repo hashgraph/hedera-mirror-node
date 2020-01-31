@@ -280,7 +280,7 @@ public class TopicFeature {
         subscriptionResponse.validateReceivedMessages();
     }
 
-    @After("@TopicClientClose")
+    @After
     public void closeClients() {
         if (sdkClient != null) {
             try {

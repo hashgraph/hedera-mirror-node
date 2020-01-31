@@ -1,10 +1,9 @@
 hedera:
   test:
     acceptance:
+      messagewaitsla: 23
       nodeid: 0.0.3
       nodeaddress: testnet
       mirrornodeaddress: hcs.testnet.mirrornode.hedera.com:5600
       operatorid: <accountId>
       operatorkey: <accountPrivateKey>
-
-

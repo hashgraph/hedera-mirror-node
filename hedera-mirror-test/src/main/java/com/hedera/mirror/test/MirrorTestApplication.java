@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance;
+package com.hedera.mirror.test;
 
 /*-
  * ‌
@@ -20,16 +20,14 @@ package com.hedera.mirror.test.e2e.acceptance;
  * ‍
  */
 
-import io.cucumber.junit.Cucumber;
-import io.cucumber.junit.CucumberOptions;
-import org.junit.runner.RunWith;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@RunWith(Cucumber.class)
-@CucumberOptions(
-        features = "src/test/resources",
-        glue = "com.hedera.mirror.test.e2e.acceptance",
-        plugin = {"pretty", "de.monochromata.cucumber.report.PrettyReports:target/cucumber"},
-        tags = "@Sanity"
-)
-public class AcceptanceTest {
+@SpringBootApplication
+public class MirrorTestApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(MirrorTestApplication.class, args);
+    }
 }
+

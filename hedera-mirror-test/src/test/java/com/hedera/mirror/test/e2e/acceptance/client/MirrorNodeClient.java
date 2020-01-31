@@ -37,11 +37,13 @@ import com.hedera.mirror.test.e2e.acceptance.config.ClientConnectionConfig;
 @Log4j2
 public class MirrorNodeClient {
     private final MirrorClient mirrorClient;
+    private final int messagewaitsla;
 
     public MirrorNodeClient(ClientConnectionConfig clientConnectionConfig) {
         String mirrorNodeAddress = clientConnectionConfig.getMirrorNodeAddress();
         log.debug("Creating Mirror Node client for {}", mirrorNodeAddress);
         mirrorClient = new MirrorClient(Objects.requireNonNull(mirrorNodeAddress));
+        messagewaitsla = clientConnectionConfig.getMessageWaitSLA();
     }
 
     public SubscriptionResponse subscribeToTopic(MirrorConsensusTopicQuery mirrorConsensusTopicQuery) throws Throwable {
@@ -63,7 +65,7 @@ public class MirrorNodeClient {
     public SubscriptionResponse subscribeToTopicAndRetrieveMessages(MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
                                                                     int numMessages,
                                                                     int latency) throws Exception {
-        latency = latency <= 0 ? 20 : latency;
+        latency = latency <= 0 ? messagewaitsla : latency;
         log.debug("Subscribing to topic, expecting {} within {} seconds", numMessages, latency);
 
         CountDownLatch messageLatch = new CountDownLatch(numMessages);
@@ -104,6 +106,7 @@ public class MirrorNodeClient {
     }
 
     public void close() throws InterruptedException {
-        mirrorClient.close();
+        log.debug("Closing Mirror Node client, waits up to 10 s for valid close");
+        mirrorClient.close(10, TimeUnit.SECONDS);
     }
 }
