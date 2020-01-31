@@ -30,6 +30,7 @@ import java.util.LinkedHashSet;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,9 +49,15 @@ public class MetricsConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(prefix = "management.metrics.table", name = "enabled", havingValue = "true",
+            matchIfMissing = true)
     MeterBinder tableMetrics() {
+        // select count(*) is very slow on large tables, so we use the stats table to provide an estimate
+        final String query = "select n_live_tup from pg_stat_all_tables where relname = '%s'";
+        String name = dataSourceProperties.getName();
+
         return registry -> getTablesNames().stream()
-                .map(table -> new DatabaseTableMetrics(dataSource, dataSourceProperties.getName(), table, null))
+                .map(table -> new DatabaseTableMetrics(dataSource, String.format(query, table), name, table, null))
                 .forEach(mb -> mb.bindTo(registry));
     }
 
