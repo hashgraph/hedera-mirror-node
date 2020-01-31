@@ -5,9 +5,7 @@ To run locally, it'll first need to be built using Java. To run via Docker, eith
 from GCR.
 
 ```console
-docker pull gcr.io/mirrornode/hedera-mirror-importer:latest
-docker pull gcr.io/mirrornode/hedera-mirror-rest:latest
-docker pull gcr.io/mirrornode/hedera-mirror-grpc:latest
+docker-compose pull
 ```
 
 ## Building
