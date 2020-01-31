@@ -22,6 +22,8 @@ management:
         enabled: false
         index: mirror
         step: 30s
+    tags:
+      app: ${spring.application.name}
 spring:
   application:
     name: hedera-mirror-importer
