@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
@@ -42,6 +43,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
+import com.hedera.mirror.test.e2e.acceptance.config.ClientConnectionConfig;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
 @Log4j2
@@ -57,19 +59,25 @@ public class TopicFeature {
     SubscriptionResponse subscriptionResponse;
     List<TransactionReceipt> transactionReceipts;
     Ed25519PrivateKey submitKey;
+    Instant testInstantReference;
+
+    @Autowired
+    private ClientConnectionConfig clientConnectionConfig;
 
     @Given("User obtained SDK client")
     public void getSDKClient() {
         if (sdkClient == null) {
-            sdkClient = new SDKClient();
+            sdkClient = new SDKClient(clientConnectionConfig);
             topicClient = new TopicClient(sdkClient.getClient());
         }
+
+        testInstantReference = Instant.now();
     }
 
     @Given("User obtained Mirror Node Consensus client")
     public void getMirrorNodeClient() {
         if (mirrorClient == null) {
-            mirrorClient = new MirrorNodeClient();
+            mirrorClient = new MirrorNodeClient(clientConnectionConfig);
         }
     }
 
@@ -118,15 +126,25 @@ public class TopicFeature {
     @Given("I provide a date {string} and a number of messages {int} I want to receive")
     public void setTopicListenParams(String startDate, int numMessages) {
         this.numMessages = numMessages;
-        mirrorConsensusTopicQuery.setStartTime(FeatureInputHandler.messageQueryDateStringToInstant(startDate));
+
+        Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startDate, testInstantReference);
+        log.trace("Subscribe mirrorConsensusTopicQuery : StartTime : {}", startTime);
+
+        mirrorConsensusTopicQuery
+                .setStartTime(startTime);
     }
 
     @Given("I provide a startDate {string} and endDate {string} and a number of messages {int} I want to receive")
     public void setTopicListenParams(String startDate, String endDate, int numMessages) {
         this.numMessages = numMessages;
+
+        Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startDate, testInstantReference);
+        Instant endTime = FeatureInputHandler.messageQueryDateStringToInstant(endDate, Instant.now());
+        log.trace("Subscribe mirrorConsensusTopicQuery : StartTime : {}. EndTime : {}", startTime, endTime);
+
         mirrorConsensusTopicQuery
-                .setStartTime(FeatureInputHandler.messageQueryDateStringToInstant(startDate))
-                .setEndTime(FeatureInputHandler.messageQueryDateStringToInstant(endDate));
+                .setStartTime(startTime)
+                .setEndTime(endTime);
     }
 
     @Given("I provide a startSequence {int} and endSequence {int} and a number of messages {int} I want to receive")
@@ -135,7 +153,7 @@ public class TopicFeature {
 
         Instant startTime = topicClient.getInstantOfPublishedMessage(startSequence - 1).minusMillis(10);
         Instant endTime = topicClient.getInstantOfPublishedMessage(endSequence - 1).plusMillis(10);
-        log.info("Subscribe mirrorConsensusTopicQuery : StartTime : {}. EndTime : {}, Limit : {}", startTime, endTime);
+        log.trace("Subscribe mirrorConsensusTopicQuery : StartTime : {}. EndTime : {}", startTime, endTime);
 
         mirrorConsensusTopicQuery
                 .setStartTime(startTime)

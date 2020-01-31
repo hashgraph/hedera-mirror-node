@@ -7,7 +7,7 @@
     <description>Cross module system and performance tests for the Hedera Mirror Node</description>
     <modelVersion>4.0.0</modelVersion>
     <name>Hedera Mirror Node Test</name>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
 
     <parent>
         <artifactId>hedera-mirror-node</artifactId>
@@ -27,11 +27,6 @@
             <groupId>com.hedera.hashgraph</groupId>
             <artifactId>sdk</artifactId>
             <version>1.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.cdimascio</groupId>
-            <artifactId>java-dotenv</artifactId>
-            <version>5.0.1</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
@@ -57,6 +52,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-spring</artifactId>
+            <version>${cucumber.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>compile</scope>
@@ -71,26 +72,26 @@
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+        </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-help-plugin</artifactId>
-                <version>3.2.0</version>
-                <executions>
-                    <execution>
-                        <id>show-profiles</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>active-profiles</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 
     <profiles>
         <profile>
@@ -105,7 +106,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <version>2.21.0</version>
                         <configuration>
-                            <parallel>classes</parallel>
+                            <parallel>methods</parallel>
                             <threadCount>10</threadCount>
                             <argLine>-Xmx1024m -Xms1024m</argLine>
                             <skipTests>${skipTests}</skipTests>

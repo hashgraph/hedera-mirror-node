@@ -5,11 +5,15 @@ import java.time.Instant;
 
 public class FeatureInputHandler {
     public static Instant messageQueryDateStringToInstant(String date) {
+        return messageQueryDateStringToInstant(date, Instant.now());
+    }
+
+    public static Instant messageQueryDateStringToInstant(String date, Instant referenceInstant) {
         Instant refDate;
         try {
             refDate = Instant.parse(date);
         } catch (DateTimeException dtex) {
-            refDate = Instant.now().plusSeconds(Long.parseLong(date));
+            refDate = referenceInstant.plusSeconds(Long.parseLong(date));
         }
 
         return refDate;

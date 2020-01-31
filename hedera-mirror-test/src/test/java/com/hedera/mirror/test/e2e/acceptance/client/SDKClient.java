@@ -20,7 +20,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import io.github.cdimascio.dotenv.Dotenv;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -31,6 +30,7 @@ import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
+import com.hedera.mirror.test.e2e.acceptance.config.ClientConnectionConfig;
 
 @Log4j2
 @Value
@@ -40,15 +40,15 @@ public class SDKClient {
     private final AccountId operatorId;
     private final boolean testNet;
 
-    public SDKClient() {
+    public SDKClient(ClientConnectionConfig clientConnectionConfig) {
 
         // Grab configuration variables from the .env file
-        operatorId = AccountId.fromString(Dotenv.load().get("OPERATOR_ID"));
-        var operatorKey = Ed25519PrivateKey.fromString(Dotenv.load().get("OPERATOR_KEY"));
+        operatorId = AccountId.fromString(clientConnectionConfig.getOperatorId());
+        var operatorKey = Ed25519PrivateKey.fromString(clientConnectionConfig.getOperatorKey());
         payerPublicKey = operatorKey.publicKey;
 
         Client client;
-        var nodeAddress = Dotenv.load().get("NODE_ADDRESS");
+        var nodeAddress = clientConnectionConfig.getNodeAddress();
         testNet = nodeAddress.equalsIgnoreCase("testnet");
         if (isTestNet()) {
             log.debug("Creating SDK client for TestNet");
@@ -57,7 +57,7 @@ public class SDKClient {
             log.debug("Creating SDK client for MainNet");
             client = Client.forMainnet();
         } else {
-            var nodeId = AccountId.fromString(Dotenv.load().get("NODE_ID"));
+            var nodeId = AccountId.fromString(clientConnectionConfig.getNodeId());
             log.debug("Creating SDK client for node {} at {}", nodeId, nodeAddress);
 
             // Build client

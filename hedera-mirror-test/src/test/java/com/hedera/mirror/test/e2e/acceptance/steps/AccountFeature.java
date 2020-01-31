@@ -26,24 +26,32 @@ import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.cucumber.junit.platform.engine.Cucumber;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
+import com.hedera.mirror.test.e2e.acceptance.config.ClientConnectionConfig;
 
 @Log4j2
-@io.cucumber.junit.platform.engine.Cucumber
+@Cucumber
 public class AccountFeature {
     private AccountId accountId;
     private long balance;
     private SDKClient sdkClient;
 
+    @Autowired
+    private ClientConnectionConfig clientConnectionConfig;
+
     @Given("User obtained SDK client for account feature")
     public void getSDKClient() {
+        assertNotNull(clientConnectionConfig, "clientConnectionConfig is null");
+
         if (sdkClient == null) {
-            sdkClient = new SDKClient();
+            sdkClient = new SDKClient(clientConnectionConfig);
         }
     }
 

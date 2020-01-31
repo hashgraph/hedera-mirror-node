@@ -1,0 +1,10 @@
+hedera:
+  test:
+    acceptance:
+      nodeid: 0.0.3
+      nodeaddress: testnet
+      mirrornodeaddress: hcs.testnet.mirrornode.hedera.com:5600
+      operatorid: <accountId>
+      operatorkey: <accountPrivateKey>
+
+

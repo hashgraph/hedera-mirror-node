@@ -21,7 +21,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import com.google.common.base.Stopwatch;
-import io.github.cdimascio.dotenv.Dotenv;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -33,13 +32,14 @@ import com.hedera.hashgraph.sdk.mirror.MirrorClient;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
+import com.hedera.mirror.test.e2e.acceptance.config.ClientConnectionConfig;
 
 @Log4j2
 public class MirrorNodeClient {
     private final MirrorClient mirrorClient;
 
-    public MirrorNodeClient() {
-        String mirrorNodeAddress = Dotenv.load().get("MIRROR_NODE_ADDRESS");
+    public MirrorNodeClient(ClientConnectionConfig clientConnectionConfig) {
+        String mirrorNodeAddress = clientConnectionConfig.getMirrorNodeAddress();
         log.debug("Creating Mirror Node client for {}", mirrorNodeAddress);
         mirrorClient = new MirrorClient(Objects.requireNonNull(mirrorNodeAddress));
     }

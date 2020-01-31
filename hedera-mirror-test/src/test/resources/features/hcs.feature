@@ -2,7 +2,8 @@
 Feature: HCS Coverage Feature
 
     Background: User has clients
-        Given User obtained SDK client
+        Given Config context is loaded
+        And User obtained SDK client
         Given User obtained Mirror Node Consensus client
         Then all setup items were configured
 
@@ -47,7 +48,7 @@ Feature: HCS Coverage Feature
         Examples:
             | startDate                 | numMessages |
             | "1970-01-01T00:00:00.00Z" | 2           |
-            | "2000-01-01T00:00:00.00Z" | 5           |
+            | "-60"                     | 5           |
 
     #Verified
     Scenario Outline: Validate resubscribe topic filtering

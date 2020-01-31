@@ -2,7 +2,8 @@
 Feature: Account Coverage Feature
 
     Background: User has sdk client
-        Given User obtained SDK client for account feature
+        Given Config context is loaded
+        And User obtained SDK client for account feature
 
     @BalanceCheck @Sanity
     # To check operator balance, set accountId to empty string
