@@ -17,6 +17,7 @@ references:
   restore_maven_cache: &restore_maven_cache
     restore_cache:
       keys:
+        #  Perms on ~/.m2 differ by executor (docker/machine), so {{ arch }} is needed.
         - maven-v2-{{ arch }}-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
         - maven-v2-{{ arch }}-{{ .Branch }}
         - maven-v2-{{ arch }}-
@@ -51,7 +52,7 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v.*/
-      - release_docker_images:
+      - publish_images:
           requires:
             - build_maven
             - build_rest
@@ -59,7 +60,7 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /^v.*/
+              only: /^.*/
 
 jobs:
   build_maven:
@@ -169,7 +170,7 @@ jobs:
       - store_artifacts:
           path: /tmp/workspace/artifacts
 
-  release_docker_images:
+  publish_images:
     machine:
       image: ubuntu-1604:201903-01
     environment:
