@@ -42,30 +42,30 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
-import com.hedera.mirror.test.e2e.acceptance.config.ClientConnectionConfig;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
 @Log4j2
 @Cucumber
 public class TopicFeature {
-    int numMessages;
-    int latency;
-    MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
-    SDKClient sdkClient;
-    MirrorNodeClient mirrorClient;
-    TopicClient topicClient;
-    ConsensusTopicId consensusTopicId;
-    SubscriptionResponse subscriptionResponse;
-    Ed25519PrivateKey submitKey;
-    Instant testInstantReference;
+    private int numMessages;
+    private int latency;
+    private MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
+    private SDKClient sdkClient;
+    private MirrorNodeClient mirrorClient;
+    private TopicClient topicClient;
+    private ConsensusTopicId consensusTopicId;
+    private SubscriptionResponse subscriptionResponse;
+    private Ed25519PrivateKey submitKey;
+    private Instant testInstantReference;
 
     @Autowired
-    private ClientConnectionConfig clientConnectionConfig;
+    private AcceptanceTestProperties acceptanceTestProperties;
 
     @Given("User obtained SDK client")
     public void getSDKClient() {
         if (sdkClient == null) {
-            sdkClient = new SDKClient(clientConnectionConfig);
+            sdkClient = new SDKClient(acceptanceTestProperties);
             topicClient = new TopicClient(sdkClient.getClient());
         }
 
@@ -75,7 +75,7 @@ public class TopicFeature {
     @Given("User obtained Mirror Node Consensus client")
     public void getMirrorNodeClient() {
         if (mirrorClient == null) {
-            mirrorClient = new MirrorNodeClient(clientConnectionConfig);
+            mirrorClient = new MirrorNodeClient(acceptanceTestProperties);
         }
     }
 

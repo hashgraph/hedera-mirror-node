@@ -34,7 +34,7 @@ import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
-import com.hedera.mirror.test.e2e.acceptance.config.ClientConnectionConfig;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 
 @Log4j2
 @Cucumber
@@ -44,14 +44,14 @@ public class AccountFeature {
     private SDKClient sdkClient;
 
     @Autowired
-    private ClientConnectionConfig clientConnectionConfig;
+    private AcceptanceTestProperties acceptanceTestProperties;
 
     @Given("User obtained SDK client for account feature")
     public void getSDKClient() {
-        assertNotNull(clientConnectionConfig, "clientConnectionConfig is null");
+        assertNotNull(acceptanceTestProperties, "acceptanceTestProperties is null");
 
         if (sdkClient == null) {
-            sdkClient = new SDKClient(clientConnectionConfig);
+            sdkClient = new SDKClient(acceptanceTestProperties);
         }
     }
 

@@ -26,12 +26,12 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component
-@ConfigurationProperties(prefix = "hedera.test.acceptance")
-public class ClientConnectionConfig {
+@ConfigurationProperties(prefix = "hedera.mirror.test.acceptance")
+public class AcceptanceTestProperties {
     private String nodeAddress;
     private String nodeId;
     private String mirrorNodeAddress;
     private String operatorId;
     private String operatorKey;
-    private int messageWaitSLA;
+    private int messageTimeout;
 }

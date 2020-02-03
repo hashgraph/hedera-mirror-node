@@ -25,21 +25,21 @@ Tests can be compiled and run by running the following command from the root fol
 
 -   Test run Config Properties: Configuration properties are set in the application.yml file located under /src/test/resources utilizing the spring boot application context for DI logic. Properties include
 
-    -   messagewaitsla - number of seconds to wait on messages representing transactions (default is 20)
-    -   nodeid - main node id to submit transactions to in 'x.y.z' format (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book)
-    -   nodeaddress - node domain or IP address (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book or set to 'testnet' or 'mainnet' for automatic sdk handling)
-    -   mirrornodeaddress - mirror node grpc server (refer to https://docs.hedera.com/guides/docs/mirror-node-api/hedera-consensus-service-api-1)
-    -   operatorid - account id on network 'x.y.z' format
-    -   operatorkey - account private key, to be used for signing transaction and client identification #Be careful with showing this, do not check this value in.
+    -   messageTimeout - number of seconds to wait on messages representing transactions (default is 20)
+    -   nodeId - main node id to submit transactions to in 'x.y.z' format (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book)
+    -   nodeAddress - node domain or IP address (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book or set to 'testnet' or 'mainnet' for automatic sdk handling)
+    -   mirrorNodeAddress - mirror node grpc server (refer to https://docs.hedera.com/guides/docs/mirror-node-api/hedera-consensus-service-api-1)
+    -   operatorId - account id on network 'x.y.z' format
+    -   operatorKey - account private key, to be used for signing transaction and client identification #Be careful with showing this, do not check this value in.
 
 -   Tags : Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
     -   All test cases
 
-*             `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
+*               `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
     -   Negative cases
-*             `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
+*               `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
     -   Edge cases
-*             `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
+*               `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
     -   ... (search for @? tags within the .feature files for further tags)
 
 ### Test Layout
@@ -116,7 +116,7 @@ Then using the [JMeter Maven Plugin](https://github.com/jmeter-maven-plugin/jmet
 
 -   Start the tests:
 
-    `./mvnw clean verify -P=integration-tests --projects hedera-mirror-test`
+    `./mvnw clean verify -P=performance-tests --projects hedera-mirror-test`
 
     Optional properties follow the 'Modifying Properties' logic (https://github.com/jmeter-maven-plugin/jmeter-maven-plugin/wiki/Modifying-Properties) and include the following
 

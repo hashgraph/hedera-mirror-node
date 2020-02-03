@@ -30,7 +30,7 @@ import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
-import com.hedera.mirror.test.e2e.acceptance.config.ClientConnectionConfig;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 
 @Log4j2
 @Value
@@ -38,26 +38,24 @@ public class SDKClient {
     private final Client client;
     private final Ed25519PublicKey payerPublicKey;
     private final AccountId operatorId;
-    private final boolean testNet;
 
-    public SDKClient(ClientConnectionConfig clientConnectionConfig) {
+    public SDKClient(AcceptanceTestProperties acceptanceTestProperties) {
 
         // Grab configuration variables from the .env file
-        operatorId = AccountId.fromString(clientConnectionConfig.getOperatorId());
-        var operatorKey = Ed25519PrivateKey.fromString(clientConnectionConfig.getOperatorKey());
+        operatorId = AccountId.fromString(acceptanceTestProperties.getOperatorId());
+        var operatorKey = Ed25519PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
         payerPublicKey = operatorKey.publicKey;
 
         Client client;
-        var nodeAddress = clientConnectionConfig.getNodeAddress();
-        testNet = nodeAddress.equalsIgnoreCase("testnet");
-        if (isTestNet()) {
+        var nodeAddress = acceptanceTestProperties.getNodeAddress();
+        if (nodeAddress.equalsIgnoreCase("testnet")) {
             log.debug("Creating SDK client for TestNet");
             client = Client.forTestnet();
         } else if (nodeAddress.equalsIgnoreCase("mainnet")) {
             log.debug("Creating SDK client for MainNet");
             client = Client.forMainnet();
         } else {
-            var nodeId = AccountId.fromString(clientConnectionConfig.getNodeId());
+            var nodeId = AccountId.fromString(acceptanceTestProperties.getNodeId());
             log.debug("Creating SDK client for node {} at {}", nodeId, nodeAddress);
 
             // Build client

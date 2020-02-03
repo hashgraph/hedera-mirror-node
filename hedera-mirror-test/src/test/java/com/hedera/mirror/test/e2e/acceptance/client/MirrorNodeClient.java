@@ -32,18 +32,18 @@ import com.hedera.hashgraph.sdk.mirror.MirrorClient;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
-import com.hedera.mirror.test.e2e.acceptance.config.ClientConnectionConfig;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 
 @Log4j2
 public class MirrorNodeClient {
     private final MirrorClient mirrorClient;
-    private final int messagewaitsla;
+    private final int messageTimeout;
 
-    public MirrorNodeClient(ClientConnectionConfig clientConnectionConfig) {
-        String mirrorNodeAddress = clientConnectionConfig.getMirrorNodeAddress();
+    public MirrorNodeClient(AcceptanceTestProperties acceptanceTestProperties) {
+        String mirrorNodeAddress = acceptanceTestProperties.getMirrorNodeAddress();
         log.debug("Creating Mirror Node client for {}", mirrorNodeAddress);
         mirrorClient = new MirrorClient(Objects.requireNonNull(mirrorNodeAddress));
-        messagewaitsla = clientConnectionConfig.getMessageWaitSLA();
+        messageTimeout = acceptanceTestProperties.getMessageTimeout();
     }
 
     public SubscriptionResponse subscribeToTopic(MirrorConsensusTopicQuery mirrorConsensusTopicQuery) throws Throwable {
@@ -65,7 +65,7 @@ public class MirrorNodeClient {
     public SubscriptionResponse subscribeToTopicAndRetrieveMessages(MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
                                                                     int numMessages,
                                                                     int latency) throws Exception {
-        latency = latency <= 0 ? messagewaitsla : latency;
+        latency = latency <= 0 ? messageTimeout : latency;
         log.debug("Subscribing to topic, expecting {} within {} seconds", numMessages, latency);
 
         CountDownLatch messageLatch = new CountDownLatch(numMessages);

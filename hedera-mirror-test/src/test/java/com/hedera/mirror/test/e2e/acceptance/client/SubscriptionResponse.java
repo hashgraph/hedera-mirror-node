@@ -38,7 +38,6 @@ public class SubscriptionResponse {
     private Throwable responseError;
 
     public void handleMirrorConsensusTopicResponse(MirrorConsensusTopicResponse topicResponse) {
-//        messages.add(topicResponse);
         String messageAsString = new String(topicResponse.message, StandardCharsets.UTF_8);
         log.info("Received message: " + messageAsString
                 + " consensus timestamp: " + topicResponse.consensusTimestamp

@@ -27,16 +27,16 @@ import io.cucumber.junit.platform.engine.Cucumber;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.hedera.mirror.test.e2e.acceptance.config.ClientConnectionConfig;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 
 @Cucumber
 @SpringBootTest
 public class ContextLoadFeature {
     @Autowired
-    protected ClientConnectionConfig clientConnectionConfig;
+    protected AcceptanceTestProperties acceptanceTestProperties;
 
     @Given("Config context is loaded")
     public void getSDKClient() {
-        assertNotNull(clientConnectionConfig, "clientConnectionConfig is null");
+        assertNotNull(acceptanceTestProperties, "acceptanceTestProperties is null");
     }
 }
