@@ -19,6 +19,7 @@
         <jmeter.test>E2E_Single_User_All_Messages.jmx</jmeter.test>
         <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
         <cucumber.version>5.0.0</cucumber.version>
+        <skipTests>true</skipTests>
     </properties>
 
     <dependencies>
@@ -100,7 +101,9 @@
                         <configuration>
                             <parallel>methods</parallel>
                             <threadCount>10</threadCount>
+                            <useSystemClassLoader>false</useSystemClassLoader>
                             <argLine>-Xmx1024m -Xms1024m</argLine>
+                            <skipTests>false</skipTests>
                             <systemPropertyVariables>
                                 <log4j.configurationFile>${project.basedir}/src/test/resources/log4j2.xml
                                 </log4j.configurationFile>
@@ -117,7 +120,6 @@
                     </plugin>
                 </plugins>
             </build>
-
         </profile>
         <profile>
             <id>integration-tests</id>
@@ -164,6 +166,7 @@
                             <propertiesUser>
                                 <subscribeThreadCount>${jmeter.subscribeThreadCount}</subscribeThreadCount>
                             </propertiesUser>
+                            <skipTests>false</skipTests>
                         </configuration>
                     </plugin>
                 </plugins>
