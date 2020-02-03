@@ -98,3 +98,35 @@ describe('Utils createTransactionId tests', () => {
     expect(val).toBe('0.0.0-0-000000000');
   });
 });
+
+describe('utils.validateReq', () => {
+  test('transfers=raw', () => {
+    var input = {query: {transfers: 'raw'}};
+    var val = utils.validateReq(input);
+    expect(val.isValid).toBeTruthy();
+  });
+
+  test('transfers=invalid', () => {
+    var input = {query: {transfers: 'invalid'}};
+    var val = utils.validateReq(input);
+    expect(val.isValid).toBeFalsy();
+  });
+});
+
+describe('utils.compareTransfers', () => {
+  [
+    // aAccount, aAmount, bAccount, bAmount, shouldReturn
+    ['0.1.2', 34, '0.1.2', 34, 0],
+    ['1.1.2', 34, '0.1.2', 34, 1],
+    ['0.2.2', 34, '0.1.2', 34, 1],
+    ['0.1.3', 34, '0.1.2', 34, 1],
+    ['0.1.2', 34, '0.1.2', 33, 1]
+  ].forEach(args => {
+    test(args.slice(0, -1).join(' , ') + ' => ' + args.slice(-1)[0], () => {
+      var a = {account: args[0], amount: args[1]};
+      var b = {account: args[2], amount: args[3]};
+      expect(utils.compareTransfers(a, b)).toBe(args[4]); // a, b is expected
+      expect(utils.compareTransfers(b, a)).toBe(0 - args[4]); // b, a is the opposite.
+    });
+  });
+});

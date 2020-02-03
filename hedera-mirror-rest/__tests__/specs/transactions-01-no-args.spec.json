@@ -25,7 +25,11 @@
           },
           {
             "account": "0.15.10",
-            "amount": -11
+            "amount": -10
+          },
+          {
+            "account": "0.15.10",
+            "amount": -1
           }
         ]
       },
@@ -51,7 +55,11 @@
           },
           {
             "account": "0.15.10",
-            "amount": -21
+            "amount": -20
+          },
+          {
+            "account": "0.15.10",
+            "amount": -1
           }
         ]
       },
@@ -71,7 +79,11 @@
           },
           {
             "account": "0.15.8",
-            "amount": -31
+            "amount": -30
+          },
+          {
+            "account": "0.15.8",
+            "amount": -1
           },
           {
             "account": "0.15.9",
@@ -97,7 +109,11 @@
           },
           {
             "account": "0.15.3",
-            "amount": -51
+            "amount": -50
+          },
+          {
+            "account": "0.15.3",
+            "amount": -1
           },
           {
             "account": "0.15.4",
@@ -123,7 +139,11 @@
           },
           {
             "account": "0.15.3",
-            "amount": -71
+            "amount": -70
+          },
+          {
+            "account": "0.15.3",
+            "amount": -1
           },
           {
             "account": "0.15.4",
@@ -149,7 +169,11 @@
           },
           {
             "account": "0.15.3",
-            "amount": -71
+            "amount": -70
+          },
+          {
+            "account": "0.15.3",
+            "amount": -1
           },
           {
             "account": "0.15.4",
@@ -193,7 +217,11 @@
           },
           {
             "account": "0.15.13",
-            "amount": -51
+            "amount": -50
+          },
+          {
+            "account": "0.15.13",
+            "amount": -1
           },
           {
             "account": "0.15.63",
@@ -219,7 +247,11 @@
           },
           {
             "account": "0.15.63",
-            "amount": -71
+            "amount": -70
+          },
+          {
+            "account": "0.15.63",
+            "amount": -1
           },
           {
             "account": "0.15.82",
@@ -249,7 +281,11 @@
           },
           {
             "account": "0.15.82",
-            "amount": -21
+            "amount": -20
+          },
+          {
+            "account": "0.15.82",
+            "amount": -1
           }
         ],
         "valid_duration_seconds": "8000",

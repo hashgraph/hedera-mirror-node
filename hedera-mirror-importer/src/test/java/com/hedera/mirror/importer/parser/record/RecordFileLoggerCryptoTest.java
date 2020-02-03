@@ -58,58 +58,48 @@ import com.hedera.mirror.importer.util.Utility;
 
 public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
-    //TODO: These transaction data items are not saved to the database
-    //  cryptoCreateTransactionBody.getReceiveRecordThreshold()
-    //  cryptoCreateTransactionBody.getShardID()
-    //  cryptoCreateTransactionBody.getRealmID()
-    //  cryptoCreateTransactionBody.getNewRealmAdminKey()
-    //  cryptoCreateTransactionBody.getReceiverSigRequired()
-    //  cryptoCreateTransactionBody.getSendRecordThreshold()
-    //  cryptoCreateTransactionBody.getReceiveRecordThreshold()
-    //  transactionBody.getTransactionFee()
-    //  transactionBody.getTransactionValidDuration()
-    //  transaction.getSigMap()
-    //  record.getTransactionHash();
-
-    private static final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1001)
+    private static final long payerAccountNum = 1111L;
+    private static final AccountID payerAccountId = AccountID.newBuilder().setAccountNum(payerAccountNum).build();
+    private static final long newAccountNum = 2222L;
+    private static final AccountID newAccountId = AccountID.newBuilder().setAccountNum(newAccountNum).build();
+    private static final long transferToAccountNum = 3333L;
+    private static final long nodeAccountNum = 3L;
+    private static final AccountID nodeAccountId = AccountID.newBuilder().setAccountNum(nodeAccountNum).build();
+    private static final long treasuryAccountNum = 98L;
+    private static final long proxyAccountNum = 999L;
+    private static final AccountID proxyAccountId = AccountID.newBuilder().setAccountNum(proxyAccountNum).build();
+    private static final long updatedProxyAccountNum = 9999L;
+    private static final AccountID updatedProxyAccountId = AccountID.newBuilder().setAccountNum(updatedProxyAccountNum)
             .build();
     private static final String memo = "Crypto test memo";
-    private static final long[] transferAccounts = {98, 2002, 3};
-    private static final long[] transferAmounts = {1000, -2000, 20};
 
     @BeforeEach
     void before() {
         parserProperties.setPersistClaims(true);
         parserProperties.setPersistCryptoTransferAmounts(true);
+        parserProperties.setPersistNonFeeTransfersAlways(false);
     }
 
     @Test
     void cryptoCreate() throws Exception {
-
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var transferList = getDefaultTransferListForCryptoCreate();
+        var record = transactionRecordSuccess(transactionBody, transferList).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
 
-        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
+        var dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
-        com.hedera.mirror.importer.domain.Entities dbNewAccountEntity = entityRepository
-                .findById(dbTransaction.getEntityId()).get();
-        com.hedera.mirror.importer.domain.Entities dbProxyAccountId = entityRepository
-                .findById(dbNewAccountEntity.getProxyAccountId()).get();
+        var dbNewAccountEntity = entityRepository.findByPrimaryKey(0, 0, newAccountNum).get();
+        var dbProxyAccountId = entityRepository.findById(dbNewAccountEntity.getProxyAccountId()).get();
 
+        var expectedEntityCount = 5; // payer, node, treasury, new account, proxy account
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(5, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 1, expectedEntityCount,
+                        transferList.getAccountAmountsCount(), 0, 0, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
@@ -149,7 +139,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         for (int i = 0; i < testBatchSize + 1; i++) {
             Transaction transaction = cryptoCreateTransaction();
             TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-            TransactionRecord record = transactionRecordSuccess(transactionBody);
+            var record = transactionRecordSuccess(transactionBody, getDefaultTransferListForCryptoCreate()).build();
 
             RecordFileLogger.storeRecord(transaction, record);
         }
@@ -169,7 +159,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         Transaction transaction = createTransactionWithBody();
         TransactionBody transactionBody = transaction.getBody();
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var transferList = getDefaultTransferListForCryptoCreate();
+        var record = transactionRecordSuccess(transactionBody, transferList).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
@@ -186,15 +177,10 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                         dbNewAccountEntity.getEntityNum()).get();
         AccountID recordReceiptAccountId = record.getReceipt().getAccountID();
 
+        var expectedEntityCount = 5; // payer, node, treasury, new account, proxy account
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(5, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 1, expectedEntityCount,
+                        transferList.getAccountAmountsCount(), 0, 0, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
@@ -237,119 +223,28 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        TransactionRecord record = transactionRecord(transactionBody,
-                ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+        var transferList = getTransferListForFailure();
+        var record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, transferList)
+                .build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
 
-        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
+        var dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
-        com.hedera.mirror.importer.domain.Entities dbNewAccountEntity = entityRepository
-                .findById(dbTransaction.getEntityId()).get();
-        com.hedera.mirror.importer.domain.Entities dbProxyAccountId = entityRepository
-                .findById(dbNewAccountEntity.getProxyAccountId()).get();
 
+        var expectedEntityCount = 2; // payer, node
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(3, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 1, expectedEntityCount,
+                        transferList.getAccountAmountsCount(), 0, 0, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
                 // record inputs
                 , () -> assertRecord(record, dbTransaction)
-                // receipt
-                , () -> assertAccount(record.getReceipt().getAccountID(), dbNewAccountEntity)
 
                 // record transfer list
                 , () -> assertRecordTransfers(record)
-
-                // transaction body inputs
-                , () -> assertEquals(cryptoCreateTransactionBody.getAutoRenewPeriod().getSeconds(), dbNewAccountEntity
-                        .getAutoRenewPeriod())
-                , () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance())
-                , () -> assertEquals(Utility.protobufKeyToHexIfEd25519OrNull(cryptoCreateTransactionBody.getKey()
-                        .toByteArray()), dbNewAccountEntity.getEd25519PublicKeyHex())
-                , () -> assertAccount(cryptoCreateTransactionBody.getProxyAccountID(), dbProxyAccountId)
-                , () -> assertArrayEquals(cryptoCreateTransactionBody.getKey().toByteArray(), dbNewAccountEntity
-                        .getKey())
-
-                // Additional entity checks
-                , () -> assertFalse(dbNewAccountEntity.isDeleted())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
-        );
-
-        // Crypto transfer list
-        verifyRepoCryptoTransferList(record);
-    }
-
-    @Test
-    void cryptoCreateInitialBalanceInTransferList() throws Exception {
-
-        Transaction transaction = cryptoCreateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        TransactionRecord tempRecord = transactionRecordSuccess(transactionBody);
-
-        // add initial balance to transfer list
-        long initialBalance = cryptoCreateTransactionBody.getInitialBalance();
-
-        TransferList.Builder transferList = tempRecord.getTransferList().toBuilder();
-        transferList.addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId).setAmount(initialBalance));
-        transferList.addAccountAmounts(AccountAmount.newBuilder()
-                .setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(202))
-                .setAmount(-initialBalance));
-        TransactionRecord record = tempRecord.toBuilder().setTransferList(transferList).build();
-
-        RecordFileLogger.storeRecord(transaction, record);
-        RecordFileLogger.completeFile("", "");
-
-        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
-                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
-        com.hedera.mirror.importer.domain.Entities dbNewAccountEntity = entityRepository
-                .findById(dbTransaction.getEntityId()).get();
-        com.hedera.mirror.importer.domain.Entities dbProxyAccountId = entityRepository
-                .findById(dbNewAccountEntity.getProxyAccountId()).get();
-
-        assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(7, entityRepository.count())
-                , () -> assertEquals(5, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
-
-                // transaction
-                , () -> assertTransaction(transactionBody, dbTransaction)
-                // record inputs
-                , () -> assertRecord(record, dbTransaction)
-                // receipt
-                , () -> assertAccount(record.getReceipt().getAccountID(), dbNewAccountEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
-
-                // transaction body inputs
-                , () -> assertEquals(cryptoCreateTransactionBody.getAutoRenewPeriod().getSeconds(), dbNewAccountEntity
-                        .getAutoRenewPeriod())
-                , () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance())
-                , () -> assertEquals(Utility.protobufKeyToHexIfEd25519OrNull(cryptoCreateTransactionBody.getKey()
-                        .toByteArray()), dbNewAccountEntity.getEd25519PublicKeyHex())
-                , () -> assertAccount(cryptoCreateTransactionBody.getProxyAccountID(), dbProxyAccountId)
-                , () -> assertArrayEquals(cryptoCreateTransactionBody.getKey().toByteArray(), dbNewAccountEntity
-                        .getKey())
-
-                // Additional entity checks
-                , () -> assertFalse(dbNewAccountEntity.isDeleted())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
         );
 
         // Crypto transfer list
@@ -361,14 +256,16 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
         Transaction firstTransaction = cryptoCreateTransaction();
         TransactionBody firstTransactionBody = TransactionBody.parseFrom(firstTransaction.getBodyBytes());
-        TransactionRecord firstRecord = transactionRecordSuccess(firstTransactionBody);
+        var firstTransferList = getDefaultTransferListForCryptoCreate();
+        var firstRecord = transactionRecordSuccess(firstTransactionBody, firstTransferList).build();
 
         RecordFileLogger.storeRecord(firstTransaction, firstRecord);
 
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var secondTransferList = getDefaultTransferListForCryptoCreate();
+        var record = transactionRecordSuccess(transactionBody, secondTransferList).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
@@ -380,15 +277,12 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         com.hedera.mirror.importer.domain.Entities dbProxyAccountId = entityRepository
                 .findById(dbNewAccountEntity.getProxyAccountId()).get();
 
+        var expectedEntityCount = 5; // payer, node, treasury, new account, proxy account
+        var expectedTransferCount = firstTransferList.getAccountAmountsCount()
+                + secondTransferList.getAccountAmountsCount();
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(10, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 2, expectedEntityCount, expectedTransferCount,
+                        0, 0, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
@@ -419,13 +313,27 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         verifyRepoCryptoTransferList(record);
     }
 
+    /**
+     * Github issue #483
+     */
+    @Test
+    void samePayerAndUpdateAccount() throws Exception {
+        Transaction transaction = cryptoUpdateTransaction(payerAccountId); // Same payer and update account.
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
+        TransactionRecord record = transactionRecordSuccess(transactionBody, getDefaultTransferListForCrypto()).build();
+        RecordFileLogger.storeRecord(transaction, record);
+        RecordFileLogger.completeFile("", "");
+    }
+
     @Test
     void cryptoUpdateSuccessfulTransaction() throws Exception {
 
         // first create the account
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
-        TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
+        var createTransferList = getDefaultTransferListForCryptoCreate();
+        var createRecord = transactionRecordSuccess(createTransactionBody, createTransferList).build();
 
         RecordFileLogger.storeRecord(createTransaction, createRecord);
 
@@ -433,7 +341,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         Transaction transaction = cryptoUpdateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var updateTransferList = getDefaultTransferListForCrypto();
+        var record = transactionRecordSuccess(transactionBody, updateTransferList).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
@@ -445,22 +354,17 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         com.hedera.mirror.importer.domain.Entities dbProxyAccountId = entityRepository
                 .findById(dbAccountEntity.getProxyAccountId()).get();
 
+        var expectedEntityCount = 6; // payer, node, treasury, new account, proxy account, updated proxy account
+        var expectedTransferCount = createTransferList.getAccountAmountsCount()
+                + updateTransferList.getAccountAmountsCount();
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(7, entityRepository.count())
-                , () -> assertEquals(8, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 2, expectedEntityCount, expectedTransferCount,
+                        0, 0, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
                 // record inputs
                 , () -> assertRecord(record, dbTransaction)
-                // receipt
-                , () -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
 
                 // record transfer list
                 , () -> assertRecordTransfers(record)
@@ -484,25 +388,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         verifyRepoCryptoTransferList(record);
     }
 
-    /**
-     * Github issue #483
-     */
-    @Test
-    void samePayerAndUpdateAccount() throws Exception {
-        Transaction transaction = cryptoUpdateTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        transactionBody = TransactionBody.newBuilder()
-                .mergeFrom(transactionBody)
-                .setTransactionID(Utility.getTransactionId(accountId))
-                .build();
-        transaction = Transaction.newBuilder().setBodyBytes(transactionBody.toByteString()).build();
-        CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
-
-        RecordFileLogger.storeRecord(transaction, record);
-        RecordFileLogger.completeFile("", "");
-    }
-
     @DisplayName("update account such that expiration timestamp overflows nanos_timestamp")
     @ParameterizedTest(name = "with seconds {0} and expectedNanosTimestamp {1}")
     @CsvSource({
@@ -516,14 +401,15 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         // first create the account
         var createTransaction = cryptoCreateTransaction();
         var createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
-        var createRecord = transactionRecordSuccess(createTransactionBody);
+        var createTransferList = getDefaultTransferListForCryptoCreate();
+        var createRecord = transactionRecordSuccess(createTransactionBody, createTransferList).build();
 
         RecordFileLogger.storeRecord(createTransaction, createRecord);
 
         // now update
         var updateTransaction = Transaction.newBuilder();
         var updateTransactionBody = CryptoUpdateTransactionBody.newBuilder();
-        updateTransactionBody.setAccountIDToUpdate(accountId);
+        updateTransactionBody.setAccountIDToUpdate(payerAccountId);
 
         // *** THIS IS THE OVERFLOW WE WANT TO TEST ***
         // This should result in the entity having a Long.MAX_VALUE or Long.MIN_VALUE expirations (the results of
@@ -533,7 +419,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         var transactionBody = defaultTransactionBodyBuilder(memo);
         transactionBody.setCryptoUpdateAccount(updateTransactionBody.build());
         updateTransaction.setBodyBytes(transactionBody.build().toByteString());
-        var rec = transactionRecordSuccess(transactionBody.build());
+        var updateTransferList = getDefaultTransferListForCrypto();
+        var rec = transactionRecordSuccess(transactionBody.build(), updateTransferList).build();
 
         RecordFileLogger.storeRecord(updateTransaction.build(), rec);
         RecordFileLogger.completeFile("", "");
@@ -555,15 +442,17 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         // first create the account
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
-        TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
+        var createTransferList = getDefaultTransferListForCryptoCreate();
+        var createRecord = transactionRecordSuccess(createTransactionBody, createTransferList).build();
 
         RecordFileLogger.storeRecord(createTransaction, createRecord);
 
         // now update
         Transaction transaction = cryptoUpdateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        TransactionRecord record = transactionRecord(transactionBody,
-                ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
+        var updateTransferList = getTransferListForFailure();
+        var record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
+                updateTransferList).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
@@ -578,22 +467,17 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         com.hedera.mirror.importer.domain.Entities dbAccountEntity = entityRepository
                 .findById(dbTransaction.getEntityId()).get();
 
+        var expectedEntitiesCount = 5; // payer, node, treasury, new account, proxy - nothing new from update
+        var expectedTransferCount = createTransferList.getAccountAmountsCount()
+                + updateTransferList.getAccountAmountsCount();
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(8, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 2, expectedEntitiesCount, expectedTransferCount,
+                        0, 0, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
                 // record inputs
                 , () -> assertRecord(record, dbTransaction)
-                // receipt
-                , () -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
                 // record transfer list
                 , () -> assertRecordTransfers(record)
                 // no changes to entity
@@ -610,14 +494,16 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         // first create the account
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
-        TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
+        var createTransferList = getDefaultTransferListForCryptoCreate();
+        var createRecord = transactionRecordSuccess(createTransactionBody, createTransferList).build();
 
         RecordFileLogger.storeRecord(createTransaction, createRecord);
 
         // now delete
         Transaction transaction = cryptoDeleteTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var deleteTransferList = getDefaultTransferListForCrypto();
+        var record = transactionRecordSuccess(transactionBody, deleteTransferList).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
@@ -629,22 +515,19 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         com.hedera.mirror.importer.domain.Entities dbProxyAccountId = entityRepository
                 .findById(dbAccountEntity.getProxyAccountId()).get();
 
+        var expectedEntityCount = 5; // payer, node, treasury, new account, proxy account
+        var expectedTransferCount = createTransferList.getAccountAmountsCount()
+                + deleteTransferList.getAccountAmountsCount();
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(8, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 2, expectedEntityCount, expectedTransferCount,
+                        0, 0, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
                 // record inputs
                 , () -> assertRecord(record, dbTransaction)
                 // receipt
-                , () -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
+                , () -> assertAccount(newAccountId, dbAccountEntity)
 
                 // record transfer list
                 , () -> assertRecordTransfers(record)
@@ -670,15 +553,17 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         // first create the account
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
-        TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
+        var createTransferList = getDefaultTransferListForCryptoCreate();
+        var createRecord = transactionRecordSuccess(createTransactionBody, createTransferList).build();
 
         RecordFileLogger.storeRecord(createTransaction, createRecord);
 
         // now delete
         Transaction transaction = cryptoDeleteTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        TransactionRecord record = transactionRecord(transactionBody,
-                ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
+        var deleteTransferList = getTransferListForFailure();
+        var record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
+                deleteTransferList).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
@@ -690,22 +575,19 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         com.hedera.mirror.importer.domain.Entities dbProxyAccountId = entityRepository
                 .findById(dbAccountEntity.getProxyAccountId()).get();
 
+        var expectedEntityCount = 5; // payer, node, treasury, new account, proxy account
+        var expectedTransferCount = createTransferList.getAccountAmountsCount()
+                + deleteTransferList.getAccountAmountsCount();
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(8, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 2, expectedEntityCount, expectedTransferCount,
+                        0, 0, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
                 // record inputs
                 , () -> assertRecord(record, dbTransaction)
                 // receipt
-                , () -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
+                , () -> assertAccount(newAccountId, dbAccountEntity)
 
                 // record transfer list
                 , () -> assertRecordTransfers(record)
@@ -731,7 +613,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         // first create the account
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
-        TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
+        var createTransferList = getDefaultTransferListForCryptoCreate();
+        var createRecord = transactionRecordSuccess(createTransactionBody, createTransferList).build();
 
         RecordFileLogger.storeRecord(createTransaction, createRecord);
 
@@ -739,7 +622,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         Transaction transaction = cryptoAddClaimTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         CryptoAddClaimTransactionBody cryptoAddClaimTransactionBody = transactionBody.getCryptoAddClaim();
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var addClaimTransferList = getDefaultTransferListForCrypto();
+        var record = transactionRecordSuccess(transactionBody, addClaimTransferList).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
@@ -750,22 +634,19 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 .findById(dbTransaction.getEntityId()).get();
         LiveHash dbLiveHash = liveHashRepository.findById(dbTransaction.getConsensusNs()).get();
 
+        var expectedEntityCount = 5; // payer, node, treasury, new account, proxy account
+        var expectedTransferCount = createTransferList.getAccountAmountsCount()
+                + addClaimTransferList.getAccountAmountsCount();
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(8, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(1, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 2, expectedEntityCount, expectedTransferCount,
+                        0, 1, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
                 // record inputs
                 , () -> assertRecord(record, dbTransaction)
                 // receipt
-                , () -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
+                , () -> assertAccount(newAccountId, dbAccountEntity)
 
                 // record transfer list
                 , () -> assertRecordTransfers(record)
@@ -787,7 +668,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         // first create the account
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
-        TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
+        var createTransferList = getDefaultTransferListForCryptoCreate();
+        var createRecord = transactionRecordSuccess(createTransactionBody, createTransferList).build();
 
         RecordFileLogger.storeRecord(createTransaction, createRecord);
 
@@ -795,7 +677,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         Transaction transaction = cryptoAddClaimTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         CryptoAddClaimTransactionBody cryptoAddClaimTransactionBody = transactionBody.getCryptoAddClaim();
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var addClaimTransferList = getDefaultTransferListForCrypto();
+        var record = transactionRecordSuccess(transactionBody, addClaimTransferList).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
@@ -805,22 +688,19 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         com.hedera.mirror.importer.domain.Entities dbAccountEntity = entityRepository
                 .findById(dbTransaction.getEntityId()).get();
 
+        var expectedEntitiesCount = 5; // payer, node, treasury, new account. proxy account
+        var expectedTransferCount = createTransferList.getAccountAmountsCount()
+                + addClaimTransferList.getAccountAmountsCount();
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(8, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 2, expectedEntitiesCount, expectedTransferCount,
+                        0, 0, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
                 // record inputs
                 , () -> assertRecord(record, dbTransaction)
                 // receipt
-                , () -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
+                , () -> assertAccount(newAccountId, dbAccountEntity)
 
                 // record transfer list
                 , () -> assertRecordTransfers(record)
@@ -839,22 +719,25 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         // first create the account
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
-        TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
+        var createTransferList = getDefaultTransferListForCryptoCreate();
+        var createRecord = transactionRecordSuccess(createTransactionBody, createTransferList).build();
 
         RecordFileLogger.storeRecord(createTransaction, createRecord);
 
         // add a claim
         Transaction transactionAddClaim = cryptoAddClaimTransaction();
         TransactionBody transactionBodyAddClaim = TransactionBody.parseFrom(transactionAddClaim.getBodyBytes());
-        TransactionRecord recordAddClaim = transactionRecordSuccess(transactionBodyAddClaim);
+        var addClaimTransferList = getDefaultTransferListForCrypto();
+        var recordAddClaim = transactionRecordSuccess(transactionBodyAddClaim, addClaimTransferList).build();
 
         RecordFileLogger.storeRecord(transactionAddClaim, recordAddClaim);
 
         // now delete the claim
         Transaction transaction = cryptoDeleteClaimTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        var deleteClaimTransferList = getDefaultTransferListForCrypto();
         CryptoDeleteClaimTransactionBody deleteClaimTransactionBody = transactionBody.getCryptoDeleteClaim();
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var record = transactionRecordSuccess(transactionBody, deleteClaimTransferList).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
@@ -863,22 +746,19 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
         Entities dbAccountEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
 
+        var expectedEntitiesCount = 5; // payer, node, treasury, new account. proxy account
+        var expectedTransferCount = createTransferList.getAccountAmountsCount()
+                + addClaimTransferList.getAccountAmountsCount() + deleteClaimTransferList.getAccountAmountsCount();
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(3, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(11, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(1, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 3, expectedEntitiesCount, expectedTransferCount,
+                        0, 1, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
                 // record inputs
                 , () -> assertRecord(record, dbTransaction)
                 // receipt
-                , () -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
+                , () -> assertAccount(newAccountId, dbAccountEntity)
 
                 // record transfer list
                 , () -> assertRecordTransfers(record)
@@ -898,7 +778,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var record = transactionRecordSuccess(transactionBody, getDefaultTransferListForCryptoTransfer()).build();
 
         RecordFileLogger.storeRecord(transaction, record);
 
@@ -908,14 +788,37 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
 
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(4, entityRepository.count())
-                , () -> assertEquals(3, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 1, 4, 6, 0, 0, 0, 0)
+
+                // transaction
+                , () -> assertTransaction(transactionBody, dbTransaction)
+                // record inputs
+                , () -> assertRecord(record, dbTransaction)
+
+                // record transfer list
+                , () -> assertRecordTransfers(record)
+        );
+
+        // Crypto transfer list
+        verifyRepoCryptoTransferList(record);
+    }
+
+    @Test
+    void cryptoTransferAggregatedTransferList() throws Exception {
+        Transaction transaction = cryptoTransferTransaction();
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        var transferList = getAggregatedTransferListForCryptoTransfer();
+        var record = transactionRecordSuccess(transactionBody, transferList).build();
+
+        RecordFileLogger.storeRecord(transaction, record);
+        RecordFileLogger.completeFile("", "");
+
+        var dbTransaction = transactionRepository
+                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+
+        var expectedEntityCount = 4; // payer, node, treasury, recipient.
+        assertAll(
+                () -> assertRepositoryRowCounts(1, 1, expectedEntityCount, transferList.getAccountAmountsCount(), 0, 0, 0, 2)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
@@ -936,7 +839,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var record = transactionRecordSuccess(transactionBody, getDefaultTransferListForCryptoTransfer()).build();
 
         RecordFileLogger.storeRecord(transaction, record);
 
@@ -946,14 +849,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
 
         assertAll(
-                // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(2, entityRepository.count())
-                , () -> assertEquals(0, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertRepositoryRowCounts(1, 1, 2, 0, 0, 0, 0, 0)
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
@@ -981,8 +877,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         int unknownResult = -1000;
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        TransactionRecord record = transactionRecord(transactionBody, unknownResult);
+        var record = transactionRecord(transactionBody, unknownResult, getTransferListForFailure()).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
@@ -1011,7 +906,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 .setSigMap(getSigMap())
                 .build();
 
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var record = transactionRecordSuccess(transactionBody, getDefaultTransferListForCrypto()).build();
 
         RecordFileLogger.storeRecord(transaction, record);
         RecordFileLogger.completeFile("", "");
@@ -1022,15 +917,18 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 .containsOnly(unknownType);
     }
 
-    private TransactionRecord transactionRecordSuccess(TransactionBody transactionBody) {
-        return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS);
+    private TransactionRecord.Builder transactionRecordSuccess(TransactionBody transactionBody,
+                                                               TransferList.Builder transferList) {
+        return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS, transferList);
     }
 
-    private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum responseCode) {
-        return transactionRecord(transactionBody, responseCode.getNumber());
+    private TransactionRecord.Builder transactionRecord(TransactionBody transactionBody, ResponseCodeEnum responseCode,
+                                                        TransferList.Builder transferList) {
+        return transactionRecord(transactionBody, responseCode.getNumber(), transferList);
     }
 
-    private TransactionRecord transactionRecord(TransactionBody transactionBody, int responseCode) {
+    private TransactionRecord.Builder transactionRecord(TransactionBody transactionBody, int responseCode,
+                                                        TransferList.Builder transferList) {
         TransactionRecord.Builder record = TransactionRecord.newBuilder();
 
         // record
@@ -1040,27 +938,19 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         // Build the record
         record.setConsensusTimestamp(consensusTimeStamp);
         record.setMemoBytes(ByteString.copyFromUtf8(transactionBody.getMemo()));
-        receipt.setAccountID(accountId);
         receipt.setStatusValue(responseCode);
+        if (transactionBody.hasCryptoCreateAccount() && responseCode == ResponseCodeEnum.SUCCESS.getNumber()) {
+            receipt.setAccountID(newAccountId);
+        }
 
         record.setReceipt(receipt.build());
         record.setTransactionFee(transactionBody.getTransactionFee());
         record.setTransactionHash(ByteString.copyFromUtf8("TransactionHash"));
         record.setTransactionID(transactionBody.getTransactionID());
 
-        TransferList.Builder transferList = TransferList.newBuilder();
-
-        for (int i = 0; i < transferAccounts.length; i++) {
-            AccountAmount.Builder accountAmount = AccountAmount.newBuilder();
-            accountAmount.setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0)
-                    .setAccountNum(transferAccounts[i]));
-            accountAmount.setAmount(transferAmounts[i]);
-            transferList.addAccountAmounts(accountAmount);
-        }
-
         record.setTransferList(transferList);
 
-        return record.build();
+        return record;
     }
 
     private Transaction cryptoCreateTransaction() {
@@ -1075,7 +965,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         cryptoCreate
                 .setNewRealmAdminKey(keyFromString(
                         "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"));
-        cryptoCreate.setProxyAccountID(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3));
+        cryptoCreate.setProxyAccountID(proxyAccountId);
         cryptoCreate.setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build());
         cryptoCreate.setShardID(ShardID.newBuilder().setShardNum(0));
         cryptoCreate.setReceiveRecordThreshold(2000L);
@@ -1083,7 +973,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         cryptoCreate.setSendRecordThreshold(3000L);
 
         // Transaction body
-        TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+        TransactionBody.Builder body = getDefaultTransactionBody();
 
         // body transaction
         body.setCryptoCreateAccount(cryptoCreate.build());
@@ -1105,7 +995,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         cryptoCreate
                 .setNewRealmAdminKey(keyFromString(
                         "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"));
-        cryptoCreate.setProxyAccountID(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3));
+        cryptoCreate.setProxyAccountID(proxyAccountId);
         cryptoCreate.setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build());
         cryptoCreate.setShardID(ShardID.newBuilder().setShardNum(0));
         cryptoCreate.setReceiveRecordThreshold(2000L);
@@ -1113,7 +1003,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         cryptoCreate.setSendRecordThreshold(3000L);
 
         // Transaction body
-        TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+        TransactionBody.Builder body = getDefaultTransactionBody();
 
         // body transaction
         body.setCryptoCreateAccount(cryptoCreate.build());
@@ -1124,8 +1014,25 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
     }
 
     private Transaction cryptoUpdateTransaction() {
+        return cryptoUpdateTransaction(newAccountId);
+    }
+
+    private Transaction cryptoUpdateTransaction(AccountID accountId) {
 
         Transaction.Builder transaction = Transaction.newBuilder();
+
+        // Transaction body
+        TransactionBody.Builder body = getDefaultTransactionBody();
+        // body transaction
+        body.setCryptoUpdateAccount(cryptoUpdateTransactionBody(accountId));
+
+        transaction.setBodyBytes(body.build().toByteString());
+        transaction.setSigMap(getSigMap());
+
+        return transaction.build();
+    }
+
+    private CryptoUpdateTransactionBody cryptoUpdateTransactionBody(AccountID accountId) {
         CryptoUpdateTransactionBody.Builder cryptoUpdate = CryptoUpdateTransactionBody.newBuilder();
         String key = "0a2312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110aaa";
 
@@ -1134,20 +1041,11 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         cryptoUpdate.setAutoRenewPeriod(Duration.newBuilder().setSeconds(5001L));
         cryptoUpdate.setExpirationTime(Utility.instantToTimestamp(Instant.now()));
         cryptoUpdate.setKey(keyFromString(key));
-        cryptoUpdate.setProxyAccountID(AccountID.newBuilder().setShardNum(5).setRealmNum(6).setAccountNum(8));
+        cryptoUpdate.setProxyAccountID(updatedProxyAccountId);
         cryptoUpdate.setReceiveRecordThreshold(5001L);
         cryptoUpdate.setReceiverSigRequired(false);
         cryptoUpdate.setSendRecordThreshold(6001L);
-
-        // Transaction body
-        TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
-        // body transaction
-        body.setCryptoUpdateAccount(cryptoUpdate.build());
-
-        transaction.setBodyBytes(body.build().toByteString());
-        transaction.setSigMap(getSigMap());
-
-        return transaction.build();
+        return cryptoUpdate.build();
     }
 
     private Transaction cryptoDeleteTransaction() {
@@ -1157,10 +1055,10 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         CryptoDeleteTransactionBody.Builder cryptoDelete = CryptoDeleteTransactionBody.newBuilder();
 
         // Build a transaction
-        cryptoDelete.setDeleteAccountID(accountId);
+        cryptoDelete.setDeleteAccountID(newAccountId);
 
         // Transaction body
-        TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+        TransactionBody.Builder body = getDefaultTransactionBody();
         // body transaction
         body.setCryptoDelete(cryptoDelete.build());
 
@@ -1178,7 +1076,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
         // Build a claim
         Claim.Builder claim = Claim.newBuilder();
-        claim.setAccountID(accountId);
+        claim.setAccountID(newAccountId);
         claim.setClaimDuration(Duration.newBuilder().setSeconds(10000L));
         claim.setHash(ByteString.copyFromUtf8("claim hash"));
         KeyList.Builder keyList = KeyList.newBuilder();
@@ -1189,7 +1087,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         cryptoAddClaim.setClaim(claim);
 
         // Transaction body
-        TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+        TransactionBody.Builder body = getDefaultTransactionBody();
         // body transaction
         body.setCryptoAddClaim(cryptoAddClaim);
 
@@ -1207,11 +1105,11 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
                 .newBuilder();
 
         // Build a transaction
-        cryptoDeleteClaim.setAccountIDToDeleteFrom(accountId);
+        cryptoDeleteClaim.setAccountIDToDeleteFrom(newAccountId);
         cryptoDeleteClaim.setHashToDelete(ByteString.copyFromUtf8("claim hash"));
 
         // Transaction body
-        TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+        TransactionBody.Builder body = getDefaultTransactionBody();
         // body transaction
         body.setCryptoDeleteClaim(cryptoDeleteClaim);
 
@@ -1228,20 +1126,14 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         CryptoTransferTransactionBody.Builder cryptoTransferBody = CryptoTransferTransactionBody.newBuilder();
 
         // Build a transaction
-        TransferList.Builder transferList = TransferList.newBuilder();
-
-        for (int i = 0; i < transferAccounts.length; i++) {
-            AccountAmount.Builder accountAmount = AccountAmount.newBuilder();
-            accountAmount.setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0)
-                    .setAccountNum(transferAccounts[i]));
-            accountAmount.setAmount(transferAmounts[i]);
-            transferList.addAccountAmounts(accountAmount);
-        }
+        TransferList.Builder transferList = TransferList.newBuilder()
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -1000))
+                .addAccountAmounts(createAccountAmount(transferToAccountNum, 1000));
 
         cryptoTransferBody.setTransfers(transferList);
 
         // Transaction body
-        TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+        TransactionBody.Builder body = getDefaultTransactionBody();
         // body transaction
         body.setCryptoTransfer(cryptoTransferBody);
 
@@ -1258,9 +1150,10 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
             var aa = transferList.getAccountAmounts(i);
             var accountId = aa.getAccountID();
 
-            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndEntityNum(
+            tempDbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndEntityNumAndAmount(
                     Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).get();
+                    accountId.getAccountNum(),
+                    aa.getAmount()).get();
 
             assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()), tempDbCryptoTransfer
                     .getConsensusTimestamp());
@@ -1270,13 +1163,97 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         }
     }
 
+    private AccountAmount.Builder createAccountAmount(long accountNum, long amount) {
+        return AccountAmount.newBuilder().setAccountID(AccountID.newBuilder().setAccountNum(accountNum))
+                .setAmount(amount);
+    }
+
+    private TransferList.Builder getDefaultTransferListForCryptoCreate() {
+        return TransferList.newBuilder()
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -1000))
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -20))
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -80))
+                .addAccountAmounts(createAccountAmount(newAccountNum, 1000))
+                .addAccountAmounts(createAccountAmount(nodeAccountNum, 20))
+                .addAccountAmounts(createAccountAmount(treasuryAccountNum, 80));
+    }
+
+    private TransferList.Builder getDefaultTransferListForCryptoTransfer() {
+        return TransferList.newBuilder()
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -1000))
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -20))
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -80))
+                .addAccountAmounts(createAccountAmount(transferToAccountNum, 1000))
+                .addAccountAmounts(createAccountAmount(nodeAccountNum, 20))
+                .addAccountAmounts(createAccountAmount(treasuryAccountNum, 80));
+    }
+
+    private TransferList.Builder getDefaultTransferListForCrypto() {
+        return TransferList.newBuilder()
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -1000))
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -20))
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -80))
+                .addAccountAmounts(createAccountAmount(nodeAccountNum, 20))
+                .addAccountAmounts(createAccountAmount(treasuryAccountNum, 80));
+    }
+
+    private TransferList.Builder getAggregatedTransferListForCryptoCreate() {
+        return TransferList.newBuilder()
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -1100))
+                .addAccountAmounts(createAccountAmount(newAccountNum, 1000))
+                .addAccountAmounts(createAccountAmount(nodeAccountNum, 20))
+                .addAccountAmounts(createAccountAmount(treasuryAccountNum, 80));
+    }
+
+    private TransferList.Builder getAggregatedTransferListForCryptoTransfer() {
+        return TransferList.newBuilder()
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -1100))
+                .addAccountAmounts(createAccountAmount(transferToAccountNum, 1000))
+                .addAccountAmounts(createAccountAmount(nodeAccountNum, 20))
+                .addAccountAmounts(createAccountAmount(treasuryAccountNum, 80));
+    }
+
+    private TransferList.Builder getTransferListForFailure() {
+        return TransferList.newBuilder()
+                .addAccountAmounts(createAccountAmount(payerAccountNum, -20))
+                .addAccountAmounts(createAccountAmount(nodeAccountNum, 20));
+    }
+
+    private void assertRepositoryRowCounts(int recordFileCount, int transactionCount, int entityCount,
+                                           int cryptoTransferCount, int contractResultCount, int liveHashCount,
+                                           int fileDataCount, int nonFeeTransferCount) {
+        assertAll(() -> assertEquals(recordFileCount, recordFileRepository.count(), "recordFileRepository")
+                , () -> assertEquals(transactionCount, transactionRepository.count(), "transactionRepository")
+                , () -> assertEquals(entityCount, entityRepository.count(), "entityRepository")
+                , () -> assertEquals(cryptoTransferCount, cryptoTransferRepository.count(), "cryptoTransferRepository")
+                , () -> assertEquals(contractResultCount, contractResultRepository.count(), "contractResultRepository")
+                , () -> assertEquals(liveHashCount, liveHashRepository.count(), "liveHashRepository")
+                , () -> assertEquals(fileDataCount, fileDataRepository.count(), "fileDataRepository")
+                , () -> assertEquals(nonFeeTransferCount, nonFeeTransferRepository.count(), "nonFeeTransferRepository")
+        );
+    }
+
+    private TransactionBody.Builder getDefaultTransactionBody() {
+
+        long validDuration = 120;
+        long txFee = 100L;
+
+        TransactionBody.Builder body = TransactionBody.newBuilder();
+        body.setTransactionFee(txFee);
+        body.setMemo(memo);
+        body.setNodeAccountID(nodeAccountId);
+        body.setTransactionID(Utility.getTransactionId(payerAccountId));
+        body.setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration).build());
+        return body;
+    }
+
     @Test
     void cryptoTransferPersistRawBytesDefault() throws Exception {
         // Use the default properties for record parsing - the raw bytes
         // should NOT be stored in the db
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var record = transactionRecordSuccess(transactionBody, getDefaultTransferListForCryptoTransfer()).build();
         byte[] rawBytes = transaction.getBodyBytes().toByteArray();
 
         RecordFileLogger.storeRecord(transaction, record, rawBytes);
@@ -1295,7 +1272,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         parserProperties.setPersistTransactionBytes(true);
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var record = transactionRecordSuccess(transactionBody, getDefaultTransferListForCryptoTransfer()).build();
         byte[] rawBytes = transaction.getBodyBytes().toByteArray();
 
         RecordFileLogger.storeRecord(transaction, record, rawBytes);
@@ -1314,7 +1291,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         parserProperties.setPersistTransactionBytes(false);
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        var record = transactionRecordSuccess(transactionBody, getDefaultTransferListForCryptoTransfer()).build();
         byte[] rawBytes = transaction.getBodyBytes().toByteArray();
 
         RecordFileLogger.storeRecord(transaction, record, rawBytes);

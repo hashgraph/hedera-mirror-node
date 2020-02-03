@@ -25,7 +25,11 @@
           },
           {
             "account": "0.15.10",
-            "amount": -11
+            "amount": -10
+          },
+          {
+            "account": "0.15.10",
+            "amount": -1
           }
         ]
       }

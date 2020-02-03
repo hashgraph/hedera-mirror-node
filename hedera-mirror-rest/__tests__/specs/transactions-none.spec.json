@@ -1,0 +1,12 @@
+{
+  "description": "No transactions",
+  "setup": [],
+  "url": "/api/v1/transactions",
+  "responseStatus": 200,
+  "responseJson": {
+    "transactions": [],
+    "links": {
+      "next": null
+    }
+  }
+}

@@ -105,6 +105,11 @@ const paramValidityChecks = function(param, opAndVal) {
       // Acceptable words: success or fail
       ret = ['success', 'fail'].includes(val);
       break;
+    case 'transfers':
+      // By default - attempt to itemize transfers (breaking out fees and explicitly requested transfers).
+      // if transfers=raw, only return the raw transferList from the TransactionRecord.
+      ret = ['raw'].includes(val);
+      break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
       ret = false;
@@ -617,7 +622,42 @@ const createTransactionId = function(shard, realm, num, validStartTimestamp) {
   return shard + '.' + realm + '.' + num + '-' + nsToSecNsWithHyphen(validStartTimestamp);
 };
 
+/**
+ * Comparison function between 2 {account: '0.0.123', amount: 12345} transfer objects.
+ * @param a
+ * @param b
+ * @returns {number}
+ */
+const compareTransfers = function(a, b) {
+  // Translate a and b to an array of numbers then compare.
+  let aParts = a.account
+    .split('.')
+    .map(s => +s)
+    .concat(+a.amount);
+  let bParts = b.account
+    .split('.')
+    .map(s => +s)
+    .concat(+b.amount);
+  if (aParts.length != bParts.length) {
+    if (aParts.length < bParts.length) {
+      return -1;
+    } else if (bParts.length < aParts.length) {
+      return 1;
+    }
+  } else {
+    for (let i = 0; i < aParts.length; ++i) {
+      if (aParts[i] < bParts[i]) {
+        return -1;
+      } else if (bParts[i] < aParts[i]) {
+        return 1;
+      }
+    }
+  }
+  return 0;
+};
+
 module.exports = {
+  compareTransfers: compareTransfers,
   parseParams: parseParams,
   parseCreditDebitParams: parseCreditDebitParams,
   parseLimitAndOrderParams: parseLimitAndOrderParams,
@@ -638,5 +678,6 @@ module.exports = {
   getNullableNumber: getNullableNumber,
   nsToSecNsWithHyphen: nsToSecNsWithHyphen,
   createTransactionId: createTransactionId,
-  TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS
+  TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
+  TREASURY_ACCOUNT_ID: '0.0.98'
 };

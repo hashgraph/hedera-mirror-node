@@ -240,7 +240,8 @@ const addCryptoTransferTransaction = async function(
     fileId,
     payerAccountId,
     [
-      [payerAccountId, -1 - amount],
+      [payerAccountId, -1],
+      [payerAccountId, 0 - amount],
       [recipientAccountId, amount],
       [bankId, 1]
     ],
@@ -334,30 +335,34 @@ function extractDurationAndMaxFeeFromTransactionResults(rows) {
 // TESTS
 //
 
-test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfer', async () => {
+test('DB integration test - transactions.reqToSql - no query string - 3 txn 12 xfer', async () => {
   let sql = transactions.reqToSql({query: {}});
   let res = await sqlConnection.query(sql.query, sql.params);
-  expect(res.rowCount).toEqual(9);
+  expect(res.rowCount).toEqual(12);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '@1050: account 10 \u0127-11',
+    '@1050: account 10 \u0127-1',
+    '@1050: account 10 \u0127-10',
     '@1050: account 2 \u01271',
     '@1050: account 9 \u012710',
-    '@1051: account 10 \u0127-21',
+    '@1051: account 10 \u0127-1',
+    '@1051: account 10 \u0127-20',
     '@1051: account 2 \u01271',
     '@1051: account 9 \u012720',
     '@1052: account 2 \u01271',
-    '@1052: account 8 \u0127-31',
+    '@1052: account 8 \u0127-1',
+    '@1052: account 8 \u0127-30',
     '@1052: account 9 \u012730'
   ]);
 });
 
-test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfer', async () => {
+test('DB integration test - transactions.reqToSql - single valid account - 1 txn 4 xfer', async () => {
   let sql = transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
   let res = await sqlConnection.query(sql.query, sql.params);
-  expect(res.rowCount).toEqual(3);
+  expect(res.rowCount).toEqual(4);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
     '@1052: account 2 \u01271',
-    '@1052: account 8 \u0127-31',
+    '@1052: account 8 \u0127-1',
+    '@1052: account 8 \u0127-30',
     '@1052: account 9 \u012730'
   ]);
 });
@@ -378,14 +383,17 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
 
   let sql = transactions.reqToSql({query: {'account.id': '0.15.3'}});
   res = await sqlConnection.query(sql.query, sql.params);
-  expect(res.rowCount).toEqual(9);
+  expect(res.rowCount).toEqual(12);
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual([
     '@5,null',
     '@5,null',
     '@5,null',
+    '@5,null',
     '@null,777',
     '@null,777',
     '@null,777',
+    '@null,777',
+    '@null,null',
     '@null,null',
     '@null,null',
     '@null,null'
@@ -432,14 +440,16 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
   // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
   // Note bank is out of desired range but is expected in query result
-  expect(res.rowCount).toEqual(6);
+  expect(res.rowCount).toEqual(8);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
     '@2063: account 2 \u01271',
-    '@2063: account 63 \u0127-71',
+    '@2063: account 63 \u0127-1',
+    '@2063: account 63 \u0127-70',
     '@2063: account 82 \u012770',
     '@2064: account 2 \u01271',
     '@2064: account 63 \u012720',
-    '@2064: account 82 \u0127-21'
+    '@2064: account 82 \u0127-1',
+    '@2064: account 82 \u0127-20'
   ]);
 });
 
@@ -448,9 +458,11 @@ fs.readdirSync(specPath).forEach(function(file) {
   let p = path.join(specPath, file);
   let specText = fs.readFileSync(p, 'utf8');
   var spec = JSON.parse(specText);
-  test(`DB integration test - ${file} - ${spec.url}`, async () => {
-    let response = await request(server).get(spec.url);
-    expect(response.status).toEqual(spec.responseStatus);
-    expect(JSON.parse(response.text)).toEqual(spec.responseJson);
-  });
+  if (!('setup' in spec)) {
+    test(`DB integration test - ${file} - ${spec.url}`, async () => {
+      let response = await request(server).get(spec.url);
+      expect(response.status).toEqual(spec.responseStatus);
+      expect(JSON.parse(response.text)).toEqual(spec.responseJson);
+    });
+  }
 });

@@ -24,6 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -85,6 +88,8 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     protected EntityTypeRepository entityTypeRepository;
     @Resource
     protected TopicMessageRepository topicMessageRepository;
+    @Resource
+    protected NonFeeTransferRepository nonFeeTransferRepository;
 
     @Resource
     protected RecordParserProperties parserProperties;
@@ -136,9 +141,9 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
                             .getAccountNum());
 
             var accountNum = accountId.get().getEntityNum();
-            var cryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndEntityNum(
+            var cryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndEntityNumAndAmount(
                     Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountNum).get();
+                    accountNum, accountAmount.getAmount()).get();
             Assertions.assertEquals(accountAmount.getAmount(), cryptoTransfer.getAmount());
             Assertions.assertEquals(accountAmount.getAccountID().getRealmNum(), cryptoTransfer.getRealmNum());
         }
@@ -214,7 +219,7 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
 
         long validDuration = 120;
         AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build();
-        long txFee = 53968962L;
+        long txFee = 100L;
         AccountID nodeAccount = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build();
 
         TransactionBody.Builder body = TransactionBody.newBuilder();

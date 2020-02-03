@@ -52,6 +52,8 @@ public class RecordParserProperties implements ParserProperties {
 
     private boolean persistFiles = true;
 
+    private boolean persistNonFeeTransfersAlways = false;
+
     private boolean persistSystemFiles = true;
 
     // If configured the mirror node will store the raw transaction
