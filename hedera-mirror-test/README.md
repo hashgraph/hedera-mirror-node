@@ -35,11 +35,11 @@ Tests can be compiled and run by running the following command from the root fol
 -   Tags : Tags allow you to filter which cucumber scenarios and file are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
     -   All test cases
 
-*         `./mvnw clean integration-test --projects hedera-mirror-test/ -Dcucumber.filter.tags="@FullSuite"`
+*           `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
     -   Negative cases
-*         `./mvnw clean integration-test --projects hedera-mirror-test/ -Dcucumber.filter.tags="@Negative"`
+*           `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
     -   Edge cases
-*         `./mvnw clean integration-test --projects hedera-mirror-test/ -Dcucumber.filter.tags="@Edge"`
+*           `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
 
 ### Test Layout
 
@@ -115,7 +115,7 @@ Then using the [JMeter Maven Plugin](https://github.com/jmeter-maven-plugin/jmet
 
 -   Start the tests:
 
-    `./mvnw clean verify --projects hedera-mirror-test`
+    `./mvnw clean verify -P=integration-tests --projects hedera-mirror-test`
 
     Optional properties follow the 'Modifying Properties' logic (https://github.com/jmeter-maven-plugin/jmeter-maven-plugin/wiki/Modifying-Properties) and include the following
 

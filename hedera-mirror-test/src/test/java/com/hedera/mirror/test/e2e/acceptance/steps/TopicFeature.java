@@ -28,7 +28,6 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +56,6 @@ public class TopicFeature {
     TopicClient topicClient;
     ConsensusTopicId consensusTopicId;
     SubscriptionResponse subscriptionResponse;
-    List<TransactionReceipt> transactionReceipts;
     Ed25519PrivateKey submitKey;
     Instant testInstantReference;
 
@@ -81,24 +79,41 @@ public class TopicFeature {
         }
     }
 
-    @Given("I attempt to create a new topic id")
+    @Given("I successfully create a new topic id")
     public void createNewTopic() throws HederaStatusException {
-        if (consensusTopicId == null) {
-            topicClient = new TopicClient(sdkClient.getClient());
-            transactionReceipts = new ArrayList();
+        topicClient = new TopicClient(sdkClient.getClient());
 
-            submitKey = Ed25519PrivateKey.generate();
-            Ed25519PublicKey submitPublicKey = submitKey.publicKey;
-            log.debug("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
+        submitKey = Ed25519PrivateKey.generate();
+        Ed25519PublicKey submitPublicKey = submitKey.publicKey;
+        log.debug("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 
-            TransactionReceipt receipt = topicClient.createTopic(sdkClient.getPayerPublicKey(), submitPublicKey);
-            consensusTopicId = receipt.getConsensusTopicId();
-            mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
-                    .setTopicId(consensusTopicId)
-                    .setStartTime(Instant.EPOCH);
+        TransactionReceipt receipt = topicClient.createTopic(sdkClient.getPayerPublicKey(), submitPublicKey);
+        assertNotNull(receipt);
+        ConsensusTopicId topicId = receipt.getConsensusTopicId();
+        assertNotNull(topicId);
 
-            transactionReceipts.add(receipt);
-        }
+        consensusTopicId = topicId;
+        mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
+                .setTopicId(consensusTopicId)
+                .setStartTime(Instant.EPOCH);
+    }
+
+    @When("I successfully update an existing topic")
+    public void updateTopic() throws HederaStatusException {
+        TopicClient topicClient = new TopicClient(sdkClient.getClient());
+
+        TransactionReceipt receipt = topicClient.updateTopic(consensusTopicId);
+
+        assertNotNull(receipt);
+    }
+
+    @When("I successfully delete the topic")
+    public void deleteTopic() throws HederaStatusException {
+
+        TopicClient topicClient = new TopicClient(sdkClient.getClient());
+        TransactionReceipt receipt = topicClient.deleteTopic(consensusTopicId);
+
+        assertNotNull(receipt);
     }
 
     @Given("I provide a topic id {string}")
@@ -123,7 +138,7 @@ public class TopicFeature {
         this.latency = latency;
     }
 
-    @Given("I provide a date {string} and a number of messages {int} I want to receive")
+    @Given("I provide a startDate {string} and a number of messages {int} I want to receive")
     public void setTopicListenParams(String startDate, int numMessages) {
         this.numMessages = numMessages;
 
@@ -170,19 +185,6 @@ public class TopicFeature {
                 .setLimit(limit);
     }
 
-    @When("{long} milliseconds pass by")
-    public void waitSeconds(long milliSecs) throws InterruptedException {
-        log.trace("Waiting {} seconds", milliSecs);
-        Thread.sleep(milliSecs, 0);
-    }
-
-    @When("I attempt to update an existing topic")
-    public void updateTopic() throws HederaStatusException {
-        TopicClient topicClient = new TopicClient(sdkClient.getClient());
-        transactionReceipts = new ArrayList();
-        transactionReceipts.add(topicClient.updateTopic(consensusTopicId));
-    }
-
     @When("I subscribe to the topic")
     public void verifySubscriptionChannelConnection() throws Throwable {
         subscriptionResponse = mirrorClient.subscribeToTopic(mirrorConsensusTopicQuery);
@@ -192,17 +194,9 @@ public class TopicFeature {
     @When("I publish {int} messages")
     public void verifyTopicMessagePublish(int messageCount) throws InterruptedException, HederaStatusException {
         numMessages = messageCount;
-        transactionReceipts = topicClient
+        List<TransactionReceipt> transactionReceipts = topicClient
                 .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount);
         assertEquals(messageCount, transactionReceipts.size());
-    }
-
-    @When("I attempt to delete the topic")
-    public void deleteTopic() throws HederaStatusException {
-
-        TopicClient topicClient = new TopicClient(sdkClient.getClient());
-        transactionReceipts = new ArrayList();
-        transactionReceipts.add(topicClient.deleteTopic(consensusTopicId));
     }
 
     @Then("all setup items were configured")
@@ -265,14 +259,6 @@ public class TopicFeature {
         assertEquals(expectedMessageCount, subscriptionResponse.getMessages().size());
         subscriptionResponse.validateReceivedMessages();
         mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
-    }
-
-    @Then("the network should confirm valid transaction receipts for this operation")
-    public void verifyTransactionReceipts() {
-        assertFalse(transactionReceipts.isEmpty());
-        for (TransactionReceipt receipt : transactionReceipts) {
-            assertNotNull(receipt);
-        }
     }
 
     @Then("the network should confirm valid topic messages were received")

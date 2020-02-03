@@ -67,11 +67,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
@@ -87,10 +82,6 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot</artifactId>
-        </dependency>
-        <dependency>
             <groupId>de.monochromata.cucumber</groupId>
             <artifactId>reporting-plugin</artifactId>
             <version>4.0.15</version>
@@ -100,9 +91,6 @@
     <profiles>
         <profile>
             <id>acceptance-tests</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <build>
                 <plugins>
                     <plugin>
