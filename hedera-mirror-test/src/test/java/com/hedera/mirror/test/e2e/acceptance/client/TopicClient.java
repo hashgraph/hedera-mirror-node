@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -60,14 +61,11 @@ public class TopicClient {
         TransactionReceipt transactionReceipt = new ConsensusTopicCreateTransaction()
                 .setAdminKey(adminKey)
                 .setSubmitKey(submitKey)
-                .setAutoRenewAccountId(sdkClient.getOperatorId()) // Set this account as renew account
-                .setMaxTransactionFee(300_000_000)
+                .setAutoRenewAccountId(sdkClient.getOperatorId())
+                .setMaxTransactionFee(1_000_000_000)
                 .setTopicMemo("HCS Topic_" + refInstant)
-//                .setAutoRenewPeriod(Duration.ofDays(5)) // AUTORENEW_DURATION_NOT_IN_RANGE - 30 * 86400L
-//                .setNodeAccountId()
-//                .setTransactionId()
-//                .setTransactionMemo("HCS Topic Creation_" + refInstant)
-//                .setTransactionValidDuration(Duration.ofDays(1))
+//                .setAutoRenewPeriod(Duration.ofDays(7000000)) // INSUFFICIENT_TX_FEE, also unsupported
+//                .setAutoRenewAccountId()
                 .execute(client)
                 .getReceipt(client);
 
@@ -83,7 +81,12 @@ public class TopicClient {
                 .setTopicId(topicId)
                 .setTopicMemo(newMemo)
                 .setExpirationTime(Instant.now().plus(120, ChronoUnit.DAYS))
-//                .setAutoRenewPeriod(Duration.ofDays(12))
+                .setAutoRenewPeriod(Duration.ofSeconds(8000000))
+                .clearAdminKey()
+                .clearSubmitKey()
+                .clearTopicMemo()
+                .clearAutoRenewAccountId()
+//                .setAutoRenewAccountId()
                 .build(client)
                 .execute(client)
                 .getReceipt(client);
