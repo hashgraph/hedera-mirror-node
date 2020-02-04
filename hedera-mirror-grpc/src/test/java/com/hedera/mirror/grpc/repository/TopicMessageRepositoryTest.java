@@ -106,12 +106,27 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findByFilterWithStartTime() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(topicMessage2.getConsensusTimestamp())
+                .build();
+
+        topicMessageRepository.findByFilter(filter)
+                .as(StepVerifier::create)
+                .expectNext(topicMessage2)
+                .expectNext(topicMessage3)
+                .verifyComplete();
+    }
+
+    @Test
+    void findByFilterWithStartTimeOverflow() {
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.parse("0001-01-01T00:00:00Z"))
                 .build();
 
         topicMessageRepository.findByFilter(filter)
@@ -136,6 +151,25 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .expectNext(topicMessage1)
                 .expectNext(topicMessage2)
+                .verifyComplete();
+    }
+
+    @Test
+    void findByFilterWithTimeOverflows() {
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.parse("0001-01-01T00:00:00Z"))
+                .endTime(Instant.parse("2262-04-11T23:47:16.854775808Z"))
+                .build();
+
+        topicMessageRepository.findByFilter(filter)
+                .as(StepVerifier::create)
+                .expectNext(topicMessage1)
+                .expectNext(topicMessage2)
+                .expectNext(topicMessage3)
                 .verifyComplete();
     }
 

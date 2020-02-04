@@ -39,4 +39,12 @@ public class InstantToLongConverter implements Converter<Instant, Long> {
         }
         return Math.addExact(Math.multiplyExact(instant.getEpochSecond(), NANOS_PER_SECOND), instant.getNano());
     }
+
+    public Long convertOrDefault(Instant instant) {
+        try {
+            return convert(instant);
+        } catch (ArithmeticException ex) {
+            return 0L;
+        }
+    }
 }

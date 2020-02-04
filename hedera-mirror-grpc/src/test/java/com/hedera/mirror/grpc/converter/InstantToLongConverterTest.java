@@ -54,4 +54,15 @@ public class InstantToLongConverterTest {
     void convertOverflow(Instant input) {
         assertThrows(ArithmeticException.class, () -> converter.convert(input));
     }
+
+    @DisplayName("Default Long overflow cases to 0")
+    @ParameterizedTest(name = "with input {0}")
+    @CsvSource({
+            "2262-04-11T23:47:16.854775808Z, 0",
+            "1677-09-21T00:12:43.545224193Z, 0"
+    })
+    void convertOrDefault(Instant input, Long expected) {
+        Long result = converter.convertOrDefault(input);
+        assertEquals(expected, result);
+    }
 }
