@@ -31,7 +31,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.hashgraph.sdk.HederaStatusException;
-import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
@@ -39,7 +38,6 @@ import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 @Log4j2
 @Cucumber
 public class AccountFeature {
-    private AccountId accountId;
     private long balance;
     private SDKClient sdkClient;
 
@@ -55,19 +53,9 @@ public class AccountFeature {
         }
     }
 
-    @Given("I provided an account string of {string}")
-    public void retrieveAccount(String targetAccount) {
-        // if no account specified check operator balance
-        if (targetAccount.isEmpty()) {
-            accountId = sdkClient.getOperatorId();
-        } else {
-            accountId = AccountId.fromString(targetAccount);
-        }
-    }
-
     @When("I request balance info for this account")
     public void getAccountBalance() throws HederaStatusException {
-        balance = AccountClient.getBalance(sdkClient.getClient(), accountId);
+        balance = AccountClient.getBalance(sdkClient.getClient(), sdkClient.getOperatorId());
     }
 
     @Then("the result should be greater than or equal to {long}")

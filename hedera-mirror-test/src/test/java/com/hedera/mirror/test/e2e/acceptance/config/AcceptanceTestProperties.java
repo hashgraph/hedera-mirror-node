@@ -20,18 +20,28 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * ‍
  */
 
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
-@Data
 @Component
 @ConfigurationProperties(prefix = "hedera.mirror.test.acceptance")
+@Data
+@Validated
 public class AcceptanceTestProperties {
+    @NotBlank
     private String nodeAddress;
+    @NotBlank
     private String nodeId;
+    @NotBlank
     private String mirrorNodeAddress;
+    @NotBlank
     private String operatorId;
+    @NotBlank
     private String operatorKey;
+    @Min(0)
     private int messageTimeout;
 }
