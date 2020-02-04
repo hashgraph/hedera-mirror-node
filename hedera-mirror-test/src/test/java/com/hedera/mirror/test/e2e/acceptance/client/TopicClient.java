@@ -42,12 +42,15 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 @Value
 public class TopicClient {
 
+    private final SDKClient sdkClient;
     private final Client client;
     private final List<Instant> recordPublishInstants;
 
-    public TopicClient(Client client) {
-        this.client = client;
+    public TopicClient(SDKClient sdkClient) {
+        this.sdkClient = sdkClient;
+        client = sdkClient.getClient();
         recordPublishInstants = new ArrayList<>();
+        log.debug("Creating Topic Client");
     }
 
     public TransactionReceipt createTopic(Ed25519PublicKey adminKey, Ed25519PublicKey submitKey) throws HederaStatusException {

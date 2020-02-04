@@ -1,12 +1,6 @@
 @TopicMessagesFilter @FullSuite
 Feature: HCS Message Filter Coverage Feature
 
-    Background: User has clients
-        Given Config context is loaded
-        And User obtained SDK client
-        Given User obtained Mirror Node Consensus client
-        Then all setup items were configured
-
     @Sanity
     Scenario Outline: Validate topic filtering with past date and get X previous
         Given I successfully create a new topic id
@@ -42,13 +36,13 @@ Feature: HCS Message Filter Coverage Feature
         Examples:
             | publishCount | startSequence | endSequence | numMessages |
             | 50           | 25            | 30          | 5           |
-
-    Scenario Outline: Validate topic filtering with past date and limit of 10
+        
+    Scenario Outline: Validate topic filtering with past date and a specified limit
         Given I successfully create a new topic id
         And I publish <numMessages> messages
         When I provide a startDate <startDate> and endDate <endDate> and a limit of <limit> messages I want to receive
         And I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages
         Examples:
-            | numMessages | startDate                 | endDate                   | limit |
-            | 10          | "2020-01-01T00:00:00.00Z" | "2020-02-01T00:00:00.00Z" | 5     |
+            | numMessages | startDate                 | endDate | limit |
+            | 10          | "2020-01-01T00:00:00.00Z" | "180"   | 5     |

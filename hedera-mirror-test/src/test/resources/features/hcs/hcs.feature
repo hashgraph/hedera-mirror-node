@@ -1,12 +1,6 @@
 @TopicMessagesBase @FullSuite
 Feature: HCS Base Coverage Feature
 
-    Background: User has clients
-        Given Config context is loaded
-        And User obtained SDK client
-        Given User obtained Mirror Node Consensus client
-        Then all setup items were configured
-
     @Sanity
     Scenario Outline: Validate Topic message submission
         Given I successfully create a new topic id
@@ -19,9 +13,15 @@ Feature: HCS Base Coverage Feature
             | 1           |
             | 7           |
 
+    @UpdateTopic
     Scenario: Validate Topic Updates
         Given I successfully create a new topic id
         Then I successfully update an existing topic
+
+    @DeleteTopic
+    Scenario: Validate topic deletion
+        Given I successfully create a new topic id
+        Then I successfully delete the topic
 
     Scenario Outline: Validate Topic message listener
         Given I successfully create a new topic id
@@ -42,8 +42,3 @@ Feature: HCS Base Coverage Feature
             | topicId | errorCode                                                                              |
             | ""      | "Missing required topicID"                                                             |
             | "-1"    | "INVALID_ARGUMENT: subscribeTopic.filter.topicNum: must be greater than or equal to 0" |
-
-    Scenario: Validate topic deletion
-        Given I successfully create a new topic id
-        Then I successfully delete the topic
-

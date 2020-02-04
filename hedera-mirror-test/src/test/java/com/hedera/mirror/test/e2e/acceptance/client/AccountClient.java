@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Client;
@@ -35,9 +36,37 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 
 @Log4j2
+@Value
 public class AccountClient {
 
-    public static AccountId createNewAccount(Client client) throws HederaStatusException {
+    private final SDKClient sdkClient;
+    private final Client client;
+
+    public AccountClient(SDKClient sdkClient) {
+        this.sdkClient = sdkClient;
+        client = sdkClient.getClient();
+        log.debug("Creating Account Client");
+    }
+
+    public static long getBalance(Client client, String accountIdString) throws HederaStatusException {
+        return getBalance(client, accountIdString);
+    }
+
+    public long getBalance() throws HederaStatusException {
+        return getBalance(sdkClient.getOperatorId());
+    }
+
+    public long getBalance(AccountId accountId) throws HederaStatusException {
+        Hbar balance = new AccountBalanceQuery()
+                .setAccountId(sdkClient.getOperatorId())
+                .execute(client);
+
+        log.debug("{} balance is {}", accountId, balance);
+
+        return balance.asTinybar();
+    }
+
+    public AccountId createNewAccount() throws HederaStatusException {
         // 1. Generate a Ed25519 private, public key pair
         Ed25519PrivateKey newKey = Ed25519PrivateKey.generate();
         Ed25519PublicKey newPublicKey = newKey.publicKey;
@@ -60,19 +89,5 @@ public class AccountClient {
 
         log.trace("account = {}", newAccountId);
         return newAccountId;
-    }
-
-    public static long getBalance(Client client, String accountIdString) throws HederaStatusException {
-        return getBalance(client, accountIdString);
-    }
-
-    public static long getBalance(Client client, AccountId accountId) throws HederaStatusException {
-        Hbar balance = new AccountBalanceQuery()
-                .setAccountId(accountId)
-                .execute(client);
-
-        log.debug("{} balance is {}", accountId, balance);
-
-        return balance.asTinybar();
     }
 }

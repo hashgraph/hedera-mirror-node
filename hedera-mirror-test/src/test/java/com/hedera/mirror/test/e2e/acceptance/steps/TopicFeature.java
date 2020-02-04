@@ -39,10 +39,8 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
 @Log4j2
@@ -51,43 +49,27 @@ public class TopicFeature {
     private int numMessages;
     private int latency;
     private MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
-    private SDKClient sdkClient;
-    private MirrorNodeClient mirrorClient;
-    private TopicClient topicClient;
     private ConsensusTopicId consensusTopicId;
     private SubscriptionResponse subscriptionResponse;
     private Ed25519PrivateKey submitKey;
     private Instant testInstantReference;
 
     @Autowired
-    private AcceptanceTestProperties acceptanceTestProperties;
+    private MirrorNodeClient mirrorClient;
 
-    @Given("User obtained SDK client")
-    public void getSDKClient() {
-        if (sdkClient == null) {
-            sdkClient = new SDKClient(acceptanceTestProperties);
-            topicClient = new TopicClient(sdkClient.getClient());
-        }
-
-        testInstantReference = Instant.now();
-    }
-
-    @Given("User obtained Mirror Node Consensus client")
-    public void getMirrorNodeClient() {
-        if (mirrorClient == null) {
-            mirrorClient = new MirrorNodeClient(acceptanceTestProperties);
-        }
-    }
+    @Autowired
+    private TopicClient topicClient;
 
     @Given("I successfully create a new topic id")
     public void createNewTopic() throws HederaStatusException {
-        topicClient = new TopicClient(sdkClient.getClient());
+        testInstantReference = Instant.now();
 
         submitKey = Ed25519PrivateKey.generate();
         Ed25519PublicKey submitPublicKey = submitKey.publicKey;
         log.debug("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 
-        TransactionReceipt receipt = topicClient.createTopic(sdkClient.getPayerPublicKey(), submitPublicKey);
+        TransactionReceipt receipt = topicClient
+                .createTopic(topicClient.getSdkClient().getPayerPublicKey(), submitPublicKey);
         assertNotNull(receipt);
         ConsensusTopicId topicId = receipt.getConsensusTopicId();
         assertNotNull(topicId);
@@ -100,8 +82,6 @@ public class TopicFeature {
 
     @When("I successfully update an existing topic")
     public void updateTopic() throws HederaStatusException {
-        TopicClient topicClient = new TopicClient(sdkClient.getClient());
-
         TransactionReceipt receipt = topicClient.updateTopic(consensusTopicId);
 
         assertNotNull(receipt);
@@ -109,8 +89,6 @@ public class TopicFeature {
 
     @When("I successfully delete the topic")
     public void deleteTopic() throws HederaStatusException {
-
-        TopicClient topicClient = new TopicClient(sdkClient.getClient());
         TransactionReceipt receipt = topicClient.deleteTopic(consensusTopicId);
 
         assertNotNull(receipt);
@@ -199,13 +177,6 @@ public class TopicFeature {
         assertEquals(messageCount, transactionReceipts.size());
     }
 
-    @Then("all setup items were configured")
-    public void verifySetup() {
-        assertNotNull(sdkClient);
-        assertNotNull(mirrorClient);
-        log.trace("Verified non null setup items");
-    }
-
     @Then("I unsubscribe from a topic")
     public void verifyUnSubscribeFromChannelConnection() {
         mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
@@ -268,12 +239,10 @@ public class TopicFeature {
 
     @After
     public void closeClients() {
-        if (sdkClient != null) {
-            try {
-                sdkClient.close();
-            } catch (Exception ex) {
-                log.warn("Error closing SDK client : {}", ex.getMessage());
-            }
+        try {
+            topicClient.getSdkClient().close();
+        } catch (Exception ex) {
+            log.warn("Error closing SDK client : {}", ex.getMessage());
         }
 
         if (mirrorClient != null) {

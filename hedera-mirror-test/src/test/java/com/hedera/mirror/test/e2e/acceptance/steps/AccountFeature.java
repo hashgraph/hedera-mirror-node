@@ -23,39 +23,28 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.cucumber.java.After;
-import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 
 @Log4j2
 @Cucumber
+@SpringBootTest
 public class AccountFeature {
     private long balance;
-    private SDKClient sdkClient;
 
     @Autowired
-    private AcceptanceTestProperties acceptanceTestProperties;
-
-    @Given("User obtained SDK client for account feature")
-    public void getSDKClient() {
-        assertNotNull(acceptanceTestProperties, "acceptanceTestProperties is null");
-
-        if (sdkClient == null) {
-            sdkClient = new SDKClient(acceptanceTestProperties);
-        }
-    }
+    private AccountClient accountClient;
 
     @When("I request balance info for this account")
     public void getAccountBalance() throws HederaStatusException {
-        balance = AccountClient.getBalance(sdkClient.getClient(), sdkClient.getOperatorId());
+        balance = accountClient.getBalance();
     }
 
     @Then("the result should be greater than or equal to {long}")
@@ -65,13 +54,10 @@ public class AccountFeature {
 
     @After
     public void closeClients() {
-
-        if (sdkClient != null) {
-            try {
-                sdkClient.close();
-            } catch (Exception ex) {
-                log.warn("Error closing SDK client : {}", ex);
-            }
+        try {
+            accountClient.getSdkClient().close();
+        } catch (Exception ex) {
+            log.warn("Error closing SDK client : {}", ex);
         }
     }
 }
