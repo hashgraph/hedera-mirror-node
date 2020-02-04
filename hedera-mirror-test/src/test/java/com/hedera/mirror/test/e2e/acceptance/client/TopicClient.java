@@ -21,6 +21,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Value;
@@ -59,8 +60,8 @@ public class TopicClient {
         TransactionReceipt transactionReceipt = new ConsensusTopicCreateTransaction()
                 .setAdminKey(adminKey)
                 .setSubmitKey(submitKey)
-//                .setAutoRenewAccountId(AccountId.fromString("0.0.2")) // AUTORENEW_ACCOUNT_NOT_ALLOWED
-                .setMaxTransactionFee(1_000_000_000)
+                .setAutoRenewAccountId(sdkClient.getOperatorId()) // Set this account as renew account
+                .setMaxTransactionFee(300_000_000)
                 .setTopicMemo("HCS Topic_" + refInstant)
 //                .setAutoRenewPeriod(Duration.ofDays(5)) // AUTORENEW_DURATION_NOT_IN_RANGE - 30 * 86400L
 //                .setNodeAccountId()
@@ -81,6 +82,7 @@ public class TopicClient {
         TransactionReceipt transactionReceipt = new ConsensusTopicUpdateTransaction()
                 .setTopicId(topicId)
                 .setTopicMemo(newMemo)
+                .setExpirationTime(Instant.now().plus(120, ChronoUnit.DAYS))
 //                .setAutoRenewPeriod(Duration.ofDays(12))
                 .build(client)
                 .execute(client)

@@ -36,7 +36,7 @@ Feature: HCS Message Filter Coverage Feature
         Examples:
             | publishCount | startSequence | endSequence | numMessages |
             | 50           | 25            | 30          | 5           |
-        
+
     Scenario Outline: Validate topic filtering with past date and a specified limit
         Given I successfully create a new topic id
         And I publish <numMessages> messages
