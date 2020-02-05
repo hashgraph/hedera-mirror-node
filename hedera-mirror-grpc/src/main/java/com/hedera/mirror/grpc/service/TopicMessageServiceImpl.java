@@ -22,6 +22,7 @@ package com.hedera.mirror.grpc.service;
 
 import com.google.common.base.Stopwatch;
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.Data;
@@ -157,8 +158,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         void onComplete() {
-            log.info("[{}] Topic {} {} complete with {} messages in {}", filter
-                    .getSubscriberId(), topicId, mode, count, stopwatch);
+            var rate = (int) (1_000_000.0 * count.get() / stopwatch.elapsed(TimeUnit.MICROSECONDS));
+            log.info("[{}] Topic {} {} complete with {} messages in {} ({}/s)", filter
+                    .getSubscriberId(), topicId, mode, count, stopwatch, rate);
             mode = mode.next();
         }
     }

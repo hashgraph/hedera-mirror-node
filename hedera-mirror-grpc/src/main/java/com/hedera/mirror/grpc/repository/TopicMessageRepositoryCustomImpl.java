@@ -28,6 +28,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.springframework.data.r2dbc.query.Criteria;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.grpc.GrpcProperties;
@@ -45,6 +47,8 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
     private final InstantToLongConverter instantToLongConverter;
 
     @Override
+    @Transactional(propagation = Propagation.NESTED, readOnly = true, transactionManager =
+            "connectionFactoryTransactionManager")
     public Flux<TopicMessage> findByFilter(TopicMessageFilter filter) {
         Criteria whereClause = Criteria.where("realm_num")
                 .is(filter.getRealmNum())

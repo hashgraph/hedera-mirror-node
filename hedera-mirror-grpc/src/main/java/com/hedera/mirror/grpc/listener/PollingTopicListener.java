@@ -25,9 +25,10 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -35,18 +36,25 @@ import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 
 @Named
 @Log4j2
-@RequiredArgsConstructor
 public class PollingTopicListener implements TopicListener {
 
     private final ListenerProperties listenerProperties;
     private final TopicMessageRepository topicMessageRepository;
+    private final Scheduler scheduler;
+
+    public PollingTopicListener(ListenerProperties listenerProperties, TopicMessageRepository topicMessageRepository) {
+        this.listenerProperties = listenerProperties;
+        this.topicMessageRepository = topicMessageRepository;
+        scheduler = Schedulers.newBoundedElastic(listenerProperties
+                .getPoolSize(), Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZE, "poll");
+    }
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
         PollingContext context = new PollingContext(filter);
         Duration frequency = listenerProperties.getPollingFrequency();
 
-        return Flux.interval(frequency)
+        return Flux.interval(frequency, scheduler)
                 .filter(i -> !context.isRunning()) // Discard polling requests while querying
                 .concatMap(i -> poll(context))
                 .name("poll")

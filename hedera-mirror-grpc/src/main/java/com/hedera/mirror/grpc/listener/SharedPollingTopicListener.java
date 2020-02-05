@@ -26,6 +26,8 @@ import javax.inject.Named;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
@@ -50,8 +52,10 @@ public class SharedPollingTopicListener implements TopicListener {
 
         Duration frequency = listenerProperties.getPollingFrequency();
         PollingContext context = new PollingContext();
+        Scheduler scheduler = Schedulers.newBoundedElastic(listenerProperties
+                .getPoolSize(), Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZE, "shared-poll");
 
-        poller = Flux.interval(frequency)
+        poller = Flux.interval(frequency, scheduler)
                 .filter(i -> !context.isRunning()) // Discard polling requests while querying
                 .concatMap(i -> poll(context))
                 .name("shared-poll")

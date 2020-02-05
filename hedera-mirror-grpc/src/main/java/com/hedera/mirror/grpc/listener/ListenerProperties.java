@@ -21,6 +21,7 @@ package com.hedera.mirror.grpc.listener;
  */
 
 import java.time.Duration;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -33,6 +34,9 @@ public class ListenerProperties {
 
     @NotNull
     private Duration pollingFrequency = Duration.ofSeconds(2);
+
+    @Min(1)
+    private int poolSize = Runtime.getRuntime().availableProcessors() * 10;
 
     @NotNull
     private ListenerType type = ListenerType.POLL;

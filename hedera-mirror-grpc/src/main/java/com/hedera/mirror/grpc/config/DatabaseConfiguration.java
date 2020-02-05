@@ -20,10 +20,14 @@ package com.hedera.mirror.grpc.config;
  * ‍
  */
 
+import io.r2dbc.postgresql.PostgresqlConnectionFactoryProvider;
 import io.r2dbc.spi.ConnectionFactory;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.springframework.boot.autoconfigure.r2dbc.ConnectionFactoryOptionsBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -44,5 +48,15 @@ public class DatabaseConfiguration {
         converters.addAll(R2dbcCustomConversions.STORE_CONVERTERS);
         return new R2dbcCustomConversions(
                 CustomConversions.StoreConversions.of(dialect.getSimpleTypeHolder(), converters), customConverters);
+    }
+
+    @Bean
+    ConnectionFactoryOptionsBuilderCustomizer connectionFactoryCustomizer() {
+        Map<String, String> options = new HashMap<>();
+        options.put("default_transaction_read_only", "on");
+        options.put("idle_in_transaction_session_timeout", "30s");
+        options.put("lock_timeout", "30s");
+        options.put("statement_timeout", "300s");
+        return builder -> builder.option(PostgresqlConnectionFactoryProvider.OPTIONS, options);
     }
 }
