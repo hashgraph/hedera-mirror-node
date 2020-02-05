@@ -158,7 +158,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         void onComplete() {
-            var rate = (int) (1_000_000.0 * count.get() / stopwatch.elapsed(TimeUnit.MICROSECONDS));
+            var elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+            var rate = elapsed > 0 ? (int) (1000.0 * count.get() / elapsed) : 0;
             log.info("[{}] Topic {} {} complete with {} messages in {} ({}/s)", filter
                     .getSubscriberId(), topicId, mode, count, stopwatch, rate);
             mode = mode.next();

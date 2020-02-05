@@ -24,9 +24,7 @@ import io.r2dbc.postgresql.PostgresqlConnectionFactoryProvider;
 import io.r2dbc.spi.ConnectionFactory;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.springframework.boot.autoconfigure.r2dbc.ConnectionFactoryOptionsBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +33,8 @@ import org.springframework.data.convert.CustomConversions;
 import org.springframework.data.r2dbc.convert.R2dbcCustomConversions;
 import org.springframework.data.r2dbc.dialect.DialectResolver;
 import org.springframework.data.r2dbc.dialect.R2dbcDialect;
+
+import com.hedera.mirror.grpc.GrpcProperties;
 
 @Configuration
 public class DatabaseConfiguration {
@@ -51,12 +51,8 @@ public class DatabaseConfiguration {
     }
 
     @Bean
-    ConnectionFactoryOptionsBuilderCustomizer connectionFactoryCustomizer() {
-        Map<String, String> options = new HashMap<>();
-        options.put("default_transaction_read_only", "on");
-        options.put("idle_in_transaction_session_timeout", "30s");
-        options.put("lock_timeout", "30s");
-        options.put("statement_timeout", "300s");
-        return builder -> builder.option(PostgresqlConnectionFactoryProvider.OPTIONS, options);
+    ConnectionFactoryOptionsBuilderCustomizer connectionFactoryCustomizer(GrpcProperties grpcProperties) {
+        return builder -> builder
+                .option(PostgresqlConnectionFactoryProvider.OPTIONS, grpcProperties.getConnectionOptions());
     }
 }
