@@ -21,8 +21,10 @@ package com.hedera.mirror.grpc.controller;
  */
 
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import java.time.Instant;
 import javax.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -49,6 +51,8 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
 
+    private static final long LONG_MAX_SECONDS = 9_223_372_036_000_000_000L;
+    private static final int LONG_MAX_NANOSECONDS = 854_775_807;
     private final TopicMessageService topicMessageService;
 
     @Override
@@ -72,11 +76,23 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                 .topicNum((int) query.getTopicID().getTopicNum());
 
         if (query.hasConsensusStartTime()) {
-            builder.startTime(ProtoUtil.fromTimestamp(query.getConsensusStartTime()));
+            Timestamp startTimeStamp = query.getConsensusStartTime();
+
+            // scope pre epoch timestamps to epoch instant
+            if (startTimeStamp.getSeconds() < 0 || startTimeStamp.getNanos() < 0) {
+                builder.startTime(Instant.EPOCH);
+            } else {
+                builder.startTime(ProtoUtil.fromTimestamp(startTimeStamp));
+            }
         }
 
         if (query.hasConsensusEndTime()) {
-            builder.endTime(ProtoUtil.fromTimestamp(query.getConsensusEndTime()));
+            Timestamp endTimeStamp = query.getConsensusEndTime();
+
+            // only set endTime if it's smaller than the seconds and nanoseconds in the Long.MAX value
+            if (endTimeStamp.getSeconds() <= LONG_MAX_SECONDS && endTimeStamp.getNanos() <= LONG_MAX_NANOSECONDS) {
+                builder.endTime(ProtoUtil.fromTimestamp(endTimeStamp));
+            }
         }
 
         return builder.build();
