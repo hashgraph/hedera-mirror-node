@@ -106,27 +106,12 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findByFilterWithStartTime() {
+        domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(topicMessage2.getConsensusTimestamp())
-                .build();
-
-        topicMessageRepository.findByFilter(filter)
-                .as(StepVerifier::create)
-                .expectNext(topicMessage2)
-                .expectNext(topicMessage3)
-                .verifyComplete();
-    }
-
-    @Test
-    void findByFilterWithStartTimeOverflow() {
-        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
-
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.parse("0001-01-01T00:00:00Z"))
                 .build();
 
         topicMessageRepository.findByFilter(filter)
@@ -162,7 +147,7 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.parse("0001-01-01T00:00:00Z"))
-                .endTime(Instant.parse("2262-04-11T23:47:16.854775808Z"))
+                .endTime(Instant.parse("3000-04-11T23:47:16.854775808Z"))
                 .build();
 
         topicMessageRepository.findByFilter(filter)

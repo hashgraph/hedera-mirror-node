@@ -31,20 +31,24 @@ public class InstantToLongConverter implements Converter<Instant, Long> {
 
     // Reserve 9 of the least significant digits for nanoseconds
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
+    private static final Instant longMaxInstant = Instant.parse("2262-04-11T23:47:16.854775807Z");
 
     @Override
     public Long convert(Instant instant) {
         if (instant == null) {
             return null;
         }
-        return Math.addExact(Math.multiplyExact(instant.getEpochSecond(), NANOS_PER_SECOND), instant.getNano());
-    }
 
-    public Long convertOrDefault(Instant instant) {
-        try {
-            return convert(instant);
-        } catch (ArithmeticException ex) {
+        // handle pre EPOCH instants
+        if (instant.isBefore(Instant.EPOCH)) {
             return 0L;
         }
+
+        // handle instants with long values greater than Long.MAX_VALUE
+        if (instant.isAfter(longMaxInstant)) {
+            return Long.MAX_VALUE;
+        }
+
+        return Math.addExact(Math.multiplyExact(instant.getEpochSecond(), NANOS_PER_SECOND), instant.getNano());
     }
 }

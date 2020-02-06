@@ -38,31 +38,12 @@ public class InstantToLongConverterTest {
             "2019-07-29T20:48:44.226490001Z, 1564433324226490001",
             "2019-07-29T20:48:44Z, 1564433324000000000",
             "1970-01-01T00:00:00.000000001Z, 1",
-            "2262-04-11T23:47:16.854775807Z, 9223372036854775807"
+            "2262-04-11T23:47:16.854775807Z, 9223372036854775807",
+            "3000-04-11T23:47:16.854775807Z, 9223372036854775807",
+            "1677-09-21T00:12:43.545224193Z, 0"
     })
     void convert(Instant input, Long expected) {
         Long result = converter.convert(input);
-        assertEquals(expected, result);
-    }
-
-    @DisplayName("Long overflow")
-    @ParameterizedTest(name = "with input {0}")
-    @CsvSource({
-            "2262-04-11T23:47:16.854775808Z",
-            "1677-09-21T00:12:43.545224193Z"
-    })
-    void convertOverflow(Instant input) {
-        assertThrows(ArithmeticException.class, () -> converter.convert(input));
-    }
-
-    @DisplayName("Default Long overflow cases to 0")
-    @ParameterizedTest(name = "with input {0}")
-    @CsvSource({
-            "2262-04-11T23:47:16.854775808Z, 0",
-            "1677-09-21T00:12:43.545224193Z, 0"
-    })
-    void convertOrDefault(Instant input, Long expected) {
-        Long result = converter.convertOrDefault(input);
         assertEquals(expected, result);
     }
 }

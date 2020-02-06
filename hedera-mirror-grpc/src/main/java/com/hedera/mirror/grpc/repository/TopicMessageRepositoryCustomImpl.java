@@ -47,12 +47,11 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
                 .and("topic_num")
                 .is(filter.getTopicNum())
                 .and("consensus_timestamp")
-                .greaterThanOrEquals(instantToLongConverter.convertOrDefault(filter.getStartTime()));
+                .greaterThanOrEquals(instantToLongConverter.convert(filter.getStartTime()));
 
-        Long endTime = instantToLongConverter.convertOrDefault(filter.getEndTime());
-        if (filter.getEndTime() != null && endTime > 0) {
+        if (filter.getEndTime() != null) {
             whereClause = whereClause.and("consensus_timestamp")
-                    .lessThan(endTime);
+                    .lessThan(instantToLongConverter.convert(filter.getEndTime()));
         }
 
         return databaseClient.select()
