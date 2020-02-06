@@ -23,11 +23,14 @@ package com.hedera.mirror.grpc.repository;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.springframework.data.r2dbc.query.Criteria;
 import reactor.core.publisher.Flux;
 
+import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -38,6 +41,7 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryCustom {
 
     private final DatabaseClient databaseClient;
+    private final GrpcProperties grpcProperties;
     private final InstantToLongConverter instantToLongConverter;
 
     @Override
@@ -54,15 +58,22 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
                     .lessThan(instantToLongConverter.convert(filter.getEndTime()));
         }
 
+        int limit = filter.hasLimit() ? (int) filter.getLimit() : Integer.MAX_VALUE;
+        int pageSize = Math.min(limit, grpcProperties.getMaxPageSize());
+        Pageable pageable = PageRequest.of(0, pageSize);
+
         return databaseClient.select()
                 .from(TopicMessage.class)
                 .matching(whereClause)
                 .orderBy(Sort.by("consensus_timestamp"))
+                .page(pageable)
                 .fetch()
                 .all()
-                .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .name("findByFilter")
                 .metrics()
-                .doOnSubscribe(s -> log.debug("Executing query: {}", filter));
+                .doOnSubscribe(s -> log.debug("Executing query: {}", filter))
+                .doOnCancel(() -> log.debug("[{}] Cancelled query", filter.getSubscriberId()))
+                .doOnComplete(() -> log.debug("[{}] Completed query", filter.getSubscriberId()))
+                .doOnNext(t -> log.trace("[{}] Next message: {}", filter.getSubscriberId(), t));
     }
 }
