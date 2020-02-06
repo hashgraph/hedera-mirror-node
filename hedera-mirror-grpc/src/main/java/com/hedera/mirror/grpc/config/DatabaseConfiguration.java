@@ -20,10 +20,12 @@ package com.hedera.mirror.grpc.config;
  * ‍
  */
 
+import io.r2dbc.postgresql.PostgresqlConnectionFactoryProvider;
 import io.r2dbc.spi.ConnectionFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.springframework.boot.autoconfigure.r2dbc.ConnectionFactoryOptionsBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -31,6 +33,8 @@ import org.springframework.data.convert.CustomConversions;
 import org.springframework.data.r2dbc.convert.R2dbcCustomConversions;
 import org.springframework.data.r2dbc.dialect.DialectResolver;
 import org.springframework.data.r2dbc.dialect.R2dbcDialect;
+
+import com.hedera.mirror.grpc.GrpcProperties;
 
 @Configuration
 public class DatabaseConfiguration {
@@ -44,5 +48,11 @@ public class DatabaseConfiguration {
         converters.addAll(R2dbcCustomConversions.STORE_CONVERTERS);
         return new R2dbcCustomConversions(
                 CustomConversions.StoreConversions.of(dialect.getSimpleTypeHolder(), converters), customConverters);
+    }
+
+    @Bean
+    ConnectionFactoryOptionsBuilderCustomizer connectionFactoryCustomizer(GrpcProperties grpcProperties) {
+        return builder -> builder
+                .option(PostgresqlConnectionFactoryProvider.OPTIONS, grpcProperties.getConnectionOptions());
     }
 }

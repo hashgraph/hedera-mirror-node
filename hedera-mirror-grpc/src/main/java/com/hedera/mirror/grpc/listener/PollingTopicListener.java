@@ -70,7 +70,6 @@ public class PollingTopicListener implements TopicListener {
                 .topicNum(filter.getTopicNum())
                 .build();
 
-        log.debug("Polling for messages: {}", newFilter);
         return topicMessageRepository.findByFilter(newFilter)
                 .doOnSubscribe(s -> context.setRunning(true))
                 .doOnCancel(() -> context.setRunning(false))

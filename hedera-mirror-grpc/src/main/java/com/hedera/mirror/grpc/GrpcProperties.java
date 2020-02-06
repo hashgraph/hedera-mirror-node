@@ -20,18 +20,21 @@ package com.hedera.mirror.grpc;
  * ‍
  */
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.data.r2dbc.R2dbcTransactionManagerAutoConfiguration;
-import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
-import reactor.core.scheduler.Schedulers;
+import java.util.HashMap;
+import java.util.Map;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
-@ConfigurationPropertiesScan
-@SpringBootApplication(exclude = R2dbcTransactionManagerAutoConfiguration.class)
-public class MirrorGrpcApplication {
+@Data
+@Validated
+@ConfigurationProperties("hedera.mirror.grpc")
+public class GrpcProperties {
+    @Min(32)
+    private int maxPageSize = 1000;
 
-    public static void main(String[] args) {
-        Schedulers.enableMetrics();
-        SpringApplication.run(MirrorGrpcApplication.class, args);
-    }
+    @NotNull
+    private Map<String, String> connectionOptions = new HashMap<>();
 }
