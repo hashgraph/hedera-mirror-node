@@ -42,5 +42,3 @@ spring:
     username: ${hedera.mirror.grpc.db.username}
     pool:
       max-size: 100
-  transaction:
-    default-timeout: 120s

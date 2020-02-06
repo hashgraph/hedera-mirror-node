@@ -33,7 +33,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("hedera.mirror.grpc")
 public class GrpcProperties {
     @Min(32)
-    private int maxPageSize = 5000;
+    private int maxPageSize = 1000;
 
     @NotNull
     private Map<String, String> connectionOptions = new HashMap<>();
