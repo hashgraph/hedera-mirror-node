@@ -7,6 +7,11 @@ hedera:
         password: mirror_grpc_pass
         port: 5432
         username: mirror_grpc
+      connectionOptions:
+        default_transaction_read_only: "on"
+        idle_in_transaction_session_timeout: "30s"
+        lock_timeout: "30s"
+        statement_timeout: "120s"
       port: 5600
 grpc:
   server:
