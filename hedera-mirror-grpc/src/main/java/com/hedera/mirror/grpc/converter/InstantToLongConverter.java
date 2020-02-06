@@ -31,7 +31,7 @@ public class InstantToLongConverter implements Converter<Instant, Long> {
 
     // Reserve 9 of the least significant digits for nanoseconds
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
-    private static final Instant longMaxInstant = Instant.parse("2262-04-11T23:47:16.854775807Z");
+    private static final Instant LONG_MAX_INSTANT = Instant.parse("2262-04-11T23:47:16.854775807Z");
 
     @Override
     public Long convert(Instant instant) {
@@ -45,7 +45,7 @@ public class InstantToLongConverter implements Converter<Instant, Long> {
         }
 
         // handle instants with long values greater than Long.MAX_VALUE
-        if (instant.isAfter(longMaxInstant)) {
+        if (instant.isAfter(LONG_MAX_INSTANT)) {
             return Long.MAX_VALUE;
         }
 
