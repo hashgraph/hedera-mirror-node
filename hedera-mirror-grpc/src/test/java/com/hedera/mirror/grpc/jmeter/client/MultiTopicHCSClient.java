@@ -39,9 +39,10 @@ import com.hedera.mirror.grpc.jmeter.sampler.HCSTopicSampler;
 
 @Log4j2
 public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
-
-    private final String clientPattern = "%s.client%s[%d]";
-    private String propertiesBasePattern;
+    private final String basePattern = "%s.%s";
+    private final String clientPattern = "client%s[%d]";
+    JavaSamplerContext javaSamplerContext;
+    private String propertiesBase;
     private Map<TopicSubscription, HCSTopicSampler> consensusServiceReactiveSamplers;
     private String host;
     private int port;
@@ -50,13 +51,12 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
     @Override
     public void setupTest(JavaSamplerContext javaSamplerContext) {
         consensusServiceReactiveSamplers = new HashMap<>();
+        this.javaSamplerContext = javaSamplerContext;
 
-        propertiesBasePattern = getTestParam(javaSamplerContext, "propertiesBase", "hedera.mirror.test.performance.");
-        host = getTestParam(javaSamplerContext, "host", "localhost");
-        port = Integer.parseInt(getTestParam(javaSamplerContext, "port", "5600"));
-        clientCount = Integer
-                .parseInt(getTestParam(javaSamplerContext, "clientCount", "hedera.mirror.test.performance" +
-                        ".clientCount"));
+        propertiesBase = javaSamplerContext.getParameter("propertiesBase", "hedera.mirror.test.performance");
+        host = getTestParam("host", "localhost");
+        port = Integer.parseInt(getTestParam("port", "5600"));
+        clientCount = Integer.parseInt(getTestParam("clientCount", "0"));
 
         for (int i = 0; i < clientCount; i++) {
             TopicSubscription topicSubscription = TopicSubscription.builder()
@@ -69,6 +69,8 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
                     .subscribeTimeoutSeconds(convertClientParamToInt("SubscribeTimeoutSeconds", i))
                     .build();
 
+            log.debug("Created TopicSubscription : {}", topicSubscription);
+
             consensusServiceReactiveSamplers.put(topicSubscription, createSampler(topicSubscription));
         }
 
@@ -78,64 +80,18 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
     @Override
     public Arguments getDefaultParameters() {
         Arguments defaultParameters = new Arguments();
-        defaultParameters.addArgument("host", "localhost");
-        defaultParameters.addArgument("port", "5600");
-        defaultParameters.addArgument("limit", "100");
-        defaultParameters.addArgument("consensusStartTimeSeconds", "0");
-        defaultParameters.addArgument("consensusEndTimeSeconds", "0");
-        defaultParameters.addArgument("topicIDs", "0");
-        defaultParameters.addArgument("realmNum", "0");
-        defaultParameters.addArgument("historicMessagesCount", "0");
-        defaultParameters.addArgument("newTopicsMessageCount", "0");
-        defaultParameters.addArgument("messagesLatchWaitSeconds", "60");
+        defaultParameters.addArgument("propertiesBase", "hedera.mirror.test.performance");
         return defaultParameters;
     }
 
     @Override
     public SampleResult runTest(JavaSamplerContext javaSamplerContext) {
-        SampleResult result = new SampleResult();
-        int successSamplesCount = 0;
-        result.sampleStart();
-
-        try {
-            for (TopicSubscription subscription : consensusServiceReactiveSamplers.keySet()) {
-                MessageListener listener = MessageListener.builder()
-                        .historicMessagesCount(subscription.getHistoricMessagesCount())
-                        .futureMessagesCount(subscription.getIncomingMessageCount())
-                        .messagesLatchWaitSeconds(subscription.getSubscribeTimeoutSeconds())
-                        .build();
-
-                HCSTopicSampler.SamplerResult response = consensusServiceReactiveSamplers
-                        .get(subscription).subscribeTopic(listener);
-
-                result.sampleEnd();
-                result.setResponseData(response.toString().getBytes());
-                result.setSuccessful(response.isSuccess());
-
-                if (!response.isSuccess()) {
-                    result.setResponseMessage("Failure in subscribe topic test : " + subscription);
-                    result.setResponseCode("500");
-                } else {
-                    successSamplesCount++;
-                    result.setResponseMessage("Successfully performed subscription : " + subscription);
-                    result.setResponseCodeOK();
-                }
-            }
-        } catch (Exception ex) {
-            log.error("Error subscribing to topic", ex);
-
-            StringWriter stringWriter = new StringWriter();
-            ex.printStackTrace(new PrintWriter(stringWriter));
-            result.sampleEnd();
-            result.setResponseMessage("Exception: " + ex);
-            result.setResponseData(stringWriter.toString().getBytes());
-            result.setDataType(SampleResult.TEXT);
-            result.setResponseCode("500");
+        boolean sequential = Boolean.parseBoolean(getTestParam("sequential", "true"));
+        if (true) {
+            return sequentialRun();
+        } else {
+            return concurrentRun();
         }
-
-        log.info("{} out of {} samples passed", successSamplesCount, clientCount);
-
-        return result;
     }
 
     private HCSTopicSampler createSampler(TopicSubscription topicSubscription) {
@@ -155,8 +111,63 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
         return new HCSTopicSampler(host, port, builder.build());
     }
 
-    private String getTestParam(JavaSamplerContext javaSamplerContext, String property, String defaultVal) {
-        String retrievedValue = javaSamplerContext.getJMeterProperties().getProperty(propertiesBasePattern + property);
+    private SampleResult sequentialRun() {
+        SampleResult result = new SampleResult();
+        int successSamplesCount = 0;
+        result.sampleStart();
+
+        try {
+            HCSTopicSampler.SamplerResult response = null;
+            for (TopicSubscription subscription : consensusServiceReactiveSamplers.keySet()) {
+                MessageListener listener = MessageListener.builder()
+                        .historicMessagesCount(subscription.getHistoricMessagesCount())
+                        .futureMessagesCount(subscription.getIncomingMessageCount())
+                        .messagesLatchWaitSeconds(subscription.getSubscribeTimeoutSeconds())
+                        .build();
+
+                response = consensusServiceReactiveSamplers.get(subscription).subscribeTopic(listener);
+
+                if (!response.isSuccess()) {
+                    log.debug("Failure in subscribe topic test : " + subscription);
+                } else {
+                    successSamplesCount++;
+                    log.debug("Successfully performed subscription : " + subscription);
+                }
+            }
+
+            result.setResponseMessage("Successfully performed subscriptions");
+            result.setResponseCodeOK();
+            result.sampleEnd();
+            result.setResponseData(response.toString().getBytes());
+            result.setSuccessful(response.isSuccess());
+        } catch (Exception ex) {
+            log.error("Error subscribing to topic", ex);
+
+            StringWriter stringWriter = new StringWriter();
+            ex.printStackTrace(new PrintWriter(stringWriter));
+
+            result.setResponseMessage("Failure in subscribes");
+            result.setResponseCode("500");
+            result.sampleEnd();
+            result.setResponseMessage("Exception: " + ex);
+            result.setResponseData(stringWriter.toString().getBytes());
+            result.setDataType(SampleResult.TEXT);
+            result.setResponseCode("500");
+        }
+
+        log.info("{} out of {} samples passed", successSamplesCount, clientCount);
+
+        return result;
+    }
+
+    private SampleResult concurrentRun() {
+        SampleResult result = new SampleResult();
+
+        return result;
+    }
+
+    private String getTestParam(String property, String defaultVal) {
+        String retrievedValue = getTestParam(property);
         if (retrievedValue == null || retrievedValue.isEmpty()) {
             return defaultVal;
         }
@@ -164,11 +175,20 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
         return retrievedValue;
     }
 
+    private String getTestParam(String property) {
+        String value = javaSamplerContext.getJMeterProperties()
+                .getProperty(String.format(basePattern, propertiesBase, property));
+        log.info("Retrieved {} prop as {}", property, value);
+        return value;
+    }
+
     private long convertClientParamToLong(String property, int num) {
-        return Long.parseLong(String.format(clientPattern, propertiesBasePattern, property, num));
+        String value = getTestParam(String.format(clientPattern, property, num));
+        return Long.parseLong(value);
     }
 
     private int convertClientParamToInt(String property, int num) {
-        return Integer.parseInt(String.format(clientPattern, propertiesBasePattern, property, num));
+        String value = getTestParam(String.format(clientPattern, property, num));
+        return Integer.parseInt(value);
     }
 }
