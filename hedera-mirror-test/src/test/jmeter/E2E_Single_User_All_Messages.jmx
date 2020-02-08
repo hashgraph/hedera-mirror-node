@@ -66,7 +66,7 @@
                 </elementProp>
                 <elementProp name="historicMessagesCount" elementType="Argument">
                   <stringProp name="Argument.name">historicMessagesCount</stringProp>
-                  <stringProp name="Argument.value">3</stringProp>
+                  <stringProp name="Argument.value">0</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
                 <elementProp name="newTopicsMessageCount" elementType="Argument">
@@ -86,7 +86,7 @@
                 </elementProp>
                 <elementProp name="delSeqFrom" elementType="Argument">
                   <stringProp name="Argument.name">delSeqFrom</stringProp>
-                  <stringProp name="Argument.value">0</stringProp>
+                  <stringProp name="Argument.value">-1</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
               </collectionProp>
@@ -119,7 +119,7 @@
               </elementProp>
               <elementProp name="port" elementType="Argument">
                 <stringProp name="Argument.name">port</stringProp>
-                <stringProp name="Argument.value">5432</stringProp>
+                <stringProp name="Argument.value">${__P(testjmeterprop,119)}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="host" elementType="Argument">
@@ -154,7 +154,7 @@
               </elementProp>
               <elementProp name="newTopicsMessageCount" elementType="Argument">
                 <stringProp name="Argument.name">newTopicsMessageCount</stringProp>
-                <stringProp name="Argument.value">2</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="newTopicsMessageDelay" elementType="Argument">
@@ -232,12 +232,12 @@
               </elementProp>
               <elementProp name="historicMessagesCount" elementType="Argument">
                 <stringProp name="Argument.name">historicMessagesCount</stringProp>
-                <stringProp name="Argument.value">3</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="newTopicsMessageCount" elementType="Argument">
                 <stringProp name="Argument.name">newTopicsMessageCount</stringProp>
-                <stringProp name="Argument.value">2</stringProp>
+                <stringProp name="Argument.value">0</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="messagesLatchWaitSeconds" elementType="Argument">
@@ -247,7 +247,7 @@
               </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.ConsensusServiceReactiveClient</stringProp>
+          <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.SingleTopicHCSClient</stringProp>
         </JavaSampler>
         <hashTree>
           <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="SubscribeAssert" enabled="true">
@@ -330,7 +330,7 @@
               </elementProp>
               <elementProp name="delSeqFrom" elementType="Argument">
                 <stringProp name="Argument.name">delSeqFrom</stringProp>
-                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.value">-1</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>

@@ -24,6 +24,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.stream.Stream;
 import lombok.extern.log4j.Log4j2;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
@@ -32,18 +33,27 @@ import org.apache.jmeter.samplers.SampleResult;
 
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.grpc.jmeter.props.MessageListener;
-import com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler;
+import com.hedera.mirror.grpc.jmeter.sampler.HCSTopicSampler;
 
 @Log4j2
-public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
+public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
 
-    private ConsensusServiceReactiveSampler consensusServiceReactiveSampler;
+    private HCSTopicSampler HCSTopicSampler;
 
     /**
      * Setup test by instantiating client using user defined test properties
      */
     @Override
     public void setupTest(JavaSamplerContext context) {
+
+        String client1 = context.getJMeterProperties().getProperty("hedera.mirror.test.performance.client1");
+        long[] clientValues = Stream.of(client1.split(",")).mapToLong(Long::parseLong).toArray();
+        log.info("***** clientCount : {}, client1 : {}, clients object : {}, clients string : {}",
+                context.getJMeterProperties().getProperty("hedera.mirror.test.performance.clientCount"),
+                clientValues,
+                context.getJMeterProperties().get("hedera.mirror.test.performance.clients"),
+                context.getJMeterProperties().getProperty("hedera.mirror.test.performance.clients"));
+
         String host = context.getParameter("host", "localhost");
         int port = context.getIntParameter("port", 5600);
         long startTime = context.getLongParameter("consensusStartTimeSeconds", 0);
@@ -62,11 +72,11 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
             builder.setConsensusEndTime(Timestamp.newBuilder().setSeconds(endTimeSecs).build());
         }
 
-        consensusServiceReactiveSampler = new ConsensusServiceReactiveSampler(host, port, builder.build());
+        HCSTopicSampler = new HCSTopicSampler(host, port, builder.build());
 
         super.setupTest(context);
     }
-    
+
     /**
      * Specifies and makes available parameters and their defaults to the jMeter GUI when editing Test Plans
      *
@@ -94,7 +104,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();
-        ConsensusServiceReactiveSampler.SamplerResult response = null;
+        HCSTopicSampler.SamplerResult response = null;
         result.sampleStart();
 
         try {
@@ -104,7 +114,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
                     .messagesLatchWaitSeconds(context.getIntParameter("messagesLatchWaitSeconds", 60))
                     .build();
 
-            response = consensusServiceReactiveSampler.subscribeTopic(listener);
+            response = HCSTopicSampler.subscribeTopic(listener);
 
             result.sampleEnd();
             result.setResponseData(response.toString().getBytes());

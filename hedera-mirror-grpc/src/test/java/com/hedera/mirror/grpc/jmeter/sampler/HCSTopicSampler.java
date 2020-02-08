@@ -43,17 +43,17 @@ import com.hedera.mirror.grpc.jmeter.props.MessageListener;
  * A test client that will make requests of the Consensus service from the Consensus server
  */
 @Log4j2
-public class ConsensusServiceReactiveSampler {
+public class HCSTopicSampler {
 
     private final ManagedChannel channel;
     private final ConsensusServiceGrpc.ConsensusServiceStub asyncStub;
     private final ConsensusTopicQuery request;
 
-    public ConsensusServiceReactiveSampler(String host, int port, ConsensusTopicQuery request) {
+    public HCSTopicSampler(String host, int port, ConsensusTopicQuery request) {
         this(ManagedChannelBuilder.forAddress(host, port).usePlaintext(true), request);
     }
 
-    public ConsensusServiceReactiveSampler(ManagedChannelBuilder<?> channelBuilder, ConsensusTopicQuery request) {
+    public HCSTopicSampler(ManagedChannelBuilder<?> channelBuilder, ConsensusTopicQuery request) {
         channel = channelBuilder.build();
         asyncStub = ConsensusServiceGrpc.newStub(channel);
         this.request = request;
