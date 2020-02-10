@@ -121,6 +121,56 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .containsSequence(response(topicMessage1), response(topicMessage2), response(topicMessage3));
     }
 
+    @Test
+    void subscribeTopicQueryPreEpochTimeRange() throws Exception {
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+
+        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
+                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(-123).setNanos(-456).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
+                .build();
+
+        Flux<TopicMessage> generator = Flux.concat(domainBuilder.topicMessage(), domainBuilder.topicMessage());
+
+        grpcConsensusService.subscribeTopic(Mono.just(query))
+                .as(StepVerifier::create)
+                .expectNext(response(topicMessage1))
+                .expectNext(response(topicMessage2))
+                .expectNext(response(topicMessage3))
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> generator.blockLast())
+                .expectNextCount(2)
+                .thenAwait()
+                .verifyComplete();
+    }
+
+    @Test
+    void subscribeTopicQueryPostLongMaxTimeRange() throws Exception {
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+
+        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
+                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(9223372036L).setNanos(854775807).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
+                .build();
+
+        Flux<TopicMessage> generator = Flux.concat(domainBuilder.topicMessage(), domainBuilder.topicMessage());
+
+        grpcConsensusService.subscribeTopic(Mono.just(query))
+                .as(StepVerifier::create)
+                .expectNext(response(topicMessage1))
+                .expectNext(response(topicMessage2))
+                .expectNext(response(topicMessage3))
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> generator.blockLast())
+                .expectNextCount(2)
+                .thenAwait()
+                .verifyComplete();
+    }
+
     void assertException(Throwable t, Status.Code status, String message) {
         assertThat(t).isNotNull()
                 .isInstanceOf(StatusRuntimeException.class)

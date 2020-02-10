@@ -39,8 +39,8 @@ public class InstantToLongConverter implements Converter<Instant, Long> {
             return null;
         }
 
-        // handle pre EPOCH instants
-        if (instant.isBefore(Instant.EPOCH)) {
+        // handle EPOCH and pre EPOCH instants
+        if (instant.equals(Instant.EPOCH) || instant.isBefore(Instant.EPOCH)) {
             return 0L;
         }
 

@@ -51,8 +51,9 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
 
-    private static final long LONG_MAX_SECONDS = 9_223_372_036_000_000_000L;
-    private static final int LONG_MAX_NANOSECONDS = 854_775_807;
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
+    private static final long LONG_MAX_SECONDS = Long.MAX_VALUE / NANOS_PER_SECOND * NANOS_PER_SECOND;
+    private static final int LONG_MAX_NANOSECONDS = (int) (Long.MAX_VALUE % NANOS_PER_SECOND);
     private final TopicMessageService topicMessageService;
 
     @Override
@@ -89,8 +90,8 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         if (query.hasConsensusEndTime()) {
             Timestamp endTimeStamp = query.getConsensusEndTime();
 
-            // only set endTime if it's smaller than the seconds and nanoseconds in the Long.MAX value
-            if (endTimeStamp.getSeconds() <= LONG_MAX_SECONDS && endTimeStamp.getNanos() <= LONG_MAX_NANOSECONDS) {
+            // only set endTime if it's in the range of 0 and Long.MAX in both its seconds and nanoseconds
+            if (validEndTimeStamp(endTimeStamp)) {
                 builder.endTime(ProtoUtil.fromTimestamp(endTimeStamp));
             }
         }
@@ -119,5 +120,14 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
 
         log.error("Unknown error subscribing to topic", t);
         return Status.INTERNAL.augmentDescription(t.getMessage()).asRuntimeException();
+    }
+
+    private boolean validEndTimeStamp(Timestamp endTimeStamp) {
+        if (endTimeStamp == null) {
+            return false;
+        }
+
+        return (endTimeStamp.getSeconds() >= 0 && endTimeStamp.getSeconds() <= LONG_MAX_SECONDS) &&
+                (endTimeStamp.getNanos() >= 0 && endTimeStamp.getNanos() <= LONG_MAX_NANOSECONDS);
     }
 }
