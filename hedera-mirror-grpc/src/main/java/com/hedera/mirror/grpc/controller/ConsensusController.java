@@ -127,7 +127,12 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             return false;
         }
 
-        return (endTimeStamp.getSeconds() >= 0 && endTimeStamp.getSeconds() <= LONG_MAX_SECONDS) &&
-                (endTimeStamp.getNanos() >= 0 && endTimeStamp.getNanos() <= LONG_MAX_NANOSECONDS);
+        if (endTimeStamp.getSeconds() < 0 || endTimeStamp.getNanos() < 0) {
+            log.warn("Negative endTimeStamp supplied");
+            throw Status.INVALID_ARGUMENT.augmentDescription("Negative endTimeStamp supplied").asRuntimeException();
+        }
+
+        return (endTimeStamp.getSeconds() <= LONG_MAX_SECONDS) &&
+                (endTimeStamp.getNanos() <= LONG_MAX_NANOSECONDS);
     }
 }
