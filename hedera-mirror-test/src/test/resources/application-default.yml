@@ -1,0 +1,10 @@
+hedera:
+  mirror:
+    test:
+      acceptance:
+        messageTimeout: 20
+        nodeId: 0.0.3
+        nodeAddress: testnet
+        mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
+        operatorId:
+        operatorKey:

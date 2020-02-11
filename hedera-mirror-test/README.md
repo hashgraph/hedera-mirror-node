@@ -1,4 +1,63 @@
-# Performance Testing
+# 1. E2E Acceptance Testing
+
+This section covers the E2E testing strategy employed by the mirror node for key scenarios
+
+## Overview
+
+In an effort to quickly confirm product capability during deployment windows, we desired to have E2E tests that would allow us to confirm functionality on core scenarios that spanned the main and mirror networks interactions.
+HCS specifically is a key scenario where transactions are submitted to the main network, the mirror node parser ingests these to the DB and the mirror node GRCP endpoint is subscribed to to obtain messages verifying transactions.
+This E2E suite gives us the ability to execute scenarios as external users would and gain the required confidence during development cycles.
+
+## Cucumber
+
+A BDD approach was desired for our E2E test strategy as it would ensure we more closely tracked valid customer scenarios.
+Cucumber is one framework that provides tools to follow this methodology. One benefit being that tests can be written in human readable text. This allows developers, PM's and designers to formulate tests that have connected code to run valid customer scenarios.
+Cucumber uses the Gherkin plain language parser to describe tests.
+Further details may be explored at https://cucumber.io/. Additionally, cucumbers BDD approach is explained here https://cucumber.io/docs/bdd/
+
+### Test Execution
+
+Tests can be compiled and run by running the following command from the root folder
+
+    `./mvnw clean integration-test --projects hedera-mirror-test/`
+
+### Test Configuration
+
+-   Test run Config Properties: Configuration properties are set in the application.yml file located under /src/test/resources utilizing the spring boot application context for DI logic. Properties include
+
+    -   messageTimeout - number of seconds to wait on messages representing transactions (default is 20)
+    -   nodeId - main node id to submit transactions to in 'x.y.z' format (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book)
+    -   nodeAddress - node domain or IP address (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book or set to 'testnet' or 'mainnet' for automatic sdk handling)
+    -   mirrorNodeAddress - mirror node grpc server (refer to https://docs.hedera.com/guides/docs/mirror-node-api/hedera-consensus-service-api-1)
+    -   operatorId - account id on network 'x.y.z' format
+    -   operatorKey - account private key, to be used for signing transaction and client identification #Be careful with showing this, do not check this value in.
+
+-   Tags : Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
+    -   All test cases
+
+*               `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
+    -   Negative cases
+*               `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
+    -   Edge cases
+*               `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
+    -   ... (search for @? tags within the .feature files for further tags)
+
+### Test Layout
+
+The project layout encompasses the Cucumber Feature files, the Runner file(s) and the Step files
+
+-   Feature Files : These are located under 'src/test/resources/features/' folder and are files of the \*.feature format. These files contain the Gherkin based language that describes the test scenarios.
+-   Step Files : These are java classes located under 'src/test/java/com/hedera/mirror/test/e2e/acceptance/steps'. Every 'Given', 'When', 'And', and 'Then' keyword line in the .feature file has a matching step method that implements its logic. Feature files scenarios and Step file method descriptions must be kept in sync to avoid mismatch errors.
+-   Runner Files : Currently a single Runner file is used at 'src/test/java/com/hedera/mirror/test/e2e/acceptance/AcceptanceTest.java'. This file also specifies the CucumberOptions such as 'features', 'glue' and 'plugin' that are used to connect all the files together.
+
+### Test Creation
+
+To create a new test/scenario follow these steps
+
+1. Update an existing .feature file or create a new .feature file under 'src/test/resources/features/' with your desired scenario. Describe your scenario with a 'Given' setup, a 'When' execution and a 'Then' validation step. The 'When' and 'Then' steps would be the expected minimum for a meaningful scenario.
+2. Update an existing step file or create a new step file with the corresponding java method under 'src/test/java/com/hedera/mirror/test/e2e/acceptance/steps' that will be run. Note method Cucumber attribute text must match the feature file.
+
+# 2. Performance Testing
 
 This code runs performance load tests against Mirror Node Modules.
 
@@ -57,7 +116,7 @@ Then using the [JMeter Maven Plugin](https://github.com/jmeter-maven-plugin/jmet
 
 -   Start the tests:
 
-    `./mvnw clean verify --projects hedera-mirror-test`
+    `./mvnw clean verify -P=performance-tests --projects hedera-mirror-test`
 
     Optional properties follow the 'Modifying Properties' logic (https://github.com/jmeter-maven-plugin/jmeter-maven-plugin/wiki/Modifying-Properties) and include the following
 
