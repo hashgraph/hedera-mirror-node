@@ -48,9 +48,9 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
         int port = context.getIntParameter("port", 5600);
         long startTime = context.getLongParameter("consensusStartTimeSeconds", 0);
         long endTimeSecs = context.getLongParameter("consensusEndTimeSeconds", 0);
+        long limit = context.getLongParameter("limit", 100);
 
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
-                .setLimit(context.getLongParameter("limit", 100))
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(startTime).build())
                 .setTopicID(
                         TopicID.newBuilder()
@@ -62,11 +62,15 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
             builder.setConsensusEndTime(Timestamp.newBuilder().setSeconds(endTimeSecs).build());
         }
 
+        if (limit > 0) {
+            builder.setLimit(limit);
+        }
+
         consensusServiceReactiveSampler = new ConsensusServiceReactiveSampler(host, port, builder.build());
 
         super.setupTest(context);
     }
-    
+
     /**
      * Specifies and makes available parameters and their defaults to the jMeter GUI when editing Test Plans
      *
