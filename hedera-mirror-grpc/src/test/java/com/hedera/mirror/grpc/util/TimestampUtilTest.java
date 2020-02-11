@@ -41,19 +41,20 @@ public class TimestampUtilTest {
     }
 
     @Test
+    void isValidTimeStampLongThreshold() {
+        Timestamp timestamp = Timestamp.newBuilder().setSeconds(TimestampUtil.LONG_MAX_SECONDS)
+                .setNanos(TimestampUtil.LONG_MAX_NANOSECONDS).build();
+        assertTrue(TimestampUtil.isValidTimeStamp(timestamp));
+    }
+
+    @Test
     void isValidTimeStampNull() {
-        assertEquals(false, TimestampUtil.isValidTimeStamp(null));
+        assertFalse(TimestampUtil.isValidTimeStamp(null));
     }
 
     @Test
     void isValidTimeStampMax() {
         Timestamp timestamp = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).setNanos(Integer.MAX_VALUE).build();
-        assertEquals(false, TimestampUtil.isValidTimeStamp(null));
-    }
-
-    @Test
-    void isValidTimeStampMin() {
-        Timestamp timestamp = Timestamp.newBuilder().setSeconds(Long.MIN_VALUE).setNanos(Integer.MIN_VALUE).build();
-        assertEquals(false, TimestampUtil.isValidTimeStamp(null));
+        assertFalse(TimestampUtil.isValidTimeStamp(timestamp));
     }
 }

@@ -43,6 +43,7 @@ import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.util.ProtoUtil;
+import com.hedera.mirror.grpc.util.TimestampUtil;
 
 public class ConsensusControllerTest extends GrpcIntegrationTest {
 
@@ -122,13 +123,14 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void subscribeTopicQueryPreEpochTimeRange() throws Exception {
+    void subscribeTopicQueryPreEpochTimeStamp() throws Exception {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(-123).setNanos(-456).build())
+                .setConsensusEndTime(Timestamp.newBuilder().setSeconds(-123).setNanos(-456).build())
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
                 .build();
 
@@ -147,13 +149,16 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void subscribeTopicQueryPostLongMaxTimeRange() throws Exception {
+    void subscribeTopicQueryLongOverflowTimeStamp() throws Exception {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
-        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
-                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(9223372036L).setNanos(854775807).build())
+        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()//9223372036000000000
+                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(TimestampUtil.LONG_MAX_SECONDS)
+                        .setNanos(TimestampUtil.LONG_MAX_NANOSECONDS + 1).build())
+                .setConsensusEndTime(Timestamp.newBuilder().setSeconds(TimestampUtil.LONG_MAX_SECONDS + 1)
+                        .setNanos(TimestampUtil.LONG_MAX_NANOSECONDS).build())
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
                 .build();
 

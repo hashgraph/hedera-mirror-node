@@ -10,8 +10,8 @@ import lombok.extern.log4j.Log4j2;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TimestampUtil {
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
-    private static final long LONG_MAX_SECONDS = Long.MAX_VALUE / NANOS_PER_SECOND * NANOS_PER_SECOND;
-    private static final int LONG_MAX_NANOSECONDS = (int) (Long.MAX_VALUE % NANOS_PER_SECOND);
+    public static final long LONG_MAX_SECONDS = Long.MAX_VALUE / NANOS_PER_SECOND * NANOS_PER_SECOND;
+    public static final int LONG_MAX_NANOSECONDS = (int) (Long.MAX_VALUE % NANOS_PER_SECOND);
 
     public static boolean isValidTimeStamp(Timestamp endTimeStamp) {
         if (endTimeStamp == null) {

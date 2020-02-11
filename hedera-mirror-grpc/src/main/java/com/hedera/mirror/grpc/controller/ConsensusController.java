@@ -77,10 +77,10 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             Timestamp startTimeStamp = query.getConsensusStartTime();
 
             // scope pre epoch timestamps to epoch instant
-            if (startTimeStamp.getSeconds() < 0 || startTimeStamp.getNanos() < 0) {
-                builder.startTime(Instant.EPOCH);
-            } else {
+            if (TimestampUtil.isValidTimeStamp(startTimeStamp)) {
                 builder.startTime(ProtoUtil.fromTimestamp(startTimeStamp));
+            } else {
+                builder.startTime(Instant.EPOCH);
             }
         }
 
