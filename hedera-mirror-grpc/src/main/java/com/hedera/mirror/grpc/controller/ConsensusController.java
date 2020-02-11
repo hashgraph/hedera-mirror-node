@@ -39,7 +39,6 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
-import com.hedera.mirror.grpc.util.TimestampUtil;
 
 /**
  * GRPC calls their protocol adapter layer a service, but most of the industry calls this layer the controller layer.
@@ -76,20 +75,27 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         if (query.hasConsensusStartTime()) {
             Timestamp startTimeStamp = query.getConsensusStartTime();
 
-            // scope pre epoch timestamps to epoch instant
-            if (TimestampUtil.isValidTimeStamp(startTimeStamp)) {
-                builder.startTime(ProtoUtil.fromTimestamp(startTimeStamp));
+            Instant startInstant = null;
+            if (ProtoUtil.isLongSupportedTimeStamp(startTimeStamp)) {
+                startInstant = ProtoUtil.fromTimestamp(startTimeStamp);
             } else {
-                builder.startTime(Instant.EPOCH);
+                // scope unsupported startTimeStamp to epoch instant
+                startInstant = Instant.EPOCH;
             }
+
+            builder.startTime(startInstant);
         }
 
         if (query.hasConsensusEndTime()) {
             Timestamp endTimeStamp = query.getConsensusEndTime();
 
-            // only set endTime if it's in the range of 0 and Long.MAX in both its seconds and nanoseconds
-            if (TimestampUtil.isValidTimeStamp(endTimeStamp)) {
+            // only set endTime if the range 0 to Long.MAX range is inclusive of endTime
+            if (ProtoUtil.isLongSupportedTimeStamp(endTimeStamp)) {
                 builder.endTime(ProtoUtil.fromTimestamp(endTimeStamp));
+            } else {
+                log.warn("Unsupported endTimeStamp supplied : {}", endTimeStamp);
+                throw Status.INVALID_ARGUMENT.augmentDescription("Unsupported endTimeStamp supplied")
+                        .asRuntimeException();
             }
         }
 

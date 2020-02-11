@@ -27,11 +27,15 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ProtoUtil {
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
+    public static final long LONG_MAX_SECONDS = Long.MAX_VALUE / NANOS_PER_SECOND * NANOS_PER_SECOND;
+    public static final int LONG_MAX_NANOSECONDS = (int) (Long.MAX_VALUE % NANOS_PER_SECOND);
 
     public static final Instant fromTimestamp(Timestamp timestamp) {
         if (timestamp == null) {
             return null;
         }
+
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 
@@ -44,5 +48,20 @@ public final class ProtoUtil {
                 .setSeconds(instant.getEpochSecond())
                 .setNanos(instant.getNano())
                 .build();
+    }
+
+    public static boolean isLongSupportedTimeStamp(Timestamp timestamp) {
+        if (timestamp == null) {
+            return false;
+        }
+
+        if (timestamp.getSeconds() < 0 || timestamp.getNanos() < 0) {
+            return false;
+        }
+
+        // valid if seconds is less than max or if seconds is at max and nanoseconds are at or below max
+        // 0 <= valid_time < LONG_MAX_SECONDS (9_223_372_036_000_000_000L) + LONG_MAX_NANOSECONDS (854_775_807)
+        return (timestamp.getSeconds() < LONG_MAX_SECONDS) ||
+                (timestamp.getSeconds() == LONG_MAX_SECONDS && timestamp.getNanos() <= LONG_MAX_NANOSECONDS);
     }
 }
