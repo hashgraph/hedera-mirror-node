@@ -74,28 +74,42 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
 
         if (query.hasConsensusStartTime()) {
             Timestamp startTimeStamp = query.getConsensusStartTime();
-
-            Instant startInstant = null;
-            if (ProtoUtil.isLongSupportedTimeStamp(startTimeStamp)) {
-                startInstant = ProtoUtil.fromTimestamp(startTimeStamp);
-            } else {
-                // scope unsupported startTimeStamp to epoch instant
-                startInstant = Instant.EPOCH;
+            ProtoUtil.TimestampLongSupportRange timestampLongSupportRange = ProtoUtil
+                    .getTimestampLongSupportRange(startTimeStamp);
+            switch (timestampLongSupportRange) {
+                case BELOW:
+                    // scope unsupported startTimeStamp to epoch instant
+                    builder.startTime(Instant.EPOCH);
+                    break;
+                case WITHIN:
+                    builder.startTime(ProtoUtil.fromTimestamp(startTimeStamp));
+                    break;
+                case ABOVE:
+                    throw Status.INVALID_ARGUMENT.augmentDescription("TimeStamp supplied is above supported time range")
+                            .asRuntimeException();
+                default:
+                    throw Status.INVALID_ARGUMENT.augmentDescription("Unsupported timeStamp supplied")
+                            .asRuntimeException();
             }
-
-            builder.startTime(startInstant);
         }
 
         if (query.hasConsensusEndTime()) {
             Timestamp endTimeStamp = query.getConsensusEndTime();
-
-            // only set endTime if the range 0 to Long.MAX range is inclusive of endTime
-            if (ProtoUtil.isLongSupportedTimeStamp(endTimeStamp)) {
-                builder.endTime(ProtoUtil.fromTimestamp(endTimeStamp));
-            } else {
-                log.warn("Unsupported endTimeStamp supplied : {}", endTimeStamp);
-                throw Status.INVALID_ARGUMENT.augmentDescription("Unsupported endTimeStamp supplied")
-                        .asRuntimeException();
+            ProtoUtil.TimestampLongSupportRange timestampLongSupportRange = ProtoUtil
+                    .getTimestampLongSupportRange(endTimeStamp);
+            switch (timestampLongSupportRange) {
+                case BELOW:
+                    throw Status.INVALID_ARGUMENT.augmentDescription("TimeStamp supplied is below supported time range")
+                            .asRuntimeException();
+                case WITHIN:
+                    // only set endTime if the range 0 to Long.MAX range is inclusive of endTime
+                    builder.endTime(ProtoUtil.fromTimestamp(endTimeStamp));
+                    break;
+                case ABOVE:
+                    break;
+                default:
+                    throw Status.INVALID_ARGUMENT.augmentDescription("Unsupported timeStamp supplied")
+                            .asRuntimeException();
             }
         }
 

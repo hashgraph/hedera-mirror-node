@@ -50,18 +50,29 @@ public final class ProtoUtil {
                 .build();
     }
 
-    public static boolean isLongSupportedTimeStamp(Timestamp timestamp) {
+    public static TimestampLongSupportRange getTimestampLongSupportRange(Timestamp timestamp) {
         if (timestamp == null) {
-            return false;
+            return TimestampLongSupportRange.INVALID;
         }
 
         if (timestamp.getSeconds() < 0 || timestamp.getNanos() < 0) {
-            return false;
+            return TimestampLongSupportRange.BELOW;
         }
 
         // valid if seconds is less than max or if seconds is at max and nanoseconds are at or below max
         // 0 <= valid_time < LONG_MAX_SECONDS (9_223_372_036_000_000_000L) + LONG_MAX_NANOSECONDS (854_775_807)
-        return (timestamp.getSeconds() < LONG_MAX_SECONDS) ||
-                (timestamp.getSeconds() == LONG_MAX_SECONDS && timestamp.getNanos() <= LONG_MAX_NANOSECONDS);
+        if ((timestamp.getSeconds() < LONG_MAX_SECONDS) ||
+                (timestamp.getSeconds() == LONG_MAX_SECONDS && timestamp.getNanos() <= LONG_MAX_NANOSECONDS)) {
+            return TimestampLongSupportRange.WITHIN;
+        }
+
+        return TimestampLongSupportRange.ABOVE;
+    }
+
+    public enum TimestampLongSupportRange {
+        BELOW,
+        WITHIN,
+        ABOVE,
+        INVALID
     }
 }
