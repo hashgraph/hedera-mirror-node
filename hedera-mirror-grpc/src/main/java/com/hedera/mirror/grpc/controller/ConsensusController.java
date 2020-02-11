@@ -39,6 +39,7 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
+import com.hedera.mirror.grpc.util.TimestampUtil;
 
 /**
  * GRPC calls their protocol adapter layer a service, but most of the industry calls this layer the controller layer.
@@ -50,10 +51,6 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 @Log4j2
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
-
-    private static final long NANOS_PER_SECOND = 1_000_000_000L;
-    private static final long LONG_MAX_SECONDS = Long.MAX_VALUE / NANOS_PER_SECOND * NANOS_PER_SECOND;
-    private static final int LONG_MAX_NANOSECONDS = (int) (Long.MAX_VALUE % NANOS_PER_SECOND);
     private final TopicMessageService topicMessageService;
 
     @Override
@@ -91,7 +88,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             Timestamp endTimeStamp = query.getConsensusEndTime();
 
             // only set endTime if it's in the range of 0 and Long.MAX in both its seconds and nanoseconds
-            if (validEndTimeStamp(endTimeStamp)) {
+            if (TimestampUtil.isValidTimeStamp(endTimeStamp)) {
                 builder.endTime(ProtoUtil.fromTimestamp(endTimeStamp));
             }
         }
@@ -120,19 +117,5 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
 
         log.error("Unknown error subscribing to topic", t);
         return Status.INTERNAL.augmentDescription(t.getMessage()).asRuntimeException();
-    }
-
-    private boolean validEndTimeStamp(Timestamp endTimeStamp) {
-        if (endTimeStamp == null) {
-            return false;
-        }
-
-        if (endTimeStamp.getSeconds() < 0 || endTimeStamp.getNanos() < 0) {
-            log.warn("Negative endTimeStamp supplied");
-            throw Status.INVALID_ARGUMENT.augmentDescription("Negative endTimeStamp supplied").asRuntimeException();
-        }
-
-        return (endTimeStamp.getSeconds() <= LONG_MAX_SECONDS) &&
-                (endTimeStamp.getNanos() <= LONG_MAX_NANOSECONDS);
     }
 }
