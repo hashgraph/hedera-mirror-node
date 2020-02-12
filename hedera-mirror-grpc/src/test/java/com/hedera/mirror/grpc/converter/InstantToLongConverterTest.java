@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -45,5 +46,23 @@ public class InstantToLongConverterTest {
     void convert(Instant input, Long expected) {
         Long result = converter.convert(input);
         assertEquals(expected, result);
+    }
+
+    @Test
+    void convertNull() {
+        Long result = converter.convert(null);
+        assertNull(result);
+    }
+
+    @Test
+    void convertLongMin() {
+        Long result = converter.convert(Instant.MIN);
+        assertEquals(0, result);
+    }
+
+    @Test
+    void convertLongMax() {
+        Long result = converter.convert(Instant.MAX);
+        assertEquals(Long.MAX_VALUE, result);
     }
 }

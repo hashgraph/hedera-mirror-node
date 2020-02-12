@@ -20,7 +20,6 @@ package com.hedera.mirror.grpc.repository;
  * ‍
  */
 
-import java.time.Duration;
 import java.time.Instant;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
@@ -138,26 +137,6 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
                 .expectNext(topicMessage1)
                 .expectNext(topicMessage2)
                 .verifyComplete();
-    }
-
-    @Test
-    void findByFilterWithTimeOverflows() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
-
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.parse("0001-01-01T00:00:00Z"))
-                .endTime(Instant.parse("3000-04-11T23:47:16.854775808Z"))
-                .build();
-
-        topicMessageRepository.findByFilter(filter)
-                .as(StepVerifier::create)
-                .expectNext(topicMessage1)
-                .expectNext(topicMessage2)
-                .expectNext(topicMessage3)
-                .thenCancel()
-                .verify(Duration.ofMillis(500));
     }
 
     @Test

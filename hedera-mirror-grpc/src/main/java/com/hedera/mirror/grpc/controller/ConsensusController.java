@@ -35,6 +35,7 @@ import reactor.core.publisher.Mono;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
+import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.service.TopicMessageService;
@@ -50,7 +51,6 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 @Log4j2
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
-    public static final Instant LONG_MAX_INSTANT = Instant.parse("2262-04-11T23:47:16.854775807Z");
     private final TopicMessageService topicMessageService;
 
     @Override
@@ -82,7 +82,9 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         if (query.hasConsensusEndTime()) {
             Timestamp endTimeStamp = query.getConsensusEndTime();
             Instant endInstant = ProtoUtil.fromTimestamp(endTimeStamp);
-            builder.endTime(endInstant.isAfter(LONG_MAX_INSTANT) ? LONG_MAX_INSTANT : endInstant);
+            builder.endTime(endInstant
+                    .isAfter(InstantToLongConverter.LONG_MAX_INSTANT) ? InstantToLongConverter.LONG_MAX_INSTANT :
+                    endInstant);
         }
 
         return builder.build();
