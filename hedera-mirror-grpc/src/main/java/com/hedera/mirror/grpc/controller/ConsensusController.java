@@ -50,6 +50,7 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 @Log4j2
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
+    public static final Instant LONG_MAX_INSTANT = Instant.parse("2262-04-11T23:47:16.854775807Z");
     private final TopicMessageService topicMessageService;
 
     @Override
@@ -74,42 +75,23 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
 
         if (query.hasConsensusStartTime()) {
             Timestamp startTimeStamp = query.getConsensusStartTime();
-            ProtoUtil.TimestampLongSupportRange timestampLongSupportRange = ProtoUtil
-                    .getTimestampLongSupportRange(startTimeStamp);
-            switch (timestampLongSupportRange) {
-                case BELOW:
-                    // scope unsupported startTimeStamp to epoch instant
-                    builder.startTime(Instant.EPOCH);
-                    break;
-                case WITHIN:
-                    builder.startTime(ProtoUtil.fromTimestamp(startTimeStamp));
-                    break;
-                case ABOVE:
-                    throw Status.INVALID_ARGUMENT.augmentDescription("TimeStamp supplied is above supported time range")
-                            .asRuntimeException();
-                default:
-                    throw Status.INVALID_ARGUMENT.augmentDescription("Unsupported timeStamp supplied")
-                            .asRuntimeException();
+            Instant startInstant = ProtoUtil.fromTimestamp(startTimeStamp);
+
+            if (startInstant.isBefore(Instant.EPOCH)) {
+                builder.startTime(Instant.EPOCH);
+            } else {
+                builder.startTime(ProtoUtil.fromTimestamp(startTimeStamp));
             }
         }
 
         if (query.hasConsensusEndTime()) {
             Timestamp endTimeStamp = query.getConsensusEndTime();
-            ProtoUtil.TimestampLongSupportRange timestampLongSupportRange = ProtoUtil
-                    .getTimestampLongSupportRange(endTimeStamp);
-            switch (timestampLongSupportRange) {
-                case BELOW:
-                    throw Status.INVALID_ARGUMENT.augmentDescription("TimeStamp supplied is below supported time range")
-                            .asRuntimeException();
-                case WITHIN:
-                    // only set endTime if the range 0 to Long.MAX range is inclusive of endTime
-                    builder.endTime(ProtoUtil.fromTimestamp(endTimeStamp));
-                    break;
-                case ABOVE:
-                    break;
-                default:
-                    throw Status.INVALID_ARGUMENT.augmentDescription("Unsupported timeStamp supplied")
-                            .asRuntimeException();
+            Instant endInstant = ProtoUtil.fromTimestamp(endTimeStamp);
+
+            if (endInstant.isAfter(LONG_MAX_INSTANT)) {
+                builder.endTime(LONG_MAX_INSTANT);
+            } else {
+                builder.endTime(ProtoUtil.fromTimestamp(endTimeStamp));
             }
         }
 

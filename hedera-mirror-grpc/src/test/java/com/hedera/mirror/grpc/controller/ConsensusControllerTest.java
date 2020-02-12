@@ -45,6 +45,9 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
 public class ConsensusControllerTest extends GrpcIntegrationTest {
+    private final long nanosPerSecond = 1_000_000_000L;
+    public final long longMaxSeconds = Long.MAX_VALUE / nanosPerSecond * nanosPerSecond;
+    public final int longMaxNanoseconds = (int) (Long.MAX_VALUE % nanosPerSecond);
 
     @GrpcClient("local")
     private ReactorConsensusServiceGrpc.ReactorConsensusServiceStub grpcConsensusService;
@@ -147,35 +150,6 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void subscribeTopicQueryPreEpochEndTime() throws Exception {
-        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
-                .setConsensusEndTime(Timestamp.newBuilder().setSeconds(-123).setNanos(-456).build())
-                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
-                .build();
-
-        grpcConsensusService.subscribeTopic(Mono.just(query))
-                .as(StepVerifier::create)
-                .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "TimeStamp supplied is " +
-                        "below supported time range"))
-                .verify(Duration.ofMillis(500));
-    }
-
-    @Test
-    void subscribeTopicQueryLongOverflowStartTime() throws Exception {
-        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
-                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(ProtoUtil.LONG_MAX_SECONDS)
-                        .setNanos(ProtoUtil.LONG_MAX_NANOSECONDS + 1).build())
-                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
-                .build();
-
-        grpcConsensusService.subscribeTopic(Mono.just(query))
-                .as(StepVerifier::create)
-                .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "TimeStamp supplied is " +
-                        "above supported time range"))
-                .verify(Duration.ofMillis(500));
-    }
-
-    @Test
     void subscribeTopicQueryLongOverflowEndTime() throws Exception {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
@@ -183,8 +157,8 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(1).setNanos(2).build())
-                .setConsensusEndTime(Timestamp.newBuilder().setSeconds(ProtoUtil.LONG_MAX_SECONDS + 1)
-                        .setNanos(ProtoUtil.LONG_MAX_NANOSECONDS).build())
+                .setConsensusEndTime(Timestamp.newBuilder().setSeconds(longMaxSeconds + 1)
+                        .setNanos(longMaxNanoseconds).build())
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
                 .build();
 
