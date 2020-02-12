@@ -20,9 +20,12 @@ package com.hedera.mirror.grpc.converter;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.time.Instant;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -41,5 +44,24 @@ public class LongToInstantConverterTest {
     void testConvert(Long input, Instant expected) {
         Instant result = converter.convert(input);
         Assertions.assertEquals(expected, result);
+    }
+
+    @Test
+    void convertNull() {
+        Instant result = converter.convert(null);
+        assertNull(result);
+    }
+
+    @Test
+    void convertLongMin() {
+        Instant result = converter.convert(Long.MIN_VALUE);
+        Instant.ofEpochSecond(-123, -456);
+        assertEquals(Instant.parse("1677-09-21T00:12:43.145224192Z"), result);
+    }
+
+    @Test
+    void convertLongMax() {
+        Instant result = converter.convert(Long.MAX_VALUE);
+        assertEquals(Instant.parse("2262-04-11T23:47:16.854775807Z"), result);
     }
 }

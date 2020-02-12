@@ -45,10 +45,6 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
 public class ConsensusControllerTest extends GrpcIntegrationTest {
-    private final long nanosPerSecond = 1_000_000_000L;
-    public final long longMaxSeconds = Long.MAX_VALUE / nanosPerSecond * nanosPerSecond;
-    public final int longMaxNanoseconds = (int) (Long.MAX_VALUE % nanosPerSecond);
-
     @GrpcClient("local")
     private ReactorConsensusServiceGrpc.ReactorConsensusServiceStub grpcConsensusService;
 
@@ -131,6 +127,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
+                .setLimit(5L)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(-123).setNanos(-456).build())
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
                 .build();
@@ -156,9 +153,10 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
+                .setLimit(5L)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(1).setNanos(2).build())
-                .setConsensusEndTime(Timestamp.newBuilder().setSeconds(longMaxSeconds + 1)
-                        .setNanos(longMaxNanoseconds).build())
+                .setConsensusEndTime(Timestamp.newBuilder().setSeconds(31556889864403199L)
+                        .setNanos(999999999).build())
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
                 .build();
 
