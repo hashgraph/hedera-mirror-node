@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc.repository;
  * ‍
  */
 
+import java.time.Duration;
 import java.time.Instant;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
@@ -106,7 +107,7 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findByFilterWithStartTime() {
-        domainBuilder.topicMessage().block();
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
@@ -155,7 +156,8 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
                 .expectNext(topicMessage1)
                 .expectNext(topicMessage2)
                 .expectNext(topicMessage3)
-                .verifyComplete();
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
     }
 
     @Test

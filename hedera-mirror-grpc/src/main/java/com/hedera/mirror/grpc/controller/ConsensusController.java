@@ -76,23 +76,13 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         if (query.hasConsensusStartTime()) {
             Timestamp startTimeStamp = query.getConsensusStartTime();
             Instant startInstant = ProtoUtil.fromTimestamp(startTimeStamp);
-
-            if (startInstant.isBefore(Instant.EPOCH)) {
-                builder.startTime(Instant.EPOCH);
-            } else {
-                builder.startTime(ProtoUtil.fromTimestamp(startTimeStamp));
-            }
+            builder.startTime(startInstant.isBefore(Instant.EPOCH) ? Instant.EPOCH : startInstant);
         }
 
         if (query.hasConsensusEndTime()) {
             Timestamp endTimeStamp = query.getConsensusEndTime();
             Instant endInstant = ProtoUtil.fromTimestamp(endTimeStamp);
-
-            if (endInstant.isAfter(LONG_MAX_INSTANT)) {
-                builder.endTime(LONG_MAX_INSTANT);
-            } else {
-                builder.endTime(ProtoUtil.fromTimestamp(endTimeStamp));
-            }
+            builder.endTime(endInstant.isAfter(LONG_MAX_INSTANT) ? LONG_MAX_INSTANT : endInstant);
         }
 
         return builder.build();
