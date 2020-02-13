@@ -27,11 +27,11 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ProtoUtil {
-
     public static final Instant fromTimestamp(Timestamp timestamp) {
         if (timestamp == null) {
             return null;
         }
+
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 

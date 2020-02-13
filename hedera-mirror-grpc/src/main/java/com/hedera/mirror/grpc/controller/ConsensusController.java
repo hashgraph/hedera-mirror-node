@@ -21,8 +21,10 @@ package com.hedera.mirror.grpc.controller;
  */
 
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import java.time.Instant;
 import javax.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -33,6 +35,7 @@ import reactor.core.publisher.Mono;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
+import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.service.TopicMessageService;
@@ -48,7 +51,6 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 @Log4j2
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
-
     private final TopicMessageService topicMessageService;
 
     @Override
@@ -72,11 +74,17 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                 .topicNum((int) query.getTopicID().getTopicNum());
 
         if (query.hasConsensusStartTime()) {
-            builder.startTime(ProtoUtil.fromTimestamp(query.getConsensusStartTime()));
+            Timestamp startTimeStamp = query.getConsensusStartTime();
+            Instant startInstant = ProtoUtil.fromTimestamp(startTimeStamp);
+            builder.startTime(startInstant.isBefore(Instant.EPOCH) ? Instant.EPOCH : startInstant);
         }
 
         if (query.hasConsensusEndTime()) {
-            builder.endTime(ProtoUtil.fromTimestamp(query.getConsensusEndTime()));
+            Timestamp endTimeStamp = query.getConsensusEndTime();
+            Instant endInstant = ProtoUtil.fromTimestamp(endTimeStamp);
+            builder.endTime(endInstant
+                    .isAfter(InstantToLongConverter.LONG_MAX_INSTANT) ? InstantToLongConverter.LONG_MAX_INSTANT :
+                    endInstant);
         }
 
         return builder.build();
