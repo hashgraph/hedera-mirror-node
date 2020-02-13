@@ -1,6 +1,6 @@
 {
   "name": "hedera-mirror-rest",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Hedera Mirror Node REST API",
   "main": "server.js",
   "scripts": {
