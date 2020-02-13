@@ -46,7 +46,7 @@ import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 @Log4j2
 @Cucumber
 public class TopicFeature {
-    private int numMessages;
+    private int messageSubscribeCount;
     private int latency;
     private MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
     private ConsensusTopicId consensusTopicId;
@@ -122,23 +122,23 @@ public class TopicFeature {
             log.debug("Set mirrorConsensusTopicQuery with topic {}, {}", topicId, mirrorConsensusTopicQuery);
         }
 
-        numMessages = 0;
+        messageSubscribeCount = 0;
     }
 
     @Given("I provide a number of messages {int} I want to receive")
     public void setTopicListenParams(int numMessages) {
-        this.numMessages = numMessages;
+        messageSubscribeCount = numMessages;
     }
 
     @Given("I provide a number of messages {int} I want to receive within {int} seconds")
     public void setTopicListenParams(int numMessages, int latency) {
-        this.numMessages = numMessages;
+        messageSubscribeCount = numMessages;
         this.latency = latency;
     }
 
     @Given("I provide a startDate {string} and a number of messages {int} I want to receive")
     public void setTopicListenParams(String startDate, int numMessages) {
-        this.numMessages = numMessages;
+        messageSubscribeCount = numMessages;
 
         Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startDate, testInstantReference);
         log.trace("Subscribe mirrorConsensusTopicQuery : StartTime : {}", startTime);
@@ -149,7 +149,7 @@ public class TopicFeature {
 
     @Given("I provide a startDate {string} and endDate {string} and a number of messages {int} I want to receive")
     public void setTopicListenParams(String startDate, String endDate, int numMessages) {
-        this.numMessages = numMessages;
+        messageSubscribeCount = numMessages;
 
         Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startDate, testInstantReference);
         Instant endTime = FeatureInputHandler.messageQueryDateStringToInstant(endDate, Instant.now());
@@ -162,7 +162,7 @@ public class TopicFeature {
 
     @Given("I provide a startSequence {int} and endSequence {int} and a number of messages {int} I want to receive")
     public void setTopicListenParams(int startSequence, int endSequence, int numMessages) {
-        this.numMessages = numMessages;
+        messageSubscribeCount = numMessages;
 
         Instant startTime = topicClient.getInstantOfPublishedMessage(startSequence - 1).minusMillis(10);
         Instant endTime = topicClient.getInstantOfPublishedMessage(endSequence - 1).plusMillis(10);
@@ -175,7 +175,7 @@ public class TopicFeature {
 
     @Given("I provide a startDate {string} and endDate {string} and a limit of {int} messages I want to receive")
     public void setTopicListenParamswLimit(String startDate, String endDate, int limit) {
-        numMessages = limit;
+        messageSubscribeCount = limit;
 
         mirrorConsensusTopicQuery
                 .setStartTime(FeatureInputHandler.messageQueryDateStringToInstant(startDate))
@@ -192,17 +192,18 @@ public class TopicFeature {
     @When("I publish {int} batches of {int} messages every {long} milliseconds")
     public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException,
             HederaStatusException {
-        numMessages = messageCount;
-
         for (int i = 0; i < numGroups; i++) {
             publishedTransactionReceipts = topicClient
                     .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount);
             Thread.sleep(milliSleep, 0);
         }
+
+        messageSubscribeCount = numGroups * messageCount;
     }
 
     @When("I publish and verify {int} messages")
     public void publishAndVerifyTopicMessages(int messageCount) throws InterruptedException, HederaStatusException {
+        messageSubscribeCount = messageCount;
         publishTopicMessages(1, messageCount, 0);
         assertEquals(messageCount, publishedTransactionReceipts.size());
     }
@@ -239,7 +240,7 @@ public class TopicFeature {
         assertNotNull(mirrorConsensusTopicQuery, "mirrorConsensusTopicQuery null");
 
         subscriptionResponse = mirrorClient
-                .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, numMessages, latency);
+                .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, messageSubscribeCount, latency);
     }
 
     @Then("I subscribe with a filter to retrieve these published messages")
@@ -254,7 +255,7 @@ public class TopicFeature {
         mirrorConsensusTopicQuery.setStartTime(startTime);
 
         subscriptionResponse = mirrorClient
-                .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, numMessages, latency);
+                .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, messageSubscribeCount, latency);
     }
 
     @Then("the network should successfully observe these messages")
@@ -262,7 +263,7 @@ public class TopicFeature {
         assertNotNull(subscriptionResponse, "subscriptionResponse is null");
         assertFalse(subscriptionResponse.errorEncountered(), "Error encountered");
 
-        assertEquals(numMessages, subscriptionResponse.getMessages().size());
+        assertEquals(messageSubscribeCount, subscriptionResponse.getMessages().size());
         subscriptionResponse.validateReceivedMessages();
         mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
     }
