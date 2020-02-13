@@ -4,7 +4,7 @@ Feature: HCS Base Coverage Feature
     @Sanity @BasicSubscribe @Acceptance
     Scenario Outline: Validate Topic message submission
         Given I successfully create a new topic id
-        And I publish <numMessages> messages
+        And I publish and verify <numMessages> messages
         When I provide a number of messages <numMessages> I want to receive
         And I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages
@@ -40,8 +40,8 @@ Feature: HCS Base Coverage Feature
         And I subscribe with a filter to retrieve these published messages
         Then the network should successfully observe these messages
         Examples:
-            | topicId | numBatches | numMessages | milliSleep |
-            | "30950" | 10         | 1000        | 2000       |
+            | topicId  | numBatches | numMessages | milliSleep |
+            | "171231" | 10         | 1000        | 2000       |
 
     @PublishAndVerify
     Scenario Outline: Validate topic message subscription

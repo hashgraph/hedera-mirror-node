@@ -116,21 +116,26 @@ public class TopicClient {
 
     public List<TransactionReceipt> publishMessagesToTopic(ConsensusTopicId topicId, String baseMessage,
                                                            Ed25519PrivateKey submitKey,
-                                                           int numMessages) throws HederaStatusException
+                                                           int numMessages, boolean verify) throws HederaStatusException
             , InterruptedException {
         log.debug("Publishing {} messages to topicId : {}.", numMessages, topicId);
         Instant refInstant = Instant.now();
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
             String message = baseMessage + "_" + refInstant + "_" + i + 1;
-            transactionReceiptList.add(publishMessageToTopic(topicId, message, submitKey));
+
+            if (verify) {
+                transactionReceiptList.add(publishMessageToTopicAndVerify(topicId, message, submitKey));
+            } else {
+                publishMessageToTopic(topicId, message, submitKey);
+            }
         }
 
         return transactionReceiptList;
     }
 
-    public TransactionReceipt publishMessageToTopic(ConsensusTopicId topicId, String message,
-                                                    Ed25519PrivateKey submitKey) throws HederaStatusException {
+    public TransactionId publishMessageToTopic(ConsensusTopicId topicId, String message,
+                                               Ed25519PrivateKey submitKey) throws HederaStatusException {
         Transaction transaction = new ConsensusMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(message)
@@ -143,21 +148,35 @@ public class TopicClient {
         }
 
         TransactionId transactionId = transaction.execute(client);
+        // get only the 1st sequence number
+        if (recordPublishInstants.size() == 0) {
+            recordPublishInstants.put(0L, transactionId.getRecord(client).consensusTimestamp);
+        }
 
-        TransactionReceipt transactionReceipt = null;
-//        transactionReceipt = transactionId.getReceipt(client);
+        return transactionId;
+    }
 
-//        log.trace("Published message : '{}' to topicId : {} with sequence number : {}", message, topicId,
-//                transactionReceipt.getConsensusTopicSequenceNumber());
-//
-//        // note time stamp
-//        recordPublishInstants.put(transactionReceipt.getConsensusTopicSequenceNumber(), transactionId
-//                .getRecord(client).consensusTimestamp);
-//
+    public TransactionReceipt publishMessageToTopicAndVerify(ConsensusTopicId topicId, String message,
+                                                             Ed25519PrivateKey submitKey) throws HederaStatusException {
+        TransactionId transactionId = publishMessageToTopic(topicId, message, submitKey);
+
+        TransactionReceipt transactionReceipt = transactionId.getReceipt(client);
+
+        log.trace("Published message : '{}' to topicId : {} with sequence number : {}", message, topicId,
+                transactionReceipt.getConsensusTopicSequenceNumber());
+
+        // note time stamp
+        recordPublishInstants.put(transactionReceipt.getConsensusTopicSequenceNumber(), transactionId
+                .getRecord(client).consensusTimestamp);
+
         return transactionReceipt;
     }
 
     public Instant getInstantOfPublishedMessage(long sequenceNumber) {
         return recordPublishInstants.get(sequenceNumber);
+    }
+
+    public Instant getInstantOfFirstPublishedMessage() {
+        return recordPublishInstants.get(0L);
     }
 }

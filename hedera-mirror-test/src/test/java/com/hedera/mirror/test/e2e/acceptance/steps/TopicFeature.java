@@ -193,8 +193,7 @@ public class TopicFeature {
     public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException,
             HederaStatusException {
         for (int i = 0; i < numGroups; i++) {
-            publishedTransactionReceipts = topicClient
-                    .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount);
+            topicClient.publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount, false);
             Thread.sleep(milliSleep, 0);
         }
 
@@ -204,7 +203,8 @@ public class TopicFeature {
     @When("I publish and verify {int} messages")
     public void publishAndVerifyTopicMessages(int messageCount) throws InterruptedException, HederaStatusException {
         messageSubscribeCount = messageCount;
-        publishTopicMessages(1, messageCount, 0);
+        publishedTransactionReceipts = topicClient
+                .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount, true);
         assertEquals(messageCount, publishedTransactionReceipts.size());
     }
 
@@ -249,8 +249,13 @@ public class TopicFeature {
         assertNotNull(mirrorConsensusTopicQuery, "mirrorConsensusTopicQuery null");
 
         // get start time from first published messages
-        long firstMessageSeqNum = publishedTransactionReceipts.get(0).getConsensusTopicSequenceNumber();
-        Instant startTime = topicClient.getInstantOfPublishedMessage(firstMessageSeqNum);
+        Instant startTime;
+        if (publishedTransactionReceipts.size() == 0) {
+            startTime = topicClient.getInstantOfFirstPublishedMessage();
+        } else {
+            long firstMessageSeqNum = publishedTransactionReceipts.get(0).getConsensusTopicSequenceNumber();
+            startTime = topicClient.getInstantOfPublishedMessage(firstMessageSeqNum);
+        }
 
         mirrorConsensusTopicQuery.setStartTime(startTime);
 
