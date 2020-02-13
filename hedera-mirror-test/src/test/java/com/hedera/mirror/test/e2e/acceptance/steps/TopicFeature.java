@@ -250,7 +250,7 @@ public class TopicFeature {
 
         // get start time from first published messages
         Instant startTime;
-        if (publishedTransactionReceipts.size() == 0) {
+        if (publishedTransactionReceipts == null) {
             startTime = topicClient.getInstantOfFirstPublishedMessage();
         } else {
             long firstMessageSeqNum = publishedTransactionReceipts.get(0).getConsensusTopicSequenceNumber();

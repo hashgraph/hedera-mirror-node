@@ -41,7 +41,7 @@ Feature: HCS Base Coverage Feature
         Then the network should successfully observe these messages
         Examples:
             | topicId  | numBatches | numMessages | milliSleep |
-            | "171231" | 10         | 1000        | 2000       |
+            | "171231" | 2          | 3           | 2000       |
 
     @PublishAndVerify
     Scenario Outline: Validate topic message subscription
