@@ -34,6 +34,7 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
+import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -47,6 +48,9 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Resource
     private DomainBuilder domainBuilder;
+
+    @Resource
+    private GrpcProperties grpcProperties;
 
     @Test
     void invalidFilter() {
@@ -135,6 +139,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void historicalMessagesWithEndTime() {
+        grpcProperties.setMaxPageSize(200);
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
@@ -150,7 +155,30 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .expectNext(topicMessage1)
                 .expectNext(topicMessage2)
                 .expectNext(topicMessage3)
-                .verifyComplete();
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
+    }
+
+    @Test
+    void historicalMessagesWithEndTimeExceedsPageSize() {
+        grpcProperties.setMaxPageSize(1);
+        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage4 = domainBuilder.topicMessage().block();
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .endTime(topicMessage4.getConsensusTimestamp())
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .as(StepVerifier::create)
+                .expectNext(topicMessage1)
+                .expectNext(topicMessage2)
+                .expectNext(topicMessage3)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
