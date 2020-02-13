@@ -1,7 +1,7 @@
 @TopicMessagesBase @FullSuite
 Feature: HCS Base Coverage Feature
 
-    @Sanity
+    @Sanity @BasicSubscribe
     Scenario Outline: Validate Topic message submission
         Given I successfully create a new topic id
         And I publish <numMessages> messages
@@ -10,8 +10,49 @@ Feature: HCS Base Coverage Feature
         Then the network should successfully observe these messages
         Examples:
             | numMessages |
+            | 100         |
+#            | 7           |
+
+    @Sanity @OpenSubscribe
+    Scenario Outline: Validate Topic message submission
+        Given I successfully create a new open topic
+        And I publish and verify <numMessages> messages
+        When I provide a number of messages <numMessages> I want to receive
+        And I subscribe with a filter to retrieve messages
+        Then the network should successfully observe these messages
+        Examples:
+            | numMessages |
             | 1           |
-            | 7           |
+
+    @SubscribeOnly
+    Scenario Outline: Validate topic message subscription
+        Given I provide a topic id <topicId>
+        When I provide a number of messages <numMessages> I want to receive
+        And I subscribe with a filter to retrieve messages
+        Then the network should successfully observe these messages
+        Examples:
+            | topicId  | numMessages |
+            | "169223" | 680         |
+
+    @PublishOnly
+    Scenario Outline: Validate topic message subscription
+        Given I provide a topic id <topicId>
+        And I publish <numBatches> batches of <numMessages> messages every <milliSleep> milliseconds
+        And I subscribe with a filter to retrieve messages
+        Then the network should successfully observe these messages
+        Examples:
+            | topicId | numBatches | numMessages | milliSleep |
+            | "30950" | 10         | 1000        | 2000       |
+
+    @PublishAndVerify
+    Scenario Outline: Validate topic message subscription
+        Given I provide a topic id <topicId>
+        And I publish and verify <numMessages> messages
+        And I subscribe with a filter to retrieve these published messages
+        Then the network should successfully observe these messages
+        Examples:
+            | topicId  | numMessages |
+            | "171231" | 340         |
 
     @UpdateTopic
     Scenario: Validate Topic Updates
@@ -25,7 +66,7 @@ Feature: HCS Base Coverage Feature
 
     Scenario Outline: Validate Topic message listener
         Given I successfully create a new topic id
-        And I publish <numMessages> messages
+        And I publish and verify <numMessages> messages
         When I provide a number of messages <numMessages> I want to receive within <latency> seconds
         And I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages

@@ -53,6 +53,7 @@ public class TopicFeature {
     private SubscriptionResponse subscriptionResponse;
     private Ed25519PrivateKey submitKey;
     private Instant testInstantReference;
+    private List<TransactionReceipt> publishedTransactionReceipts;
 
     @Autowired
     private MirrorNodeClient mirrorClient;
@@ -70,6 +71,22 @@ public class TopicFeature {
 
         TransactionReceipt receipt = topicClient
                 .createTopic(topicClient.getSdkClient().getPayerPublicKey(), submitPublicKey);
+        assertNotNull(receipt);
+        ConsensusTopicId topicId = receipt.getConsensusTopicId();
+        assertNotNull(topicId);
+
+        consensusTopicId = topicId;
+        mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
+                .setTopicId(consensusTopicId)
+                .setStartTime(Instant.EPOCH);
+    }
+
+    @Given("I successfully create a new open topic")
+    public void createNewOpenTopic() throws HederaStatusException {
+        testInstantReference = Instant.now();
+
+        TransactionReceipt receipt = topicClient
+                .createTopic(topicClient.getSdkClient().getPayerPublicKey(), null);
         assertNotNull(receipt);
         ConsensusTopicId topicId = receipt.getConsensusTopicId();
         assertNotNull(topicId);
@@ -99,7 +116,10 @@ public class TopicFeature {
         mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery();
         if (!topicId.isEmpty()) {
             consensusTopicId = new ConsensusTopicId(0, 0, Long.parseLong(topicId));
-            mirrorConsensusTopicQuery.setTopicId(consensusTopicId);
+            mirrorConsensusTopicQuery
+                    .setTopicId(consensusTopicId)
+                    .setStartTime(Instant.EPOCH);
+            log.debug("Set mirrorConsensusTopicQuery with topic {}, {}", topicId, mirrorConsensusTopicQuery);
         }
 
         numMessages = 0;
@@ -169,12 +189,22 @@ public class TopicFeature {
         assertNotNull(subscriptionResponse);
     }
 
-    @When("I publish {int} messages")
-    public void verifyTopicMessagePublish(int messageCount) throws InterruptedException, HederaStatusException {
+    @When("I publish {int} batches of {int} messages every {long} milliseconds")
+    public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException,
+            HederaStatusException {
         numMessages = messageCount;
-        List<TransactionReceipt> transactionReceipts = topicClient
-                .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount);
-        assertEquals(messageCount, transactionReceipts.size());
+
+        for (int i = 0; i < numGroups; i++) {
+            publishedTransactionReceipts = topicClient
+                    .publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount);
+            Thread.sleep(milliSleep, 0);
+        }
+    }
+
+    @When("I publish and verify {int} messages")
+    public void publishAndVerifyTopicMessages(int messageCount) throws InterruptedException, HederaStatusException {
+        publishTopicMessages(1, messageCount, 0);
+        assertEquals(messageCount, publishedTransactionReceipts.size());
     }
 
     @Then("I unsubscribe from a topic")
@@ -207,6 +237,21 @@ public class TopicFeature {
     public void retrieveTopicMessages() throws Exception {
         assertNotNull(consensusTopicId, "consensusTopicId null");
         assertNotNull(mirrorConsensusTopicQuery, "mirrorConsensusTopicQuery null");
+
+        subscriptionResponse = mirrorClient
+                .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, numMessages, latency);
+    }
+
+    @Then("I subscribe with a filter to retrieve these published messages")
+    public void retrievePublishedTopicMessages() throws Exception {
+        assertNotNull(consensusTopicId, "consensusTopicId null");
+        assertNotNull(mirrorConsensusTopicQuery, "mirrorConsensusTopicQuery null");
+
+        // get start time from first published messages
+        long firstMessageSeqNum = publishedTransactionReceipts.get(0).getConsensusTopicSequenceNumber();
+        Instant startTime = topicClient.getInstantOfPublishedMessage(firstMessageSeqNum);
+
+        mirrorConsensusTopicQuery.setStartTime(startTime);
 
         subscriptionResponse = mirrorClient
                 .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, numMessages, latency);

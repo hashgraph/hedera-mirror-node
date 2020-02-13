@@ -1,7 +1,7 @@
 @Accounts @FullSuite
 Feature: Account Coverage Feature
 
-    @BalanceCheck @Sanity
+    @BalanceCheck @Sanity @SubscribeOnly
     Scenario Outline: Validate account balance check scenario
         When I request balance info for this account
         Then the result should be greater than or equal to <threshold>
