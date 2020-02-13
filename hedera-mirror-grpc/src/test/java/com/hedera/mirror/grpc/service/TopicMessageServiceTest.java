@@ -139,7 +139,6 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void historicalMessagesWithEndTime() {
-        grpcProperties.setMaxPageSize(200);
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
@@ -161,7 +160,9 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void historicalMessagesWithEndTimeExceedsPageSize() {
+        int oldMaxPageSize = grpcProperties.getMaxPageSize();
         grpcProperties.setMaxPageSize(1);
+
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
@@ -179,6 +180,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .expectNext(topicMessage3)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
+
+        grpcProperties.setMaxPageSize(oldMaxPageSize);
     }
 
     @Test
