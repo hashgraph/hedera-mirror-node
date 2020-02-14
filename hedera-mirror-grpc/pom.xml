@@ -40,12 +40,11 @@
         <dependency>
             <groupId>io.r2dbc</groupId>
             <artifactId>r2dbc-pool</artifactId>
-            <version>0.8.2.BUILD-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.r2dbc</groupId>
             <artifactId>r2dbc-postgresql</artifactId>
-            <version>0.8.2.BUILD-SNAPSHOT</version>
+            <version>0.8.2.BUILD-20200214.102436-4</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
