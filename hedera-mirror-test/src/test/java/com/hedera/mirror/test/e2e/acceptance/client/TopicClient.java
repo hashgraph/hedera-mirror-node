@@ -24,12 +24,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
+import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
@@ -46,26 +49,31 @@ public class TopicClient {
 
     private final SDKClient sdkClient;
     private final Client client;
-    private final List<Instant> recordPublishInstants;
+    private final Map<Long, Instant> recordPublishInstants;
 
     public TopicClient(SDKClient sdkClient) {
         this.sdkClient = sdkClient;
         client = sdkClient.getClient();
-        recordPublishInstants = new ArrayList<>();
+        recordPublishInstants = new HashMap<>();
         log.debug("Creating Topic Client");
     }
 
     public TransactionReceipt createTopic(Ed25519PublicKey adminKey, Ed25519PublicKey submitKey) throws HederaStatusException {
 
         Instant refInstant = Instant.now();
-        TransactionReceipt transactionReceipt = new ConsensusTopicCreateTransaction()
+        ConsensusTopicCreateTransaction consensusTopicCreateTransaction = new ConsensusTopicCreateTransaction()
                 .setAdminKey(adminKey)
-                .setSubmitKey(submitKey)
                 .setAutoRenewAccountId(sdkClient.getOperatorId())
                 .setMaxTransactionFee(1_000_000_000)
-                .setTopicMemo("HCS Topic_" + refInstant)
+                .setTopicMemo("HCS Topic_" + refInstant);
 //                .setAutoRenewPeriod(Duration.ofDays(7000000)) // INSUFFICIENT_TX_FEE, also unsupported
 //                .setAutoRenewAccountId()
+
+        if (submitKey != null) {
+            consensusTopicCreateTransaction.setSubmitKey(submitKey);
+        }
+
+        TransactionReceipt transactionReceipt = consensusTopicCreateTransaction
                 .execute(client)
                 .getReceipt(client);
 
@@ -108,42 +116,67 @@ public class TopicClient {
 
     public List<TransactionReceipt> publishMessagesToTopic(ConsensusTopicId topicId, String baseMessage,
                                                            Ed25519PrivateKey submitKey,
-                                                           int numMessages) throws HederaStatusException
+                                                           int numMessages, boolean verify) throws HederaStatusException
             , InterruptedException {
         log.debug("Publishing {} messages to topicId : {}.", numMessages, topicId);
         Instant refInstant = Instant.now();
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
             String message = baseMessage + "_" + refInstant + "_" + i + 1;
-            transactionReceiptList.add(publishMessageToTopic(topicId, message, submitKey));
+
+            if (verify) {
+                transactionReceiptList.add(publishMessageToTopicAndVerify(topicId, message, submitKey));
+            } else {
+                publishMessageToTopic(topicId, message, submitKey);
+            }
         }
 
         return transactionReceiptList;
     }
 
-    public TransactionReceipt publishMessageToTopic(ConsensusTopicId topicId, String message,
-                                                    Ed25519PrivateKey submitKey) throws HederaStatusException {
-        TransactionId transactionId = new ConsensusMessageSubmitTransaction()
+    public TransactionId publishMessageToTopic(ConsensusTopicId topicId, String message,
+                                               Ed25519PrivateKey submitKey) throws HederaStatusException {
+        Transaction transaction = new ConsensusMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(message)
-                .build(client)
-                // The transaction is automatically signed by the payer.
-                // Due to the topic having a submitKey requirement, additionally sign the transaction with that key.
-                .sign(submitKey)
-                .execute(client);
+                .build(client);
 
-        // note time stamp
-        recordPublishInstants.add(transactionId.getRecord(client).consensusTimestamp);
+        if (submitKey != null) {
+            // The transaction is automatically signed by the payer.
+            // Due to the topic having a submitKey requirement, additionally sign the transaction with that key.
+            transaction.sign(submitKey);
+        }
+
+        TransactionId transactionId = transaction.execute(client);
+        // get only the 1st sequence number
+        if (recordPublishInstants.size() == 0) {
+            recordPublishInstants.put(0L, transactionId.getRecord(client).consensusTimestamp);
+        }
+
+        return transactionId;
+    }
+
+    public TransactionReceipt publishMessageToTopicAndVerify(ConsensusTopicId topicId, String message,
+                                                             Ed25519PrivateKey submitKey) throws HederaStatusException {
+        TransactionId transactionId = publishMessageToTopic(topicId, message, submitKey);
 
         TransactionReceipt transactionReceipt = transactionId.getReceipt(client);
 
         log.trace("Published message : '{}' to topicId : {} with sequence number : {}", message, topicId,
                 transactionReceipt.getConsensusTopicSequenceNumber());
 
+        // note time stamp
+        recordPublishInstants.put(transactionReceipt.getConsensusTopicSequenceNumber(), transactionId
+                .getRecord(client).consensusTimestamp);
+
         return transactionReceipt;
     }
 
-    public Instant getInstantOfPublishedMessage(int sequenceNumber) {
+    public Instant getInstantOfPublishedMessage(long sequenceNumber) {
         return recordPublishInstants.get(sequenceNumber);
+    }
+
+    public Instant getInstantOfFirstPublishedMessage() {
+        return recordPublishInstants.get(0L);
     }
 }

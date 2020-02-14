@@ -58,7 +58,7 @@ public class SubscriptionResponse {
         MirrorConsensusTopicResponse lastMirrorConsensusTopicResponse = null;
         for (MirrorConsensusTopicResponse mirrorConsensusTopicResponse : messages) {
             String messageAsString = new String(mirrorConsensusTopicResponse.message, StandardCharsets.UTF_8);
-            log.info("Observed message: {}, consensus timestamp: {}, topic sequence number: {}",
+            log.trace("Observed message: {}, consensus timestamp: {}, topic sequence number: {}",
                     messageAsString, mirrorConsensusTopicResponse.consensusTimestamp,
                     mirrorConsensusTopicResponse.sequenceNumber);
 

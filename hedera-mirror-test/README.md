@@ -19,7 +19,7 @@ Further details may be explored at https://cucumber.io/. Additionally, cucumbers
 
 Tests can be compiled and run by running the following command from the root folder
 
-    `./mvnw clean integration-test --projects hedera-mirror-test/`
+    `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests`
 
 ### Test Configuration
 
@@ -32,14 +32,20 @@ Tests can be compiled and run by running the following command from the root fol
     -   operatorId - account id on network 'x.y.z' format
     -   operatorKey - account private key, to be used for signing transaction and client identification #Be careful with showing this, do not check this value in.
 
+Options can be set through the command line as follows
+
+    `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dhedera.mirror.test.acceptance.nodeId=0.0.4 -Dhedera.mirror.test.acceptance.nodeAddress=1.testnet.hedera.com:50211`
+
 -   Tags : Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
     -   All test cases
 
-*               `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
+*                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@AcceptanceSuite"`
     -   Negative cases
-*               `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
+*                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
+    -   Negative cases
+*                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
     -   Edge cases
-*               `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
+*                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
     -   ... (search for @? tags within the .feature files for further tags)
 
 ### Test Layout
