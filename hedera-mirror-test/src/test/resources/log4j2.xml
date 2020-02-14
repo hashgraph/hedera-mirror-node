@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d %-5p [%-5t] %c{1.} %m%n %throwable{short}"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Logger name="com.hedera.mirror.test" level="info" additivity="false">
+            <AppenderRef ref="console"/>
+        </Logger>
+        <Logger name="com.hedera.mirror.test.e2e.acceptance" level="debug" additivity="false">
+            <AppenderRef ref="console"/>
+        </Logger>
+        <Root level="warn">
+            <AppenderRef ref="console"/>
+        </Root>
+    </Loggers>
+</Configuration>
