@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.springframework.stereotype.Component;
@@ -51,14 +52,18 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
             }
         } else if (body.hasCryptoCreateAccount()) {
             var amount = body.getCryptoCreateAccount().getInitialBalance();
-            var newAccountId = transactionRecord.getReceipt().getAccountID();
-            result.add(AccountAmount.newBuilder().setAccountID(newAccountId).setAmount(amount).build());
             result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(0 - amount).build());
+            if (ResponseCodeEnum.SUCCESS == transactionRecord.getReceipt().getStatus()) {
+                var newAccountId = transactionRecord.getReceipt().getAccountID();
+                result.add(AccountAmount.newBuilder().setAccountID(newAccountId).setAmount(amount).build());
+            }
         } else if (body.hasContractCreateInstance()) {
             var amount = body.getContractCreateInstance().getInitialBalance();
-            var contractAccountId = contractIdToAccountId(transactionRecord.getReceipt().getContractID());
-            result.add(AccountAmount.newBuilder().setAccountID(contractAccountId).setAmount(amount).build());
             result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(0 - amount).build());
+            if (ResponseCodeEnum.SUCCESS == transactionRecord.getReceipt().getStatus()) {
+                var contractAccountId = contractIdToAccountId(transactionRecord.getReceipt().getContractID());
+                result.add(AccountAmount.newBuilder().setAccountID(contractAccountId).setAmount(amount).build());
+            }
         } else if (body.hasContractCall()) {
             var amount = body.getContractCall().getAmount();
             var contractAccountId = contractIdToAccountId(body.getContractCall().getContractID());

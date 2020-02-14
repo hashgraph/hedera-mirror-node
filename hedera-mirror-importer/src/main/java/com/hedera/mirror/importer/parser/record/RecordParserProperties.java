@@ -52,7 +52,7 @@ public class RecordParserProperties implements ParserProperties {
 
     private boolean persistFiles = true;
 
-    private boolean persistNonFeeTransfersAlways = false;
+    private boolean persistNonFeeTransfers = false;
 
     private boolean persistSystemFiles = true;
 

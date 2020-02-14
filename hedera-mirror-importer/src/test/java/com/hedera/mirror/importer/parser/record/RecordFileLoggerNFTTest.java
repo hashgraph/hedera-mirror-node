@@ -103,7 +103,7 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
     @BeforeEach
     void before() {
         parserProperties.setPersistCryptoTransferAmounts(true);
-        parserProperties.setPersistNonFeeTransfersAlways(false);
+        parserProperties.setPersistNonFeeTransfers(false);
 
         expectedEntityNum.clear();
         expectedNonFeeTransfersCount = 0;
@@ -119,6 +119,7 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void contractCallAggregatedTransfers() throws Exception {
+        parserProperties.setPersistNonFeeTransfers(true);
         givenSuccessfulContractCallTransactionAggregatedTransfers();
         processRecords();
         assertEverything();
@@ -133,6 +134,7 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void contractCreateAggregatedTransfers() throws Exception {
+        parserProperties.setPersistNonFeeTransfers(true);
         givenSuccessfulContractCreateTransactionAggregatedTransfers();
         processRecords();
         assertEverything();
@@ -146,7 +148,16 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
+    void cryptoCreateItemizedTransfersStoreNonFeeTransfers() throws Exception {
+        parserProperties.setPersistNonFeeTransfers(true);
+        givenSuccessfulCryptoCreateTransaction();
+        processRecords();
+        assertEverything();
+    }
+
+    @Test
     void cryptoCreateAggregatedTransfers() throws Exception {
+        parserProperties.setPersistNonFeeTransfers(true);
         givenSuccessfulCryptoCreateTransactionAggregatedTransfers();
         processRecords();
         assertEverything();
@@ -161,15 +172,8 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void cryptoTransferAggregatedTransfers() throws Exception {
+        parserProperties.setPersistNonFeeTransfers(true);
         givenSuccessfulCryptoTransferTransactionAggregatedTransfers();
-        processRecords();
-        assertEverything();
-    }
-
-    @Test
-    void cryptoCreateItemizedTransfersConfigAlways() throws Exception {
-        parserProperties.setPersistNonFeeTransfersAlways(true);
-        givenSuccessfulCryptoCreateTransaction();
         processRecords();
         assertEverything();
     }
@@ -190,7 +194,7 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void cryptoTransferFailedItemizedTransfersConfigAlways() throws Exception {
-        parserProperties.setPersistNonFeeTransfersAlways(true);
+        parserProperties.setPersistNonFeeTransfers(true);
         givenFailedCryptoTransferTransaction();
         processRecords();
         assertEverything();
@@ -333,7 +337,7 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
     private void givenSuccessfulContractCallTransaction() throws Exception {
         contractCallWithTransferList(transferListForContractCallItemized());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_CONTRACT_NUM));
-        if (parserProperties.isPersistNonFeeTransfersAlways()) {
+        if (parserProperties.isPersistNonFeeTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
@@ -341,7 +345,9 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
     private void givenSuccessfulContractCallTransactionAggregatedTransfers() throws Exception {
         contractCallWithTransferList(transferListForContractCallAggregated());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_CONTRACT_NUM));
-        expectedNonFeeTransfersCount += 2;
+        if (parserProperties.isPersistNonFeeTransfers()) {
+            expectedNonFeeTransfersCount += 2;
+        }
     }
 
     private void givenSuccessfulContractCreateTransaction() throws Exception {
@@ -350,7 +356,7 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
         // BUG: If proxyAccount isn't specified on contract create. entity 0 still gets created and associated with the
         // entity.
         expectedEntityNum.add(BUG_ACCOUNT_NUM);
-        if (parserProperties.isPersistNonFeeTransfersAlways()) {
+        if (parserProperties.isPersistNonFeeTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
@@ -362,14 +368,16 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
         // BUG: If proxyAccount isn't specified on contract create. entity 0 still gets created and associated with the
         // entity.
         expectedEntityNum.add(BUG_ACCOUNT_NUM);
-        expectedNonFeeTransfersCount += 2;
+        if (parserProperties.isPersistNonFeeTransfers()) {
+            expectedNonFeeTransfersCount += 2;
+        }
     }
 
     private void givenSuccessfulCryptoCreateTransaction() throws Exception {
         cryptoCreateWithTransferList(transferListForCryptoCreateItemized());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, PROXY_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM,
                 NEW_ACCOUNT_NUM));
-        if (parserProperties.isPersistNonFeeTransfersAlways()) {
+        if (parserProperties.isPersistNonFeeTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
@@ -378,14 +386,16 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
         cryptoCreateWithTransferList(transferListForCryptoCreateAggregated());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, PROXY_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM,
                 NEW_ACCOUNT_NUM));
-        expectedNonFeeTransfersCount += 2;
+        if (parserProperties.isPersistNonFeeTransfers()) {
+            expectedNonFeeTransfersCount += 2;
+        }
     }
 
     private void givenFailedCryptoTransferTransaction() throws Exception {
         cryptoTransferWithTransferList(transferListForFailedCryptoTransferItemized(),
                 ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM));
-        if (parserProperties.isPersistNonFeeTransfersAlways()) {
+        if (parserProperties.isPersistNonFeeTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
@@ -399,7 +409,7 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
     private void givenSuccessfulCryptoTransferTransaction() throws Exception {
         cryptoTransferWithTransferList(transferListForCryptoTransferItemized());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_ACCOUNT_NUM));
-        if (parserProperties.isPersistNonFeeTransfersAlways()) {
+        if (parserProperties.isPersistNonFeeTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
     }
@@ -407,7 +417,9 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
     private void givenSuccessfulCryptoTransferTransactionAggregatedTransfers() throws Exception {
         cryptoTransferWithTransferList(transferListForCryptoTransferAggregated());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_ACCOUNT_NUM));
-        expectedNonFeeTransfersCount += 2;
+        if (parserProperties.isPersistNonFeeTransfers()) {
+            expectedNonFeeTransfersCount += 2;
+        }
     }
 
     private void processRecords() throws SQLException {
@@ -464,6 +476,7 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
         // They happen to be the same here (initialBalance same as transfer amount).
         return transferListForContractCreateAggregated();
     }
+
     private TransferList.Builder transferListForContractCreateItemized() {
         return TransferList.newBuilder()
                 .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - TRANSFER_AMOUNT))

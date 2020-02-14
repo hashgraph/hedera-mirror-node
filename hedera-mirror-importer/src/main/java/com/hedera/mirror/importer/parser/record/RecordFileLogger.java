@@ -558,24 +558,11 @@ public class RecordFileLogger {
      * @return
      */
     private static boolean shouldStoreNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord) {
-        if (parserProperties.isPersistNonFeeTransfersAlways() &&
-                (body.hasCryptoTransfer() || body.hasContractCall())) {
-            // If configured to always store, and the type is one where the sender/recipient(s) are know, store it
-            // regardless of success/failure.
-            return true;
-        }
-
-        if (!isSuccessful(transactionRecord)) {
-            return false;
-        }
         if (!body.hasCryptoCreateAccount() && !body.hasContractCreateInstance() && !body.hasCryptoTransfer() && !body
                 .hasContractCall()) {
             return false;
         }
-        if (!parserProperties.isPersistNonFeeTransfersAlways() && appearsItemized(transactionRecord.getTransferList())) {
-            return false;
-        }
-        return true;
+        return parserProperties.isPersistNonFeeTransfers();
     }
 
     /**
@@ -610,27 +597,6 @@ public class RecordFileLogger {
             sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.ENTITY_NUM.ordinal(), accountNum);
             sqlInsertNonFeeTransfers.addBatch();
         }
-    }
-
-    /**
-     * For R3-style transferlists, which are itemized, the treasury or other accounts should have multiple Transfers.
-     * Otherwise assume aggregation did happen HAPI-side. This method is only a good heuristic for successful
-     * transactions with non-fee transfers.
-     *
-     * @param transferList
-     * @return
-     */
-    private static boolean appearsItemized(TransferList transferList) {
-        // Assuming realm = 0.
-        var seenAccountNums = new HashSet<Long>();
-        for (var accountAmount : transferList.getAccountAmountsList()) {
-            var accountId = accountAmount.getAccountID();
-            if (seenAccountNums.contains(accountId.getAccountNum())) {
-                return true;
-            }
-            seenAccountNums.add(accountId.getAccountNum());
-        }
-        return false;
     }
 
     /**

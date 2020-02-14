@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -69,8 +70,19 @@ public class NonFeeTransferExtractionStrategyImplTest {
                 getNewAccountTransactionRecord());
         assertAll(
                 () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count())
-                , () -> assertResult(createAccountAmounts(newEntityNum, initialBalance,
-                        payerAccountNum, 0 - initialBalance), result)
+                , () -> assertResult(createAccountAmounts( payerAccountNum, 0 - initialBalance,
+                        newEntityNum, initialBalance), result)
+        );
+    }
+
+    @Test
+    void extractNonFeeTransfersFailedCryptoCreate() {
+        var transactionBody = getCryptoCreateTransactionBody();
+        var result = extractionStrategy.extractNonFeeTransfers(payerAccountId, transactionBody,
+                getFailedTransactionRecord());
+        assertAll(
+                () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count())
+                , () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance), result)
         );
     }
 
@@ -81,8 +93,19 @@ public class NonFeeTransferExtractionStrategyImplTest {
                 getNewContractTransactionRecord());
         assertAll(
                 () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count())
-                , () -> assertResult(createAccountAmounts(newEntityNum, initialBalance,
-                        payerAccountNum, 0 - initialBalance), result)
+                , () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance,
+                        newEntityNum, initialBalance), result)
+        );
+    }
+
+    @Test
+    void extractNonFeeTransfersFailedContractCreate() {
+        var transactionBody = getContractCreateTransactionBody();
+        var result = extractionStrategy.extractNonFeeTransfers(payerAccountId, transactionBody,
+                getFailedTransactionRecord());
+        assertAll(
+                () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count())
+                , () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance), result)
         );
     }
 
@@ -104,7 +127,7 @@ public class NonFeeTransferExtractionStrategyImplTest {
     void extractNonFeeTransfersFileCreateNone() {
         var transactionBody = getFileCreateTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(payerAccountId, transactionBody,
-                getSimpleTransactionRecord());
+                getNewFileTransactionRecord());
         assertAll(
                 () -> assertEquals(0, StreamSupport.stream(result.spliterator(), false).count())
         );
@@ -161,30 +184,36 @@ public class NonFeeTransferExtractionStrategyImplTest {
     }
 
     private TransactionBody getFileCreateTransactionBody() {
-        var innerBody = FileCreateTransactionBody.getDefaultInstance();
+        var innerBody = FileCreateTransactionBody.newBuilder().build();
         return TransactionBody.newBuilder().setFileCreate(innerBody).build();
     }
 
     private TransactionRecord getSimpleTransactionRecord() {
-        return TransactionRecord.getDefaultInstance();
+        var receipt = TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS);
+        return TransactionRecord.newBuilder().setReceipt(receipt).build();
+    }
+
+    private TransactionRecord getFailedTransactionRecord() {
+        var receipt = TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.INVALID_SIGNATURE);
+        return TransactionRecord.newBuilder().setReceipt(receipt).build();
     }
 
     private TransactionRecord getNewAccountTransactionRecord() {
-        var receipt = TransactionReceipt.newBuilder().setAccountID(newAccountId).build();
+        var receipt = TransactionReceipt.newBuilder().setAccountID(newAccountId).setStatus(ResponseCodeEnum.SUCCESS).build();
         return TransactionRecord.newBuilder().setReceipt(receipt).build();
     }
 
     private TransactionRecord getNewContractTransactionRecord() {
         var receipt = TransactionReceipt.newBuilder().setContractID(
                 ContractID.newBuilder().setContractNum(newEntityNum).build()
-        ).build();
+        ).setStatus(ResponseCodeEnum.SUCCESS).build();
         return TransactionRecord.newBuilder().setReceipt(receipt).build();
     }
 
     private TransactionRecord getNewFileTransactionRecord() {
         var receipt = TransactionReceipt.newBuilder().setFileID(
                 FileID.newBuilder().setFileNum(newEntityNum).build()
-        ).build();
+        ).setStatus(ResponseCodeEnum.SUCCESS).build();
         return TransactionRecord.newBuilder().setReceipt(receipt).build();
     }
 
