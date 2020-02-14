@@ -22,6 +22,8 @@ package com.hedera.mirror.grpc.jmeter.client;
 
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import lombok.extern.log4j.Log4j2;
@@ -37,6 +39,7 @@ import com.hedera.mirror.grpc.jmeter.sampler.HCSTopicSampler;
 @Log4j2
 public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
 
+    private static ManagedChannel channel;
     private HCSTopicSampler hcsTopicSampler;
 
     /**
@@ -49,6 +52,7 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
         long startTime = context.getLongParameter("consensusStartTimeSeconds", 0);
         long endTimeSecs = context.getLongParameter("consensusEndTimeSeconds", 0);
         long limit = context.getLongParameter("limit", 100);
+        boolean sharedChannel = Boolean.valueOf(context.getParameter("sharedChannel", "false"));
 
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(startTime).build())
@@ -66,9 +70,21 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
             builder.setLimit(limit);
         }
 
-        hcsTopicSampler = new HCSTopicSampler(host, port, builder.build());
+        setSampler(sharedChannel, host, port, builder.build());
 
         super.setupTest(context);
+    }
+
+    private void setSampler(boolean sharedChannel, String host, int port, ConsensusTopicQuery consensusTopicQuery) {
+        if (sharedChannel) {
+            if (channel == null) {
+                channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+            }
+
+            hcsTopicSampler = new HCSTopicSampler(channel, consensusTopicQuery);
+        } else {
+            hcsTopicSampler = new HCSTopicSampler(host, port, consensusTopicQuery);
+        }
     }
 
     /**
@@ -89,6 +105,7 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
         defaultParameters.addArgument("historicMessagesCount", "0");
         defaultParameters.addArgument("newTopicsMessageCount", "0");
         defaultParameters.addArgument("messagesLatchWaitSeconds", "60");
+        defaultParameters.addArgument("sharedChannel", "false");
         return defaultParameters;
     }
 

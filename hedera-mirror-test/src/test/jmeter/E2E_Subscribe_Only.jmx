@@ -79,6 +79,11 @@
                 <stringProp name="Argument.value">60</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
+              <elementProp name="sharedChannel" elementType="Argument">
+                <stringProp name="Argument.name">sharedChannel</stringProp>
+                <stringProp name="Argument.value">true</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
             </collectionProp>
           </elementProp>
           <stringProp name="classname">com.hedera.mirror.grpc.jmeter.client.SingleTopicHCSClient</stringProp>
