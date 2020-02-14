@@ -32,12 +32,12 @@ import org.apache.jmeter.samplers.SampleResult;
 
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.grpc.jmeter.props.MessageListener;
-import com.hedera.mirror.grpc.jmeter.sampler.ConsensusServiceReactiveSampler;
+import com.hedera.mirror.grpc.jmeter.sampler.HCSTopicSampler;
 
 @Log4j2
-public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
+public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
 
-    private ConsensusServiceReactiveSampler consensusServiceReactiveSampler;
+    private HCSTopicSampler hcsTopicSampler;
 
     /**
      * Setup test by instantiating client using user defined test properties
@@ -66,7 +66,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
             builder.setLimit(limit);
         }
 
-        consensusServiceReactiveSampler = new ConsensusServiceReactiveSampler(host, port, builder.build());
+        hcsTopicSampler = new HCSTopicSampler(host, port, builder.build());
 
         super.setupTest(context);
     }
@@ -98,7 +98,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();
-        ConsensusServiceReactiveSampler.SamplerResult response = null;
+        HCSTopicSampler.SamplerResult response = null;
         result.sampleStart();
 
         try {
@@ -108,7 +108,7 @@ public class ConsensusServiceReactiveClient extends AbstractJavaSamplerClient {
                     .messagesLatchWaitSeconds(context.getIntParameter("messagesLatchWaitSeconds", 60))
                     .build();
 
-            response = consensusServiceReactiveSampler.subscribeTopic(listener);
+            response = hcsTopicSampler.subscribeTopic(listener);
 
             result.sampleEnd();
             result.setResponseData(response.toString().getBytes());
