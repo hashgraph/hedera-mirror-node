@@ -14,4 +14,5 @@ public class TopicSubscription {
     private final int historicMessagesCount;
     private final int incomingMessageCount;
     private final int subscribeTimeoutSeconds;
+    private final long milliSecWaitBefore;
 }

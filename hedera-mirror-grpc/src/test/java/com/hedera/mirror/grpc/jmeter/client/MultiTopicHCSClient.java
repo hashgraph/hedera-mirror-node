@@ -67,6 +67,7 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
                     .historicMessagesCount(convertClientParamToInt("HistoricMessagesCount", i))
                     .incomingMessageCount(convertClientParamToInt("IncomingMessageCount", i))
                     .subscribeTimeoutSeconds(convertClientParamToInt("SubscribeTimeoutSeconds", i))
+                    .milliSecWaitBefore(convertClientParamToInt("MilliSecWaitBefore", i))
                     .build();
 
             log.debug("Created TopicSubscription : {}", topicSubscription);
@@ -86,12 +87,8 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
 
     @Override
     public SampleResult runTest(JavaSamplerContext javaSamplerContext) {
-        boolean sequential = Boolean.parseBoolean(getTestParam("sequential", "true"));
-        if (true) {
-            return sequentialRun();
-        } else {
-            return concurrentRun();
-        }
+        // run designated clients in order
+        return sequentialRun();
     }
 
     private HCSTopicSampler createSampler(TopicSubscription topicSubscription) {
@@ -119,6 +116,11 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
         try {
             HCSTopicSampler.SamplerResult response = null;
             for (TopicSubscription subscription : consensusServiceReactiveSamplers.keySet()) {
+                if (subscription.getMilliSecWaitBefore() > 0) {
+                    log.debug("Waiting {} ms before subscribing", subscription.getMilliSecWaitBefore());
+                    Thread.sleep(subscription.getMilliSecWaitBefore(), 0);
+                }
+
                 MessageListener listener = MessageListener.builder()
                         .historicMessagesCount(subscription.getHistoricMessagesCount())
                         .futureMessagesCount(subscription.getIncomingMessageCount())
@@ -178,7 +180,7 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
     private String getTestParam(String property) {
         String value = javaSamplerContext.getJMeterProperties()
                 .getProperty(String.format(basePattern, propertiesBase, property));
-        log.info("Retrieved {} prop as {}", property, value);
+        log.trace("Retrieved {} prop as {}", property, value);
         return value;
     }
 
