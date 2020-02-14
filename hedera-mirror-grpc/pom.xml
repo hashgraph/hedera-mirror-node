@@ -11,7 +11,7 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.5.4</version>
+        <version>0.5.5</version>
     </parent>
 
     <dependencies>
@@ -44,6 +44,7 @@
         <dependency>
             <groupId>io.r2dbc</groupId>
             <artifactId>r2dbc-postgresql</artifactId>
+            <version>0.8.2.BUILD-20200214.102436-4</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
@@ -162,6 +163,13 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>io.r2dbc</groupId>
+                <artifactId>r2dbc-bom</artifactId>
+                <version>Arabba-SR2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.springframework.boot.experimental</groupId>
                 <artifactId>spring-boot-bom-r2dbc</artifactId>
                 <version>0.1.0.M3</version>
@@ -220,4 +228,12 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>spring-libs-snapshot</id>
+            <name>SpringSnapshotRepository</name>
+            <url>https://repo.spring.io/libs-snapshot</url>
+        </repository>
+    </repositories>
 </project>

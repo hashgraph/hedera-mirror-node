@@ -63,9 +63,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     }
 
     private Flux<TopicMessage> incomingMessages(TopicContext topicContext) {
-        if (!topicContext.shouldListen()) {
-            return Flux.empty();
-        }
+//        if (!topicContext.shouldListen()) {
+//            return Flux.empty();
+//        }
 
         TopicMessageFilter filter = topicContext.getFilter();
         TopicMessage last = topicContext.getLastTopicMessage();
