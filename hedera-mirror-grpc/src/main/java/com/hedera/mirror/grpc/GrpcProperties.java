@@ -28,6 +28,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+import com.hedera.mirror.grpc.config.NettyProperties;
+
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.grpc")
@@ -37,4 +39,7 @@ public class GrpcProperties {
 
     @NotNull
     private Map<String, String> connectionOptions = new HashMap<>();
+
+    @NotNull
+    private NettyProperties netty;
 }

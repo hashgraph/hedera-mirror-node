@@ -78,7 +78,9 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
     private void setSampler(boolean sharedChannel, String host, int port, ConsensusTopicQuery consensusTopicQuery) {
         if (sharedChannel) {
             if (channel == null) {
-                channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+                synchronized (this) {
+                    channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+                }
             }
 
             hcsTopicSampler = new HCSTopicSampler(channel, consensusTopicQuery);

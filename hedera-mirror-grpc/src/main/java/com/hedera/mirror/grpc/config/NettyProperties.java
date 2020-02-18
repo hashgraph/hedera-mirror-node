@@ -22,13 +22,11 @@ package com.hedera.mirror.grpc.config;
 
 import javax.validation.constraints.Min;
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.grpc.netty")
 public class NettyProperties {
-    @Min(5)
-    private int maxConcurrentCallsPerConnection = 10;
+    @Min(1)
+    private int maxConcurrentCallsPerConnection = 5;
 }
