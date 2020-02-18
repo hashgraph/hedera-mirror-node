@@ -1,10 +1,10 @@
-package com.hedera.mirror.grpc;
+package com.hedera.mirror.grpc.domain;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * Copyright (C) 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,26 +20,25 @@ package com.hedera.mirror.grpc;
  * ‍
  */
 
-import java.util.HashMap;
-import java.util.Map;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
+@Builder
 @Data
-@Validated
-@ConfigurationProperties("hedera.mirror.grpc")
-public class GrpcProperties {
+@Table("t_entities")
+public class Entity {
+    @Id
+    private Long id;
 
-    private boolean checkTopicExists = true;
+    private Long entityNum;
 
-    @Min(32)
-    private int maxPageSize = 1000;
+    private Long entityRealm;
 
-    @NotNull
-    private Map<String, String> connectionOptions = new HashMap<>();
+    private Long entityShard;
 
-    private long shard = 0;
+    @Column("fk_entity_type_id")
+    private EntityType entityTypeId;
 }

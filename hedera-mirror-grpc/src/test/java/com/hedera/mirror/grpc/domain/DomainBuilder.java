@@ -48,7 +48,25 @@ public class DomainBuilder {
 
     @PostConstruct
     void setup() {
+        databaseClient.delete().from(Entity.class).fetch().rowsUpdated().block();
         databaseClient.delete().from(TopicMessage.class).fetch().rowsUpdated().block();
+    }
+
+    public Mono<Entity> entity() {
+        return entity(e -> {
+        });
+    }
+
+    public Mono<Entity> entity(Consumer<Entity.EntityBuilder> customizer) {
+        Entity.EntityBuilder builder = Entity.builder()
+                .entityNum(0L)
+                .entityRealm(0L)
+                .entityShard(0L)
+                .entityTypeId(EntityType.TOPIC);
+
+        customizer.accept(builder);
+        Entity entity = builder.build();
+        return insert(entity).thenReturn(entity);
     }
 
     public Mono<TopicMessage> topicMessage() {
