@@ -81,6 +81,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.db.password`                           | mirror_grpc_pass        | The database password the GRPC API uses to connect. **Should be changed from default**         |
 | `hedera.mirror.grpc.db.port`                               | 5432                    | The port used to connect to the database                                                       |
 | `hedera.mirror.grpc.db.username`                           | mirror_grpc             | The username the GRPC API uses to connect to the database                                      |
+| `hedera.mirror.grpc.endTimeInterval`                       | 30s                     | How often we should check if a subscription has gone past the end time                         |
 | `hedera.mirror.grpc.listener.pollingFrequency`             | 2s                      | How often to polling for new topic messages. Can accept duration units like `50ms`, `10s` etc. |
 | `hedera.mirror.grpc.listener.type`                         | POLL                    | The type of listener to use for incoming messages. Accepts either NOTIFY or POLL               |
 | `hedera.mirror.grpc.port`                                  | 5600                    | The GRPC API port                                                                              |

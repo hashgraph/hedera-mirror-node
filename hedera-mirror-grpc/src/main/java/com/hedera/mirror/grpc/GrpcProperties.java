@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc;
  * ‍
  */
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import javax.validation.constraints.Min;
@@ -32,6 +33,10 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("hedera.mirror.grpc")
 public class GrpcProperties {
+
+    @NotNull
+    private Duration endTimeInterval = Duration.ofSeconds(30);
+
     @Min(32)
     private int maxPageSize = 1000;
 

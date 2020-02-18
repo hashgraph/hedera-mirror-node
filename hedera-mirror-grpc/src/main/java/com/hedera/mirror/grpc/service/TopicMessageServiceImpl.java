@@ -30,7 +30,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.listener.TopicListener;
@@ -42,6 +44,7 @@ import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 @Validated
 public class TopicMessageServiceImpl implements TopicMessageService {
 
+    private final GrpcProperties grpcProperties;
     private final TopicListener topicListener;
     private final TopicMessageRepository topicMessageRepository;
 
@@ -56,17 +59,23 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
                 .concatMap(t -> missingMessages(topicContext, t))
                 .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()))
+                .takeUntilOther(pastEndTime(topicContext))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .doOnNext(topicContext::onNext)
                 .doOnCancel(topicContext::onComplete)
                 .doOnComplete(topicContext::onComplete);
     }
 
-    private Flux<TopicMessage> incomingMessages(TopicContext topicContext) {
-//        if (!topicContext.shouldListen()) {
-//            return Flux.empty();
-//        }
+    private Flux<Long> pastEndTime(TopicContext topicContext) {
+        if (topicContext.getFilter().getEndTime() == null) {
+            return Flux.never();
+        }
 
+        return Mono.delay(grpcProperties.getEndTimeInterval())
+                .repeat(() -> !topicContext.isPastEndTime());
+    }
+
+    private Flux<TopicMessage> incomingMessages(TopicContext topicContext) {
         TopicMessageFilter filter = topicContext.getFilter();
         TopicMessage last = topicContext.getLastTopicMessage();
         long limit = filter.hasLimit() ? filter.getLimit() - topicContext.getCount().get() : 0;
@@ -129,7 +138,6 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         private final String topicId;
         private final Stopwatch stopwatch;
         private final AtomicLong count;
-        private final Instant startTime;
         private volatile TopicMessage lastTopicMessage;
         private volatile Mode mode;
 
@@ -138,7 +146,6 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             topicId = filter.getRealmNum() + "." + filter.getTopicNum();
             stopwatch = Stopwatch.createStarted();
             count = new AtomicLong(0L);
-            startTime = Instant.now();
             mode = Mode.QUERY;
         }
 
@@ -148,13 +155,21 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             log.trace("[{}] Topic {} received message #{}: {}", filter.getSubscriberId(), topicId, count, topicMessage);
         }
 
-        boolean shouldListen() {
-            return filter.getEndTime() == null || filter.getEndTime().isAfter(startTime);
-        }
-
         boolean isNext(TopicMessage topicMessage) {
             return lastTopicMessage == null || topicMessage.getSequenceNumber() == lastTopicMessage
                     .getSequenceNumber() + 1;
+        }
+
+        /**
+         * Checks whether the end time is after the current time and we haven't seen any new messages in more than the
+         * interval check.
+         *
+         * @return if the end time is after the current time
+         */
+        boolean isPastEndTime() {
+            Instant now = Instant.now();
+            return filter.getEndTime().isAfter(now) && (lastTopicMessage == null ||
+                    lastTopicMessage.getConsensusTimestamp().plus(grpcProperties.getEndTimeInterval()).isBefore(now));
         }
 
         void onComplete() {

@@ -121,6 +121,35 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     }
 
     @Test
+    void noMessagesWithPastEndTime() {
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .endTime(Instant.EPOCH.plusSeconds(1))
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .as(StepVerifier::create)
+                .expectNextCount(0L)
+                .verifyComplete();
+    }
+
+    @Test
+    void noMessagesWithFutureEndTime() {
+        Instant endTime = Instant.now().plusSeconds(3);
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.now())
+                .endTime(endTime)
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .expectNextCount(0L)
+                .verifyComplete();
+    }
+
+    @Test
     void historicalMessages() {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
@@ -154,8 +183,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .expectNext(topicMessage1)
                 .expectNext(topicMessage2)
                 .expectNext(topicMessage3)
-                .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verifyComplete();
     }
 
     @Test
@@ -178,8 +206,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .expectNext(topicMessage1)
                 .expectNext(topicMessage2)
                 .expectNext(topicMessage3)
-                .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verifyComplete();
 
         grpcProperties.setMaxPageSize(oldMaxPageSize);
     }
@@ -254,8 +281,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .thenAwait(Duration.ofMillis(100))
                 .then(() -> generator.blockLast())
                 .expectNext(1L, 2L)
-                .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verifyComplete();
     }
 
     @Test
@@ -360,7 +386,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     void missingMessages() {
         TopicListener topicListener = Mockito.mock(TopicListener.class);
         TopicMessageRepository topicMessageRepository = Mockito.mock(TopicMessageRepository.class);
-        topicMessageService = new TopicMessageServiceImpl(topicListener, topicMessageRepository);
+        topicMessageService = new TopicMessageServiceImpl(new GrpcProperties(), topicListener, topicMessageRepository);
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
