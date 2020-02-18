@@ -41,5 +41,5 @@ public class GrpcProperties {
     private Map<String, String> connectionOptions = new HashMap<>();
 
     @NotNull
-    private NettyProperties netty;
+    private NettyProperties netty = new NettyProperties();
 }

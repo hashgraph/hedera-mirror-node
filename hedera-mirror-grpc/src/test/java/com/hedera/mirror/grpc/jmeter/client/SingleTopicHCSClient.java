@@ -42,6 +42,12 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
     private static ManagedChannel channel;
     private HCSTopicSampler hcsTopicSampler;
 
+    private static synchronized void setChannel(String host, int port) {
+        if (channel == null) {
+            channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+        }
+    }
+
     /**
      * Setup test by instantiating client using user defined test properties
      */
@@ -77,11 +83,7 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
 
     private void setSampler(boolean sharedChannel, String host, int port, ConsensusTopicQuery consensusTopicQuery) {
         if (sharedChannel) {
-            if (channel == null) {
-                synchronized (this) {
-                    channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
-                }
-            }
+            setChannel(host, port);
 
             hcsTopicSampler = new HCSTopicSampler(channel, consensusTopicQuery);
         } else {
