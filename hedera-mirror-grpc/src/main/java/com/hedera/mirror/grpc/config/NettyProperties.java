@@ -1,10 +1,10 @@
-package com.hedera.mirror.grpc;
+package com.hedera.mirror.grpc.config;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * Copyright (C) 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,26 +20,13 @@ package com.hedera.mirror.grpc;
  * ‍
  */
 
-import java.util.HashMap;
-import java.util.Map;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
-
-import com.hedera.mirror.grpc.config.NettyProperties;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.grpc")
-public class GrpcProperties {
-    @Min(32)
-    private int maxPageSize = 1000;
-
-    @NotNull
-    private Map<String, String> connectionOptions = new HashMap<>();
-
-    @NotNull
-    private NettyProperties netty = new NettyProperties();
+public class NettyProperties {
+    @Min(1)
+    private int maxConcurrentCallsPerConnection = 5;
 }
