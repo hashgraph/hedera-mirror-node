@@ -47,6 +47,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 import javax.inject.Named;
@@ -69,6 +70,7 @@ public class RecordFileLogger {
     private static NetworkAddressBook networkAddressBook;
     private static EntityRepository entityRepository;
     private static EntityTypeRepository entityTypeRepository;
+    private static NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private static Predicate<com.hedera.mirror.importer.domain.Transaction> transactionFilter;
 
     private static long fileId = 0;
@@ -77,18 +79,21 @@ public class RecordFileLogger {
 
     private static PreparedStatement sqlInsertTransaction;
     private static PreparedStatement sqlInsertTransferList;
+    private static PreparedStatement sqlInsertNonFeeTransfers;
     private static PreparedStatement sqlInsertFileData;
     private static PreparedStatement sqlInsertContractCall;
     private static PreparedStatement sqlInsertClaimData;
     private static PreparedStatement sqlInsertTopicMessage;
 
     public RecordFileLogger(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
-                            NetworkAddressBook networkAddressBook,
-                            EntityRepository entityRepository, EntityTypeRepository entityTypeRepository) {
+                            NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
+                            EntityTypeRepository entityTypeRepository,
+                            NonFeeTransferExtractionStrategy nonFeeTransfersExtractor) {
         RecordFileLogger.parserProperties = parserProperties;
         RecordFileLogger.networkAddressBook = networkAddressBook;
         RecordFileLogger.entityRepository = entityRepository;
         RecordFileLogger.entityTypeRepository = entityTypeRepository;
+        RecordFileLogger.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
         transactionFilter = commonParserProperties.getFilter();
     }
 
@@ -129,6 +134,10 @@ public class RecordFileLogger {
                     + " (consensus_timestamp, amount, realm_num, entity_num)"
                     + " VALUES (?, ?, ?, ?)");
 
+            sqlInsertNonFeeTransfers = connect.prepareStatement("insert into non_fee_transfers"
+                    + " (consensus_timestamp, amount, realm_num, entity_num)"
+                    + " values (?, ?, ?, ?)");
+
             sqlInsertFileData = connect.prepareStatement("INSERT INTO t_file_data"
                     + " (consensus_timestamp, file_data)"
                     + " VALUES (?, ?)");
@@ -156,6 +165,7 @@ public class RecordFileLogger {
         try {
             sqlInsertFileData.close();
             sqlInsertTransferList.close();
+            sqlInsertNonFeeTransfers.close();
             sqlInsertTransaction.close();
             sqlInsertContractCall.close();
             sqlInsertClaimData.close();
@@ -501,6 +511,7 @@ public class RecordFileLogger {
         log.debug("Storing transaction: {}", tx);
 
         if ((txRecord.hasTransferList()) && parserProperties.isPersistCryptoTransferAmounts()) {
+            processNonFeeTransfers(consensusNs, payerAccountId, body, txRecord);
             if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
                 insertCryptoCreateTransferList(consensusNs, txRecord, body, txRecord.getReceipt()
                         .getAccountID(), payerAccountId);
@@ -536,6 +547,55 @@ public class RecordFileLogger {
             batch_count = 0;
         } else {
             batch_count += 1;
+        }
+    }
+
+    /**
+     * Should the given transaction/record generate non_fee_transfers based on what type the transaction is,
+     * it's status, and run-time configuration concerning which situations warrant storing.
+     * @param body
+     * @param transactionRecord
+     * @return
+     */
+    private static boolean shouldStoreNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord) {
+        if (!body.hasCryptoCreateAccount() && !body.hasContractCreateInstance() && !body.hasCryptoTransfer() && !body
+                .hasContractCall()) {
+            return false;
+        }
+        return parserProperties.isPersistNonFeeTransfers();
+    }
+
+    /**
+     * Additionally store rows in the non_fee_transactions table if applicable.
+     * This will allow the rest-api to create an itemized set of transfers that reflects non-fees (explicit transfers),
+     * threshold records, node fee, and network+service fee (paid to treasury).
+     *
+     * @param consensusTimestamp
+     * @param payerAccountId
+     * @param body
+     * @param transactionRecord
+     */
+    private static void processNonFeeTransfers(long consensusTimestamp, AccountID payerAccountId,
+                                               TransactionBody body, TransactionRecord transactionRecord)
+            throws SQLException {
+        if (!shouldStoreNonFeeTransfers(body, transactionRecord)) {
+            return;
+        }
+
+        for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(payerAccountId, body, transactionRecord)) {
+            addNonFeeTransferInserts(consensusTimestamp, aa.getAccountID().getRealmNum(),
+                    aa.getAccountID().getAccountNum(), aa.getAmount());
+        }
+    }
+
+    private static void addNonFeeTransferInserts(long consensusTimestamp, long realm, long accountNum, long amount)
+            throws SQLException {
+        if (0 != amount) {
+            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
+            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.AMOUNT.ordinal(), amount);
+            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.REALM_NUM.ordinal(), realm);
+            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.ENTITY_NUM.ordinal(), accountNum);
+            sqlInsertNonFeeTransfers.addBatch();
         }
     }
 
@@ -919,13 +979,15 @@ public class RecordFileLogger {
     private static void executeBatches() throws SQLException {
         int[] transactions = sqlInsertTransaction.executeBatch();
         int[] transferLists = sqlInsertTransferList.executeBatch();
+        int[] nonFeeTransfers = sqlInsertNonFeeTransfers.executeBatch();
         int[] fileData = sqlInsertFileData.executeBatch();
         int[] contractCalls = sqlInsertContractCall.executeBatch();
         int[] claimData = sqlInsertClaimData.executeBatch();
         int[] topicMessages = sqlInsertTopicMessage.executeBatch();
-        log.info("Inserted {} transactions, {} transfer lists, {} files, {} contracts, {} claims, {} topic messages",
+        log.info("Inserted {} transactions, {} transfer lists, {} files, {} contracts, {} claims, {} topic messages, " +
+                        "{} non-fee transfers",
                 transactions.length, transferLists.length, fileData.length, contractCalls.length, claimData.length,
-                topicMessages.length);
+                topicMessages.length, nonFeeTransfers.length);
     }
 
     public static Entities getEntity(AccountID accountID) {
@@ -975,6 +1037,11 @@ public class RecordFileLogger {
     }
 
     enum F_TRANSFERLIST {
+        ZERO // column indices start at 1, this creates the necessary offset
+        , CONSENSUS_TIMESTAMP, AMOUNT, REALM_NUM, ENTITY_NUM
+    }
+
+    enum F_NONFEETRANSFER {
         ZERO // column indices start at 1, this creates the necessary offset
         , CONSENSUS_TIMESTAMP, AMOUNT, REALM_NUM, ENTITY_NUM
     }
