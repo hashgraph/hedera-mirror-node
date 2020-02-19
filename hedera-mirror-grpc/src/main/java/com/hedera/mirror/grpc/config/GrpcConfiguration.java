@@ -24,6 +24,7 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.services.HealthStatusManager;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import net.devh.boot.grpc.server.serverfactory.GrpcServerConfigurer;
 import net.devh.boot.grpc.server.service.GrpcServiceDefinition;
 import net.devh.boot.grpc.server.service.GrpcServiceDiscoverer;
@@ -53,7 +54,14 @@ public class GrpcConfiguration {
 
     @Bean
     public GrpcServerConfigurer grpcServerConfigurer(GrpcProperties grpcProperties) {
+        NettyProperties nettyProperties = grpcProperties.getNetty();
         return serverBuilder -> ((NettyServerBuilder) serverBuilder)
-                .maxConcurrentCallsPerConnection(grpcProperties.getNetty().getMaxConcurrentCallsPerConnection());
+                .flowControlWindow(nettyProperties.getFlowControlWindow())
+                .keepAliveTime(nettyProperties.getKeepAlive(), TimeUnit.SECONDS)
+                .keepAliveTimeout(nettyProperties.getKeepAliveTimeout(), TimeUnit.SECONDS)
+                .maxConcurrentCallsPerConnection(nettyProperties.getMaxConcurrentCallsPerConnection())
+                .maxInboundMessageSize(nettyProperties.getMaxMessageSize())
+                .maxInboundMetadataSize(nettyProperties.getMaxMetadataSize())
+                .permitKeepAliveWithoutCalls(true);
     }
 }
