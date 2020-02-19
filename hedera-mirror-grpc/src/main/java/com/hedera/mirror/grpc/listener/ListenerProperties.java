@@ -38,7 +38,6 @@ public class ListenerProperties {
     private ListenerType type = ListenerType.POLL;
 
     public enum ListenerType {
-        NOTIFY,
         POLL,
         SHARED_POLL
     }

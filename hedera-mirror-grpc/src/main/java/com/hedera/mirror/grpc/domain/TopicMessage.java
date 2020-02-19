@@ -20,7 +20,6 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.Instant;
 import java.util.Comparator;
 import lombok.Builder;
@@ -28,14 +27,11 @@ import lombok.ToString;
 import lombok.Value;
 import org.springframework.data.annotation.Id;
 
-import com.hedera.mirror.grpc.converter.LongToInstantDeserializer;
-
 @Builder
 @Value
 public class TopicMessage implements Comparable<TopicMessage> {
 
     @Id
-    @JsonDeserialize(using = LongToInstantDeserializer.class)
     private Instant consensusTimestamp;
 
     @ToString.Exclude
