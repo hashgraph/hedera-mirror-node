@@ -30,10 +30,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import com.hedera.mirror.grpc.GrpcProperties;
+import com.hedera.mirror.grpc.domain.EntityType;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.listener.TopicListener;
+import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 
 @Named
@@ -42,7 +47,9 @@ import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 @Validated
 public class TopicMessageServiceImpl implements TopicMessageService {
 
+    private final GrpcProperties grpcProperties;
     private final TopicListener topicListener;
+    private final EntityRepository entityRepository;
     private final TopicMessageRepository topicMessageRepository;
 
     @Override
@@ -50,7 +57,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         log.info("Subscribing to topic: {}", filter);
         TopicContext topicContext = new TopicContext(filter);
 
-        return topicMessageRepository.findByFilter(filter)
+        return topicExists(filter).thenMany(topicMessageRepository.findByFilter(filter)
                 .doOnComplete(topicContext::onComplete)
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
@@ -59,7 +66,16 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .doOnNext(topicContext::onNext)
                 .doOnCancel(topicContext::onComplete)
-                .doOnComplete(topicContext::onComplete);
+                .doOnComplete(topicContext::onComplete));
+    }
+
+    private Mono<?> topicExists(TopicMessageFilter filter) {
+        return entityRepository
+                .findByCompositeKey(grpcProperties.getShard(), filter.getRealmNum(), filter.getTopicNum())
+                .switchIfEmpty(grpcProperties.isCheckTopicExists() ? Mono.error(new TopicNotFoundException()) :
+                        Mono.empty())
+                .filter(e -> e.getEntityTypeId() == EntityType.TOPIC)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Not a valid topic")));
     }
 
     private Flux<TopicMessage> incomingMessages(TopicContext topicContext) {

@@ -76,14 +76,17 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.downloader.record.threads`                  | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.downloader.region`                          | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.downloader.secretKey`                       | ""                      | The cloud storage secret key                                                                   |
+| `hedera.mirror.grpc.checkTopicExists`                      | true                    | Whether to throw an error when the topic doesn't exist                                         |
 | `hedera.mirror.grpc.db.host`                               | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
 | `hedera.mirror.grpc.db.name`                               | mirror_node             | The name of the database                                                                       |
 | `hedera.mirror.grpc.db.password`                           | mirror_grpc_pass        | The database password the GRPC API uses to connect. **Should be changed from default**         |
 | `hedera.mirror.grpc.db.port`                               | 5432                    | The port used to connect to the database                                                       |
 | `hedera.mirror.grpc.db.username`                           | mirror_grpc             | The username the GRPC API uses to connect to the database                                      |
 | `hedera.mirror.grpc.listener.pollingFrequency`             | 2s                      | How often to polling for new topic messages. Can accept duration units like `50ms`, `10s` etc. |
-| `hedera.mirror.grpc.listener.type`                         | POLL                    | The type of listener to use for incoming messages. Accepts either NOTIFY or POLL               |
+| `hedera.mirror.grpc.listener.type`                         | POLL                    | The type of listener to use for incoming messages. Accepts either NOTIFY, POLL or SHARED_POLL  |
+| `hedera.mirror.grpc.maxPageSize`                           | 1000                    | The maximum number of messages to return in a single call to the database                      |
 | `hedera.mirror.grpc.port`                                  | 5600                    | The GRPC API port                                                                              |
+| `hedera.mirror.grpc.shard`                                 | 0                       | The default shard number that the GRPC component participates in                               |
 | `hedera.mirror.importer.parser.exclude`                    | []                      | A list of filters that determine which transactions are ignored. Takes precedence over include |
 | `hedera.mirror.importer.parser.exclude.entity`             | []                      | A list of entity IDs to ignore in shard.realm.num (e.g. 0.0.3) format                          |
 | `hedera.mirror.importer.parser.exclude.transaction`        | []                      | A list of transaction types to ignore. See `TransactionTypeEnum.java` for possible values      |
