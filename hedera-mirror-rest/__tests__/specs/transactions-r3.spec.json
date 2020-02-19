@@ -1,0 +1,69 @@
+{
+  "description": "R3-style transferlist (already itemized by HAPI)",
+
+  "setup": [
+    {"add_account": {"entity_num": 1234}},
+    {"add_account": {"entity_num": 9876}},
+    {
+      "add_crypto_transfer": {
+        "consensus_timestamp": "12345678000000000",
+        "payer_account_id": "0.0.9876",
+        "recipient_account_id": "0.0.1234",
+        "amount": 128
+      }
+    }
+  ],
+
+  "url": "/api/v1/transactions",
+
+  "responseStatus": 200,
+  "responseJson": {
+    "transactions": [
+      {
+        "consensus_timestamp": "12345678.000000000",
+        "valid_start_timestamp": "12345677.999999999",
+        "charged_tx_fee": 7,
+        "memo_base64": null,
+        "result": "SUCCESS",
+        "name": "CRYPTOTRANSFER",
+        "max_fee": "33",
+        "valid_duration_seconds": "11",
+        "node": "0.0.3",
+        "transaction_id": "0.0.9876-12345677-999999999",
+        "transfers": [
+          {
+            "account": "0.0.3",
+            "amount": 1
+          },
+          {
+            "account": "0.0.98",
+            "amount": 2
+          },
+          {
+            "account": "0.0.98",
+            "amount": 4
+          },
+          {
+            "account": "0.0.1234",
+            "amount": 128
+          },
+          {
+            "account": "0.0.9876",
+            "amount": -128
+          },
+          {
+            "account": "0.0.9876",
+            "amount": -5
+          },
+          {
+            "account": "0.0.9876",
+            "amount": -2
+          }
+        ]
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

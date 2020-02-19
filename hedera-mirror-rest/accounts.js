@@ -204,10 +204,6 @@ const getOneAccount = function(req, res) {
   const resultTypeQuery = utils.parseResultParams(req);
   const {limitQuery, limitParams, order, limit} = utils.parseLimitAndOrderParams(req);
 
-  let ret = {
-    transactions: []
-  };
-
   // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we
   // need to look  for the given account.id in both account_balances and t_entities table and combine with an 'or'
   const entitySql =
@@ -255,19 +251,28 @@ const getOneAccount = function(req, res) {
   logger.debug('getOneAccount transactions query: ' + pgTransactionsQuery + JSON.stringify(innerParams));
 
   // Execute query & get a promise
-  const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);
+  const transactionsPromise = pool.query(pgTransactionsQuery, innerParams).then(transactionsResults => {
+    return transactions
+      .createTransferLists(req.query['transfers'] === 'raw', transactionsResults.rows)
+      .then(transactionsMap => {
+        return {transactionsResults: transactionsResults, transactionsMap: transactionsMap};
+      });
+  });
 
   // After all promises (for all of the above queries) have been resolved...
   Promise.all([entityPromise, transactionsPromise])
     .then(function(values) {
       const entityResults = values[0];
-      const transactionsResults = values[1];
+      const transactionsResults = values[1].transactionsResults;
+      const transactionsMap = values[1].transactionsMap;
 
       // Process the results of entities query
       if (entityResults.rows.length !== 1) {
         res.status(500).send('Error: Could not get entity information');
         return;
       }
+
+      let ret = {};
 
       for (let row of entityResults.rows) {
         const r = processRow(row);
@@ -278,16 +283,14 @@ const getOneAccount = function(req, res) {
 
       if (process.env.NODE_ENV === 'test') {
         ret.entitySqlQuery = entityResults.sqlQuery;
+        ret.transactionsSqlQuery = transactionsResults.sqlQuery;
       }
 
       // Process the results of t_transactions query
-      const tl = transactions.createTransferLists(transactionsResults.rows, ret);
-      ret = tl.ret;
-      let anchorSecNs = tl.anchorSecNs;
-
-      if (process.env.NODE_ENV === 'test') {
-        ret.transactionsSqlQuery = transactionsResults.sqlQuery;
-      }
+      let anchorSecNs = transactions.getAnchorSecNs(transactionsResults);
+      ret = {
+        transactions: Object.values(transactionsMap).sort(transactions.sortTransferList)
+      };
 
       // Pagination links
       ret.links = {

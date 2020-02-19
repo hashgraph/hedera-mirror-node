@@ -1,0 +1,54 @@
+{
+  "description": "R3-style transferlist (already itemized by HAPI)",
+  "setup": [
+    {"add_account": {"entity_num": 1234}},
+    {"add_account": {"entity_num": 9876}},
+    {
+      "add_account_balances": {
+        "account_id": "0.0.1234",
+        "balances": [
+          {
+            "consensus_timestamp": "12345678.000000000",
+            "balance": 100
+          },
+          {
+            "consensus_timestamp": "12345679.000000000",
+            "balance": 200
+          }
+        ]
+      }
+    },
+    {
+      "add_account_balances": {
+        "account_id": "0.0.9876",
+        "balances": [
+          {
+            "consensus_timestamp": "12345679.000000000",
+            "balance": 0
+          }
+        ]
+      }
+    }
+  ],
+
+  "url": "/api/v1/balances",
+
+  "responseStatus": 200,
+
+  "responseJson": {
+    "timestamp": "12345679.000000000",
+    "balances": [
+      {
+        "account": "0.0.9876",
+        "balance": 0
+      },
+      {
+        "account": "0.0.1234",
+        "balance": 200
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

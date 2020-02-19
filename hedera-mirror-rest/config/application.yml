@@ -2,6 +2,7 @@
 hedera:
   mirror:
     api:
+      enableTransferListItemization: true
       includeHostInLink: false
       maxLimit: 1000
       log:

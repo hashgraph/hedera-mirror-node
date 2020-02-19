@@ -1,0 +1,80 @@
+{
+  "description": "Accounts request for 1 account, R3-style transferlist (already itemized by HAPI)",
+  "setup": [
+    {
+      "add_account": {
+        "entity_num": 1234
+      }
+    },
+    {
+      "add_account": {
+        "entity_num": 9876
+      }
+    },
+    {
+      "add_crypto_transfer": {
+        "consensus_timestamp": "12345678000000000",
+        "payer_account_id": "0.0.9876",
+        "recipient_account_id": "0.0.1234",
+        "amount": 128
+      }
+    },
+    {
+      "add_account_balances": {
+        "account_id": "0.0.1234",
+        "balances": [
+          {
+            "consensus_timestamp": "12345678.000000000",
+            "balance": 100
+          },
+          {
+            "consensus_timestamp": "12345679.000000000",
+            "balance": 200
+          }
+        ]
+      }
+    },
+    {
+      "add_account_balances": {
+        "account_id": "0.0.9876",
+        "balances": [
+          {
+            "consensus_timestamp": "12345679.000000000",
+            "balance": 0
+          }
+        ]
+      }
+    }
+  ],
+  "url": "/api/v1/accounts",
+  "responseStatus": 200,
+  "responseJson": {
+    "accounts": [
+      {
+        "balance": {
+          "timestamp": "12345679.000000000",
+          "balance": 200
+        },
+        "account": "0.0.1234",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false
+      },
+      {
+        "balance": {
+          "timestamp": "12345679.000000000",
+          "balance": 0
+        },
+        "account": "0.0.9876",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

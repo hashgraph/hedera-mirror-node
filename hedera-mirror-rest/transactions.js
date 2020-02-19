@@ -20,17 +20,26 @@
 'use strict';
 const utils = require('./utils.js');
 const config = require('./config.js');
+const TransferListItemizer = require('./transfer_list_itemizer.js');
 
 /**
- * Create transferlists from the output of SQL queries. The SQL table has different
- * rows for each of the transfers in a single transaction. This function collates all
- * transfers into a single list.
- * @param {Array of objects} rows Array of rows returned as a result of an SQL query
- * @param {Array} arr REST API return array
- * @return {Array} arr Updated REST API return array
+ * Given the SQL results from a transactions query, return the attribute used for pagination links.
+ * @param results
+ * @returns {*}
  */
-const createTransferLists = function(rows, arr) {
-  // If the transaction has a transferlist (i.e. list of individual trasnfers, it
+const getAnchorSecNs = function(results) {
+  return results.rows.length > 0 ? utils.nsToSecNs(results.rows[results.rows.length - 1].consensus_ns) : 0;
+};
+
+/**
+ * Create transferlists from the output of the initial SQL query (possibly requiring an additional query.
+ * @param {Boolean} doReturnRawTransfers Return the raw transfers from the TransactionRecord vs potentially
+ * itemizing them.
+ * @param {Array of objects} rows Array of rows returned as a result of an SQL query
+ * @return {Promise<transactionsMap>} promise Promise returning a dictionary of transactions.
+ */
+const createTransferLists = function(doReturnRawTransfers, rows) {
+  // If the transaction has a transferlist (i.e. list of individual transfers, it
   // will show up as separate rows. Combine those into a single transferlist for
   // a given consensus_ns (Note that there could be two records for the same
   // transaction-id where one would pass and others could fail as duplicates)
@@ -68,18 +77,92 @@ const createTransferLists = function(rows, arr) {
     });
   }
 
-  const anchorSecNs = rows.length > 0 ? utils.nsToSecNs(rows[rows.length - 1].consensus_ns) : 0;
-
-  arr.transactions = Object.values(transactions);
-
-  return {
-    ret: arr,
-    anchorSecNs: anchorSecNs
-  };
+  return doReturnRawTransfers || !config.api.enableTransferListItemization
+    ? new Promise(resolve => {
+        resolve(transactions);
+      })
+    : selectNonFeeTransfersAndItemize(transactions);
 };
 
 /**
- * Cryptotransfer transactions queries are orgnaized as follows: First there's an inner query that selects the
+ * Given the list of transactions and the raw transfer list from the TransactionRecord (result), additionally query
+ * the non_fee_transfers table, then combine those results with the transfers list per transaction and itemize the
+ * transfer list returned to the user such that the following become separate transfer line items:
+ * explicit transfers requested by the transaction submitter,
+ * node fee paid by the transaction payer to the node,
+ * network + service fees paid by the transaction payer to the treasury,
+ * threshold record fees paid by any (non-node, non-treasury) entity to the treasury
+ * @param transactionsMap
+ * @returns {Promise<transactionsMap>}
+ */
+const selectNonFeeTransfersAndItemize = function(transactionsMap) {
+  let consensusTimestamps = Object.keys(transactionsMap);
+  if (0 == consensusTimestamps.length) {
+    return new Promise(resolve => {
+      resolve(transactionsMap);
+    });
+  }
+
+  let query = 'select * from non_fee_transfers where consensus_timestamp in (' + consensusTimestamps.join(',') + ');';
+
+  return pool.query(query, []).then(results => {
+    let allNonFeeTransfers = {};
+    for (let row of results.rows) {
+      const cts = row['consensus_timestamp'];
+      if (!(cts in allNonFeeTransfers)) {
+        allNonFeeTransfers[cts] = [];
+      }
+      allNonFeeTransfers[cts].push(row);
+    }
+    Object.keys(transactionsMap).forEach(consensusTimestamp => {
+      itemizeTransferListForTransaction(consensusTimestamp, transactionsMap, allNonFeeTransfers);
+    });
+    return transactionsMap;
+  });
+};
+
+/**
+ * Itemize transfer lists for successful CryptoCreateAccount, CryptoTransfer, ContractCreateInstance, ContractCall
+ * transactions that have results from the non_fee_transfers table.
+ * @param transactionTypeName
+ * @param transactionResult
+ * @param transferList
+ * @param nonFeeTransfers
+ * @returns {boolean|boolean}
+ */
+const shouldItemize = function(transactionTypeName, transactionResult, transferList, nonFeeTransfers) {
+  if (
+    !['CONTRACTCALL', 'CONTRACTCREATEINSTANCE', 'CRYPTOCREATEACCOUNT', 'CRYPTOTRANSFER'].includes(
+      transactionTypeName
+    ) ||
+    transactionResult != 'SUCCESS'
+  ) {
+    return false;
+  }
+
+  let set = new Set();
+  for (let transfer of transferList) {
+    if (set.has(transfer.account)) {
+      return false; // Already itemized by HAPI.
+    }
+    set.add(transfer.account);
+  }
+
+  return set.has(utils.TREASURY_ACCOUNT_ID) && 0 != nonFeeTransfers.length;
+};
+
+const itemizeTransferListForTransaction = function(consensusTimestamp, allTransactions, allNonFeeTransfers) {
+  let transaction = allTransactions[consensusTimestamp];
+  let nonFeeTransfers = allNonFeeTransfers[consensusTimestamp] || [];
+
+  if (shouldItemize(transaction.name, transaction.result, transaction.transfers, nonFeeTransfers)) {
+    transaction.transfers = new TransferListItemizer(transaction, nonFeeTransfers).itemize();
+  }
+  return transaction.transfers;
+};
+
+/**
+ * Cryptotransfer transactions queries are organized as follows: First there's an inner query that selects the
  * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
  * extract all relevant information for those transactions.
  * This function returns the outer query base on the consensus_timestamps list returned by the inner query.
@@ -122,7 +205,7 @@ const getTransactionsOuterQuery = function(innerQuery, order) {
 };
 
 /**
- * Cryptotransfer transactions queries are orgnaized as follows: First there's an inner query that selects the
+ * Cryptotransfer transactions queries are organized as follows: First there's an inner query that selects the
  * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
  * extract all relevant information for those transactions.
  * This function forms the inner query base based on all the query criteria specified in the REST URL
@@ -211,33 +294,39 @@ const getTransactions = function(req) {
 
   logger.debug('getTransactions query: ' + query.query + JSON.stringify(query.params));
 
-  // Execute query
+  // Execute first query
   return pool.query(query.query, query.params).then(results => {
-    let ret = {
-      transactions: [],
-      links: {
-        next: null
+    return createTransferLists(req.query['transfers'] === 'raw', results.rows).then(transactionsMap => {
+      let anchorSecNs = getAnchorSecNs(results);
+
+      let ret = {
+        transactions: Object.values(transactionsMap),
+        links: {
+          next: null
+        }
+      };
+
+      ret.links = {
+        next: utils.getPaginationLink(
+          req,
+          ret.transactions.length !== query.limit,
+          'timestamp',
+          anchorSecNs,
+          query.order
+        )
+      };
+
+      if (process.env.NODE_ENV === 'test') {
+        ret.sqlQuery = results.sqlQuery;
       }
-    };
 
-    const tl = createTransferLists(results.rows, ret);
-    ret = tl.ret;
-    let anchorSecNs = tl.anchorSecNs;
+      logger.debug('getTransactions returning ' + ret.transactions.length + ' entries');
 
-    ret.links = {
-      next: utils.getPaginationLink(req, ret.transactions.length !== query.limit, 'timestamp', anchorSecNs, query.order)
-    };
-
-    if (process.env.NODE_ENV === 'test') {
-      ret.sqlQuery = results.sqlQuery;
-    }
-
-    logger.debug('getTransactions returning ' + ret.transactions.length + ' entries');
-
-    return {
-      code: utils.httpStatusCodes.OK,
-      contents: ret
-    };
+      return {
+        code: utils.httpStatusCodes.OK,
+        contents: ret
+      };
+    });
   });
 };
 
@@ -312,24 +401,29 @@ const getOneTransaction = function(req, res) {
     }
 
     logger.debug('# rows returned: ' + results.rows.length);
-    const tl = createTransferLists(results.rows, ret);
-    ret = tl.ret;
 
-    if (ret.transactions.length === 0) {
-      res.status(404).send('Not found');
-      return;
-    }
+    return createTransferLists(req.query['transfers'] === 'raw', results.rows).then(transactionsMap => {
+      let ret = {
+        transactions: Object.values(transactionsMap)
+      };
 
-    if (process.env.NODE_ENV === 'test') {
-      ret.sqlQuery = results.sqlQuery;
-    }
+      if (ret.transactions.length === 0) {
+        res.status(404).send('Not found');
+        return;
+      }
 
-    logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
-    res.json(ret);
+      if (process.env.NODE_ENV === 'test') {
+        ret.sqlQuery = results.sqlQuery;
+      }
+
+      logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
+      res.json(ret);
+    });
   });
 };
 
 module.exports = {
+  getAnchorSecNs: getAnchorSecNs,
   getTransactions: getTransactions,
   getOneTransaction: getOneTransaction,
   createTransferLists: createTransferLists,

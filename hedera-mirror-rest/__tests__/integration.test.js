@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * Copyright (C) 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,17 +23,14 @@
  * Integration tests for the rest-api and postgresql database.
  * Tests will be performed using either a docker postgres instance managed by the testContainers module or
  * some other database (running locally, instantiated in the CI environment, etc).
+ *
  * Tests instantiate the database schema via a flywaydb wrapper using the flyway CLI to clean and migrate the
  * schema (using sql files in the ../src/resources/db/migration directory).
  *
- * Test data is created by:
- * 1) reading account id, balance, expiration and crypto transfer information from integration_test_data.json
- * 2) storing those accounts in integration DB
- * 3) creating 3 balances records per account at timestamp 1000, 2000, 3000 in the integration DB
- * 4) apply transfers (from integration_test_data.json) to the integration DB
+ * Before each test the DB is cleared out.
  *
- * Tests are then run in code below (find TESTS all caps) and by comparing requests/responses from the server to data
- * in the specs/ dir.
+ * Tests are loaded from the specs directory via JSON files.
+ * Each file has a 'setup' section for setting up database data, a `url` to call, and expected results JSON.
  *
  * environment variables used:
  * TEST_DB_HOST (default: use testcontainers, examples: localhost, dbhost, 10.0.0.75)
@@ -41,15 +38,15 @@
  * TEST_DB_NAME (default: mirror_node_integration)
  */
 const {GenericContainer} = require('testcontainers');
-const transactions = require('../transactions.js');
 const exec = require('child_process').exec;
 const path = require('path');
 const request = require('supertest');
+const math = require('mathjs');
 const server = require('../server');
+const utils = require('../utils');
 const fs = require('fs');
 
 let oldPool;
-let oldShardNum;
 
 let dockerDb;
 let SqlConnectionPool = require('pg').Pool;
@@ -113,7 +110,6 @@ const instantiateDatabase = async function() {
   global.pool = sqlConnection;
 
   await flywayMigrate();
-  await setupData();
 };
 
 /**
@@ -135,7 +131,8 @@ const flywayMigrate = function() {
         'FLYWAY_PLACEHOLDERS_db-user': dbUser,
         'FLYWAY_PLACEHOLDERS_api-user': 'mirror_api',
         'FLYWAY_PLACEHOLDERS_api-password': 'mirror_api_pass',
-        FLYWAY_LOCATIONS: 'filesystem:../hedera-mirror-importer/src/main/resources/db/migration'
+        FLYWAY_LOCATIONS:
+          'filesystem:' + path.join('..', 'hedera-mirror-importer', 'src', 'main', 'resources', 'db', 'migration')
       },
       process.env
     )
@@ -160,132 +157,8 @@ const flywayMigrate = function() {
   });
 };
 
-//
-// TEST DATA
-// shard 0, realm 15, accounts 1-10
-// 3 balances per account
-// several transactions
-//
-const shard = 0;
-const realm = 15;
-const accountEntityIds = {};
-const addAccount = async function(accountId, exp_tm_nanosecs = null) {
-  let e = accountEntityIds[accountId];
-  if (e) {
-    return e;
-  }
-  let res = await sqlConnection.query(
-    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns) values ($1, $2, $3, $4, $5) returning id;',
-    [1, shard, realm, accountId, exp_tm_nanosecs]
-  );
-  e = res.rows[0]['id'];
-  accountEntityIds[accountId] = e;
-  return e;
-};
-
-const addTransaction = async function(
-  consensusTimestamp,
-  fileId,
-  payerAccountId,
-  transfers,
-  validDurationSeconds = 11,
-  maxFee = 33,
-  result = 22,
-  type = 14
-) {
-  await sqlConnection.query(
-    'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
-    [
-      consensusTimestamp,
-      consensusTimestamp - 1,
-      fileId,
-      accountEntityIds[payerAccountId],
-      accountEntityIds[2],
-      result,
-      type,
-      validDurationSeconds,
-      maxFee
-    ]
-  );
-  for (var i = 0; i < transfers.length; ++i) {
-    let xfer = transfers[i];
-    await sqlConnection.query(
-      'insert into t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
-      [consensusTimestamp, xfer[1], realm, xfer[0]]
-    );
-  }
-};
-
-/**
- * Add a crypto transfer from A to B with A also paying 1 tinybar to account number 2 (fee)
- * @param consensusTimestamp
- * @param fileId
- * @param payerAccountId
- * @param recipientAccountId
- * @param amount
- * @returns {Promise<void>}
- */
-const addCryptoTransferTransaction = async function(
-  consensusTimestamp,
-  fileId,
-  payerAccountId,
-  recipientAccountId,
-  amount,
-  validDurationSeconds,
-  maxFee,
-  bankId = 2
-) {
-  await addTransaction(
-    consensusTimestamp,
-    fileId,
-    payerAccountId,
-    [
-      [payerAccountId, -1 - amount],
-      [recipientAccountId, amount],
-      [bankId, 1]
-    ],
-    validDurationSeconds,
-    maxFee
-  );
-};
-
-/**
- * Setup test data in the postgres instance.
- */
-const testDataPath = path.join(__dirname, 'integration_test_data.json');
-const testData = fs.readFileSync(testDataPath);
-const testDataJson = JSON.parse(testData);
-
-const setupData = async function() {
-  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['test']);
-  let fileId = res.rows[0]['id'];
-  console.log(`Record file id is ${fileId}`);
-
-  const balancePerAccountCount = 3;
-  const testAccounts = testDataJson['accounts'];
-  console.log(`Adding ${testAccounts.length} accounts with ${balancePerAccountCount} balances per account`);
-  for (let account of testAccounts) {
-    await addAccount(account.id, account.expiration_ns);
-
-    // Add 3 balances for each account.
-    for (var ts = 0; ts < balancePerAccountCount; ++ts) {
-      await sqlConnection.query(
-        'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
-        [ts * 1000, realm, account.id, account.balance]
-      );
-    }
-  }
-
-  console.log('Adding crypto transfer transactions');
-  for (let transfer of testDataJson['transfers']) {
-    await addCryptoTransferTransaction(transfer.time, fileId, transfer.from, transfer.to, transfer.amount);
-  }
-
-  console.log('Finished initializing DB data');
-};
-
 beforeAll(async () => {
-  jest.setTimeout(20000);
+  jest.setTimeout(30000);
   await instantiateDatabase();
 });
 
@@ -313,144 +186,279 @@ afterAll(() => {
   }
 });
 
+//
+// Test data helpers
+//
+const TREASURY_ACCOUNT_ID = utils.TREASURY_ACCOUNT_ID;
+const NODE_ACCOUNT_ID = '0.0.3';
+const NODE_FEE = 1;
+const NETWORK_FEE = 2;
+const SERVICE_FEE = 4;
+
+// Local map of account id '0.0.2' => t_entities.id
+let accountEntityIds = {};
+let recordFileId;
+
 /**
- * Map a DB transaction/cryptotransfer result to something easily comparable in a test assert/expect.
- * @param rows
- * @returns {*}
+ * {entity_shard: 0, entity_realm: 0, entity_num: 27} to '0.0.27'
+ * @param account
+ * @returns {string}
  */
-function mapTransactionResults(rows) {
-  return rows.map(function(v) {
-    return '@' + v['consensus_ns'] + ': account ' + v['account_num'] + ' \u0127' + v['amount'];
-  });
-}
-
-function extractDurationAndMaxFeeFromTransactionResults(rows) {
-  return rows.map(function(v) {
-    return '@' + v['valid_duration_seconds'] + ',' + v['max_fee'];
-  });
-}
-
-//
-// TESTS
-//
-
-test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfer', async () => {
-  let sql = transactions.reqToSql({query: {}});
-  let res = await sqlConnection.query(sql.query, sql.params);
-  expect(res.rowCount).toEqual(9);
-  expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '@1050: account 10 \u0127-11',
-    '@1050: account 2 \u01271',
-    '@1050: account 9 \u012710',
-    '@1051: account 10 \u0127-21',
-    '@1051: account 2 \u01271',
-    '@1051: account 9 \u012720',
-    '@1052: account 2 \u01271',
-    '@1052: account 8 \u0127-31',
-    '@1052: account 9 \u012730'
-  ]);
-});
-
-test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfer', async () => {
-  let sql = transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
-  let res = await sqlConnection.query(sql.query, sql.params);
-  expect(res.rowCount).toEqual(3);
-  expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '@1052: account 2 \u01271',
-    '@1052: account 8 \u0127-31',
-    '@1052: account 9 \u012730'
-  ]);
-});
-
-test('DB integration test - transactions.reqToSql - invalid account', async () => {
-  let sql = transactions.reqToSql({query: {'account.id': '0.17.666'}});
-  let res = await sqlConnection.query(sql.query, sql.params);
-  expect(res.rowCount).toEqual(0);
-});
-
-test('DB integration test - transactions.reqToSql - null validDurationSeconds and maxFee inserts', async () => {
-  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['nodurationfee']);
-  let fileId = res.rows[0]['id'];
-
-  await addCryptoTransferTransaction(1062, fileId, 3, 4, 50, 5, null); // null maxFee
-  await addCryptoTransferTransaction(1063, fileId, 3, 4, 70, null, 777); //null validDurationSeconds
-  await addCryptoTransferTransaction(1064, fileId, 3, 4, 70, null, null); // valid validDurationSeconds and maxFee
-
-  let sql = transactions.reqToSql({query: {'account.id': '0.15.3'}});
-  res = await sqlConnection.query(sql.query, sql.params);
-  expect(res.rowCount).toEqual(9);
-  expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual([
-    '@5,null',
-    '@5,null',
-    '@5,null',
-    '@null,777',
-    '@null,777',
-    '@null,777',
-    '@null,null',
-    '@null,null',
-    '@null,null'
-  ]);
-});
-
-test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
-  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', [
-    'unknowntypeandresult'
-  ]);
-  let fileId = res.rows[0]['id'];
-  await addTransaction(1070, fileId, 7, [[2, 1]], 11, 33, -1, -1);
-
-  let sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
-  res = await sqlConnection.query(sql.query, sql.params);
-  expect(res.rowCount).toEqual(1);
-  expect(res.rows[0].name).toEqual('UNKNOWN');
-  expect(res.rows[0].result).toEqual('UNKNOWN');
-});
-
-const createAndPopulateNewAccount = async (id, ts, bal) => {
-  await addAccount(id);
-  await sqlConnection.query(
-    'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
-    [ts, realm, id, bal]
-  );
+const getAccountId = function(account) {
+  return account.entity_shard + '.' + account.entity_realm + '.' + account.entity_num;
 };
 
-test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
-  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['accountrange']);
-  let fileId = res.rows[0]['id'];
+/**
+ * '0.0.27' to {entity_shard: 0, entity_realm: 0, entity_num: 27}
+ * @param str
+ * @returns {{entity_realm: (*|string), entity_num: (*|string), entity_shard: (*|string)}}
+ */
+const toAccount = function(str) {
+  let tokens = str.split('.');
+  return {
+    entity_shard: tokens[0],
+    entity_realm: tokens[1],
+    entity_num: tokens[2]
+  };
+};
 
-  await createAndPopulateNewAccount(13, 5, 10);
-  await createAndPopulateNewAccount(63, 6, 50);
-  await createAndPopulateNewAccount(82, 7, 100);
+const consensusTimestampDecimalToBignum = function(decimalValue) {
+  let tokens = decimalValue.split('.', 2);
+  let result = math.bignumber(tokens[0]).times(1000000000);
+  if (tokens.length > 1) {
+    result = result.plus(math.bignumber(tokens[1]));
+  }
+  return result;
+};
 
-  // create 3 transactions - 9 transfers
-  await addCryptoTransferTransaction(2062, fileId, 13, 63, 50, 5000, 50);
-  await addCryptoTransferTransaction(2063, fileId, 63, 82, 70, 7000, 777);
-  await addCryptoTransferTransaction(2064, fileId, 82, 63, 20, 8000, -80);
+const addAccount = async function(account) {
+  account = Object.assign({entity_shard: 0, entity_realm: 0, exp_time_ns: null}, account);
+  let e = accountEntityIds[getAccountId(account)];
+  if (e) {
+    return e;
+  }
+  let res = await sqlConnection.query(
+    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns) values ($1, $2, $3, $4, $5) returning id;',
+    [1, account.entity_shard, account.entity_realm, account.entity_num, account.exp_time_ns]
+  );
+  e = res.rows[0]['id'];
+  accountEntityIds[getAccountId(account)] = e;
+  return e;
+};
 
-  let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.100']}});
-  res = await sqlConnection.query(sql.query, sql.params);
+/**
+ * Insert an array of {account_id: '0.0.123', balances: [consensus_timestamp: 123456789000000000, balance: 100] } into
+ * the account_balances table.
+ * @param accountBalances
+ * @returns {Promise<*|string>}
+ */
+const addAccountBalances = async function(accountBalances) {
+  let account = toAccount(accountBalances.account_id);
+  for (let i = 0; i < accountBalances.balances.length; ++i) {
+    let ab = accountBalances.balances[i];
+    await sqlConnection.query(
+      'insert into account_balances (account_realm_num, account_num, balance, consensus_timestamp) values ($1, $2, $3, $4);',
+      [
+        account.entity_realm,
+        account.entity_num,
+        ab.balance,
+        consensusTimestampDecimalToBignum(ab.consensus_timestamp).toString()
+      ]
+    );
+  }
+};
 
-  // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
-  // Note bank is out of desired range but is expected in query result
-  expect(res.rowCount).toEqual(6);
-  expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '@2063: account 2 \u01271',
-    '@2063: account 63 \u0127-71',
-    '@2063: account 82 \u012770',
-    '@2064: account 2 \u01271',
-    '@2064: account 63 \u012720',
-    '@2064: account 82 \u0127-21'
-  ]);
+const aggregateTransfers = function(transaction) {
+  let set = new Set();
+  transaction.transfers.forEach(transfer => {
+    let accountId = getAccountId(transfer); // Get '0.0.x' account ID from the transfer.
+    let val = set[accountId];
+    if (undefined === val) {
+      set[accountId] = transfer;
+    } else {
+      set[accountId].amount += transfer.amount;
+    }
+  });
+  transaction.transfers = Object.values(set);
+};
+
+const addTransaction = async function(transaction) {
+  transaction = Object.assign(
+    {
+      type: 14,
+      result: 22,
+      max_fee: 33,
+      valid_duration_seconds: 11,
+      transfers: [],
+      non_fee_transfers: [],
+      charged_tx_fee: NODE_FEE + NETWORK_FEE + SERVICE_FEE
+    },
+    transaction
+  );
+  transaction.consensus_timestamp = math.bignumber(transaction.consensus_timestamp);
+  await sqlConnection.query(
+    'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee, charged_tx_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);',
+    [
+      transaction.consensus_timestamp.toString(),
+      transaction.consensus_timestamp.minus(1).toString(),
+      recordFileId,
+      accountEntityIds[transaction.payer_account_id],
+      accountEntityIds[NODE_ACCOUNT_ID],
+      transaction.result,
+      transaction.type,
+      transaction.valid_duration_seconds,
+      transaction.max_fee,
+      transaction.charged_tx_fee
+    ]
+  );
+  if (transaction['aggregate_transfers']) {
+    aggregateTransfers(transaction);
+  }
+  for (let i = 0; i < transaction.transfers.length; ++i) {
+    let transfer = transaction.transfers[i];
+    await sqlConnection.query(
+      'insert into t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
+      [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
+    );
+  }
+  for (let i = 0; i < transaction.non_fee_transfers.length; ++i) {
+    let transfer = transaction.non_fee_transfers[i];
+    await sqlConnection.query(
+      'insert into non_fee_transfers (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
+      [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
+    );
+  }
+};
+
+const addCryptoTransfer = async function(cryptoTransfer) {
+  if (!('sender_account_id' in cryptoTransfer)) {
+    cryptoTransfer.sender_account_id = cryptoTransfer.payer_account_id;
+  }
+  let sender = toAccount(cryptoTransfer.sender_account_id);
+  let recipient = toAccount(cryptoTransfer.recipient_account_id);
+  if (!('transfers' in cryptoTransfer)) {
+    let payer = toAccount(cryptoTransfer.payer_account_id);
+    let node = toAccount(NODE_ACCOUNT_ID);
+    let treasury = toAccount(TREASURY_ACCOUNT_ID);
+    cryptoTransfer['transfers'] = [
+      Object.assign({}, payer, {amount: 0 - NODE_FEE - SERVICE_FEE}),
+      Object.assign({}, payer, {amount: 0 - NETWORK_FEE}),
+      Object.assign({}, sender, {amount: 0 - cryptoTransfer.amount}),
+      Object.assign({}, recipient, {amount: cryptoTransfer.amount}),
+      Object.assign({}, node, {amount: NODE_FEE}),
+      Object.assign({}, treasury, {amount: SERVICE_FEE}),
+      Object.assign({}, treasury, {amount: NETWORK_FEE})
+    ];
+  }
+  if (cryptoTransfer['include_non_fee_transfers']) {
+    cryptoTransfer['non_fee_transfers'] = [
+      Object.assign({}, sender, {amount: 0 - cryptoTransfer.amount}),
+      Object.assign({}, recipient, {amount: cryptoTransfer.amount})
+    ];
+  }
+  await addTransaction(cryptoTransfer);
+};
+
+const setupBasic = async function() {
+  await addAccount(toAccount(TREASURY_ACCOUNT_ID));
+  await addAccount(toAccount(NODE_ACCOUNT_ID));
+  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['test']);
+  recordFileId = res.rows[0]['id'];
+  console.log('Clearing DB');
+};
+
+const cleanupSql = fs.readFileSync(
+  path.join(
+    __dirname,
+    '..',
+    '..',
+    'hedera-mirror-importer',
+    'src',
+    'main',
+    'resources',
+    'db',
+    'scripts',
+    'cleanup.sql'
+  ),
+  'utf8'
+);
+beforeEach(async () => {
+  // Cleanup
+  await sqlConnection.query(cleanupSql);
+  accountEntityIds = {};
+  await setupBasic();
 });
 
 let specPath = path.join(__dirname, 'specs');
 fs.readdirSync(specPath).forEach(function(file) {
   let p = path.join(specPath, file);
   let specText = fs.readFileSync(p, 'utf8');
-  var spec = JSON.parse(specText);
-  test(`DB integration test - ${file} - ${spec.url}`, async () => {
-    let response = await request(server).get(spec.url);
-    expect(response.status).toEqual(spec.responseStatus);
-    expect(JSON.parse(response.text)).toEqual(spec.responseJson);
+  let spec = JSON.parse(specText);
+
+  //
+  // Setup data in the database for the test.
+  //
+  if ('setup' in spec) {
+    test(`DB integration test - ${file} - ${spec.url}`, async () => {
+      console.log(`Processing - ${file}`);
+      for (let i = 0; i < spec.setup.length; ++i) {
+        let args = spec.setup[i];
+        let func = Object.keys(args)[0];
+        let funcArgs = args[func];
+        console.log('Setup ' + func + ' ' + JSON.stringify(funcArgs));
+        switch (func) {
+          case 'add_account':
+            await addAccount(funcArgs);
+            break;
+          case 'add_transaction':
+            await addTransaction(funcArgs);
+            break;
+          case 'add_crypto_transfer':
+            await addCryptoTransfer(funcArgs);
+            break;
+          case 'add_account_balances':
+            await addAccountBalances(funcArgs);
+            break;
+        }
+      }
+
+      let response = await request(server).get(spec.url);
+
+      expect(response.status).toEqual(spec.responseStatus);
+      expect(JSON.parse(response.text)).toEqual(spec.responseJson);
+    });
+  }
+});
+
+// Process a /api/v1/transactions request returning a mix of R3 and R4-style transfer lists.
+let url = '/api/v1/transactions';
+let n = 1000;
+test(`DB integration test - ${n} txns - ${url}`, async () => {
+  await addAccount({entity_num: 1234});
+  await addAccount({entity_num: 9876});
+  let start = math.bignumber('12345678000000000');
+  for (let i = 0; i < n; ++i) {
+    await addCryptoTransfer({
+      consensus_timestamp: start.plus(i),
+      payer_account_id: '0.0.9876',
+      recipient_account_id: '0.0.1234',
+      amount: i,
+      aggregate_transfers: i >= n / 2, // First half have R3-style pre-itemized-by-HAPI transfer lists, last half R4 aggregated.
+      include_non_fee_transfers: 0 == i % 2 // Starting with 0, odd have non_fee_transfers rows, even do not.
+    });
+  }
+
+  let response = await request(server).get(url);
+
+  expect(response.status).toEqual(200);
+
+  let transactions = JSON.parse(response.text).transactions;
+  expect(transactions.length).toEqual(n); // Received all the expected transactions
+
+  transactions.forEach((transaction, i) => {
+    let actual = consensusTimestampDecimalToBignum(transaction.consensus_timestamp);
+    expect(actual.toString()).toBe(start.plus(n - i - 1).toString());
+
+    expect(transaction.transfers.length).toBeGreaterThan(2);
   });
 });

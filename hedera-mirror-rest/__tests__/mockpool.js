@@ -78,18 +78,32 @@ class Pool {
 
     // To parse the sql parameters, we need the 'order by' param used
     let orderprefix = '';
-    switch (callerFile) {
-      case 'transactions':
-        orderprefix = 'consensus_ns';
-        break;
-      case 'balances':
-        orderprefix = 'account_num';
-        break;
-      case 'accounts':
-        orderprefix = 'coalesce\\(ab.account_num, e.entity_num\\)';
-        break;
-      default:
-        break;
+    if (sqlquery.includes('non_fee_transactions')) {
+      // Ignore all this hard-coded "mock"-like functionality for this new table.
+      return new Promise(function(resolve, reject) {
+        resolve({
+          rows: [],
+          sqlQuery: {
+            query: sqlquery,
+            params: sqlparams,
+            parsedparams: []
+          }
+        });
+      });
+    } else {
+      switch (callerFile) {
+        case 'transactions':
+          orderprefix = 'consensus_ns';
+          break;
+        case 'balances':
+          orderprefix = 'account_num';
+          break;
+        case 'accounts':
+          orderprefix = 'coalesce\\(ab.account_num, e.entity_num\\)';
+          break;
+        default:
+          break;
+      }
     }
 
     // Parse the SQL query
@@ -192,7 +206,7 @@ class Pool {
       row.account_realm = 0;
       row.account_num =
         Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low));
-      row.amount = i * 1000;
+      row.amount = i * 1000 + 1; // 0 isn't a good amount for tests in a transfer list.
       row.charged_tx_fee = 100 + i;
       rows.push(row);
     }
