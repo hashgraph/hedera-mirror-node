@@ -41,7 +41,6 @@ BEGIN
     ALTER TABLE topic_message
         DROP CONSTRAINT IF EXISTS topic_message_pkey;
     DROP INDEX IF EXISTS topic_message__realm_num_timestamp;
-    DROP TRIGGER IF EXISTS topic_message_trigger ON topic_message;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -53,8 +52,6 @@ BEGIN
     ALTER TABLE topic_message
         ADD PRIMARY KEY USING INDEX topic_message_pkey;
     CREATE INDEX IF NOT EXISTS topic_message__realm_num_timestamp ON topic_message (realm_num, topic_num, consensus_timestamp);
-    CREATE TRIGGER topic_message_trigger
-        AFTER INSERT ON topic_message FOR EACH ROW EXECUTE PROCEDURE topic_message_notifier('topic_message');
 END;
 $$ LANGUAGE plpgsql;
 
@@ -62,11 +59,8 @@ CREATE OR REPLACE FUNCTION drop_t_cryptotransferlists_constraints_and_indexes() 
 $$
 DECLARE
 BEGIN
-    ALTER TABLE t_cryptotransferlists
-        DROP CONSTRAINT IF EXISTS fk__t_transactions;
     DROP INDEX IF EXISTS idx__t_cryptotransferlists__realm_and_num_and_consensus;
     DROP INDEX IF EXISTS idx__t_cryptotransferlists__consensus_and_realm_and_num;
-    DROP INDEX IF EXISTS idx__t_cryptotransferlist_amount;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -74,11 +68,8 @@ CREATE OR REPLACE FUNCTION create_t_cryptotransferlists_constraints_and_indexes(
 $$
 DECLARE
 BEGIN
-    ALTER TABLE t_cryptotransferlists
-        ADD CONSTRAINT fk__t_transactions FOREIGN KEY (consensus_timestamp) REFERENCES t_transactions (consensus_ns);
     CREATE INDEX IF NOT EXISTS idx__t_cryptotransferlists__realm_and_num_and_consensus ON t_cryptotransferlists (realm_num, entity_num, consensus_timestamp);
     CREATE INDEX IF NOT EXISTS idx__t_cryptotransferlists__consensus_and_realm_and_num ON t_cryptotransferlists (consensus_timestamp, realm_num, entity_num);
-    CREATE INDEX IF NOT EXISTS idx__t_cryptotransferlist_amount ON t_cryptotransferlists (amount);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -86,8 +77,6 @@ CREATE OR REPLACE FUNCTION drop_t_file_data_constraints_and_indexes() RETURNS vo
 $$
 DECLARE
 BEGIN
-    ALTER TABLE t_file_data
-        DROP CONSTRAINT IF EXISTS fk__t_transactions;
     DROP INDEX IF EXISTS idx__t_file_data__consensus;
 END;
 $$ LANGUAGE plpgsql;
@@ -96,8 +85,6 @@ CREATE OR REPLACE FUNCTION create_t_file_data_constraints_and_indexes() RETURNS 
 $$
 DECLARE
 BEGIN
-    ALTER TABLE t_file_data
-        ADD CONSTRAINT fk__t_transactions FOREIGN KEY (consensus_timestamp) REFERENCES t_transactions (consensus_ns);
     CREATE INDEX IF NOT EXISTS idx__t_file_data__consensus ON t_file_data (consensus_timestamp DESC);
 END;
 $$ LANGUAGE plpgsql;
@@ -107,8 +94,6 @@ CREATE OR REPLACE FUNCTION drop_t_livehashes_constraints_and_indexes() RETURNS v
 $$
 DECLARE
 BEGIN
-    ALTER TABLE t_livehashes
-        DROP CONSTRAINT IF EXISTS fk__t_transactions;
     DROP INDEX IF EXISTS idx__t_livehashes__consensus;
 END;
 $$ LANGUAGE plpgsql;
@@ -117,8 +102,6 @@ CREATE OR REPLACE FUNCTION create_t_livehashes_constraints_and_indexes() RETURNS
 $$
 DECLARE
 BEGIN
-    ALTER TABLE t_livehashes
-        ADD CONSTRAINT fk__t_transactions FOREIGN KEY (consensus_timestamp) REFERENCES t_transactions (consensus_ns);
     CREATE INDEX IF NOT EXISTS idx__t_livehashes__consensus ON t_livehashes (consensus_timestamp DESC);
 END;
 $$ LANGUAGE plpgsql;
@@ -128,8 +111,6 @@ CREATE OR REPLACE FUNCTION drop_t_contract_result_constraints_and_indexes() RETU
 $$
 DECLARE
 BEGIN
-    ALTER TABLE t_contract_result
-        DROP CONSTRAINT IF EXISTS fk__t_transactions;
     DROP INDEX IF EXISTS idx__t_contract_result__consensus;
 END;
 $$ LANGUAGE plpgsql;
@@ -138,8 +119,6 @@ CREATE OR REPLACE FUNCTION create_t_contract_result_constraints_and_indexes() RE
 $$
 DECLARE
 BEGIN
-    ALTER TABLE t_contract_result
-        ADD CONSTRAINT fk__t_transactions FOREIGN KEY (consensus_timestamp) REFERENCES t_transactions (consensus_ns);
     CREATE INDEX IF NOT EXISTS idx__t_contract_result__consensus ON t_contract_result (consensus_timestamp DESC);
 END;
 $$ LANGUAGE plpgsql;
@@ -150,18 +129,9 @@ DECLARE
 BEGIN
     ALTER TABLE t_transactions
         DROP CONSTRAINT IF EXISTS pk__t_transactions__consensus_ns;
-    ALTER TABLE t_transactions
-        DROP CONSTRAINT IF EXISTS fk_cud_entity_id;
-    ALTER TABLE t_transactions
-        DROP CONSTRAINT IF EXISTS fk_node_account_id;
-    ALTER TABLE t_transactions
-        DROP CONSTRAINT IF EXISTS fk_payer_account_id;
-    ALTER TABLE t_transactions
-        DROP CONSTRAINT IF EXISTS fk_rec_file_id;
     DROP INDEX IF EXISTS idx__t_transactions__transaction_id;
     DROP INDEX IF EXISTS idx_t_transactions_node_account;
     DROP INDEX IF EXISTS idx_t_transactions_payer_id;
-    DROP INDEX IF EXISTS idx_t_transactions_rec_file;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -172,18 +142,9 @@ BEGIN
     CREATE UNIQUE INDEX pk__t_transactions__consensus_ns ON t_transactions (consensus_ns);
     ALTER TABLE t_transactions
         ADD PRIMARY KEY USING INDEX pk__t_transactions__consensus_ns;
-    ALTER TABLE t_transactions
-        ADD CONSTRAINT fk_cud_entity_id FOREIGN KEY (fk_cud_entity_id) REFERENCES t_entities (id) ON UPDATE CASCADE ON DELETE CASCADE;
-    ALTER TABLE t_transactions
-        ADD CONSTRAINT fk_node_account_id FOREIGN KEY (fk_node_acc_id) REFERENCES t_entities (id) ON UPDATE CASCADE ON DELETE CASCADE;
-    ALTER TABLE t_transactions
-        ADD CONSTRAINT fk_payer_account_id FOREIGN KEY (fk_payer_acc_id) REFERENCES t_entities (id) ON UPDATE CASCADE ON DELETE CASCADE;
-    ALTER TABLE t_transactions
-        ADD CONSTRAINT fk_rec_file_id FOREIGN KEY (fk_rec_file_id) REFERENCES t_record_files (id) ON UPDATE CASCADE ON DELETE CASCADE;
     CREATE INDEX IF NOT EXISTS idx__t_transactions__transaction_id ON t_transactions (valid_start_ns, fk_payer_acc_id);
     CREATE INDEX IF NOT EXISTS idx_t_transactions_node_account ON t_transactions (fk_node_acc_id);
     CREATE INDEX IF NOT EXISTS idx_t_transactions_payer_id ON t_transactions (fk_payer_acc_id);
-    CREATE INDEX IF NOT EXISTS idx_t_transactions_rec_file ON t_transactions (fk_rec_file_id);
 END;
 $$ LANGUAGE plpgsql;
 
