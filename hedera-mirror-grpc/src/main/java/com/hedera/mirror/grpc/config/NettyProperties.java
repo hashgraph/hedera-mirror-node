@@ -27,17 +27,11 @@ import org.springframework.validation.annotation.Validated;
 @Data
 @Validated
 public class NettyProperties {
-    @Min(1)
-    private int maxConcurrentCallsPerConnection = 5;
-
     @Min(1024) // 64 kb
     private int flowControlWindow = 64 * 1024;
 
     @Min(1)
-    private int keepAlive = 30;
-
-    @Min(1)
-    private int keepAliveTimeout = 5;
+    private int maxConcurrentCallsPerConnection = 5;
 
     @Min(8) // 6 kb
     private int maxMessageSize = 6 * 1024;
