@@ -20,15 +20,19 @@ package com.hedera.mirror.grpc.config;
  * ‍
  */
 
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.services.HealthStatusManager;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import net.devh.boot.grpc.server.serverfactory.GrpcServerConfigurer;
 import net.devh.boot.grpc.server.service.GrpcServiceDefinition;
 import net.devh.boot.grpc.server.service.GrpcServiceDiscoverer;
 import org.springframework.boot.actuate.health.CompositeHealthContributor;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.hedera.mirror.grpc.GrpcProperties;
 
 @Configuration
 public class GrpcConfiguration {
@@ -45,5 +49,11 @@ public class GrpcConfiguration {
         }
 
         return CompositeHealthContributor.fromMap(healthIndicators);
+    }
+
+    @Bean
+    public GrpcServerConfigurer grpcServerConfigurer(GrpcProperties grpcProperties) {
+        return serverBuilder -> ((NettyServerBuilder) serverBuilder)
+                .maxConcurrentCallsPerConnection(grpcProperties.getNetty().getMaxConcurrentCallsPerConnection());
     }
 }

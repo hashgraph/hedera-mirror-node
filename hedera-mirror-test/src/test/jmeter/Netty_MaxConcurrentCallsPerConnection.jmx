@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.2.1">
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="E2E 200 TPS Test Plan" enabled="true">
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Netty MaxConcurrentCallsPerConnection Test Plan" enabled="true">
       <stringProp name="TestPlan.comments"></stringProp>
       <boolProp name="TestPlan.functional_mode">false</boolProp>
       <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
@@ -18,7 +18,7 @@
           <boolProp name="LoopController.continue_forever">false</boolProp>
           <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">${__P(subcribeThreadCount,1)}</stringProp>
+        <stringProp name="ThreadGroup.num_threads">${__P(subcribeThreadCount,100)}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
         <stringProp name="ThreadGroup.duration"></stringProp>
@@ -66,7 +66,7 @@
               </elementProp>
               <elementProp name="historicMessagesCount" elementType="Argument">
                 <stringProp name="Argument.name">historicMessagesCount</stringProp>
-                <stringProp name="Argument.value">5</stringProp>
+                <stringProp name="Argument.value">1000</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="newTopicsMessageCount" elementType="Argument">
@@ -81,7 +81,7 @@
               </elementProp>
               <elementProp name="sharedChannel" elementType="Argument">
                 <stringProp name="Argument.name">sharedChannel</stringProp>
-                <stringProp name="Argument.value">false</stringProp>
+                <stringProp name="Argument.value">true</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
