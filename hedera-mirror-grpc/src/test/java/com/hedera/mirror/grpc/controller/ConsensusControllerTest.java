@@ -30,6 +30,7 @@ import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import javax.annotation.Resource;
 import net.devh.boot.grpc.client.inject.GrpcClient;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -53,6 +54,11 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
     @Resource
     private DomainBuilder domainBuilder;
+
+    @BeforeEach
+    void setup() {
+        domainBuilder.entity().block();
+    }
 
     @Test
     void missingTopicID() throws Exception {

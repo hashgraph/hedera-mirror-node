@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.r2dbc.spi.R2dbcNonTransientResourceException;
 import java.time.Instant;
 import javax.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
@@ -51,6 +53,9 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 @Log4j2
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
+
+    private static final String DB_ERROR = "Unable to connect to database. Please retry later";
+
     private final TopicMessageService topicMessageService;
 
     @Override
@@ -58,7 +63,10 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return request.map(this::toFilter)
                 .flatMapMany(topicMessageService::subscribeTopic)
                 .map(this::toResponse)
-                .onErrorMap(ConstraintViolationException.class, t -> invalidRequest(t))
+                .onErrorMap(ConstraintViolationException.class, e -> error(e, Status.INVALID_ARGUMENT))
+                .onErrorMap(IllegalArgumentException.class, e -> error(e, Status.INVALID_ARGUMENT))
+                .onErrorMap(TopicNotFoundException.class, e -> error(e, Status.NOT_FOUND))
+                .onErrorMap(R2dbcNonTransientResourceException.class, e -> error(e, Status.UNAVAILABLE, DB_ERROR))
                 .onErrorMap(t -> unknownError(t));
     }
 
@@ -82,9 +90,8 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         if (query.hasConsensusEndTime()) {
             Timestamp endTimeStamp = query.getConsensusEndTime();
             Instant endInstant = ProtoUtil.fromTimestamp(endTimeStamp);
-            builder.endTime(endInstant
-                    .isAfter(InstantToLongConverter.LONG_MAX_INSTANT) ? InstantToLongConverter.LONG_MAX_INSTANT :
-                    endInstant);
+            builder.endTime(endInstant.isAfter(InstantToLongConverter.LONG_MAX_INSTANT) ?
+                    InstantToLongConverter.LONG_MAX_INSTANT : endInstant);
         }
 
         return builder.build();
@@ -99,9 +106,13 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                 .build();
     }
 
-    private Throwable invalidRequest(Throwable t) {
-        log.warn("Invalid ConsensusTopicQuery: {}", t.getMessage());
-        return Status.INVALID_ARGUMENT.augmentDescription(t.getMessage()).asRuntimeException();
+    private Throwable error(Throwable t, Status status) {
+        return error(t, status, t.getMessage());
+    }
+
+    private Throwable error(Throwable t, Status status, String message) {
+        log.warn("Received {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
+        return status.augmentDescription(message).asRuntimeException();
     }
 
     private Throwable unknownError(Throwable t) {
@@ -109,7 +120,8 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             return t;
         }
 
-        log.error("Unknown error subscribing to topic", t);
-        return Status.INTERNAL.augmentDescription(t.getMessage()).asRuntimeException();
+        final String message = "Unknown error subscribing to topic";
+        log.error(message, t);
+        return Status.UNKNOWN.augmentDescription(message).asRuntimeException();
     }
 }

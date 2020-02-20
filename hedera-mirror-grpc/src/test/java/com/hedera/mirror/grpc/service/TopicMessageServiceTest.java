@@ -27,18 +27,24 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import javax.annotation.Resource;
 import javax.validation.ConstraintViolationException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
+import com.hedera.mirror.grpc.domain.Entity;
+import com.hedera.mirror.grpc.domain.EntityType;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.listener.TopicListener;
+import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 
 public class TopicMessageServiceTest extends GrpcIntegrationTest {
@@ -51,6 +57,11 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Resource
     private GrpcProperties grpcProperties;
+
+    @BeforeEach
+    void setup() {
+        domainBuilder.entity().block();
+    }
 
     @Test
     void invalidFilter() {
@@ -104,6 +115,46 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         assertThatThrownBy(() -> topicMessageService.subscribeTopic(filter))
                 .isInstanceOf(ConstraintViolationException.class)
                 .hasMessageContaining("Start time must be before the current time");
+    }
+
+    @Test
+    void topicNotFound() {
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .topicNum(999)
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .as(StepVerifier::create)
+                .expectError(TopicNotFoundException.class)
+                .verify(Duration.ofMillis(100));
+    }
+
+    @Test
+    void topicNotFoundWithCheckTopicExistsFalse() {
+        grpcProperties.setCheckTopicExists(false);
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .topicNum(999)
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .as(StepVerifier::create)
+                .thenCancel()
+                .verify(Duration.ofMillis(100));
+
+        grpcProperties.setCheckTopicExists(true);
+    }
+
+    @Test
+    void invalidTopic() {
+        domainBuilder.entity(e -> e.entityTypeId(EntityType.ACCOUNT).entityNum(1L)).block();
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .topicNum(1)
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                .as(StepVerifier::create)
+                .expectError(IllegalArgumentException.class)
+                .verify(Duration.ofMillis(100));
     }
 
     @Test
@@ -280,6 +331,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void bothMessagesWithTopicNum() {
+        domainBuilder.entity(e -> e.entityNum(1L)).block();
+        domainBuilder.entity(e -> e.entityNum(2L)).block();
         domainBuilder.topicMessage(t -> t.topicNum(0)).block();
         domainBuilder.topicMessage(t -> t.topicNum(1)).block();
 
@@ -306,6 +359,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void bothMessagesWithRealmNum() {
+        domainBuilder.entity(e -> e.entityRealm(1L)).block();
+        domainBuilder.entity(e -> e.entityRealm(2L)).block();
         domainBuilder.topicMessage(t -> t.realmNum(0)).block();
         domainBuilder.topicMessage(t -> t.realmNum(1)).block();
 
@@ -359,8 +414,10 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void missingMessages() {
         TopicListener topicListener = Mockito.mock(TopicListener.class);
+        EntityRepository entityRepository = Mockito.mock(EntityRepository.class);
         TopicMessageRepository topicMessageRepository = Mockito.mock(TopicMessageRepository.class);
-        topicMessageService = new TopicMessageServiceImpl(topicListener, topicMessageRepository);
+        topicMessageService = new TopicMessageServiceImpl(new GrpcProperties(), topicListener, entityRepository,
+                topicMessageRepository);
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -369,8 +426,10 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessage beforeMissing = topicMessage(1);
         TopicMessage afterMissing = topicMessage(4);
 
-        Mockito.when(topicListener.listen(filter)).thenReturn(Flux.just(beforeMissing, afterMissing));
+        Mockito.when(entityRepository.findByCompositeKey(0, filter.getRealmNum(), filter.getTopicNum())).thenReturn(Mono
+                .just(Entity.builder().entityTypeId(EntityType.TOPIC).build()));
         Mockito.when(topicMessageRepository.findByFilter(filter)).thenReturn(Flux.empty());
+        Mockito.when(topicListener.listen(filter)).thenReturn(Flux.just(beforeMissing, afterMissing));
         Mockito.when(topicMessageRepository.findByFilter(ArgumentMatchers
                 .argThat(t -> t.getLimit() == 2 &&
                         t.getStartTime().equals(beforeMissing.getConsensusTimestamp().plusNanos(1)) &&

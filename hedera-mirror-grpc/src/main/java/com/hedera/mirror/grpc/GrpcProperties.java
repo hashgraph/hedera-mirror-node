@@ -34,6 +34,9 @@ import com.hedera.mirror.grpc.config.NettyProperties;
 @Validated
 @ConfigurationProperties("hedera.mirror.grpc")
 public class GrpcProperties {
+
+    private boolean checkTopicExists = true;
+
     @Min(32)
     private int maxPageSize = 1000;
 
@@ -42,4 +45,6 @@ public class GrpcProperties {
 
     @NotNull
     private NettyProperties netty = new NettyProperties();
+
+    private long shard = 0;
 }

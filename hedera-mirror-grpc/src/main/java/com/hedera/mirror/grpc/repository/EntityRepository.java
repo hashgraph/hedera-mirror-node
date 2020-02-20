@@ -4,7 +4,7 @@ package com.hedera.mirror.grpc.repository;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * Copyright (C) 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,14 @@ package com.hedera.mirror.grpc.repository;
  * ‍
  */
 
-import java.time.Instant;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.Entity;
 
-public interface TopicMessageRepository extends ReactiveCrudRepository<TopicMessage, Instant>,
-        TopicMessageRepositoryCustom {
+public interface EntityRepository extends ReactiveCrudRepository<Entity, Long> {
 
-    @Query("select * from topic_message where consensus_timestamp > $1 order by consensus_timestamp asc")
-    Flux<TopicMessage> findByConsensusTimestampGreaterThan(long consensusTimestamp);
+    @Query("select * from t_entities where entity_shard = $1 and entity_realm = $2 and entity_num = $3 limit 1")
+    Mono<Entity> findByCompositeKey(long shard, long realm, long num);
 }
