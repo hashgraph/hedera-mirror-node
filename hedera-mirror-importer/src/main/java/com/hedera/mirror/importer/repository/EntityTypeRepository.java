@@ -31,6 +31,6 @@ import com.hedera.mirror.importer.domain.EntityType;
 
 public interface EntityTypeRepository extends CrudRepository<EntityType, Integer> {
 
-    @Cacheable(cacheManager = CacheConfiguration.EXPIRE_AFTER_5M, cacheNames = "entity_type")
+    @Cacheable(cacheManager = CacheConfiguration.TINY_LRU_CACHE, cacheNames = "entity_type")
     Optional<EntityType> findByName(String name);
 }

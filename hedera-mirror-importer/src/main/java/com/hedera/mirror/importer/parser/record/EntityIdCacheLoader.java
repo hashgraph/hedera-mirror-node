@@ -20,25 +20,36 @@
 
 package com.hedera.mirror.importer.parser.record;
 
+import com.google.common.base.Stopwatch;
+
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.EntityIdRepository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.InitializingBean;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import javax.annotation.Resource;
 
 @Component
+@Log4j2
 @RequiredArgsConstructor
-public class EntityIdCacheLoader implements InitializingBean {
-    @Resource
-    EntityIdRepository entityIdRepository;
+public class EntityIdCacheLoader {
+    private final EntityIdRepository entityIdRepository;
     private final CommonParserProperties commonParserProperties;
 
-    @Override
-    public void afterPropertiesSet() {
+    @Async
+    @EventListener(ApplicationReadyEvent.class)
+    public void load() {
         var pageable = PageRequest.of(0, commonParserProperties.getEntityIdCacheSize());
-        entityIdRepository.findAll(pageable); // Seed the cache
+
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        // Seed the cache
+        entityIdRepository.findAll(pageable).forEach(id -> {
+            entityIdRepository.cache(id);
+        });
+        log.info("Cached event id mappings in {}", stopwatch);
     }
 }

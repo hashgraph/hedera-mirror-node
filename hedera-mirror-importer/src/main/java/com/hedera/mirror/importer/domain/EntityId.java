@@ -32,7 +32,6 @@ import lombok.extern.log4j.Log4j2;
 
 @Data
 @Entity
-@Log4j2
 @Table(name = "t_entities")
 @NoArgsConstructor
 public class EntityId {

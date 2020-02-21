@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import java.util.Collection;
 import java.util.Optional;
 
 import com.hedera.mirror.importer.domain.EntityId;
@@ -42,19 +43,15 @@ public interface EntityIdRepository extends PagingAndSortingRepository<EntityId,
     @Query("from EntityId where entityShard = ?1 and entityRealm = ?2 and entityNum = ?3")
     Optional<EntityId> findByNativeIds(long entityShard, long entityRealm, long entityNum);
 
-    @Cacheable(key = "{#p0.entityShard, #p0.entityRealm, #p0.entityNum}")
     @Override
     Page<EntityId> findAll(Pageable pageable);
-
-    default EntityId findOrCreateBy(long entityShard, long entityRealm, long entityNum, int entityTypeId) {
-        var found = findByNativeIds(entityShard, entityRealm, entityNum);
-        if (!found.isPresent()) {
-            return save(new EntityId(entityShard, entityRealm, entityNum, entityTypeId));
-        }
-        return found.get();
-    }
 
     @CachePut(key = "{#p0.entityShard, #p0.entityRealm, #p0.entityNum}")
     @Override
     <S extends EntityId> S save(S entity);
+
+    @CachePut(key = "{#p0.entityShard, #p0.entityRealm, #p0.entityNum}")
+    default <S extends EntityId> S cache(S entity) {
+        return entity;
+    }
 }

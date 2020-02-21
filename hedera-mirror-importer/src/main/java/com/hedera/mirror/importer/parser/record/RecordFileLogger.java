@@ -1053,14 +1053,28 @@ public class RecordFileLogger {
         if (0 == entityNum) {
             return null;
         }
-        return entityIdRepository.findOrCreateBy(shardNum, realmNum, entityNum,
-                entityTypeRepository.findByName(type).map(EntityType::getId).get());
+        return entityIdRepository.findByNativeIds(shardNum, realmNum, entityNum).orElseGet(() -> {
+            EntityId entityId = new EntityId();
+            entityId.setEntityShard(shardNum);
+            entityId.setEntityRealm(realmNum);
+            entityId.setEntityNum(entityNum);
+            entityId.setEntityTypeId(entityTypeRepository.findByName(type).map(EntityType::getId).get());
+            return entityIdRepository.save(entityId);
+        });
     }
 
     private static Entities createEntity(Entities entity) {
         if (entity != null && entity.getId() == null) {
             log.debug("Creating entity: {}", () -> entity.getDisplayId());
-            return entityRepository.save(entity);
+            var result = entityRepository.save(entity);
+            var entityId = new EntityId();
+            entityId.setId(result.getId());
+            entityId.setEntityShard(result.getEntityShard());
+            entityId.setEntityRealm(result.getEntityRealm());
+            entityId.setEntityNum(result.getEntityNum());
+            entityId.setEntityTypeId(result.getEntityTypeId());
+            entityIdRepository.cache(entityId);
+            return result;
         }
         return entity;
     }
