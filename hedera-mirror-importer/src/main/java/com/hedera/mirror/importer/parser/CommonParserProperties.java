@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.function.Predicate;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

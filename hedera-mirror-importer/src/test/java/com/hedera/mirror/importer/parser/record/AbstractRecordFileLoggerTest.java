@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 
+import com.hedera.mirror.importer.repository.EntityIdRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -72,6 +73,8 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     protected TransactionRepository transactionRepository;
     @Resource
     protected EntityRepository entityRepository;
+    @Resource
+    protected EntityIdRepository entityIdRepository;
     @Resource
     protected ContractResultRepository contractResultRepository;
     @Resource

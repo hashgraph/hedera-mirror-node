@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
-import com.github.benmanes.caffeine.cache.CaffeineSpec;
-
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 
 import lombok.RequiredArgsConstructor;

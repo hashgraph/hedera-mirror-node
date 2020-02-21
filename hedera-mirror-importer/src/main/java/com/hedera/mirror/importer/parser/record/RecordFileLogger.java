@@ -263,10 +263,8 @@ public class RecordFileLogger {
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
         long initialBalance = 0;
 
-        // entity will be loaded from the repository if the call is a create/update/delete on the entity.
-        // Otherwise just the entityId will be used.
-        Entities entity = null;
-        EntityId entityId = null;
+        Entities entity = null; // Entity used when t_entities row must be updated.
+        EntityId entityId = null; // Entity ID simply used for reference purposes (in the transaction object)
         EntityId proxyEntityId = null;
 
         /**
@@ -463,18 +461,19 @@ public class RecordFileLogger {
         long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
         AccountID payerAccountId = transactionID.getAccountID();
 
-        if (entityId != null) {
-            entity = new Entities();
-            entity.setId(entityId.getId());
-            entity.setEntityShard(entityId.getEntityShard());
-            entity.setEntityRealm(entityId.getEntityRealm());
-            entity.setEntityNum(entityId.getEntityNum());
-        }
-
         com.hedera.mirror.importer.domain.Transaction tx = new com.hedera.mirror.importer.domain.Transaction();
         tx.setChargedTxFee(txRecord.getTransactionFee());
         tx.setConsensusNs(consensusNs);
-        tx.setEntity(entity);
+        if (entityId != null) {
+            var tempEntity = new Entities();
+            tempEntity.setId(entityId.getId());
+            tempEntity.setEntityShard(entityId.getEntityShard());
+            tempEntity.setEntityRealm(entityId.getEntityRealm());
+            tempEntity.setEntityNum(entityId.getEntityNum());
+            tx.setEntity(tempEntity);
+        } else if (null != entity) {
+            tx.setEntity(entity);
+        }
         tx.setInitialBalance(initialBalance);
         tx.setMemo(body.getMemo().getBytes());
         tx.setMaxFee(body.getTransactionFee());
@@ -492,16 +491,14 @@ public class RecordFileLogger {
         }
 
         if (entity != null) {
-            if (entityId != null) {
-                entity = entityRepository.findByPrimaryKey(entity.getEntityShard(),
-                        entity.getEntityRealm(), entity.getEntityNum()).get();
-            }
             if (proxyEntityId != null) {
                 entity.setProxyAccountId(proxyEntityId.getId());
             }
             entity.setAutoRenewAccount(createEntity(entity.getAutoRenewAccount()));
             entity = entityRepository.save(entity);
             sqlInsertTransaction.setLong(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), entity.getId());
+        } else if (entityId != null) {
+            sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), entityId.getId());
         } else {
             sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), null);
         }
