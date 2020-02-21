@@ -38,13 +38,17 @@
             <artifactId>micrometer-registry-elastic</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.projectreactor.addons</groupId>
+            <artifactId>reactor-extra</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.r2dbc</groupId>
             <artifactId>r2dbc-pool</artifactId>
         </dependency>
         <dependency>
             <groupId>io.r2dbc</groupId>
             <artifactId>r2dbc-postgresql</artifactId>
-            <version>0.8.2.BUILD-20200214.102436-4</version>
+            <version>0.8.2.BUILD-20200207.142047-2</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>

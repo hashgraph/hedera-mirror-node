@@ -15,6 +15,8 @@ hedera:
         username: mirror_node
       listener:
         pollingFrequency: 50ms
+      retriever:
+        pollingFrequency: 50ms
 spring:
   datasource:
     name: ${hedera.mirror.grpc.db.name}

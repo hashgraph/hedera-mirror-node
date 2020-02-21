@@ -1,10 +1,10 @@
-package com.hedera.mirror.grpc.listener;
+package com.hedera.mirror.grpc.retriever;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * Copyright (C) 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,10 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.Data;
@@ -40,26 +42,31 @@ import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 @Named
 @Log4j2
 @RequiredArgsConstructor
-public class PollingTopicListener implements TopicListener {
+public class PollingTopicMessageRetriever implements TopicMessageRetriever {
 
-    private final ListenerProperties listenerProperties;
+    private final RetrieverProperties retrieverProperties;
     private final TopicMessageRepository topicMessageRepository;
     private final Scheduler scheduler = Schedulers
-            .newParallel("poll", 4 * Runtime.getRuntime().availableProcessors(), true);
+            .newParallel("retriever", 4 * Runtime.getRuntime().availableProcessors(), true);
 
     @Override
-    public Flux<TopicMessage> listen(TopicMessageFilter filter) {
+    public Flux<TopicMessage> retrieve(TopicMessageFilter filter) {
+        if (!retrieverProperties.isEnabled()) {
+            return Flux.empty();
+        }
+
         PollingContext context = new PollingContext(filter);
-        Duration frequency = listenerProperties.getPollingFrequency();
+        Duration frequency = retrieverProperties.getPollingFrequency();
 
         return Flux.defer(() -> poll(context))
-                .delaySubscription(frequency, scheduler)
-                .repeatWhen(Repeat.times(Long.MAX_VALUE)
+                .repeatWhen(Repeat.create(r -> !context.isComplete(), Long.MAX_VALUE)
                         .fixedBackoff(frequency)
                         .jitter(Jitter.random(0.1))
                         .withBackoffScheduler(scheduler))
-                .name("poll")
+                .name("retriever")
                 .metrics()
+                .doOnCancel(context::onComplete)
+                .doOnComplete(context::onComplete)
                 .doOnNext(context::onNext)
                 .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", frequency.toMillis(), filter));
     }
@@ -67,8 +74,8 @@ public class PollingTopicListener implements TopicListener {
     private Flux<TopicMessage> poll(PollingContext context) {
         TopicMessageFilter filter = context.getFilter();
         TopicMessage last = context.getLast();
-        int limit = filter.hasLimit() ? (int) (filter.getLimit() - context.getCount().get()) : Integer.MAX_VALUE;
-        int pageSize = Math.min(limit, listenerProperties.getMaxPageSize());
+        int limit = filter.hasLimit() ? (int) (filter.getLimit() - context.getTotal().get()) : Integer.MAX_VALUE;
+        int pageSize = Math.min(limit, retrieverProperties.getMaxPageSize());
         Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
 
         TopicMessageFilter newFilter = filter.toBuilder()
@@ -76,19 +83,39 @@ public class PollingTopicListener implements TopicListener {
                 .startTime(startTime)
                 .build();
 
-        return topicMessageRepository.findByFilter(newFilter);
+        return topicMessageRepository.findByFilter(newFilter)
+                .doOnSubscribe(s -> context.getPageSize().set(0L));
     }
 
     @Data
     private class PollingContext {
 
         private final TopicMessageFilter filter;
-        private final AtomicLong count = new AtomicLong(0L);
+        private final AtomicLong pageSize = new AtomicLong(0L);
+        private final Stopwatch stopwatch = Stopwatch.createStarted();
+        private final AtomicLong total = new AtomicLong(0L);
         private volatile TopicMessage last;
+
+        /**
+         * Checks if this publisher is complete by comparing if the number of results in the last page was less than the
+         * page size. This avoids the extra query if we were to just check if last page was empty.
+         *
+         * @return whether all historic messages have been returned
+         */
+        boolean isComplete() {
+            return pageSize.get() < retrieverProperties.getMaxPageSize();
+        }
 
         void onNext(TopicMessage topicMessage) {
             last = topicMessage;
-            count.incrementAndGet();
+            total.incrementAndGet();
+            pageSize.incrementAndGet();
+        }
+
+        void onComplete() {
+            var elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+            var rate = elapsed > 0 ? (int) (1000.0 * total.get() / elapsed) : 0;
+            log.debug("Finished retrieving {} messages in {} ({}/s)", total, stopwatch, rate);
         }
     }
 }
