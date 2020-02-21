@@ -53,7 +53,11 @@ public class GrpcConfiguration {
 
     @Bean
     public GrpcServerConfigurer grpcServerConfigurer(GrpcProperties grpcProperties) {
+        NettyProperties nettyProperties = grpcProperties.getNetty();
         return serverBuilder -> ((NettyServerBuilder) serverBuilder)
-                .maxConcurrentCallsPerConnection(grpcProperties.getNetty().getMaxConcurrentCallsPerConnection());
+                .flowControlWindow(nettyProperties.getFlowControlWindow())
+                .maxConcurrentCallsPerConnection(nettyProperties.getMaxConcurrentCallsPerConnection())
+                .maxInboundMessageSize(nettyProperties.getMaxMessageSize())
+                .maxInboundMetadataSize(nettyProperties.getMaxMetadataSize());
     }
 }

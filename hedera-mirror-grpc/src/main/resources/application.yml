@@ -15,7 +15,6 @@ hedera:
       port: 5600
 grpc:
   server:
-    max-inbound-message-size: 6144
     port: ${hedera.mirror.grpc.port}
 logging:
   level:
