@@ -27,13 +27,16 @@ import com.hedera.mirror.importer.domain.EntityId;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
 
+import org.springframework.data.repository.PagingAndSortingRepository;
+
 @CacheConfig(cacheNames = "entity_ids", cacheManager = CacheConfiguration.BIG_LRU_CACHE)
-public interface EntityIdRepository extends CrudRepository<EntityId, Long> {
+public interface EntityIdRepository extends PagingAndSortingRepository<EntityId, Long> {
 
     @Cacheable(key = "{#p0, #p1, #p2}", sync = true)
     @Query("from EntityId where entityShard = ?1 and entityRealm = ?2 and entityNum = ?3")
@@ -41,7 +44,7 @@ public interface EntityIdRepository extends CrudRepository<EntityId, Long> {
 
     @Cacheable(key = "{#p0.entityShard, #p0.entityRealm, #p0.entityNum}")
     @Override
-    Iterable<EntityId> findAll();
+    Page<EntityId> findAll(Pageable pageable);
 
     default EntityId findOrCreateBy(long entityShard, long entityRealm, long entityNum, int entityTypeId) {
         var found = findByNativeIds(entityShard, entityRealm, entityNum);

@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.function.Predicate;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -37,6 +39,9 @@ import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.parser")
 public class CommonParserProperties {
+
+    @Min(1)
+    private int entityIdCacheSize = 100_000;
 
     @NotNull
     private Collection<TransactionFilter> exclude = new ArrayList<>();

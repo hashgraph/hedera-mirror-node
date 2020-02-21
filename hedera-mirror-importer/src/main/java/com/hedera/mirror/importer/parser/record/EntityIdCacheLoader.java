@@ -20,21 +20,25 @@
 
 package com.hedera.mirror.importer.parser.record;
 
+import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.EntityIdRepository;
 
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 @Component
-@NoArgsConstructor
+@RequiredArgsConstructor
 public class EntityIdCacheLoader implements InitializingBean {
     @Resource
     EntityIdRepository entityIdRepository;
+    private final CommonParserProperties commonParserProperties;
 
     @Override
     public void afterPropertiesSet() {
-        entityIdRepository.findAll(); // Seed the cache
+        var pageable = PageRequest.of(0, commonParserProperties.getEntityIdCacheSize());
+        entityIdRepository.findAll(pageable); // Seed the cache
     }
 }

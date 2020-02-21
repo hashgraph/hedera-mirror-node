@@ -20,6 +20,11 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
+import com.github.benmanes.caffeine.cache.CaffeineSpec;
+
+import com.hedera.mirror.importer.parser.CommonParserProperties;
+
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -31,7 +36,10 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 @ConditionalOnProperty(prefix = "spring.cache", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableCaching
+@RequiredArgsConstructor
 public class CacheConfiguration {
+
+    private final CommonParserProperties commonParserProperties;
 
     public static final String EXPIRE_AFTER_5M = "cacheManagerExpireAfter5m";
     public static final String EXPIRE_AFTER_30M = "cacheManagerExpireAfter30m";
@@ -55,7 +63,7 @@ public class CacheConfiguration {
     @Bean(BIG_LRU_CACHE)
     CacheManager bigLruCache() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheSpecification("maximumSize=100000");
+        caffeineCacheManager.setCacheSpecification("maximumSize=" + commonParserProperties.getEntityIdCacheSize());
         return caffeineCacheManager;
     }
 }
