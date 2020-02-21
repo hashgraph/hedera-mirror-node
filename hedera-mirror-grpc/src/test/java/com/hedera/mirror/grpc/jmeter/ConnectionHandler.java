@@ -122,8 +122,6 @@ public class ConnectionHandler {
 
         if (!topicExists(topicNum)) {
             topicNum = createTopic();
-        } else {
-            log.info("Topic {} does exist, no need to create to it", topicNum);
         }
 
         long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(topicNum) : seqStart;
@@ -169,7 +167,7 @@ public class ConnectionHandler {
                     return topicNum;
                 }).first().block();
 
-        log.debug("Next available topic ID number is {}", nextTopicId);
+        log.trace("Next available topic ID number is {}", nextTopicId);
         return nextTopicId;
     }
 
@@ -190,7 +188,7 @@ public class ConnectionHandler {
                     return max;
                 }).first().block();
 
-        log.info("Next available topic ID sequence number is {}", nextSeqNum);
+        log.trace("Next available topic ID sequence number is {}", nextSeqNum);
         return nextSeqNum;
     }
 
