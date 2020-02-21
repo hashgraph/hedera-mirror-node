@@ -68,24 +68,26 @@ public class ConnectionHandler {
         return DatabaseClient.create(getConnectionFactory());
     }
 
-    public long createTopic() {
+    public long createNextTopic() {
         long topicNum = getNextAvailableTopicID();
 
+        createTopic(topicNum);
+        return topicNum;
+    }
+
+    public void createTopic(long topicNum) {
         String entityInsertSql = "insert into t_entities"
-                + " (id, entity_num, entity_realm, entity_shard, fk_entity_type_id, key, ed25519_public_key_hex)"
-                + " values ($1, $2, $3, $4, $5, $6, $7)";
+                + " (entity_num, entity_realm, entity_shard, fk_entity_type_id)"
+                + " values ($1, $2, $3, $4) on conflict do nothing";
         client.execute(entityInsertSql)
                 .bind("$1", topicNum)
-                .bind("$2", topicNum)
+                .bind("$2", 0)
                 .bind("$3", 0)
-                .bind("$4", 0)
-                .bind("$5", 4)
-                .bind("$6", new byte[] {55, 66, 77})
-                .bind("$7", "4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f")
-                .then().block();
+                .bind("$4", 4)
+                .then()
+                .block();
 
         log.trace("Created new Topic {}", topicNum);
-        return topicNum;
     }
 
     public boolean topicExists(long topicId) {
@@ -120,9 +122,7 @@ public class ConnectionHandler {
             return;
         }
 
-        if (!topicExists(topicNum)) {
-            topicNum = createTopic();
-        }
+        createTopic(topicNum);
 
         long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(topicNum) : seqStart;
         log.info("Inserting {} topic messages starting from sequence number {}", newTopicsMessageCount,

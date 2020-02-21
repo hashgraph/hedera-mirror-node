@@ -54,8 +54,6 @@ public class TopicMessageGeneratorSampler {
 
         populateHistoricalMessages(messageGen);
         generateIncomingMessages(messageGen);
-
-        connectionHandler.close();
         log.debug("Successfully populated topic messages");
     }
 
