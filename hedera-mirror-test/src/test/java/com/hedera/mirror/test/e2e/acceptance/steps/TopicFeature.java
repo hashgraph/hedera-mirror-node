@@ -200,7 +200,7 @@ public class TopicFeature {
         messageSubscribeCount = numGroups * messageCount;
     }
 
-    @When("I publish and verify {int} messages")
+    @When("I publish and verify {int} messages sent")
     public void publishAndVerifyTopicMessages(int messageCount) throws InterruptedException, HederaStatusException {
         messageSubscribeCount = messageCount;
         publishedTransactionReceipts = topicClient

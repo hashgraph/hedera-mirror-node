@@ -34,7 +34,7 @@ import com.hedera.mirror.grpc.jmeter.props.MessageGenerator;
 @RequiredArgsConstructor
 public class TopicMessageGeneratorSampler {
 
-    public static final Instant INCOMING_START = Instant.now();
+    public static Instant INCOMING_START;
     private final ConnectionHandler connectionHandler;
 
     /**
@@ -54,8 +54,6 @@ public class TopicMessageGeneratorSampler {
 
         populateHistoricalMessages(messageGen);
         generateIncomingMessages(messageGen);
-
-        connectionHandler.close();
         log.debug("Successfully populated topic messages");
     }
 
@@ -63,8 +61,11 @@ public class TopicMessageGeneratorSampler {
         if (messageGenerator.getHistoricMessagesCount() > 0) {
             Instant pastInstant = Instant.EPOCH.plus(7, ChronoUnit.DAYS);
             connectionHandler.insertTopicMessage(messageGenerator.getHistoricMessagesCount(), messageGenerator
-                    .getTopicNum(), pastInstant, -1);
+                    .getTopicNum(), Instant.now(), -1);
         }
+
+        // all messages from this point will be considered future
+        INCOMING_START = Instant.now();
     }
 
     private void generateIncomingMessages(MessageGenerator messageGenerator) {
@@ -74,11 +75,11 @@ public class TopicMessageGeneratorSampler {
 
             if (messageGenerator.getNewTopicsMessageDelay() <= 0) {
                 connectionHandler.insertTopicMessage(messageGenerator.getFutureMessagesCount(), messageGenerator
-                        .getTopicNum(), INCOMING_START, -1);
+                        .getTopicNum(), Instant.now(), -1);
             } else {
                 while (cycleCount < messageGenerator.getTopicMessageEmitCycles()) {
                     connectionHandler.insertTopicMessage(messageGenerator.getFutureMessagesCount(), messageGenerator
-                            .getTopicNum(), INCOMING_START, -1);
+                            .getTopicNum(), Instant.now(), -1);
                     ++cycleCount;
                     Uninterruptibles
                             .sleepUninterruptibly(messageGenerator.getNewTopicsMessageDelay(), TimeUnit.MILLISECONDS);
