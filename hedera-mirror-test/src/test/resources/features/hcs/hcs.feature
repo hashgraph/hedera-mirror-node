@@ -4,7 +4,7 @@ Feature: HCS Base Coverage Feature
     @Sanity @BasicSubscribe @Acceptance
     Scenario Outline: Validate Topic message submission
         Given I successfully create a new topic id
-        And I publish and verify <numMessages> messages
+        And I publish and verify <numMessages> messages sent
         When I provide a number of messages <numMessages> I want to receive
         And I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages
@@ -15,7 +15,7 @@ Feature: HCS Base Coverage Feature
     @OpenSubscribe @Acceptance
     Scenario Outline: Validate Topic message submission to an open submit topic
         Given I successfully create a new open topic
-        And I publish and verify <numMessages> messages
+        And I publish and verify <numMessages> messages sent
         When I provide a number of messages <numMessages> I want to receive
         And I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages
@@ -30,8 +30,8 @@ Feature: HCS Base Coverage Feature
         And I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages
         Examples:
-            | topicId  | numMessages |
-            | "169223" | 680         |
+            | topicId     | numMessages |
+            | "200002151" | 5           |
 
     @PublishOnly
     Scenario Outline: Validate topic message subscription
@@ -46,7 +46,7 @@ Feature: HCS Base Coverage Feature
     @PublishAndVerify
     Scenario Outline: Validate topic message subscription
         Given I provide a topic id <topicId>
-        And I publish and verify <numMessages> messages
+        And I publish and verify <numMessages> messages sent
         And I subscribe with a filter to retrieve these published messages
         Then the network should successfully observe these messages
         Examples:
@@ -66,7 +66,7 @@ Feature: HCS Base Coverage Feature
     @Acceptance
     Scenario Outline: Validate Topic message listener latency
         Given I successfully create a new topic id
-        And I publish and verify <numMessages> messages
+        And I publish and verify <numMessages> messages sent
         When I provide a number of messages <numMessages> I want to receive within <latency> seconds
         And I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages

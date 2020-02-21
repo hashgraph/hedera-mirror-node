@@ -120,7 +120,7 @@ public class HCSTopicSampler {
                 result.success = false;
             }
 
-            log.info("{} Historic messages obtained in {} ({}/s)", result.getTotalMessageCount(), result
+            log.info("{} Historic messages obtained in {} ({}/s)", result.getHistoricalMessageCount(), result
                     .getStopwatch(), result.getMessageRate());
 
             if (historicMessagesLatch.getCount() == 0 && !incomingMessagesLatch
