@@ -510,7 +510,7 @@ public class RecordFileLoggerTopicTest extends AbstractRecordFileLoggerTest {
         RecordFileLogger.storeRecord(transaction, transactionRecord);
         RecordFileLogger.completeFile("", "");
 
-        assertEquals(0L, entityRepository.count());
+        assertEquals(1L, entityRepository.count());
         assertEquals(0L, topicMessageRepository.count());
     }
 
