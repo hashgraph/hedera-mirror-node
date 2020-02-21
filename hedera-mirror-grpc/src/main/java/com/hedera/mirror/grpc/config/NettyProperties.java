@@ -38,4 +38,7 @@ public class NettyProperties {
 
     @Min(8) // 1 kb
     private int maxMetadataSize = 1024;
+
+    @Min(8)
+    private int threadPoolThreadCount = 1000;
 }
