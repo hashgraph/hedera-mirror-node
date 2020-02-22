@@ -69,7 +69,7 @@ public class GrpcConfiguration {
                 .executor(executor)
                 .flowControlWindow(nettyProperties.getFlowControlWindow())
                 .maxConcurrentCallsPerConnection(nettyProperties.getMaxConcurrentCallsPerConnection())
-                .maxInboundMessageSize(nettyProperties.getMaxMessageSize())
-                .maxInboundMetadataSize(nettyProperties.getMaxMetadataSize());
+                .maxInboundMessageSize(nettyProperties.getMaxInboundMessageSize())
+                .maxInboundMetadataSize(nettyProperties.getMaxInboundMetadataSize());
     }
 }

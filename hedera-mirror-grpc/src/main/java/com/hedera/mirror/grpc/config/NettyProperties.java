@@ -35,10 +35,10 @@ public class NettyProperties {
     private int maxConcurrentCallsPerConnection = 5;
 
     @Min(8) // 6 kb
-    private int maxMessageSize = 6 * 1024;
+    private int maxInboundMessageSize = 6 * 1024;
 
     @Min(8) // 1 kb
-    private int maxMetadataSize = 1024;
+    private int maxInboundMetadataSize = 1024;
 
     @Min(1)
     private int executorThreadMinCount = 10;
