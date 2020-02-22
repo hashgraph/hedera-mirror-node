@@ -59,8 +59,8 @@ public class GrpcConfiguration {
     public GrpcServerConfigurer grpcServerConfigurer(GrpcProperties grpcProperties) {
         NettyProperties nettyProperties = grpcProperties.getNetty();
         Executor executor = new ThreadPoolExecutor(
-                nettyProperties.getExecutorThreadMinCount(),
-                nettyProperties.getExecutorThreadMaxCount(),
+                nettyProperties.getExecutorCoreThreadCount(),
+                nettyProperties.getExecutorMaxThreadCount(),
                 nettyProperties.getThreadKeepAliveTime(),
                 TimeUnit.SECONDS,
                 new SynchronousQueue<>());

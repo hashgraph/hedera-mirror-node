@@ -41,10 +41,10 @@ public class NettyProperties {
     private int maxInboundMetadataSize = 1024;
 
     @Min(1)
-    private int executorThreadMinCount = 10;
+    private int executorCoreThreadCount = 10;
 
     @Max(10000)
-    private int executorThreadMaxCount = 1000;
+    private int executorMaxThreadCount = 1000;
 
     @Max(60)
     private long threadKeepAliveTime = 60;

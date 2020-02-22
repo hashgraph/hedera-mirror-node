@@ -85,10 +85,13 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.listener.pollingFrequency`             | 2s                      | How often to polling for new topic messages. Can accept duration units like `50ms`, `10s` etc. |
 | `hedera.mirror.grpc.listener.type`                         | POLL                    | The type of listener to use for incoming messages. Accepts either NOTIFY, POLL or SHARED_POLL  |
 | `hedera.mirror.grpc.maxPageSize`                           | 1000                    | The maximum number of messages to return in a single call to the database                      |
+| `hedera.mirror.grpc.netty.executorCoreThreadCount`         | 10                      | The number of core threads                                                                     |
+| `hedera.mirror.grpc.netty.executorMaxThreadCount`          | 1000                    | The maximum allowed number of threads                                                          |
 | `hedera.mirror.grpc.netty.flowControlWindow`               | 64 \* 1024              | The HTTP/2 flow control window                                                                 |
+| `hedera.mirror.grpc.netty.keepAliveTime`                   | 60                      | The seconds limit for which threads may remain idle before being terminated                    |
 | `hedera.mirror.grpc.netty.maxConcurrentCallsPerConnection` | 5                       | The maximum number of concurrent calls permitted for each incoming connection                  |
-| `hedera.mirror.grpc.netty.maxMessageSize`                  | 6 \* 1024               | The maximum message size allowed to be received on the server                                  |
-| `hedera.mirror.grpc.netty.maxMetadataSize`                 | 1024                    | The maximum size of metadata allowed to be received                                            |
+| `hedera.mirror.grpc.netty.maxInboundMessageSize`           | 6 \* 1024               | The maximum message size allowed to be received on the server                                  |
+| `hedera.mirror.grpc.netty.maxInboundMetadataSize`          | 1024                    | The maximum size of metadata allowed to be received                                            |
 | `hedera.mirror.grpc.port`                                  | 5600                    | The GRPC API port                                                                              |
 | `hedera.mirror.grpc.shard`                                 | 0                       | The default shard number that the GRPC component participates in                               |
 | `hedera.mirror.importer.parser.exclude`                    | []                      | A list of filters that determine which transactions are ignored. Takes precedence over include |
