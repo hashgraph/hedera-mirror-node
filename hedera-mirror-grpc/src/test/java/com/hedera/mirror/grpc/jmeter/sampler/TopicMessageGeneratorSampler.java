@@ -34,7 +34,7 @@ import com.hedera.mirror.grpc.jmeter.props.MessageGenerator;
 @RequiredArgsConstructor
 public class TopicMessageGeneratorSampler {
 
-    public static Instant INCOMING_START;
+    public static Instant INCOMING_START = Instant.now();
     private final ConnectionHandler connectionHandler;
 
     /**

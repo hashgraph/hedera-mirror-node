@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc.config;
  * ‍
  */
 
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.validation.annotation.Validated;
@@ -40,5 +41,11 @@ public class NettyProperties {
     private int maxMetadataSize = 1024;
 
     @Min(8)
-    private int threadPoolThreadCount = 1000;
+    private int executorThreadMinCount = 20;
+
+    @Max(10000)
+    private int executorThreadMaxCount = 1000;
+
+    @Max(60)
+    private long threadKeepAliveTime = 60;
 }

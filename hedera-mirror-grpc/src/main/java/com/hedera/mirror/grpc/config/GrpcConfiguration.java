@@ -20,13 +20,14 @@ package com.hedera.mirror.grpc.config;
  * ‍
  */
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.services.HealthStatusManager;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import net.devh.boot.grpc.server.serverfactory.GrpcServerConfigurer;
 import net.devh.boot.grpc.server.service.GrpcServiceDefinition;
 import net.devh.boot.grpc.server.service.GrpcServiceDiscoverer;
@@ -57,12 +58,12 @@ public class GrpcConfiguration {
     @Bean
     public GrpcServerConfigurer grpcServerConfigurer(GrpcProperties grpcProperties) {
         NettyProperties nettyProperties = grpcProperties.getNetty();
-        Executor executor = Executors.newFixedThreadPool(
-                nettyProperties.getThreadPoolThreadCount(),
-                new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat("hcs-executor-%d")
-                        .build());
+        Executor executor = new ThreadPoolExecutor(
+                nettyProperties.getExecutorThreadMinCount(),
+                nettyProperties.getExecutorThreadMaxCount(),
+                nettyProperties.getThreadKeepAliveTime(),
+                TimeUnit.SECONDS,
+                new SynchronousQueue<>());
 
         return serverBuilder -> ((NettyServerBuilder) serverBuilder)
                 .executor(executor)
