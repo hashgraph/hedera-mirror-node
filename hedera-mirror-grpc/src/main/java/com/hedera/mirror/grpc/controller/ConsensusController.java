@@ -26,6 +26,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.r2dbc.spi.R2dbcNonTransientResourceException;
 import java.time.Instant;
+import java.util.concurrent.TimeoutException;
 import javax.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -65,6 +66,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                 .map(this::toResponse)
                 .onErrorMap(ConstraintViolationException.class, e -> error(e, Status.INVALID_ARGUMENT))
                 .onErrorMap(IllegalArgumentException.class, e -> error(e, Status.INVALID_ARGUMENT))
+                .onErrorMap(TimeoutException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
                 .onErrorMap(TopicNotFoundException.class, e -> error(e, Status.NOT_FOUND))
                 .onErrorMap(R2dbcNonTransientResourceException.class, e -> error(e, Status.UNAVAILABLE, DB_ERROR))
                 .onErrorMap(t -> unknownError(t));

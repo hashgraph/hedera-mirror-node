@@ -35,8 +35,14 @@ public class RetrieverProperties {
     private boolean enabled = true;
 
     @Min(32)
-    private int maxPageSize = 500;
+    private int maxPageSize = 200;
 
     @NotNull
     private Duration pollingFrequency = Duration.ofSeconds(2L);
+
+    @Min(1)
+    private int threadMultiplier = 4;
+
+    @NotNull
+    private Duration timeout = Duration.ofSeconds(30L);
 }

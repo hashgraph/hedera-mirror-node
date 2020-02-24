@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
@@ -41,13 +40,19 @@ import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 
 @Named
 @Log4j2
-@RequiredArgsConstructor
 public class PollingTopicMessageRetriever implements TopicMessageRetriever {
 
     private final RetrieverProperties retrieverProperties;
     private final TopicMessageRepository topicMessageRepository;
-    private final Scheduler scheduler = Schedulers
-            .newParallel("retriever", 4 * Runtime.getRuntime().availableProcessors(), true);
+    private final Scheduler scheduler;
+
+    public PollingTopicMessageRetriever(RetrieverProperties retrieverProperties,
+                                        TopicMessageRepository topicMessageRepository) {
+        this.retrieverProperties = retrieverProperties;
+        this.topicMessageRepository = topicMessageRepository;
+        int threadCount = retrieverProperties.getThreadMultiplier() * Runtime.getRuntime().availableProcessors();
+        scheduler = Schedulers.newParallel("retriever", threadCount, true);
+    }
 
     @Override
     public Flux<TopicMessage> retrieve(TopicMessageFilter filter) {
@@ -65,6 +70,7 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
                         .withBackoffScheduler(scheduler))
                 .name("retriever")
                 .metrics()
+                .timeout(retrieverProperties.getTimeout(), scheduler)
                 .doOnCancel(context::onComplete)
                 .doOnComplete(context::onComplete)
                 .doOnNext(context::onNext)

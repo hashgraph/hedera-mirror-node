@@ -22,6 +22,7 @@ package com.hedera.mirror.grpc.retriever;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.TimeoutException;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
@@ -214,5 +215,28 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .expectNext(2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
+    }
+
+    @Test
+    void timeout() {
+        int maxPageSize = retrieverProperties.getMaxPageSize();
+        Duration timeout = retrieverProperties.getTimeout();
+        retrieverProperties.setMaxPageSize(1);
+        retrieverProperties.setTimeout(Duration.ofMillis(10));
+
+        domainBuilder.topicMessages(10).blockLast();
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        pollingTopicMessageRetriever.retrieve(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .expectNext(1L)
+                .expectError(TimeoutException.class)
+                .verify(Duration.ofMillis(500));
+
+        retrieverProperties.setMaxPageSize(maxPageSize);
+        retrieverProperties.setTimeout(timeout);
     }
 }
