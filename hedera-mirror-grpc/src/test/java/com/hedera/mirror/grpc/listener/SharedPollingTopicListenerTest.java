@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Resource;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
@@ -40,6 +41,11 @@ public class SharedPollingTopicListenerTest extends AbstractTopicListenerTest {
     @Override
     protected TopicListener getTopicListener() {
         return topicListener;
+    }
+
+    @BeforeEach
+    void setup() {
+        topicListener.init(); // Clear the buffer between runs
     }
 
     @Test

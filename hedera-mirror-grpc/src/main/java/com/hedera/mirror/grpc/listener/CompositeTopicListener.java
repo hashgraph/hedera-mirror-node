@@ -42,6 +42,10 @@ public class CompositeTopicListener implements TopicListener {
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
+        if (!listenerProperties.isEnabled()) {
+            return Flux.empty();
+        }
+
         return getTopicListener().listen(filter);
     }
 

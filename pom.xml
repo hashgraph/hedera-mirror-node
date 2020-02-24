@@ -182,5 +182,10 @@
             <id>spring-milestone</id>
             <url>https://repo.spring.io/milestone</url>
         </repository>
+        <repository>
+            <id>spring-libs-snapshot</id>
+            <name>SpringSnapshotRepository</name>
+            <url>https://repo.spring.io/libs-snapshot</url>
+        </repository>
     </repositories>
 </project>

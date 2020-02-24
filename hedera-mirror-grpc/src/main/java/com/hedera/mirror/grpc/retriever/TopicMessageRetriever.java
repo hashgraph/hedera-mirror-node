@@ -1,10 +1,10 @@
-package com.hedera.mirror.grpc.repository;
+package com.hedera.mirror.grpc.retriever;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * Copyright (C) 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,15 @@ package com.hedera.mirror.grpc.repository;
  * ‍
  */
 
-import java.time.Instant;
-import org.springframework.data.r2dbc.repository.Query;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
-public interface TopicMessageRepository extends ReactiveCrudRepository<TopicMessage, Instant>,
-        TopicMessageRepositoryCustom {
-
-    @Query("select * from topic_message where consensus_timestamp > :consensusTimestamp " +
-            "order by consensus_timestamp asc limit :limit")
-    Flux<TopicMessage> findLatest(long consensusTimestamp, long limit);
+/**
+ * Retrieves historical topic messages. This is a cold publisher retrieving only when subscribed and completing once all
+ * current results in the database are returned.
+ */
+public interface TopicMessageRetriever {
+    Flux<TopicMessage> retrieve(TopicMessageFilter filter);
 }

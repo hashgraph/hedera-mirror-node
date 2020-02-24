@@ -40,6 +40,7 @@ import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.listener.TopicListener;
 import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
+import com.hedera.mirror.grpc.retriever.TopicMessageRetriever;
 
 @Named
 @Log4j2
@@ -51,13 +52,14 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     private final TopicListener topicListener;
     private final EntityRepository entityRepository;
     private final TopicMessageRepository topicMessageRepository;
+    private final TopicMessageRetriever topicMessageRetriever;
 
     @Override
     public Flux<TopicMessage> subscribeTopic(TopicMessageFilter filter) {
         log.info("Subscribing to topic: {}", filter);
         TopicContext topicContext = new TopicContext(filter);
 
-        return topicExists(filter).thenMany(topicMessageRepository.findByFilter(filter)
+        return topicExists(filter).thenMany(topicMessageRetriever.retrieve(filter)
                 .doOnComplete(topicContext::onComplete)
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
@@ -88,13 +90,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         long limit = filter.hasLimit() ? filter.getLimit() - topicContext.getCount().get() : 0;
         Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
 
-        TopicMessageFilter newFilter = TopicMessageFilter.builder()
-                .endTime(filter.getEndTime())
+        TopicMessageFilter newFilter = filter.toBuilder()
                 .limit(limit)
-                .realmNum(filter.getRealmNum())
                 .startTime(startTime)
-                .subscriberId(filter.getSubscriberId())
-                .topicNum(filter.getTopicNum())
                 .build();
 
         return topicListener.listen(newFilter);
@@ -107,13 +105,10 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
         TopicMessage last = topicContext.getLastTopicMessage();
         TopicMessageFilter filter = topicContext.getFilter();
-        TopicMessageFilter newFilter = TopicMessageFilter.builder()
+        TopicMessageFilter newFilter = filter.toBuilder()
                 .endTime(current.getConsensusTimestamp())
                 .limit(current.getSequenceNumber() - last.getSequenceNumber() - 1)
-                .realmNum(filter.getRealmNum())
-                .subscriberId(filter.getSubscriberId())
                 .startTime(last.getConsensusTimestamp().plusNanos(1))
-                .topicNum(filter.getTopicNum())
                 .build();
 
         log.info("[{}] Querying topic {} for missing messages between sequence {} and {}",
