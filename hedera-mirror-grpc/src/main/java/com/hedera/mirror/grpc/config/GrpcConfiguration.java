@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc.config;
  * ‍
  */
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.services.HealthStatusManager;
 import java.util.LinkedHashMap;
@@ -63,7 +64,11 @@ public class GrpcConfiguration {
                 nettyProperties.getExecutorMaxThreadCount(),
                 nettyProperties.getThreadKeepAliveTime(),
                 TimeUnit.SECONDS,
-                new SynchronousQueue<>());
+                new SynchronousQueue<>(),
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("grpc-executor-%d")
+                        .build());
 
         return serverBuilder -> ((NettyServerBuilder) serverBuilder)
                 .executor(executor)
