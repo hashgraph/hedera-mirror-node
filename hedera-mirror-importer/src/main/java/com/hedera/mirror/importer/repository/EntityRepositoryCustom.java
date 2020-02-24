@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,13 +20,12 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import lombok.Value;
+import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
 
-@Value
-public class EntityId {
-    private Long id;
-    private Long entityShard;
-    private Long entityRealm;
-    private Long entityNum;
-    private Integer entityTypeId;
+import java.util.Collection;
+
+public interface EntityRepositoryCustom {
+    Collection<EntityId> findAllEntityIds(int limit);
+    <S extends Entities> EntityId saveAndCacheEntityId(S entity);
 }

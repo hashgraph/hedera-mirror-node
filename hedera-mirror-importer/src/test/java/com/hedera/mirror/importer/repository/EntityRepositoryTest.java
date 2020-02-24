@@ -21,6 +21,8 @@ package com.hedera.mirror.importer.repository;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
@@ -73,5 +75,26 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
                 .findByPrimaryKey(entity.getEntityShard(), entity.getEntityRealm(), entity.getEntityNum()))
                 .get()
                 .isEqualTo(entity);
+    }
+
+    @Test
+    void findEntityIdByNativeIds() {
+        var entityTypeId = entityTypeRepository.findByName("account").get().getId();
+
+        var entity = new Entities();
+        entity.setEntityTypeId(entityTypeId);
+        entity.setEntityShard(1L);
+        entity.setEntityRealm(2L);
+        entity.setEntityNum(3L);
+        final var expected = entityRepository.save(entity);
+
+        var entityId = entityRepository.findEntityIdByNativeIds(entity.getEntityShard(), entity.getEntityRealm(),
+                entity.getEntityNum()).get();
+
+        assertAll(() -> assertEquals(expected.getId(), entityId.getId())
+                ,() -> assertEquals(expected.getEntityShard(), entityId.getEntityShard())
+                ,() -> assertEquals(expected.getEntityRealm(), entityId.getEntityRealm())
+                ,() -> assertEquals(expected.getEntityNum(), entityId.getEntityNum())
+        );
     }
 }

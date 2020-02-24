@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.repository.EntityIdRepository;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -71,7 +70,6 @@ public class RecordFileLogger {
     private static RecordParserProperties parserProperties;
     private static NetworkAddressBook networkAddressBook;
     private static EntityRepository entityRepository;
-    private static EntityIdRepository entityIdRepository;
     private static EntityTypeRepository entityTypeRepository;
     private static NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private static Predicate<com.hedera.mirror.importer.domain.Transaction> transactionFilter;
@@ -90,14 +88,12 @@ public class RecordFileLogger {
 
     public RecordFileLogger(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
                             NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
-                            EntityIdRepository entityIdRepository,
                             EntityTypeRepository entityTypeRepository,
                             NonFeeTransferExtractionStrategy nonFeeTransfersExtractor) {
         RecordFileLogger.parserProperties = parserProperties;
         RecordFileLogger.networkAddressBook = networkAddressBook;
         RecordFileLogger.entityRepository = entityRepository;
         RecordFileLogger.entityTypeRepository = entityTypeRepository;
-        RecordFileLogger.entityIdRepository = entityIdRepository;
         RecordFileLogger.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
         transactionFilter = commonParserProperties.getFilter();
     }
@@ -1053,13 +1049,13 @@ public class RecordFileLogger {
         if (0 == entityNum) {
             return null;
         }
-        return entityIdRepository.findByNativeIds(shardNum, realmNum, entityNum).orElseGet(() -> {
-            EntityId entityId = new EntityId();
+        return entityRepository.findEntityIdByNativeIds(shardNum, realmNum, entityNum).orElseGet(() -> {
+            Entities entityId = new Entities();
             entityId.setEntityShard(shardNum);
             entityId.setEntityRealm(realmNum);
             entityId.setEntityNum(entityNum);
             entityId.setEntityTypeId(entityTypeRepository.findByName(type).map(EntityType::getId).get());
-            return entityIdRepository.save(entityId);
+            return entityRepository.saveAndCacheEntityId(entityId);
         });
     }
 
@@ -1067,13 +1063,9 @@ public class RecordFileLogger {
         if (entity != null && entity.getId() == null) {
             log.debug("Creating entity: {}", () -> entity.getDisplayId());
             var result = entityRepository.save(entity);
-            var entityId = new EntityId();
-            entityId.setId(result.getId());
-            entityId.setEntityShard(result.getEntityShard());
-            entityId.setEntityRealm(result.getEntityRealm());
-            entityId.setEntityNum(result.getEntityNum());
-            entityId.setEntityTypeId(result.getEntityTypeId());
-            entityIdRepository.cache(entityId);
+            var entityId = new EntityId(result.getId(), result.getEntityShard(), result.getEntityRealm(),
+                result.getEntityNum(), result.getEntityTypeId());
+            entityRepository.cache(entityId);
             return result;
         }
         return entity;
