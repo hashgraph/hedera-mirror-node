@@ -22,12 +22,10 @@ package com.hedera.mirror.grpc.jmeter;
 
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
-import io.r2dbc.postgresql.api.PostgresqlConnection;
-import io.r2dbc.postgresql.api.PostgresqlStatement;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.r2dbc.core.DatabaseClient;
 
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 
@@ -35,7 +33,7 @@ import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 public class ConnectionHandler {
 
     private final InstantToLongConverter converter = new InstantToLongConverter();
-    private final PostgresqlConnection connection;
+    private final DatabaseClient client;
     private final String host;
     private final int port;
     private final String dbName;
@@ -49,7 +47,7 @@ public class ConnectionHandler {
         this.dbUser = dbUser;
         this.dbPassword = dbPassword;
 
-        connection = getConnection();
+        client = getClient();
     }
 
     private PostgresqlConnectionFactory getConnectionFactory() {
@@ -66,9 +64,56 @@ public class ConnectionHandler {
         return connectionFactory;
     }
 
-    private PostgresqlConnection getConnection() {
-        log.debug("Obtain PostgresqlConnection");
-        return getConnectionFactory().create().block(Duration.ofMillis(500));
+    private DatabaseClient getClient() {
+        return DatabaseClient.create(getConnectionFactory());
+    }
+
+    public long createNextTopic() {
+        long topicNum = getNextAvailableTopicID();
+
+        createTopic(topicNum);
+        return topicNum;
+    }
+
+    public void createTopic(long topicNum) {
+        String entityInsertSql = "insert into t_entities"
+                + " (entity_num, entity_realm, entity_shard, fk_entity_type_id)"
+                + " values ($1, $2, $3, $4) on conflict do nothing";
+        client.execute(entityInsertSql)
+                .bind("$1", topicNum)
+                .bind("$2", 0)
+                .bind("$3", 0)
+                .bind("$4", 4)
+                .then()
+                .block();
+
+        log.trace("Created new Topic {}", topicNum);
+    }
+
+    public boolean topicExists(long topicId) {
+        boolean topicExists = false;
+
+        String topicSelectSql = "select id from t_entities where entity_shard = $1 and entity_realm = $2 and " +
+                "entity_num = $3";
+
+        topicExists = client.execute(topicSelectSql)
+                .bind("$1", 0)
+                .bind("$2", 0)
+                .bind("$3", topicId)
+                .map((row, metadata) -> {
+                    Long topicNum = row.get(0, Long.class);
+
+                    if (topicNum == null) {
+                        return false;
+                    }
+
+                    return true;
+                })
+                .first()
+                .defaultIfEmpty(false)
+                .block();
+
+        return topicExists;
     }
 
     public void insertTopicMessage(int newTopicsMessageCount, long topicNum, Instant startTime, long seqStart) {
@@ -76,6 +121,8 @@ public class ConnectionHandler {
             // no messages to create, abort and db logic
             return;
         }
+
+        createTopic(topicNum);
 
         long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(topicNum) : seqStart;
         log.info("Inserting {} topic messages starting from sequence number {}", newTopicsMessageCount,
@@ -90,14 +137,14 @@ public class ConnectionHandler {
                     + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
                     + " values ($1, $2, $3, $4, $5, $6)";
 
-            PostgresqlStatement statement = connection.createStatement(topicMessageInsertSql)
+            client.execute(topicMessageInsertSql)
                     .bind("$1", consensusTimestamp)
                     .bind("$2", 0)
                     .bind("$3", topicNum)
                     .bind("$4", new byte[] {22, 33, 44})
                     .bind("$5", new byte[] {55, 66, 77})
-                    .bind("$6", sequenceNum);
-            statement.execute().blockLast();
+                    .bind("$6", sequenceNum)
+                    .then().block();
 
             log.trace("Stored TopicMessage {}, Time: {}, count: {}, seq : {}", topicNum, consensusTimestamp, i,
                     sequenceNum);
@@ -107,20 +154,18 @@ public class ConnectionHandler {
     }
 
     public long getNextAvailableTopicID() {
-        String nextTopicIdSql = "SELECT MAX(topic_num) FROM topic_message";
-        PostgresqlStatement statement = connection.createStatement(nextTopicIdSql);
+        String nextTopicIdSql = "SELECT MAX(entity_num) FROM t_entities";
 
-        long nextTopicId = 1 + statement.execute()
-                .flatMap(result ->
-                        result.map((row, metadata) -> {
-                            Long topicNum = row.get(0, Long.class);
+        long nextTopicId = 1 + client.execute(nextTopicIdSql)
+                .map((row, metadata) -> {
+                    Long topicNum = row.get(0, Long.class);
 
-                            if (topicNum == null) {
-                                throw new IllegalStateException("Topic num query failed");
-                            }
+                    if (topicNum == null) {
+                        throw new IllegalStateException("Topic num query failed");
+                    }
 
-                            return topicNum;
-                        })).blockFirst();
+                    return topicNum;
+                }).first().block();
 
         log.trace("Next available topic ID number is {}", nextTopicId);
         return nextTopicId;
@@ -128,21 +173,20 @@ public class ConnectionHandler {
 
     public long getNextAvailableSequenceNumber(long topicId) {
         String nextSeqSql = "SELECT MAX(sequence_number) FROM topic_message WHERE topic_num = $1";
-        PostgresqlStatement statement = connection.createStatement(nextSeqSql).bind("$1", topicId);
 
-        long nextSeqNum = 1 + statement.execute()
-                .flatMap(result ->
-                        result.map((row, metadata) -> {
-                            Long max = row.get(0, Long.class);
+        long nextSeqNum = 1 + client.execute(nextSeqSql)
+                .bind("$1", topicId)
+                .map((row, metadata) -> {
+                    Long max = row.get(0, Long.class);
 
-                            if (max == null) {
-                                max = -1L;
-                                log.trace("Max sequence num query failed, setting max to -1 as likely not messages " +
-                                        "for this topic exist");
-                            }
+                    if (max == null) {
+                        max = -1L;
+                        log.trace("Max sequence num query failed, setting max to -1 as likely no messages " +
+                                "for this topic exist");
+                    }
 
-                            return max;
-                        })).blockFirst();
+                    return max;
+                }).first().block();
 
         log.trace("Next available topic ID sequence number is {}", nextSeqNum);
         return nextSeqNum;
@@ -156,16 +200,12 @@ public class ConnectionHandler {
         }
 
         String delTopicMsgsSql = "delete from topic_message where topic_num = $1 and sequence_number >= $2";
-        PostgresqlStatement statement = connection.createStatement(delTopicMsgsSql)
+
+        client.execute(delTopicMsgsSql)
                 .bind("$1", topicId)
-                .bind("$2", seqNumFrom);
+                .bind("$2", seqNumFrom)
+                .then().block();
 
-        statement.execute().blockLast();
         log.info("Cleared topic messages for topic ID {} after sequence {}", topicId, seqNumFrom);
-    }
-
-    public void close() {
-        log.debug("Closing connection");
-        connection.close().block(Duration.ofMillis(500));
     }
 }

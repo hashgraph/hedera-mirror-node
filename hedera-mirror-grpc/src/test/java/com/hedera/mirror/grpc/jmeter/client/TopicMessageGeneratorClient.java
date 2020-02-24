@@ -121,17 +121,4 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
 
         return result;
     }
-
-    @Override
-    public void teardownTest(JavaSamplerContext context) {
-        try {
-            if (connectionHandler != null) {
-                connectionHandler.close();
-            }
-        } catch (Exception ex) {
-            log.error("Unable to close connection", ex);
-        }
-
-        super.teardownTest(context);
-    }
 }
