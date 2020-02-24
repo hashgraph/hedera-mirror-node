@@ -50,6 +50,6 @@ public class EntityIdCacheLoader {
         entityIdRepository.findAll(pageable).forEach(id -> {
             entityIdRepository.cache(id);
         });
-        log.info("Cached event id mappings in {}", stopwatch);
+        log.info("Cached entity id mappings in {}", stopwatch);
     }
 }
