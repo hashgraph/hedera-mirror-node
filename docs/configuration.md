@@ -102,6 +102,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.retriever.threadMultiplier`            | 4                       | Multiplied by the CPU count to calculate the number of retriever threads                       |
 | `hedera.mirror.grpc.retriever.timeout`                     | 30s                     | How long to wait between emission of messages before returning an error                        |
 | `hedera.mirror.grpc.shard`                                 | 0                       | The default shard number that the GRPC component participates in                               |
+| `hedera.mirror.importer.parser.entityIdCacheSize`          | 100000                  | Cache size for (shard,realm,num) -> t_entities.id map (parser performance)                     |
 | `hedera.mirror.importer.parser.exclude`                    | []                      | A list of filters that determine which transactions are ignored. Takes precedence over include |
 | `hedera.mirror.importer.parser.exclude.entity`             | []                      | A list of entity IDs to ignore in shard.realm.num (e.g. 0.0.3) format                          |
 | `hedera.mirror.importer.parser.exclude.transaction`        | []                      | A list of transaction types to ignore. See `TransactionTypeEnum.java` for possible values      |
