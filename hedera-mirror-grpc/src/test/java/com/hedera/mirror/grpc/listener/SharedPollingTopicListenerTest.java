@@ -98,4 +98,26 @@ public class SharedPollingTopicListenerTest extends AbstractTopicListenerTest {
                 .thenCancel()
                 .verify(Duration.ofMillis(100));
     }
+
+    @Test
+    void bufferFilled() {
+        int bufferSize = listenerProperties.getBufferSize();
+        listenerProperties.setBufferSize(2);
+        topicListener.init();
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        getTopicListener().listen(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> domainBuilder.topicMessages(5).blockLast())
+                .expectNext(1L, 2L, 3L, 4L, 5L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
+
+        listenerProperties.setBufferSize(bufferSize);
+    }
 }
