@@ -28,6 +28,10 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+import reactor.retry.Jitter;
+import reactor.retry.Repeat;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -40,15 +44,20 @@ public class PollingTopicListener implements TopicListener {
 
     private final ListenerProperties listenerProperties;
     private final TopicMessageRepository topicMessageRepository;
+    private final Scheduler scheduler = Schedulers
+            .newParallel("poll", 4 * Runtime.getRuntime().availableProcessors(), true);
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
         PollingContext context = new PollingContext(filter);
         Duration frequency = listenerProperties.getPollingFrequency();
 
-        return Flux.interval(frequency)
-                .filter(i -> !context.isRunning()) // Discard polling requests while querying
-                .concatMap(i -> poll(context))
+        return Flux.defer(() -> poll(context))
+                .delaySubscription(frequency, scheduler)
+                .repeatWhen(Repeat.times(Long.MAX_VALUE)
+                        .fixedBackoff(frequency)
+                        .jitter(Jitter.random(0.1))
+                        .withBackoffScheduler(scheduler))
                 .name("poll")
                 .metrics()
                 .doOnNext(context::onNext)
@@ -58,22 +67,16 @@ public class PollingTopicListener implements TopicListener {
     private Flux<TopicMessage> poll(PollingContext context) {
         TopicMessageFilter filter = context.getFilter();
         TopicMessage last = context.getLast();
-        long limit = filter.hasLimit() ? filter.getLimit() - context.getCount().get() : 0;
+        int limit = filter.hasLimit() ? (int) (filter.getLimit() - context.getCount().get()) : Integer.MAX_VALUE;
+        int pageSize = Math.min(limit, listenerProperties.getMaxPageSize());
         Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
 
-        TopicMessageFilter newFilter = TopicMessageFilter.builder()
-                .endTime(filter.getEndTime())
-                .limit(limit)
-                .realmNum(filter.getRealmNum())
-                .subscriberId(filter.getSubscriberId())
+        TopicMessageFilter newFilter = filter.toBuilder()
+                .limit(pageSize)
                 .startTime(startTime)
-                .topicNum(filter.getTopicNum())
                 .build();
 
-        return topicMessageRepository.findByFilter(newFilter)
-                .doOnSubscribe(s -> context.setRunning(true))
-                .doOnCancel(() -> context.setRunning(false))
-                .doOnComplete(() -> context.setRunning(false));
+        return topicMessageRepository.findByFilter(newFilter);
     }
 
     @Data
@@ -82,7 +85,6 @@ public class PollingTopicListener implements TopicListener {
         private final TopicMessageFilter filter;
         private final AtomicLong count = new AtomicLong(0L);
         private volatile TopicMessage last;
-        private volatile boolean running = false;
 
         void onNext(TopicMessage topicMessage) {
             last = topicMessage;

@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Resource;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
@@ -40,6 +41,11 @@ public class SharedPollingTopicListenerTest extends AbstractTopicListenerTest {
     @Override
     protected TopicListener getTopicListener() {
         return topicListener;
+    }
+
+    @BeforeEach
+    void setup() {
+        topicListener.init(); // Clear the buffer between runs
     }
 
     @Test
@@ -91,5 +97,27 @@ public class SharedPollingTopicListenerTest extends AbstractTopicListenerTest {
                 .expectNextCount(0)
                 .thenCancel()
                 .verify(Duration.ofMillis(100));
+    }
+
+    @Test
+    void bufferFilled() {
+        int bufferSize = listenerProperties.getBufferSize();
+        listenerProperties.setBufferSize(2);
+        topicListener.init();
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        getTopicListener().listen(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> domainBuilder.topicMessages(5).blockLast())
+                .expectNext(1L, 2L, 3L, 4L, 5L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
+
+        listenerProperties.setBufferSize(bufferSize);
     }
 }

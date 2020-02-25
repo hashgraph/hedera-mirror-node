@@ -23,23 +23,28 @@ package com.hedera.mirror.grpc;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
+
+import com.hedera.mirror.grpc.config.NettyProperties;
 
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.grpc")
 public class GrpcProperties {
 
-    @NotNull
-    private Duration endTimeInterval = Duration.ofSeconds(30);
-
-    @Min(32)
-    private int maxPageSize = 1000;
+    private boolean checkTopicExists = true;
 
     @NotNull
     private Map<String, String> connectionOptions = new HashMap<>();
+
+    @NotNull
+    private Duration endTimeInterval = Duration.ofSeconds(30);
+
+    @NotNull
+    private NettyProperties netty = new NettyProperties();
+
+    private long shard = 0;
 }

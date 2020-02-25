@@ -42,7 +42,82 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     @Resource
     protected DomainBuilder domainBuilder;
 
+    @Resource
+    protected ListenerProperties listenerProperties;
+
     protected abstract TopicListener getTopicListener();
+
+    @Test
+    void noMessages() {
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        getTopicListener().listen(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .expectNextCount(0L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
+    }
+
+    @Test
+    void lessThanPageSize() {
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        getTopicListener().listen(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> domainBuilder.topicMessage().block())
+                .expectNext(1L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
+    }
+
+    @Test
+    void equalPageSize() {
+        int maxPageSize = listenerProperties.getMaxPageSize();
+        listenerProperties.setMaxPageSize(2);
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        getTopicListener().listen(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> domainBuilder.topicMessages(2).blockLast())
+                .expectNext(1L, 2L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
+
+        listenerProperties.setMaxPageSize(maxPageSize);
+    }
+
+    @Test
+    void greaterThanPageSize() {
+        int maxPageSize = listenerProperties.getMaxPageSize();
+        listenerProperties.setMaxPageSize(2);
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        getTopicListener().listen(filter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> domainBuilder.topicMessages(3).blockLast())
+                .expectNext(1L, 2L, 3L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
+
+        listenerProperties.setMaxPageSize(maxPageSize);
+    }
 
     @Test
     void startTimeBefore() {

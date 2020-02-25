@@ -37,12 +37,15 @@ import com.hedera.mirror.grpc.listener.ListenerProperties.ListenerType;
 public class CompositeTopicListener implements TopicListener {
 
     private final ListenerProperties listenerProperties;
-    private final NotifyingTopicListener notifyingTopicListener;
     private final PollingTopicListener pollingTopicListener;
     private final SharedPollingTopicListener sharedPollingTopicListener;
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
+        if (!listenerProperties.isEnabled()) {
+            return Flux.empty();
+        }
+
         return getTopicListener().listen(filter);
     }
 
@@ -50,8 +53,6 @@ public class CompositeTopicListener implements TopicListener {
         ListenerType type = listenerProperties.getType();
 
         switch (type) {
-            case NOTIFY:
-                return notifyingTopicListener;
             case POLL:
                 return pollingTopicListener;
             case SHARED_POLL:

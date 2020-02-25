@@ -29,7 +29,9 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import javax.annotation.Resource;
+import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.client.inject.GrpcClient;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -42,8 +44,10 @@ import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.listener.SharedPollingTopicListener;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
+@Log4j2
 public class ConsensusControllerTest extends GrpcIntegrationTest {
     @GrpcClient("local")
     private ReactorConsensusServiceGrpc.ReactorConsensusServiceStub grpcConsensusService;
@@ -53,6 +57,15 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
     @Resource
     private DomainBuilder domainBuilder;
+
+    @Resource
+    private SharedPollingTopicListener sharedPollingTopicListener;
+
+    @BeforeEach
+    void setup() {
+        domainBuilder.entity().block();
+        sharedPollingTopicListener.init();  // Clear the buffer between runs
+    }
 
     @Test
     void missingTopicID() throws Exception {
@@ -99,8 +112,8 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
-                .thenAwait()
-                .verifyComplete();
+                .expectComplete()
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
@@ -142,8 +155,8 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
-                .thenAwait()
-                .verifyComplete();
+                .expectComplete()
+                .verify(Duration.ofMillis(500));
     }
 
     @Test
@@ -170,8 +183,8 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
-                .thenAwait()
-                .verifyComplete();
+                .expectComplete()
+                .verify(Duration.ofMillis(500));
     }
 
     void assertException(Throwable t, Status.Code status, String message) {

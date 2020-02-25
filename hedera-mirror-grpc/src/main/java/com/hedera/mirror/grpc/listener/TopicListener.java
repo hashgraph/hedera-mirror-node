@@ -20,12 +20,15 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
-import com.hedera.mirror.grpc.domain.TopicMessage;
-
-import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-
 import reactor.core.publisher.Flux;
 
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
+
+/**
+ * Listens for new topic messages, filtering them as appropriate for the current subscriber. Implementations can be
+ * either hot or cold publishers.
+ */
 public interface TopicListener {
     Flux<TopicMessage> listen(TopicMessageFilter filter);
 }

@@ -48,6 +48,7 @@ public class HCSTopicSampler {
     private final ManagedChannel channel;
     private final ConsensusServiceGrpc.ConsensusServiceStub asyncStub;
     private final ConsensusTopicQuery request;
+    private boolean canShutdownChannel = true;
 
     public HCSTopicSampler(String host, int port, ConsensusTopicQuery request) {
         this(ManagedChannelBuilder.forAddress(host, port).usePlaintext(true), request);
@@ -55,6 +56,14 @@ public class HCSTopicSampler {
 
     public HCSTopicSampler(ManagedChannelBuilder<?> channelBuilder, ConsensusTopicQuery request) {
         channel = channelBuilder.build();
+        asyncStub = ConsensusServiceGrpc.newStub(channel);
+        this.request = request;
+    }
+
+    public HCSTopicSampler(ManagedChannel channel, ConsensusTopicQuery request) {
+        // prevent channel shutdown in shared case
+        canShutdownChannel = false;
+        this.channel = channel;
         asyncStub = ConsensusServiceGrpc.newStub(channel);
         this.request = request;
     }
@@ -111,7 +120,7 @@ public class HCSTopicSampler {
                 result.success = false;
             }
 
-            log.info("{} Historic messages obtained in {} ({}/s)", result.getTotalMessageCount(), result
+            log.info("{} Historic messages obtained in {} ({}/s)", result.getHistoricalMessageCount(), result
                     .getStopwatch(), result.getMessageRate());
 
             if (historicMessagesLatch.getCount() == 0 && !incomingMessagesLatch
@@ -124,7 +133,11 @@ public class HCSTopicSampler {
             throw ex;
         } finally {
             responseObserver.onCompleted();
-            shutdown();
+
+            if (canShutdownChannel) {
+                shutdown();
+            }
+
             return result;
         }
     }

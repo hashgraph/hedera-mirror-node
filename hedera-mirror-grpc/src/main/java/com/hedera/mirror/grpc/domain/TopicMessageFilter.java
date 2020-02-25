@@ -31,7 +31,7 @@ import org.springframework.validation.annotation.Validated;
 import com.hedera.mirror.grpc.validation.EndTime;
 import com.hedera.mirror.grpc.validation.StartTime;
 
-@Builder
+@Builder(toBuilder = true)
 @EndTime
 @StartTime
 @Validated

@@ -16,6 +16,8 @@ hedera:
       endTimeInterval: 500ms
       listener:
         pollingFrequency: 50ms
+      retriever:
+        pollingFrequency: 50ms
 spring:
   datasource:
     name: ${hedera.mirror.grpc.db.name}
