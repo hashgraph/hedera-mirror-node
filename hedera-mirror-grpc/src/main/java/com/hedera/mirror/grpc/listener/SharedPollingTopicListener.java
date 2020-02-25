@@ -84,8 +84,9 @@ public class SharedPollingTopicListener implements TopicListener {
                 .doOnComplete(() -> log.info("Completed polling"))
                 .doOnNext(context::onNext)
                 .doOnSubscribe(context::onStart)
-                .replay(listenerProperties.getBufferSize())
-                .autoConnect(0, disposable -> pollerDisposable = disposable);
+                .cache(listenerProperties.getBufferSize());
+
+        pollerDisposable = poller.subscribe();
     }
 
     @Override
