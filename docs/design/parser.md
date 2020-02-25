@@ -18,7 +18,6 @@ SQL Database client is tightly coupled with transaction & record's processor whi
 -   Parsing multiple rcd/balance/etc files in parallel. Parser is far from being bottleneck, there is no need to optimize it
 -   Accommodate possibility of publishing transactions/topic messages/etc to GRPC server directly
 -   Support writing to multiple databases from single importer
--   Support filtering of transactions in parser
 -   Update balance file parser code immediately
 
 ## Architecture
@@ -39,10 +38,8 @@ SQL Database client is tightly coupled with transaction & record's processor whi
 
 ```java
 public interface StreamEventsHandler {
-    void onStart();
-    void onShutdown();
-    void onFileStart(String filename) throws ImporterException;
-    void onFileComplete(String filename) throws ImporterException;
+    void onBatchStart(String batchName) throws ImporterException;
+    void onBatchComplete(String batchName) throws ImporterException;
     void onError(Throwable e);
 }
 
@@ -86,6 +83,7 @@ public class RecordItemParser {
 public class RecordItem {
     private final Transaction transaction;
     private final TransactionRecord record;
+    private final byte[] transactionRawBytes;
 }
 ```
 
@@ -100,28 +98,17 @@ public class RecordFileParser {
     private final RecordItemParser recordItemParser;  // injected dependency
     private final StreamEventsHandler streamEventsHandler;  // injected dependency
 
-    public void onFile(String fileName) {
+    public void onFile(String filename, InputStream inputStream) {
         // process stream file
-    }
-
-    @PostConstruct
-    public void postConstruct() {
-        streamEventsHandler.onStart();
-    }
-
-    @PreDestroy
-    public void preDestroy() {
-        streamEventsHandler.onShutdown();
     }
 }
 ```
 
-1. Triggers `streamEventsHandler.onStart()` and `streamEventsHandler.onShutdown()` on bean's creation and destruction
-1. On each call to `onFile(filename)`:
-    1. Call `streamEventsHandler.onFileStart(filename)`
+1. On each call to `onFile(filename, inputStream)`:
+    1. Call `streamEventsHandler.onBatchStart(filename)`
     1. Validate prev hash
     1. For each set of `Transaction` and `TransactionRecord` in record file, call `recordItemParser.onRecordItem(recordItem)`.
-    1. Finally call `streamEventsHandler.onFileComplete(filename)`
+    1. Finally call `streamEventsHandler.onBatchComplete(filename)`
     1. On exceptions, call `streamEventsHandler.onError(error)`
 
 ### RecordFileReader
@@ -134,7 +121,8 @@ public class RecordFileReader extends FileWatcher {
     @Override
     public void onCreate() {
         // List files
-        recordFileParser.onFile(filename);
+        // Open the file on disk, create InputStream on it. Keep RecordFileParser filesystem agnostic.
+        recordFileParser.onFile(filename, inputStream);
     }
 }
 ```
@@ -149,20 +137,38 @@ public class RecordFileReader extends FileWatcher {
 
 ## Tasks (in suggested order):
 
+#### Milestone 1
+
 1. Finalize design
 1. Refactoring
     1. Add the interfaces `StreamEventsHandler` and `RecordStreamEventsHandler`
-    1. Create `PostgresWritingRecordStreamEventsHandler`. Move existing postgres writer code to new class as-is.
+    1. Split `RecordFileLogger` class into two
+        1. Create `PostgresWritingRecordStreamEventsHandler`. Move existing postgres writer code from `RecordFileLogger` to new class as-is.
+        1. Rename `RecordFileLogger` to `RecordItemParser`. Add `.. implements <TODO>`
+
+#### Milestone 2
+
+All top level tasks can be done in parallel
+
 1. Perf benchmarks
     1. Move database abstractions to `hedera.mirror.repository` package from where they can be shared by importer, grpc, data-generator.
         - Replace `PostgresCSVDomainWriter` by `PostgresWritingRecordStreamEventsHandler` to test db insert performance and establish baseline
 1. Optimize `PostgresWritingRecordStreamEventsHandler`
+    - Schema changes to remove entity ids
+    - Get rid of all `SELECT` queries in parser
     - Use of `COPY`
     - Concurrency using multiple jdbc connections
+1. Refactor `RecordItemParser` class. Split parsing logic into re-usable helper functions.
+    - Will make it easy for mirror node users to write custom parsers
+    - Will make it possible to have filtering logic less loosely coupled with parsing logic
+1. Split `RecordFileParser` class into two
+    - Move FileSystem related code into `RecordFileReader`
+    - Keep `RecordFileParser` agnostic of source of stream files
 
-#### Followup tasks to tie loose ends
+#### Milestone 3 (followup tasks to tie loose ends)
 
--   Update `RecordStreamReader` to use `FileWatcher` and share as much as possible code with `BalanceFileParser` (to be renamed to `BalanceStreamReader`)
 -   Remove event parser code: Doesn't have tests. Not used in last 6 months. No likelihood of needed in next couple months
     There is no need to pay tech-rent on this debt. Can be dont right once when it is really needed
+-   Delete files once they are parsed
 -   Update balance file parser code to new design
+    -   Share as much filesystem related code as possible between `RecordFileReader` and `BalanceFileParser` (to be renamed to `BalanceStreamReader`)
