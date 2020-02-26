@@ -73,8 +73,6 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
     private static final long PROXY_ACCOUNT_NUM = 999;
     private static final AccountID PROXY_ACCOUNT_ID = AccountID.newBuilder().setAccountNum(PROXY_ACCOUNT_NUM).build();
 
-    private static final long BUG_ACCOUNT_NUM = 0;
-
     private static final long NODE_FEE = 16;
     private static final long NETWORK_FEE = 32;
     private static final long SERVICE_FEE = 64;
@@ -353,9 +351,6 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
     private void givenSuccessfulContractCreateTransaction() throws Exception {
         contractCreateWithTransferList(transferListForContractCreateItemized());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_CONTRACT_NUM));
-        // BUG: If proxyAccount isn't specified on contract create. entity 0 still gets created and associated with the
-        // entity.
-        expectedEntityNum.add(BUG_ACCOUNT_NUM);
         if (parserProperties.isPersistNonFeeTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
@@ -365,9 +360,6 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
         contractCreateWithTransferList(transferListForContractCreateAggregated());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_CONTRACT_NUM));
 
-        // BUG: If proxyAccount isn't specified on contract create. entity 0 still gets created and associated with the
-        // entity.
-        expectedEntityNum.add(BUG_ACCOUNT_NUM);
         if (parserProperties.isPersistNonFeeTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }

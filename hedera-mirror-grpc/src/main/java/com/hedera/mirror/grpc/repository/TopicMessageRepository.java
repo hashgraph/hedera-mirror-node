@@ -30,6 +30,7 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 public interface TopicMessageRepository extends ReactiveCrudRepository<TopicMessage, Instant>,
         TopicMessageRepositoryCustom {
 
-    @Query("select * from topic_message where consensus_timestamp > $1 order by consensus_timestamp asc")
-    Flux<TopicMessage> findByConsensusTimestampGreaterThan(long consensusTimestamp);
+    @Query("select * from topic_message where consensus_timestamp > :consensusTimestamp " +
+            "order by consensus_timestamp asc limit :limit")
+    Flux<TopicMessage> findLatest(long consensusTimestamp, long limit);
 }

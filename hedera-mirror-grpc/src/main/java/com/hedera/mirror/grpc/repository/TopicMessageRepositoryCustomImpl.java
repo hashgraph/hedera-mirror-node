@@ -30,7 +30,6 @@ import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.springframework.data.r2dbc.query.Criteria;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -41,7 +40,6 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryCustom {
 
     private final DatabaseClient databaseClient;
-    private final GrpcProperties grpcProperties;
     private final InstantToLongConverter instantToLongConverter;
 
     @Override
@@ -58,9 +56,7 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
                     .lessThan(instantToLongConverter.convert(filter.getEndTime()));
         }
 
-        int limit = filter.hasLimit() ? (int) filter.getLimit() : Integer.MAX_VALUE;
-        int pageSize = Math.min(limit, grpcProperties.getMaxPageSize());
-        Pageable pageable = PageRequest.of(0, pageSize);
+        Pageable pageable = filter.hasLimit() ? PageRequest.of(0, (int) filter.getLimit()) : Pageable.unpaged();
 
         return databaseClient.select()
                 .from(TopicMessage.class)

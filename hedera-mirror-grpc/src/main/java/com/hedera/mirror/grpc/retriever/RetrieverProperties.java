@@ -1,10 +1,10 @@
-package com.hedera.mirror.grpc;
+package com.hedera.mirror.grpc.retriever;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * Copyright (C) 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,27 +20,29 @@ package com.hedera.mirror.grpc;
  * ‍
  */
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Duration;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.grpc.config.NettyProperties;
-
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.grpc")
-public class GrpcProperties {
+@ConfigurationProperties("hedera.mirror.grpc.retriever")
+public class RetrieverProperties {
 
-    private boolean checkTopicExists = true;
+    private boolean enabled = true;
+
+    @Min(32)
+    private int maxPageSize = 200;
 
     @NotNull
-    private Map<String, String> connectionOptions = new HashMap<>();
+    private Duration pollingFrequency = Duration.ofSeconds(2L);
+
+    @Min(1)
+    private int threadMultiplier = 4;
 
     @NotNull
-    private NettyProperties netty = new NettyProperties();
-
-    private long shard = 0;
+    private Duration timeout = Duration.ofSeconds(30L);
 }

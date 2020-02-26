@@ -157,13 +157,14 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void findByConsensusTimestampGreaterThan() {
+    void findLatest() {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+        TopicMessage topicMessage4 = domainBuilder.topicMessage().block();
         long consensusTimestamp = instantToLongConverter.convert(topicMessage1.getConsensusTimestamp());
 
-        topicMessageRepository.findByConsensusTimestampGreaterThan(consensusTimestamp)
+        topicMessageRepository.findLatest(consensusTimestamp, 2)
                 .as(StepVerifier::create)
                 .expectNext(topicMessage2, topicMessage3)
                 .verifyComplete();

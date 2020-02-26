@@ -1,11 +1,10 @@
-package com.hedera.mirror.importer.repository;
-
+package com.hedera.mirror.grpc.retriever;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * Copyright (C) 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +20,15 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
+import reactor.core.publisher.Flux;
 
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.repository.CrudRepository;
+import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
-import com.hedera.mirror.importer.config.CacheConfiguration;
-import com.hedera.mirror.importer.domain.EntityType;
-
-public interface EntityTypeRepository extends CrudRepository<EntityType, Integer> {
-
-    @Cacheable(cacheManager = CacheConfiguration.TINY_LRU_CACHE, cacheNames = "entity_type")
-    Optional<EntityType> findByName(String name);
+/**
+ * Retrieves historical topic messages. This is a cold publisher retrieving only when subscribed and completing once all
+ * current results in the database are returned.
+ */
+public interface TopicMessageRetriever {
+    Flux<TopicMessage> retrieve(TopicMessageFilter filter);
 }

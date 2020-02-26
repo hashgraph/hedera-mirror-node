@@ -109,6 +109,6 @@ public class DomainBuilder {
                 .using(domainObject)
                 .fetch()
                 .first()
-                .doOnNext(d -> log.debug("Inserted: {}", d));
+                .doOnNext(d -> log.debug("Inserted: {}", domainObject));
     }
 }

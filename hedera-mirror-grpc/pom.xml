@@ -11,7 +11,7 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.5.5</version>
+        <version>0.6.0-rc1</version>
     </parent>
 
     <dependencies>
@@ -36,6 +36,10 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-elastic</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor.addons</groupId>
+            <artifactId>reactor-extra</artifactId>
         </dependency>
         <dependency>
             <groupId>io.r2dbc</groupId>
@@ -234,12 +238,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <repositories>
-        <repository>
-            <id>spring-libs-snapshot</id>
-            <name>SpringSnapshotRepository</name>
-            <url>https://repo.spring.io/libs-snapshot</url>
-        </repository>
-    </repositories>
 </project>
