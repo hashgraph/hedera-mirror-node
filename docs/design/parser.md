@@ -74,18 +74,27 @@ public interface BalanceEventsHandler extends StreamEventsHandler {
         - For `data-generator` to generate custom stream files for testing: end-to-end importer perf test, parser + db
           perf test, isolated parser micro-benchmark, etc
 
-### RecordItemListener
+### StreamItemListener
+
+```java
+package com.hedera.mirror.importer.parser;
+
+public interface StreamItemListener<T> {
+    void onItem(T item) throws ImporterException;
+}
+```
+
+#### RecordItemListener
 
 ```java
 package com.hedera.mirror.importer.parser.record;
 
-public interface RecordItemListener {
-    void onRecordItem(RecordItem recordItem) throws ImporterException;
+public interface RecordItemListener extends StreamItemListener<RecordItem> {
 }
 ```
 
 ```java
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.domain;
 
 @Value
 public class RecordItem {
@@ -103,7 +112,7 @@ package com.hedera.mirror.importer.parser.record;
 public class RecordItemParser implements RecordItemListener {
     private final RecordStreamEventsHandler RecordStreamEventsHandler;  // injected dependency
 
-    public void onRecordItem(RecordItem recordItem) throws ImporterException {
+    public void onItem(RecordItem recordItem) throws ImporterException {
         // process recordItem
     }
 }
@@ -112,18 +121,17 @@ public class RecordItemParser implements RecordItemListener {
 1. Parse `Transaction` and `TransactionRecord` in the `recordItem`
 1. Calls `onTransaction`/`onEntity`/`onEntityUpdate`/`onTopicMessage`/`onCryptoTransferLists` etc
 
-### RecordBatchListener
+### RecordFileParser
 
 ```java
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.domain;
 
-// 'Batch' can be stream file, or gossip events (in future).
-public interface RecordBatchListener {
-    void onBatch(String batchName, InputStream inputStream);
+@Value
+public class StreamFile {
+    String filename;
+    InputStream inputStream;
 }
 ```
-
-#### RecordFileParser
 
 ```java
 package com.hedera.mirror.importer.parser.record;
@@ -134,16 +142,16 @@ public class RecordFileParser implements RecordBatchListener {
     private final RecordItemListener recordItemListener;  // injected dependency
     private final StreamEventsHandler streamEventsHandler;  // injected dependency
 
-    void onBatch(String filename, InputStream inputStream) {
+    void onFile(StreamFile streamFile) {
         // process stream file
     }
 }
 ```
 
-1. On each call to `onBatch(filename, inputStream)`:
+1. On each call to `onFile(filename, inputStream)`:
     1. Call `streamEventsHandler.onBatchStart(filename)`
     1. Validate prev hash
-    1. For each set of `Transaction` and `TransactionRecord` in record file, call `recordItemListener.onRecordItem(recordItem)`.
+    1. For each set of `Transaction` and `TransactionRecord` in record file, call `recordItemListener.onItem(recordItem)`.
     1. Finally call `streamEventsHandler.onBatchComplete(filename)`
     1. On exceptions, call `streamEventsHandler.onError(error)`
 
@@ -160,7 +168,8 @@ public class RecordFileReader extends FileWatcher {
     public void onCreate() {
         // List files
         // Open the file on disk, create InputStream on it. Keep RecordFileParser filesystem agnostic.
-        recordFileParser.onBatch(filename, inputStream);
+        StreamFile streamFile = new StreamFile(filename, inputStream);
+        recordFileParser.onFile(streamFile);
     }
 }
 ```
