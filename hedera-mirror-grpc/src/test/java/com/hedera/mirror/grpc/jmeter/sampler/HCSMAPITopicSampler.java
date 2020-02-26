@@ -41,13 +41,13 @@ import com.hedera.mirror.grpc.jmeter.props.MessageListener;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
 @Log4j2
-public class HCSSDKTopicSampler implements HCSTopicSampler {
+public class HCSMAPITopicSampler implements HCSTopicSampler {
 
     private final ConsensusTopicQuery request;
     private final MirrorClient mirrorClient;
     private final MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
 
-    public HCSSDKTopicSampler(ConsensusTopicQuery request, String mirrorNodeAddress) {
+    public HCSMAPITopicSampler(ConsensusTopicQuery request, String mirrorNodeAddress) {
         this.request = request;
         mirrorClient = new MirrorClient(Objects.requireNonNull(mirrorNodeAddress));
         log.info("Setup MirrorClient at {}} for request {}", TextFormat.shortDebugString(request), mirrorNodeAddress);

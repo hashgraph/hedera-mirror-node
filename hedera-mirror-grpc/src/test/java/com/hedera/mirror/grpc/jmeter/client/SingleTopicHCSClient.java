@@ -33,9 +33,10 @@ import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
+import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
 import com.hedera.mirror.grpc.jmeter.props.MessageListener;
 import com.hedera.mirror.grpc.jmeter.sampler.HCSDirectStubTopicSampler;
-import com.hedera.mirror.grpc.jmeter.sampler.HCSSDKTopicSampler;
+import com.hedera.mirror.grpc.jmeter.sampler.HCSMAPITopicSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.HCSSamplerResult;
 import com.hedera.mirror.grpc.jmeter.sampler.HCSTopicSampler;
 
@@ -44,6 +45,7 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
 
     private static ManagedChannel channel;
     private HCSTopicSampler hcsTopicSampler;
+    private PropertiesHandler propHandler;
 
     private static synchronized void setChannel(String host, int port) {
         if (channel == null) {
@@ -56,19 +58,20 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
      */
     @Override
     public void setupTest(JavaSamplerContext context) {
-        String host = context.getParameter("host", "localhost");
-        int port = context.getIntParameter("port", 5600);
-        long startTime = context.getLongParameter("consensusStartTimeSeconds", 0);
-        long endTimeSecs = context.getLongParameter("consensusEndTimeSeconds", 0);
-        long limit = context.getLongParameter("limit", 100);
-        boolean sharedChannel = Boolean.valueOf(context.getParameter("sharedChannel", "false"));
+        propHandler = new PropertiesHandler(context);
+        String host = propHandler.getTestParam("host", "localhost");
+        int port = propHandler.getIntTestParam("port", "5600");
+        boolean sharedChannel = Boolean.valueOf(propHandler.getTestParam("sharedChannel", "false"));
+        long startTime = propHandler.getLongClientTestParam("StartTime", 0, "0");
+        long endTimeSecs = propHandler.getLongClientTestParam("EndTime", 0, "0");
+        long limit = propHandler.getLongClientTestParam("Limit", 0, "100");
 
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(startTime).build())
                 .setTopicID(
                         TopicID.newBuilder()
-                                .setRealmNum(context.getLongParameter("realmNum"))
-                                .setTopicNum(context.getLongParameter("topicID"))
+                                .setRealmNum(propHandler.getLongClientTestParam("RealmNum", 0, "0"))
+                                .setTopicNum(propHandler.getLongClientTestParam("TopicId", 0, "0"))
                                 .build());
 
         if (endTimeSecs != 0) {
@@ -80,7 +83,7 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
         }
 
         ConsensusTopicQuery consensusTopicQuery = builder.build();
-        boolean useMAPI = Boolean.valueOf(context.getParameter("useMAPI", "true"));
+        boolean useMAPI = Boolean.valueOf(propHandler.getClientTestParam("UseMAPI", 0, "false"));
         log.trace("useMAPI : {}", useMAPI);
         if (useMAPI) {
             setMAPITopicSampler(host, port, consensusTopicQuery);
@@ -92,7 +95,7 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
     }
 
     private void setMAPITopicSampler(String host, int port, ConsensusTopicQuery consensusTopicQuery) {
-        hcsTopicSampler = new HCSSDKTopicSampler(consensusTopicQuery, host + ":" + port);
+        hcsTopicSampler = new HCSMAPITopicSampler(consensusTopicQuery, host + ":" + port);
     }
 
     private void setDirectStubSampler(boolean sharedChannel, String host, int port,
@@ -140,9 +143,9 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
 
         try {
             MessageListener listener = MessageListener.builder()
-                    .historicMessagesCount(context.getIntParameter("historicMessagesCount", 0))
-                    .futureMessagesCount(context.getIntParameter("newTopicsMessageCount", 0))
-                    .messagesLatchWaitSeconds(context.getIntParameter("messagesLatchWaitSeconds", 60))
+                    .historicMessagesCount(propHandler.getIntClientTestParam("HistoricMessagesCount", 0, "0"))
+                    .futureMessagesCount(propHandler.getIntClientTestParam("IncomingMessageCount", 0, "0"))
+                    .messagesLatchWaitSeconds(propHandler.getIntClientTestParam("SubscribeTimeoutSeconds", 0, "60"))
                     .build();
 
             response = hcsTopicSampler.subscribeTopic(listener);
