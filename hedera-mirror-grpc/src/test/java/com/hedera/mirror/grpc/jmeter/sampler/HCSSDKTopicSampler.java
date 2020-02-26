@@ -50,7 +50,7 @@ public class HCSSDKTopicSampler implements HCSTopicSampler {
     public HCSSDKTopicSampler(ConsensusTopicQuery request, String mirrorNodeAddress) {
         this.request = request;
         mirrorClient = new MirrorClient(Objects.requireNonNull(mirrorNodeAddress));
-        log.info("Setup MirrorClient at {}} for request {}", request, mirrorNodeAddress);
+        log.info("Setup MirrorClient at {}} for request {}", TextFormat.shortDebugString(request), mirrorNodeAddress);
 
         TopicID topicID = request.getTopicID();
         mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery()
