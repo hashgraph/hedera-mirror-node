@@ -56,7 +56,7 @@
                 </elementProp>
                 <elementProp name="topicID" elementType="Argument">
                   <stringProp name="Argument.name">topicID</stringProp>
-                  <stringProp name="Argument.value">0</stringProp>
+                  <stringProp name="Argument.value">200002152</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
                 <elementProp name="realmNum" elementType="Argument">
@@ -66,7 +66,7 @@
                 </elementProp>
                 <elementProp name="historicMessagesCount" elementType="Argument">
                   <stringProp name="Argument.name">historicMessagesCount</stringProp>
-                  <stringProp name="Argument.value">3</stringProp>
+                  <stringProp name="Argument.value">15000</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
                 <elementProp name="newTopicsMessageCount" elementType="Argument">
@@ -139,7 +139,7 @@
               </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
-                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.value">200002152</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="realmNum" elementType="Argument">
@@ -184,7 +184,7 @@
           <boolProp name="LoopController.continue_forever">false</boolProp>
           <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">${__P(subcribeThreadCount,1)}</stringProp>
+        <stringProp name="ThreadGroup.num_threads">${__P(subcribeThreadCount,10)}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
         <stringProp name="ThreadGroup.duration"></stringProp>
@@ -222,7 +222,7 @@
               </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
-                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.value">200002152</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="realmNum" elementType="Argument">
@@ -232,7 +232,7 @@
               </elementProp>
               <elementProp name="historicMessagesCount" elementType="Argument">
                 <stringProp name="Argument.name">historicMessagesCount</stringProp>
-                <stringProp name="Argument.value">3</stringProp>
+                <stringProp name="Argument.value">3000</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="newTopicsMessageCount" elementType="Argument">
@@ -242,7 +242,7 @@
               </elementProp>
               <elementProp name="messagesLatchWaitSeconds" elementType="Argument">
                 <stringProp name="Argument.name">messagesLatchWaitSeconds</stringProp>
-                <stringProp name="Argument.value">60</stringProp>
+                <stringProp name="Argument.value">20</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
@@ -300,7 +300,7 @@
               </elementProp>
               <elementProp name="topicID" elementType="Argument">
                 <stringProp name="Argument.name">topicID</stringProp>
-                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.value">200002152</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="realmNum" elementType="Argument">
@@ -330,7 +330,7 @@
               </elementProp>
               <elementProp name="delSeqFrom" elementType="Argument">
                 <stringProp name="Argument.name">delSeqFrom</stringProp>
-                <stringProp name="Argument.value">0</stringProp>
+                <stringProp name="Argument.value">-1</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>

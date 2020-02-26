@@ -35,7 +35,8 @@ import org.apache.jmeter.samplers.SampleResult;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.grpc.jmeter.props.MessageListener;
 import com.hedera.mirror.grpc.jmeter.props.TopicSubscription;
-import com.hedera.mirror.grpc.jmeter.sampler.HCSTopicSampler;
+import com.hedera.mirror.grpc.jmeter.sampler.HCSDirectStubTopicSampler;
+import com.hedera.mirror.grpc.jmeter.sampler.HCSSamplerResult;
 
 @Log4j2
 public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
@@ -43,7 +44,7 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
     private final String clientPattern = "client%s[%d]";
     JavaSamplerContext javaSamplerContext;
     private String propertiesBase;
-    private Map<TopicSubscription, HCSTopicSampler> consensusServiceReactiveSamplers;
+    private Map<TopicSubscription, HCSDirectStubTopicSampler> consensusServiceReactiveSamplers;
     private String host;
     private int port;
     private int clientCount;
@@ -91,7 +92,7 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
         return sequentialRun();
     }
 
-    private HCSTopicSampler createSampler(TopicSubscription topicSubscription) {
+    private HCSDirectStubTopicSampler createSampler(TopicSubscription topicSubscription) {
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
                 .setLimit(topicSubscription.getLimit())
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(topicSubscription.getStartTime()).build())
@@ -105,7 +106,7 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
             builder.setConsensusEndTime(Timestamp.newBuilder().setSeconds(topicSubscription.getEndTime()).build());
         }
 
-        return new HCSTopicSampler(host, port, builder.build());
+        return new HCSDirectStubTopicSampler(host, port, builder.build());
     }
 
     private SampleResult sequentialRun() {
@@ -114,7 +115,7 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
         result.sampleStart();
 
         try {
-            HCSTopicSampler.SamplerResult response = null;
+            HCSSamplerResult response = null;
             for (TopicSubscription subscription : consensusServiceReactiveSamplers.keySet()) {
                 if (subscription.getMilliSecWaitBefore() > 0) {
                     log.debug("Waiting {} ms before subscribing", subscription.getMilliSecWaitBefore());

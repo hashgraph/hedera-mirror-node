@@ -44,7 +44,7 @@
         <dependency>
             <groupId>io.r2dbc</groupId>
             <artifactId>r2dbc-postgresql</artifactId>
-            <version>0.8.2.BUILD-20200214.102436-4</version>
+            <version>0.8.2.BUILD-20200207.142047-2</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
@@ -156,6 +156,12 @@
             <groupId>org.apache.jmeter</groupId>
             <artifactId>ApacheJMeter_java</artifactId>
             <version>5.1.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.hedera.hashgraph</groupId>
+            <artifactId>sdk</artifactId>
+            <version>1.1.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

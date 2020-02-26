@@ -34,6 +34,9 @@ import org.apache.jmeter.samplers.SampleResult;
 
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.grpc.jmeter.props.MessageListener;
+import com.hedera.mirror.grpc.jmeter.sampler.HCSDirectStubTopicSampler;
+import com.hedera.mirror.grpc.jmeter.sampler.HCSSDKTopicSampler;
+import com.hedera.mirror.grpc.jmeter.sampler.HCSSamplerResult;
 import com.hedera.mirror.grpc.jmeter.sampler.HCSTopicSampler;
 
 @Log4j2
@@ -76,18 +79,30 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
             builder.setLimit(limit);
         }
 
-        setSampler(sharedChannel, host, port, builder.build());
+        ConsensusTopicQuery consensusTopicQuery = builder.build();
+        boolean useMAPI = Boolean.valueOf(context.getParameter("useMAPI", "true"));
+        log.trace("useMAPI : {}", useMAPI);
+        if (useMAPI) {
+            setMAPITopicSampler(host, port, consensusTopicQuery);
+        } else {
+            setDirectStubSampler(sharedChannel, host, port, consensusTopicQuery);
+        }
 
         super.setupTest(context);
     }
 
-    private void setSampler(boolean sharedChannel, String host, int port, ConsensusTopicQuery consensusTopicQuery) {
+    private void setMAPITopicSampler(String host, int port, ConsensusTopicQuery consensusTopicQuery) {
+        hcsTopicSampler = new HCSSDKTopicSampler(consensusTopicQuery, host + ":" + port);
+    }
+
+    private void setDirectStubSampler(boolean sharedChannel, String host, int port,
+                                      ConsensusTopicQuery consensusTopicQuery) {
         if (sharedChannel) {
             setChannel(host, port);
 
-            hcsTopicSampler = new HCSTopicSampler(channel, consensusTopicQuery);
+            hcsTopicSampler = new HCSDirectStubTopicSampler(channel, consensusTopicQuery);
         } else {
-            hcsTopicSampler = new HCSTopicSampler(host, port, consensusTopicQuery);
+            hcsTopicSampler = new HCSDirectStubTopicSampler(host, port, consensusTopicQuery);
         }
     }
 
@@ -110,6 +125,7 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
         defaultParameters.addArgument("newTopicsMessageCount", "0");
         defaultParameters.addArgument("messagesLatchWaitSeconds", "60");
         defaultParameters.addArgument("sharedChannel", "false");
+        defaultParameters.addArgument("useMAPI", "false");
         return defaultParameters;
     }
 
@@ -119,7 +135,7 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();
-        HCSTopicSampler.SamplerResult response = null;
+        HCSSamplerResult response = null;
         result.sampleStart();
 
         try {
