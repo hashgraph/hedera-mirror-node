@@ -35,11 +35,17 @@ SQL Database client is tightly coupled with transaction & record's processor whi
 ### EventsHandler
 
 ```java
+package com.hedera.mirror.importer.parser;
+
 public interface StreamEventsHandler {
     void onBatchStart(String batchName) throws ImporterException;
     void onBatchComplete(String batchName) throws ImporterException;
     void onError(Throwable e);
 }
+```
+
+```java
+package com.hedera.mirror.importer.parser.record;
 
 public interface RecordStreamEventsHandler extends StreamEventsHandler {
     void onTransaction(c.h.m.i.d.Transaction) throws ImporterException;
@@ -48,6 +54,10 @@ public interface RecordStreamEventsHandler extends StreamEventsHandler {
     void onCryptoTransferList(c.h.m.i.d.CryptoTransfer) throws ImporterException;
     void onTopicMessage(c.h.m.i.d.TopicMessage) throws ImporterException;
 }
+```
+
+```java
+package com.hedera.mirror.importer.parser.balance;
 
 public interface BalanceEventsHandler extends StreamEventsHandler {
     void onBalance(c.h.m.i.d.Balance) throws ImporterException;
@@ -67,12 +77,16 @@ public interface BalanceEventsHandler extends StreamEventsHandler {
 ### RecordItemListener
 
 ```java
+package com.hedera.mirror.importer.parser.record;
+
 public interface RecordItemListener {
     void onRecordItem(RecordItem recordItem) throws ImporterException;
 }
 ```
 
 ```java
+package com.hedera.mirror.importer.parser.record;
+
 @Value
 public class RecordItem {
     private final Transaction transaction;
@@ -84,6 +98,8 @@ public class RecordItem {
 #### RecordItemParser
 
 ```java
+package com.hedera.mirror.importer.parser.record;
+
 public class RecordItemParser implements RecordItemListener {
     private final RecordStreamEventsHandler RecordStreamEventsHandler;  // injected dependency
 
@@ -99,7 +115,9 @@ public class RecordItemParser implements RecordItemListener {
 ### RecordBatchListener
 
 ```java
-// 'Batch' can be a stream file, gossip events, etc
+package com.hedera.mirror.importer.parser.record;
+
+// 'Batch' can be stream file, or gossip events (in future).
 public interface RecordBatchListener {
     void onBatch(String batchName, InputStream inputStream);
 }
@@ -108,6 +126,8 @@ public interface RecordBatchListener {
 #### RecordFileParser
 
 ```java
+package com.hedera.mirror.importer.parser.record;
+
 // Parses transactions batched together in a *stream file*
 public class RecordFileParser implements RecordBatchListener {
 
@@ -130,6 +150,8 @@ public class RecordFileParser implements RecordBatchListener {
 ### RecordFileReader
 
 ```java
+package com.hedera.mirror.importer.parser.record;
+
 public class RecordFileReader extends FileWatcher {
 
     private final RecordFileParser recordFileParser; // injected dependency
@@ -159,7 +181,7 @@ public class RecordFileReader extends FileWatcher {
     1. Add the interfaces `StreamEventsHandler` and `RecordStreamEventsHandler`
     1. Split `RecordFileLogger` class into two
         1. Create `PostgresWritingRecordStreamEventsHandler`. Move existing postgres writer code from `RecordFileLogger` to new class as-is.
-        1. Rename `RecordFileLogger` to `RecordItemParser`. Add `.. implements <TODO>`
+        1. Rename `RecordFileLogger` to `RecordItemParser`. Add `.. implements RecordItemListener`
 
 #### Milestone 2
 
