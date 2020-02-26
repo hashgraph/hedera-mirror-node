@@ -26,7 +26,7 @@ SQL Database client is tightly coupled with transaction & record's processor whi
 
 ![Data Flow](images/parser-events-hander-data-flow.png)
 
--   Record files --> RecordFileReader --> RecordFileParser --> RecordItemParser --> RecordStreamEventsHandler --> DB
+-   Record files --> RecordFileReader --> RecordFileListener --> RecordItemListener --> RecordStreamEventsHandler --> DB
 
 #### Control Flow
 
@@ -64,15 +64,11 @@ public interface BalanceEventsHandler extends StreamEventsHandler {
         - For `data-generator` to generate custom stream files for testing: end-to-end importer perf test, parser + db
           perf test, isolated parser micro-benchmark, etc
 
-### RecordItemParser
+### RecordItemListener
 
 ```java
-public class RecordItemParser {
-    private final RecordStreamEventsHandler RecordStreamEventsHandler;  // injected dependency
-
-    public void onRecordItem(RecordItem recordItem) throws ImporterException {
-        // process recordItem
-    }
+public interface RecordItemListener {
+    void onRecordItem(RecordItem recordItem) throws ImporterException;
 }
 ```
 
@@ -85,27 +81,49 @@ public class RecordItem {
 }
 ```
 
+#### RecordItemParser
+
+```java
+public class RecordItemParser implements RecordItemListener {
+    private final RecordStreamEventsHandler RecordStreamEventsHandler;  // injected dependency
+
+    public void onRecordItem(RecordItem recordItem) throws ImporterException {
+        // process recordItem
+    }
+}
+```
+
 1. Parse `Transaction` and `TransactionRecord` in the `recordItem`
 1. Calls `onTransaction`/`onEntity`/`onEntityUpdate`/`onTopicMessage`/`onCryptoTransferLists` etc
 
-### RecordFileParser
+### RecordBatchListener
 
 ```java
-public class RecordFileParser {
+// 'Batch' can be a stream file, gossip events, etc
+public interface RecordBatchListener {
+    void onBatch(String batchName, InputStream inputStream);
+}
+```
 
-    private final RecordItemParser recordItemParser;  // injected dependency
+#### RecordFileParser
+
+```java
+// Parses transactions batched together in a *stream file*
+public class RecordFileParser implements RecordBatchListener {
+
+    private final RecordItemListener recordItemListener;  // injected dependency
     private final StreamEventsHandler streamEventsHandler;  // injected dependency
 
-    public void onFile(String filename, InputStream inputStream) {
+    void onBatch(String filename, InputStream inputStream) {
         // process stream file
     }
 }
 ```
 
-1. On each call to `onFile(filename, inputStream)`:
+1. On each call to `onBatch(filename, inputStream)`:
     1. Call `streamEventsHandler.onBatchStart(filename)`
     1. Validate prev hash
-    1. For each set of `Transaction` and `TransactionRecord` in record file, call `recordItemParser.onRecordItem(recordItem)`.
+    1. For each set of `Transaction` and `TransactionRecord` in record file, call `recordItemListener.onRecordItem(recordItem)`.
     1. Finally call `streamEventsHandler.onBatchComplete(filename)`
     1. On exceptions, call `streamEventsHandler.onError(error)`
 
@@ -120,7 +138,7 @@ public class RecordFileReader extends FileWatcher {
     public void onCreate() {
         // List files
         // Open the file on disk, create InputStream on it. Keep RecordFileParser filesystem agnostic.
-        recordFileParser.onFile(filename, inputStream);
+        recordFileParser.onBatch(filename, inputStream);
     }
 }
 ```
@@ -131,7 +149,6 @@ public class RecordFileReader extends FileWatcher {
    that indeed turns out to be the case, then I see at least two possibilities: - Use manual connection(s) to COPY to t_transactions, t_cryptotransferlists, topic_message, other write heavy tables.
    And use Spring Repositories for other tables. However, that raises the question of consistency of data across multiple
    transactions (since there are multiple connections). - Use COPY and PreparedStatement over single connection
-1. How to do entity updates using Spring data?
 
 ## Tasks (in suggested order):
 
@@ -148,20 +165,20 @@ public class RecordFileReader extends FileWatcher {
 
 All top level tasks can be done in parallel
 
-1. Perf benchmarks
-    1. Move database abstractions to `hedera.mirror.repository` package from where they can be shared by importer, grpc, data-generator.
-        - Replace `PostgresCSVDomainWriter` by `PostgresWritingRecordStreamEventsHandler` to test db insert performance and establish baseline
-1. Optimize `PostgresWritingRecordStreamEventsHandler`
-    - Schema changes to remove entity ids
-    - Get rid of all `SELECT` queries in parser
-    - Use of `COPY`
-    - Concurrency using multiple jdbc connections
+1. Perf
+    1. Replace `PostgresCSVDomainWriter` by `PostgresWritingRecordStreamEventsHandler` to test db insert performance and establish baseline
+    1. Optimize `PostgresWritingRecordStreamEventsHandler`
+        - Schema changes to remove entity ids
+        - Get rid of all `SELECT` queries in parser
+        - Use of `COPY`
+        - Concurrency using multiple jdbc connections
 1. Refactor `RecordItemParser` class. Split parsing logic into re-usable helper functions.
     - Will make it easy for mirror node users to write custom parsers
     - Will make it possible to have filtering logic less loosely coupled with parsing logic
 1. Split `RecordFileParser` class into two
     - Move FileSystem related code into `RecordFileReader`
     - Keep `RecordFileParser` agnostic of source of stream files
+1. Implement `BigQueryWritingRecordStreamEventsHandler` for `blockchain-etl` project (if needed)
 
 #### Milestone 3 (followup tasks to tie loose ends)
 
