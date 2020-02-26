@@ -34,8 +34,6 @@ SQL Database client is tightly coupled with transaction & record's processor whi
 
 ### EventsHandler
 
-![StreamEventsHandler](images/parser-events-handler-class-diagram.png)
-
 ```java
 public interface StreamEventsHandler {
     void onBatchStart(String batchName) throws ImporterException;
