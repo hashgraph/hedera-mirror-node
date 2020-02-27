@@ -147,17 +147,6 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             startTime = Instant.now();
         }
 
-        void onNext(TopicMessage topicMessage) {
-            lastTopicMessage = topicMessage;
-            count.incrementAndGet();
-            log.trace("[{}] Topic {} received message #{}: {}", filter.getSubscriberId(), topicId, count, topicMessage);
-        }
-
-        boolean isNext(TopicMessage topicMessage) {
-            return lastTopicMessage == null || topicMessage.getSequenceNumber() == lastTopicMessage
-                    .getSequenceNumber() + 1;
-        }
-
         boolean isComplete() {
             if (filter.getEndTime() == null) {
                 return false;
@@ -168,6 +157,11 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             }
 
             return filter.getEndTime().plus(grpcProperties.getEndTimeInterval()).isBefore(Instant.now());
+        }
+
+        boolean isNext(TopicMessage topicMessage) {
+            return lastTopicMessage == null || topicMessage.getSequenceNumber() == lastTopicMessage
+                    .getSequenceNumber() + 1;
         }
 
         private int rate() {
@@ -183,6 +177,12 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         void onComplete() {
             log.info("[{}] Topic {} completed with {} messages in {} ({}/s)",
                     filter.getSubscriberId(), topicId, count, stopwatch, rate());
+        }
+
+        void onNext(TopicMessage topicMessage) {
+            lastTopicMessage = topicMessage;
+            count.incrementAndGet();
+            log.trace("[{}] Topic {} received message #{}: {}", filter.getSubscriberId(), topicId, count, topicMessage);
         }
     }
 }

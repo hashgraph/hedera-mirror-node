@@ -41,7 +41,7 @@ public class GrpcProperties {
     private Map<String, String> connectionOptions = new HashMap<>();
 
     @NotNull
-    private Duration endTimeInterval = Duration.ofSeconds(10);
+    private Duration endTimeInterval = Duration.ofSeconds(30);
 
     @NotNull
     private NettyProperties netty = new NettyProperties();
