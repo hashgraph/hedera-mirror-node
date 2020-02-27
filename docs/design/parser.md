@@ -19,37 +19,27 @@ SQL Database client is tightly coupled with transaction & record's processor whi
 -   Accommodate possibility of publishing transactions/topic messages/etc to GRPC server directly
 -   Support writing to multiple databases from single importer
 -   Update balance file parser code immediately
+-   Make mirror node be ran without PostgreSQL. It will still require it to store application state.
 
 ## Architecture
 
 #### Data Flow
 
-![Data Flow](images/parser-events-hander-data-flow.png)
+![Data Flow](images/parser-data-flow.png)
 
--   Record files --> RecordFileReader --> RecordFileListener --> RecordItemListener --> RecordStreamEventsHandler --> DB
+-   Similar flows will exist for balance and event.
 
 #### Control Flow
 
-![Control Flow](images/parser-events-hander-control-flow.png)
+![Control Flow](images/parser-control-flow.png)
 
-### EventsHandler
-
-```java
-package com.hedera.mirror.importer.parser.domain;
-
-public class StreamFileInfo {
-    String filename;
-    String fileHash;
-    String prevFileHash;
-}
-```
+### ParsedItemHandler
 
 ```java
 package com.hedera.mirror.importer.parser;
 
-public interface StreamEventsHandler {
-    void onFileStart(StreamFileInfo streamFileInfo) throws ImporterException;
-    void onFileComplete(StreamFileInfo streamFileInfo) throws ImporterException;
+public interface ParsedItemHandler {
+    void onFileComplete() throws ImporterException;
     void onError();
 }
 ```
@@ -57,7 +47,7 @@ public interface StreamEventsHandler {
 ```java
 package com.hedera.mirror.importer.parser.record;
 
-public interface RecordStreamEventsHandler extends StreamEventsHandler {
+public interface RecordParsedItemHandler extends ParsedItemHandler {
     void onTransaction(c.h.m.i.d.Transaction transaction) throws ImporterException;
     void onCryptoTransferList(c.h.m.i.d.CryptoTransfer cryptoTransfer) throws ImporterException;
     void onNonFeeTransfer(c.h.m.i.d.NonFeeTransfer nonFeeTransfer) throws ImporterException;
@@ -71,18 +61,18 @@ public interface RecordStreamEventsHandler extends StreamEventsHandler {
 ```java
 package com.hedera.mirror.importer.parser.balance;
 
-public interface BalanceEventsHandler extends StreamEventsHandler {
+public interface BalanceParsedItemHandler extends ParsedItemHandler {
     void onBalance(c.h.m.i.d.Balance balance) throws ImporterException;
 }
 ```
 
-1. There will be following implementations for `RecordStreamEventsHandler`:
-    1. `PostgresWritingRecordStreamEventsHandler`:
+1. There will be following implementations for `RecordParsedItemHandler`:
+    1. `PostgresWritingRecordParsedItemHandler`:
         - For writing stream data to Postgres database
         - For `data-generator` to test database insert performance in isolation (from parser)
-    1. `NullRecordStreamEventsHandler`: Discards all events and do nothing.
+    1. `NullRecordParsedItemHandler`: Discards all items and do nothing.
         - For micro-benchmarking parser performance
-    1. `StreamFileWriterRecordStreamEventsHandler`: Package stream data into .rcd/balance/etc file.
+    1. `StreamFileWriterRecordParsedItemHandler`: Package stream data into .rcd/balance/etc file.
         - For `data-generator` to generate custom stream files for testing: end-to-end importer perf test, parser + db
           perf test, isolated parser micro-benchmark, etc
 
@@ -95,14 +85,33 @@ milestone 2).
 ### StreamItemListener
 
 ```java
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.parser.domain;
 
-public interface StreamItemListener<T> {
-    void onItem(T item) throws ImporterException;
+public interface StreamItem {
 }
 ```
 
-#### RecordItemListener
+```java
+package com.hedera.mirror.importer.parser.domain;
+
+@Value
+public class RecordItem implements StreamItem {
+    private final Transaction transaction;
+    private final TransactionRecord record;
+    private final byte[] transactionBytes;
+    private final byte[] recordBytes;
+}
+```
+
+-   Similarly for balance and event streams
+
+```java
+package com.hedera.mirror.importer.parser;
+
+public interface StreamItemListener<T extends StreamItem> {
+    void onItem(T item) throws ImporterException;
+}
+```
 
 ```java
 package com.hedera.mirror.importer.parser.record;
@@ -111,16 +120,7 @@ public interface RecordItemListener extends StreamItemListener<RecordItem> {
 }
 ```
 
-```java
-package com.hedera.mirror.importer.parser.domain;
-
-@Value
-public class RecordItem {
-    private final Transaction transaction;
-    private final TransactionRecord record;
-    private final byte[] transactionRawBytes;
-}
-```
+-   Similarly for balance and event streams
 
 #### RecordItemParser
 
@@ -128,7 +128,7 @@ public class RecordItem {
 package com.hedera.mirror.importer.parser.record;
 
 public class RecordItemParser implements RecordItemListener {
-    private final RecordStreamEventsHandler RecordStreamEventsHandler;  // injected dependency
+    private final RecordParsedItemHandler recordParsedItemHandler;  // injected dependency
 
     public void onItem(RecordItem recordItem) throws ImporterException {
         // process recordItem
@@ -154,11 +154,11 @@ public class StreamFileData {
 ```java
 package com.hedera.mirror.importer.parser.record;
 
-// Parses transactions batched together in a *stream file*
-public class RecordFileParser implements RecordBatchListener {
+// Parses transactions in a *stream file*
+public class RecordFileParser {
 
     private final RecordItemListener recordItemListener;  // injected dependency
-    private final StreamEventsHandler streamEventsHandler;  // injected dependency
+    private final RecordParsedItemHandler recordParsedItemHandler;  // injected dependency
 
     void onFile(StreamFileData streamFileData) {
         // process stream file
@@ -166,12 +166,11 @@ public class RecordFileParser implements RecordBatchListener {
 }
 ```
 
-1. On each call to `onFile(filename, inputStream)`:
-    1. Call `streamEventsHandler.onBatchStart(filename)`
+1. On each call to `onFile(streamFileData)`:
     1. Validate prev hash
     1. For each set of `Transaction` and `TransactionRecord` in record file, call `recordItemListener.onItem(recordItem)`.
-    1. Finally call `streamEventsHandler.onBatchComplete(filename)`
-    1. On exceptions, call `streamEventsHandler.onError(error)`
+    1. Finally call `parsedItemHandler.onFileComplete()`
+    1. On exceptions, call `parsedItemHandler.onError(error)`
 
 ### RecordFileReader
 
@@ -207,27 +206,27 @@ public class RecordFileReader extends FileWatcher {
 1. Refactoring
     1. Add the interfaces and domains
     1. Split `RecordFileLogger` class into two
-        1. Create `PostgresWritingRecordStreamEventsHandler`. Move existing postgres writer code from `RecordFileLogger` to new class as-is.
+        1. Create `PostgresWritingRecordParsedItemHandler`. Move existing postgres writer code from `RecordFileLogger` to new class as-is.
         1. Rename `RecordFileLogger` to `RecordItemParser`. Add `.. implements RecordItemListener`
 
 #### Milestone 2
 
 All top level tasks can be done in parallel.
 
+1. Split `RecordFileParser` class into two
+    - Move FileSystem related code into `RecordFileReader`
+    - Keep `RecordFileParser` agnostic of source of stream files
 1. Perf
-    1. Replace `PostgresCSVDomainWriter` by `PostgresWritingRecordStreamEventsHandler` to test db insert performance and establish baseline
-    1. Optimize `PostgresWritingRecordStreamEventsHandler`
-        - Schema changes to remove entity ids
+    1. Hook up `PostgresWritingRecordParsedItemHandler` with `data-generator` to test db insert performance and establish baseline
+    1. Optimize `PostgresWritingRecordParsedItemHandler`
+        - Schema changes to remove entity ids (while at it, remove `fildId` from `t_transactions`)
         - Get rid of all `SELECT` queries in parser
         - Use of `COPY`
         - Concurrency using multiple jdbc connections
 1. Refactor `RecordItemParser` class. Split parsing logic into re-usable helper functions.
     - Will make it easy for mirror node users to write custom parsers
     - Will make it possible to have filtering logic less loosely coupled with parsing logic
-1. Split `RecordFileParser` class into two
-    - Move FileSystem related code into `RecordFileReader`
-    - Keep `RecordFileParser` agnostic of source of stream files
-1. Implement `BigQueryWritingRecordStreamEventsHandler` for `blockchain-etl` project (if needed)
+1. Implement `BigQueryWritingRecordParsedItemHandler` for `blockchain-etl` project (if needed)
 
 #### Milestone 3 (followup tasks to tie loose ends)
 
