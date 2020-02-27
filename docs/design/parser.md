@@ -35,12 +35,22 @@ SQL Database client is tightly coupled with transaction & record's processor whi
 ### EventsHandler
 
 ```java
+package com.hedera.mirror.importer.parser.domain;
+
+public class StreamFileInfo {
+    String filename;
+    String fileHash;
+    String prevFileHash;
+}
+```
+
+```java
 package com.hedera.mirror.importer.parser;
 
 public interface StreamEventsHandler {
-    void onBatchStart(String batchName) throws ImporterException;
-    void onBatchComplete(String batchName) throws ImporterException;
-    void onError(Throwable e);
+    void onFileStart(StreamFileInfo streamFileInfo) throws ImporterException;
+    void onFileComplete(StreamFileInfo streamFileInfo) throws ImporterException;
+    void onError();
 }
 ```
 
@@ -48,11 +58,13 @@ public interface StreamEventsHandler {
 package com.hedera.mirror.importer.parser.record;
 
 public interface RecordStreamEventsHandler extends StreamEventsHandler {
-    void onTransaction(c.h.m.i.d.Transaction) throws ImporterException;
-    void onEntity(c.h.m.i.d.Entities) throws ImporterException;
-    void onEntityUpdate(c.h.m.i.d.Entities) throws ImporterException;
-    void onCryptoTransferList(c.h.m.i.d.CryptoTransfer) throws ImporterException;
-    void onTopicMessage(c.h.m.i.d.TopicMessage) throws ImporterException;
+    void onTransaction(c.h.m.i.d.Transaction transaction) throws ImporterException;
+    void onCryptoTransferList(c.h.m.i.d.CryptoTransfer cryptoTransfer) throws ImporterException;
+    void onNonFeeTransfer(c.h.m.i.d.NonFeeTransfer nonFeeTransfer) throws ImporterException;
+    void onTopicMessage(c.h.m.i.d.TopicMessage topicMessage) throws ImporterException;
+    void onContractResult(c.h.m.i.d.ContractResult contractResult) throws ImporterException;
+    void onFileData(c.h.m.i.d.FileData fileData) throws ImporterException;
+    void onLiveHash(c.h.m.i.d.LiveHash liveHash) throws ImporterException;
 }
 ```
 
@@ -60,7 +72,7 @@ public interface RecordStreamEventsHandler extends StreamEventsHandler {
 package com.hedera.mirror.importer.parser.balance;
 
 public interface BalanceEventsHandler extends StreamEventsHandler {
-    void onBalance(c.h.m.i.d.Balance) throws ImporterException;
+    void onBalance(c.h.m.i.d.Balance balance) throws ImporterException;
 }
 ```
 
@@ -73,6 +85,12 @@ public interface BalanceEventsHandler extends StreamEventsHandler {
     1. `StreamFileWriterRecordStreamEventsHandler`: Package stream data into .rcd/balance/etc file.
         - For `data-generator` to generate custom stream files for testing: end-to-end importer perf test, parser + db
           perf test, isolated parser micro-benchmark, etc
+
+Note that there are no functions for entities. Updating entities in batch in not possible right now since
+`t_transactions` table refers to entity ids. For entities, first, schema changes are needed to remove entity ids,
+then `onEntity` and `onEntityUpdate` functions will be added to insert/update entities in bulk. For the purpose of
+immediate refactor, we can leave entities in `RecordItemParser` (until perf optimizations via schema change in
+milestone 2).
 
 ### StreamItemListener
 
@@ -119,7 +137,7 @@ public class RecordItemParser implements RecordItemListener {
 ```
 
 1. Parse `Transaction` and `TransactionRecord` in the `recordItem`
-1. Calls `onTransaction`/`onEntity`/`onEntityUpdate`/`onTopicMessage`/`onCryptoTransferLists` etc
+1. Calls `onTransaction`/`onTopicMessage`/`onCryptoTransferLists` etc
 
 ### RecordFileParser
 
@@ -127,7 +145,7 @@ public class RecordItemParser implements RecordItemListener {
 package com.hedera.mirror.importer.parser.domain;
 
 @Value
-public class StreamFile {
+public class StreamFileData {
     String filename;
     InputStream inputStream;
 }
@@ -142,7 +160,7 @@ public class RecordFileParser implements RecordBatchListener {
     private final RecordItemListener recordItemListener;  // injected dependency
     private final StreamEventsHandler streamEventsHandler;  // injected dependency
 
-    void onFile(StreamFile streamFile) {
+    void onFile(StreamFileData streamFileData) {
         // process stream file
     }
 }
@@ -168,8 +186,8 @@ public class RecordFileReader extends FileWatcher {
     public void onCreate() {
         // List files
         // Open the file on disk, create InputStream on it. Keep RecordFileParser filesystem agnostic.
-        StreamFile streamFile = new StreamFile(filename, inputStream);
-        recordFileParser.onFile(streamFile);
+        StreamFileData streamFileData = new StreamFileData(filename, inputStream);
+        recordFileParser.onFile(streamFileData);
     }
 }
 ```
@@ -187,14 +205,14 @@ public class RecordFileReader extends FileWatcher {
 
 1. Finalize design
 1. Refactoring
-    1. Add the interfaces `StreamEventsHandler` and `RecordStreamEventsHandler`
+    1. Add the interfaces and domains
     1. Split `RecordFileLogger` class into two
         1. Create `PostgresWritingRecordStreamEventsHandler`. Move existing postgres writer code from `RecordFileLogger` to new class as-is.
         1. Rename `RecordFileLogger` to `RecordItemParser`. Add `.. implements RecordItemListener`
 
 #### Milestone 2
 
-All top level tasks can be done in parallel
+All top level tasks can be done in parallel.
 
 1. Perf
     1. Replace `PostgresCSVDomainWriter` by `PostgresWritingRecordStreamEventsHandler` to test db insert performance and establish baseline
