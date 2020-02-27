@@ -31,6 +31,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.retry.Repeat;
 
 import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.domain.EntityType;
@@ -60,15 +61,13 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         TopicContext topicContext = new TopicContext(filter);
 
         return topicExists(filter).thenMany(topicMessageRetriever.retrieve(filter)
-                .doOnComplete(topicContext::onComplete)
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
                 .concatMap(t -> missingMessages(topicContext, t))
                 .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()))
-                .takeUntilOther(pastEndTime(topicContext))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .doOnNext(topicContext::onNext)
-                .doOnCancel(topicContext::onComplete)
+                .doOnCancel(topicContext::onCancel)
                 .doOnComplete(topicContext::onComplete));
     }
 
@@ -81,16 +80,11 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Not a valid topic")));
     }
 
-    private Flux<Long> pastEndTime(TopicContext topicContext) {
-        if (topicContext.getFilter().getEndTime() == null) {
-            return Flux.never();
+    private Flux<TopicMessage> incomingMessages(TopicContext topicContext) {
+        if (topicContext.isComplete()) {
+            return Flux.empty();
         }
 
-        return Mono.delay(grpcProperties.getEndTimeInterval())
-                .repeat(() -> !topicContext.isPastEndTime());
-    }
-
-    private Flux<TopicMessage> incomingMessages(TopicContext topicContext) {
         TopicMessageFilter filter = topicContext.getFilter();
         TopicMessage last = topicContext.getLastTopicMessage();
         long limit = filter.hasLimit() ? filter.getLimit() - topicContext.getCount().get() : 0;
@@ -101,7 +95,17 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .startTime(startTime)
                 .build();
 
-        return topicListener.listen(newFilter);
+        return topicListener.listen(newFilter)
+                .takeUntilOther(pastEndTime(topicContext));
+    }
+
+    private Flux<Object> pastEndTime(TopicContext topicContext) {
+        if (topicContext.getFilter().getEndTime() == null) {
+            return Flux.never();
+        }
+
+        return Flux.empty().repeatWhen(Repeat.create(r -> !topicContext.isComplete(), Long.MAX_VALUE)
+                .fixedBackoff(grpcProperties.getEndTimeInterval()));
     }
 
     private Flux<TopicMessage> missingMessages(TopicContext topicContext, TopicMessage current) {
@@ -125,20 +129,6 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .concatWithValues(current);
     }
 
-    private enum Mode {
-        QUERY,
-        LISTEN;
-
-        Mode next() {
-            return this == QUERY ? LISTEN : this;
-        }
-
-        @Override
-        public String toString() {
-            return super.toString().toLowerCase();
-        }
-    }
-
     @Data
     private class TopicContext {
 
@@ -146,15 +136,15 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         private final String topicId;
         private final Stopwatch stopwatch;
         private final AtomicLong count;
+        private final Instant startTime;
         private volatile TopicMessage lastTopicMessage;
-        private volatile Mode mode;
 
         public TopicContext(TopicMessageFilter filter) {
             this.filter = filter;
-            topicId = filter.getRealmNum() + "." + filter.getTopicNum();
+            topicId = grpcProperties.getShard() + "." + filter.getRealmNum() + "." + filter.getTopicNum();
             stopwatch = Stopwatch.createStarted();
             count = new AtomicLong(0L);
-            mode = Mode.QUERY;
+            startTime = Instant.now();
         }
 
         void onNext(TopicMessage topicMessage) {
@@ -168,24 +158,31 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                     .getSequenceNumber() + 1;
         }
 
-        /**
-         * Checks whether the end time is after the current time and we haven't seen any new messages in more than the
-         * interval check.
-         *
-         * @return if the end time is after the current time
-         */
-        boolean isPastEndTime() {
-            Instant now = Instant.now();
-            return filter.getEndTime().isAfter(now) && (lastTopicMessage == null ||
-                    lastTopicMessage.getConsensusTimestamp().plus(grpcProperties.getEndTimeInterval()).isBefore(now));
+        boolean isComplete() {
+            if (filter.getEndTime() == null) {
+                return false;
+            }
+
+            if (filter.getEndTime().isBefore(startTime)) {
+                return true;
+            }
+
+            return filter.getEndTime().plus(grpcProperties.getEndTimeInterval()).isBefore(Instant.now());
+        }
+
+        private int rate() {
+            var elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+            return elapsed > 0 ? (int) (1000.0 * count.get() / elapsed) : 0;
+        }
+
+        void onCancel() {
+            log.info("[{}] Topic {} cancelled with {} messages in {} ({}/s)",
+                    filter.getSubscriberId(), topicId, count, stopwatch, rate());
         }
 
         void onComplete() {
-            var elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-            var rate = elapsed > 0 ? (int) (1000.0 * count.get() / elapsed) : 0;
-            log.info("[{}] Topic {} {} complete with {} messages in {} ({}/s)", filter
-                    .getSubscriberId(), topicId, mode, count, stopwatch, rate);
-            mode = mode.next();
+            log.info("[{}] Topic {} completed with {} messages in {} ({}/s)",
+                    filter.getSubscriberId(), topicId, count, stopwatch, rate());
         }
     }
 }
