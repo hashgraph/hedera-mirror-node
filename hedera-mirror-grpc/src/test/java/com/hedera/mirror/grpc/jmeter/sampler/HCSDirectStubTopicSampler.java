@@ -170,12 +170,18 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
         private final long realmNum;
         private final long topicNum;
         private final Stopwatch stopwatch = Stopwatch.createStarted();
-
+        private Instant incomingMessagesThreshold;
         private long historicalMessageCount = 0L;
         private long incomingMessageCount = 0L;
         private boolean success = true;
         private ConsensusTopicResponse last;
         private boolean historical = true;
+
+        public SamplerResult(long realmNum, long topicNum) {
+            this.realmNum = realmNum;
+            this.topicNum = topicNum;
+            incomingMessagesThreshold = Instant.now();
+        }
 
         public long getTotalMessageCount() {
             return historicalMessageCount + incomingMessageCount;
@@ -203,7 +209,7 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
                 }
             }
 
-            if (currentTime.isBefore(TopicMessageGeneratorSampler.INCOMING_START)) {
+            if (currentTime.isBefore(incomingMessagesThreshold)) {
                 ++historicalMessageCount;
             } else {
                 historical = false;

@@ -23,6 +23,7 @@ package com.hedera.mirror.grpc.jmeter.sampler;
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.TextFormat;
 import com.hederahashgraph.api.proto.java.TopicID;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -82,8 +83,7 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
         CountDownLatch historicMessagesLatch = new CountDownLatch(messageListener.getHistoricMessagesCount());
         CountDownLatch incomingMessagesLatch = new CountDownLatch(messageListener.getFutureMessagesCount());
         TopicID topicId = request.getTopicID();
-        SamplerResult result = new SamplerResult(topicId.getRealmNum(), topicId
-                .getTopicNum());
+        SamplerResult result = new SamplerResult(topicId.getRealmNum(), topicId.getTopicNum());
 
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         MirrorSubscriptionHandle subscription = null;
@@ -153,12 +153,19 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
         private final long realmNum;
         private final long topicNum;
         private final Stopwatch stopwatch = Stopwatch.createStarted();
-
+        private Instant incomingMessagesThreshold;
         private long historicalMessageCount = 0L;
         private long incomingMessageCount = 0L;
         private boolean success = true;
         private MirrorConsensusTopicResponse last;
         private boolean historical = true;
+        private Throwable responseError;
+
+        public SamplerResult(long realmNum, long topicNum) {
+            this.realmNum = realmNum;
+            this.topicNum = topicNum;
+            incomingMessagesThreshold = Instant.now();
+        }
 
         public long getTotalMessageCount() {
             return historicalMessageCount + incomingMessageCount;
@@ -184,7 +191,7 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
                 }
             }
 
-            if (response.consensusTimestamp.isBefore(TopicMessageGeneratorSampler.INCOMING_START)) {
+            if (response.consensusTimestamp.isBefore(incomingMessagesThreshold)) {
                 ++historicalMessageCount;
             } else {
                 historical = false;
