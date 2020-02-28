@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.jmeter;
+package com.hedera.mirror.grpc.jmeter.handler;
 
 /*-
  * ‌

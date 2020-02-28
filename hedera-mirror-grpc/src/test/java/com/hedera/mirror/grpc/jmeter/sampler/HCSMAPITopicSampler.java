@@ -20,24 +20,21 @@ package com.hedera.mirror.grpc.jmeter.sampler;
  * ‍
  */
 
-import com.google.common.base.Stopwatch;
 import com.google.protobuf.TextFormat;
 import com.hederahashgraph.api.proto.java.TopicID;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.mirror.MirrorClient;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
-import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.grpc.jmeter.props.MessageListener;
+import com.hedera.mirror.grpc.jmeter.sampler.result.HCSMAPISamplerResult;
+import com.hedera.mirror.grpc.jmeter.sampler.result.HCSSamplerResult;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
 @Log4j2
@@ -82,12 +79,12 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
         CountDownLatch historicMessagesLatch = new CountDownLatch(messageListener.getHistoricMessagesCount());
         CountDownLatch incomingMessagesLatch = new CountDownLatch(messageListener.getFutureMessagesCount());
         TopicID topicId = request.getTopicID();
-        SamplerResult result = new SamplerResult(topicId.getRealmNum(), topicId
-                .getTopicNum());
-
-        SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
+        HCSMAPISamplerResult result = HCSMAPISamplerResult
+                .builder()
+                .realmNum(topicId.getRealmNum())
+                .topicNum(topicId.getTopicNum())
+                .build();
         MirrorSubscriptionHandle subscription = null;
-        List<MirrorConsensusTopicResponse> messages = new ArrayList<>();
 
         try {
             subscription = mirrorConsensusTopicQuery
@@ -100,9 +97,7 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
                                     incomingMessagesLatch.countDown();
                                 }
                             },
-                            subscriptionResponse::handleThrowable);
-
-            subscriptionResponse.setSubscription(subscription);
+                            result::onError);
 
             // await some new messages
             if (!historicMessagesLatch.await(messageListener.getMessagesLatchWaitSeconds(), TimeUnit.SECONDS)) {
@@ -131,67 +126,7 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
                 log.info("Unsubscribed from {}", subscription);
             }
 
-            HCSSamplerResult.HCSSamplerResultBuilder builder = HCSSamplerResult.builder()
-                    .historicalMessageCount(result.historicalMessageCount)
-                    .incomingMessageCount(result.incomingMessageCount)
-                    .realmNum(result.realmNum)
-                    .success(result.success)
-                    .topicNum(result.topicNum);
-
-            if (result.last != null) {
-                builder.lastConcensusTimestamp(result.last.consensusTimestamp)
-                        .lastSequenceNumber(result.last.sequenceNumber);
-            }
-
-            return builder.build();
-        }
-    }
-
-    @Data
-    public class SamplerResult {
-
-        private final long realmNum;
-        private final long topicNum;
-        private final Stopwatch stopwatch = Stopwatch.createStarted();
-
-        private long historicalMessageCount = 0L;
-        private long incomingMessageCount = 0L;
-        private boolean success = true;
-        private MirrorConsensusTopicResponse last;
-        private boolean historical = true;
-
-        public long getTotalMessageCount() {
-            return historicalMessageCount + incomingMessageCount;
-        }
-
-        public long getMessageRate() {
-            long seconds = stopwatch.elapsed(TimeUnit.SECONDS);
-            return seconds > 0 ? getTotalMessageCount() / seconds : 0;
-        }
-
-        public void onNext(MirrorConsensusTopicResponse response) {
-            log.trace("Observed {}", response);
-
-            if (last != null) {
-                if (response.sequenceNumber != last.sequenceNumber + 1) {
-                    throw new IllegalArgumentException("Out of order message sequence. Expected " + (last
-                            .sequenceNumber + 1) + " got " + response.sequenceNumber);
-                }
-
-                if (!response.consensusTimestamp.isAfter(last.consensusTimestamp)) {
-                    throw new IllegalArgumentException("Out of order message timestamp. Expected " + response.consensusTimestamp +
-                            " to be after " + last.consensusTimestamp);
-                }
-            }
-
-            if (response.consensusTimestamp.isBefore(TopicMessageGeneratorSampler.INCOMING_START)) {
-                ++historicalMessageCount;
-            } else {
-                historical = false;
-                ++incomingMessageCount;
-            }
-
-            last = response;
+            return result;
         }
     }
 }

@@ -28,7 +28,7 @@ import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 
-import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
+import com.hedera.mirror.grpc.jmeter.handler.ConnectionHandler;
 import com.hedera.mirror.grpc.jmeter.props.MessageGenerator;
 import com.hedera.mirror.grpc.jmeter.sampler.TopicMessageGeneratorSampler;
 

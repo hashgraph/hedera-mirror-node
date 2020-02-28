@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.mirror.grpc.jmeter.ConnectionHandler;
+import com.hedera.mirror.grpc.jmeter.handler.ConnectionHandler;
 import com.hedera.mirror.grpc.jmeter.props.MessageGenerator;
 
 @Log4j2

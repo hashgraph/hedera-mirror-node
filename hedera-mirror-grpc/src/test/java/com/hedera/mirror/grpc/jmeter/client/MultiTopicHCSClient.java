@@ -38,8 +38,8 @@ import com.hedera.mirror.grpc.jmeter.props.MessageListener;
 import com.hedera.mirror.grpc.jmeter.props.TopicSubscription;
 import com.hedera.mirror.grpc.jmeter.sampler.HCSDirectStubTopicSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.HCSMAPITopicSampler;
-import com.hedera.mirror.grpc.jmeter.sampler.HCSSamplerResult;
 import com.hedera.mirror.grpc.jmeter.sampler.HCSTopicSampler;
+import com.hedera.mirror.grpc.jmeter.sampler.result.HCSSamplerResult;
 
 @Log4j2
 public class MultiTopicHCSClient extends AbstractJavaSamplerClient {

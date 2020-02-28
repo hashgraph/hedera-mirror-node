@@ -23,6 +23,10 @@ package com.hedera.mirror.grpc.jmeter.handler;
 import lombok.extern.log4j.Log4j2;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 
+/**
+ * A utility class for easily retrieving jmeter user properties from a properties file Offers numerous method overloads
+ * for cleaner code calls
+ */
 @Log4j2
 public class PropertiesHandler {
     private final String basePattern = "%s.%s";
