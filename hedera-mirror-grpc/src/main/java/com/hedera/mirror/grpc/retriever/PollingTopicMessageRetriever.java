@@ -121,7 +121,8 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
         void onComplete() {
             var elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
             var rate = elapsed > 0 ? (int) (1000.0 * total.get() / elapsed) : 0;
-            log.debug("Finished retrieving {} messages in {} ({}/s)", total, stopwatch, rate);
+            log.info("[{}] Finished retrieving {} messages in {} ({}/s)",
+                    filter.getSubscriberId(), total, stopwatch, rate);
         }
     }
 }

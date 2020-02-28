@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc;
  * ‍
  */
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import javax.validation.constraints.NotNull;
@@ -38,6 +39,9 @@ public class GrpcProperties {
 
     @NotNull
     private Map<String, String> connectionOptions = new HashMap<>();
+
+    @NotNull
+    private Duration endTimeInterval = Duration.ofSeconds(30);
 
     @NotNull
     private NettyProperties netty = new NettyProperties();
