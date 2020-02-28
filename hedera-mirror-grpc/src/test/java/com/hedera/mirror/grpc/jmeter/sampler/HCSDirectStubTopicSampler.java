@@ -106,9 +106,7 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
 
             @Override
             public void onCompleted() {
-                log.info("Observed {} historic and {} incoming messages in {} ({}/s): {}", result
-                        .getHistoricalMessageCount(), result.getIncomingMessageCount(), result.getStopwatch(), result
-                        .getMessageRate(), result.isSuccess() ? "success" : "failed");
+                result.onComplete();
             }
         };
 

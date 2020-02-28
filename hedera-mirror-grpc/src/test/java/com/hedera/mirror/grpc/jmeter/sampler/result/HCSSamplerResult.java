@@ -75,6 +75,11 @@ public abstract class HCSSamplerResult<T> {
         last = result;
     }
 
+    public void onComplete() {
+        log.info("Observed {} historic and {} incoming messages in {} ({}/s): {}", historicalMessageCount,
+                incomingMessageCount, stopwatch, getMessageRate(), success ? "success" : "failed");
+    }
+
     public void onError(Throwable err) {
         log.error("GRPC error on subscription : {}", err.getMessage());
         throw new IllegalArgumentException("Error on subscription");

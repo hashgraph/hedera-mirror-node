@@ -114,9 +114,7 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
                 result.setSuccess(false);
             }
 
-            log.info("Observed {} historic and {} incoming messages in {} ({}/s): {}", result
-                    .getHistoricalMessageCount(), result.getIncomingMessageCount(), result.getStopwatch(), result
-                    .getMessageRate(), result.isSuccess() ? "success" : "failed");
+            result.onComplete();
         } catch (Exception ex) {
             log.error("Error subscribing to topic", ex);
             throw ex;
