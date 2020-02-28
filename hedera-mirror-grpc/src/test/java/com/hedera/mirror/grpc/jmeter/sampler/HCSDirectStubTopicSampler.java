@@ -83,6 +83,7 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
                 .builder()
                 .realmNum(topicId.getRealmNum())
                 .topicNum(topicId.getTopicNum())
+                .success(true)
                 .build();
         StreamObserver<ConsensusTopicResponse> responseObserver = new StreamObserver<>() {
 

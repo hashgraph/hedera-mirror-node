@@ -83,6 +83,7 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
                 .builder()
                 .realmNum(topicId.getRealmNum())
                 .topicNum(topicId.getTopicNum())
+                .success(true)
                 .build();
         MirrorSubscriptionHandle subscription = null;
 

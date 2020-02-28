@@ -41,11 +41,6 @@ public abstract class HCSSamplerResult<T> {
     private boolean success = true;
     private boolean historical = true;
 
-    public HCSSamplerResult(long realmNum, long topicNum) {
-        this.realmNum = realmNum;
-        this.topicNum = topicNum;
-    }
-
     abstract Instant getConsensusInstant(T t);
 
     abstract long getSequenceNumber(T t);
