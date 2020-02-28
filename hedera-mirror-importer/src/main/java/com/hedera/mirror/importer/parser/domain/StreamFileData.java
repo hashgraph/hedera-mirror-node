@@ -5,6 +5,6 @@ import java.io.InputStream;
 
 @Value
 public class StreamFileData {
-    String filename;
-    InputStream inputStream;
+    private final String filename;
+    private final InputStream inputStream;
 }
