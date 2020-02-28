@@ -194,9 +194,11 @@ public class RecordFileReader extends FileWatcher {
 ## Outstanding questions:
 
 1. Does Spring Data repository has support for Postgres COPY command? Couldn't find sources that suggest it does. If
-   that indeed turns out to be the case, then I see at least two possibilities: - Use manual connection(s) to COPY to t_transactions, t_cryptotransferlists, topic_message, other write heavy tables.
-   And use Spring Repositories for other tables. However, that raises the question of consistency of data across multiple
-   transactions (since there are multiple connections). - Use COPY and PreparedStatement over single connection
+   that indeed turns out to be the case, then I see at least two possibilities:
+    - Use manual connection(s) to COPY to t_transactions, t_cryptotransferlists, topic_message, other write heavy tables.
+      And use Spring Repositories for other tables. However, that raises the question of consistency of data across multiple
+      transactions (since there are multiple connections).
+    - Use COPY and PreparedStatement over single connection
 
 ## Tasks (in suggested order):
 
@@ -204,34 +206,38 @@ public class RecordFileReader extends FileWatcher {
 
 1. Finalize design
 1. Refactoring
-    1. Add the interfaces and domains
+    1. Add the interfaces and domains ([#564](https://github.com/hashgraph/hedera-mirror-node/issues/564))
     1. Split `RecordFileLogger` class into two
-        1. Create `PostgresWritingRecordParsedItemHandler`. Move existing postgres writer code from `RecordFileLogger` to new class as-is.
+        1. Create `PostgresWritingRecordParsedItemHandler`. Move existing postgres writer code from `RecordFileLogger`
+           to new class as-is. ([#566](https://github.com/hashgraph/hedera-mirror-node/issues/566))
         1. Rename `RecordFileLogger` to `RecordItemParser`. Add `.. implements RecordItemListener`
+           ([#567](https://github.com/hashgraph/hedera-mirror-node/issues/567))
 
 #### Milestone 2
 
 All top level tasks can be done in parallel.
 
-1. Split `RecordFileParser` class into two
+1. Split `RecordFileParser` class into two ([#568](https://github.com/hashgraph/hedera-mirror-node/issues/568))
     - Move FileSystem related code into `RecordFileReader`
     - Keep `RecordFileParser` agnostic of source of stream files
 1. Perf
-    1. Hook up `PostgresWritingRecordParsedItemHandler` with `data-generator` to test db insert performance and establish baseline
-    1. Optimize `PostgresWritingRecordParsedItemHandler`
+    1. Hook up `PostgresWritingRecordParsedItemHandler` with `data-generator` to test db insert performance and
+       establish baseline ([#569](https://github.com/hashgraph/hedera-mirror-node/issues/569))
+    1. Optimize `PostgresWritingRecordParsedItemHandler` ([#570](https://github.com/hashgraph/hedera-mirror-node/issues/570))
         - Schema changes to remove entity ids (while at it, remove `fildId` from `t_transactions`)
         - Get rid of all `SELECT` queries in parser
         - Use of `COPY`
         - Concurrency using multiple jdbc connections
 1. Refactor `RecordItemParser` class. Split parsing logic into re-usable helper functions.
-    - Will make it easy for mirror node users to write custom parsers
-    - Will make it possible to have filtering logic less loosely coupled with parsing logic
+   ([#571](https://github.com/hashgraph/hedera-mirror-node/issues/571)) - Will make it easy for mirror node users to write custom parsers - Will make it possible to have filtering logic less loosely coupled with parsing logic
 1. Implement `BigQueryWritingRecordParsedItemHandler` for `blockchain-etl` project (if needed)
 
 #### Milestone 3 (followup tasks to tie loose ends)
 
 -   Remove event parser code: Doesn't have tests. Not used in last 6 months. No likelihood of needed in next couple months
-    There is no need to pay tech-rent on this debt. Can be dont right once when it is really needed
--   Delete files once they are parsed
--   Update balance file parser code to new design
-    -   Share as much filesystem related code as possible between `RecordFileReader` and `BalanceFileParser` (to be renamed to `BalanceStreamReader`)
+    There is no need to pay tech-rent on this debt. Can be dont right once when it is really needed.
+    ([#572](https://github.com/hashgraph/hedera-mirror-node/issues/572))
+-   Delete files once they are parsed ([#259](https://github.com/hashgraph/hedera-mirror-node/issues/259))
+-   Update balance file parser code to new design ([#573](https://github.com/hashgraph/hedera-mirror-node/issues/573))
+    -   Share as much filesystem related code as possible between `RecordFileReader` and `BalanceFileParser`
+        (to be renamed to `BalanceStreamReader`)
