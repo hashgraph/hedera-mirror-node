@@ -22,6 +22,7 @@ package com.hedera.mirror.grpc.jmeter.handler;
 
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
+import io.r2dbc.postgresql.api.PostgresqlBatch;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.extern.log4j.Log4j2;
@@ -39,6 +40,7 @@ public class ConnectionHandler {
     private final String dbName;
     private final String dbUser;
     private final String dbPassword;
+    private final PostgresqlConnectionFactory connectionFactory;
 
     public ConnectionHandler(String host, int port, String dbName, String dbUser, String dbPassword) {
         this.host = host;
@@ -47,10 +49,15 @@ public class ConnectionHandler {
         this.dbUser = dbUser;
         this.dbPassword = dbPassword;
 
+        connectionFactory = getConnectionFactory();
         client = getClient();
     }
 
     private PostgresqlConnectionFactory getConnectionFactory() {
+        if (connectionFactory != null) {
+            return connectionFactory;
+        }
+
         log.trace("Initialize connectionFactory");
         PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(
                 PostgresqlConnectionConfiguration.builder()
@@ -65,7 +72,11 @@ public class ConnectionHandler {
     }
 
     private DatabaseClient getClient() {
-        return DatabaseClient.create(getConnectionFactory());
+        return DatabaseClient.create(connectionFactory);
+    }
+
+    private PostgresqlBatch getBatch() {
+        return connectionFactory.create().block().createBatch();
     }
 
     public long createNextTopic() {
@@ -125,32 +136,32 @@ public class ConnectionHandler {
         createTopic(topicNum);
 
         long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(topicNum) : seqStart;
-        log.info("Inserting {} topic messages starting from sequence number {}", newTopicsMessageCount,
-                nextSequenceNum);
+        log.info("Inserting {} topic messages starting from sequence number {} and time {}", newTopicsMessageCount,
+                nextSequenceNum, startTime);
+
+        PostgresqlBatch batch = getBatch();
+        String batchEntry = "insert into topic_message"
+                + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
+                + " values (%s, %s, %s, %s, %s, %s)";
 
         for (int i = 0; i < newTopicsMessageCount; i++) {
             long sequenceNum = nextSequenceNum + i;
             Instant temp = startTime.plus(sequenceNum, ChronoUnit.NANOS);
             Long consensusTimestamp = converter.convert(temp);
 
-            String topicMessageInsertSql = "insert into topic_message"
-                    + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
-                    + " values ($1, $2, $3, $4, $5, $6)";
+            batch.add(String
+                    .format(batchEntry, consensusTimestamp, 0, topicNum, "'\\xdeadbeef'", "'\\xdeadbeef'",
+                            sequenceNum));
 
-            client.execute(topicMessageInsertSql)
-                    .bind("$1", consensusTimestamp)
-                    .bind("$2", 0)
-                    .bind("$3", topicNum)
-                    .bind("$4", new byte[] {22, 33, 44})
-                    .bind("$5", new byte[] {55, 66, 77})
-                    .bind("$6", sequenceNum)
-                    .then().block();
-
-            log.trace("Stored TopicMessage {}, Time: {}, count: {}, seq : {}", topicNum, consensusTimestamp, i,
+            log.trace("Adding TopicMessage {}, Time: {}, count: {}, seq : {} to batch", topicNum, consensusTimestamp, i,
                     sequenceNum);
         }
 
-        log.trace("Successfully inserted {} topic messages", newTopicsMessageCount);
+        batch.execute()
+                .then()
+                .block();
+
+        log.debug("Successfully inserted {} topic messages", newTopicsMessageCount);
     }
 
     public long getNextAvailableTopicID() {
