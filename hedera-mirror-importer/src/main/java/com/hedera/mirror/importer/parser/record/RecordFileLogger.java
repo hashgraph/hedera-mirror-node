@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.EntityId;
-
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -55,8 +53,11 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityTypeRepository;
@@ -73,14 +74,13 @@ public class RecordFileLogger {
     private static EntityTypeRepository entityTypeRepository;
     private static NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private static Predicate<com.hedera.mirror.importer.domain.Transaction> transactionFilter;
+    private static PostgresWritingRecordParsedItemHandler postgresWriter;
 
     private static long fileId = 0;
     private static long BATCH_SIZE = 100;
     private static long batch_count = 0;
 
     private static PreparedStatement sqlInsertTransaction;
-    private static PreparedStatement sqlInsertTransferList;
-    private static PreparedStatement sqlInsertNonFeeTransfers;
     private static PreparedStatement sqlInsertFileData;
     private static PreparedStatement sqlInsertContractCall;
     private static PreparedStatement sqlInsertClaimData;
@@ -89,12 +89,14 @@ public class RecordFileLogger {
     public RecordFileLogger(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
                             NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
                             EntityTypeRepository entityTypeRepository,
-                            NonFeeTransferExtractionStrategy nonFeeTransfersExtractor) {
+                            NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
+                            PostgresWritingRecordParsedItemHandler postgresWriter) {
         RecordFileLogger.parserProperties = parserProperties;
         RecordFileLogger.networkAddressBook = networkAddressBook;
         RecordFileLogger.entityRepository = entityRepository;
         RecordFileLogger.entityTypeRepository = entityTypeRepository;
         RecordFileLogger.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
+        RecordFileLogger.postgresWriter = postgresWriter;
         transactionFilter = commonParserProperties.getFilter();
     }
 
@@ -131,13 +133,7 @@ public class RecordFileLogger {
                     + ", transaction_hash, transaction_bytes)"
                     + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-            sqlInsertTransferList = connect.prepareStatement("INSERT INTO t_cryptotransferlists"
-                    + " (consensus_timestamp, amount, realm_num, entity_num)"
-                    + " VALUES (?, ?, ?, ?)");
-
-            sqlInsertNonFeeTransfers = connect.prepareStatement("insert into non_fee_transfers"
-                    + " (consensus_timestamp, amount, realm_num, entity_num)"
-                    + " values (?, ?, ?, ?)");
+            postgresWriter.initSqlStatements(connect);
 
             sqlInsertFileData = connect.prepareStatement("INSERT INTO t_file_data"
                     + " (consensus_timestamp, file_data)"
@@ -165,12 +161,11 @@ public class RecordFileLogger {
     public static boolean finish() {
         try {
             sqlInsertFileData.close();
-            sqlInsertTransferList.close();
-            sqlInsertNonFeeTransfers.close();
             sqlInsertTransaction.close();
             sqlInsertContractCall.close();
             sqlInsertClaimData.close();
             sqlInsertTopicMessage.close();
+            postgresWriter.finish();
 
             connect = DatabaseUtilities.closeDatabase(connect);
             return false;
@@ -208,6 +203,7 @@ public class RecordFileLogger {
         try (CallableStatement fileClose = connect.prepareCall("{call f_file_complete( ?, ?, ? ) }")) {
             // execute any remaining batches
             executeBatches();
+            postgresWriter.onFileComplete();
 
             // update the file to processed
 
@@ -578,14 +574,9 @@ public class RecordFileLogger {
     }
 
     /**
-     * Additionally store rows in the non_fee_transactions table if applicable.
-     * This will allow the rest-api to create an itemized set of transfers that reflects non-fees (explicit transfers),
-     * threshold records, node fee, and network+service fee (paid to treasury).
-     *
-     * @param consensusTimestamp
-     * @param payerAccountId
-     * @param body
-     * @param transactionRecord
+     * Additionally store rows in the non_fee_transactions table if applicable. This will allow the rest-api to create
+     * an itemized set of transfers that reflects non-fees (explicit transfers), threshold records, node fee, and
+     * network+service fee (paid to treasury).
      */
     private static void processNonFeeTransfers(long consensusTimestamp, AccountID payerAccountId,
                                                TransactionBody body, TransactionRecord transactionRecord)
@@ -600,14 +591,10 @@ public class RecordFileLogger {
         }
     }
 
-    private static void addNonFeeTransferInserts(long consensusTimestamp, long realm, long accountNum, long amount)
-            throws SQLException {
+    private static void addNonFeeTransferInserts(long consensusTimestamp, long realm, long accountNum, long amount) {
         if (0 != amount) {
-            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.AMOUNT.ordinal(), amount);
-            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.REALM_NUM.ordinal(), realm);
-            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.ENTITY_NUM.ordinal(), accountNum);
-            sqlInsertNonFeeTransfers.addBatch();
+            postgresWriter.onNonFeeTransfer(
+                    new NonFeeTransfer(consensusTimestamp, realm, accountNum, amount));
         }
     }
 
@@ -850,20 +837,13 @@ public class RecordFileLogger {
         }
     }
 
-    private static void insertTransferList(long consensusTimestamp, TransferList transferList)
-            throws SQLException {
-
+    private static void insertTransferList(long consensusTimestamp, TransferList transferList) {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
             var aa = transferList.getAccountAmounts(i);
             var accountId = aa.getAccountID();
             createEntity(getEntity(aa.getAccountID()));
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), aa.getAmount());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
-                    accountId.getRealmNum());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ENTITY_NUM.ordinal(),
-                    accountId.getAccountNum());
-            sqlInsertTransferList.addBatch();
+            addCryptoTransferList(consensusTimestamp, accountId.getRealmNum(), accountId.getAccountNum(), aa
+                    .getAmount());
         }
     }
 
@@ -887,19 +867,12 @@ public class RecordFileLogger {
         }
         TransferList transferList = txRecord.getTransferList();
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
             var aa = transferList.getAccountAmounts(i);
             long amount = aa.getAmount();
             var accountId = aa.getAccountID();
             long accountNum = accountId.getAccountNum();
             createEntity(getEntity(accountId));
-
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), amount);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
-                    accountId.getRealmNum());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ENTITY_NUM.ordinal(),
-                    accountNum);
-            sqlInsertTransferList.addBatch();
+            addCryptoTransferList(consensusTimestamp, accountId.getRealmNum(), accountNum, aa.getAmount());
 
             if (addInitialBalance && (initialBalance == aa.getAmount()) && (accountNum == createdAccountNum)) {
                 addInitialBalance = false;
@@ -908,25 +881,17 @@ public class RecordFileLogger {
 
         if (addInitialBalance) {
             createEntity(getEntity(payerAccountId));
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), -initialBalance);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
-                    payerAccountId.getRealmNum());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ENTITY_NUM.ordinal(),
-                    payerAccountId.getAccountNum());
-
-            sqlInsertTransferList.addBatch();
+            addCryptoTransferList(consensusTimestamp, payerAccountId.getRealmNum(), payerAccountId
+                    .getAccountNum(), -initialBalance);
 
             createEntity(getEntity(createdAccountId));
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(),
-                    createdAccountId.getRealmNum());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ENTITY_NUM.ordinal(),
-                    createdAccountNum);
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), initialBalance);
-
-            sqlInsertTransferList.addBatch();
+            addCryptoTransferList(consensusTimestamp, createdAccountId
+                    .getRealmNum(), createdAccountNum, initialBalance);
         }
+    }
+
+    private static void addCryptoTransferList(long consensusTimestamp, long realmNum, long accountNum, long amount) {
+        postgresWriter.onCryptoTransferList(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
     }
 
     private static boolean isFileAddressBook(FileID fileId) {
@@ -990,16 +955,13 @@ public class RecordFileLogger {
 
     private static void executeBatches() throws SQLException {
         int[] transactions = sqlInsertTransaction.executeBatch();
-        int[] transferLists = sqlInsertTransferList.executeBatch();
-        int[] nonFeeTransfers = sqlInsertNonFeeTransfers.executeBatch();
         int[] fileData = sqlInsertFileData.executeBatch();
         int[] contractCalls = sqlInsertContractCall.executeBatch();
         int[] claimData = sqlInsertClaimData.executeBatch();
         int[] topicMessages = sqlInsertTopicMessage.executeBatch();
-        log.info("Inserted {} transactions, {} transfer lists, {} files, {} contracts, {} claims, {} topic messages, " +
-                        "{} non-fee transfers",
-                transactions.length, transferLists.length, fileData.length, contractCalls.length, claimData.length,
-                topicMessages.length, nonFeeTransfers.length);
+        postgresWriter.executeBatches();
+        log.info("Inserted {} transactions, {} files, {} contracts, {} claims, {} topic messages",
+                transactions.length, fileData.length, contractCalls.length, claimData.length, topicMessages.length);
     }
 
     public static Entities getEntity(AccountID accountID) {
@@ -1064,7 +1026,7 @@ public class RecordFileLogger {
             log.debug("Creating entity: {}", () -> entity.getDisplayId());
             var result = entityRepository.save(entity);
             var entityId = new EntityId(result.getId(), result.getEntityShard(), result.getEntityRealm(),
-                result.getEntityNum(), result.getEntityTypeId());
+                    result.getEntityNum(), result.getEntityTypeId());
             entityRepository.cache(entityId);
             return result;
         }
@@ -1080,16 +1042,6 @@ public class RecordFileLogger {
         , FK_NODE_ACCOUNT_ID, MEMO, VALID_START_NS, TYPE, FK_PAYER_ACCOUNT_ID, RESULT, CONSENSUS_NS,
         CUD_ENTITY_ID, CHARGED_TX_FEE, INITIAL_BALANCE, FK_REC_FILE_ID, VALID_DURATION_SECONDS, MAX_FEE,
         TRANSACTION_HASH, TRANSACTION_BYTES
-    }
-
-    enum F_TRANSFERLIST {
-        ZERO // column indices start at 1, this creates the necessary offset
-        , CONSENSUS_TIMESTAMP, AMOUNT, REALM_NUM, ENTITY_NUM
-    }
-
-    enum F_NONFEETRANSFER {
-        ZERO // column indices start at 1, this creates the necessary offset
-        , CONSENSUS_TIMESTAMP, AMOUNT, REALM_NUM, ENTITY_NUM
     }
 
     enum F_FILE_DATA {
