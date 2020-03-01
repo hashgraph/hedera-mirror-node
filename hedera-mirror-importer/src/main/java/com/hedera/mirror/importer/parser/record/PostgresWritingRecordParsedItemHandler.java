@@ -41,6 +41,10 @@ import com.hedera.mirror.importer.exception.ParserSQLException;
 public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemHandler {
     private PreparedStatement sqlInsertTransferList;
     private PreparedStatement sqlInsertNonFeeTransfers;
+    private PreparedStatement sqlInsertFileData;
+    private PreparedStatement sqlInsertContractResult;
+    private PreparedStatement sqlInsertLiveHashes;
+    private PreparedStatement sqlInsertTopicMessage;
 
     void initSqlStatements(Connection connection) throws ParserSQLException {
         try {
@@ -51,6 +55,22 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             sqlInsertNonFeeTransfers = connection.prepareStatement("insert into non_fee_transfers"
                     + " (consensus_timestamp, amount, realm_num, entity_num)"
                     + " values (?, ?, ?, ?)");
+
+            sqlInsertFileData = connection.prepareStatement("INSERT INTO t_file_data"
+                    + " (consensus_timestamp, file_data)"
+                    + " VALUES (?, ?)");
+
+            sqlInsertContractResult = connection.prepareStatement("INSERT INTO t_contract_result"
+                    + " (consensus_timestamp, function_params, gas_supplied, call_result, gas_used)"
+                    + " VALUES (?, ?, ?, ?, ?)");
+
+            sqlInsertLiveHashes = connection.prepareStatement("INSERT INTO t_livehashes"
+                    + " (consensus_timestamp, livehash)"
+                    + " VALUES (?, ?)");
+
+            sqlInsertTopicMessage = connection.prepareStatement("insert into topic_message"
+                    + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
+                    + " values (?, ?, ?, ?, ?, ?)");
         } catch (SQLException e) {
             throw new ParserSQLException("Unable to prepare SQL statements", e);
         }
@@ -69,6 +89,10 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
         try {
             sqlInsertTransferList.close();
             sqlInsertNonFeeTransfers.close();
+            sqlInsertFileData.close();
+            sqlInsertContractResult.close();
+            sqlInsertLiveHashes.close();
+            sqlInsertTopicMessage.close();
         } catch (SQLException e) {
             throw new ParserSQLException("Error closing connection", e);
         }
@@ -78,7 +102,14 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
         try {
             int[] transferLists = sqlInsertTransferList.executeBatch();
             int[] nonFeeTransfers = sqlInsertNonFeeTransfers.executeBatch();
-            log.info("Inserted {} transfer lists, {} non-fee transfers", transferLists.length, nonFeeTransfers.length);
+            int[] fileData = sqlInsertFileData.executeBatch();
+            int[] contractResult = sqlInsertContractResult.executeBatch();
+            int[] liveHashes = sqlInsertLiveHashes.executeBatch();
+            int[] topicMessages = sqlInsertTopicMessage.executeBatch();
+            log.info("Inserted {} transfer lists, {} files, {} contracts, {} claims, {} topic messages, " +
+                            "{} non-fee transfers",
+                    transferLists.length, fileData.length, contractResult.length, liveHashes.length,
+                    topicMessages.length, nonFeeTransfers.length);
         } catch (SQLException e) {
             log.error("Error committing sql insert batch ", e);
             throw new ParserSQLException(e);
@@ -120,22 +151,57 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
 
     @Override
     public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
-        // to be implemented in followup change
+        try {
+            sqlInsertTopicMessage.setLong(F_TOPICMESSAGE.CONSENSUS_TIMESTAMP.ordinal(),
+                    topicMessage.getConsensusTimestamp());
+            sqlInsertTopicMessage.setShort(F_TOPICMESSAGE.REALM_NUM.ordinal(), (short) topicMessage.getRealmNum());
+            sqlInsertTopicMessage.setInt(F_TOPICMESSAGE.TOPIC_NUM.ordinal(), topicMessage.getTopicNum());
+            sqlInsertTopicMessage.setBytes(F_TOPICMESSAGE.MESSAGE.ordinal(), topicMessage.getMessage());
+            sqlInsertTopicMessage.setBytes(F_TOPICMESSAGE.RUNNING_HASH.ordinal(), topicMessage.getRunningHash());
+            sqlInsertTopicMessage.setLong(F_TOPICMESSAGE.SEQUENCE_NUMBER.ordinal(), topicMessage.getSequenceNumber());
+            sqlInsertTopicMessage.addBatch();
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        }
     }
 
     @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
-        // to be implemented in followup change
+        try {
+            sqlInsertContractResult.setLong(F_CONTRACT_RESULT.CONSENSUS_TIMESTAMP.ordinal(),
+                    contractResult.getConsensusTimestamp());
+            sqlInsertContractResult
+                    .setBytes(F_CONTRACT_RESULT.FUNCTION_PARAMS.ordinal(), contractResult.getFunctionParameters());
+            sqlInsertContractResult.setLong(F_CONTRACT_RESULT.GAS_SUPPLIED.ordinal(), contractResult.getGasSupplied());
+            sqlInsertContractResult.setBytes(F_CONTRACT_RESULT.CALL_RESULT.ordinal(), contractResult.getCallResult());
+            sqlInsertContractResult.setLong(F_CONTRACT_RESULT.GAS_USED.ordinal(), contractResult.getGasUsed());
+            sqlInsertContractResult.addBatch();
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        }
     }
 
     @Override
     public void onFileData(FileData fileData) throws ImporterException {
-        // to be implemented in followup change
+        try {
+            sqlInsertFileData.setLong(F_FILE_DATA.CONSENSUS_TIMESTAMP.ordinal(), fileData.getConsensusTimestamp());
+            sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), fileData.getFileData());
+            sqlInsertFileData.addBatch();
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        }
     }
 
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
-        // to be implemented in followup change
+        try {
+            sqlInsertLiveHashes
+                    .setLong(F_LIVEHASHES.CONSENSUS_TIMESTAMP.ordinal(), liveHash.getConsensusTimestamp());
+            sqlInsertLiveHashes.setBytes(F_LIVEHASHES.LIVEHASH.ordinal(), liveHash.getLivehash());
+            sqlInsertLiveHashes.addBatch();
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        }
     }
 
     @Override
@@ -151,5 +217,22 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
     enum F_NONFEETRANSFER {
         ZERO // column indices start at 1, this creates the necessary offset
         , CONSENSUS_TIMESTAMP, AMOUNT, REALM_NUM, ENTITY_NUM
+    }
+
+    enum F_TOPICMESSAGE {
+        ZERO // column indices start at 1, this creates the necessary offset
+        , CONSENSUS_TIMESTAMP, REALM_NUM, TOPIC_NUM, MESSAGE, RUNNING_HASH, SEQUENCE_NUMBER
+    }
+
+    enum F_FILE_DATA {
+        ZERO, CONSENSUS_TIMESTAMP, FILE_DATA
+    }
+
+    enum F_CONTRACT_RESULT {
+        ZERO, CONSENSUS_TIMESTAMP, FUNCTION_PARAMS, GAS_SUPPLIED, CALL_RESULT, GAS_USED
+    }
+
+    enum F_LIVEHASHES {
+        ZERO, CONSENSUS_TIMESTAMP, LIVEHASH
     }
 }

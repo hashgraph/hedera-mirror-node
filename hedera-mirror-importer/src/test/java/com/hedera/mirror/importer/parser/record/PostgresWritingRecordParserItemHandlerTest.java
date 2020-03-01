@@ -25,17 +25,29 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.sql.Connection;
 import java.util.Optional;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.ContractResult;
+import com.hedera.mirror.importer.domain.FileData;
+
+import com.hedera.mirror.importer.domain.LiveHash;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.test.context.jdbc.Sql;
+import org.testcontainers.shaded.org.bouncycastle.util.Strings;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.FileDataRepository;
+import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.util.DatabaseUtilities;
 
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
@@ -47,6 +59,18 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
     @Resource
     protected NonFeeTransferRepository nonFeeTransferRepository;
+
+    @Resource
+    protected ContractResultRepository contractResultRepository;
+
+    @Resource
+    protected LiveHashRepository liveHashRepository;
+
+    @Resource
+    protected FileDataRepository fileDataRepository;
+
+    @Resource
+    protected TopicMessageRepository topicMessageRepository;
 
     @Resource
     protected PostgresWritingRecordParsedItemHandler postgresWriter;
@@ -102,6 +126,65 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         assertEquals(2, nonFeeTransferRepository.count());
         assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer1, 1L);
         assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer2, 2L);
+    }
+
+    @Test
+    void onTopicMessage() throws Exception {
+        // setup
+        byte[] message = Strings.toByteArray("test message");
+        byte[] runningHash = Strings.toByteArray("running hash");
+        TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash, 10L, 1001);
+
+        // when
+        postgresWriter.onTopicMessage(expectedTopicMessage);
+        completeFileAndCommit();
+
+        // expect
+        assertEquals(1, topicMessageRepository.count());
+        assertExistsAndEquals(topicMessageRepository, expectedTopicMessage, 1L);
+    }
+
+    @Test
+    void onFileData() throws Exception {
+        // setup
+        FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"));
+
+        // when
+        postgresWriter.onFileData(expectedFileData);
+        completeFileAndCommit();
+
+        // expect
+        assertEquals(1, fileDataRepository.count());
+        assertExistsAndEquals(fileDataRepository, expectedFileData, 11L);
+    }
+
+    @Test
+    void onContractResult() throws Exception {
+        // setup
+        ContractResult expectedContractResult = new ContractResult(15L, Strings.toByteArray("function parameters"),
+                10000L, Strings.toByteArray("call result"), 10000L);
+
+        // when
+        postgresWriter.onContractResult(expectedContractResult);
+        completeFileAndCommit();
+
+        // expect
+        assertEquals(1, contractResultRepository.count());
+        assertExistsAndEquals(contractResultRepository, expectedContractResult, 15L);
+    }
+
+    @Test
+    void onLiveHash() throws Exception {
+        // setup
+        LiveHash expectedLiveHash = new LiveHash(20L, Strings.toByteArray("live hash"));
+
+        // when
+        postgresWriter.onLiveHash(expectedLiveHash);
+        completeFileAndCommit();
+
+        // expect
+        assertEquals(1, liveHashRepository.count());
+        assertExistsAndEquals(liveHashRepository, expectedLiveHash, 20L);
     }
 
     @Test
