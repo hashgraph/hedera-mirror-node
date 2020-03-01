@@ -27,12 +27,16 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.springframework.data.domain.Persistable;
 
 @Data
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "t_transactions")
 @ToString(exclude = {"memo", "transactionHash", "transactionBytes"})
 public class Transaction implements Persistable<Long> {

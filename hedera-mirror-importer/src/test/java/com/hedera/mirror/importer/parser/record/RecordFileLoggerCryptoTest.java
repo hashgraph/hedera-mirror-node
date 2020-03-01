@@ -139,9 +139,8 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void cryptoCreateBatch() throws Exception {
-
-        long testBatchSize = 10;
-        RecordFileLogger.setBatchSize(testBatchSize);
+        int testBatchSize = 10;
+        postgresWriterProperties.setBatchSize(testBatchSize);
 
         for (int i = 0; i < testBatchSize + 1; i++) {
             Transaction transaction = cryptoCreateTransaction();

@@ -88,6 +88,8 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     protected TopicMessageRepository topicMessageRepository;
     @Resource
     protected NonFeeTransferRepository nonFeeTransferRepository;
+    @Resource
+    protected PostgresWriterProperties postgresWriterProperties;
 
     @Resource
     protected RecordParserProperties parserProperties;

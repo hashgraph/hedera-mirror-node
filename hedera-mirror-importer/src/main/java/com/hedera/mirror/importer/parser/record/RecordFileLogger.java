@@ -44,7 +44,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.io.IOException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Set;
@@ -62,6 +61,7 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityTypeRepository;
@@ -81,10 +81,6 @@ public class RecordFileLogger {
     private static PostgresWritingRecordParsedItemHandler postgresWriter;
 
     private static long fileId = 0;
-    private static long BATCH_SIZE = 100;
-    private static long batch_count = 0;
-
-    private static PreparedStatement sqlInsertTransaction;
 
     public RecordFileLogger(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
                             NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
@@ -104,13 +100,7 @@ public class RecordFileLogger {
         return fileId;
     }
 
-    static void setBatchSize(long batchSize) {
-        BATCH_SIZE = batchSize;
-    }
-
     public static boolean start() {
-        batch_count = 0;
-
         connect = DatabaseUtilities.openDatabase(connect);
 
         if (connect == null) {
@@ -124,29 +114,18 @@ public class RecordFileLogger {
             log.error("Unable to set connection to not auto commit", e);
             return false;
         }
-
         try {
-            sqlInsertTransaction = connect.prepareStatement("INSERT INTO t_transactions"
-                    + " (fk_node_acc_id, memo, valid_start_ns, type, fk_payer_acc_id"
-                    + ", result, consensus_ns, fk_cud_entity_id, charged_tx_fee"
-                    + ", initial_balance, fk_rec_file_id, valid_duration_seconds, max_fee"
-                    + ", transaction_hash, transaction_bytes)"
-                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
             postgresWriter.initSqlStatements(connect);
-        } catch (SQLException e) {
+        } catch (ParserSQLException e) {
             log.error("Unable to prepare SQL statements", e);
             return false;
         }
-
         return true;
     }
 
     public static boolean finish() {
         try {
-            sqlInsertTransaction.close();
             postgresWriter.finish();
-
             connect = DatabaseUtilities.closeDatabase(connect);
             return false;
         } catch (SQLException e) {
@@ -181,8 +160,6 @@ public class RecordFileLogger {
 
     public static void completeFile(String fileHash, String previousHash) throws SQLException {
         try (CallableStatement fileClose = connect.prepareCall("{call f_file_complete( ?, ?, ? ) }")) {
-            // execute any remaining batches
-            executeBatches();
             postgresWriter.onFileComplete();
 
             // update the file to processed
@@ -468,35 +445,16 @@ public class RecordFileLogger {
             }
             entity.setAutoRenewAccount(createEntity(entity.getAutoRenewAccount()));
             entity = entityRepository.save(entity);
-            sqlInsertTransaction.setLong(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), entity.getId());
         } else if (entityId != null) {
-            sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), entityId.getId());
-        } else {
-            sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), null);
+            entity = new Entities();
+            entity.setId(entityId.getId());
         }
+        tx.setEntity(entity);
 
         EntityId payerEntityId = getEntityId(payerAccountId);
         EntityId nodeEntityId = getEntityId(body.getNodeAccountID());
         tx.setNodeAccountId(nodeEntityId.getId());
         tx.setPayerAccountId(payerEntityId.getId());
-
-        // Temporary until we convert SQL statements to repository invocations
-        sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), tx.getNodeAccountId());
-        sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), tx.getMemo());
-        sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), tx.getValidStartNs());
-        sqlInsertTransaction.setInt(F_TRANSACTION.TYPE.ordinal(), tx.getType());
-        sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), tx.getRecordFileId());
-        sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION_SECONDS.ordinal(), tx.getValidDurationSeconds());
-        sqlInsertTransaction.setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), tx.getPayerAccountId());
-        sqlInsertTransaction.setLong(F_TRANSACTION.RESULT.ordinal(), tx.getResult());
-        sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), tx.getConsensusNs());
-        sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), tx.getChargedTxFee());
-        sqlInsertTransaction.setLong(F_TRANSACTION.MAX_FEE.ordinal(), tx.getMaxFee());
-        sqlInsertTransaction.setBytes(F_TRANSACTION.TRANSACTION_HASH.ordinal(), tx.getTransactionHash());
-        sqlInsertTransaction.setBytes(F_TRANSACTION.TRANSACTION_BYTES.ordinal(), tx.getTransactionBytes());
-        sqlInsertTransaction.setLong(F_TRANSACTION.INITIAL_BALANCE.ordinal(), tx.getInitialBalance());
-        sqlInsertTransaction.addBatch();
-        log.debug("Storing transaction: {}", tx);
 
         if ((txRecord.hasTransferList()) && parserProperties.isPersistCryptoTransferAmounts()) {
             processNonFeeTransfers(consensusNs, payerAccountId, body, txRecord);
@@ -509,7 +467,6 @@ public class RecordFileLogger {
         }
 
         // TransactionBody-specific handlers.
-        // If so-configured, each will update the SQL prepared statements via addBatch().
         if (body.hasContractCall()) {
             insertContractCall(consensusNs, body.getContractCall(), txRecord);
         } else if (body.hasContractCreateInstance()) {
@@ -523,19 +480,15 @@ public class RecordFileLogger {
             } else if (body.hasFileAppend()) {
                 insertFileAppend(consensusNs, body.getFileAppend());
             } else if (body.hasFileCreate()) {
-                insertFileCreate(consensusNs, body.getFileCreate(), txRecord);
+                insertFileData(consensusNs, body.getFileCreate().getContents().toByteArray(),
+                        txRecord.getReceipt().getFileID());
             } else if (body.hasFileUpdate()) {
                 insertFileUpdate(consensusNs, body.getFileUpdate());
             }
         }
 
-        if (batch_count == BATCH_SIZE - 1) {
-            // execute any remaining batches
-            executeBatches();
-            batch_count = 0;
-        } else {
-            batch_count += 1;
-        }
+        postgresWriter.onTransaction(tx);
+        log.debug("Storing transaction: {}", tx);
     }
 
     /**
@@ -740,28 +693,21 @@ public class RecordFileLogger {
         postgresWriter.onTopicMessage(topicMessage);
     }
 
-    private static void insertFileCreate(long consensusTimestamp, FileCreateTransactionBody transactionBody,
-                                         TransactionRecord transactionRecord) {
+    private static void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID) {
         if (parserProperties.isPersistFiles() ||
-                (parserProperties.isPersistSystemFiles() && transactionRecord.getReceipt().getFileID()
-                        .getFileNum() < 1000)) {
-            byte[] contents = transactionBody.getContents().toByteArray();
+                (parserProperties.isPersistSystemFiles() && fileID.getFileNum() < 1000)) {
             postgresWriter.onFileData(new FileData(consensusTimestamp, contents));
         }
     }
 
     private static void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody)
             throws IOException {
-        if (parserProperties.isPersistFiles() ||
-                (parserProperties.isPersistSystemFiles() && transactionBody.getFileID().getFileNum() < 1000)) {
-            byte[] contents = transactionBody.getContents().toByteArray();
-            postgresWriter.onFileData(new FileData(consensusTimestamp, contents));
-
-            // update the local address book
-            if (isFileAddressBook(transactionBody.getFileID())) {
-                // we have an address book update, refresh the local file
-                networkAddressBook.append(contents);
-            }
+        byte[] contents = transactionBody.getContents().toByteArray();
+        insertFileData(consensusTimestamp, contents, transactionBody.getFileID());
+        // update the local address book
+        if (isFileAddressBook(transactionBody.getFileID())) {
+            // we have an address book update, refresh the local file
+            networkAddressBook.append(contents);
         }
     }
 
@@ -911,12 +857,6 @@ public class RecordFileLogger {
                 new ContractResult(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed));
     }
 
-    private static void executeBatches() throws SQLException {
-        int[] transactions = sqlInsertTransaction.executeBatch();
-        postgresWriter.executeBatches();
-        log.info("Inserted {} transactions", transactions.length);
-    }
-
     public static Entities getEntity(AccountID accountID) {
         return getEntity(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum(), "account");
     }
@@ -988,24 +928,5 @@ public class RecordFileLogger {
 
     public enum INIT_RESULT {
         OK, FAIL, SKIP
-    }
-
-    enum F_TRANSACTION {
-        ZERO // column indices start at 1, this creates the necessary offset
-        , FK_NODE_ACCOUNT_ID, MEMO, VALID_START_NS, TYPE, FK_PAYER_ACCOUNT_ID, RESULT, CONSENSUS_NS,
-        CUD_ENTITY_ID, CHARGED_TX_FEE, INITIAL_BALANCE, FK_REC_FILE_ID, VALID_DURATION_SECONDS, MAX_FEE,
-        TRANSACTION_HASH, TRANSACTION_BYTES
-    }
-
-    enum F_FILE_DATA {
-        ZERO, CONSENSUS_TIMESTAMP, FILE_DATA
-    }
-
-    enum F_CONTRACT_CALL {
-        ZERO, CONSENSUS_TIMESTAMP, FUNCTION_PARAMS, GAS_SUPPLIED, CALL_RESULT, GAS_USED
-    }
-
-    enum F_LIVEHASH_DATA {
-        ZERO, CONSENSUS_TIMESTAMP, LIVEHASH
     }
 }
