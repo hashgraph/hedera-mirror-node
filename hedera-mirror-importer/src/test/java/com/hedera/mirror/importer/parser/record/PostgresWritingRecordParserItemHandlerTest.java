@@ -23,10 +23,12 @@ package com.hedera.mirror.importer.parser.record;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.Connection;
+import java.util.Optional;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -70,28 +72,36 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
     @Test
     void onCryptoTransferList() throws Exception {
+        // setup
+        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, 0L, 1L);
+        CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, 0L, 2L);
+
         // when
-        postgresWriter.onCryptoTransferList(new CryptoTransfer(1L, 1L, 0L, 1L));
-        postgresWriter.onCryptoTransferList(new CryptoTransfer(2L, -2L, 0L, 2L));
+        postgresWriter.onCryptoTransferList(cryptoTransfer1);
+        postgresWriter.onCryptoTransferList(cryptoTransfer2);
         completeFileAndCommit();
 
         // expect
         assertEquals(2, cryptoTransferRepository.count());
-        assertTrue(cryptoTransferRepository.findByConsensusTimestampAndEntityNumAndAmount(1L, 1L, 1L).isPresent());
-        assertTrue(cryptoTransferRepository.findByConsensusTimestampAndEntityNumAndAmount(2L, 2L, -2L).isPresent());
+        assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer1, 1L);
+        assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer2, 2L);
     }
 
     @Test
     void onNonFeeTransfer() throws Exception {
+        // setup
+        NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, 1L, 0L, 1L);
+        NonFeeTransfer nonFeeTransfer2 = new NonFeeTransfer(2L, -2L, 0L, 2L);
+
         // when
-        postgresWriter.onNonFeeTransfer(new NonFeeTransfer(1L, 1L, 0L, 1L));
-        postgresWriter.onNonFeeTransfer(new NonFeeTransfer(2L, -2L, 0L, 2L));
+        postgresWriter.onNonFeeTransfer(nonFeeTransfer1);
+        postgresWriter.onNonFeeTransfer(nonFeeTransfer2);
         completeFileAndCommit();
 
         // expect
         assertEquals(2, nonFeeTransferRepository.count());
-        assertTrue(nonFeeTransferRepository.findById(1L).isPresent());
-        assertTrue(nonFeeTransferRepository.findById(2L).isPresent());
+        assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer1, 1L);
+        assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer2, 2L);
     }
 
     @Test
@@ -104,5 +114,11 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         // expect
         assertEquals(0, nonFeeTransferRepository.count());
         assertEquals(0, cryptoTransferRepository.count());
+    }
+
+    static <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
+        Optional<T> actual = repository.findById(id);
+        assertTrue(actual.isPresent());
+        assertEquals(expected, actual.get());
     }
 }
