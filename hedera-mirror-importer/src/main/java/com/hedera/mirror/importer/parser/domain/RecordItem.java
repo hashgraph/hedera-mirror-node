@@ -22,10 +22,16 @@ package com.hedera.mirror.importer.parser.domain;
 
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import lombok.AllArgsConstructor;
 import lombok.Value;
 
 @Value
+@AllArgsConstructor
 public class RecordItem implements StreamItem {
+    public RecordItem(Transaction transaction, TransactionRecord record) {
+        this(transaction, record, null, null);
+    }
+
     private final Transaction transaction;
     private final TransactionRecord record;
     private final byte[] transactionBytes;
