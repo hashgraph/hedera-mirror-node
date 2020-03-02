@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.ContractResult;
@@ -36,18 +37,31 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 
+import org.apache.commons.lang3.NotImplementedException;
+
 @Log4j2
 @Named
+@RequiredArgsConstructor
 public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemHandler {
+    private long batch_count = 0;
+    private PreparedStatement sqlInsertTransaction;
     private PreparedStatement sqlInsertTransferList;
     private PreparedStatement sqlInsertNonFeeTransfers;
     private PreparedStatement sqlInsertFileData;
     private PreparedStatement sqlInsertContractResult;
     private PreparedStatement sqlInsertLiveHashes;
     private PreparedStatement sqlInsertTopicMessage;
+    private final PostgresWriterProperties properties;
 
     void initSqlStatements(Connection connection) throws ParserSQLException {
         try {
+            sqlInsertTransaction = connection.prepareStatement("INSERT INTO t_transactions"
+                    + " (fk_node_acc_id, memo, valid_start_ns, type, fk_payer_acc_id"
+                    + ", result, consensus_ns, fk_cud_entity_id, charged_tx_fee"
+                    + ", initial_balance, fk_rec_file_id, valid_duration_seconds, max_fee"
+                    + ", transaction_hash, transaction_bytes)"
+                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
             sqlInsertTransferList = connection.prepareStatement("INSERT INTO t_cryptotransferlists"
                     + " (consensus_timestamp, amount, realm_num, entity_num)"
                     + " VALUES (?, ?, ?, ?)");
@@ -87,6 +101,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
 
     private void closeStatements() {
         try {
+            sqlInsertTransaction.close();
             sqlInsertTransferList.close();
             sqlInsertNonFeeTransfers.close();
             sqlInsertFileData.close();
@@ -100,25 +115,60 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
 
     void executeBatches() {
         try {
+            int[] transactions = sqlInsertTransaction.executeBatch();
             int[] transferLists = sqlInsertTransferList.executeBatch();
             int[] nonFeeTransfers = sqlInsertNonFeeTransfers.executeBatch();
             int[] fileData = sqlInsertFileData.executeBatch();
             int[] contractResult = sqlInsertContractResult.executeBatch();
             int[] liveHashes = sqlInsertLiveHashes.executeBatch();
             int[] topicMessages = sqlInsertTopicMessage.executeBatch();
-            log.info("Inserted {} transfer lists, {} files, {} contracts, {} claims, {} topic messages, " +
+            log.info("Inserted {} transactions, {} transfer lists, {} files, {} contracts, {} claims, {} topic " +
+                            "messages, " +
                             "{} non-fee transfers",
-                    transferLists.length, fileData.length, contractResult.length, liveHashes.length,
-                    topicMessages.length, nonFeeTransfers.length);
+                    transactions.length, transferLists.length, fileData.length, contractResult.length,
+                    liveHashes.length, topicMessages.length, nonFeeTransfers.length);
         } catch (SQLException e) {
             log.error("Error committing sql insert batch ", e);
             throw new ParserSQLException(e);
         }
+        batch_count = 0;
     }
 
     @Override
     public void onTransaction(Transaction transaction) throws ImporterException {
-        // to be implemented in followup change
+        try {
+            // Temporary until we convert SQL statements to repository invocations
+            if (transaction.getEntity() != null) {
+                sqlInsertTransaction.setLong(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), transaction.getEntity().getId());
+            } else {
+                sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), null);
+            }
+            sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), transaction.getRecordFileId());
+            sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), transaction.getNodeAccountId());
+            sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), transaction.getMemo());
+            sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), transaction.getValidStartNs());
+            sqlInsertTransaction.setInt(F_TRANSACTION.TYPE.ordinal(), transaction.getType());
+            sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION_SECONDS.ordinal(),
+                    transaction.getValidDurationSeconds());
+            sqlInsertTransaction.setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), transaction.getPayerAccountId());
+            sqlInsertTransaction.setLong(F_TRANSACTION.RESULT.ordinal(), transaction.getResult());
+            sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), transaction.getConsensusNs());
+            sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), transaction.getChargedTxFee());
+            sqlInsertTransaction.setLong(F_TRANSACTION.MAX_FEE.ordinal(), transaction.getMaxFee());
+            sqlInsertTransaction.setBytes(F_TRANSACTION.TRANSACTION_HASH.ordinal(), transaction.getTransactionHash());
+            sqlInsertTransaction.setBytes(F_TRANSACTION.TRANSACTION_BYTES.ordinal(), transaction.getTransactionBytes());
+            sqlInsertTransaction.setLong(F_TRANSACTION.INITIAL_BALANCE.ordinal(), transaction.getInitialBalance());
+            sqlInsertTransaction.addBatch();
+
+            if (batch_count == properties.getBatchSize() - 1) {
+                // execute any remaining batches
+                executeBatches();
+            } else {
+                batch_count += 1;
+            }
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        }
     }
 
     @Override
@@ -206,7 +256,14 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
 
     @Override
     public void onError(Throwable e) {
-        // to be implemented in followup change
+        throw new NotImplementedException("onError not implemented");
+    }
+
+    enum F_TRANSACTION {
+        ZERO // column indices start at 1, this creates the necessary offset
+        , FK_NODE_ACCOUNT_ID, MEMO, VALID_START_NS, TYPE, FK_PAYER_ACCOUNT_ID, RESULT, CONSENSUS_NS,
+        CUD_ENTITY_ID, CHARGED_TX_FEE, INITIAL_BALANCE, FK_REC_FILE_ID, VALID_DURATION_SECONDS, MAX_FEE,
+        TRANSACTION_HASH, TRANSACTION_BYTES
     }
 
     enum F_TRANSFERLIST {
