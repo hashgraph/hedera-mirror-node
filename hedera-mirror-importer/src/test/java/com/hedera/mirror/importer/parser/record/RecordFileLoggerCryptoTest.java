@@ -138,28 +138,6 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
     }
 
     @Test
-    void cryptoCreateBatch() throws Exception {
-        int testBatchSize = 10;
-        postgresWriterProperties.setBatchSize(testBatchSize);
-
-        for (int i = 0; i < testBatchSize + 1; i++) {
-            Transaction transaction = cryptoCreateTransaction();
-            TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-            TransactionRecord record = transactionRecordSuccess(transactionBody);
-
-            RecordFileLogger.storeRecord(transaction, record);
-        }
-        RecordFileLogger.completeFile("", "");
-
-        long txCount = transactionRepository.count();
-
-        assertAll(
-                // row counts
-                () -> assertEquals(testBatchSize + 1, txCount)
-        );
-    }
-
-    @Test
     void cryptoCreateTransactionWithBody() throws Exception {
 
         Transaction transaction = createTransactionWithBody();
