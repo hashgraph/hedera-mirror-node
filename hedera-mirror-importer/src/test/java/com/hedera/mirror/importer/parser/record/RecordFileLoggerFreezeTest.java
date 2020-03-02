@@ -37,6 +37,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
@@ -56,8 +57,7 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(transaction, record);
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -76,10 +76,7 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
+                , () -> assertRecord(record)
         );
     }
 
@@ -90,8 +87,7 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
-        RecordFileLogger.storeRecord(transaction, record);
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -110,10 +106,7 @@ public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
+                , () -> assertRecord(record)
         );
     }
 

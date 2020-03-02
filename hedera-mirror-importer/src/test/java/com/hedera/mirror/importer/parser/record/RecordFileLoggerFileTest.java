@@ -58,6 +58,7 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
@@ -100,8 +101,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(transaction, record);
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -123,13 +123,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertEquals(Utility
@@ -156,8 +153,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(transaction, record);
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -178,13 +174,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
         );
     }
 
@@ -197,8 +190,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
                 .setRealmNum(0).setFileNum(10).build());
 
-        RecordFileLogger.storeRecord(transaction, record);
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -220,13 +212,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertEquals(Utility
@@ -254,8 +243,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
                 .setRealmNum(0).setFileNum(2000).build());
 
-        RecordFileLogger.storeRecord(transaction, record);
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -276,13 +264,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertEquals(Utility
@@ -309,8 +294,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(transaction, record);
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         var dbTransaction = transactionRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp()))
                 .get();
@@ -334,9 +318,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -358,13 +340,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // file data
                 , () -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData
@@ -386,9 +365,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -410,13 +387,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // file data
                 , () -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData
@@ -443,9 +417,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         parserProperties.setPersistFiles(true);
         parserProperties.setPersistSystemFiles(true);
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -467,13 +439,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // file data
                 , () -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData
@@ -503,9 +472,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody);
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -527,13 +494,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertEquals(Utility
@@ -569,9 +533,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -592,13 +554,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertEquals(Utility
@@ -628,9 +587,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
                 .setRealmNum(0).setFileNum(102).build());
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -652,13 +609,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // file data
                 , () -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData
@@ -684,9 +638,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -708,13 +660,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertEquals(Utility
@@ -749,9 +698,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody);
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -773,13 +720,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertNotNull(dbFileEntity.getExpiryTimeNs())
@@ -804,9 +748,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -828,16 +770,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
-
-                // transaction body inputs
-                , () -> assertNull(dbFileEntity.getExpiryTimeNs())
                 , () -> assertNull(dbFileEntity.getKey())
 
                 // file data
@@ -867,9 +803,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody);
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -891,13 +825,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertEquals(Utility
@@ -920,9 +851,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -944,13 +873,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertEquals(Utility
@@ -981,9 +907,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody);
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1005,13 +929,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertNotNull(dbFileEntity.getExpiryTimeNs())
@@ -1032,9 +953,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1056,13 +975,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertNull(dbFileEntity.getExpiryTimeNs())
@@ -1088,9 +1004,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         parserProperties.setPersistFiles(true);
         parserProperties.setPersistSystemFiles(true);
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1112,13 +1026,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertEquals(Utility
@@ -1150,9 +1061,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         parserProperties.setPersistFiles(true);
         parserProperties.setPersistSystemFiles(true);
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1174,13 +1083,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertEquals(Utility
@@ -1218,9 +1124,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(transaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1241,13 +1145,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertTrue(dbFileEntity.isDeleted())
@@ -1290,13 +1191,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertTrue(dbFileEntity.isDeleted())
@@ -1340,13 +1238,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertFalse(dbFileEntity.isDeleted())
@@ -1389,13 +1284,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertTrue(dbFileEntity.isDeleted())
@@ -1437,13 +1329,10 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
+                , () -> assertRecord(record)
 
                 // receipt
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
 
                 // transaction body inputs
                 , () -> assertFalse(dbFileEntity.isDeleted())
@@ -1485,10 +1374,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
+                , () -> assertRecord(record)
         );
     }
 
@@ -1521,10 +1407,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
                 , () -> assertTransaction(transactionBody, dbTransaction)
 
                 // record inputs
-                , () -> assertRecord(record, dbTransaction)
-
-                // record transfer list
-                , () -> assertRecordTransfers(record)
+                , () -> assertRecord(record)
         );
     }
 
