@@ -97,8 +97,9 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
     }
 
     @AfterEach
-    final void afterEach() {
+    final void afterEach() throws Exception {
         postgresWriter.finish();
+        connection.close();
     }
 
     void completeFileAndCommit() throws Exception {
@@ -221,9 +222,9 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         // setup
         int batchSize = 10;
         postgresWriterProperties.setBatchSize(batchSize);
-        Connection connection = Mockito.mock(Connection.class);
+        Connection connection2 = Mockito.mock(Connection.class);
         List<PreparedStatement> preparedStatements = new ArrayList<>(); // tracks all PreparedStatements
-        when(connection.prepareStatement(any())).then(ignored -> {
+        when(connection2.prepareStatement(any())).then(ignored -> {
             PreparedStatement preparedStatement = Mockito.mock(PreparedStatement.class);
             when(preparedStatement.executeBatch()).thenReturn(new int[] {});
             preparedStatements.add(preparedStatement);
@@ -231,7 +232,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         });
         PostgresWritingRecordParsedItemHandler postgresWriter2 =
                 new PostgresWritingRecordParsedItemHandler(postgresWriterProperties);
-        postgresWriter2.initSqlStatements(connection);
+        postgresWriter2.initSqlStatements(connection2);
 
         // when
         for (int i = 0; i < batchSize; i++) {
