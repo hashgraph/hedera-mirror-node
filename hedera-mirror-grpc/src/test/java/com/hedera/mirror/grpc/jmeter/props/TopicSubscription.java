@@ -15,4 +15,5 @@ public class TopicSubscription {
     private final int incomingMessageCount;
     private final int subscribeTimeoutSeconds;
     private final long milliSecWaitBefore;
+    private final boolean useMAPI;
 }
