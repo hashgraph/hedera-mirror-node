@@ -1,10 +1,10 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * Copyright (C) 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,27 +20,19 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+public class ParserSQLException extends ImporterException {
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+    private static final long serialVersionUID = 5216154273755649844L;
 
-@Data
-@Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Table(name = "t_cryptotransferlists")
-public class CryptoTransfer {
+    public ParserSQLException(String message) {
+        super(message);
+    }
 
-    @Id
-    private Long consensusTimestamp;
+    public ParserSQLException(Throwable throwable) {
+        super(throwable);
+    }
 
-    private Long amount;
-
-    private Long realmNum;
-
-    private Long entityNum;
+    public ParserSQLException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }
