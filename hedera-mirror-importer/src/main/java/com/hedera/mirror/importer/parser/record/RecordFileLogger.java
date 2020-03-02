@@ -53,11 +53,15 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityTypeRepository;
@@ -81,10 +85,6 @@ public class RecordFileLogger {
     private static long batch_count = 0;
 
     private static PreparedStatement sqlInsertTransaction;
-    private static PreparedStatement sqlInsertFileData;
-    private static PreparedStatement sqlInsertContractCall;
-    private static PreparedStatement sqlInsertClaimData;
-    private static PreparedStatement sqlInsertTopicMessage;
 
     public RecordFileLogger(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
                             NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
@@ -134,22 +134,6 @@ public class RecordFileLogger {
                     + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             postgresWriter.initSqlStatements(connect);
-
-            sqlInsertFileData = connect.prepareStatement("INSERT INTO t_file_data"
-                    + " (consensus_timestamp, file_data)"
-                    + " VALUES (?, ?)");
-
-            sqlInsertContractCall = connect.prepareStatement("INSERT INTO t_contract_result"
-                    + " (consensus_timestamp, function_params, gas_supplied, call_result, gas_used)"
-                    + " VALUES (?, ?, ?, ?, ?)");
-
-            sqlInsertClaimData = connect.prepareStatement("INSERT INTO t_livehashes"
-                    + " (consensus_timestamp, livehash)"
-                    + " VALUES (?, ?)");
-
-            sqlInsertTopicMessage = connect.prepareStatement("insert into topic_message"
-                    + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
-                    + " values (?, ?, ?, ?, ?, ?)");
         } catch (SQLException e) {
             log.error("Unable to prepare SQL statements", e);
             return false;
@@ -160,11 +144,7 @@ public class RecordFileLogger {
 
     public static boolean finish() {
         try {
-            sqlInsertFileData.close();
             sqlInsertTransaction.close();
-            sqlInsertContractCall.close();
-            sqlInsertClaimData.close();
-            sqlInsertTopicMessage.close();
             postgresWriter.finish();
 
             connect = DatabaseUtilities.closeDatabase(connect);
@@ -559,8 +539,9 @@ public class RecordFileLogger {
     }
 
     /**
-     * Should the given transaction/record generate non_fee_transfers based on what type the transaction is,
-     * it's status, and run-time configuration concerning which situations warrant storing.
+     * Should the given transaction/record generate non_fee_transfers based on what type the transaction is, it's
+     * status, and run-time configuration concerning which situations warrant storing.
+     *
      * @param body
      * @param transactionRecord
      * @return
@@ -748,39 +729,33 @@ public class RecordFileLogger {
     }
 
     private static void insertConsensusTopicMessage(ConsensusSubmitMessageTransactionBody transactionBody,
-                                                    TransactionRecord transactionRecord) throws SQLException {
+                                                    TransactionRecord transactionRecord) {
         var receipt = transactionRecord.getReceipt();
-        var ts = transactionRecord.getConsensusTimestamp();
         var topicId = transactionBody.getTopicID();
-        sqlInsertTopicMessage.setLong(1, Utility.timeStampInNanos(ts));
-        sqlInsertTopicMessage.setShort(2, (short) topicId.getRealmNum());
-        sqlInsertTopicMessage.setInt(3, (int) topicId.getTopicNum());
-        sqlInsertTopicMessage.setBytes(4, transactionBody.getMessage().toByteArray());
-        sqlInsertTopicMessage.setBytes(5, receipt.getTopicRunningHash().toByteArray());
-        sqlInsertTopicMessage.setLong(6, receipt.getTopicSequenceNumber());
-        sqlInsertTopicMessage.addBatch();
+        TopicMessage topicMessage = new TopicMessage(
+                Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()),
+                transactionBody.getMessage().toByteArray(), (int) topicId.getRealmNum(),
+                receipt.getTopicRunningHash().toByteArray(), receipt.getTopicSequenceNumber(),
+                (int) topicId.getTopicNum());
+        postgresWriter.onTopicMessage(topicMessage);
     }
 
     private static void insertFileCreate(long consensusTimestamp, FileCreateTransactionBody transactionBody,
-                                         TransactionRecord transactionRecord) throws SQLException {
+                                         TransactionRecord transactionRecord) {
         if (parserProperties.isPersistFiles() ||
                 (parserProperties.isPersistSystemFiles() && transactionRecord.getReceipt().getFileID()
                         .getFileNum() < 1000)) {
             byte[] contents = transactionBody.getContents().toByteArray();
-            sqlInsertFileData.setLong(F_FILE_DATA.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
-            sqlInsertFileData.addBatch();
+            postgresWriter.onFileData(new FileData(consensusTimestamp, contents));
         }
     }
 
     private static void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody)
-            throws SQLException, IOException {
+            throws IOException {
         if (parserProperties.isPersistFiles() ||
                 (parserProperties.isPersistSystemFiles() && transactionBody.getFileID().getFileNum() < 1000)) {
             byte[] contents = transactionBody.getContents().toByteArray();
-            sqlInsertFileData.setLong(F_FILE_DATA.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
-            sqlInsertFileData.addBatch();
+            postgresWriter.onFileData(new FileData(consensusTimestamp, contents));
 
             // update the local address book
             if (isFileAddressBook(transactionBody.getFileID())) {
@@ -791,13 +766,10 @@ public class RecordFileLogger {
     }
 
     private static void insertCryptoAddClaim(long consensusTimestamp,
-                                             CryptoAddClaimTransactionBody transactionBody) throws SQLException {
+                                             CryptoAddClaimTransactionBody transactionBody) {
         if (parserProperties.isPersistClaims()) {
             byte[] claim = transactionBody.getClaim().getHash().toByteArray();
-
-            sqlInsertClaimData.setLong(F_LIVEHASH_DATA.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertClaimData.setBytes(F_LIVEHASH_DATA.LIVEHASH.ordinal(), claim);
-            sqlInsertClaimData.addBatch();
+            postgresWriter.onLiveHash(new LiveHash(consensusTimestamp, claim));
         }
     }
 
@@ -813,9 +785,7 @@ public class RecordFileLogger {
                 callResult = transactionRecord.getContractCallResult().toByteArray();
                 gasUsed = transactionRecord.getContractCallResult().getGasUsed();
             }
-
-            insertContractResults(sqlInsertContractCall, consensusTimestamp, functionParams, gasSupplied, callResult,
-                    gasUsed);
+            insertContractResults(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed);
         }
     }
 
@@ -831,9 +801,7 @@ public class RecordFileLogger {
                 callResult = transactionRecord.getContractCreateResult().toByteArray();
                 gasUsed = transactionRecord.getContractCreateResult().getGasUsed();
             }
-
-            insertContractResults(sqlInsertContractCall, consensusTimestamp, functionParams, gasSupplied, callResult,
-                    gasUsed);
+            insertContractResults(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed);
         }
     }
 
@@ -851,8 +819,7 @@ public class RecordFileLogger {
                                                        TransactionRecord txRecord,
                                                        TransactionBody body,
                                                        AccountID createdAccountId,
-                                                       AccountID payerAccountId)
-            throws SQLException {
+                                                       AccountID payerAccountId) {
 
         long initialBalance = 0;
         long createdAccountNum = 0;
@@ -868,7 +835,6 @@ public class RecordFileLogger {
         TransferList transferList = txRecord.getTransferList();
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
-            long amount = aa.getAmount();
             var accountId = aa.getAccountID();
             long accountNum = accountId.getAccountNum();
             createEntity(getEntity(accountId));
@@ -899,14 +865,12 @@ public class RecordFileLogger {
     }
 
     private static void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody)
-            throws SQLException, IOException {
+            throws IOException {
         FileID fileId = transactionBody.getFileID();
         if (parserProperties.isPersistFiles() ||
                 (parserProperties.isPersistSystemFiles() && fileId.getFileNum() < 1000)) {
             byte[] contents = transactionBody.getContents().toByteArray();
-            sqlInsertFileData.setLong(F_FILE_DATA.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-            sqlInsertFileData.setBytes(F_FILE_DATA.FILE_DATA.ordinal(), contents);
-            sqlInsertFileData.addBatch();
+            postgresWriter.onFileData(new FileData(consensusTimestamp, contents));
         }
 
         // update the local address book
@@ -941,27 +905,16 @@ public class RecordFileLogger {
         return dataCase.getNumber();
     }
 
-    public static void insertContractResults(PreparedStatement insert, long consensusTimestamp,
-                                             byte[] functionParams, long gasSupplied,
-                                             byte[] callResult, long gasUsed) throws SQLException {
-        insert.setLong(F_CONTRACT_CALL.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-        insert.setBytes(F_CONTRACT_CALL.FUNCTION_PARAMS.ordinal(), functionParams);
-        insert.setLong(F_CONTRACT_CALL.GAS_SUPPLIED.ordinal(), gasSupplied);
-        insert.setBytes(F_CONTRACT_CALL.CALL_RESULT.ordinal(), callResult);
-        insert.setLong(F_CONTRACT_CALL.GAS_USED.ordinal(), gasUsed);
-
-        insert.addBatch();
+    private static void insertContractResults(
+            long consensusTimestamp, byte[] functionParams, long gasSupplied, byte[] callResult, long gasUsed) {
+        postgresWriter.onContractResult(
+                new ContractResult(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed));
     }
 
     private static void executeBatches() throws SQLException {
         int[] transactions = sqlInsertTransaction.executeBatch();
-        int[] fileData = sqlInsertFileData.executeBatch();
-        int[] contractCalls = sqlInsertContractCall.executeBatch();
-        int[] claimData = sqlInsertClaimData.executeBatch();
-        int[] topicMessages = sqlInsertTopicMessage.executeBatch();
         postgresWriter.executeBatches();
-        log.info("Inserted {} transactions, {} files, {} contracts, {} claims, {} topic messages",
-                transactions.length, fileData.length, contractCalls.length, claimData.length, topicMessages.length);
+        log.info("Inserted {} transactions", transactions.length);
     }
 
     public static Entities getEntity(AccountID accountID) {
