@@ -30,7 +30,10 @@ import io.micrometer.core.instrument.Timer;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -120,37 +123,45 @@ public class RecordFileParser implements FileParser {
         return null;
     }
 
+    private RecordFileLogger.INIT_RESULT initFile(String filename) {
+        return RecordFileLogger.initFile(filename);
+    }
+
+    private void closeFileAndCommit(String fileHash, String previousHash) throws SQLException {
+        RecordFileLogger.completeFile(fileHash, previousHash);
+    }
+
+    private void rollback() {
+        RecordFileLogger.rollback();
+    }
+
     /**
      * Given a service record name, read and parse and return as a list of service record pair
      *
-     * @param fileName         the name of record file to read
-     * @param previousFileHash the hash of the previous record file in the series
-     * @param thisFileHash     the hash of this file
+     * @param fileName             the name of record file to read
+     * @param expectedPrevFileHash the hash of the previous record file in the series
+     * @param thisFileHash         the hash of this file
      * @return return boolean indicating method success
      * @throws Exception
      */
-    private boolean loadRecordFile(String fileName, String previousFileHash, String thisFileHash) throws Exception {
-
-        File file = new File(fileName);
-        String newFileHash = "";
-
-        if (file.exists() == false) {
-            log.warn("File does not exist {}", fileName);
+    private boolean loadRecordFile(String fileName, InputStream inputStream, String expectedPrevFileHash,
+                                   String thisFileHash) {
+        var result = initFile(fileName);
+        if (result == RecordFileLogger.INIT_RESULT.SKIP) {
+            return true; // skip this fle
+        } else if (result == RecordFileLogger.INIT_RESULT.FAIL) {
             return false;
         }
         long counter = 0;
-        byte[] readFileHash = new byte[48];
-        RecordFileLogger.INIT_RESULT initFileResult = RecordFileLogger.initFile(fileName);
         Stopwatch stopwatch = Stopwatch.createStarted();
         Integer recordFileVersion = 0;
         Boolean success = false;
 
-        if (initFileResult == RecordFileLogger.INIT_RESULT.OK) {
-            try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
+            try (DataInputStream dis = new DataInputStream(inputStream)) {
                 recordFileVersion = dis.readInt();
                 int version = dis.readInt();
 
-                log.info("Loading version {} record file: {}", recordFileVersion, file.getName());
+                log.info("Loading version {} record file: {}", recordFileVersion, fileName);
 
                 while (dis.available() != 0) {
 
@@ -159,26 +170,25 @@ public class RecordFileParser implements FileParser {
 
                         switch (typeDelimiter) {
                             case FileDelimiter.RECORD_TYPE_PREV_HASH:
+                                byte[] readFileHash = new byte[48];
                                 dis.read(readFileHash);
 
-                                if (Utility.hashIsEmpty(previousFileHash)) {
+                                if (Utility.hashIsEmpty(expectedPrevFileHash)) {
                                     log.error("Previous file hash not available");
-                                    previousFileHash = Hex.encodeHexString(readFileHash);
+                                    expectedPrevFileHash = Hex.encodeHexString(readFileHash);
                                 }
 
-                                newFileHash = Hex.encodeHexString(readFileHash);
-
-                                log.trace("New file hash = {}, old hash = {}", newFileHash, previousFileHash);
-
-                                if (!newFileHash.contentEquals(previousFileHash)) {
-
+                                String actualPrevFileHash = Hex.encodeHexString(readFileHash);
+                                log.trace("actual file hash = {}, expected file hash = {}", actualPrevFileHash,
+                                        expectedPrevFileHash);
+                                if (!actualPrevFileHash.contentEquals(expectedPrevFileHash)) {
                                     if (applicationStatusRepository
                                             .findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER)
                                             .compareTo(Utility.getFileName(fileName)) < 0) {
                                         // last file for which mismatch is allowed is in the past
-                                        log.error("Hash mismatch for file {}. Previous = {}, Current = {}", fileName,
-                                                previousFileHash, newFileHash);
-                                        RecordFileLogger.rollback();
+                                        log.error("Hash mismatch for file {}. Actual = {}, Expected = {}", fileName,
+                                                expectedPrevFileHash, actualPrevFileHash);
+                                        rollback();
                                         return false;
                                     }
                                 }
@@ -229,32 +239,30 @@ public class RecordFileParser implements FileParser {
                                 break;
 
                             default:
-                                log.error("Unknown record file delimiter {} for file {}", typeDelimiter, file);
-                                RecordFileLogger.rollback();
+                                log.error("Unknown record file delimiter {} for file {}", typeDelimiter, fileName);
+                                rollback();
                                 return false;
                         }
                     } catch (Exception e) {
                         log.error("Exception {}", e);
-                        RecordFileLogger.rollback();
+                        rollback();
                         return false;
                     }
                 }
 
                 log.trace("Calculated file hash for the current file {}", thisFileHash);
-                RecordFileLogger.completeFile(thisFileHash, previousFileHash);
+                closeFileAndCommit(thisFileHash, expectedPrevFileHash);
 
                 if (!Utility.hashIsEmpty(thisFileHash)) {
                     applicationStatusRepository
                             .updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, thisFileHash);
                 }
-
                 success = true;
             } catch (Exception e) {
-                log.error("Error parsing record file {} after {}", file, stopwatch, e);
-                RecordFileLogger.rollback();
+                log.error("Error parsing record file {} after {}", fileName, stopwatch, e);
+                rollback();
             } finally {
-                log.info("Finished parsing {} transactions from record file {} in {}", counter, file
-                        .getName(), stopwatch);
+                log.info("Finished parsing {} transactions from record file {} in {}", counter, fileName, stopwatch);
 
                 parseDurationMetric.tag("type", "record")
                         .tag("success", success.toString())
@@ -262,14 +270,7 @@ public class RecordFileParser implements FileParser {
                         .register(meterRegistry)
                         .record(stopwatch.elapsed());
             }
-
             return success;
-        } else if (initFileResult == RecordFileLogger.INIT_RESULT.SKIP) {
-            return true;
-        } else {
-            RecordFileLogger.rollback();
-            return false;
-        }
     }
 
     /**
@@ -277,18 +278,24 @@ public class RecordFileParser implements FileParser {
      *
      * @throws Exception
      */
-    private void loadRecordFiles(List<String> fileNames) throws Exception {
+    private void loadRecordFiles(List<String> fileNames) {
         String prevFileHash = applicationStatusRepository
                 .findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
         Collections.sort(fileNames);
 
         for (String name : fileNames) {
-            String thisFileHash = "";
             if (ShutdownHelper.isStopping()) {
                 return;
             }
-            thisFileHash = Hex.encodeHexString(Utility.getFileHash(name));
-            if (loadRecordFile(name, prevFileHash, thisFileHash)) {
+            String thisFileHash = Hex.encodeHexString(Utility.getFileHash(name));
+            InputStream fileInputStream;
+            try {
+                fileInputStream = new FileInputStream(new File(name));
+            } catch (FileNotFoundException e) {
+                log.warn("File does not exist {}", name);
+                return;
+            }
+            if (loadRecordFile(name, fileInputStream, prevFileHash, thisFileHash)) {
                 prevFileHash = thisFileHash;
                 Utility.moveFileToParsedDir(name, "/parsedRecordFiles/");
             } else {
