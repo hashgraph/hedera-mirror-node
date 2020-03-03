@@ -31,38 +31,38 @@ public class RecordFileLoggerTest extends AbstractRecordFileLoggerTest {
 
     @Test
     void initFile() throws Exception {
-        assertEquals(RecordFileLogger.INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-        RecordFileLogger.completeFile("", "");
-        RecordFile recordFile = recordFileRepository.findById(RecordFileLogger.getFileId()).get();
+        assertEquals(RecordFileLogger.INIT_RESULT.OK, recordFileLogger.initFile("TestFile"));
+        recordFileLogger.completeFile("", "");
+        RecordFile recordFile = recordFileRepository.findById(recordFileLogger.getFileId()).get();
         assertEquals("TestFile", recordFile.getName());
     }
 
     @Test
     void initFileDuplicate() throws Exception {
-        assertEquals(RecordFileLogger.INIT_RESULT.OK, RecordFileLogger.initFile("TestFile"));
-        assertEquals(RecordFileLogger.INIT_RESULT.SKIP, RecordFileLogger.initFile("TestFile"));
+        assertEquals(RecordFileLogger.INIT_RESULT.OK, recordFileLogger.initFile("TestFile"));
+        assertEquals(RecordFileLogger.INIT_RESULT.SKIP, recordFileLogger.initFile("TestFile"));
     }
 
     @Test
     void completeFileNoHashes() throws Exception {
-        RecordFileLogger.completeFile("", "");
-        RecordFile recordFile = recordFileRepository.findById(RecordFileLogger.getFileId()).get();
+        recordFileLogger.completeFile("", "");
+        RecordFile recordFile = recordFileRepository.findById(recordFileLogger.getFileId()).get();
         assertNull(recordFile.getFileHash());
         assertNull(recordFile.getPreviousHash());
     }
 
     @Test
     void completeFileWithHashes() throws Exception {
-        RecordFileLogger.completeFile("123", "456");
-        RecordFile recordFile = recordFileRepository.findById(RecordFileLogger.getFileId()).get();
+        recordFileLogger.completeFile("123", "456");
+        RecordFile recordFile = recordFileRepository.findById(recordFileLogger.getFileId()).get();
         assertEquals("123", recordFile.getFileHash());
         assertEquals("456", recordFile.getPreviousHash());
     }
 
     @Test
     void rollback() throws Exception {
-        RecordFileLogger.rollback();
-        Optional<RecordFile> recordFile = recordFileRepository.findById(RecordFileLogger.getFileId());
+        recordFileLogger.rollback();
+        Optional<RecordFile> recordFile = recordFileRepository.findById(recordFileLogger.getFileId());
         assertFalse(recordFile.isPresent());
     }
 }
