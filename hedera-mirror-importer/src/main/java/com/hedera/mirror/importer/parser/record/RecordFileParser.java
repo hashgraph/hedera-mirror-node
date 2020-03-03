@@ -21,9 +21,6 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import com.google.common.base.Stopwatch;
-
-import com.hedera.mirror.importer.parser.domain.RecordItem;
-
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -50,6 +47,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.parser.FileParser;
+import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.FileDelimiter;
 import com.hedera.mirror.importer.util.ShutdownHelper;
@@ -65,7 +63,7 @@ public class RecordFileParser implements FileParser {
     private final ApplicationStatusRepository applicationStatusRepository;
     private final RecordParserProperties parserProperties;
     private final MeterRegistry meterRegistry;
-    private final RecordFileLogger recordFileLogger;
+    private final RecordItemParser recordItemParser;
 
     // Metrics
     private final Timer.Builder parseDurationMetric;
@@ -74,11 +72,11 @@ public class RecordFileParser implements FileParser {
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
                             RecordParserProperties parserProperties, MeterRegistry meterRegistry,
-                            RecordFileLogger recordFileLogger) {
+                            RecordItemParser recordItemParser) {
         this.applicationStatusRepository = applicationStatusRepository;
         this.parserProperties = parserProperties;
         this.meterRegistry = meterRegistry;
-        this.recordFileLogger = recordFileLogger;
+        this.recordItemParser = recordItemParser;
 
         parseDurationMetric = Timer.builder("hedera.mirror.parse.duration")
                 .description("The duration in ms it took to parse the file and store it in the database");
@@ -129,16 +127,16 @@ public class RecordFileParser implements FileParser {
         return null;
     }
 
-    private RecordFileLogger.INIT_RESULT initFile(String filename) {
-        return recordFileLogger.initFile(filename);
+    private RecordItemParser.INIT_RESULT initFile(String filename) {
+        return recordItemParser.initFile(filename);
     }
 
     private void closeFileAndCommit(String fileHash, String previousHash) throws SQLException {
-        recordFileLogger.completeFile(fileHash, previousHash);
+        recordItemParser.completeFile(fileHash, previousHash);
     }
 
     private void rollback() {
-        recordFileLogger.rollback();
+        recordItemParser.rollback();
     }
 
     /**
@@ -154,9 +152,9 @@ public class RecordFileParser implements FileParser {
     private boolean loadRecordFile(String fileName, InputStream inputStream, String expectedPrevFileHash,
                                    String thisFileHash) {
         var result = initFile(fileName);
-        if (result == RecordFileLogger.INIT_RESULT.SKIP) {
+        if (result == RecordItemParser.INIT_RESULT.SKIP) {
             return true; // skip this fle
-        } else if (result == RecordFileLogger.INIT_RESULT.FAIL) {
+        } else if (result == RecordItemParser.INIT_RESULT.FAIL) {
             rollback();
             return false;
         }
@@ -223,7 +221,7 @@ public class RecordFileParser implements FileParser {
                                             .printProtoMessage(txRecord.getConsensusTimestamp()));
                                 }
 
-                                recordFileLogger.onItem(
+                                recordItemParser.onItem(
                                         new RecordItem(transaction, txRecord, transactionRawBytes, recordRawBytes));
                             } finally {
                                 // TODO: Refactor to not parse TransactionBody twice
@@ -327,7 +325,7 @@ public class RecordFileParser implements FileParser {
 
             Path path = parserProperties.getValidPath();
             log.debug("Parsing record files from {}", path);
-            if (recordFileLogger.start()) {
+            if (recordItemParser.start()) {
 
                 File file = path.toFile();
                 if (file.isDirectory()) { //if it's a directory
@@ -350,7 +348,7 @@ public class RecordFileParser implements FileParser {
                 } else {
                     log.error("Input parameter is not a folder: {}", path);
                 }
-                recordFileLogger.finish();
+                recordItemParser.finish();
             }
         } catch (Exception e) {
             log.error("Error parsing files", e);

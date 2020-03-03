@@ -62,7 +62,7 @@ import com.hedera.mirror.importer.util.Utility;
 //Class manually commits so have to manually cleanup tables
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-public class AbstractRecordFileLoggerTest extends IntegrationTest {
+public class AbstractRecordItemParserTest extends IntegrationTest {
 
     @Resource
     protected TransactionRepository transactionRepository;
@@ -88,20 +88,20 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     protected NonFeeTransferRepository nonFeeTransferRepository;
 
     @Resource
-    protected RecordFileLogger recordFileLogger;
+    protected RecordItemParser recordItemParser;
 
     @Resource
     protected RecordParserProperties parserProperties;
 
     @BeforeEach
     final void beforeCommon() throws Exception {
-        assertTrue(recordFileLogger.start());
-        assertEquals(RecordFileLogger.INIT_RESULT.OK, recordFileLogger.initFile(UUID.randomUUID().toString()));
+        assertTrue(recordItemParser.start());
+        assertEquals(RecordItemParser.INIT_RESULT.OK, recordItemParser.initFile(UUID.randomUUID().toString()));
     }
 
     @AfterEach
     final void afterCommon() {
-        recordFileLogger.finish();
+        recordItemParser.finish();
     }
 
     protected final void assertAccount(AccountID accountId, com.hedera.mirror.importer.domain.Entities dbEntity) {
@@ -132,8 +132,8 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) throws Exception {
-        recordFileLogger.onItem(recordItem);
-        recordFileLogger.completeFile("", "");
+        recordItemParser.onItem(recordItem);
+        recordItemParser.completeFile("", "");
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {

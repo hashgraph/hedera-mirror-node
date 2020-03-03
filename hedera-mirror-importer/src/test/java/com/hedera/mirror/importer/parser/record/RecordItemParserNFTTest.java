@@ -23,9 +23,6 @@ package com.hedera.mirror.importer.parser.record;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-
-import com.hedera.mirror.importer.parser.domain.RecordItem;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -41,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -53,12 +49,13 @@ import lombok.Data;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 /**
- * Integration tests relating to RecordFileLogger and non_fee_transfers.
+ * Integration tests relating to RecordItemParser and non_fee_transfers.
  */
-public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
+public class RecordItemParserNFTTest extends AbstractRecordItemParserTest {
 
     private static final long PAYER_ACCOUNT_NUM = 1111;
     private static final AccountID PAYER_ACCOUNT_ID = AccountID.newBuilder().setAccountNum(PAYER_ACCOUNT_NUM).build();
@@ -88,7 +85,7 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
 
     private static final String MEMO = "crypto non fee transfer tests";
 
-    private Set<Long> expectedEntityNum = new HashSet<>();
+    private final Set<Long> expectedEntityNum = new HashSet<>();
     private int expectedNonFeeTransfersCount;
 
     @Data
@@ -98,7 +95,7 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
         private TransactionRecord record;
     }
 
-    private List<TransactionContext> expectedTransactions = new LinkedList<>();
+    private final List<TransactionContext> expectedTransactions = new LinkedList<>();
 
     @BeforeEach
     void before() {
@@ -206,8 +203,8 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
     private void assertEverything() {
         assertAll(
                 () -> assertRepositoryRowCounts()
-                ,() -> assertTransactions()
-                ,() -> assertEntities()
+                , () -> assertTransactions()
+                , () -> assertEntities()
         );
     }
 
@@ -216,8 +213,10 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
                 .mapToInt(t -> t.record.getTransferList().getAccountAmountsList().size()).sum();
         assertAll(() -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "t_transactions rows")
                 , () -> assertEquals(expectedEntityNum.size(), entityRepository.count(), "t_entities rows")
-                , () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(), "t_cryptotransferlists rows")
-                , () -> assertEquals(expectedNonFeeTransfersCount, nonFeeTransferRepository.count(), "non_fee_transfers rows")
+                , () -> assertEquals(expectedTransfersCount, cryptoTransferRepository
+                        .count(), "t_cryptotransferlists rows")
+                , () -> assertEquals(expectedNonFeeTransfersCount, nonFeeTransferRepository
+                        .count(), "non_fee_transfers rows")
         );
     }
 
@@ -230,7 +229,7 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
 
             assertAll(
                     () -> assertEquals(dbNode.getId(), dbTransaction.getNodeAccountId())
-                    ,() -> assertEquals(dbPayer.getId(), dbTransaction.getPayerAccountId())
+                    , () -> assertEquals(dbPayer.getId(), dbTransaction.getPayerAccountId())
             );
         });
     }
@@ -276,15 +275,15 @@ public class RecordFileLoggerNFTTest extends AbstractRecordFileLoggerTest {
 
     private Transaction cryptoCreate() {
         var inner = CryptoCreateTransactionBody.newBuilder()
-            .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
-            .setInitialBalance(TRANSFER_AMOUNT)
-            .setKey(keyFromString("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
-            .setProxyAccountID(PROXY_ACCOUNT_ID);
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
+                .setInitialBalance(TRANSFER_AMOUNT)
+                .setKey(keyFromString("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
+                .setProxyAccountID(PROXY_ACCOUNT_ID);
 
         var body = transactionBody().setCryptoCreateAccount(inner);
         return Transaction.newBuilder()
-            .setBodyBytes(body.build().toByteString())
-            .setSigMap(getSigMap()).build();
+                .setBodyBytes(body.build().toByteString())
+                .setSigMap(getSigMap()).build();
     }
 
     private void cryptoCreateWithTransferList(TransferList.Builder transferList) throws Exception {

@@ -54,7 +54,7 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
+public class RecordItemParserContractTest extends AbstractRecordItemParserTest {
 
     private static final ContractID contractId = ContractID.newBuilder().setShardNum(0).setRealmNum(0)
             .setContractNum(1001).build();

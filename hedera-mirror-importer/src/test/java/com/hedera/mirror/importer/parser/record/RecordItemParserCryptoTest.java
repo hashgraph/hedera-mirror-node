@@ -57,7 +57,7 @@ import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
+public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
     //TODO: These transaction data items are not saved to the database
     //  cryptoCreateTransactionBody.getReceiveRecordThreshold()

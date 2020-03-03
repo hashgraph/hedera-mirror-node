@@ -75,7 +75,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-public class RecordFileLogger implements RecordItemListener {
+public class RecordItemParser implements RecordItemListener {
     private final RecordParserProperties parserProperties;
     private final NetworkAddressBook networkAddressBook;
     private final EntityRepository entityRepository;
@@ -88,7 +88,7 @@ public class RecordFileLogger implements RecordItemListener {
     @Getter
     private long fileId = 0;
 
-    public RecordFileLogger(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
+    public RecordItemParser(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
                             NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
                             EntityTypeRepository entityTypeRepository,
                             NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
