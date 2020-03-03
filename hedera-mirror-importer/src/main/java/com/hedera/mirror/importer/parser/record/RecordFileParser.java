@@ -21,6 +21,10 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import com.google.common.base.Stopwatch;
+
+import com.hedera.mirror.importer.exception.ParserSQLException;
+import com.hedera.mirror.importer.util.DatabaseUtilities;
+
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -33,7 +37,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.sql.CallableStatement;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -64,6 +71,8 @@ public class RecordFileParser implements FileParser {
     private final RecordParserProperties parserProperties;
     private final MeterRegistry meterRegistry;
     private final RecordItemParser recordItemParser;
+    private final PostgresWritingRecordParsedItemHandler postgresWriter;
+    private Connection connect;
 
     // Metrics
     private final Timer.Builder parseDurationMetric;
@@ -72,11 +81,13 @@ public class RecordFileParser implements FileParser {
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
                             RecordParserProperties parserProperties, MeterRegistry meterRegistry,
-                            RecordItemParser recordItemParser) {
+                            RecordItemParser recordItemParser,
+                            PostgresWritingRecordParsedItemHandler postgresWriter) {
         this.applicationStatusRepository = applicationStatusRepository;
         this.parserProperties = parserProperties;
         this.meterRegistry = meterRegistry;
         this.recordItemParser = recordItemParser;
+        this.postgresWriter = postgresWriter;
 
         parseDurationMetric = Timer.builder("hedera.mirror.parse.duration")
                 .description("The duration in ms it took to parse the file and store it in the database");
@@ -127,16 +138,85 @@ public class RecordFileParser implements FileParser {
         return null;
     }
 
-    private RecordItemParser.INIT_RESULT initFile(String filename) {
-        return recordItemParser.initFile(filename);
+    /**
+     * @return 0 if row with given filename already exists, otherwise id of newly added row.
+     *         In case of failure, returns -1;
+     */
+    public long initFile(String fileName) {
+        try {
+            long fileId;
+
+            try (CallableStatement fileCreate = connect.prepareCall("{? = call f_file_create( ? ) }")) {
+                fileCreate.registerOutParameter(1, Types.BIGINT);
+                fileCreate.setString(2, fileName);
+                fileCreate.execute();
+                fileId = fileCreate.getLong(1);
+            }
+
+            if (fileId == 0) {
+                log.trace("File {} already exists in the database.", fileName);
+            } else {
+                log.trace("Added file {} to the database.", fileName);
+            }
+            return fileId;
+        } catch (SQLException e) {
+            log.error("Error saving file in database: {}",  fileName, e);
+            return -1L;
+        }
     }
 
-    private void closeFileAndCommit(String fileHash, String previousHash) throws SQLException {
-        recordItemParser.completeFile(fileHash, previousHash);
+    public void closeFileAndCommit(long fileId, String fileHash, String previousHash) throws SQLException {
+        try (CallableStatement fileClose = connect.prepareCall("{call f_file_complete( ?, ?, ? ) }")) {
+            postgresWriter.onFileComplete();
+
+            // update the file to processed
+
+            fileClose.setLong(1, fileId);
+
+            if (Utility.hashIsEmpty(fileHash)) {
+                fileClose.setObject(2, null);
+            } else {
+                fileClose.setString(2, fileHash);
+            }
+
+            if (Utility.hashIsEmpty(previousHash)) {
+                fileClose.setObject(3, null);
+            } else {
+                fileClose.setString(3, previousHash);
+            }
+
+            fileClose.execute();
+            // commit the changes to the database
+            connect.commit();
+        }
+    }
+
+    void initConnection() {
+        try {
+            connect = DatabaseUtilities.getConnection();
+            connect.setAutoCommit(false); // do not auto-commit
+            connect.setClientInfo("ApplicationName", this.getClass().getName());
+        } catch (SQLException e) {
+            throw new ParserSQLException("Error setting up connection to database", e);
+        }
+        postgresWriter.initSqlStatements(connect);
+    }
+
+    void closeConnection() {
+        try {
+            postgresWriter.closeStatements();
+            DatabaseUtilities.closeDatabase(connect);
+        } catch (SQLException e) {
+            log.error("Error closing connection", e);
+        }
     }
 
     private void rollback() {
-        recordItemParser.rollback();
+        try {
+            connect.rollback();
+        } catch (SQLException e) {
+            log.error("Exception while rolling transaction back", e);
+        }
     }
 
     /**
@@ -149,12 +229,12 @@ public class RecordFileParser implements FileParser {
      * @return return boolean indicating method success
      * @throws Exception
      */
-    private boolean loadRecordFile(String fileName, InputStream inputStream, String expectedPrevFileHash,
+    public boolean loadRecordFile(String fileName, InputStream inputStream, String expectedPrevFileHash,
                                    String thisFileHash) {
-        var result = initFile(fileName);
-        if (result == RecordItemParser.INIT_RESULT.SKIP) {
+        var fileId = initFile(fileName);
+        if (fileId == 0) {
             return true; // skip this fle
-        } else if (result == RecordItemParser.INIT_RESULT.FAIL) {
+        } else if (fileId == -1) {
             rollback();
             return false;
         }
@@ -258,7 +338,7 @@ public class RecordFileParser implements FileParser {
             }
 
             log.trace("Calculated file hash for the current file {}", thisFileHash);
-            closeFileAndCommit(thisFileHash, expectedPrevFileHash);
+            closeFileAndCommit(fileId, thisFileHash, expectedPrevFileHash);
 
             if (!Utility.hashIsEmpty(thisFileHash)) {
                 applicationStatusRepository
@@ -314,44 +394,44 @@ public class RecordFileParser implements FileParser {
     @Override
     @Scheduled(fixedRateString = "${hedera.mirror.parser.record.frequency:500}")
     public void parse() {
+        if (!parserProperties.isEnabled()) {
+            return;
+        }
+
+        if (ShutdownHelper.isStopping()) {
+            return;
+        }
+
+        Path path = parserProperties.getValidPath();
+        log.debug("Parsing record files from {}", path);
+
         try {
-            if (!parserProperties.isEnabled()) {
-                return;
-            }
+            initConnection();
+            File file = path.toFile();
+            if (file.isDirectory()) { //if it's a directory
 
-            if (ShutdownHelper.isStopping()) {
-                return;
-            }
+                String[] files = file.list(); // get all files under the directory
+                Arrays.sort(files);           // sorted by name (timestamp)
 
-            Path path = parserProperties.getValidPath();
-            log.debug("Parsing record files from {}", path);
-            if (recordItemParser.start()) {
+                // add directory prefix to get full path
+                List<String> fullPaths = Arrays.asList(files).stream()
+                        .filter(f -> Utility.isRecordFile(f))
+                        .map(s -> file + "/" + s)
+                        .collect(Collectors.toList());
 
-                File file = path.toFile();
-                if (file.isDirectory()) { //if it's a directory
-
-                    String[] files = file.list(); // get all files under the directory
-                    Arrays.sort(files);           // sorted by name (timestamp)
-
-                    // add directory prefix to get full path
-                    List<String> fullPaths = Arrays.asList(files).stream()
-                            .filter(f -> Utility.isRecordFile(f))
-                            .map(s -> file + "/" + s)
-                            .collect(Collectors.toList());
-
-                    if (fullPaths != null && fullPaths.size() != 0) {
-                        log.trace("Processing record files: {}", fullPaths);
-                        loadRecordFiles(fullPaths);
-                    } else {
-                        log.debug("No files to parse");
-                    }
+                if (fullPaths != null && fullPaths.size() != 0) {
+                    log.trace("Processing record files: {}", fullPaths);
+                    loadRecordFiles(fullPaths);
                 } else {
-                    log.error("Input parameter is not a folder: {}", path);
+                    log.debug("No files to parse");
                 }
-                recordItemParser.finish();
+            } else {
+                log.error("Input parameter is not a folder: {}", path);
             }
         } catch (Exception e) {
             log.error("Error parsing files", e);
+        } finally {
+            closeConnection();
         }
     }
 }

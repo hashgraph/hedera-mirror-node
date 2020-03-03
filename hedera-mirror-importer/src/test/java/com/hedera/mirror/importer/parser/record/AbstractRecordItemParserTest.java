@@ -36,7 +36,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.util.UUID;
+import java.sql.Connection;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +57,7 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionResultRepository;
+import com.hedera.mirror.importer.util.DatabaseUtilities;
 import com.hedera.mirror.importer.util.Utility;
 
 //Class manually commits so have to manually cleanup tables
@@ -70,8 +71,6 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
     protected EntityRepository entityRepository;
     @Resource
     protected ContractResultRepository contractResultRepository;
-    @Resource
-    protected RecordFileRepository recordFileRepository;
     @Resource
     protected CryptoTransferRepository cryptoTransferRepository;
     @Resource
@@ -93,15 +92,21 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
     @Resource
     protected RecordParserProperties parserProperties;
 
+    @Resource
+    protected PostgresWritingRecordParsedItemHandler postgresWriter;
+
+    protected Connection connect;
+
     @BeforeEach
     final void beforeCommon() throws Exception {
-        assertTrue(recordItemParser.start());
-        assertEquals(RecordItemParser.INIT_RESULT.OK, recordItemParser.initFile(UUID.randomUUID().toString()));
+        connect = DatabaseUtilities.getConnection();
+        connect.setAutoCommit(false);
+        postgresWriter.initSqlStatements(connect);
     }
 
     @AfterEach
-    final void afterCommon() {
-        recordItemParser.finish();
+    final void afterCommon() throws Exception {
+        connect.close();
     }
 
     protected final void assertAccount(AccountID accountId, com.hedera.mirror.importer.domain.Entities dbEntity) {
@@ -133,7 +138,8 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) throws Exception {
         recordItemParser.onItem(recordItem);
-        recordItemParser.completeFile("", "");
+        postgresWriter.onFileComplete();
+        connect.commit();
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {

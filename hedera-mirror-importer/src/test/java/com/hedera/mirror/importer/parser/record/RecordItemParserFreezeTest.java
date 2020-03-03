@@ -64,8 +64,7 @@ public class RecordItemParserFreezeTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
+                () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEquals(4, entityRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
@@ -94,8 +93,7 @@ public class RecordItemParserFreezeTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
+                () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEquals(4, entityRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())

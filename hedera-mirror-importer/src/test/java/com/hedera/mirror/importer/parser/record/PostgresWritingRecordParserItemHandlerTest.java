@@ -98,7 +98,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
     @AfterEach
     final void afterEach() throws Exception {
-        postgresWriter.finish();
+        postgresWriter.closeStatements();
         connection.close();
     }
 
@@ -204,7 +204,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
     void onTransaction() throws Exception {
         // setup
         Transaction expectedTransaction = new Transaction(101L, 0L, Strings.toByteArray("memo"), 0, 0, 1L, 1L, 1L, null,
-                1L, 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
+                0L, 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
 
         // when
         postgresWriter.onTransaction(expectedTransaction);

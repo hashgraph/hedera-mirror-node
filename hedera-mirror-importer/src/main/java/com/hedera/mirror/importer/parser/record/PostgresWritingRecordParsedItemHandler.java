@@ -90,16 +90,12 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
         }
     }
 
-    public void finish() {
-        closeStatements();
-    }
-
     @Override
     public void onFileComplete() {
         executeBatches();
     }
 
-    private void closeStatements() {
+    public void closeStatements() {
         try {
             sqlInsertTransaction.close();
             sqlInsertTransferList.close();
@@ -143,7 +139,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             } else {
                 sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), null);
             }
-            sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), transaction.getRecordFileId());
+            sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), 0); // deprecated. set to 0 until removed.
             sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), transaction.getNodeAccountId());
             sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), transaction.getMemo());
             sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), transaction.getValidStartNs());
