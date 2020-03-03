@@ -247,7 +247,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
                 .parseFrom(contractCreateTransaction.getBodyBytes());
         TransactionRecord recordCreate = createOrUpdateRecord(createTransactionBody);
 
-        RecordFileLogger.storeRecord(contractCreateTransaction, recordCreate);
+        parseRecordItemAndCommit(new RecordItem(contractCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = contractUpdateAllTransaction();
@@ -362,7 +362,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
         ContractCreateTransactionBody contractCreateTransactionBody = createTransactionBody
                 .getContractCreateInstance();
 
-        RecordFileLogger.storeRecord(contractCreateTransaction, recordCreate);
+        parseRecordItemAndCommit(new RecordItem(contractCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = contractUpdateAllTransaction();
@@ -420,7 +420,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
                 .parseFrom(contractCreateTransaction.getBodyBytes());
         TransactionRecord recordCreate = createOrUpdateRecord(createTransactionBody);
 
-        RecordFileLogger.storeRecord(contractCreateTransaction, recordCreate);
+        parseRecordItemAndCommit(new RecordItem(contractCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = contractDeleteTransaction();
@@ -564,7 +564,7 @@ public class RecordFileLoggerContractTest extends AbstractRecordFileLoggerTest {
                 .parseFrom(contractCreateTransaction.getBodyBytes());
         TransactionRecord recordCreate = createOrUpdateRecord(createTransactionBody);
 
-        RecordFileLogger.storeRecord(contractCreateTransaction, recordCreate);
+        parseRecordItemAndCommit(new RecordItem(contractCreateTransaction, recordCreate));
 
         // now call
         Transaction transaction = contractCallTransaction();

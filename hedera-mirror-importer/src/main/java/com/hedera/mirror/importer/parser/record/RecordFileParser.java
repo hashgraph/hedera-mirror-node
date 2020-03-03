@@ -21,6 +21,9 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import com.google.common.base.Stopwatch;
+
+import com.hedera.mirror.importer.parser.domain.RecordItem;
+
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -62,6 +65,7 @@ public class RecordFileParser implements FileParser {
     private final ApplicationStatusRepository applicationStatusRepository;
     private final RecordParserProperties parserProperties;
     private final MeterRegistry meterRegistry;
+    private final RecordFileLogger recordFileLogger;
 
     // Metrics
     private final Timer.Builder parseDurationMetric;
@@ -69,10 +73,12 @@ public class RecordFileParser implements FileParser {
     private final DistributionSummary.Builder transactionSizeMetric;
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
-                            RecordParserProperties parserProperties, MeterRegistry meterRegistry) {
+                            RecordParserProperties parserProperties, MeterRegistry meterRegistry,
+                            RecordFileLogger recordFileLogger) {
         this.applicationStatusRepository = applicationStatusRepository;
         this.parserProperties = parserProperties;
         this.meterRegistry = meterRegistry;
+        this.recordFileLogger = recordFileLogger;
 
         parseDurationMetric = Timer.builder("hedera.mirror.parse.duration")
                 .description("The duration in ms it took to parse the file and store it in the database");
@@ -124,15 +130,15 @@ public class RecordFileParser implements FileParser {
     }
 
     private RecordFileLogger.INIT_RESULT initFile(String filename) {
-        return RecordFileLogger.initFile(filename);
+        return recordFileLogger.initFile(filename);
     }
 
     private void closeFileAndCommit(String fileHash, String previousHash) throws SQLException {
-        RecordFileLogger.completeFile(fileHash, previousHash);
+        recordFileLogger.completeFile(fileHash, previousHash);
     }
 
     private void rollback() {
-        RecordFileLogger.rollback();
+        recordFileLogger.rollback();
     }
 
     /**
@@ -151,6 +157,7 @@ public class RecordFileParser implements FileParser {
         if (result == RecordFileLogger.INIT_RESULT.SKIP) {
             return true; // skip this fle
         } else if (result == RecordFileLogger.INIT_RESULT.FAIL) {
+            rollback();
             return false;
         }
         long counter = 0;
@@ -198,14 +205,14 @@ public class RecordFileParser implements FileParser {
                             counter++;
 
                             int byteLength = dis.readInt();
-                            byte[] rawBytes = new byte[byteLength];
-                            dis.readFully(rawBytes);
-                            Transaction transaction = Transaction.parseFrom(rawBytes);
+                            byte[] transactionRawBytes = new byte[byteLength];
+                            dis.readFully(transactionRawBytes);
+                            Transaction transaction = Transaction.parseFrom(transactionRawBytes);
 
                             byteLength = dis.readInt();
-                            rawBytes = new byte[byteLength];
-                            dis.readFully(rawBytes);
-                            TransactionRecord txRecord = TransactionRecord.parseFrom(rawBytes);
+                            byte[] recordRawBytes = new byte[byteLength];
+                            dis.readFully(recordRawBytes);
+                            TransactionRecord txRecord = TransactionRecord.parseFrom(recordRawBytes);
 
                             try {
                                 if (log.isTraceEnabled()) {
@@ -216,14 +223,15 @@ public class RecordFileParser implements FileParser {
                                             .printProtoMessage(txRecord.getConsensusTimestamp()));
                                 }
 
-                                RecordFileLogger.storeRecord(transaction, txRecord, rawBytes);
+                                recordFileLogger.onItem(
+                                        new RecordItem(transaction, txRecord, transactionRawBytes, recordRawBytes));
                             } finally {
                                 // TODO: Refactor to not parse TransactionBody twice
                                 DataCase dc = Utility.getTransactionBody(transaction).getDataCase();
                                 String type = dc != null && dc != DataCase.DATA_NOT_SET ? dc.name() : "UNKNOWN";
                                 transactionSizeMetric.tag("type", type)
                                         .register(meterRegistry)
-                                        .record(rawBytes.length);
+                                        .record(transactionRawBytes.length);
 
                                 Instant consensusTimestamp = Utility
                                         .convertToInstant(txRecord.getConsensusTimestamp());
@@ -319,7 +327,7 @@ public class RecordFileParser implements FileParser {
 
             Path path = parserProperties.getValidPath();
             log.debug("Parsing record files from {}", path);
-            if (RecordFileLogger.start()) {
+            if (recordFileLogger.start()) {
 
                 File file = path.toFile();
                 if (file.isDirectory()) { //if it's a directory
@@ -342,7 +350,7 @@ public class RecordFileParser implements FileParser {
                 } else {
                     log.error("Input parameter is not a folder: {}", path);
                 }
-                RecordFileLogger.finish();
+                recordFileLogger.finish();
             }
         } catch (Exception e) {
             log.error("Error parsing files", e);

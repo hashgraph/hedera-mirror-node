@@ -310,7 +310,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(fileCreateTransaction.getBodyBytes());
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        RecordFileLogger.storeRecord(fileCreateTransaction, recordCreate);
+        parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now append
         Transaction transaction = fileAppendTransaction();
@@ -464,7 +464,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(fileCreateTransaction.getBodyBytes());
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        RecordFileLogger.storeRecord(fileCreateTransaction, recordCreate);
+        parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = fileUpdateAllTransaction();
@@ -525,7 +525,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
         FileCreateTransactionBody fileCreateTransactionBody = createTransactionBody.getFileCreate();
 
-        RecordFileLogger.storeRecord(fileCreateTransaction, recordCreate);
+        parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = fileUpdateAllTransaction();
@@ -690,7 +690,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(fileCreateTransaction.getBodyBytes());
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        RecordFileLogger.storeRecord(fileCreateTransaction, recordCreate);
+        parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = fileUpdateContentsTransaction();
@@ -795,7 +795,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(fileCreateTransaction.getBodyBytes());
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        RecordFileLogger.storeRecord(fileCreateTransaction, recordCreate);
+        parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = fileUpdateExpiryTransaction();
@@ -899,7 +899,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(fileCreateTransaction.getBodyBytes());
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        RecordFileLogger.storeRecord(fileCreateTransaction, recordCreate);
+        parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = fileUpdateKeysTransaction();
@@ -1117,7 +1117,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(fileCreateTransaction.getBodyBytes());
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        RecordFileLogger.storeRecord(fileCreateTransaction, recordCreate);
+        parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
 
         // now update
         Transaction transaction = fileDeleteTransaction();
@@ -1168,9 +1168,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody transactionBody = TransactionBody.parseFrom(fileDeleteTransaction.getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(fileDeleteTransaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(fileDeleteTransaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1215,9 +1213,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
 
-        RecordFileLogger.storeRecord(fileDeleteTransaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(fileDeleteTransaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1261,9 +1257,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody transactionBody = TransactionBody.parseFrom(systemDeleteTransaction.getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(systemDeleteTransaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(systemDeleteTransaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1307,9 +1301,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionBody transactionBody = TransactionBody.parseFrom(systemUndeleteTransaction.getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody);
 
-        RecordFileLogger.storeRecord(systemUndeleteTransaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(systemUndeleteTransaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1353,9 +1345,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
-        RecordFileLogger.storeRecord(systemDeleteTransaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(systemDeleteTransaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1386,9 +1376,7 @@ public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
-        RecordFileLogger.storeRecord(systemUndeleteTransaction, record);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(systemUndeleteTransaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();

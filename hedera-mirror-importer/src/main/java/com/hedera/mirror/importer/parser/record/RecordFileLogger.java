@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -49,6 +50,7 @@ import java.sql.Types;
 import java.util.Set;
 import java.util.function.Predicate;
 import javax.inject.Named;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
@@ -61,8 +63,11 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
+import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityTypeRepository;
 import com.hedera.mirror.importer.util.DatabaseUtilities;
@@ -70,37 +75,34 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-public class RecordFileLogger {
-    public static Connection connect = null;
-    private static RecordParserProperties parserProperties;
-    private static NetworkAddressBook networkAddressBook;
-    private static EntityRepository entityRepository;
-    private static EntityTypeRepository entityTypeRepository;
-    private static NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
-    private static Predicate<com.hedera.mirror.importer.domain.Transaction> transactionFilter;
-    private static PostgresWritingRecordParsedItemHandler postgresWriter;
+public class RecordFileLogger implements RecordItemListener {
+    private final RecordParserProperties parserProperties;
+    private final NetworkAddressBook networkAddressBook;
+    private final EntityRepository entityRepository;
+    private final EntityTypeRepository entityTypeRepository;
+    private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
+    private final Predicate<com.hedera.mirror.importer.domain.Transaction> transactionFilter;
+    private final PostgresWritingRecordParsedItemHandler postgresWriter;
 
-    private static long fileId = 0;
+    public Connection connect = null;
+    @Getter
+    private long fileId = 0;
 
     public RecordFileLogger(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
                             NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
                             EntityTypeRepository entityTypeRepository,
                             NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                             PostgresWritingRecordParsedItemHandler postgresWriter) {
-        RecordFileLogger.parserProperties = parserProperties;
-        RecordFileLogger.networkAddressBook = networkAddressBook;
-        RecordFileLogger.entityRepository = entityRepository;
-        RecordFileLogger.entityTypeRepository = entityTypeRepository;
-        RecordFileLogger.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
-        RecordFileLogger.postgresWriter = postgresWriter;
+        this.parserProperties = parserProperties;
+        this.networkAddressBook = networkAddressBook;
+        this.entityRepository = entityRepository;
+        this.entityTypeRepository = entityTypeRepository;
+        this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
+        this.postgresWriter = postgresWriter;
         transactionFilter = commonParserProperties.getFilter();
     }
 
-    static long getFileId() {
-        return fileId;
-    }
-
-    public static boolean start() {
+    public boolean start() {
         connect = DatabaseUtilities.openDatabase(connect);
 
         if (connect == null) {
@@ -123,7 +125,7 @@ public class RecordFileLogger {
         return true;
     }
 
-    public static boolean finish() {
+    public boolean finish() {
         try {
             postgresWriter.finish();
             connect = DatabaseUtilities.closeDatabase(connect);
@@ -134,7 +136,7 @@ public class RecordFileLogger {
         return true;
     }
 
-    public static INIT_RESULT initFile(String fileName) {
+    public INIT_RESULT initFile(String fileName) {
         try {
             fileId = 0;
 
@@ -158,7 +160,7 @@ public class RecordFileLogger {
         return INIT_RESULT.FAIL;
     }
 
-    public static void completeFile(String fileHash, String previousHash) throws SQLException {
+    public void completeFile(String fileHash, String previousHash) throws SQLException {
         try (CallableStatement fileClose = connect.prepareCall("{call f_file_complete( ?, ?, ? ) }")) {
             postgresWriter.onFileComplete();
 
@@ -184,7 +186,7 @@ public class RecordFileLogger {
         }
     }
 
-    public static void rollback() {
+    public void rollback() {
         try {
             connect.rollback();
         } catch (SQLException e) {
@@ -196,17 +198,20 @@ public class RecordFileLogger {
         return ResponseCodeEnum.SUCCESS == transactionRecord.getReceipt().getStatus();
     }
 
-    public static void storeRecord(Transaction transaction, TransactionRecord txRecord) throws Exception {
-        storeRecord(transaction, txRecord, null);
-    }
+    @Override
+    public void onItem(RecordItem recordItem) throws ImporterException {
+        Transaction transaction = recordItem.getTransaction();
+        TransactionRecord txRecord = recordItem.getRecord();
 
-    public static void storeRecord(Transaction transaction, TransactionRecord txRecord, byte[] rawBytes) throws Exception {
         TransactionBody body;
-
         if (transaction.hasBody()) {
             body = transaction.getBody();
         } else {
-            body = TransactionBody.parseFrom(transaction.getBodyBytes());
+            try {
+                body = TransactionBody.parseFrom(transaction.getBodyBytes());
+            } catch (InvalidProtocolBufferException e) {
+                throw new ParserException("Error parsing transaction from body bytes", e);
+            }
         }
 
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
@@ -429,7 +434,7 @@ public class RecordFileLogger {
         tx.setRecordFileId(fileId);
         tx.setResult(txRecord.getReceipt().getStatusValue());
         tx.setType(getTransactionType(body));
-        tx.setTransactionBytes(parserProperties.isPersistTransactionBytes() ? rawBytes : null);
+        tx.setTransactionBytes(parserProperties.isPersistTransactionBytes() ? recordItem.getTransactionBytes() : null);
         tx.setTransactionHash(txRecord.getTransactionHash().toByteArray());
         tx.setValidDurationSeconds(validDurationSeconds);
         tx.setValidStartNs(validStartNs);
@@ -499,7 +504,7 @@ public class RecordFileLogger {
      * @param transactionRecord
      * @return
      */
-    private static boolean shouldStoreNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord) {
+    private boolean shouldStoreNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord) {
         if (!body.hasCryptoCreateAccount() && !body.hasContractCreateInstance() && !body.hasCryptoTransfer() && !body
                 .hasContractCall()) {
             return false;
@@ -512,9 +517,8 @@ public class RecordFileLogger {
      * an itemized set of transfers that reflects non-fees (explicit transfers), threshold records, node fee, and
      * network+service fee (paid to treasury).
      */
-    private static void processNonFeeTransfers(long consensusTimestamp, AccountID payerAccountId,
-                                               TransactionBody body, TransactionRecord transactionRecord)
-            throws SQLException {
+    private void processNonFeeTransfers(long consensusTimestamp, AccountID payerAccountId,
+                                        TransactionBody body, TransactionRecord transactionRecord) {
         if (!shouldStoreNonFeeTransfers(body, transactionRecord)) {
             return;
         }
@@ -525,7 +529,7 @@ public class RecordFileLogger {
         }
     }
 
-    private static void addNonFeeTransferInserts(long consensusTimestamp, long realm, long accountNum, long amount) {
+    private void addNonFeeTransferInserts(long consensusTimestamp, long realm, long accountNum, long amount) {
         if (0 != amount) {
             postgresWriter.onNonFeeTransfer(
                     new NonFeeTransfer(consensusTimestamp, realm, accountNum, amount));
@@ -541,8 +545,8 @@ public class RecordFileLogger {
      * @throws SQLException
      * @throws IllegalArgumentException
      */
-    private static Entities storeConsensusCreateTopic(TransactionBody body,
-                                                      TransactionRecord transactionRecord) {
+    private Entities storeConsensusCreateTopic(TransactionBody body,
+                                               TransactionRecord transactionRecord) {
         if (!body.hasConsensusCreateTopic()) {
             throw new IllegalArgumentException("transaction is not a ConsensusCreateTopic");
         }
@@ -583,8 +587,8 @@ public class RecordFileLogger {
      * @throws SQLException
      * @throws IllegalArgumentException
      */
-    private static Entities storeConsensusUpdateTopic(TransactionBody body,
-                                                      TransactionRecord transactionRecord) {
+    private Entities storeConsensusUpdateTopic(TransactionBody body,
+                                               TransactionRecord transactionRecord) {
         if (!body.hasConsensusUpdateTopic()) {
             throw new IllegalArgumentException("transaction is not a ConsensusUpdateTopic");
         }
@@ -637,8 +641,8 @@ public class RecordFileLogger {
      * @throws SQLException
      * @throws IllegalArgumentException
      */
-    private static Entities storeConsensusDeleteTopic(TransactionBody body,
-                                                      TransactionRecord transactionRecord) {
+    private Entities storeConsensusDeleteTopic(TransactionBody body,
+                                               TransactionRecord transactionRecord) {
         if (!body.hasConsensusDeleteTopic()) {
             throw new IllegalArgumentException("transaction is not a ConsensusDeleteTopic");
         }
@@ -666,8 +670,8 @@ public class RecordFileLogger {
      * @throws SQLException
      * @throws IllegalArgumentException
      */
-    private static EntityId storeConsensusSubmitMessage(TransactionBody body,
-                                                        TransactionRecord transactionRecord) {
+    private EntityId storeConsensusSubmitMessage(TransactionBody body,
+                                                 TransactionRecord transactionRecord) {
         if (!body.hasConsensusSubmitMessage()) {
             throw new IllegalArgumentException("transaction is not a ConsensusSubmitMessage");
         }
@@ -681,8 +685,8 @@ public class RecordFileLogger {
         return getEntityId(transactionBody.getTopicID());
     }
 
-    private static void insertConsensusTopicMessage(ConsensusSubmitMessageTransactionBody transactionBody,
-                                                    TransactionRecord transactionRecord) {
+    private void insertConsensusTopicMessage(ConsensusSubmitMessageTransactionBody transactionBody,
+                                             TransactionRecord transactionRecord) {
         var receipt = transactionRecord.getReceipt();
         var topicId = transactionBody.getTopicID();
         TopicMessage topicMessage = new TopicMessage(
@@ -693,35 +697,37 @@ public class RecordFileLogger {
         postgresWriter.onTopicMessage(topicMessage);
     }
 
-    private static void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID) {
+    private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID) {
         if (parserProperties.isPersistFiles() ||
                 (parserProperties.isPersistSystemFiles() && fileID.getFileNum() < 1000)) {
             postgresWriter.onFileData(new FileData(consensusTimestamp, contents));
         }
     }
 
-    private static void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody)
-            throws IOException {
+    private void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody) {
         byte[] contents = transactionBody.getContents().toByteArray();
         insertFileData(consensusTimestamp, contents, transactionBody.getFileID());
-        // update the local address book
+        // we have an address book update, refresh the local file
         if (isFileAddressBook(transactionBody.getFileID())) {
-            // we have an address book update, refresh the local file
-            networkAddressBook.append(contents);
+            try {
+                networkAddressBook.append(contents);
+            } catch (IOException e) {
+                throw new ParserException("Error appending to network address book", e);
+            }
         }
     }
 
-    private static void insertCryptoAddClaim(long consensusTimestamp,
-                                             CryptoAddClaimTransactionBody transactionBody) {
+    private void insertCryptoAddClaim(long consensusTimestamp,
+                                      CryptoAddClaimTransactionBody transactionBody) {
         if (parserProperties.isPersistClaims()) {
             byte[] claim = transactionBody.getClaim().getHash().toByteArray();
             postgresWriter.onLiveHash(new LiveHash(consensusTimestamp, claim));
         }
     }
 
-    private static void insertContractCall(long consensusTimestamp,
-                                           ContractCallTransactionBody transactionBody,
-                                           TransactionRecord transactionRecord) throws SQLException {
+    private void insertContractCall(long consensusTimestamp,
+                                    ContractCallTransactionBody transactionBody,
+                                    TransactionRecord transactionRecord) {
         if (parserProperties.isPersistContracts()) {
             byte[] functionParams = transactionBody.getFunctionParameters().toByteArray();
             long gasSupplied = transactionBody.getGas();
@@ -735,9 +741,9 @@ public class RecordFileLogger {
         }
     }
 
-    private static void insertContractCreateInstance(long consensusTimestamp,
-                                                     ContractCreateTransactionBody transactionBody,
-                                                     TransactionRecord transactionRecord) throws SQLException {
+    private void insertContractCreateInstance(long consensusTimestamp,
+                                              ContractCreateTransactionBody transactionBody,
+                                              TransactionRecord transactionRecord) {
         if (parserProperties.isPersistContracts()) {
             byte[] functionParams = transactionBody.getConstructorParameters().toByteArray();
             long gasSupplied = transactionBody.getGas();
@@ -751,7 +757,7 @@ public class RecordFileLogger {
         }
     }
 
-    private static void insertTransferList(long consensusTimestamp, TransferList transferList) {
+    private void insertTransferList(long consensusTimestamp, TransferList transferList) {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var accountId = aa.getAccountID();
@@ -761,11 +767,11 @@ public class RecordFileLogger {
         }
     }
 
-    private static void insertCryptoCreateTransferList(long consensusTimestamp,
-                                                       TransactionRecord txRecord,
-                                                       TransactionBody body,
-                                                       AccountID createdAccountId,
-                                                       AccountID payerAccountId) {
+    private void insertCryptoCreateTransferList(long consensusTimestamp,
+                                                TransactionRecord txRecord,
+                                                TransactionBody body,
+                                                AccountID createdAccountId,
+                                                AccountID payerAccountId) {
 
         long initialBalance = 0;
         long createdAccountNum = 0;
@@ -802,7 +808,7 @@ public class RecordFileLogger {
         }
     }
 
-    private static void addCryptoTransferList(long consensusTimestamp, long realmNum, long accountNum, long amount) {
+    private void addCryptoTransferList(long consensusTimestamp, long realmNum, long accountNum, long amount) {
         postgresWriter.onCryptoTransferList(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
     }
 
@@ -810,19 +816,17 @@ public class RecordFileLogger {
         return (fileId.getFileNum() == 102) && (fileId.getShardNum() == 0) && (fileId.getRealmNum() == 0);
     }
 
-    private static void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody)
-            throws IOException {
+    private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody) {
         FileID fileId = transactionBody.getFileID();
-        if (parserProperties.isPersistFiles() ||
-                (parserProperties.isPersistSystemFiles() && fileId.getFileNum() < 1000)) {
-            byte[] contents = transactionBody.getContents().toByteArray();
-            postgresWriter.onFileData(new FileData(consensusTimestamp, contents));
-        }
-
-        // update the local address book
+        byte[] contents = transactionBody.getContents().toByteArray();
+        insertFileData(consensusTimestamp, contents, fileId);
+        // we have an address book update, refresh the local file
         if (isFileAddressBook(fileId)) {
-            // we have an address book update, refresh the local file
-            networkAddressBook.update(transactionBody.getContents().toByteArray());
+            try {
+                networkAddressBook.update(contents);
+            } catch (IOException e) {
+                throw new ParserException("Error appending to network address book", e);
+            }
         }
     }
 
@@ -851,29 +855,29 @@ public class RecordFileLogger {
         return dataCase.getNumber();
     }
 
-    private static void insertContractResults(
+    private void insertContractResults(
             long consensusTimestamp, byte[] functionParams, long gasSupplied, byte[] callResult, long gasUsed) {
         postgresWriter.onContractResult(
                 new ContractResult(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed));
     }
 
-    public static Entities getEntity(AccountID accountID) {
+    public Entities getEntity(AccountID accountID) {
         return getEntity(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum(), "account");
     }
 
-    public static Entities getEntity(ContractID cid) {
+    public Entities getEntity(ContractID cid) {
         return getEntity(cid.getShardNum(), cid.getRealmNum(), cid.getContractNum(), "contract");
     }
 
-    public static Entities getEntity(FileID fileId) {
+    public Entities getEntity(FileID fileId) {
         return getEntity(fileId.getShardNum(), fileId.getRealmNum(), fileId.getFileNum(), "file");
     }
 
-    public static Entities getEntity(TopicID topicId) {
+    public Entities getEntity(TopicID topicId) {
         return getEntity(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum(), "topic");
     }
 
-    private static Entities getEntity(long shardNum, long realmNum, long entityNum, String type) {
+    private Entities getEntity(long shardNum, long realmNum, long entityNum, String type) {
         return entityRepository.findByPrimaryKey(shardNum, realmNum, entityNum).orElseGet(() -> {
             Entities entity = new Entities();
             entity.setEntityNum(entityNum);
@@ -884,23 +888,23 @@ public class RecordFileLogger {
         });
     }
 
-    public static EntityId getEntityId(AccountID accountID) {
+    public EntityId getEntityId(AccountID accountID) {
         return getEntityId(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum(), "account");
     }
 
-    public static EntityId getEntityId(ContractID cid) {
+    public EntityId getEntityId(ContractID cid) {
         return getEntityId(cid.getShardNum(), cid.getRealmNum(), cid.getContractNum(), "contract");
     }
 
-    public static EntityId getEntityId(FileID fileId) {
+    public EntityId getEntityId(FileID fileId) {
         return getEntityId(fileId.getShardNum(), fileId.getRealmNum(), fileId.getFileNum(), "file");
     }
 
-    public static EntityId getEntityId(TopicID topicId) {
+    public EntityId getEntityId(TopicID topicId) {
         return getEntityId(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum(), "topic");
     }
 
-    private static EntityId getEntityId(long shardNum, long realmNum, long entityNum, String type) {
+    private EntityId getEntityId(long shardNum, long realmNum, long entityNum, String type) {
         if (0 == entityNum) {
             return null;
         }
@@ -914,7 +918,7 @@ public class RecordFileLogger {
         });
     }
 
-    private static Entities createEntity(Entities entity) {
+    private Entities createEntity(Entities entity) {
         if (entity != null && entity.getId() == null) {
             log.debug("Creating entity: {}", () -> entity.getDisplayId());
             var result = entityRepository.save(entity);

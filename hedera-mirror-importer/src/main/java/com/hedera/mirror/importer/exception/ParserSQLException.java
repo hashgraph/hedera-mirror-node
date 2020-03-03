@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class ParserSQLException extends ImporterException {
+public class ParserSQLException extends ParserException {
 
     private static final long serialVersionUID = 5216154273755649844L;
 

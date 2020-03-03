@@ -88,17 +88,20 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     protected NonFeeTransferRepository nonFeeTransferRepository;
 
     @Resource
+    protected RecordFileLogger recordFileLogger;
+
+    @Resource
     protected RecordParserProperties parserProperties;
 
     @BeforeEach
     final void beforeCommon() throws Exception {
-        assertTrue(RecordFileLogger.start());
-        assertEquals(RecordFileLogger.INIT_RESULT.OK, RecordFileLogger.initFile(UUID.randomUUID().toString()));
+        assertTrue(recordFileLogger.start());
+        assertEquals(RecordFileLogger.INIT_RESULT.OK, recordFileLogger.initFile(UUID.randomUUID().toString()));
     }
 
     @AfterEach
     final void afterCommon() {
-        RecordFileLogger.finish();
+        recordFileLogger.finish();
     }
 
     protected final void assertAccount(AccountID accountId, com.hedera.mirror.importer.domain.Entities dbEntity) {
@@ -129,8 +132,8 @@ public class AbstractRecordFileLoggerTest extends IntegrationTest {
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) throws Exception {
-        RecordFileLogger.storeRecord(recordItem.getTransaction(), recordItem.getRecord());
-        RecordFileLogger.completeFile("", "");
+        recordFileLogger.onItem(recordItem);
+        recordFileLogger.completeFile("", "");
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {

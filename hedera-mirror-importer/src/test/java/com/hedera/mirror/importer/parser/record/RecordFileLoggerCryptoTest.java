@@ -325,7 +325,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         TransactionBody firstTransactionBody = TransactionBody.parseFrom(firstTransaction.getBodyBytes());
         TransactionRecord firstRecord = transactionRecordSuccess(firstTransactionBody);
 
-        RecordFileLogger.storeRecord(firstTransaction, firstRecord);
+        parseRecordItemAndCommit(new RecordItem(firstTransaction, firstRecord));
 
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -385,7 +385,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
         TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
 
-        RecordFileLogger.storeRecord(createTransaction, createRecord);
+        parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
         // now update
         Transaction transaction = cryptoUpdateTransaction();
@@ -471,7 +471,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         var createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
         var createRecord = transactionRecordSuccess(createTransactionBody);
 
-        RecordFileLogger.storeRecord(createTransaction, createRecord);
+        parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
         // now update
         var updateTransaction = Transaction.newBuilder();
@@ -488,8 +488,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         updateTransaction.setBodyBytes(transactionBody.build().toByteString());
         var rec = transactionRecordSuccess(transactionBody.build());
 
-        RecordFileLogger.storeRecord(updateTransaction.build(), rec);
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(updateTransaction.build(), rec));
 
         var dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(rec.getConsensusTimestamp())).get();
@@ -510,7 +509,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
         TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
 
-        RecordFileLogger.storeRecord(createTransaction, createRecord);
+        parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
         // now update
         Transaction transaction = cryptoUpdateTransaction();
@@ -562,7 +561,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
         TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
 
-        RecordFileLogger.storeRecord(createTransaction, createRecord);
+        parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
         // now delete
         Transaction transaction = cryptoDeleteTransaction();
@@ -618,7 +617,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
         TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
 
-        RecordFileLogger.storeRecord(createTransaction, createRecord);
+        parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
         // now delete
         Transaction transaction = cryptoDeleteTransaction();
@@ -675,7 +674,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
         TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
 
-        RecordFileLogger.storeRecord(createTransaction, createRecord);
+        parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
         // now add claim
         Transaction transaction = cryptoAddClaimTransaction();
@@ -727,7 +726,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
         TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
 
-        RecordFileLogger.storeRecord(createTransaction, createRecord);
+        parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
         // now add claim
         Transaction transaction = cryptoAddClaimTransaction();
@@ -775,14 +774,14 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
         TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
 
-        RecordFileLogger.storeRecord(createTransaction, createRecord);
+        parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
         // add a claim
         Transaction transactionAddClaim = cryptoAddClaimTransaction();
         TransactionBody transactionBodyAddClaim = TransactionBody.parseFrom(transactionAddClaim.getBodyBytes());
         TransactionRecord recordAddClaim = transactionRecordSuccess(transactionBodyAddClaim);
 
-        RecordFileLogger.storeRecord(transactionAddClaim, recordAddClaim);
+        parseRecordItemAndCommit(new RecordItem(transactionAddClaim, recordAddClaim));
 
         // now delete the claim
         Transaction transaction = cryptoDeleteClaimTransaction();
@@ -1200,9 +1199,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecordSuccess(transactionBody);
         byte[] rawBytes = transaction.getBodyBytes().toByteArray();
 
-        RecordFileLogger.storeRecord(transaction, record, rawBytes);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record, rawBytes, null));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1219,9 +1216,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecordSuccess(transactionBody);
         byte[] rawBytes = transaction.getBodyBytes().toByteArray();
 
-        RecordFileLogger.storeRecord(transaction, record, rawBytes);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record, rawBytes, null));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1238,9 +1233,7 @@ public class RecordFileLoggerCryptoTest extends AbstractRecordFileLoggerTest {
         TransactionRecord record = transactionRecordSuccess(transactionBody);
         byte[] rawBytes = transaction.getBodyBytes().toByteArray();
 
-        RecordFileLogger.storeRecord(transaction, record, rawBytes);
-
-        RecordFileLogger.completeFile("", "");
+        parseRecordItemAndCommit(new RecordItem(transaction, record, rawBytes, null));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
