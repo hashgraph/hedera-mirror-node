@@ -133,6 +133,7 @@ jobs:
           POSTGRES_PASSWORD: mirror_node_pass
           POSTGRES_USER: mirror_node
     steps:
+      - checkout
       - *pom_checksum
       - *restore_maven_cache
       - run:
