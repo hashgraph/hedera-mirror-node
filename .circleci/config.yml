@@ -37,12 +37,6 @@ workflows:
               only: /.*/
             tags:
               only: /.*/
-      - perf_maven:
-          filters:
-            branches:
-              only: /.*/
-            tags:
-              only: /.*/
       - build_rest:
           filters: # required since `release_artifacts` has tag filters AND requires `this`
             branches:
@@ -67,6 +61,12 @@ workflows:
               ignore: /.*/
             tags:
               only: /^.*/
+      - perf_maven:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
 
 jobs:
   build_maven:
@@ -133,9 +133,12 @@ jobs:
           POSTGRES_PASSWORD: mirror_node_pass
           POSTGRES_USER: mirror_node
     steps:
+      - *pom_checksum
+      - *restore_maven_cache
       - run:
           name: Running maven (integration)
           command: ./mvnw ${MAVEN_CLI_OPTS} integration-test --projects hedera-mirror-importer/ -P performance-test
+      - *save_maven_cache
       - store_test_results:
           path: hedera-mirror-importer/target/failsafe-reports
 
