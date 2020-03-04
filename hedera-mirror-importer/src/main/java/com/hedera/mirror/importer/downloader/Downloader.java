@@ -271,7 +271,7 @@ public abstract class Downloader {
      * @param sigFilesMap
      */
     private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
-        // reload address book and keys in case it has been updated by RecordFileLogger
+        // reload address book and keys in case it has been updated by RecordItemParser
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(networkAddressBook);
         Path validPath = downloaderProperties.getValidPath();
 

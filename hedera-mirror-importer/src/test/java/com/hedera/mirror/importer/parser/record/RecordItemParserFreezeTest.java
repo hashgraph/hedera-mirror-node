@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public class RecordFileLoggerFreezeTest extends AbstractRecordFileLoggerTest {
+public class RecordItemParserFreezeTest extends AbstractRecordItemParserTest {
 
     private static final String memo = "File test memo";
 

@@ -61,7 +61,7 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public class RecordFileLoggerFileTest extends AbstractRecordFileLoggerTest {
+public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
 
     //TODO: The following are not yet saved to the mirror node database
     // transactionBody.getTransactionFee()
