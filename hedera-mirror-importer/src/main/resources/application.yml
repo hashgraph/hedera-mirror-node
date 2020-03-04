@@ -8,6 +8,10 @@ hedera:
       password: mirror_node_pass
       port: 5432
       username: mirror_node
+    parser:
+      record:
+        pubsub:
+          enabled: false
 logging:
   level:
     root: warn
@@ -20,6 +24,11 @@ management:
     web:
       exposure:
         include: health, info, prometheus
+  health:
+    pubsub:
+      # Just importing pubsub deps enables its health checker and it requires auth credentials.
+      # Setting spring.cloud.gcp.pubsub.enabled=false is not enough to disable the pubsub health check.
+      enabled: ${hedera.mirror.parser.record.pubsub.enabled}
   metrics:
     export:
       elastic:
@@ -34,6 +43,13 @@ spring:
   application:
     name: hedera-mirror-importer
   cloud:
+    gcp:
+      core: # Initializes credentials, which may be not set if pubsub is disabled.
+        enabled: ${hedera.mirror.parser.record.pubsub.enabled}
+      pubsub:
+        enabled: ${hedera.mirror.parser.record.pubsub.enabled}
+      credentials:
+        location: ${hedera.mirror.parser.record.pubsub.credentialsLocation}
     kubernetes:
       reload:
         enabled: true

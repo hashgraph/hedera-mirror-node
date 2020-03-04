@@ -77,5 +77,12 @@ public class RecordParserProperties implements ParserProperties {
          * If configured the mirror node will store the raw transaction bytes on the t_transaction table
          */
         private boolean transactionBytes = false;
+
+        private Destination to = Destination.DATABASE;
+    }
+
+    public enum Destination {
+        DATABASE,
+        PUBSUB
     }
 }
