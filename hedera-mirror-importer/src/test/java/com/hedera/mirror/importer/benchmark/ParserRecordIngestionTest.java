@@ -4,8 +4,8 @@ import java.nio.file.Path;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,8 +20,8 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 @Log4j2
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class ParserRecordIngestionIT extends IntegrationTest {
+@Tag("performance")
+public class ParserRecordIngestionTest extends IntegrationTest {
 
     @TempDir
     Path dataPath;
