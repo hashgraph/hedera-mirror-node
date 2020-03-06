@@ -23,21 +23,27 @@ package com.hedera.mirror.importer.parser.record;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
-import com.google.common.collect.Sets;
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.FileCopier;
@@ -45,10 +51,9 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.parser.RecordStreamFileListener;
+import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
-import com.hedera.mirror.importer.repository.TransactionRepository;
 
 // Class manually commits so have to manually cleanup tables
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
@@ -60,15 +65,16 @@ public class RecordFileParserTest extends IntegrationTest {
     @Value("classpath:data")
     Path testPath;
     @Resource
+    @InjectMocks
     private RecordFileParser recordFileParser;
     @Resource
     private ApplicationStatusRepository applicationStatusRepository;
     @Resource
-    private TransactionRepository transactionRepository;
-    @Resource
-    private RecordFileRepository recordFileRepository;
-    @Resource
     private RecordParserProperties parserProperties;
+    @MockBean
+    private RecordItemListener recordItemListener;
+    @MockBean
+    private RecordStreamFileListener recordStreamFileListener;
     private FileCopier fileCopier;
     private StreamType streamType;
 
@@ -76,6 +82,8 @@ public class RecordFileParserTest extends IntegrationTest {
     private File file2;
     private static final int NUM_TXNS_FILE_1 = 19;
     private static final int NUM_TXNS_FILE_2 = 15;
+    private static RecordFile recordFile1;
+    private static RecordFile recordFile2;
 
     @BeforeEach
     void before() {
@@ -88,139 +96,175 @@ public class RecordFileParserTest extends IntegrationTest {
                 .to(streamType.getPath(), streamType.getValid());
         file1 = parserProperties.getValidPath().resolve("2019-08-30T18_10_00.419072Z.rcd").toFile();
         file2 = parserProperties.getValidPath().resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
+        recordFile1 = new RecordFile(0L, file1.getPath(), 0L, 0L,
+                "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
+                "");
+        recordFile2 = new RecordFile(0L, file2.getPath(), 0L, 0L,
+                "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
+                recordFile1.getFileHash());
+    }
+
+    // Asserts that recordStreamFileListener.onStart is called exactly with given fileNames.
+    private void assertOnStart(String... fileNames) {
+        ArgumentCaptor<StreamFileData> captor = ArgumentCaptor.forClass(StreamFileData.class);
+        verify(recordStreamFileListener, times(fileNames.length)).onStart(captor.capture());
+        List<StreamFileData> actualArgs = captor.getAllValues();
+        assertThat(actualArgs)
+                .extracting(StreamFileData::getFilename)
+                .contains(fileNames);
+    }
+
+    // Asserts that recordStreamFileListener.onEnd is called exactly with given params, in given order
+    private void assertOnEnd(RecordFile... recordFiles) {
+        ArgumentCaptor<RecordFile> captor = ArgumentCaptor.forClass(RecordFile.class);
+        verify(recordStreamFileListener, times(recordFiles.length)).onEnd(captor.capture());
+        List<RecordFile> actualArgs = captor.getAllValues();
+        for (int i = 0; i < recordFiles.length; i++) {
+            RecordFile actual = actualArgs.get(i);
+            RecordFile expected = recordFiles[i];
+            assertEquals(expected.getId(), actual.getId());
+            assertEquals(expected.getName(), actual.getName());
+            assertEquals(expected.getFileHash(), actual.getFileHash());
+            assertEquals(expected.getPreviousHash(), actual.getPreviousHash());
+        }
+    }
+
+    // Asserts that parsed directory contains exactly the files with given fileNames
+    private void assertParsedFiles(String... fileNames) throws Exception {
+        assertThat(Files.walk(parserProperties.getParsedPath()))
+                .filteredOn(p -> !p.toFile().isDirectory())
+                .hasSize(fileNames.length)
+                .extracting(Path::getFileName)
+                .extracting(Path::toString)
+                .contains(fileNames);
     }
 
     @Test
     void parse() throws Exception {
+        // setup
         fileCopier.copy();
+        when(recordStreamFileListener.onStart(any())).thenAnswer(invocation -> {
+            StreamFileData streamFileData = invocation.getArgument(0, StreamFileData.class);
+            RecordFile recordFile = new RecordFile();
+            recordFile.setId(0L);
+            recordFile.setName(streamFileData.getFilename());
+            return Optional.of(recordFile);
+        });
+
+        // when
         recordFileParser.parse();
 
-        assertThat(Files.walk(parserProperties.getParsedPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(2)
-                .extracting(Path::getFileName)
-                .contains(Paths.get(file2.getName()))
-                .contains(Paths.get(file1.getName()));
-
-        Assertions.assertThat(transactionRepository.findAll())
-                .hasSize(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)
-                .extracting(Transaction::getType)
-                .containsOnlyElementsOf(Sets.newHashSet(11, 12, 14));
-        assertEquals(1, recordFileRepository.findByName(file1.toString()).size());
-        assertEquals(1, recordFileRepository.findByName(file2.toString()).size());
+        // expect
+        assertParsedFiles(file1.getName(), file2.getName());
+        verify(recordItemListener, times(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)).onItem(any());
+        assertOnStart(file1.getPath(), file2.getPath());
+        assertOnEnd(recordFile1, recordFile2);
     }
 
     @Test
     void disabled() throws Exception {
+        // setup
         parserProperties.setEnabled(false);
         fileCopier.copy();
+
+        // when
         recordFileParser.parse();
-        assertThat(Files.walk(parserProperties.getParsedPath())).filteredOn(p -> !p.toFile().isDirectory()).hasSize(0);
-        assertThat(transactionRepository.count()).isEqualTo(0L);
-        assertEquals(0, recordFileRepository.count());
+
+        // expect
+        assertParsedFiles();
+        verifyNoInteractions(recordItemListener);
+        verifyNoInteractions(recordStreamFileListener);
     }
 
     @Test
     void noFiles() throws Exception {
+        // when
         recordFileParser.parse();
-        assertThat(Files.walk(parserProperties.getParsedPath())).filteredOn(p -> !p.toFile().isDirectory()).hasSize(0);
-        assertThat(transactionRepository.count()).isEqualTo(0L);
-        assertEquals(0, recordFileRepository.count());
+
+        // expect
+        assertParsedFiles();
+        verifyNoInteractions(recordItemListener);
+        verifyNoInteractions(recordStreamFileListener);
     }
 
     @Test
     void invalidFile() throws Exception {
+        // setup
         FileUtils.writeStringToFile(file2, "corrupt", "UTF-8");
+
+        // when
         recordFileParser.parse();
-        assertThat(Files.walk(parserProperties.getParsedPath())).filteredOn(p -> !p.toFile().isDirectory()).hasSize(0);
-        assertThat(transactionRepository.count()).isEqualTo(0L);
-        assertEquals(0, recordFileRepository.count());
+
+        // expect
+        assertParsedFiles();
+        verifyNoInteractions(recordItemListener);
+        verifyNoInteractions(recordStreamFileListener);
     }
 
     @Test
     void hashMismatch() throws Exception {
+        // setup
         applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "123");
         fileCopier.copy();
+
+        // when
         recordFileParser.parse();
-        assertThat(Files.walk(parserProperties.getParsedPath())).filteredOn(p -> !p.toFile().isDirectory()).hasSize(0);
-        assertThat(transactionRepository.count()).isEqualTo(0L);
-        assertEquals(0, recordFileRepository.count());
+
+        // expect
+        assertParsedFiles();
+        verifyNoInteractions(recordItemListener);
+        verifyNoInteractions(recordStreamFileListener);
     }
 
     @Test
     void bypassHashMismatch() throws Exception {
-        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "123");
-        applicationStatusRepository
-                .updateStatusValue(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER,
-                        "2019-09-01T00:00:00.000000Z.rcd");
+        // setup
+        applicationStatusRepository.updateStatusValue(
+                ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, "2019-09-01T00:00:00.000000Z.rcd");
         fileCopier.copy();
+
+        // when
         recordFileParser.parse();
 
-        assertThat(Files.walk(parserProperties.getParsedPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(2)
-                .extracting(Path::getFileName)
-                .contains(Paths.get(file2.getName()))
-                .contains(Paths.get(file1.getName()));
-
-        Assertions.assertThat(transactionRepository.findAll()).hasSize(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2);
+        // expect
+        assertParsedFiles(file1.getName(), file2.getName());
+        verify(recordItemListener, times(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)).onItem(any());
+        assertOnStart(file1.getPath(), file2.getPath());
     }
 
     // Bad record with invalid timestamp should fail the file parsing and rollback the transaction.
     @Test
     void badTimestampLongOverflowTest() throws Exception {
+        // setup
         FileCopier.create(testPath, dataPath)
                 .from("badTimestampLongOverflowTest")
                 .to(streamType.getPath(), streamType.getValid()).copy();
+
+        // when
         recordFileParser.parse();
-        assertThat(Files.walk(parserProperties.getParsedPath())).filteredOn(p -> !p.toFile().isDirectory()).hasSize(0);
-        assertThat(transactionRepository.count()).isEqualTo(0L);
-        assertEquals(0, recordFileRepository.count());
+
+        // expect
+        assertParsedFiles();
+        verifyNoInteractions(recordItemListener);
+        verify(recordStreamFileListener).onError();
     }
 
     @Test
     void loadRecordFileTwiceShouldSkip() throws Exception {
-        // given
-        recordFileParser.initConnection();
+        // setup
         fileCopier.copy();
         String fileName = file1.toString();
-        boolean success = recordFileParser.loadRecordFile(fileName, new FileInputStream(file1), "", "");
-        assertTrue(success);
-        Assertions.assertThat(transactionRepository.findAll()).hasSize(NUM_TXNS_FILE_1);
-        assertEquals(1, recordFileRepository.findByName(fileName).size());
+        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)), "", "");
 
         // when: load same file again
-        success = recordFileParser.loadRecordFile(fileName, new FileInputStream(file1), "", "");
+        when(recordStreamFileListener.onStart(any())).thenReturn(Optional.empty());
+        boolean success = recordFileParser.loadRecordFile(
+                new StreamFileData(fileName, new FileInputStream(file1)), "", "");
 
         // expect
         assertTrue(success);
-        Assertions.assertThat(transactionRepository.findAll()).hasSize(NUM_TXNS_FILE_1);
-        assertEquals(1, recordFileRepository.findByName(fileName).size());
-
-        recordFileParser.closeConnection();
-    }
-
-    @Test
-    void checkHashes() throws Exception {
-        // given
-        recordFileParser.initConnection();
-        String expectedPrevFileHash =
-                "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda";
-        fileCopier.copy();
-        String fileName = file2.toString();
-
-        // when
-        boolean success = recordFileParser
-                .loadRecordFile(fileName, new FileInputStream(file2), expectedPrevFileHash, "456");
-
-        // expect
-        assertTrue(success);
-        List<RecordFile> recordFileList = recordFileRepository.findByName(fileName);
-        assertEquals(1, recordFileList.size());
-        RecordFile recordFile = recordFileList.get(0);
-        assertEquals(expectedPrevFileHash, recordFile.getPreviousHash());
-        assertEquals("456", recordFile.getFileHash());
-
-        recordFileParser.closeConnection();
+        verify(recordItemListener, times(NUM_TXNS_FILE_1)).onItem(any());
+        verify(recordStreamFileListener, times(2)).onStart(any());
+        verify(recordStreamFileListener, times(1)).onEnd(any());
     }
 }

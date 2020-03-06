@@ -21,11 +21,9 @@ package com.hedera.mirror.importer;
  */
 
 import javax.annotation.PreDestroy;
-
 import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;

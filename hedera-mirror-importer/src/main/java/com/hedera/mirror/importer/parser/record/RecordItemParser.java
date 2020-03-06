@@ -76,19 +76,19 @@ public class RecordItemParser implements RecordItemListener {
     private final EntityTypeRepository entityTypeRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final Predicate<com.hedera.mirror.importer.domain.Transaction> transactionFilter;
-    private final PostgresWritingRecordParsedItemHandler postgresWriter;
+    private final RecordParsedItemHandler recordParsedItemHandler;
 
     public RecordItemParser(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
                             NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
                             EntityTypeRepository entityTypeRepository,
                             NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
-                            PostgresWritingRecordParsedItemHandler postgresWriter) {
+                            RecordParsedItemHandler recordParsedItemHandler) {
         this.parserProperties = parserProperties;
         this.networkAddressBook = networkAddressBook;
         this.entityRepository = entityRepository;
         this.entityTypeRepository = entityTypeRepository;
         this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
-        this.postgresWriter = postgresWriter;
+        this.recordParsedItemHandler = recordParsedItemHandler;
         transactionFilter = commonParserProperties.getFilter();
     }
 
@@ -389,7 +389,7 @@ public class RecordItemParser implements RecordItemListener {
             }
         }
 
-        postgresWriter.onTransaction(tx);
+        recordParsedItemHandler.onTransaction(tx);
         log.debug("Storing transaction: {}", tx);
     }
 
@@ -428,7 +428,7 @@ public class RecordItemParser implements RecordItemListener {
 
     private void addNonFeeTransferInserts(long consensusTimestamp, long realm, long accountNum, long amount) {
         if (0 != amount) {
-            postgresWriter.onNonFeeTransfer(
+            recordParsedItemHandler.onNonFeeTransfer(
                     new NonFeeTransfer(consensusTimestamp, realm, accountNum, amount));
         }
     }
@@ -591,13 +591,13 @@ public class RecordItemParser implements RecordItemListener {
                 transactionBody.getMessage().toByteArray(), (int) topicId.getRealmNum(),
                 receipt.getTopicRunningHash().toByteArray(), receipt.getTopicSequenceNumber(),
                 (int) topicId.getTopicNum());
-        postgresWriter.onTopicMessage(topicMessage);
+        recordParsedItemHandler.onTopicMessage(topicMessage);
     }
 
     private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID) {
         if (parserProperties.isPersistFiles() ||
                 (parserProperties.isPersistSystemFiles() && fileID.getFileNum() < 1000)) {
-            postgresWriter.onFileData(new FileData(consensusTimestamp, contents));
+            recordParsedItemHandler.onFileData(new FileData(consensusTimestamp, contents));
         }
     }
 
@@ -618,7 +618,7 @@ public class RecordItemParser implements RecordItemListener {
                                       CryptoAddClaimTransactionBody transactionBody) {
         if (parserProperties.isPersistClaims()) {
             byte[] claim = transactionBody.getClaim().getHash().toByteArray();
-            postgresWriter.onLiveHash(new LiveHash(consensusTimestamp, claim));
+            recordParsedItemHandler.onLiveHash(new LiveHash(consensusTimestamp, claim));
         }
     }
 
@@ -706,7 +706,7 @@ public class RecordItemParser implements RecordItemListener {
     }
 
     private void addCryptoTransferList(long consensusTimestamp, long realmNum, long accountNum, long amount) {
-        postgresWriter.onCryptoTransferList(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
+        recordParsedItemHandler.onCryptoTransferList(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
     }
 
     private static boolean isFileAddressBook(FileID fileId) {
@@ -754,7 +754,7 @@ public class RecordItemParser implements RecordItemListener {
 
     private void insertContractResults(
             long consensusTimestamp, byte[] functionParams, long gasSupplied, byte[] callResult, long gasUsed) {
-        postgresWriter.onContractResult(
+        recordParsedItemHandler.onContractResult(
                 new ContractResult(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed));
     }
 

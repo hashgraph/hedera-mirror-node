@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.sql.Connection;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,8 +43,10 @@ import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -53,11 +54,9 @@ import com.hedera.mirror.importer.repository.EntityTypeRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionResultRepository;
-import com.hedera.mirror.importer.util.DatabaseUtilities;
 import com.hedera.mirror.importer.util.Utility;
 
 //Class manually commits so have to manually cleanup tables
@@ -95,18 +94,16 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
     @Resource
     protected PostgresWritingRecordParsedItemHandler postgresWriter;
 
-    protected Connection connect;
+    private RecordFile recordFile;
 
     @BeforeEach
-    final void beforeCommon() throws Exception {
-        connect = DatabaseUtilities.getConnection();
-        connect.setAutoCommit(false);
-        postgresWriter.initSqlStatements(connect);
+    final void beforeCommon() {
+        recordFile = postgresWriter.onStart(new StreamFileData("fileName", null)).get();
     }
 
     @AfterEach
-    final void afterCommon() throws Exception {
-        connect.close();
+    final void afterCommon() {
+        postgresWriter.onEnd(recordFile);
     }
 
     protected final void assertAccount(AccountID accountId, com.hedera.mirror.importer.domain.Entities dbEntity) {
@@ -138,8 +135,7 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) throws Exception {
         recordItemParser.onItem(recordItem);
-        postgresWriter.onFileComplete();
-        connect.commit();
+        postgresWriter.onEnd(recordFile);
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {
