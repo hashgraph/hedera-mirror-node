@@ -91,9 +91,11 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
     private RecordFile recordFile;
 
+    private static final String FILE_NAME = "fileName";
+
     @BeforeEach
     final void beforeEach() {
-        recordFile = postgresWriter.onStart(new StreamFileData("fileName", null)).get();
+        recordFile = postgresWriter.onStart(new StreamFileData(FILE_NAME, null)).get();
     }
 
     void completeFileAndCommit() {
@@ -259,6 +261,21 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         // expect
         assertEquals(0, nonFeeTransferRepository.count());
         assertEquals(0, cryptoTransferRepository.count());
+    }
+
+    @Test
+    void onDuplicateFileReturnEmpty() {
+        // given: file processed once
+        completeFileAndCommit();
+
+        // when
+        var recordFile = postgresWriter.onStart(new StreamFileData(FILE_NAME, null));
+
+        // expect
+        assertTrue(recordFile.isEmpty());
+
+        // Since no onEnd/onError would be called, SQL resource should have been released already. No explicit
+        // connection cleanup here.
     }
 
     static <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {

@@ -28,9 +28,6 @@ import java.sql.Types;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.sql.DataSource;
-
-import com.hedera.mirror.importer.parser.RecordStreamFileListener;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -43,7 +40,9 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
+import com.hedera.mirror.importer.parser.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -80,6 +79,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             if (fileId == 0) {
                 log.trace("File {} already exists in the database.", fileName);
                 closeConnectionAndStatements();
+                return Optional.empty();
             } else {
                 log.trace("Added file {} to the database.", fileName);
             }
@@ -88,9 +88,8 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             recordFile.setName(fileName);
             return Optional.of(recordFile);
         } catch (Exception e) {
-            log.error("Error saving file in database: {}", fileName, e);
             closeConnectionAndStatements();
-            return Optional.empty();
+            throw new ParserException("Error saving file in database: " + fileName, e);
         }
     }
 

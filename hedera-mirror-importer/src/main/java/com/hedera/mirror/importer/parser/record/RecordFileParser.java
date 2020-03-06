@@ -139,7 +139,9 @@ public class RecordFileParser implements FileParser {
     /**
      * Given a service record name, read and parse and return as a list of service record pair
      *
-     * @param streamFileData containing information about file to be processed
+     * @param streamFileData       containing information about file to be processed
+     * @param expectedPrevFileHash the hash of the previous record file in the series
+     * @param thisFileHash         the hash of this file
      * @return return boolean indicating method success
      * @throws Exception
      */
