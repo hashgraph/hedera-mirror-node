@@ -22,9 +22,11 @@ package com.hedera.mirror.importer.parser.record;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
@@ -32,10 +34,8 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
-import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.shaded.org.bouncycastle.util.Strings;
@@ -89,18 +89,12 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
     @Resource
     protected PostgresWriterProperties postgresWriterProperties;
 
-    protected Connection connection;
     private RecordFile recordFile;
 
     @BeforeEach
     final void beforeEach() {
         recordFile = postgresWriter.onStart(new StreamFileData("fileName", null)).get();
     }
-//
-//    @AfterEach
-//    final void afterEach() {
-//        postgresWriter.onEnd(recordFile);
-//    }
 
     void completeFileAndCommit() {
         postgresWriter.onEnd(recordFile);
@@ -217,43 +211,50 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
     // Test that on seeing 'batchSize' number of transactions, 'executeBatch()' is called for all PreparedStatements
     // issued by the connection.
     @Test
-    @Ignore
     void batchSize() throws Exception {
         // setup
         int batchSize = 10;
         postgresWriterProperties.setBatchSize(batchSize);
-        Connection connection2 = Mockito.mock(Connection.class);
-        List<PreparedStatement> preparedStatements = new ArrayList<>(); // tracks all PreparedStatements
-        when(connection2.prepareStatement(any())).then(ignored -> {
-            PreparedStatement preparedStatement = Mockito.mock(PreparedStatement.class);
+        //
+        CallableStatement fileCreate = mock(CallableStatement.class);
+        when(fileCreate.getLong(any())).thenReturn(1L);
+
+        Connection connection = mock(Connection.class);
+        when(connection.prepareCall(any())).thenReturn(fileCreate);
+        List<PreparedStatement> insertStatements = new ArrayList<>(); // tracks all PreparedStatements
+        when(connection.prepareStatement(any())).then(ignored -> {
+            PreparedStatement preparedStatement = mock(PreparedStatement.class);
             when(preparedStatement.executeBatch()).thenReturn(new int[] {});
-            preparedStatements.add(preparedStatement);
+            insertStatements.add(preparedStatement);
             return preparedStatement;
         });
 
-        DataSource dataSource = Mockito.mock(DataSource.class);
-        when(dataSource.getConnection()).thenReturn(connection2);
+        DataSource dataSource = mock(DataSource.class);
+        when(dataSource.getConnection()).thenReturn(connection);
         PostgresWritingRecordParsedItemHandler postgresWriter2 =
                 new PostgresWritingRecordParsedItemHandler(postgresWriterProperties, dataSource);
-        postgresWriter2.onStart(new StreamFileData("fileName", null));
+        postgresWriter2.onStart(new StreamFileData("fileName", null)).get();
 
         // when
         for (int i = 0; i < batchSize; i++) {
-            postgresWriter2.onTransaction(Mockito.mock(Transaction.class));
+            postgresWriter2.onTransaction(mock(Transaction.class));
         }
 
         // expect
-        for (PreparedStatement ps : preparedStatements) {
+        for (PreparedStatement ps : insertStatements) {
             verify(ps).executeBatch();
         }
+
+        postgresWriter2.onError(); // close connections
+        completeFileAndCommit();  // close postgresWriter
     }
 
     @Test
-    void rollback() throws Exception {
+    void onError() {
         // when
         postgresWriter.onNonFeeTransfer(new NonFeeTransfer(1L, 1L, 0L, 1L));
         postgresWriter.onCryptoTransferList(new CryptoTransfer(2L, -2L, 0L, 2L));
-        connection.rollback();
+        postgresWriter.onError();
 
         // expect
         assertEquals(0, nonFeeTransferRepository.count());

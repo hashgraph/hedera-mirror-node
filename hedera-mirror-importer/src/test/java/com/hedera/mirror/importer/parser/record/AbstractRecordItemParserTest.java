@@ -37,8 +37,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import javax.annotation.Resource;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -58,6 +56,8 @@ import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionResultRepository;
 import com.hedera.mirror.importer.util.Utility;
+
+import java.util.UUID;
 
 //Class manually commits so have to manually cleanup tables
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
@@ -94,18 +94,6 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
     @Resource
     protected PostgresWritingRecordParsedItemHandler postgresWriter;
 
-    private RecordFile recordFile;
-
-    @BeforeEach
-    final void beforeCommon() {
-        recordFile = postgresWriter.onStart(new StreamFileData("fileName", null)).get();
-    }
-
-    @AfterEach
-    final void afterCommon() {
-        postgresWriter.onEnd(recordFile);
-    }
-
     protected final void assertAccount(AccountID accountId, com.hedera.mirror.importer.domain.Entities dbEntity) {
         assertThat(accountId)
                 .isNotEqualTo(AccountID.getDefaultInstance())
@@ -133,7 +121,8 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
                 .isEqualTo(entityTypeRepository.findByName("contract").get().getId());
     }
 
-    protected void parseRecordItemAndCommit(RecordItem recordItem) throws Exception {
+    protected void parseRecordItemAndCommit(RecordItem recordItem) {
+        RecordFile recordFile = postgresWriter.onStart(new StreamFileData(UUID.randomUUID().toString(), null)).get();
         recordItemParser.onItem(recordItem);
         postgresWriter.onEnd(recordFile);
     }

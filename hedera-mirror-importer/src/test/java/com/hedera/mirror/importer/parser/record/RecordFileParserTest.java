@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -33,9 +34,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.exception.ParserSQLException;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,6 +90,7 @@ public class RecordFileParserTest extends IntegrationTest {
     private static final int NUM_TXNS_FILE_2 = 15;
     private static RecordFile recordFile1;
     private static RecordFile recordFile2;
+    private static Set<String> filesProcessed = new HashSet<>();
 
     @BeforeEach
     void before() {
@@ -102,9 +109,21 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFile2 = new RecordFile(0L, file2.getPath(), 0L, 0L,
                 "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
                 recordFile1.getFileHash());
+
+        when(recordStreamFileListener.onStart(any())).thenAnswer(invocation -> {
+            String fileName = invocation.getArgument(0, StreamFileData.class).getFilename();
+            if (filesProcessed.contains(fileName)) {
+                return Optional.empty();
+            }
+            RecordFile recordFile = new RecordFile();
+            recordFile.setId(0L);
+            recordFile.setName(fileName);
+            filesProcessed.add(fileName);
+            return Optional.of(recordFile);
+        });
     }
 
-    // Asserts that recordStreamFileListener.onStart is called exactly with given fileNames.
+    // Asserts that recordStreamFileListener.onStart is called wth exactly the given fileNames.
     private void assertOnStart(String... fileNames) {
         ArgumentCaptor<StreamFileData> captor = ArgumentCaptor.forClass(StreamFileData.class);
         verify(recordStreamFileListener, times(fileNames.length)).onStart(captor.capture());
@@ -114,7 +133,8 @@ public class RecordFileParserTest extends IntegrationTest {
                 .contains(fileNames);
     }
 
-    // Asserts that recordStreamFileListener.onEnd is called exactly with given params, in given order
+    // Asserts that recordStreamFileListener.onEnd is called exactly with given recordFiles (ignoring load start and end
+    //times), in given order
     private void assertOnEnd(RecordFile... recordFiles) {
         ArgumentCaptor<RecordFile> captor = ArgumentCaptor.forClass(RecordFile.class);
         verify(recordStreamFileListener, times(recordFiles.length)).onEnd(captor.capture());
@@ -139,26 +159,29 @@ public class RecordFileParserTest extends IntegrationTest {
                 .contains(fileNames);
     }
 
+    private void assertAllProcessed() throws Exception {
+        assertParsedFiles(file1.getName(), file2.getName());
+        verify(recordItemListener, times(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)).onItem(any());
+        assertOnStart(file1.getPath(), file2.getPath());
+        assertOnEnd(recordFile1, recordFile2);
+    }
+
+    private void assertNoneProcessed() throws Exception {
+        assertParsedFiles();
+        verifyNoInteractions(recordItemListener);
+        verifyNoInteractions(recordStreamFileListener);
+    }
+
     @Test
     void parse() throws Exception {
         // setup
         fileCopier.copy();
-        when(recordStreamFileListener.onStart(any())).thenAnswer(invocation -> {
-            StreamFileData streamFileData = invocation.getArgument(0, StreamFileData.class);
-            RecordFile recordFile = new RecordFile();
-            recordFile.setId(0L);
-            recordFile.setName(streamFileData.getFilename());
-            return Optional.of(recordFile);
-        });
 
         // when
         recordFileParser.parse();
 
         // expect
-        assertParsedFiles(file1.getName(), file2.getName());
-        verify(recordItemListener, times(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)).onItem(any());
-        assertOnStart(file1.getPath(), file2.getPath());
-        assertOnEnd(recordFile1, recordFile2);
+        assertAllProcessed();
     }
 
     @Test
@@ -171,9 +194,7 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFileParser.parse();
 
         // expect
-        assertParsedFiles();
-        verifyNoInteractions(recordItemListener);
-        verifyNoInteractions(recordStreamFileListener);
+        assertNoneProcessed();
     }
 
     @Test
@@ -182,23 +203,20 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFileParser.parse();
 
         // expect
-        assertParsedFiles();
-        verifyNoInteractions(recordItemListener);
-        verifyNoInteractions(recordStreamFileListener);
+        assertNoneProcessed();
     }
 
     @Test
     void invalidFile() throws Exception {
         // setup
-        FileUtils.writeStringToFile(file2, "corrupt", "UTF-8");
+        fileCopier.copy();
+        FileUtils.writeStringToFile(file1, "corrupt", "UTF-8");
 
         // when
         recordFileParser.parse();
 
         // expect
-        assertParsedFiles();
-        verifyNoInteractions(recordItemListener);
-        verifyNoInteractions(recordStreamFileListener);
+        assertNoneProcessed();
     }
 
     @Test
@@ -211,9 +229,7 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFileParser.parse();
 
         // expect
-        assertParsedFiles();
-        verifyNoInteractions(recordItemListener);
-        verifyNoInteractions(recordStreamFileListener);
+        assertNoneProcessed();
     }
 
     @Test
@@ -227,25 +243,20 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFileParser.parse();
 
         // expect
-        assertParsedFiles(file1.getName(), file2.getName());
-        verify(recordItemListener, times(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)).onItem(any());
-        assertOnStart(file1.getPath(), file2.getPath());
+        assertAllProcessed();
     }
 
-    // Bad record with invalid timestamp should fail the file parsing and rollback the transaction.
     @Test
-    void badTimestampLongOverflowTest() throws Exception {
+    void failureProcessingItemShouldRollback() throws Exception {
         // setup
-        FileCopier.create(testPath, dataPath)
-                .from("badTimestampLongOverflowTest")
-                .to(streamType.getPath(), streamType.getValid()).copy();
+        fileCopier.copy();
+        doThrow(ParserSQLException.class).when(recordItemListener).onItem(any());
 
         // when
         recordFileParser.parse();
 
         // expect
         assertParsedFiles();
-        verifyNoInteractions(recordItemListener);
         verify(recordStreamFileListener).onError();
     }
 
@@ -257,7 +268,6 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)), "", "");
 
         // when: load same file again
-        when(recordStreamFileListener.onStart(any())).thenReturn(Optional.empty());
         boolean success = recordFileParser.loadRecordFile(
                 new StreamFileData(fileName, new FileInputStream(file1)), "", "");
 
