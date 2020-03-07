@@ -22,6 +22,9 @@ package com.hedera.mirror.importer.parser.record;
 
 import com.google.common.base.Stopwatch;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.RecordStreamFileListener;
 
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -34,6 +37,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -139,25 +143,16 @@ public class RecordFileParser implements FileParser {
     /**
      * Given a service record name, read and parse and return as a list of service record pair
      *
-     * @param streamFileData       containing information about file to be processed
-     * @param expectedPrevFileHash the hash of the previous record file in the series
-     * @param thisFileHash         the hash of this file
-     * @return return boolean indicating method success
-     * @throws Exception
+     * @param streamFileData containing information about file to be processed
      */
-    public boolean loadRecordFile(StreamFileData streamFileData, String thisFileHash, String expectedPrevFileHash) {
+    public void loadRecordFile(StreamFileData streamFileData) {
         String fileName = streamFileData.getFilename();
+        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(
+                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
         Optional<RecordFile> recordFile;
-        try {
-            recordFile = recordStreamFileListener.onStart(streamFileData);
-            if (recordFile.isEmpty()) {
-                return true; // skip file
-            }
-            recordFile.get().setFileHash(thisFileHash);
-            recordFile.get().setPreviousHash(expectedPrevFileHash);
-        } catch (ImporterException e) {
-            log.error("Error processing file " + fileName, e);
-            return false;
+        recordFile = recordStreamFileListener.onStart(streamFileData);
+        if (recordFile.isEmpty()) {
+            return; // skip file
         }
         long counter = 0;
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -167,12 +162,8 @@ public class RecordFileParser implements FileParser {
         try (DataInputStream dis = new DataInputStream(streamFileData.getInputStream())) {
             recordFileVersion = dis.readInt();
             int version = dis.readInt();
-
             log.info("Loading version {} record file: {}", recordFileVersion, fileName);
-
             while (dis.available() != 0) {
-
-                try {
                     byte typeDelimiter = dis.readByte();
 
                     switch (typeDelimiter) {
@@ -193,10 +184,9 @@ public class RecordFileParser implements FileParser {
                                         .findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER)
                                         .compareTo(Utility.getFileName(fileName)) < 0) {
                                     // last file for which mismatch is allowed is in the past
-                                    log.error("Hash mismatch for file {}. Actual = {}, Expected = {}", fileName,
-                                            expectedPrevFileHash, actualPrevFileHash);
-                                    recordStreamFileListener.onError();
-                                    return false;
+                                    throw new ParserException(String.format(
+                                            "Hash mismatch for file %s. Actual = %s, Expected = %s",
+                                            fileName, expectedPrevFileHash, actualPrevFileHash));
                                 }
                             }
                             break;
@@ -247,17 +237,14 @@ public class RecordFileParser implements FileParser {
                             break;
 
                         default:
-                            log.error("Unknown record file delimiter {} for file {}", typeDelimiter, fileName);
-                            recordStreamFileListener.onError();
-                            return false;
+                            throw new ParserException(String.format(
+                                    "Unknown record file delimiter %s for file %s", typeDelimiter, fileName));
                     }
-                } catch (Exception e) {
-                    log.error("Exception {}", e);
-                    recordStreamFileListener.onError();
-                    return false;
-                }
             }
 
+            String thisFileHash = Hex.encodeHexString(Utility.getFileHash(fileName));
+            recordFile.get().setFileHash(thisFileHash);
+            recordFile.get().setPreviousHash(expectedPrevFileHash);
             log.trace("Calculated file hash for the current file {}", thisFileHash);
             recordStreamFileListener.onEnd(recordFile.get());
 
@@ -265,20 +252,16 @@ public class RecordFileParser implements FileParser {
                 applicationStatusRepository
                         .updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, thisFileHash);
             }
-            success = true;
-        } catch (Exception e) {
-            log.error("Error parsing record file {} after {}", fileName, stopwatch, e);
-            recordStreamFileListener.onError();
+        } catch (IOException e) {
+            throw new ParserException(String.format("Error parsing record file %s after %s", fileName, stopwatch), e);
         } finally {
             log.info("Finished parsing {} transactions from record file {} in {}", counter, fileName, stopwatch);
-
             parseDurationMetric.tag("type", "record")
                     .tag("success", success.toString())
                     .tag("version", recordFileVersion.toString())
                     .register(meterRegistry)
                     .record(stopwatch.elapsed());
         }
-        return success;
     }
 
     /**
@@ -287,15 +270,11 @@ public class RecordFileParser implements FileParser {
      * @throws Exception
      */
     private void loadRecordFiles(List<String> fileNames) {
-        String prevFileHash = applicationStatusRepository
-                .findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
         Collections.sort(fileNames);
-
         for (String name : fileNames) {
             if (ShutdownHelper.isStopping()) {
                 return;
             }
-            String thisFileHash = Hex.encodeHexString(Utility.getFileHash(name));
             InputStream fileInputStream;
             try {
                 fileInputStream = new FileInputStream(new File(name));
@@ -303,11 +282,12 @@ public class RecordFileParser implements FileParser {
                 log.warn("File does not exist {}", name);
                 return;
             }
-            StreamFileData streamFileData = new StreamFileData(name, fileInputStream);
-            if (loadRecordFile(streamFileData, thisFileHash, prevFileHash)) {
-                prevFileHash = thisFileHash;
+            try {
+                loadRecordFile(new StreamFileData(name, fileInputStream));
                 Utility.moveFileToParsedDir(name, "/parsedRecordFiles/");
-            } else {
+            } catch (ImporterException e) {
+                log.error("Error parsing file {}", name, e);
+                recordStreamFileListener.onError();
                 return;
             }
         }
@@ -319,14 +299,11 @@ public class RecordFileParser implements FileParser {
         if (!parserProperties.isEnabled()) {
             return;
         }
-
         if (ShutdownHelper.isStopping()) {
             return;
         }
-
         Path path = parserProperties.getValidPath();
         log.debug("Parsing record files from {}", path);
-
         try {
             File file = path.toFile();
             if (file.isDirectory()) { //if it's a directory

@@ -103,7 +103,7 @@ public class RecordFileParserTest extends IntegrationTest {
         file2 = parserProperties.getValidPath().resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
         recordFile1 = new RecordFile(0L, file1.getPath(), 0L, 0L,
                 "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                "");
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
         recordFile2 = new RecordFile(0L, file2.getPath(), 0L, 0L,
                 "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
                 recordFile1.getFileHash());
@@ -165,7 +165,9 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFileParser.parse();
 
         // then
-        assertNoneProcessed();
+        assertParsedFiles();
+        verifyNoInteractions(recordItemListener);
+        verify(recordStreamFileListener).onError();
     }
 
     @Test
@@ -214,14 +216,12 @@ public class RecordFileParserTest extends IntegrationTest {
         // given
         fileCopier.copy();
         String fileName = file1.toString();
-        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)), "", "");
+        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
 
         // when: load same file again
-        boolean success = recordFileParser.loadRecordFile(
-                new StreamFileData(fileName, new FileInputStream(file1)), "", "");
+        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
 
         // then
-        assertTrue(success);
         verify(recordItemListener, times(NUM_TXNS_FILE_1)).onItem(any());
         verify(recordStreamFileListener, times(2)).onStart(any());
         verify(recordStreamFileListener, times(1)).onEnd(any());

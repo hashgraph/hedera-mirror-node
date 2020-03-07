@@ -88,7 +88,6 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             recordFile.setName(fileName);
             return Optional.of(recordFile);
         } catch (Exception e) {
-            closeConnectionAndStatements();
             throw new ParserException("Error saving file in database: " + fileName, e);
         }
     }
