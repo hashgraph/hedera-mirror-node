@@ -104,7 +104,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
     @Test
     void onCryptoTransferList() throws Exception {
-        // setup
+        // given
         CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, 0L, 1L);
         CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, 0L, 2L);
 
@@ -113,7 +113,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         postgresWriter.onCryptoTransferList(cryptoTransfer2);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(2, cryptoTransferRepository.count());
         assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer1, 1L);
         assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer2, 2L);
@@ -121,7 +121,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
     @Test
     void onNonFeeTransfer() throws Exception {
-        // setup
+        // given
         NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, 1L, 0L, 1L);
         NonFeeTransfer nonFeeTransfer2 = new NonFeeTransfer(2L, -2L, 0L, 2L);
 
@@ -130,7 +130,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         postgresWriter.onNonFeeTransfer(nonFeeTransfer2);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(2, nonFeeTransferRepository.count());
         assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer1, 1L);
         assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer2, 2L);
@@ -138,7 +138,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
     @Test
     void onTopicMessage() throws Exception {
-        // setup
+        // given
         byte[] message = Strings.toByteArray("test message");
         byte[] runningHash = Strings.toByteArray("running hash");
         TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash, 10L, 1001);
@@ -147,28 +147,28 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         postgresWriter.onTopicMessage(expectedTopicMessage);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(1, topicMessageRepository.count());
         assertExistsAndEquals(topicMessageRepository, expectedTopicMessage, 1L);
     }
 
     @Test
     void onFileData() throws Exception {
-        // setup
+        // given
         FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"));
 
         // when
         postgresWriter.onFileData(expectedFileData);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(1, fileDataRepository.count());
         assertExistsAndEquals(fileDataRepository, expectedFileData, 11L);
     }
 
     @Test
     void onContractResult() throws Exception {
-        // setup
+        // given
         ContractResult expectedContractResult = new ContractResult(15L, Strings.toByteArray("function parameters"),
                 10000L, Strings.toByteArray("call result"), 10000L);
 
@@ -176,28 +176,28 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         postgresWriter.onContractResult(expectedContractResult);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(1, contractResultRepository.count());
         assertExistsAndEquals(contractResultRepository, expectedContractResult, 15L);
     }
 
     @Test
     void onLiveHash() throws Exception {
-        // setup
+        // given
         LiveHash expectedLiveHash = new LiveHash(20L, Strings.toByteArray("live hash"));
 
         // when
         postgresWriter.onLiveHash(expectedLiveHash);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(1, liveHashRepository.count());
         assertExistsAndEquals(liveHashRepository, expectedLiveHash, 20L);
     }
 
     @Test
     void onTransaction() throws Exception {
-        // setup
+        // given
         Transaction expectedTransaction = new Transaction(101L, 0L, Strings.toByteArray("memo"), 0, 0, 1L, 1L, 1L, null,
                 0L, 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
 
@@ -205,7 +205,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         postgresWriter.onTransaction(expectedTransaction);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(1, transactionRepository.count());
         assertExistsAndEquals(transactionRepository, expectedTransaction, 101L);
     }
@@ -214,12 +214,12 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
     // issued by the connection.
     @Test
     void batchSize() throws Exception {
-        // setup
+        // given
         int batchSize = 10;
         postgresWriterProperties.setBatchSize(batchSize);
-        //
+
         CallableStatement fileCreate = mock(CallableStatement.class);
-        when(fileCreate.getLong(any())).thenReturn(1L);
+        when(fileCreate.getLong(any(Integer.class))).thenAnswer(ignore -> 1L);
 
         Connection connection = mock(Connection.class);
         when(connection.prepareCall(any())).thenReturn(fileCreate);
@@ -235,19 +235,19 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         when(dataSource.getConnection()).thenReturn(connection);
         PostgresWritingRecordParsedItemHandler postgresWriter2 =
                 new PostgresWritingRecordParsedItemHandler(postgresWriterProperties, dataSource);
-        postgresWriter2.onStart(new StreamFileData("fileName", null)).get();
+        RecordFile recordFile = postgresWriter2.onStart(new StreamFileData("fileName", null)).get();
 
         // when
         for (int i = 0; i < batchSize; i++) {
             postgresWriter2.onTransaction(mock(Transaction.class));
         }
 
-        // expect
+        // then
         for (PreparedStatement ps : insertStatements) {
             verify(ps).executeBatch();
         }
 
-        postgresWriter2.onError(); // close connections
+        postgresWriter2.onEnd(recordFile); // close connections
         completeFileAndCommit();  // close postgresWriter
     }
 
@@ -258,7 +258,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         postgresWriter.onCryptoTransferList(new CryptoTransfer(2L, -2L, 0L, 2L));
         postgresWriter.onError();
 
-        // expect
+        // then
         assertEquals(0, nonFeeTransferRepository.count());
         assertEquals(0, cryptoTransferRepository.count());
     }
@@ -271,7 +271,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         // when
         var recordFile = postgresWriter.onStart(new StreamFileData(FILE_NAME, null));
 
-        // expect
+        // then
         assertTrue(recordFile.isEmpty());
 
         // Since no onEnd/onError would be called, SQL resource should have been released already. No explicit

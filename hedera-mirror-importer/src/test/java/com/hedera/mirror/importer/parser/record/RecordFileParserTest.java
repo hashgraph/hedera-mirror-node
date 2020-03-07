@@ -39,9 +39,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.importer.exception.ParserSQLException;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,6 +54,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -90,7 +88,7 @@ public class RecordFileParserTest extends IntegrationTest {
     private static final int NUM_TXNS_FILE_2 = 15;
     private static RecordFile recordFile1;
     private static RecordFile recordFile2;
-    private static Set<String> filesProcessed = new HashSet<>();
+    private static final Set<String> filesProcessed = new HashSet<>();
 
     @BeforeEach
     void before() {
@@ -121,6 +119,112 @@ public class RecordFileParserTest extends IntegrationTest {
             filesProcessed.add(fileName);
             return Optional.of(recordFile);
         });
+    }
+
+    @Test
+    void parse() throws Exception {
+        // given
+        fileCopier.copy();
+
+        // when
+        recordFileParser.parse();
+
+        // then
+        assertAllProcessed();
+    }
+
+    @Test
+    void disabled() throws Exception {
+        // given
+        parserProperties.setEnabled(false);
+        fileCopier.copy();
+
+        // when
+        recordFileParser.parse();
+
+        // then
+        assertNoneProcessed();
+    }
+
+    @Test
+    void noFiles() throws Exception {
+        // when
+        recordFileParser.parse();
+
+        // then
+        assertNoneProcessed();
+    }
+
+    @Test
+    void invalidFile() throws Exception {
+        // given
+        fileCopier.copy();
+        FileUtils.writeStringToFile(file1, "corrupt", "UTF-8");
+
+        // when
+        recordFileParser.parse();
+
+        // then
+        assertNoneProcessed();
+    }
+
+    @Test
+    void hashMismatch() throws Exception {
+        // given
+        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "123");
+        fileCopier.copy();
+
+        // when
+        recordFileParser.parse();
+
+        // then
+        assertNoneProcessed();
+    }
+
+    @Test
+    void bypassHashMismatch() throws Exception {
+        // given
+        applicationStatusRepository.updateStatusValue(
+                ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, "2019-09-01T00:00:00.000000Z.rcd");
+        fileCopier.copy();
+
+        // when
+        recordFileParser.parse();
+
+        // then
+        assertAllProcessed();
+    }
+
+    @Test
+    void failureProcessingItemShouldRollback() throws Exception {
+        // given
+        fileCopier.copy();
+        doThrow(ParserSQLException.class).when(recordItemListener).onItem(any());
+
+        // when
+        recordFileParser.parse();
+
+        // then
+        assertParsedFiles();
+        verify(recordStreamFileListener).onError();
+    }
+
+    @Test
+    void loadRecordFileTwiceShouldSkip() throws Exception {
+        // given
+        fileCopier.copy();
+        String fileName = file1.toString();
+        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)), "", "");
+
+        // when: load same file again
+        boolean success = recordFileParser.loadRecordFile(
+                new StreamFileData(fileName, new FileInputStream(file1)), "", "");
+
+        // then
+        assertTrue(success);
+        verify(recordItemListener, times(NUM_TXNS_FILE_1)).onItem(any());
+        verify(recordStreamFileListener, times(2)).onStart(any());
+        verify(recordStreamFileListener, times(1)).onEnd(any());
     }
 
     // Asserts that recordStreamFileListener.onStart is called wth exactly the given fileNames.
@@ -170,111 +274,6 @@ public class RecordFileParserTest extends IntegrationTest {
         assertParsedFiles();
         verifyNoInteractions(recordItemListener);
         verifyNoInteractions(recordStreamFileListener);
-    }
 
-    @Test
-    void parse() throws Exception {
-        // setup
-        fileCopier.copy();
-
-        // when
-        recordFileParser.parse();
-
-        // expect
-        assertAllProcessed();
-    }
-
-    @Test
-    void disabled() throws Exception {
-        // setup
-        parserProperties.setEnabled(false);
-        fileCopier.copy();
-
-        // when
-        recordFileParser.parse();
-
-        // expect
-        assertNoneProcessed();
-    }
-
-    @Test
-    void noFiles() throws Exception {
-        // when
-        recordFileParser.parse();
-
-        // expect
-        assertNoneProcessed();
-    }
-
-    @Test
-    void invalidFile() throws Exception {
-        // setup
-        fileCopier.copy();
-        FileUtils.writeStringToFile(file1, "corrupt", "UTF-8");
-
-        // when
-        recordFileParser.parse();
-
-        // expect
-        assertNoneProcessed();
-    }
-
-    @Test
-    void hashMismatch() throws Exception {
-        // setup
-        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "123");
-        fileCopier.copy();
-
-        // when
-        recordFileParser.parse();
-
-        // expect
-        assertNoneProcessed();
-    }
-
-    @Test
-    void bypassHashMismatch() throws Exception {
-        // setup
-        applicationStatusRepository.updateStatusValue(
-                ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, "2019-09-01T00:00:00.000000Z.rcd");
-        fileCopier.copy();
-
-        // when
-        recordFileParser.parse();
-
-        // expect
-        assertAllProcessed();
-    }
-
-    @Test
-    void failureProcessingItemShouldRollback() throws Exception {
-        // setup
-        fileCopier.copy();
-        doThrow(ParserSQLException.class).when(recordItemListener).onItem(any());
-
-        // when
-        recordFileParser.parse();
-
-        // expect
-        assertParsedFiles();
-        verify(recordStreamFileListener).onError();
-    }
-
-    @Test
-    void loadRecordFileTwiceShouldSkip() throws Exception {
-        // setup
-        fileCopier.copy();
-        String fileName = file1.toString();
-        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)), "", "");
-
-        // when: load same file again
-        boolean success = recordFileParser.loadRecordFile(
-                new StreamFileData(fileName, new FileInputStream(file1)), "", "");
-
-        // expect
-        assertTrue(success);
-        verify(recordItemListener, times(NUM_TXNS_FILE_1)).onItem(any());
-        verify(recordStreamFileListener, times(2)).onStart(any());
-        verify(recordStreamFileListener, times(1)).onEnd(any());
     }
 }
