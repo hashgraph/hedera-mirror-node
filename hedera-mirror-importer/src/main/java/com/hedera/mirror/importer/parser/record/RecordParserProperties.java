@@ -60,8 +60,6 @@ public class RecordParserProperties implements ParserProperties {
     // bytes on the t_transaction table
     private boolean persistTransactionBytes = false;
 
-    private final PostgresWriterProperties postgresWriter;
-
     @Override
     public Path getStreamPath() {
         return mirrorProperties.getDataPath().resolve(getStreamType().getPath());

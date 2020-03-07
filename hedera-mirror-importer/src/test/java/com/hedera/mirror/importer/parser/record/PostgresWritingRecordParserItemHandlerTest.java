@@ -22,19 +22,20 @@ package com.hedera.mirror.importer.parser.record;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Resource;
-import org.junit.jupiter.api.AfterEach;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.shaded.org.bouncycastle.util.Strings;
@@ -45,8 +46,10 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -54,7 +57,6 @@ import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
-import com.hedera.mirror.importer.util.DatabaseUtilities;
 
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
@@ -87,29 +89,22 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
     @Resource
     protected PostgresWriterProperties postgresWriterProperties;
 
-    protected Connection connection;
+    private RecordFile recordFile;
+
+    private static final String FILE_NAME = "fileName";
 
     @BeforeEach
-    final void beforeEach() throws Exception {
-        connection = DatabaseUtilities.getConnection();
-        connection.setAutoCommit(false);
-        postgresWriter.initSqlStatements(connection);
+    final void beforeEach() {
+        recordFile = postgresWriter.onStart(new StreamFileData(FILE_NAME, null)).get();
     }
 
-    @AfterEach
-    final void afterEach() throws Exception {
-        postgresWriter.finish();
-        connection.close();
-    }
-
-    void completeFileAndCommit() throws Exception {
-        postgresWriter.onFileComplete();
-        connection.commit();
+    void completeFileAndCommit() {
+        postgresWriter.onEnd(recordFile);
     }
 
     @Test
     void onCryptoTransferList() throws Exception {
-        // setup
+        // given
         CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, 0L, 1L);
         CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, 0L, 2L);
 
@@ -118,7 +113,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         postgresWriter.onCryptoTransferList(cryptoTransfer2);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(2, cryptoTransferRepository.count());
         assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer1, 1L);
         assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer2, 2L);
@@ -126,7 +121,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
     @Test
     void onNonFeeTransfer() throws Exception {
-        // setup
+        // given
         NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, 1L, 0L, 1L);
         NonFeeTransfer nonFeeTransfer2 = new NonFeeTransfer(2L, -2L, 0L, 2L);
 
@@ -135,7 +130,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         postgresWriter.onNonFeeTransfer(nonFeeTransfer2);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(2, nonFeeTransferRepository.count());
         assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer1, 1L);
         assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer2, 2L);
@@ -143,7 +138,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
     @Test
     void onTopicMessage() throws Exception {
-        // setup
+        // given
         byte[] message = Strings.toByteArray("test message");
         byte[] runningHash = Strings.toByteArray("running hash");
         TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash, 10L, 1001);
@@ -152,28 +147,28 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         postgresWriter.onTopicMessage(expectedTopicMessage);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(1, topicMessageRepository.count());
         assertExistsAndEquals(topicMessageRepository, expectedTopicMessage, 1L);
     }
 
     @Test
     void onFileData() throws Exception {
-        // setup
+        // given
         FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"));
 
         // when
         postgresWriter.onFileData(expectedFileData);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(1, fileDataRepository.count());
         assertExistsAndEquals(fileDataRepository, expectedFileData, 11L);
     }
 
     @Test
     void onContractResult() throws Exception {
-        // setup
+        // given
         ContractResult expectedContractResult = new ContractResult(15L, Strings.toByteArray("function parameters"),
                 10000L, Strings.toByteArray("call result"), 10000L);
 
@@ -181,36 +176,36 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         postgresWriter.onContractResult(expectedContractResult);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(1, contractResultRepository.count());
         assertExistsAndEquals(contractResultRepository, expectedContractResult, 15L);
     }
 
     @Test
     void onLiveHash() throws Exception {
-        // setup
+        // given
         LiveHash expectedLiveHash = new LiveHash(20L, Strings.toByteArray("live hash"));
 
         // when
         postgresWriter.onLiveHash(expectedLiveHash);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(1, liveHashRepository.count());
         assertExistsAndEquals(liveHashRepository, expectedLiveHash, 20L);
     }
 
     @Test
     void onTransaction() throws Exception {
-        // setup
+        // given
         Transaction expectedTransaction = new Transaction(101L, 0L, Strings.toByteArray("memo"), 0, 0, 1L, 1L, 1L, null,
-                1L, 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
+                0L, 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
 
         // when
         postgresWriter.onTransaction(expectedTransaction);
         completeFileAndCommit();
 
-        // expect
+        // then
         assertEquals(1, transactionRepository.count());
         assertExistsAndEquals(transactionRepository, expectedTransaction, 101L);
     }
@@ -219,42 +214,68 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
     // issued by the connection.
     @Test
     void batchSize() throws Exception {
-        // setup
+        // given
         int batchSize = 10;
         postgresWriterProperties.setBatchSize(batchSize);
-        Connection connection2 = Mockito.mock(Connection.class);
-        List<PreparedStatement> preparedStatements = new ArrayList<>(); // tracks all PreparedStatements
-        when(connection2.prepareStatement(any())).then(ignored -> {
-            PreparedStatement preparedStatement = Mockito.mock(PreparedStatement.class);
+
+        CallableStatement fileCreate = mock(CallableStatement.class);
+        when(fileCreate.getLong(any(Integer.class))).thenAnswer(ignore -> 1L);
+
+        Connection connection = mock(Connection.class);
+        when(connection.prepareCall(any())).thenReturn(fileCreate);
+        List<PreparedStatement> insertStatements = new ArrayList<>(); // tracks all PreparedStatements
+        when(connection.prepareStatement(any())).then(ignored -> {
+            PreparedStatement preparedStatement = mock(PreparedStatement.class);
             when(preparedStatement.executeBatch()).thenReturn(new int[] {});
-            preparedStatements.add(preparedStatement);
+            insertStatements.add(preparedStatement);
             return preparedStatement;
         });
+
+        DataSource dataSource = mock(DataSource.class);
+        when(dataSource.getConnection()).thenReturn(connection);
         PostgresWritingRecordParsedItemHandler postgresWriter2 =
-                new PostgresWritingRecordParsedItemHandler(postgresWriterProperties);
-        postgresWriter2.initSqlStatements(connection2);
+                new PostgresWritingRecordParsedItemHandler(postgresWriterProperties, dataSource);
+        RecordFile recordFile = postgresWriter2.onStart(new StreamFileData("fileName", null)).get();
 
         // when
         for (int i = 0; i < batchSize; i++) {
-            postgresWriter2.onTransaction(Mockito.mock(Transaction.class));
+            postgresWriter2.onTransaction(mock(Transaction.class));
         }
 
-        // expect
-        for (PreparedStatement ps : preparedStatements) {
+        // then
+        for (PreparedStatement ps : insertStatements) {
             verify(ps).executeBatch();
         }
+
+        postgresWriter2.onEnd(recordFile); // close connections
+        completeFileAndCommit();  // close postgresWriter
     }
 
     @Test
-    void rollback() throws Exception {
+    void onError() {
         // when
         postgresWriter.onNonFeeTransfer(new NonFeeTransfer(1L, 1L, 0L, 1L));
         postgresWriter.onCryptoTransferList(new CryptoTransfer(2L, -2L, 0L, 2L));
-        connection.rollback();
+        postgresWriter.onError();
 
-        // expect
+        // then
         assertEquals(0, nonFeeTransferRepository.count());
         assertEquals(0, cryptoTransferRepository.count());
+    }
+
+    @Test
+    void onDuplicateFileReturnEmpty() {
+        // given: file processed once
+        completeFileAndCommit();
+
+        // when
+        var recordFile = postgresWriter.onStart(new StreamFileData(FILE_NAME, null));
+
+        // then
+        assertTrue(recordFile.isEmpty());
+
+        // Since no onEnd/onError would be called, SQL resource should have been released already. No explicit
+        // connection cleanup here.
     }
 
     static <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {

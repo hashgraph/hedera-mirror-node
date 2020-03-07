@@ -20,10 +20,14 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Optional;
 import javax.inject.Named;
+import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -32,17 +36,20 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
-
-import org.apache.commons.lang3.NotImplementedException;
+import com.hedera.mirror.importer.parser.RecordStreamFileListener;
+import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
 @RequiredArgsConstructor
-public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemHandler {
+public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemHandler, RecordStreamFileListener {
     private long batch_count = 0;
     private PreparedStatement sqlInsertTransaction;
     private PreparedStatement sqlInsertTransferList;
@@ -52,8 +59,88 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
     private PreparedStatement sqlInsertLiveHashes;
     private PreparedStatement sqlInsertTopicMessage;
     private final PostgresWriterProperties properties;
+    private final DataSource dataSource;
+    private Connection connection;
 
-    void initSqlStatements(Connection connection) throws ParserSQLException {
+    @Override
+    public Optional<RecordFile> onStart(StreamFileData streamFileData) {
+        String fileName = streamFileData.getFilename();
+        try {
+            initConnectionAndStatements();
+            long fileId;
+
+            try (CallableStatement fileCreate = connection.prepareCall("{? = call f_file_create( ? ) }")) {
+                fileCreate.registerOutParameter(1, Types.BIGINT);
+                fileCreate.setString(2, fileName);
+                fileCreate.execute();
+                fileId = fileCreate.getLong(1);
+            }
+
+            if (fileId == 0) {
+                log.trace("File {} already exists in the database.", fileName);
+                closeConnectionAndStatements();
+                return Optional.empty();
+            } else {
+                log.trace("Added file {} to the database.", fileName);
+            }
+            RecordFile recordFile = new RecordFile();
+            recordFile.setId(fileId);
+            recordFile.setName(fileName);
+            return Optional.of(recordFile);
+        } catch (Exception e) {
+            closeConnectionAndStatements();
+            throw new ParserException("Error saving file in database: " + fileName, e);
+        }
+    }
+
+    @Override
+    public void onEnd(RecordFile recordFile) {
+        try (CallableStatement fileClose = connection.prepareCall("{call f_file_complete( ?, ?, ? ) }")) {
+            executeBatches();
+
+            // update the file to processed
+
+            fileClose.setLong(1, recordFile.getId());
+
+            if (Utility.hashIsEmpty(recordFile.getFileHash())) {
+                fileClose.setObject(2, null);
+            } else {
+                fileClose.setString(2, recordFile.getFileHash());
+            }
+
+            if (Utility.hashIsEmpty(recordFile.getPreviousHash())) {
+                fileClose.setObject(3, null);
+            } else {
+                fileClose.setString(3, recordFile.getPreviousHash());
+            }
+
+            fileClose.execute();
+            // commit the changes to the database
+            connection.commit();
+            closeConnectionAndStatements();
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        }
+    }
+
+    @Override
+    public void onError() {
+        try {
+            connection.rollback();
+            closeConnectionAndStatements();
+        } catch (SQLException e) {
+            log.error("Exception while rolling transaction back", e);
+        }
+    }
+
+    private void initConnectionAndStatements() throws ParserSQLException {
+        try {
+            connection = dataSource.getConnection();
+            connection.setAutoCommit(false); // do not auto-commit
+            connection.setClientInfo("ApplicationName", getClass().getName());
+        } catch (SQLException e) {
+            throw new ParserSQLException("Error setting up connection to database", e);
+        }
         try {
             sqlInsertTransaction = connection.prepareStatement("INSERT INTO t_transactions"
                     + " (fk_node_acc_id, memo, valid_start_ns, type, fk_payer_acc_id"
@@ -90,16 +177,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
         }
     }
 
-    public void finish() {
-        closeStatements();
-    }
-
-    @Override
-    public void onFileComplete() {
-        executeBatches();
-    }
-
-    private void closeStatements() {
+    private void closeConnectionAndStatements() {
         try {
             sqlInsertTransaction.close();
             sqlInsertTransferList.close();
@@ -108,6 +186,8 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             sqlInsertContractResult.close();
             sqlInsertLiveHashes.close();
             sqlInsertTopicMessage.close();
+
+            connection.close();
         } catch (SQLException e) {
             throw new ParserSQLException("Error closing connection", e);
         }
@@ -143,7 +223,8 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             } else {
                 sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), null);
             }
-            sqlInsertTransaction.setLong(F_TRANSACTION.FK_REC_FILE_ID.ordinal(), transaction.getRecordFileId());
+            sqlInsertTransaction.setLong(
+                    F_TRANSACTION.FK_REC_FILE_ID.ordinal(), 0); // deprecated. set to 0 until removed.
             sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), transaction.getNodeAccountId());
             sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), transaction.getMemo());
             sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), transaction.getValidStartNs());
@@ -252,11 +333,6 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
         } catch (SQLException e) {
             throw new ParserSQLException(e);
         }
-    }
-
-    @Override
-    public void onError(Throwable e) {
-        throw new NotImplementedException("onError not implemented");
     }
 
     enum F_TRANSACTION {

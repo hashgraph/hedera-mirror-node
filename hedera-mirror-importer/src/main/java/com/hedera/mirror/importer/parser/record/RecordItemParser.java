@@ -43,14 +43,10 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.io.IOException;
-import java.sql.CallableStatement;
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.Set;
 import java.util.function.Predicate;
 import javax.inject.Named;
-import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
@@ -65,12 +61,10 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityTypeRepository;
-import com.hedera.mirror.importer.util.DatabaseUtilities;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -82,116 +76,20 @@ public class RecordItemParser implements RecordItemListener {
     private final EntityTypeRepository entityTypeRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final Predicate<com.hedera.mirror.importer.domain.Transaction> transactionFilter;
-    private final PostgresWritingRecordParsedItemHandler postgresWriter;
-
-    public Connection connect = null;
-    @Getter
-    private long fileId = 0;
+    private final RecordParsedItemHandler recordParsedItemHandler;
 
     public RecordItemParser(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
                             NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
                             EntityTypeRepository entityTypeRepository,
                             NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
-                            PostgresWritingRecordParsedItemHandler postgresWriter) {
+                            RecordParsedItemHandler recordParsedItemHandler) {
         this.parserProperties = parserProperties;
         this.networkAddressBook = networkAddressBook;
         this.entityRepository = entityRepository;
         this.entityTypeRepository = entityTypeRepository;
         this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
-        this.postgresWriter = postgresWriter;
+        this.recordParsedItemHandler = recordParsedItemHandler;
         transactionFilter = commonParserProperties.getFilter();
-    }
-
-    public boolean start() {
-        connect = DatabaseUtilities.openDatabase(connect);
-
-        if (connect == null) {
-            log.error("Unable to connect to database");
-            return false;
-        }
-        // do not auto-commit
-        try {
-            connect.setAutoCommit(false);
-        } catch (SQLException e) {
-            log.error("Unable to set connection to not auto commit", e);
-            return false;
-        }
-        try {
-            postgresWriter.initSqlStatements(connect);
-        } catch (ParserSQLException e) {
-            log.error("Unable to prepare SQL statements", e);
-            return false;
-        }
-        return true;
-    }
-
-    public boolean finish() {
-        try {
-            postgresWriter.finish();
-            connect = DatabaseUtilities.closeDatabase(connect);
-            return false;
-        } catch (SQLException e) {
-            log.error("Error closing connection", e);
-        }
-        return true;
-    }
-
-    public INIT_RESULT initFile(String fileName) {
-        try {
-            fileId = 0;
-
-            try (CallableStatement fileCreate = connect.prepareCall("{? = call f_file_create( ? ) }")) {
-                fileCreate.registerOutParameter(1, Types.BIGINT);
-                fileCreate.setString(2, fileName);
-                fileCreate.execute();
-                fileId = fileCreate.getLong(1);
-            }
-
-            if (fileId == 0) {
-                log.trace("File {} already exists in the database.", fileName);
-                return INIT_RESULT.SKIP;
-            } else {
-                log.trace("Added file {} to the database.", fileName);
-                return INIT_RESULT.OK;
-            }
-        } catch (SQLException e) {
-            log.error("Error saving file in database: {}", fileName, e);
-        }
-        return INIT_RESULT.FAIL;
-    }
-
-    public void completeFile(String fileHash, String previousHash) throws SQLException {
-        try (CallableStatement fileClose = connect.prepareCall("{call f_file_complete( ?, ?, ? ) }")) {
-            postgresWriter.onFileComplete();
-
-            // update the file to processed
-
-            fileClose.setLong(1, fileId);
-
-            if (Utility.hashIsEmpty(fileHash)) {
-                fileClose.setObject(2, null);
-            } else {
-                fileClose.setString(2, fileHash);
-            }
-
-            if (Utility.hashIsEmpty(previousHash)) {
-                fileClose.setObject(3, null);
-            } else {
-                fileClose.setString(3, previousHash);
-            }
-
-            fileClose.execute();
-            // commit the changes to the database
-            connect.commit();
-        }
-    }
-
-    public void rollback() {
-        try {
-            connect.rollback();
-        } catch (SQLException e) {
-            log.error("Exception while rolling transaction back", e);
-        }
     }
 
     public static boolean isSuccessful(TransactionRecord transactionRecord) {
@@ -431,7 +329,6 @@ public class RecordItemParser implements RecordItemListener {
         tx.setInitialBalance(initialBalance);
         tx.setMemo(body.getMemo().getBytes());
         tx.setMaxFee(body.getTransactionFee());
-        tx.setRecordFileId(fileId);
         tx.setResult(txRecord.getReceipt().getStatusValue());
         tx.setType(getTransactionType(body));
         tx.setTransactionBytes(parserProperties.isPersistTransactionBytes() ? recordItem.getTransactionBytes() : null);
@@ -492,7 +389,7 @@ public class RecordItemParser implements RecordItemListener {
             }
         }
 
-        postgresWriter.onTransaction(tx);
+        recordParsedItemHandler.onTransaction(tx);
         log.debug("Storing transaction: {}", tx);
     }
 
@@ -531,7 +428,7 @@ public class RecordItemParser implements RecordItemListener {
 
     private void addNonFeeTransferInserts(long consensusTimestamp, long realm, long accountNum, long amount) {
         if (0 != amount) {
-            postgresWriter.onNonFeeTransfer(
+            recordParsedItemHandler.onNonFeeTransfer(
                     new NonFeeTransfer(consensusTimestamp, realm, accountNum, amount));
         }
     }
@@ -694,13 +591,13 @@ public class RecordItemParser implements RecordItemListener {
                 transactionBody.getMessage().toByteArray(), (int) topicId.getRealmNum(),
                 receipt.getTopicRunningHash().toByteArray(), receipt.getTopicSequenceNumber(),
                 (int) topicId.getTopicNum());
-        postgresWriter.onTopicMessage(topicMessage);
+        recordParsedItemHandler.onTopicMessage(topicMessage);
     }
 
     private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID) {
         if (parserProperties.isPersistFiles() ||
                 (parserProperties.isPersistSystemFiles() && fileID.getFileNum() < 1000)) {
-            postgresWriter.onFileData(new FileData(consensusTimestamp, contents));
+            recordParsedItemHandler.onFileData(new FileData(consensusTimestamp, contents));
         }
     }
 
@@ -721,7 +618,7 @@ public class RecordItemParser implements RecordItemListener {
                                       CryptoAddClaimTransactionBody transactionBody) {
         if (parserProperties.isPersistClaims()) {
             byte[] claim = transactionBody.getClaim().getHash().toByteArray();
-            postgresWriter.onLiveHash(new LiveHash(consensusTimestamp, claim));
+            recordParsedItemHandler.onLiveHash(new LiveHash(consensusTimestamp, claim));
         }
     }
 
@@ -809,7 +706,7 @@ public class RecordItemParser implements RecordItemListener {
     }
 
     private void addCryptoTransferList(long consensusTimestamp, long realmNum, long accountNum, long amount) {
-        postgresWriter.onCryptoTransferList(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
+        recordParsedItemHandler.onCryptoTransferList(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
     }
 
     private static boolean isFileAddressBook(FileID fileId) {
@@ -857,7 +754,7 @@ public class RecordItemParser implements RecordItemListener {
 
     private void insertContractResults(
             long consensusTimestamp, byte[] functionParams, long gasSupplied, byte[] callResult, long gasUsed) {
-        postgresWriter.onContractResult(
+        recordParsedItemHandler.onContractResult(
                 new ContractResult(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed));
     }
 

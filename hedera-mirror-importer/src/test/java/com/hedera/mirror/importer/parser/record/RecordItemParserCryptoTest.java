@@ -103,8 +103,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
+                () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
                 , () -> assertEquals(5, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -161,8 +160,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
+                () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
                 , () -> assertEquals(5, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -221,8 +219,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
+                () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -284,8 +281,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
+                () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEquals(7, entityRepository.count())
                 , () -> assertEquals(5, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -343,8 +339,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
+                () -> assertEquals(2, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
                 , () -> assertEquals(10, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -404,8 +399,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
+                () -> assertEquals(2, transactionRepository.count())
                 , () -> assertEquals(7, entityRepository.count())
                 , () -> assertEquals(8, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -495,7 +489,6 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
         var dbAccountEntity = entityRepository.findById(dbTransaction.getEntityId()).get();
 
         assertAll(
-                () -> assertEquals(1, recordFileRepository.count()),
                 () -> assertEquals(2, transactionRepository.count()),
                 () -> assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpiryTimeNs())
         );
@@ -531,8 +524,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
+                () -> assertEquals(2, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
                 , () -> assertEquals(8, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -579,8 +571,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
+                () -> assertEquals(2, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
                 , () -> assertEquals(8, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -636,8 +627,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
+                () -> assertEquals(2, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
                 , () -> assertEquals(8, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -692,8 +682,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
+                () -> assertEquals(2, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
                 , () -> assertEquals(8, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -743,8 +732,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(2, transactionRepository.count())
+                () -> assertEquals(2, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
                 , () -> assertEquals(8, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -797,8 +785,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(3, transactionRepository.count())
+                () -> assertEquals(3, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
                 , () -> assertEquals(11, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -836,8 +823,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
+                () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEquals(4, entityRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -869,8 +855,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, recordFileRepository.count())
-                , () -> assertEquals(1, transactionRepository.count())
+                () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEquals(2, entityRepository.count())
                 , () -> assertEquals(0, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
