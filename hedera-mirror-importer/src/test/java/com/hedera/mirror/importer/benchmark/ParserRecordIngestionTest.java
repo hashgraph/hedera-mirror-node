@@ -77,7 +77,7 @@ public class ParserRecordIngestionTest extends IntegrationTest {
     @Timeout(400)
     @Test
     void parseAndIngestMultipleFiles60000Transactions() throws Exception {
-        parse("2020-02-09T18_30_05.007359Z.rcd");
+        parse("*.rcd");
     }
 
     private void parse(String filePath) {
