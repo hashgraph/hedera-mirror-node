@@ -199,10 +199,6 @@
         </profile>
         <profile>
             <id>performance-test</id>
-            <properties>
-                <skip.integration.tests>false</skip.integration.tests>
-                <skip.unit.tests>true</skip.unit.tests>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
