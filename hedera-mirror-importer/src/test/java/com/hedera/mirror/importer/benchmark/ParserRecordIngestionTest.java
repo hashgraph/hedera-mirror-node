@@ -1,11 +1,33 @@
 package com.hedera.mirror.importer.benchmark;
 
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import java.nio.file.Path;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,10 +43,11 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Tag("performance")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ParserRecordIngestionTest extends IntegrationTest {
 
     @TempDir
-    Path dataPath;
+    static Path dataPath;
 
     @Value("classpath:data")
     Path testPath;
@@ -39,9 +62,14 @@ public class ParserRecordIngestionTest extends IntegrationTest {
 
     private StreamType streamType;
 
+    @BeforeAll
+    void warmUp() {
+        streamType = parserProperties.getStreamType();
+        parse("2020-02-09T18_30_00.000084Z.rcd");
+    }
+
     @BeforeEach
     void before() {
-        streamType = parserProperties.getStreamType();
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
     }
@@ -49,9 +77,13 @@ public class ParserRecordIngestionTest extends IntegrationTest {
     @Timeout(400)
     @Test
     void parseAndIngestMultipleFiles60000Transactions() throws Exception {
+        parse("2020-02-09T18_30_05.007359Z.rcd");
+    }
+
+    private void parse(String filePath) {
         fileCopier = FileCopier.create(testPath, dataPath)
                 .from(streamType.getPath(), "performance")
-                .filterFiles("*.rcd")
+                .filterFiles(filePath)
                 .to(streamType.getPath(), streamType.getValid());
         fileCopier.copy();
 
