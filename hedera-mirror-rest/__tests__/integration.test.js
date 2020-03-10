@@ -40,125 +40,13 @@
  * TEST_DB_PORT (default: 5432)
  * TEST_DB_NAME (default: mirror_node_integration)
  */
-const {GenericContainer} = require('testcontainers');
 const transactions = require('../transactions.js');
-const exec = require('child_process').exec;
 const path = require('path');
 const request = require('supertest');
 const server = require('../server');
 const fs = require('fs');
-
-let oldPool;
-let oldShardNum;
-
-let dockerDb;
-let SqlConnectionPool = require('pg').Pool;
+const integrationDbOps = require('./integration_db_ops.js');
 let sqlConnection;
-
-const defaultPostgresqlPort = 5432;
-const defaultDbName = 'mirror_node_integration';
-const dbUser = 'mirror_node';
-const dbPassword = 'mirror_node_pass';
-const dockerPostgresTag = '9.6.14-alpine';
-let dbPort = defaultPostgresqlPort;
-let dbHost = '127.0.0.1';
-let dbName = defaultDbName;
-
-const isDockerInstalled = function() {
-  return new Promise(resolve => {
-    exec('docker --version', err => {
-      resolve(!err);
-    });
-  });
-};
-
-/**
- * Instantiate sqlConnection by either pointing at a DB specified by environment variables or instantiating a
- * testContainers/dockerized postgresql instance.
- */
-const instantiateDatabase = async function() {
-  if (!process.env.TEST_DB_HOST) {
-    if (!(await isDockerInstalled())) {
-      dbPort = dbHost = dbName = null;
-      console.log('Environment variable TEST_DB_HOST not set and docker not found. Integration tests will fail.');
-      return;
-    }
-
-    dockerDb = await new GenericContainer('postgres', dockerPostgresTag)
-      .withEnv('POSTGRES_DB', dbName)
-      .withEnv('POSTGRES_USER', dbUser)
-      .withEnv('POSTGRES_PASSWORD', dbPassword)
-      .withExposedPorts(defaultPostgresqlPort)
-      .start();
-    dbPort = dockerDb.getMappedPort(defaultPostgresqlPort);
-    console.log(
-      `Setup testContainer (dockerized version of) postgres ${dockerPostgresTag}, listening on port ${dbPort}`
-    );
-  } else {
-    dbHost = process.env.TEST_DB_HOST;
-    dbPort = process.env.TEST_DB_PORT || defaultPostgresqlPort;
-    dbName = process.env.TEST_DB_NAME || defaultDbName;
-    console.log(`Using integration database ${dbHost}:${dbPort}/${dbName}`);
-  }
-
-  sqlConnection = new SqlConnectionPool({
-    user: dbUser,
-    host: dbHost,
-    database: dbName,
-    password: dbPassword,
-    port: dbPort
-  });
-  // Until "server", "pool" and everything else is made non-static...
-  oldPool = global.pool;
-  global.pool = sqlConnection;
-
-  await flywayMigrate();
-  await setupData();
-};
-
-/**
- * Run the sql (non-java) based migrations stored in the importer project against the target database.
- * @returns {Promise}
- */
-const flywayMigrate = function() {
-  console.log('Using flyway CLI to construct schema');
-  let exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
-  let configPath = path.join('config', '.node-flywaydb.integration.conf');
-  let flywayEnv = {
-    env: Object.assign(
-      {},
-      {
-        FLYWAY_URL: `jdbc:postgresql://${dbHost}:${dbPort}/${dbName}`,
-        FLYWAY_USER: dbUser,
-        FLYWAY_PASSWORD: dbPassword,
-        'FLYWAY_PLACEHOLDERS_db-name': dbName,
-        'FLYWAY_PLACEHOLDERS_db-user': dbUser,
-        'FLYWAY_PLACEHOLDERS_api-user': 'mirror_api',
-        'FLYWAY_PLACEHOLDERS_api-password': 'mirror_api_pass',
-        FLYWAY_LOCATIONS: 'filesystem:../hedera-mirror-importer/src/main/resources/db/migration'
-      },
-      process.env
-    )
-  };
-  return new Promise((resolve, reject) => {
-    let args = ['node', exePath, '-c', configPath, 'clean'];
-    exec(args.join(' '), flywayEnv, err => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      args = ['node', exePath, '-c', configPath, 'migrate'];
-      exec(args.join(' '), flywayEnv, (err, stdout) => {
-        if (err) {
-          reject(err);
-        } else {
-          console.log(stdout);
-          resolve();
-        }
-      });
-    });
-  });
-};
 
 //
 // TEST DATA
@@ -174,7 +62,7 @@ const addAccount = async function(accountId, exp_tm_nanosecs = null) {
   if (e) {
     return e;
   }
-  let res = await sqlConnection.query(
+  let res = await integrationDbOps.runSqlQuery(
     'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns) values ($1, $2, $3, $4, $5) returning id;',
     [1, shard, realm, accountId, exp_tm_nanosecs]
   );
@@ -193,7 +81,7 @@ const addTransaction = async function(
   result = 22,
   type = 14
 ) {
-  await sqlConnection.query(
+  await integrationDbOps.runSqlQuery(
     'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
     [
       consensusTimestamp,
@@ -209,7 +97,7 @@ const addTransaction = async function(
   );
   for (var i = 0; i < transfers.length; ++i) {
     let xfer = transfers[i];
-    await sqlConnection.query(
+    await integrationDbOps.runSqlQuery(
       'insert into t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
       [consensusTimestamp, xfer[1], realm, xfer[0]]
     );
@@ -257,7 +145,7 @@ const testData = fs.readFileSync(testDataPath);
 const testDataJson = JSON.parse(testData);
 
 const setupData = async function() {
-  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['test']);
+  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', ['test']);
   let fileId = res.rows[0]['id'];
   console.log(`Record file id is ${fileId}`);
 
@@ -269,7 +157,7 @@ const setupData = async function() {
 
     // Add 3 balances for each account.
     for (var ts = 0; ts < balancePerAccountCount; ++ts) {
-      await sqlConnection.query(
+      await integrationDbOps.runSqlQuery(
         'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
         [ts * 1000, realm, account.id, account.balance]
       );
@@ -286,30 +174,15 @@ const setupData = async function() {
 
 beforeAll(async () => {
   jest.setTimeout(20000);
-  await instantiateDatabase();
+  sqlConnection = await integrationDbOps.instantiateDatabase();
+  await setupData();
 });
 
 afterAll(() => {
+  integrationDbOps.closeConnection();
   if (sqlConnection) {
     sqlConnection.end();
     sqlConnection = null;
-  }
-  if (dockerDb) {
-    dockerDb.stop({
-      removeVolumes: false
-    });
-    dockerDb = null;
-  }
-  if (oldPool !== null) {
-    global.pool = oldPool;
-    oldPool = null;
-  }
-  if (process.env.CI) {
-    let logPath = path.join(__dirname, '..', '..', 'logs', 'hedera_mirrornode_api_3000.log');
-    console.log(logPath);
-    if (fs.existsSync(logPath)) {
-      console.log(fs.readFileSync(logPath, 'utf8'));
-    }
   }
 });
 
@@ -336,7 +209,7 @@ function extractDurationAndMaxFeeFromTransactionResults(rows) {
 
 test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfer', async () => {
   let sql = transactions.reqToSql({query: {}});
-  let res = await sqlConnection.query(sql.query, sql.params);
+  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(9);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
     '@1050: account 10 \u0127-11',
@@ -353,7 +226,7 @@ test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xf
 
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfer', async () => {
   let sql = transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
-  let res = await sqlConnection.query(sql.query, sql.params);
+  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(3);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
     '@1052: account 2 \u01271',
@@ -364,12 +237,14 @@ test('DB integration test - transactions.reqToSql - single valid account - 1 txn
 
 test('DB integration test - transactions.reqToSql - invalid account', async () => {
   let sql = transactions.reqToSql({query: {'account.id': '0.17.666'}});
-  let res = await sqlConnection.query(sql.query, sql.params);
+  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(0);
 });
 
 test('DB integration test - transactions.reqToSql - null validDurationSeconds and maxFee inserts', async () => {
-  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['nodurationfee']);
+  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', [
+    'nodurationfee'
+  ]);
   let fileId = res.rows[0]['id'];
 
   await addCryptoTransferTransaction(1062, fileId, 3, 4, 50, 5, null); // null maxFee
@@ -377,7 +252,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
   await addCryptoTransferTransaction(1064, fileId, 3, 4, 70, null, null); // valid validDurationSeconds and maxFee
 
   let sql = transactions.reqToSql({query: {'account.id': '0.15.3'}});
-  res = await sqlConnection.query(sql.query, sql.params);
+  res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(9);
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual([
     '@5,null',
@@ -393,14 +268,14 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
 });
 
 test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
-  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', [
+  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', [
     'unknowntypeandresult'
   ]);
   let fileId = res.rows[0]['id'];
   await addTransaction(1070, fileId, 7, [[2, 1]], 11, 33, -1, -1);
 
   let sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
-  res = await sqlConnection.query(sql.query, sql.params);
+  res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(1);
   expect(res.rows[0].name).toEqual('UNKNOWN');
   expect(res.rows[0].result).toEqual('UNKNOWN');
@@ -408,14 +283,16 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
 
 const createAndPopulateNewAccount = async (id, ts, bal) => {
   await addAccount(id);
-  await sqlConnection.query(
+  await integrationDbOps.runSqlQuery(
     'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
     [ts, realm, id, bal]
   );
 };
 
 test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
-  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', ['accountrange']);
+  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', [
+    'accountrange'
+  ]);
   let fileId = res.rows[0]['id'];
 
   await createAndPopulateNewAccount(13, 5, 10);
@@ -428,7 +305,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   await addCryptoTransferTransaction(2064, fileId, 82, 63, 20, 8000, -80);
 
   let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.100']}});
-  res = await sqlConnection.query(sql.query, sql.params);
+  res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
 
   // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
   // Note bank is out of desired range but is expected in query result
