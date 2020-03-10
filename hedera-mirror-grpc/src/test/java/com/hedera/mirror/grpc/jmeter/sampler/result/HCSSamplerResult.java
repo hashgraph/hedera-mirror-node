@@ -35,6 +35,7 @@ public abstract class HCSSamplerResult<T> {
     private final long topicNum;
     private final Stopwatch stopwatch = Stopwatch.createStarted();
     private final Instant subscribeStart = Instant.now();
+    private Stopwatch lastMessage = Stopwatch.createStarted();
     private long historicalMessageCount = 0L;
     private long incomingMessageCount = 0L;
     private T last;
@@ -57,7 +58,7 @@ public abstract class HCSSamplerResult<T> {
     }
 
     public void onNext(T result) {
-
+        lastMessage = Stopwatch.createStarted();
         historical = getConsensusInstant(result).isBefore(subscribeStart);
         if (historical) {
             ++historicalMessageCount;
@@ -71,12 +72,18 @@ public abstract class HCSSamplerResult<T> {
     }
 
     public void onComplete() {
-        log.info("Observed {} historic and {} incoming messages in {} ({}/s): {}", historicalMessageCount,
-                incomingMessageCount, stopwatch, getMessageRate(), success ? "success" : "failed");
+        log.info("Observed {} historic and {} incoming messages in {} ({}/s): {}. Last message received {} ago",
+                historicalMessageCount,
+                incomingMessageCount, stopwatch, getMessageRate(), success ? "success" : "failed", lastMessage);
     }
 
     public void onError(Throwable err) {
         log.error("GRPC error on subscription : {}", err.getMessage());
+        if (err.getMessage().contains("CANCELLED: unsubscribed")) {
+            // ignore error message on cancel
+            return;
+        }
+
         throw new IllegalArgumentException("Error on subscription");
     }
 
@@ -92,12 +99,12 @@ public abstract class HCSSamplerResult<T> {
                     getMessage(currentResponse), currentConsensusInstant, currentSequenceNumber);
 
             if (currentSequenceNumber != lastSequenceNumber + 1) {
-                log.error("Out of order messgae sequence. Last : {}, current : {}", last, currentResponse);
+                log.error("Out of order message sequence. Last : {}, current : {}", last, currentResponse);
                 throw new IllegalArgumentException("Out of order message sequence. Expected " + (lastSequenceNumber + 1) + " got " + currentSequenceNumber);
             }
 
             if (!currentConsensusInstant.isAfter(lastConsensusInstant)) {
-                log.error("Out of order messgae sequence. Last : {}, current : {}", last, currentResponse);
+                log.error("Out of order message sequence. Last : {}, current : {}", last, currentResponse);
                 throw new IllegalArgumentException("Out of order message timestamp. Expected " + currentConsensusInstant +
                         " to be after " + lastConsensusInstant);
             }

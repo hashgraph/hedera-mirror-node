@@ -26,6 +26,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Instant;
 import lombok.extern.log4j.Log4j2;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
@@ -49,7 +50,7 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
 
     private static synchronized void setChannel(String host, int port) {
         if (channel == null) {
-            channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+            channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
         }
     }
 
@@ -63,11 +64,20 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
         int port = propHandler.getIntTestParam("port", "5600");
         boolean sharedChannel = Boolean.valueOf(propHandler.getTestParam("sharedChannel", "false"));
         long startTime = propHandler.getLongClientTestParam("StartTime", 0, "0");
+        int nanoStartTime = 0;
+
+        // allow for subscribe from now
+        if (startTime < 0) {
+            Instant now = Instant.now();
+            startTime = now.getEpochSecond();
+            nanoStartTime = now.getNano();
+        }
+
         long endTimeSecs = propHandler.getLongClientTestParam("EndTime", 0, "0");
         long limit = propHandler.getLongClientTestParam("Limit", 0, "100");
 
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
-                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(startTime).build())
+                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(startTime).setNanos(nanoStartTime).build())
                 .setTopicID(
                         TopicID.newBuilder()
                                 .setRealmNum(propHandler.getLongClientTestParam("RealmNum", 0, "0"))

@@ -39,13 +39,13 @@ Options can be set through the command line as follows
 -   Tags : Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
     -   All test cases
 
-*                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@AcceptanceSuite"`
+*                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@AcceptanceSuite"`
     -   Negative cases
-*                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
+*                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
     -   Negative cases
-*                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
+*                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
     -   Edge cases
-*                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
+*                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
     -   ... (search for @? tags within the .feature files for further tags)
 
 ### Test Layout
@@ -122,7 +122,7 @@ Then using the [JMeter Maven Plugin](https://github.com/jmeter-maven-plugin/jmet
 
 -   Start the tests:
 
-    `./mvnw clean verify -P=performance-tests --projects hedera-mirror-test`
+    `./mvnw clean integration-test -P=performance-tests --projects hedera-mirror-test`
 
     Optional properties follow the 'Modifying Properties' logic (https://github.com/jmeter-maven-plugin/jmeter-maven-plugin/wiki/Modifying-Properties) and include the following
 
@@ -152,7 +152,7 @@ The initial jmx test plan files under `hedera-mirror-test/src/test/jmeter/` foll
     -   delSeqFrom (sequence number to delete messages in a topic from)
 2.  DB_Future_Sampler - Simulates incoming messages
     -   (See DB_Setup_Sampler options)
-3.  Subcribe_Sampler - Subscribes and listens for messages
+3.  Subscribe_Sampler - Subscribes and listens for messages
     -   host
     -   port
     -   limit

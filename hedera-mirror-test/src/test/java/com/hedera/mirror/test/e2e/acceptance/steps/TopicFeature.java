@@ -113,6 +113,7 @@ public class TopicFeature {
 
     @Given("I provide a topic id {string}")
     public void setTopicIdParam(String topicId) {
+        testInstantReference = Instant.now();
         mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery();
         if (!topicId.isEmpty()) {
             consensusTopicId = new ConsensusTopicId(0, 0, Long.parseLong(topicId));
@@ -133,6 +134,11 @@ public class TopicFeature {
     @Given("I provide a number of messages {int} I want to receive within {int} seconds")
     public void setTopicListenParams(int numMessages, int latency) {
         messageSubscribeCount = numMessages;
+        this.latency = latency;
+    }
+
+    @Given("I provide a {int} in seconds of which I want to receive messages within")
+    public void setSubscribeParams(int latency) {
         this.latency = latency;
     }
 
