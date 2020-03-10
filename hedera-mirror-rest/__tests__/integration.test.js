@@ -46,7 +46,6 @@ const request = require('supertest');
 const server = require('../server');
 const fs = require('fs');
 const integrationDbOps = require('./integration_db_ops.js');
-let sqlConnection;
 
 //
 // TEST DATA
@@ -174,16 +173,12 @@ const setupData = async function() {
 
 beforeAll(async () => {
   jest.setTimeout(20000);
-  sqlConnection = await integrationDbOps.instantiateDatabase();
+  await integrationDbOps.instantiateDatabase();
   await setupData();
 });
 
 afterAll(() => {
   integrationDbOps.closeConnection();
-  if (sqlConnection) {
-    sqlConnection.end();
-    sqlConnection = null;
-  }
 });
 
 /**
