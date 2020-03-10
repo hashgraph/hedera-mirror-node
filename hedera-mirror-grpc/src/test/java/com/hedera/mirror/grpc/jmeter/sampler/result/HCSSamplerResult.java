@@ -35,6 +35,7 @@ public abstract class HCSSamplerResult<T> {
     private final long topicNum;
     private final Stopwatch stopwatch = Stopwatch.createStarted();
     private final Instant subscribeStart = Instant.now();
+    private Throwable subscribeError;
     private Stopwatch lastMessage = Stopwatch.createStarted();
     private long historicalMessageCount = 0L;
     private long incomingMessageCount = 0L;
@@ -72,19 +73,15 @@ public abstract class HCSSamplerResult<T> {
     }
 
     public void onComplete() {
+        String errorMessage = subscribeError == null ? "" : " : with " + subscribeError.getMessage();
         log.info("Observed {} historic and {} incoming messages in {} ({}/s): {}. Last message received {} ago",
                 historicalMessageCount,
-                incomingMessageCount, stopwatch, getMessageRate(), success ? "success" : "failed", lastMessage);
+                incomingMessageCount, stopwatch, getMessageRate(), success ? "success" :
+                        "failed" + errorMessage, lastMessage);
     }
 
     public void onError(Throwable err) {
-        log.error("GRPC error on subscription : {}", err.getMessage());
-        if (err.getMessage().contains("CANCELLED: unsubscribed")) {
-            // ignore error message on cancel
-            return;
-        }
-
-        throw new IllegalArgumentException("Error on subscription");
+        subscribeError = err;
     }
 
     public void validateResponse(T currentResponse) {
