@@ -26,6 +26,14 @@ references:
       key: maven-v2-{{ arch }}-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
       paths:
         - ~/.m2
+  db_docker: &db_docker
+    docker:
+      - image: adoptopenjdk:11-jdk-hotspot
+      - image: postgres:9.6-alpine
+        environment:
+          POSTGRES_DB: mirror_node_test
+          POSTGRES_PASSWORD: mirror_node_pass
+          POSTGRES_USER: mirror_node
 
 workflows:
   version: 2
@@ -61,18 +69,18 @@ workflows:
               ignore: /.*/
             tags:
               only: /^.*/
+      - perf_maven:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
 
 jobs:
   build_maven:
     environment:
       MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-    docker:
-      - image: adoptopenjdk:11-jdk-hotspot
-      - image: postgres:9.6-alpine
-        environment:
-          POSTGRES_DB: mirror_node_test
-          POSTGRES_PASSWORD: mirror_node_pass
-          POSTGRES_USER: mirror_node
+    <<: *db_docker
     steps:
       - checkout
       - *pom_checksum
@@ -115,6 +123,21 @@ jobs:
             mkdir -p ${WORKSPACE}/artifacts
             tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}
       - *persist_artifacts
+
+  perf_maven:
+    environment:
+      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+    <<: *db_docker
+    steps:
+      - checkout
+      - *pom_checksum
+      - *restore_maven_cache
+      - run:
+          name: Running maven (integration)
+          command: ./mvnw ${MAVEN_CLI_OPTS} integration-test --projects hedera-mirror-importer/ -P performance-test
+      - *save_maven_cache
+      - store_test_results:
+          path: hedera-mirror-importer/target/failsafe-reports
 
   build_rest:
     docker:
