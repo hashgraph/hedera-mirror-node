@@ -20,9 +20,10 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH;
+import static com.hedera.mirror.importer.domain.ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
@@ -51,7 +52,6 @@ import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.ParserSQLException;
@@ -92,6 +92,7 @@ public class RecordFileParserTest extends IntegrationTest {
 
     @BeforeEach
     void before() {
+        parserProperties.setEnabled(true);
         streamType = parserProperties.getStreamType();
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
@@ -173,21 +174,23 @@ public class RecordFileParserTest extends IntegrationTest {
     @Test
     void hashMismatch() throws Exception {
         // given
-        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "123");
+        applicationStatusRepository.updateStatusValue(LAST_PROCESSED_RECORD_HASH, "123");
         fileCopier.copy();
 
         // when
         recordFileParser.parse();
 
         // then
-        assertNoneProcessed();
+        assertParsedFiles();
+        verifyNoInteractions(recordItemListener);
+        verify(recordStreamFileListener).onError();
     }
 
     @Test
     void bypassHashMismatch() throws Exception {
         // given
         applicationStatusRepository.updateStatusValue(
-                ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, "2019-09-01T00:00:00.000000Z.rcd");
+                RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, "2019-09-01T00:00:00.000000Z.rcd");
         fileCopier.copy();
 
         // when
@@ -274,6 +277,5 @@ public class RecordFileParserTest extends IntegrationTest {
         assertParsedFiles();
         verifyNoInteractions(recordItemListener);
         verifyNoInteractions(recordStreamFileListener);
-
     }
 }
