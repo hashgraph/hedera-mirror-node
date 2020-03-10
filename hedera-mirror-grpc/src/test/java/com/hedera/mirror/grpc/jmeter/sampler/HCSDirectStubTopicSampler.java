@@ -101,7 +101,7 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
             @SneakyThrows
             @Override
             public void onError(Throwable t) {
-                log.error("Error in ConsensusTopicResponse StreamObserver", t);
+                log.error("Error in ConsensusTopicResponse StreamObserver : {}", t.getMessage());
                 throw t;
             }
 
