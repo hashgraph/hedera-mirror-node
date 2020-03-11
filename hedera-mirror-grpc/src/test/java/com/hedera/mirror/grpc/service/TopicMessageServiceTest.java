@@ -148,6 +148,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         topicMessageService.subscribeTopic(filter)
                 .as(StepVerifier::create)
+                .expectSubscription()
+                .expectNoEvent(Duration.ofMillis(500))
                 .thenCancel()
                 .verify(Duration.ofMillis(100));
 
