@@ -28,7 +28,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
 import lombok.extern.log4j.Log4j2;
-import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
@@ -61,27 +60,27 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
     public void setupTest(JavaSamplerContext context) {
         propHandler = new PropertiesHandler(context);
         String host = propHandler.getTestParam("host", "localhost");
-        int port = propHandler.getIntTestParam("port", "5600");
+        int port = propHandler.getIntTestParam("port", 5600);
         boolean sharedChannel = Boolean.valueOf(propHandler.getTestParam("sharedChannel", "false"));
-        long startTime = propHandler.getLongClientTestParam("StartTime", 0, "0");
+        Long startTime = propHandler.getLongClientTestParam("StartTime", 0, null);
         int nanoStartTime = 0;
 
         // allow for subscribe from now
-        if (startTime < 0) {
+        if (startTime == null) {
             Instant now = Instant.now();
             startTime = now.getEpochSecond();
             nanoStartTime = now.getNano();
         }
 
-        long endTimeSecs = propHandler.getLongClientTestParam("EndTime", 0, "0");
-        long limit = propHandler.getLongClientTestParam("Limit", 0, "100");
+        long endTimeSecs = propHandler.getLongClientTestParam("EndTime", 0, 0L);
+        long limit = propHandler.getLongClientTestParam("Limit", 0, 100L);
 
         ConsensusTopicQuery.Builder builder = ConsensusTopicQuery.newBuilder()
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(startTime).setNanos(nanoStartTime).build())
                 .setTopicID(
                         TopicID.newBuilder()
-                                .setRealmNum(propHandler.getLongClientTestParam("RealmNum", 0, "0"))
-                                .setTopicNum(propHandler.getLongClientTestParam("TopicId", 0, "0"))
+                                .setRealmNum(propHandler.getLongClientTestParam("RealmNum", 0, 0L))
+                                .setTopicNum(propHandler.getLongClientTestParam("TopicId", 0, 0L))
                                 .build());
 
         if (endTimeSecs != 0) {
@@ -117,29 +116,6 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
         } else {
             hcsTopicSampler = new HCSDirectStubTopicSampler(host, port, consensusTopicQuery);
         }
-    }
-
-    /**
-     * Specifies and makes available parameters and their defaults to the jMeter GUI when editing Test Plans
-     *
-     * @return Sampler arguments
-     */
-    @Override
-    public Arguments getDefaultParameters() {
-        Arguments defaultParameters = new Arguments();
-        defaultParameters.addArgument("host", "localhost");
-        defaultParameters.addArgument("port", "5600");
-        defaultParameters.addArgument("limit", "100");
-        defaultParameters.addArgument("consensusStartTimeSeconds", "0");
-        defaultParameters.addArgument("consensusEndTimeSeconds", "0");
-        defaultParameters.addArgument("topicID", "0");
-        defaultParameters.addArgument("realmNum", "0");
-        defaultParameters.addArgument("historicMessagesCount", "0");
-        defaultParameters.addArgument("newTopicsMessageCount", "0");
-        defaultParameters.addArgument("messagesLatchWaitSeconds", "60");
-        defaultParameters.addArgument("sharedChannel", "false");
-        defaultParameters.addArgument("useMAPI", "false");
-        return defaultParameters;
     }
 
     /**

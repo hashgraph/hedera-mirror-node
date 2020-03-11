@@ -73,11 +73,11 @@ public abstract class HCSSamplerResult<T> {
     }
 
     public void onComplete() {
-        String errorMessage = subscribeError == null ? "" : " : with " + subscribeError.getMessage();
-        log.info("Observed {} historic and {} incoming messages in {} ({}/s): {}. Last message received {} ago",
+        String errorMessage = subscribeError == null ? "" : subscribeError.getMessage();
+        log.info("Observed {} historic and {} incoming messages in {} ({}/s). Last message received {} ago. {}",
                 historicalMessageCount,
-                incomingMessageCount, stopwatch, getMessageRate(), success ? "success" :
-                        "failed" + errorMessage, lastMessage);
+                incomingMessageCount, stopwatch, getMessageRate(), lastMessage, success ? "Success" :
+                        "Failed : " + errorMessage);
     }
 
     public void onError(Throwable err) {

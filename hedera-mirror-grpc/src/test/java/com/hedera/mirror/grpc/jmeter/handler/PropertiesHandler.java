@@ -22,6 +22,7 @@ package com.hedera.mirror.grpc.jmeter.handler;
 
 import lombok.extern.log4j.Log4j2;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
+import org.assertj.core.util.Strings;
 
 /**
  * A utility class for easily retrieving jmeter user properties from a properties file Offers numerous method overloads
@@ -48,13 +49,23 @@ public class PropertiesHandler {
         return retrievedValue;
     }
 
-    public long getLongTestParam(String property, String defaultVal) {
-        String value = getTestParam(property, defaultVal);
+    public Long getLongTestParam(String property, Long defaultVal) {
+        String value = getTestParam(property);
+
+        if (Strings.isNullOrEmpty(value)) {
+            return defaultVal;
+        }
+
         return Long.parseLong(value);
     }
 
-    public int getIntTestParam(String property, String defaultVal) {
-        String value = getTestParam(property, defaultVal);
+    public int getIntTestParam(String property, int defaultVal) {
+        String value = getTestParam(property);
+
+        if (Strings.isNullOrEmpty(value)) {
+            return defaultVal;
+        }
+
         return Integer.parseInt(value);
     }
 
@@ -65,7 +76,7 @@ public class PropertiesHandler {
     public String getClientTestParam(String property, int num, String defaultVal) {
         String retrievedValue = getTestParam(String.format(clientPattern, property, num));
 
-        if (retrievedValue == null || retrievedValue.isEmpty()) {
+        if (Strings.isNullOrEmpty(retrievedValue)) {
             return defaultVal;
         }
 
@@ -77,9 +88,8 @@ public class PropertiesHandler {
         return Long.parseLong(value);
     }
 
-    public long getLongClientTestParam(String property, int num, String defaultVal) {
-        String value = getTestParam(String.format(clientPattern, property, num), defaultVal);
-        return Long.parseLong(value);
+    public Long getLongClientTestParam(String property, int num, Long defaultVal) {
+        return getLongTestParam(String.format(clientPattern, property, num), defaultVal);
     }
 
     public int getIntClientTestParam(String property, int num) {
