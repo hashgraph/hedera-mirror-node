@@ -55,8 +55,8 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
         propHandler = new PropertiesHandler(javaSamplerContext);
 
         host = propHandler.getTestParam("host", "localhost");
-        port = propHandler.getIntTestParam("port", "5600");
-        clientCount = propHandler.getIntTestParam("clientCount", "0");
+        port = propHandler.getIntTestParam("port", 5600);
+        clientCount = propHandler.getIntTestParam("clientCount", 0);
 
         for (int i = 0; i < clientCount; i++) {
             TopicSubscription topicSubscription = TopicSubscription.builder()

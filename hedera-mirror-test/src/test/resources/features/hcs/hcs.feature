@@ -26,12 +26,12 @@ Feature: HCS Base Coverage Feature
     @SubscribeOnly @Acceptance
     Scenario Outline: Validate topic message subscription only
         Given I provide a topic id <topicId>
-        When I provide a number of messages <numMessages> I want to receive
-        And I subscribe with a filter to retrieve messages
+        And I provide a starting timestamp <startTimestamp> and a number of messages <numMessages> I want to receive
+        When I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages
         Examples:
-            | topicId     | numMessages |
-            | "200002151" | 5           |
+            | topicId     | startTimestamp | numMessages |
+            | "200002151" | "0"            | 5           |
 
     @PublishOnly
     Scenario Outline: Validate topic message subscription

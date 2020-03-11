@@ -113,6 +113,7 @@ public class TopicFeature {
 
     @Given("I provide a topic id {string}")
     public void setTopicIdParam(String topicId) {
+        testInstantReference = Instant.now();
         mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery();
         if (!topicId.isEmpty()) {
             consensusTopicId = new ConsensusTopicId(0, 0, Long.parseLong(topicId));
@@ -136,23 +137,29 @@ public class TopicFeature {
         this.latency = latency;
     }
 
-    @Given("I provide a startDate {string} and a number of messages {int} I want to receive")
-    public void setTopicListenParams(String startDate, int numMessages) {
+    @Given("I provide a {int} in seconds of which I want to receive messages within")
+    public void setSubscribeParams(int latency) {
+        this.latency = latency;
+    }
+
+    @Given("I provide a starting timestamp {string} and a number of messages {int} I want to receive")
+    public void setTopicListenParams(String startTimestamp, int numMessages) {
         messageSubscribeCount = numMessages;
 
-        Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startDate, testInstantReference);
+        Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp, testInstantReference);
         log.trace("Subscribe mirrorConsensusTopicQuery : StartTime : {}", startTime);
 
         mirrorConsensusTopicQuery
                 .setStartTime(startTime);
     }
 
-    @Given("I provide a startDate {string} and endDate {string} and a number of messages {int} I want to receive")
-    public void setTopicListenParams(String startDate, String endDate, int numMessages) {
+    @Given("I provide a starting timestamp {string} and ending timestamp {string} and a number of messages {int} I " +
+            "want to receive")
+    public void setTopicListenParams(String startTimestamp, String endTimestamp, int numMessages) {
         messageSubscribeCount = numMessages;
 
-        Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startDate, testInstantReference);
-        Instant endTime = FeatureInputHandler.messageQueryDateStringToInstant(endDate, Instant.now());
+        Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp, testInstantReference);
+        Instant endTime = FeatureInputHandler.messageQueryDateStringToInstant(endTimestamp, Instant.now());
         log.trace("Subscribe mirrorConsensusTopicQuery : StartTime : {}. EndTime : {}", startTime, endTime);
 
         mirrorConsensusTopicQuery
@@ -173,13 +180,14 @@ public class TopicFeature {
                 .setEndTime(endTime);
     }
 
-    @Given("I provide a startDate {string} and endDate {string} and a limit of {int} messages I want to receive")
-    public void setTopicListenParamswLimit(String startDate, String endDate, int limit) {
+    @Given("I provide a starting timestamp {string} and ending timestamp {string} and a limit of {int} messages I " +
+            "want to receive")
+    public void setTopicListenParamswLimit(String startTimestamp, String endTimestamp, int limit) {
         messageSubscribeCount = limit;
 
         mirrorConsensusTopicQuery
-                .setStartTime(FeatureInputHandler.messageQueryDateStringToInstant(startDate))
-                .setEndTime(FeatureInputHandler.messageQueryDateStringToInstant(endDate))
+                .setStartTime(FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp))
+                .setEndTime(FeatureInputHandler.messageQueryDateStringToInstant(endTimestamp))
                 .setLimit(limit);
     }
 
