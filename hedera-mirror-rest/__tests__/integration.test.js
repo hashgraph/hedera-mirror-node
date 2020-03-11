@@ -47,6 +47,22 @@ const server = require('../server');
 const fs = require('fs');
 const integrationDbOps = require('./integration_db_ops.js');
 
+beforeAll(async () => {
+  jest.setTimeout(20000);
+  await integrationDbOps.instantiateDatabase();
+});
+
+afterAll(() => {
+  integrationDbOps.closeConnection();
+});
+
+let accountEntityIds = {};
+beforeEach(async () => {
+  await integrationDbOps.cleanUp();
+  accountEntityIds = {};
+  await setupData();
+});
+
 //
 // TEST DATA
 // shard 0, realm 15, accounts 1-10
@@ -55,7 +71,6 @@ const integrationDbOps = require('./integration_db_ops.js');
 //
 const shard = 0;
 const realm = 15;
-const accountEntityIds = {};
 const addAccount = async function(accountId, exp_tm_nanosecs = null) {
   let e = accountEntityIds[accountId];
   if (e) {
@@ -170,16 +185,6 @@ const setupData = async function() {
 
   console.log('Finished initializing DB data');
 };
-
-beforeAll(async () => {
-  jest.setTimeout(20000);
-  await integrationDbOps.instantiateDatabase();
-  await setupData();
-});
-
-afterAll(() => {
-  integrationDbOps.closeConnection();
-});
 
 /**
  * Map a DB transaction/cryptotransfer result to something easily comparable in a test assert/expect.

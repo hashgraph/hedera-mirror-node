@@ -319,6 +319,7 @@ const runSqlQuery = async function(query, params) {
 module.exports = {
   instantiateDatabase: instantiateDatabase,
   closeConnection: closeConnection,
+  toAccount: toAccount,
   addAccount: addAccount,
   addTransaction: addTransaction,
   addCryptoTransfer: addCryptoTransfer,
