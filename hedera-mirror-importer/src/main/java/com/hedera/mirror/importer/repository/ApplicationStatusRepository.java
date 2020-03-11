@@ -21,9 +21,8 @@ package com.hedera.mirror.importer.repository;
  */
 
 import javax.transaction.Transactional;
-
 import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -44,7 +43,7 @@ public interface ApplicationStatusRepository extends CrudRepository<ApplicationS
     }
 
     @Modifying
-    @CacheEvict(key = "#p0")
+    @CachePut(key = "#p0")
     @Query("update ApplicationStatus set statusValue = :value where statusCode = :code")
     void updateStatusValue(@Param("code") ApplicationStatusCode statusCode, @Param("value") String statusValue);
 }
