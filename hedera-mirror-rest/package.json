@@ -4,7 +4,7 @@
   "description": "Hedera Mirror Node REST API",
   "main": "server.js",
   "scripts": {
-    "test": "jest --testPathPattern='__tests__/*'",
+    "test": "jest --testPathPattern='__tests__/*.test.js'",
     "acceptancetest": "__acceptancetests__/acceptancetests",
     "perftest": "__performancetests__/perfTest.js",
     "dev": "nodemon app.js"
@@ -59,7 +59,8 @@
     ],
     "testPathIgnorePatterns": [
       "__tests__/testutils.js",
-      "__tests__/mockpool.js"
+      "__tests__/mockpool.js",
+      "__tests__/integration_db_ops.js"
     ]
   },
   "jest-junit": {
