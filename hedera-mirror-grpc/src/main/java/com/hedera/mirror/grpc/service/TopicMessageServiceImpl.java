@@ -34,6 +34,7 @@ import reactor.core.publisher.Mono;
 import reactor.retry.Repeat;
 
 import com.hedera.mirror.grpc.GrpcProperties;
+import com.hedera.mirror.grpc.domain.Entity;
 import com.hedera.mirror.grpc.domain.EntityType;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -75,7 +76,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         return entityRepository
                 .findByCompositeKey(grpcProperties.getShard(), filter.getRealmNum(), filter.getTopicNum())
                 .switchIfEmpty(grpcProperties.isCheckTopicExists() ? Mono.error(new TopicNotFoundException()) :
-                        Mono.empty())
+                        Mono.just(Entity.builder().entityTypeId(EntityType.TOPIC).build()))
                 .filter(e -> e.getEntityTypeId() == EntityType.TOPIC)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Not a valid topic")));
     }
