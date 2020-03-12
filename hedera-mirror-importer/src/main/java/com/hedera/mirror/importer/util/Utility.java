@@ -611,6 +611,15 @@ public class Utility {
         }
     }
 
+    public static void deleteParsedFile(String fileName) {
+        try {
+            Files.delete(new File(fileName).toPath());
+            log.trace("Deleted parsed file {}", fileName);
+        } catch (Exception e) {
+            log.error("Error deleting parsed file {}", fileName);
+        }
+    }
+
     public static void purgeDirectory(Path path) {
         File dir = path.toFile();
         if (!dir.exists()) {

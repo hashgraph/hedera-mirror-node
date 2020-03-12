@@ -74,19 +74,16 @@ public class BalanceFileParser extends FileWatcher {
 
     private void processAllFilesForHistory() {
         Stopwatch stopwatch = Stopwatch.createStarted();
-
         try {
             File balanceFilePath = parserProperties.getValidPath().toFile();
             File[] balanceFiles = balanceFilePath.listFiles();
-
             for (File balanceFile : balanceFiles) {
                 if (ShutdownHelper.isStopping()) {
                     throw new RuntimeException("Process is shutting down");
                 }
                 if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath())
                         .loadAccountBalances()) {
-                    // move it
-                    Utility.moveFileToParsedDir(balanceFile.getCanonicalPath(), "/parsedBalanceFiles/");
+                    moveOrDeleteParsedFile(balanceFile.getCanonicalPath());
                 }
             }
             log.info("Completed processing {} balance files in {}", balanceFiles.length, stopwatch);
@@ -97,23 +94,26 @@ public class BalanceFileParser extends FileWatcher {
 
     private void processLastBalanceFile() {
         Stopwatch stopwatch = Stopwatch.createStarted();
-
         try {
             File balanceFile = getLatestBalanceFile();
-
             if (balanceFile == null) {
                 return;
             }
-
             log.debug("Processing last balance file {}", balanceFile);
-
             if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath())
                     .loadAccountBalances()) {
-                // move it
-                Utility.moveFileToParsedDir(balanceFile.getCanonicalPath(), "/parsedBalanceFiles/");
+                moveOrDeleteParsedFile(balanceFile.getCanonicalPath());
             }
         } catch (Exception e) {
             log.error("Error processing balances files after {}", stopwatch, e);
+        }
+    }
+
+    private void moveOrDeleteParsedFile(String fileName) {
+        if (((BalanceParserProperties) parserProperties).isKeepFiles()) {
+            Utility.moveFileToParsedDir(fileName, "/parsedBalanceFiles/");
+        } else {
+            Utility.deleteParsedFile(fileName);
         }
     }
 }

@@ -46,6 +46,8 @@ public class BalanceParserProperties implements ParserProperties {
     @Min(1)
     private int fileBufferSize = 200_000;
 
+    private boolean keepFiles = true;
+
     @Override
     public Path getStreamPath() {
         return mirrorProperties.getDataPath().resolve(getStreamType().getPath());
