@@ -81,10 +81,7 @@ public class BalanceFileParser extends FileWatcher {
                 if (ShutdownHelper.isStopping()) {
                     throw new RuntimeException("Process is shutting down");
                 }
-                if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath())
-                        .loadAccountBalances()) {
-                    moveOrDeleteParsedFile(balanceFile.getCanonicalPath());
-                }
+                processBalanceFile(balanceFile);
             }
             log.info("Completed processing {} balance files in {}", balanceFiles.length, stopwatch);
         } catch (Exception e) {
@@ -100,20 +97,17 @@ public class BalanceFileParser extends FileWatcher {
                 return;
             }
             log.debug("Processing last balance file {}", balanceFile);
-            if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath())
-                    .loadAccountBalances()) {
-                moveOrDeleteParsedFile(balanceFile.getCanonicalPath());
-            }
+            processBalanceFile(balanceFile);
         } catch (Exception e) {
             log.error("Error processing balances files after {}", stopwatch, e);
         }
     }
 
-    private void moveOrDeleteParsedFile(String fileName) {
-        if (((BalanceParserProperties) parserProperties).isKeepFiles()) {
-            Utility.moveFileToParsedDir(fileName, "/parsedBalanceFiles/");
-        } else {
-            Utility.deleteParsedFile(fileName);
+    private void processBalanceFile(File balanceFile) throws Exception {
+        if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath())
+                .loadAccountBalances()) {
+            Utility.moveOrDeleteParsedFile(balanceFile.getCanonicalPath(), "/parsedBalanceFiles/",
+                    ((BalanceParserProperties) parserProperties).isKeepFiles());
         }
     }
 }

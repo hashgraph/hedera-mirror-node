@@ -620,6 +620,14 @@ public class Utility {
         }
     }
 
+    public static void moveOrDeleteParsedFile(String fileName, String subDir, boolean keepFiles) {
+        if (keepFiles) {
+            Utility.moveFileToParsedDir(fileName, subDir);
+        } else {
+            Utility.deleteParsedFile(fileName);
+        }
+    }
+
     public static void purgeDirectory(Path path) {
         File dir = path.toFile();
         if (!dir.exists()) {

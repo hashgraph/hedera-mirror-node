@@ -43,7 +43,7 @@ public class RecordParserProperties implements ParserProperties {
     @NotNull
     private Duration frequency = Duration.ofMillis(500L);
 
-    private boolean keepFiles = true;
+    private boolean keepFiles = false;
 
     private boolean persistClaims = false;
 

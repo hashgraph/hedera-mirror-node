@@ -43,7 +43,7 @@ public class EventParserProperties implements ParserProperties {
     @NotNull
     private Duration frequency = Duration.ofMinutes(1L);
 
-    private boolean keepFiles = true;
+    private boolean keepFiles = false;
 
     @Override
     public Path getStreamPath() {
