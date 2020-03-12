@@ -20,9 +20,10 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH;
+import static com.hedera.mirror.importer.domain.ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
@@ -51,7 +52,6 @@ import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.ParserSQLException;
@@ -92,6 +92,7 @@ public class RecordFileParserTest extends IntegrationTest {
 
     @BeforeEach
     void before() {
+        parserProperties.setEnabled(true);
         streamType = parserProperties.getStreamType();
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
@@ -103,7 +104,7 @@ public class RecordFileParserTest extends IntegrationTest {
         file2 = parserProperties.getValidPath().resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
         recordFile1 = new RecordFile(0L, file1.getPath(), 0L, 0L,
                 "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                "");
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
         recordFile2 = new RecordFile(0L, file2.getPath(), 0L, 0L,
                 "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
                 recordFile1.getFileHash());
@@ -165,27 +166,31 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFileParser.parse();
 
         // then
-        assertNoneProcessed();
+        assertParsedFiles();
+        verifyNoInteractions(recordItemListener);
+        verify(recordStreamFileListener).onError();
     }
 
     @Test
     void hashMismatch() throws Exception {
         // given
-        applicationStatusRepository.updateStatusValue(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, "123");
+        applicationStatusRepository.updateStatusValue(LAST_PROCESSED_RECORD_HASH, "123");
         fileCopier.copy();
 
         // when
         recordFileParser.parse();
 
         // then
-        assertNoneProcessed();
+        assertParsedFiles();
+        verifyNoInteractions(recordItemListener);
+        verify(recordStreamFileListener).onError();
     }
 
     @Test
     void bypassHashMismatch() throws Exception {
         // given
         applicationStatusRepository.updateStatusValue(
-                ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, "2019-09-01T00:00:00.000000Z.rcd");
+                RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, "2019-09-01T00:00:00.000000Z.rcd");
         fileCopier.copy();
 
         // when
@@ -214,14 +219,12 @@ public class RecordFileParserTest extends IntegrationTest {
         // given
         fileCopier.copy();
         String fileName = file1.toString();
-        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)), "", "");
+        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
 
         // when: load same file again
-        boolean success = recordFileParser.loadRecordFile(
-                new StreamFileData(fileName, new FileInputStream(file1)), "", "");
+        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
 
         // then
-        assertTrue(success);
         verify(recordItemListener, times(NUM_TXNS_FILE_1)).onItem(any());
         verify(recordStreamFileListener, times(2)).onStart(any());
         verify(recordStreamFileListener, times(1)).onEnd(any());
@@ -274,6 +277,5 @@ public class RecordFileParserTest extends IntegrationTest {
         assertParsedFiles();
         verifyNoInteractions(recordItemListener);
         verifyNoInteractions(recordStreamFileListener);
-
     }
 }
