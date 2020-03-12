@@ -135,10 +135,20 @@ const flywayMigrate = function() {
     let args = ['node', exePath, '-c', configPath, 'clean'];
     exec(args.join(' '), flywayEnv, err => {
       if (err) {
-        console.log(err);
         reject(err);
         return;
       }
+
+      args = ['node', exePath, '-c', configPath, 'baseline'];
+      exec(args.join(' '), flywayEnv, (err, stdout) => {
+        if (err) {
+          reject(err);
+        } else {
+          console.log(stdout);
+          resolve();
+        }
+      });
+
       args = ['node', exePath, '-c', configPath, 'migrate'];
       exec(args.join(' '), flywayEnv, (err, stdout) => {
         if (err) {

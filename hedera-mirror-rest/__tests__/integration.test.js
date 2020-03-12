@@ -28,7 +28,7 @@
  *
  * Test data is created by:
  * 1) reading account id, balance, expiration and crypto transfer information from *.spec.json
- * 2) storing those accounts in integration DB      * 2) apply account creations, balance sets and transfers to the integration DB
+ * 2) apply account creations, balance sets and transfers to the integration DB
  *
  * Tests are then run in code below (find TESTS all caps) and by comparing requests/responses from the server to data
  * in the specs/ dir.
