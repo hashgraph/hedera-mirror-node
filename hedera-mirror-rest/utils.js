@@ -638,5 +638,6 @@ module.exports = {
   getNullableNumber: getNullableNumber,
   nsToSecNsWithHyphen: nsToSecNsWithHyphen,
   createTransactionId: createTransactionId,
-  TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS
+  TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
+  TREASURY_ACCOUNT_ID: '0.0.98'
 };

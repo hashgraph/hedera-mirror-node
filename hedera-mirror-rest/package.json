@@ -60,7 +60,7 @@
     "testPathIgnorePatterns": [
       "__tests__/testutils.js",
       "__tests__/mockpool.js",
-      "__tests__/integration_db_ops.js"
+      "__tests__/integrationDbOps.js"
     ]
   },
   "jest-junit": {

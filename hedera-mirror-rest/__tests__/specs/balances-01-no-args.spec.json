@@ -1,8 +1,121 @@
 {
+  "description": "Balance api calls for all accounts",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 1,
+        "entity_realm": 15,
+        "exp_time_ns": null
+      },
+      {
+        "entity_num": 2,
+        "entity_realm": 15,
+        "exp_time_ns": null
+      },
+      {
+        "entity_num": 3,
+        "entity_realm": 15,
+        "exp_time_ns": null
+      },
+      {
+        "entity_num": 4,
+        "entity_realm": 15,
+        "exp_time_ns": null
+      },
+      {
+        "entity_num": 5,
+        "entity_realm": 15,
+        "exp_time_ns": null
+      },
+      {
+        "entity_num": 6,
+        "entity_realm": 15,
+        "exp_time_ns": null
+      },
+      {
+        "entity_num": 7,
+        "entity_realm": 15,
+        "exp_time_ns": null
+      },
+      {
+        "entity_num": 8,
+        "entity_realm": 15,
+        "exp_time_ns": null
+      },
+      {
+        "entity_num": 9,
+        "entity_realm": 15,
+        "exp_time_ns": null
+      },
+      {
+        "entity_num": 10,
+        "entity_realm": 15,
+        "exp_time_ns": null
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2,
+        "id": 1,
+        "realm_num": 15,
+        "balance": 10
+      },
+      {
+        "timestamp": 3,
+        "id": 2,
+        "realm_num": 15,
+        "balance": 20
+      },
+      {
+        "timestamp": 4,
+        "id": 4,
+        "realm_num": 15,
+        "balance": 40
+      },
+      {
+        "timestamp": 5,
+        "id": 5,
+        "realm_num": 15,
+        "balance": 50
+      },
+      {
+        "timestamp": 6,
+        "id": 6,
+        "realm_num": 15,
+        "balance": 60
+      },
+      {
+        "timestamp": 7,
+        "id": 7,
+        "realm_num": 15,
+        "balance": 70
+      },
+      {
+        "timestamp": 8,
+        "id": 8,
+        "realm_num": 15,
+        "balance": 80
+      },
+      {
+        "timestamp": 9,
+        "id": 9,
+        "realm_num": 15,
+        "balance": 90
+      },
+      {
+        "timestamp": 10,
+        "id": 10,
+        "realm_num": 15,
+        "balance": 100
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
   "url": "/api/v1/balances",
   "responseStatus": 200,
   "responseJson": {
-    "timestamp": "0.000002000",
+    "timestamp": "0.000000010",
     "balances": [
       {
         "account": "0.15.10",

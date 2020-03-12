@@ -53,6 +53,9 @@ const NODE_FEE = 1;
 const NETWORK_FEE = 2;
 const SERVICE_FEE = 4;
 
+let accountEntityIds = {};
+let recordFileId;
+
 const isDockerInstalled = function() {
   return new Promise(resolve => {
     exec('docker --version', err => {
@@ -189,11 +192,30 @@ const toAccount = function(str) {
 };
 
 const addAccount = async function(account) {
+  account = Object.assign({entity_shard: 0, entity_realm: 0, exp_time_ns: null}, account);
+
+  let e = accountEntityIds[account.entity_num];
+  if (e) {
+    return e;
+  }
+
   let res = await sqlConnection.query(
     'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns) values ($1, $2, $3, $4, $5) returning id;',
     [1, account.entity_shard, account.entity_realm, account.entity_num, account.exp_time_ns]
   );
-  return res.rows[0]['id'];
+
+  e = res.rows[0]['id'];
+  accountEntityIds[getAccountId(account)] = e;
+
+  return e;
+};
+
+const setAccountBalance = async function(account) {
+  account = Object.assign({timestamp: 0, realm_num: 0, id: null, balance: 0}, account);
+  await sqlConnection.query(
+    'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
+    [account.timestamp, account.realm_num, account.id, account.balance]
+  );
 };
 
 const aggregateTransfers = function(transaction) {
@@ -210,7 +232,14 @@ const aggregateTransfers = function(transaction) {
   transaction.transfers = Object.values(set);
 };
 
-const addTransaction = async function(transaction, recordFileId, payerEntityId, nodeEntityId) {
+const addRecordFile = async function(recordFileName) {
+  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', [recordFileName]);
+
+  recordFileId = res.rows[0]['id'];
+  return recordFileId;
+};
+
+const addTransaction = async function(transaction) {
   transaction = Object.assign(
     {
       type: 14,
@@ -232,8 +261,8 @@ const addTransaction = async function(transaction, recordFileId, payerEntityId, 
       transaction.consensus_timestamp.toString(),
       transaction.consensus_timestamp.minus(1).toString(),
       recordFileId,
-      payerEntityId,
-      nodeEntityId,
+      accountEntityIds[transaction.payerAccountId],
+      accountEntityIds[NODE_ACCOUNT_ID],
       transaction.result,
       transaction.type,
       transaction.valid_duration_seconds,
@@ -263,7 +292,7 @@ const addTransaction = async function(transaction, recordFileId, payerEntityId, 
   }
 };
 
-const addCryptoTransfer = async function(cryptoTransfer) {
+const addCryptoTransfer = async function(cryptoTransfer, recordFile) {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }
@@ -289,7 +318,7 @@ const addCryptoTransfer = async function(cryptoTransfer) {
       Object.assign({}, recipient, {amount: cryptoTransfer.amount})
     ];
   }
-  await addTransaction(cryptoTransfer);
+  await addTransaction(cryptoTransfer, recordFile);
 };
 
 const cleanupSql = fs.readFileSync(
@@ -308,6 +337,14 @@ const cleanupSql = fs.readFileSync(
   'utf8'
 );
 
+const setUp = async function(record) {
+  await cleanUp();
+  accountEntityIds = {};
+  await addAccount(toAccount(TREASURY_ACCOUNT_ID));
+  await addAccount(toAccount(NODE_ACCOUNT_ID));
+  await addRecordFile(record);
+};
+
 const cleanUp = async function() {
   await sqlConnection.query(cleanupSql);
 };
@@ -316,13 +353,60 @@ const runSqlQuery = async function(query, params) {
   return await sqlConnection.query(query, params);
 };
 
+const loadAccounts = async function(accounts) {
+  if (accounts == null) {
+    return;
+  }
+
+  for (let i = 0; i < accounts.length; ++i) {
+    await addAccount(accounts[i]);
+  }
+};
+
+const loadBalances = async function(balances) {
+  if (balances == null) {
+    return;
+  }
+
+  for (let i = 0; i < balances.length; ++i) {
+    await setAccountBalance(balances[i]);
+  }
+};
+
+const loadCryptoTransfers = async function(cryptoTransfers) {
+  if (cryptoTransfers == null) {
+    return;
+  }
+
+  for (let i = 0; i < cryptoTransfers.length; ++i) {
+    await addCryptoTransfer(cryptoTransfers[i]);
+  }
+};
+
+const loadTransactions = async function(transactions) {
+  if (transactions == null) {
+    return;
+  }
+
+  for (let i = 0; i < transactions.length; ++i) {
+    await addTransaction(transactions[i]);
+  }
+};
+
 module.exports = {
   instantiateDatabase: instantiateDatabase,
   closeConnection: closeConnection,
   toAccount: toAccount,
   addAccount: addAccount,
+  addRecordFile: addRecordFile,
+  setAccountBalance: setAccountBalance,
   addTransaction: addTransaction,
   addCryptoTransfer: addCryptoTransfer,
+  loadAccounts: loadAccounts,
+  loadBalances: loadBalances,
+  loadCryptoTransfers: loadCryptoTransfers,
+  loadTransactions: loadTransactions,
+  setUp: setUp,
   cleanUp: cleanUp,
   runSqlQuery: runSqlQuery
 };
