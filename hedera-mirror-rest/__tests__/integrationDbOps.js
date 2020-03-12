@@ -135,6 +135,7 @@ const flywayMigrate = function() {
     let args = ['node', exePath, '-c', configPath, 'clean'];
     exec(args.join(' '), flywayEnv, err => {
       if (err) {
+        console.log(err);
         reject(err);
         return;
       }

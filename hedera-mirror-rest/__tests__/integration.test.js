@@ -38,7 +38,6 @@
  * TEST_DB_PORT (default: 5432)
  * TEST_DB_NAME (default: mirror_node_integration)
  */
-const transactions = require('../transactions.js');
 const path = require('path');
 const request = require('supertest');
 const server = require('../server');
