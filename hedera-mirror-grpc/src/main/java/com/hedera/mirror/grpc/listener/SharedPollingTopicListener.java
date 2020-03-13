@@ -30,6 +30,8 @@ import lombok.extern.log4j.Log4j2;
 import org.reactivestreams.Subscription;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
@@ -68,12 +70,15 @@ public class SharedPollingTopicListener implements TopicListener {
      */
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
-        PollingContext context = new PollingContext();
-
         if (pollerDisposable != null) {
             pollerDisposable.dispose();
         }
 
+        if (!listenerProperties.isEnabled()) {
+            return;
+        }
+
+        PollingContext context = new PollingContext();
         poller = Flux.defer(() -> poll(context))
                 .repeatWhen(Repeat.times(Long.MAX_VALUE)
                         .fixedBackoff(listenerProperties.getPollingFrequency())
@@ -99,9 +104,9 @@ public class SharedPollingTopicListener implements TopicListener {
     private Flux<TopicMessage> poll(PollingContext context) {
         Instant instant = context.getLastConsensusTimestamp();
         Long consensusTimestamp = instantToLongConverter.convert(instant);
-        long maxPageSize = listenerProperties.getMaxPageSize();
+        Pageable pageable = PageRequest.of(0, listenerProperties.getMaxPageSize());
 
-        return topicMessageRepository.findLatest(consensusTimestamp, maxPageSize)
+        return Flux.defer(() -> Flux.fromIterable(topicMessageRepository.findLatest(consensusTimestamp, pageable)))
                 .name("findLatest")
                 .metrics()
                 .doOnCancel(context::onPollEnd)
@@ -112,7 +117,7 @@ public class SharedPollingTopicListener implements TopicListener {
     private boolean filterMessage(TopicMessage message, TopicMessageFilter filter) {
         return filter.getRealmNum() == message.getRealmNum() &&
                 filter.getTopicNum() == message.getTopicNum() &&
-                !filter.getStartTime().isAfter(message.getConsensusTimestamp());
+                !filter.getStartTime().isAfter(message.getConsensusTimestampInstant());
     }
 
     @Data
@@ -124,7 +129,7 @@ public class SharedPollingTopicListener implements TopicListener {
 
         void onNext(TopicMessage topicMessage) {
             count.incrementAndGet();
-            lastConsensusTimestamp = topicMessage.getConsensusTimestamp();
+            lastConsensusTimestamp = topicMessage.getConsensusTimestampInstant();
             log.trace("Next message: {}", topicMessage);
         }
 

@@ -20,115 +20,49 @@ package com.hedera.mirror.grpc.jmeter.handler;
  * ‍
  */
 
-import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
-import io.r2dbc.postgresql.PostgresqlConnectionFactory;
-import io.r2dbc.postgresql.api.PostgresqlBatch;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.data.r2dbc.core.DatabaseClient;
+import org.postgresql.ds.PGSimpleDataSource;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
+import com.hedera.mirror.grpc.domain.TopicMessage;
 
 @Log4j2
 public class ConnectionHandler {
 
+    private static final int BATCH_SIZE = 100;
+    private static final byte[] BYTES = new byte[] {'a', 'b', 'c'};
+
     private final InstantToLongConverter converter = new InstantToLongConverter();
-    private final DatabaseClient client;
-    private final String host;
-    private final int port;
-    private final String dbName;
-    private final String dbUser;
-    private final String dbPassword;
-    private final PostgresqlConnectionFactory connectionFactory;
+    private final JdbcTemplate jdbcTemplate;
 
     public ConnectionHandler(String host, int port, String dbName, String dbUser, String dbPassword) {
-        this.host = host;
-        this.port = port;
-        this.dbName = dbName;
-        this.dbUser = dbUser;
-        this.dbPassword = dbPassword;
-
-        connectionFactory = getConnectionFactory();
-        client = getClient();
-    }
-
-    private PostgresqlConnectionFactory getConnectionFactory() {
-        if (connectionFactory != null) {
-            return connectionFactory;
-        }
-
-        log.trace("Initialize connectionFactory");
-        PostgresqlConnectionFactory connectionFactory = new PostgresqlConnectionFactory(
-                PostgresqlConnectionConfiguration.builder()
-                        .host(host)
-                        .port(port)
-                        .username(dbUser)
-                        .password(dbPassword)
-                        .database(dbName)
-                        .build());
-
-        return connectionFactory;
-    }
-
-    private DatabaseClient getClient() {
-        return DatabaseClient.create(connectionFactory);
-    }
-
-    private PostgresqlBatch getBatch() {
-        return connectionFactory.create().block().createBatch();
-    }
-
-    public long createNextTopic() {
-        long topicNum = getNextAvailableTopicID();
-
-        createTopic(topicNum);
-        return topicNum;
+        PGSimpleDataSource dataSource = new PGSimpleDataSource();
+        dataSource.setPortNumbers(new int[] {port});
+        dataSource.setServerNames(new String[] {host});
+        dataSource.setDatabaseName(dbName);
+        dataSource.setPassword(dbPassword);
+        dataSource.setUser(dbUser);
+        jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
     public void createTopic(long topicNum) {
-        String entityInsertSql = "insert into t_entities"
+        String sql = "insert into t_entities"
                 + " (entity_num, entity_realm, entity_shard, fk_entity_type_id)"
-                + " values ($1, $2, $3, $4) on conflict do nothing";
-        client.execute(entityInsertSql)
-                .bind("$1", topicNum)
-                .bind("$2", 0)
-                .bind("$3", 0)
-                .bind("$4", 4)
-                .then()
-                .block();
-
-        log.trace("Created new Topic {}", topicNum);
-    }
-
-    public boolean topicExists(long topicId) {
-        boolean topicExists = false;
-
-        String topicSelectSql = "select id from t_entities where entity_shard = $1 and entity_realm = $2 and " +
-                "entity_num = $3";
-
-        topicExists = client.execute(topicSelectSql)
-                .bind("$1", 0)
-                .bind("$2", 0)
-                .bind("$3", topicId)
-                .map((row, metadata) -> {
-                    Long topicNum = row.get(0, Long.class);
-
-                    if (topicNum == null) {
-                        return false;
-                    }
-
-                    return true;
-                })
-                .first()
-                .defaultIfEmpty(false)
-                .block();
-
-        return topicExists;
+                + " values (?, 0, 0, 4) on conflict do nothing";
+        jdbcTemplate.update(sql, new Object[] {topicNum});
+        log.info("Created new Topic {}", topicNum);
     }
 
     public void insertTopicMessage(int newTopicsMessageCount, long topicNum, Instant startTime, long seqStart) {
-        if (newTopicsMessageCount == 0) {
+        if (newTopicsMessageCount <= 0) {
             // no messages to create, abort and db logic
             return;
         }
@@ -139,66 +73,38 @@ public class ConnectionHandler {
         log.info("Inserting {} topic messages starting from sequence number {} and time {}", newTopicsMessageCount,
                 nextSequenceNum, startTime);
 
-        PostgresqlBatch batch = getBatch();
-        String batchEntry = "insert into topic_message"
-                + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
-                + " values (%s, %s, %s, %s, %s, %s)";
+        List<SqlParameterSource> parameterSources = new ArrayList<>();
+        SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate.getDataSource())
+                .withTableName("topic_message");
 
-        for (int i = 0; i < newTopicsMessageCount; i++) {
+        for (int i = 1; i <= newTopicsMessageCount; i++) {
             long sequenceNum = nextSequenceNum + i;
             Instant temp = startTime.plus(sequenceNum, ChronoUnit.NANOS);
             Long consensusTimestamp = converter.convert(temp);
+            TopicMessage topicMessage = new TopicMessage();
+            topicMessage.setConsensusTimestamp(consensusTimestamp);
+            topicMessage.setSequenceNumber(sequenceNum);
+            topicMessage.setMessage(BYTES);
+            topicMessage.setRunningHash(BYTES);
+            topicMessage.setRealmNum(0);
+            parameterSources.add(new BeanPropertySqlParameterSource(topicMessage));
 
-            batch.add(String
-                    .format(batchEntry, consensusTimestamp, 0, topicNum, "'\\xdeadbeef'", "'\\xdeadbeef'",
-                            sequenceNum));
-
-            log.trace("Adding TopicMessage {}, Time: {}, count: {}, seq : {} to batch", topicNum, consensusTimestamp, i,
-                    sequenceNum);
+            if (i % BATCH_SIZE == 0) {
+                simpleJdbcInsert.executeBatch(parameterSources.toArray(new SqlParameterSource[] {}));
+                parameterSources.clear();
+            }
         }
 
-        batch.execute()
-                .then()
-                .block();
-
-        log.debug("Successfully inserted {} topic messages", newTopicsMessageCount);
-    }
-
-    public long getNextAvailableTopicID() {
-        String nextTopicIdSql = "SELECT MAX(entity_num) FROM t_entities";
-
-        long nextTopicId = 1 + client.execute(nextTopicIdSql)
-                .map((row, metadata) -> {
-                    Long topicNum = row.get(0, Long.class);
-
-                    if (topicNum == null) {
-                        throw new IllegalStateException("Topic num query failed");
-                    }
-
-                    return topicNum;
-                }).first().block();
-
-        log.trace("Next available topic ID number is {}", nextTopicId);
-        return nextTopicId;
+        if (!parameterSources.isEmpty()) {
+            simpleJdbcInsert.executeBatch(parameterSources.toArray(new SqlParameterSource[] {}));
+            log.debug("Successfully inserted {} topic messages", newTopicsMessageCount);
+        }
     }
 
     public long getNextAvailableSequenceNumber(long topicId) {
-        String nextSeqSql = "SELECT MAX(sequence_number) FROM topic_message WHERE topic_num = $1";
-
-        long nextSeqNum = 1 + client.execute(nextSeqSql)
-                .bind("$1", topicId)
-                .map((row, metadata) -> {
-                    Long max = row.get(0, Long.class);
-
-                    if (max == null) {
-                        max = -1L;
-                        log.trace("Max sequence num query failed, setting max to -1 as likely no messages " +
-                                "for this topic exist");
-                    }
-
-                    return max;
-                }).first().block();
-
+        String sql = "SELECT MAX(sequence_number) FROM topic_message WHERE topic_num = ?";
+        Long maxSequenceNumber = jdbcTemplate.queryForObject(sql, new Object[] {topicId}, Long.class);
+        long nextSeqNum = maxSequenceNumber != null ? maxSequenceNumber + 1 : 0;
         log.trace("Next available topic ID sequence number is {}", nextSeqNum);
         return nextSeqNum;
     }
@@ -210,13 +116,9 @@ public class ConnectionHandler {
             return;
         }
 
-        String delTopicMsgsSql = "delete from topic_message where topic_num = $1 and sequence_number >= $2";
-
-        client.execute(delTopicMsgsSql)
-                .bind("$1", topicId)
-                .bind("$2", seqNumFrom)
-                .then().block();
-
+        jdbcTemplate
+                .update("delete from topic_message where topic_num = ? and sequence_number >= ?",
+                        new Object[] {topicId, seqNumFrom});
         log.info("Cleared topic messages for topic ID {} after sequence {}", topicId, seqNumFrom);
     }
 }

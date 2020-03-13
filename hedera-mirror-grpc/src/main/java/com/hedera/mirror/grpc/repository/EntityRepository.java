@@ -20,14 +20,18 @@ package com.hedera.mirror.grpc.repository;
  * ‍
  */
 
-import org.springframework.data.r2dbc.repository.Query;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
-import reactor.core.publisher.Mono;
+import java.util.Optional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.grpc.config.CacheConfiguration;
 import com.hedera.mirror.grpc.domain.Entity;
 
-public interface EntityRepository extends ReactiveCrudRepository<Entity, Long> {
+public interface EntityRepository extends CrudRepository<Entity, Long> {
 
-    @Query("select * from t_entities where entity_shard = $1 and entity_realm = $2 and entity_num = $3 limit 1")
-    Mono<Entity> findByCompositeKey(long shard, long realm, long num);
+    @Cacheable(cacheNames = "entity", cacheManager = CacheConfiguration.ENTITY_CACHE, sync = true)
+    @Query(value = "select * from t_entities where entity_shard = ?1 and entity_realm = ?2 and entity_num = ?3",
+            nativeQuery = true)
+    Optional<Entity> findByCompositeKey(long shard, long realm, long num);
 }

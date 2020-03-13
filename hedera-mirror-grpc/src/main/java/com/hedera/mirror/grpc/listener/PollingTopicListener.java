@@ -23,6 +23,7 @@ package com.hedera.mirror.grpc.listener;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,7 @@ public class PollingTopicListener implements TopicListener {
         PollingContext context = new PollingContext(filter);
         Duration frequency = listenerProperties.getPollingFrequency();
 
-        return Flux.defer(() -> poll(context))
+        return Flux.fromStream(() -> poll(context))
                 .delaySubscription(frequency, scheduler)
                 .repeatWhen(Repeat.times(Long.MAX_VALUE)
                         .fixedBackoff(frequency)
@@ -64,12 +65,12 @@ public class PollingTopicListener implements TopicListener {
                 .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", frequency.toMillis(), filter));
     }
 
-    private Flux<TopicMessage> poll(PollingContext context) {
+    private Stream<TopicMessage> poll(PollingContext context) {
         TopicMessageFilter filter = context.getFilter();
         TopicMessage last = context.getLast();
         int limit = filter.hasLimit() ? (int) (filter.getLimit() - context.getCount().get()) : Integer.MAX_VALUE;
         int pageSize = Math.min(limit, listenerProperties.getMaxPageSize());
-        Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
+        Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
 
         TopicMessageFilter newFilter = filter.toBuilder()
                 .limit(pageSize)

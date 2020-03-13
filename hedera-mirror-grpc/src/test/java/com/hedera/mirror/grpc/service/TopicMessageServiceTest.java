@@ -25,14 +25,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import javax.annotation.Resource;
 import javax.validation.ConstraintViolationException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
@@ -43,10 +44,10 @@ import com.hedera.mirror.grpc.domain.EntityType;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
+import com.hedera.mirror.grpc.listener.ListenerProperties;
 import com.hedera.mirror.grpc.listener.SharedPollingTopicListener;
 import com.hedera.mirror.grpc.listener.TopicListener;
 import com.hedera.mirror.grpc.repository.EntityRepository;
-import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 import com.hedera.mirror.grpc.retriever.RetrieverProperties;
 import com.hedera.mirror.grpc.retriever.TopicMessageRetriever;
 
@@ -62,6 +63,9 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     private GrpcProperties grpcProperties;
 
     @Resource
+    private ListenerProperties listenerProperties;
+
+    @Resource
     private RetrieverProperties retrieverProperties;
 
     @Resource
@@ -69,8 +73,14 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @BeforeEach
     void setup() {
+        listenerProperties.setEnabled(true);
         sharedPollingTopicListener.init(); // Clear the buffer between runs
         domainBuilder.entity().block();
+    }
+
+    @AfterEach
+    void after() {
+        listenerProperties.setEnabled(false);
     }
 
     @Test
@@ -239,7 +249,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .endTime(topicMessage3.getConsensusTimestamp().plusNanos(1))
+                .endTime(topicMessage3.getConsensusTimestampInstant().plusNanos(1))
                 .build();
 
         topicMessageService.subscribeTopic(filter)
@@ -258,7 +268,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .endTime(topicMessage4.getConsensusTimestamp())
+                .endTime(topicMessage4.getConsensusTimestampInstant())
                 .build();
 
         topicMessageService.subscribeTopic(filter)
@@ -280,7 +290,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .endTime(topicMessage4.getConsensusTimestamp())
+                .endTime(topicMessage4.getConsensusTimestampInstant())
                 .build();
 
         topicMessageService.subscribeTopic(filter)
@@ -418,13 +428,13 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     void bothMessagesWithTopicNum() {
         domainBuilder.entity(e -> e.entityNum(1L)).block();
         domainBuilder.entity(e -> e.entityNum(2L)).block();
-        domainBuilder.topicMessage(t -> t.topicNum(0)).block();
-        domainBuilder.topicMessage(t -> t.topicNum(1)).block();
+        domainBuilder.topicMessage(t -> t.topicNum(0).sequenceNumber(1)).block();
+        domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(1)).block();
 
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.topicNum(0)),
-                domainBuilder.topicMessage(t -> t.topicNum(1)),
-                domainBuilder.topicMessage(t -> t.topicNum(2))
+                domainBuilder.topicMessage(t -> t.topicNum(0).sequenceNumber(2)),
+                domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(2)),
+                domainBuilder.topicMessage(t -> t.topicNum(2).sequenceNumber(1))
         );
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
@@ -437,7 +447,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
                 .then(() -> generator.blockLast())
-                .expectNext(2L, 4L)
+                .expectNext(1L, 2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
     }
@@ -446,13 +456,13 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     void bothMessagesWithRealmNum() {
         domainBuilder.entity(e -> e.entityRealm(1L)).block();
         domainBuilder.entity(e -> e.entityRealm(2L)).block();
-        domainBuilder.topicMessage(t -> t.realmNum(0)).block();
-        domainBuilder.topicMessage(t -> t.realmNum(1)).block();
+        domainBuilder.topicMessage(t -> t.realmNum(0).sequenceNumber(1)).block();
+        domainBuilder.topicMessage(t -> t.realmNum(1).sequenceNumber(1)).block();
 
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.realmNum(0)),
-                domainBuilder.topicMessage(t -> t.realmNum(1)),
-                domainBuilder.topicMessage(t -> t.realmNum(2))
+                domainBuilder.topicMessage(t -> t.realmNum(0).sequenceNumber(2)),
+                domainBuilder.topicMessage(t -> t.realmNum(1).sequenceNumber(2)),
+                domainBuilder.topicMessage(t -> t.realmNum(2).sequenceNumber(1))
         );
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
@@ -465,7 +475,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
                 .then(() -> generator.blockLast())
-                .expectNext(2L, 4L)
+                .expectNext(1L, 2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
     }
@@ -500,10 +510,9 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     void missingMessages() {
         TopicListener topicListener = Mockito.mock(TopicListener.class);
         EntityRepository entityRepository = Mockito.mock(EntityRepository.class);
-        TopicMessageRepository topicMessageRepository = Mockito.mock(TopicMessageRepository.class);
         TopicMessageRetriever topicMessageRetriever = Mockito.mock(TopicMessageRetriever.class);
         topicMessageService = new TopicMessageServiceImpl(new GrpcProperties(), topicListener, entityRepository,
-                topicMessageRepository, topicMessageRetriever);
+                topicMessageRetriever);
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -512,14 +521,15 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessage beforeMissing = topicMessage(1);
         TopicMessage afterMissing = topicMessage(4);
 
-        Mockito.when(entityRepository.findByCompositeKey(0, filter.getRealmNum(), filter.getTopicNum())).thenReturn(Mono
-                .just(Entity.builder().entityTypeId(EntityType.TOPIC).build()));
+        Mockito.when(entityRepository.findByCompositeKey(0, filter.getRealmNum(), filter.getTopicNum()))
+                .thenReturn(Optional
+                        .of(Entity.builder().entityTypeId(EntityType.TOPIC).build()));
         Mockito.when(topicMessageRetriever.retrieve(filter)).thenReturn(Flux.empty());
         Mockito.when(topicListener.listen(filter)).thenReturn(Flux.just(beforeMissing, afterMissing));
-        Mockito.when(topicMessageRepository.findByFilter(ArgumentMatchers
+        Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers
                 .argThat(t -> t.getLimit() == 2 &&
-                        t.getStartTime().equals(beforeMissing.getConsensusTimestamp().plusNanos(1)) &&
-                        t.getEndTime().equals(afterMissing.getConsensusTimestamp()))))
+                        t.getStartTime().equals(beforeMissing.getConsensusTimestampInstant().plusNanos(1)) &&
+                        t.getEndTime().equals(afterMissing.getConsensusTimestampInstant()))))
                 .thenReturn(Flux.just(
                         topicMessage(2),
                         topicMessage(3)

@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.time.Instant;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -35,9 +34,6 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
-
-    @Resource
-    protected DatabaseClient databaseClient;
 
     @Resource
     protected DomainBuilder domainBuilder;

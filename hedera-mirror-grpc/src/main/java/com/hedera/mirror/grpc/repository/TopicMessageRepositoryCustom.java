@@ -20,13 +20,12 @@ package com.hedera.mirror.grpc.repository;
  * ‍
  */
 
+import java.util.stream.Stream;
+
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
-import reactor.core.publisher.Flux;
-
 public interface TopicMessageRepositoryCustom {
 
-    Flux<TopicMessage> findByFilter(TopicMessageFilter filter);
-
+    Stream<TopicMessage> findByFilter(TopicMessageFilter filter);
 }

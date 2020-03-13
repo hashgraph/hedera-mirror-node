@@ -21,10 +21,10 @@ package com.hedera.mirror.grpc.retriever;
  */
 
 import com.google.common.base.Stopwatch;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
@@ -61,11 +61,9 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
         }
 
         PollingContext context = new PollingContext(filter);
-        Duration frequency = retrieverProperties.getPollingFrequency();
-
-        return Flux.defer(() -> poll(context))
+        return Flux.fromStream(() -> poll(context))
                 .repeatWhen(Repeat.create(r -> !context.isComplete(), Long.MAX_VALUE)
-                        .fixedBackoff(frequency)
+                        .fixedBackoff(retrieverProperties.getPollingFrequency())
                         .jitter(Jitter.random(0.1))
                         .withBackoffScheduler(scheduler))
                 .name("retriever")
@@ -73,24 +71,24 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
                 .timeout(retrieverProperties.getTimeout(), scheduler)
                 .doOnCancel(context::onComplete)
                 .doOnComplete(context::onComplete)
-                .doOnNext(context::onNext)
-                .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", frequency.toMillis(), filter));
+                .doOnNext(context::onNext);
     }
 
-    private Flux<TopicMessage> poll(PollingContext context) {
+    private Stream<TopicMessage> poll(PollingContext context) {
         TopicMessageFilter filter = context.getFilter();
         TopicMessage last = context.getLast();
         int limit = filter.hasLimit() ? (int) (filter.getLimit() - context.getTotal().get()) : Integer.MAX_VALUE;
         int pageSize = Math.min(limit, retrieverProperties.getMaxPageSize());
-        Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
+        Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
+        context.getPageSize().set(0L);
 
         TopicMessageFilter newFilter = filter.toBuilder()
                 .limit(pageSize)
                 .startTime(startTime)
                 .build();
 
-        return topicMessageRepository.findByFilter(newFilter)
-                .doOnSubscribe(s -> context.getPageSize().set(0L));
+        log.debug("Executing query: {}", newFilter);
+        return topicMessageRepository.findByFilter(newFilter);
     }
 
     @Data

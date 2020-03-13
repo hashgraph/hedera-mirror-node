@@ -35,7 +35,7 @@ public class RetrieverProperties {
     private boolean enabled = true;
 
     @Min(32)
-    private int maxPageSize = 200;
+    private int maxPageSize = 1000;
 
     @NotNull
     private Duration pollingFrequency = Duration.ofSeconds(2L);
@@ -44,5 +44,5 @@ public class RetrieverProperties {
     private int threadMultiplier = 4;
 
     @NotNull
-    private Duration timeout = Duration.ofSeconds(30L);
+    private Duration timeout = Duration.ofSeconds(60L);
 }

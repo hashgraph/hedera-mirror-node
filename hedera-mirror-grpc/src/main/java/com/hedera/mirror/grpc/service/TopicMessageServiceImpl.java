@@ -41,7 +41,6 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.listener.TopicListener;
 import com.hedera.mirror.grpc.repository.EntityRepository;
-import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 import com.hedera.mirror.grpc.retriever.TopicMessageRetriever;
 
 @Named
@@ -53,7 +52,6 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     private final GrpcProperties grpcProperties;
     private final TopicListener topicListener;
     private final EntityRepository entityRepository;
-    private final TopicMessageRepository topicMessageRepository;
     private final TopicMessageRetriever topicMessageRetriever;
 
     @Override
@@ -65,7 +63,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
                 .concatMap(t -> missingMessages(topicContext, t))
-                .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestamp().isBefore(filter.getEndTime()))
+                .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestampInstant()
+                        .isBefore(filter.getEndTime()))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
                 .doOnNext(topicContext::onNext)
                 .doOnCancel(topicContext::onCancel)
@@ -73,8 +72,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     }
 
     private Mono<?> topicExists(TopicMessageFilter filter) {
-        return entityRepository
-                .findByCompositeKey(grpcProperties.getShard(), filter.getRealmNum(), filter.getTopicNum())
+        return Mono.justOrEmpty(entityRepository
+                .findByCompositeKey(grpcProperties.getShard(), filter.getRealmNum(), filter.getTopicNum()))
                 .switchIfEmpty(grpcProperties.isCheckTopicExists() ? Mono.error(new TopicNotFoundException()) :
                         Mono.just(Entity.builder().entityTypeId(EntityType.TOPIC).build()))
                 .filter(e -> e.getEntityTypeId() == EntityType.TOPIC)
@@ -89,7 +88,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         TopicMessageFilter filter = topicContext.getFilter();
         TopicMessage last = topicContext.getLastTopicMessage();
         long limit = filter.hasLimit() ? filter.getLimit() - topicContext.getCount().get() : 0;
-        Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
+        Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
 
         TopicMessageFilter newFilter = filter.toBuilder()
                 .limit(limit)
@@ -109,6 +108,11 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .fixedBackoff(grpcProperties.getEndTimeInterval()));
     }
 
+    /**
+     * A flow can have missing messages if the importer is down for a long time when the client subscribes. When the
+     * incoming flow catches up and receives the next message for the topic, it will fill in any missing messages from
+     * when it was down.
+     */
     private Flux<TopicMessage> missingMessages(TopicContext topicContext, TopicMessage current) {
         if (topicContext.isNext(current)) {
             return Flux.just(current);
@@ -117,16 +121,16 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         TopicMessage last = topicContext.getLastTopicMessage();
         TopicMessageFilter filter = topicContext.getFilter();
         TopicMessageFilter newFilter = filter.toBuilder()
-                .endTime(current.getConsensusTimestamp())
+                .endTime(current.getConsensusTimestampInstant())
                 .limit(current.getSequenceNumber() - last.getSequenceNumber() - 1)
-                .startTime(last.getConsensusTimestamp().plusNanos(1))
+                .startTime(last.getConsensusTimestampInstant().plusNanos(1))
                 .build();
 
         log.info("[{}] Querying topic {} for missing messages between sequence {} and {}",
                 filter.getSubscriberId(), topicContext.getTopicId(), last.getSequenceNumber(),
                 current.getSequenceNumber());
 
-        return topicMessageRepository.findByFilter(newFilter)
+        return topicMessageRetriever.retrieve(newFilter)
                 .concatWithValues(current);
     }
 

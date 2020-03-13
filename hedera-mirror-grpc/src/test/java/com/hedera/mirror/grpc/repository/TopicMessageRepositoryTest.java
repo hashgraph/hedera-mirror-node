@@ -20,13 +20,15 @@ package com.hedera.mirror.grpc.repository;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Instant;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
-import reactor.test.StepVerifier;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
-import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
@@ -39,19 +41,13 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
     @Resource
     private DomainBuilder domainBuilder;
 
-    @Resource
-    private InstantToLongConverter instantToLongConverter;
-
     @Test
     void findByFilterEmpty() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .build();
 
-        topicMessageRepository.findByFilter(filter)
-                .as(StepVerifier::create)
-                .expectNextCount(0)
-                .verifyComplete();
+        assertThat(topicMessageRepository.findByFilter(filter)).isEmpty();
     }
 
     @Test
@@ -64,10 +60,7 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
                 .startTime(Instant.now().plusSeconds(10))
                 .build();
 
-        topicMessageRepository.findByFilter(filter)
-                .as(StepVerifier::create)
-                .expectNextCount(0)
-                .verifyComplete();
+        assertThat(topicMessageRepository.findByFilter(filter)).isEmpty();
     }
 
     @Test
@@ -78,13 +71,10 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .realmNum(1)
-                .startTime(topicMessage1.getConsensusTimestamp())
+                .startTime(topicMessage1.getConsensusTimestampInstant())
                 .build();
 
-        topicMessageRepository.findByFilter(filter)
-                .as(StepVerifier::create)
-                .expectNext(topicMessage2)
-                .verifyComplete();
+        assertThat(topicMessageRepository.findByFilter(filter)).containsExactly(topicMessage2);
     }
 
     @Test
@@ -95,13 +85,10 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .topicNum(2)
-                .startTime(topicMessage1.getConsensusTimestamp())
+                .startTime(topicMessage1.getConsensusTimestampInstant())
                 .build();
 
-        topicMessageRepository.findByFilter(filter)
-                .as(StepVerifier::create)
-                .expectNext(topicMessage2)
-                .verifyComplete();
+        assertThat(topicMessageRepository.findByFilter(filter)).containsExactly(topicMessage2);
     }
 
     @Test
@@ -111,14 +98,10 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(topicMessage2.getConsensusTimestamp())
+                .startTime(topicMessage2.getConsensusTimestampInstant())
                 .build();
 
-        topicMessageRepository.findByFilter(filter)
-                .as(StepVerifier::create)
-                .expectNext(topicMessage2)
-                .expectNext(topicMessage3)
-                .verifyComplete();
+        assertThat(topicMessageRepository.findByFilter(filter)).containsExactly(topicMessage2, topicMessage3);
     }
 
     @Test
@@ -128,15 +111,11 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(topicMessage1.getConsensusTimestamp())
-                .endTime(topicMessage3.getConsensusTimestamp())
+                .startTime(topicMessage1.getConsensusTimestampInstant())
+                .endTime(topicMessage3.getConsensusTimestampInstant())
                 .build();
 
-        topicMessageRepository.findByFilter(filter)
-                .as(StepVerifier::create)
-                .expectNext(topicMessage1)
-                .expectNext(topicMessage2)
-                .verifyComplete();
+        assertThat(topicMessageRepository.findByFilter(filter)).containsExactly(topicMessage1, topicMessage2);
     }
 
     @Test
@@ -147,13 +126,10 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(1)
-                .startTime(topicMessage1.getConsensusTimestamp())
+                .startTime(topicMessage1.getConsensusTimestampInstant())
                 .build();
 
-        topicMessageRepository.findByFilter(filter)
-                .as(StepVerifier::create)
-                .expectNext(topicMessage1)
-                .verifyComplete();
+        assertThat(topicMessageRepository.findByFilter(filter)).containsExactly(topicMessage1);
     }
 
     @Test
@@ -162,11 +138,10 @@ public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage4 = domainBuilder.topicMessage().block();
-        long consensusTimestamp = instantToLongConverter.convert(topicMessage1.getConsensusTimestamp());
+        Pageable pageable = PageRequest.of(0, 2);
 
-        topicMessageRepository.findLatest(consensusTimestamp, 2)
-                .as(StepVerifier::create)
-                .expectNext(topicMessage2, topicMessage3)
-                .verifyComplete();
+        assertThat(topicMessageRepository
+                .findLatest(topicMessage1.getConsensusTimestamp(), pageable))
+                .containsExactly(topicMessage2, topicMessage3);
     }
 }
