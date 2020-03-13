@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.balance;
  */
 
 import com.google.common.base.Stopwatch;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -106,8 +105,7 @@ public class BalanceFileParser extends FileWatcher {
     private void processBalanceFile(File balanceFile) throws Exception {
         if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath())
                 .loadAccountBalances()) {
-            Utility.moveOrDeleteParsedFile(balanceFile.getCanonicalPath(), "/parsedBalanceFiles/",
-                    ((BalanceParserProperties) parserProperties).isKeepFiles());
+            Utility.moveOrDeleteParsedFile(balanceFile.getCanonicalPath(), parserProperties);
         }
     }
 }

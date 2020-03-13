@@ -96,6 +96,35 @@ public class RecordItemParser implements RecordItemListener {
         return ResponseCodeEnum.SUCCESS == transactionRecord.getReceipt().getStatus();
     }
 
+    private static boolean isFileAddressBook(FileID fileId) {
+        return (fileId.getFileNum() == 102) && (fileId.getShardNum() == 0) && (fileId.getRealmNum() == 0);
+    }
+
+    /**
+     * Because body.getDataCase() can return null for unknown transaction types, we instead get oneof generically
+     *
+     * @param body
+     * @return The protobuf ID that represents the transaction type
+     */
+    private static int getTransactionType(TransactionBody body) {
+        TransactionBody.DataCase dataCase = body.getDataCase();
+
+        if (dataCase == null || dataCase == TransactionBody.DataCase.DATA_NOT_SET) {
+            Set<Integer> unknownFields = body.getUnknownFields().asMap().keySet();
+
+            if (unknownFields.size() != 1) {
+                throw new IllegalStateException("Unable to guess correct transaction type since there's not exactly " +
+                        "one: " + unknownFields);
+            }
+
+            int transactionType = unknownFields.iterator().next();
+            log.warn("Encountered unknown transaction type: {}", transactionType);
+            return transactionType;
+        }
+
+        return dataCase.getNumber();
+    }
+
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
         Transaction transaction = recordItem.getTransaction();
@@ -331,7 +360,8 @@ public class RecordItemParser implements RecordItemListener {
         tx.setMaxFee(body.getTransactionFee());
         tx.setResult(txRecord.getReceipt().getStatusValue());
         tx.setType(getTransactionType(body));
-        tx.setTransactionBytes(parserProperties.isPersistTransactionBytes() ? recordItem.getTransactionBytes() : null);
+        tx.setTransactionBytes(parserProperties.getPersist().isTransactionBytes() ? recordItem
+                .getTransactionBytes() : null);
         tx.setTransactionHash(txRecord.getTransactionHash().toByteArray());
         tx.setValidDurationSeconds(validDurationSeconds);
         tx.setValidStartNs(validStartNs);
@@ -358,7 +388,7 @@ public class RecordItemParser implements RecordItemListener {
         tx.setNodeAccountId(nodeEntityId.getId());
         tx.setPayerAccountId(payerEntityId.getId());
 
-        if ((txRecord.hasTransferList()) && parserProperties.isPersistCryptoTransferAmounts()) {
+        if ((txRecord.hasTransferList()) && parserProperties.getPersist().isCryptoTransferAmounts()) {
             processNonFeeTransfers(consensusNs, payerAccountId, body, txRecord);
             if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
                 insertCryptoCreateTransferList(consensusNs, txRecord, body, txRecord.getReceipt()
@@ -406,7 +436,7 @@ public class RecordItemParser implements RecordItemListener {
                 .hasContractCall()) {
             return false;
         }
-        return parserProperties.isPersistNonFeeTransfers();
+        return parserProperties.getPersist().isNonFeeTransfers();
     }
 
     /**
@@ -595,8 +625,8 @@ public class RecordItemParser implements RecordItemListener {
     }
 
     private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID) {
-        if (parserProperties.isPersistFiles() ||
-                (parserProperties.isPersistSystemFiles() && fileID.getFileNum() < 1000)) {
+        if (parserProperties.getPersist().isFiles() ||
+                (parserProperties.getPersist().isSystemFiles() && fileID.getFileNum() < 1000)) {
             recordParsedItemHandler.onFileData(new FileData(consensusTimestamp, contents));
         }
     }
@@ -616,7 +646,7 @@ public class RecordItemParser implements RecordItemListener {
 
     private void insertCryptoAddClaim(long consensusTimestamp,
                                       CryptoAddClaimTransactionBody transactionBody) {
-        if (parserProperties.isPersistClaims()) {
+        if (parserProperties.getPersist().isClaims()) {
             byte[] claim = transactionBody.getClaim().getHash().toByteArray();
             recordParsedItemHandler.onLiveHash(new LiveHash(consensusTimestamp, claim));
         }
@@ -625,7 +655,7 @@ public class RecordItemParser implements RecordItemListener {
     private void insertContractCall(long consensusTimestamp,
                                     ContractCallTransactionBody transactionBody,
                                     TransactionRecord transactionRecord) {
-        if (parserProperties.isPersistContracts()) {
+        if (parserProperties.getPersist().isContracts()) {
             byte[] functionParams = transactionBody.getFunctionParameters().toByteArray();
             long gasSupplied = transactionBody.getGas();
             byte[] callResult = new byte[0];
@@ -641,7 +671,7 @@ public class RecordItemParser implements RecordItemListener {
     private void insertContractCreateInstance(long consensusTimestamp,
                                               ContractCreateTransactionBody transactionBody,
                                               TransactionRecord transactionRecord) {
-        if (parserProperties.isPersistContracts()) {
+        if (parserProperties.getPersist().isContracts()) {
             byte[] functionParams = transactionBody.getConstructorParameters().toByteArray();
             long gasSupplied = transactionBody.getGas();
             byte[] callResult = new byte[0];
@@ -706,11 +736,8 @@ public class RecordItemParser implements RecordItemListener {
     }
 
     private void addCryptoTransferList(long consensusTimestamp, long realmNum, long accountNum, long amount) {
-        recordParsedItemHandler.onCryptoTransferList(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
-    }
-
-    private static boolean isFileAddressBook(FileID fileId) {
-        return (fileId.getFileNum() == 102) && (fileId.getShardNum() == 0) && (fileId.getRealmNum() == 0);
+        recordParsedItemHandler
+                .onCryptoTransferList(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
     }
 
     private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody) {
@@ -725,31 +752,6 @@ public class RecordItemParser implements RecordItemListener {
                 throw new ParserException("Error appending to network address book", e);
             }
         }
-    }
-
-    /**
-     * Because body.getDataCase() can return null for unknown transaction types, we instead get oneof generically
-     *
-     * @param body
-     * @return The protobuf ID that represents the transaction type
-     */
-    private static int getTransactionType(TransactionBody body) {
-        TransactionBody.DataCase dataCase = body.getDataCase();
-
-        if (dataCase == null || dataCase == TransactionBody.DataCase.DATA_NOT_SET) {
-            Set<Integer> unknownFields = body.getUnknownFields().asMap().keySet();
-
-            if (unknownFields.size() != 1) {
-                throw new IllegalStateException("Unable to guess correct transaction type since there's not exactly " +
-                        "one: " + unknownFields);
-            }
-
-            int transactionType = unknownFields.iterator().next();
-            log.warn("Encountered unknown transaction type: {}", transactionType);
-            return transactionType;
-        }
-
-        return dataCase.getNumber();
     }
 
     private void insertContractResults(

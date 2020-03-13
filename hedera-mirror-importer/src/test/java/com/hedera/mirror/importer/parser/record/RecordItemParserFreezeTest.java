@@ -46,9 +46,9 @@ public class RecordItemParserFreezeTest extends AbstractRecordItemParserTest {
 
     @BeforeEach
     void before() {
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
-        parserProperties.setPersistCryptoTransferAmounts(true);
+        parserProperties.getPersist().setFiles(true);
+        parserProperties.getPersist().setSystemFiles(true);
+        parserProperties.getPersist().setCryptoTransferAmounts(true);
     }
 
     @Test
