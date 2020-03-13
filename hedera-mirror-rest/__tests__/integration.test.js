@@ -68,55 +68,9 @@ beforeEach(async () => {
 // shard 0, realm 15, accounts 1-10
 // 3 balances per account
 // several transactions
-//
+
 const shard = 0;
 const realm = 15;
-const addAccount = async function(accountId, exp_tm_nanosecs = null) {
-  let e = accountEntityIds[accountId];
-  if (e) {
-    return e;
-  }
-  let res = await integrationDbOps.runSqlQuery(
-    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns) values ($1, $2, $3, $4, $5) returning id;',
-    [1, shard, realm, accountId, exp_tm_nanosecs]
-  );
-  e = res.rows[0]['id'];
-  accountEntityIds[accountId] = e;
-  return e;
-};
-
-const addTransaction = async function(
-  consensusTimestamp,
-  fileId,
-  payerAccountId,
-  transfers,
-  validDurationSeconds = 11,
-  maxFee = 33,
-  result = 22,
-  type = 14
-) {
-  await integrationDbOps.runSqlQuery(
-    'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
-    [
-      consensusTimestamp,
-      consensusTimestamp - 1,
-      fileId,
-      accountEntityIds[payerAccountId],
-      accountEntityIds[2],
-      result,
-      type,
-      validDurationSeconds,
-      maxFee
-    ]
-  );
-  for (var i = 0; i < transfers.length; ++i) {
-    let xfer = transfers[i];
-    await integrationDbOps.runSqlQuery(
-      'insert into t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
-      [consensusTimestamp, xfer[1], realm, xfer[0]]
-    );
-  }
-};
 
 /**
  * Add a crypto transfer from A to B with A also paying 1 tinybar to account number 2 (fee)
@@ -135,53 +89,31 @@ const addCryptoTransferTransaction = async function(
   amount,
   validDurationSeconds,
   maxFee,
-  bankId = 2
+  result = 22,
+  type = 14
 ) {
-  await addTransaction(
-    consensusTimestamp,
-    fileId,
-    payerAccountId,
-    [
-      [payerAccountId, -1 - amount],
-      [recipientAccountId, amount],
-      [bankId, 1]
-    ],
-    validDurationSeconds,
-    maxFee
-  );
+  await integrationDbOps.addCryptoTransaction({
+    consensus_timestamp: consensusTimestamp,
+    payerAccountId: payerAccountId,
+    recipientAccountId: recipientAccountId,
+    amount: amount,
+    valid_duration_seconds: validDurationSeconds,
+    max_fee: maxFee,
+    result: result,
+    type: type
+  });
 };
 
 /**
  * Setup test data in the postgres instance.
  */
-const testDataPath = path.join(__dirname, 'integration_test_data.json');
-const testData = fs.readFileSync(testDataPath);
-const testDataJson = JSON.parse(testData);
 
 const setupData = async function() {
-  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', ['test']);
-  let fileId = res.rows[0]['id'];
-  console.log(`Record file id is ${fileId}`);
+  const testDataPath = path.join(__dirname, 'integration_test_data.json');
+  const testData = fs.readFileSync(testDataPath);
+  const testDataJson = JSON.parse(testData);
 
-  const balancePerAccountCount = 3;
-  const testAccounts = testDataJson['accounts'];
-  console.log(`Adding ${testAccounts.length} accounts with ${balancePerAccountCount} balances per account`);
-  for (let account of testAccounts) {
-    await addAccount(account.id, account.expiration_ns);
-
-    // Add 3 balances for each account.
-    for (var ts = 0; ts < balancePerAccountCount; ++ts) {
-      await integrationDbOps.runSqlQuery(
-        'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
-        [ts * 1000, realm, account.id, account.balance]
-      );
-    }
-  }
-
-  console.log('Adding crypto transfer transactions');
-  for (let transfer of testDataJson['transfers']) {
-    await addCryptoTransferTransaction(transfer.time, fileId, transfer.from, transfer.to, transfer.amount);
-  }
+  await integrationDbOps.setUp(testDataJson.setup);
 
   console.log('Finished initializing DB data');
 };
@@ -203,35 +135,57 @@ function extractDurationAndMaxFeeFromTransactionResults(rows) {
   });
 }
 
+function extractNameAndResultFromTransactionResults(rows) {
+  return rows.map(function(v) {
+    return '@' + v['name'] + ',' + v['result'];
+  });
+}
+
 //
 // TESTS
 //
 
-test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfer', async () => {
+test('DB integration test - transactions.reqToSql - no query string - 3 txn 21 xfers', async () => {
   let sql = transactions.reqToSql({query: {}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(9);
+  expect(res.rowCount).toEqual(21);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '@1050: account 10 \u0127-11',
-    '@1050: account 2 \u01271',
+    '@1050: account 10 \u0127-10',
+    '@1050: account 10 \u0127-2',
+    '@1050: account 10 \u0127-5',
+    '@1050: account 3 \u01271',
     '@1050: account 9 \u012710',
-    '@1051: account 10 \u0127-21',
-    '@1051: account 2 \u01271',
+    '@1050: account 98 \u01272',
+    '@1050: account 98 \u01274',
+    '@1051: account 10 \u0127-2',
+    '@1051: account 10 \u0127-20',
+    '@1051: account 10 \u0127-5',
+    '@1051: account 3 \u01271',
     '@1051: account 9 \u012720',
-    '@1052: account 2 \u01271',
-    '@1052: account 8 \u0127-31',
-    '@1052: account 9 \u012730'
+    '@1051: account 98 \u01272',
+    '@1051: account 98 \u01274',
+    '@1052: account 3 \u01271',
+    '@1052: account 8 \u0127-2',
+    '@1052: account 8 \u0127-30',
+    '@1052: account 8 \u0127-5',
+    '@1052: account 9 \u012730',
+    '@1052: account 98 \u01272',
+    '@1052: account 98 \u01274'
   ]);
 });
 
-test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfer', async () => {
+test('DB integration test - transactions.reqToSql - single valid account - 1 txn 7 xfers', async () => {
   let sql = transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(3);
+  expect(res.rowCount).toEqual(7);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '@1052: account 2 \u01271',
-    '@1052: account 8 \u0127-31',
-    '@1052: account 9 \u012730'
+    '@1052: account 3 \u01271',
+    '@1052: account 8 \u0127-2',
+    '@1052: account 8 \u0127-30',
+    '@1052: account 8 \u0127-5',
+    '@1052: account 9 \u012730',
+    '@1052: account 98 \u01272',
+    '@1052: account 98 \u01274'
   ]);
 });
 
@@ -242,25 +196,34 @@ test('DB integration test - transactions.reqToSql - invalid account', async () =
 });
 
 test('DB integration test - transactions.reqToSql - null validDurationSeconds and maxFee inserts', async () => {
-  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', [
-    'nodurationfee'
-  ]);
-  let fileId = res.rows[0]['id'];
+  let fileId = await integrationDbOps.addRecordFile('nodurationfee');
 
-  await addCryptoTransferTransaction(1062, fileId, 3, 4, 50, 5, null); // null maxFee
-  await addCryptoTransferTransaction(1063, fileId, 3, 4, 70, null, 777); //null validDurationSeconds
-  await addCryptoTransferTransaction(1064, fileId, 3, 4, 70, null, null); // valid validDurationSeconds and maxFee
+  await addCryptoTransferTransaction(1062, fileId, '0.15.5', '0.15.4', 50, 5, null); // null maxFee
+  await addCryptoTransferTransaction(1063, fileId, '0.15.5', '0.15.4', 70, null, 777); // null validDurationSeconds
+  await addCryptoTransferTransaction(1064, fileId, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
 
-  let sql = transactions.reqToSql({query: {'account.id': '0.15.3'}});
-  res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(9);
+  let sql = transactions.reqToSql({query: {'account.id': '0.15.5'}});
+  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  expect(res.rowCount).toEqual(21);
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual([
     '@5,null',
     '@5,null',
     '@5,null',
+    '@5,null',
+    '@5,null',
+    '@5,null',
+    '@5,null',
     '@null,777',
     '@null,777',
     '@null,777',
+    '@null,777',
+    '@null,777',
+    '@null,777',
+    '@null,777',
+    '@null,null',
+    '@null,null',
+    '@null,null',
+    '@null,null',
     '@null,null',
     '@null,null',
     '@null,null'
@@ -268,55 +231,70 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
 });
 
 test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
-  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', [
-    'unknowntypeandresult'
-  ]);
-  let fileId = res.rows[0]['id'];
-  await addTransaction(1070, fileId, 7, [[2, 1]], 11, 33, -1, -1);
+  let fileId = await integrationDbOps.addRecordFile('unknowntypeandresult');
+  await addCryptoTransferTransaction(1070, fileId, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
 
   let sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
-  res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(1);
-  expect(res.rows[0].name).toEqual('UNKNOWN');
-  expect(res.rows[0].result).toEqual('UNKNOWN');
+  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  expect(res.rowCount).toEqual(7);
+  expect(extractNameAndResultFromTransactionResults(res.rows).sort()).toEqual([
+    '@UNKNOWN,UNKNOWN',
+    '@UNKNOWN,UNKNOWN',
+    '@UNKNOWN,UNKNOWN',
+    '@UNKNOWN,UNKNOWN',
+    '@UNKNOWN,UNKNOWN',
+    '@UNKNOWN,UNKNOWN',
+    '@UNKNOWN,UNKNOWN'
+  ]);
 });
 
-const createAndPopulateNewAccount = async (id, ts, bal) => {
-  await addAccount(id);
-  await integrationDbOps.runSqlQuery(
-    'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
-    [ts, realm, id, bal]
-  );
+const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
+  await integrationDbOps.addAccount({
+    entity_num: id,
+    entity_realm: realm
+  });
+
+  await integrationDbOps.setAccountBalance({
+    timestamp: ts,
+    id: id,
+    realm_num: realm,
+    balance: bal
+  });
 };
 
 test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
-  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', [
-    'accountrange'
-  ]);
-  let fileId = res.rows[0]['id'];
+  let fileId = await integrationDbOps.addRecordFile('accountrange');
 
-  await createAndPopulateNewAccount(13, 5, 10);
-  await createAndPopulateNewAccount(63, 6, 50);
-  await createAndPopulateNewAccount(82, 7, 100);
+  await createAndPopulateNewAccount(13, 15, 5, 10);
+  await createAndPopulateNewAccount(63, 15, 6, 50);
+  await createAndPopulateNewAccount(82, 15, 7, 100);
 
   // create 3 transactions - 9 transfers
-  await addCryptoTransferTransaction(2062, fileId, 13, 63, 50, 5000, 50);
-  await addCryptoTransferTransaction(2063, fileId, 63, 82, 70, 7000, 777);
-  await addCryptoTransferTransaction(2064, fileId, 82, 63, 20, 8000, -80);
+  await addCryptoTransferTransaction(2062, fileId, '0.15.13', '0.15.63', 50, 5000, 50);
+  await addCryptoTransferTransaction(2063, fileId, '0.15.63', '0.15.82', 70, 7000, 777);
+  await addCryptoTransferTransaction(2064, fileId, '0.15.82', '0.15.63', 20, 8000, -80);
 
   let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.100']}});
-  res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
 
   // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
   // Note bank is out of desired range but is expected in query result
-  expect(res.rowCount).toEqual(6);
+  expect(res.rowCount).toEqual(14);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '@2063: account 2 \u01271',
-    '@2063: account 63 \u0127-71',
-    '@2063: account 82 \u012770',
-    '@2064: account 2 \u01271',
-    '@2064: account 63 \u012720',
-    '@2064: account 82 \u0127-21'
+    '@2063: account 3 ħ1',
+    '@2063: account 63 ħ-2',
+    '@2063: account 63 ħ-5',
+    '@2063: account 63 ħ-70',
+    '@2063: account 82 ħ70',
+    '@2063: account 98 ħ2',
+    '@2063: account 98 ħ4',
+    '@2064: account 3 ħ1',
+    '@2064: account 63 ħ20',
+    '@2064: account 82 ħ-2',
+    '@2064: account 82 ħ-20',
+    '@2064: account 82 ħ-5',
+    '@2064: account 98 ħ2',
+    '@2064: account 98 ħ4'
   ]);
 });
 
@@ -326,19 +304,14 @@ fs.readdirSync(specPath).forEach(function(file) {
   let specText = fs.readFileSync(p, 'utf8');
   var spec = JSON.parse(specText);
   test(`DB integration test - ${file} - ${spec.url}`, async () => {
-    // await specSetupSteps(spec);
+    await specSetupSteps(spec.setup);
     let response = await request(server).get(spec.url);
+
     expect(response.status).toEqual(spec.responseStatus);
     expect(JSON.parse(response.text)).toEqual(spec.responseJson);
   });
 });
 
 const specSetupSteps = async function(spec) {
-  let recordFile = spec.fileName;
-  await integrationDbOps.setUp(recordFile);
-
-  await integrationDbOps.loadAccounts(spec.setup.accounts);
-  await integrationDbOps.loadBalances(spec.setup.balances);
-  await integrationDbOps.loadCryptoTransfers(spec.setup.cryptotransfers);
-  await integrationDbOps.loadTransactions(spec.setup.transactions);
+  await integrationDbOps.setUp(spec);
 };

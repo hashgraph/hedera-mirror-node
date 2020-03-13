@@ -1,74 +1,122 @@
 {
-  "accounts": [
-    {
-      "id": 1,
-      "balance": 10,
-      "expiration_ns": null
-    },
-    {
-      "id": 2,
-      "balance": 20,
-      "expiration_ns": null
-    },
-    {
-      "id": 3,
-      "balance": 30,
-      "expiration_ns": null
-    },
-    {
-      "id": 4,
-      "balance": 40,
-      "expiration_ns": null
-    },
-    {
-      "id": 5,
-      "balance": 50,
-      "expiration_ns": null
-    },
-    {
-      "id": 6,
-      "balance": 60,
-      "expiration_ns": null
-    },
-    {
-      "id": 7,
-      "balance": 70,
-      "expiration_ns": null
-    },
-    {
-      "id": 8,
-      "balance": 80,
-      "expiration_ns": null
-    },
-    {
-      "id": 9,
-      "balance": 90,
-      "expiration_ns": "-9223372036854775808"
-    },
-    {
-      "id": 10,
-      "balance": 100,
-      "expiration_ns": "9223372036854775807"
-    }
-  ],
-  "transfers": [
-    {
-      "time": 1050,
-      "from": 10,
-      "to": 9,
-      "amount": 10
-    },
-    {
-      "time": 1051,
-      "from": 10,
-      "to": 9,
-      "amount": 20
-    },
-    {
-      "time": 1052,
-      "from": 8,
-      "to": 9,
-      "amount": 30
-    }
-  ]
+  "description": "Shared integration reqtosql tests setup",
+  "setup": {
+    "filename": "test",
+    "accounts": [
+      {
+        "entity_num": 1,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 2,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 4,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 5,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 6,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 7,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 8,
+        "entity_realm": 15
+      },
+      {
+        "entity_num": 9,
+        "entity_realm": 15,
+        "expiration_ns": "-9223372036854775808"
+      },
+      {
+        "entity_num": 10,
+        "entity_realm": 15,
+        "expiration_ns": "9223372036854775807"
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2,
+        "id": 1,
+        "realm_num": 15,
+        "balance": 10
+      },
+      {
+        "timestamp": 3,
+        "id": 2,
+        "realm_num": 15,
+        "balance": 20
+      },
+      {
+        "timestamp": 4,
+        "id": 4,
+        "realm_num": 15,
+        "balance": 40
+      },
+      {
+        "timestamp": 5,
+        "id": 5,
+        "realm_num": 15,
+        "balance": 50
+      },
+      {
+        "timestamp": 6,
+        "id": 6,
+        "realm_num": 15,
+        "balance": 60
+      },
+      {
+        "timestamp": 7,
+        "id": 7,
+        "realm_num": 15,
+        "balance": 70
+      },
+      {
+        "timestamp": 8,
+        "id": 8,
+        "realm_num": 15,
+        "balance": 80
+      },
+      {
+        "timestamp": 9,
+        "id": 9,
+        "realm_num": 15,
+        "balance": 90
+      },
+      {
+        "timestamp": 10,
+        "id": 10,
+        "realm_num": 15,
+        "balance": 100
+      }
+    ],
+    "cryptotransfers": [
+      {
+        "consensus_timestamp": "1050",
+        "payerAccountId": "0.15.10",
+        "recipientAccountId": "0.15.9",
+        "amount": 10
+      },
+      {
+        "consensus_timestamp": "1051",
+        "payerAccountId": "0.15.10",
+        "recipientAccountId": "0.15.9",
+        "amount": 20
+      },
+      {
+        "consensus_timestamp": "1052",
+        "payerAccountId": "0.15.8",
+        "recipientAccountId": "0.15.9",
+        "amount": 30
+      }
+    ]
+  }
 }

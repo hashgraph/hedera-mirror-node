@@ -182,12 +182,16 @@ const closeConnection = function() {
 // Test helpers
 //
 
-const setUp = async function(record) {
+const setUp = async function(testDataJson) {
   await cleanUp();
   accountEntityIds = {};
   await addAccount(toAccount(TREASURY_ACCOUNT_ID));
   await addAccount(toAccount(NODE_ACCOUNT_ID));
-  await addRecordFile(record);
+  await addRecordFile(testDataJson['filename']);
+  await loadAccounts(testDataJson['accounts']);
+  await loadBalances(testDataJson['balances']);
+  await loadCryptoTransfers(testDataJson['cryptotransfers']);
+  await loadTransactions(testDataJson['transactions']);
 };
 
 const cleanUp = async function() {
@@ -240,7 +244,7 @@ const loadCryptoTransfers = async function(cryptoTransfers) {
   }
 
   for (let i = 0; i < cryptoTransfers.length; ++i) {
-    await addCryptoTransfer(cryptoTransfers[i]);
+    await addCryptoTransaction(cryptoTransfers[i]);
   }
 };
 
@@ -367,7 +371,7 @@ const addTransaction = async function(transaction) {
   }
 };
 
-const addCryptoTransfer = async function(cryptoTransfer) {
+const addCryptoTransaction = async function(cryptoTransfer) {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }
@@ -398,7 +402,7 @@ const addCryptoTransfer = async function(cryptoTransfer) {
 
 module.exports = {
   addAccount: addAccount,
-  addCryptoTransfer: addCryptoTransfer,
+  addCryptoTransaction: addCryptoTransaction,
   addRecordFile: addRecordFile,
   addTransaction: addTransaction,
   cleanUp: cleanUp,
