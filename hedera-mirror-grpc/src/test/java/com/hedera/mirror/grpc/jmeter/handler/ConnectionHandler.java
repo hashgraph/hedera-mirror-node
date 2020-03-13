@@ -97,8 +97,9 @@ public class ConnectionHandler {
 
         if (!parameterSources.isEmpty()) {
             simpleJdbcInsert.executeBatch(parameterSources.toArray(new SqlParameterSource[] {}));
-            log.debug("Successfully inserted {} topic messages", newTopicsMessageCount);
         }
+
+        log.debug("Successfully inserted {} topic messages", newTopicsMessageCount);
     }
 
     public long getNextAvailableSequenceNumber(long topicId) {

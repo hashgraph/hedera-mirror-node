@@ -27,8 +27,6 @@ import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import com.hedera.mirror.grpc.jmeter.handler.ConnectionHandler;
 import com.hedera.mirror.grpc.jmeter.props.MessageGenerator;
@@ -92,7 +90,6 @@ public class TopicMessageGeneratorClient extends AbstractJavaSamplerClient {
 
         try {
             // establish db connection in test to ensure failures are reported
-            ApplicationContext applicationContext = new AnnotationConfigApplicationContext();
             connectionHandler = new ConnectionHandler(host, port, dbName, dbUser, dbPassword);
             sampler = new TopicMessageGeneratorSampler(connectionHandler);
 
