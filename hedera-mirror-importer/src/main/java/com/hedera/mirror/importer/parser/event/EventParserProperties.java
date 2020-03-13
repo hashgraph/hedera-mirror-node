@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.parser.event;
 import java.nio.file.Path;
 import java.time.Duration;
 import javax.validation.constraints.NotNull;
-
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -43,6 +42,8 @@ public class EventParserProperties implements ParserProperties {
 
     @NotNull
     private Duration frequency = Duration.ofMinutes(1L);
+
+    private boolean keepFiles = false;
 
     @Override
     public Path getStreamPath() {

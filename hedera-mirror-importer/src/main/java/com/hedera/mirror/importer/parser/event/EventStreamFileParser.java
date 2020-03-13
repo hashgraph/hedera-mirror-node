@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.event;
  */
 
 import com.google.common.base.Stopwatch;
-
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.File;
@@ -39,7 +38,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Named;
-
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -498,7 +496,7 @@ public class EventStreamFileParser implements FileParser {
             prevFileHash = applicationStatusRepository
                     .findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH);
             if (loadResult == LoadResult.OK) {
-                Utility.moveFileToParsedDir(name, PARSED_DIR);
+                Utility.moveOrDeleteParsedFile(name, PARSED_DIR, parserProperties.isKeepFiles());
             }
         }
         return true;
