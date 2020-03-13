@@ -27,16 +27,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum StreamType {
 
-    // TODO: Use a common parsed directory name 'parsed'
-    BALANCE("accountBalances", "parsedBalanceFiles"),
-    EVENT("eventsStreams", "parsedEventStreamFiles"),
-    RECORD("recordstreams", "parsedRecordFiles");
+    BALANCE("accountBalances"),
+    EVENT("eventsStreams"),
+    RECORD("recordstreams");
 
+    private static final String PARSED = "parsed";
     private static final String TEMP = "tmp";
     private static final String VALID = "valid";
 
     private final String path;
-    private final String parsed;
+
+    public String getParsed() {
+        return PARSED;
+    }
 
     public String getTemp() {
         return TEMP;

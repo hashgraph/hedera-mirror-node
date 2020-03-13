@@ -496,7 +496,7 @@ public class EventStreamFileParser implements FileParser {
             prevFileHash = applicationStatusRepository
                     .findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_EVENT_HASH);
             if (loadResult == LoadResult.OK) {
-                Utility.moveOrDeleteParsedFile(name, PARSED_DIR, parserProperties.isKeepFiles());
+                Utility.moveOrDeleteParsedFile(name, parserProperties);
             }
         }
         return true;
