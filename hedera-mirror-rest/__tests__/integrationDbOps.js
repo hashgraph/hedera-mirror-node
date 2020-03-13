@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2020 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,7 @@
 const {GenericContainer} = require('testcontainers');
 const exec = require('child_process').exec;
 const path = require('path');
-const request = require('supertest');
 const math = require('mathjs');
-const server = require('../server');
 const utils = require('../utils');
 const fs = require('fs');
 
@@ -132,14 +130,36 @@ const flywayMigrate = function() {
     )
   };
   return new Promise((resolve, reject) => {
-    let args = ['node', exePath, '-c', configPath, 'migrate'];
+    let args = ['node', exePath, '-c', configPath, 'info'];
     exec(args.join(' '), flywayEnv, (err, stdout) => {
+      console.log(stdout);
       if (err) {
         reject(err);
       } else {
-        console.log(stdout);
-        resolve();
+        if (stdout.indexOf('1.0      | Init                            | SQL  |              | Complete |') >= 0) {
+          console.log(
+            `Integration db has been previously migrated, skipping flyway clean and migration in this test session`
+          );
+          resolve();
+        }
       }
+    });
+
+    args = ['node', exePath, '-c', configPath, 'clean'];
+    exec(args.join(' '), flywayEnv, err => {
+      if (err) {
+        reject(err);
+      }
+
+      args = ['node', exePath, '-c', configPath, 'migrate'];
+      exec(args.join(' '), flywayEnv, (err, stdout) => {
+        if (err) {
+          reject(err);
+        } else {
+          console.log(stdout);
+          resolve();
+        }
+      });
     });
   });
 };
