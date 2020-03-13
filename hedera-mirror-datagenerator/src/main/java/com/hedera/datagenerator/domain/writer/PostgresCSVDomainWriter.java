@@ -54,11 +54,6 @@ import com.hedera.mirror.importer.util.Utility;
  *   <li>account_balances</li>
  * </ul>
  * <p>
- * 'Constant' data for tables:
- * <ul>
- *   <li>t_record_files : single row with id 0</li>
- * </ul>
- * <p>
  * Tables already setup by migrations:
  * <ul>
  *   <li>t_transaction_types</li>
@@ -68,6 +63,7 @@ import com.hedera.mirror.importer.util.Utility;
  * <p>
  * Tables left empty:
  * <ul>
+ *   <li>t_record_files</li>
  *   <li>t_contract_result (empty until contract transaction generator is added)</li>
  *   <li>t_events (events are disabled in production)</li>
  *   <li>t_livehashes (crypto claims not implemented in services,
@@ -103,7 +99,6 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         fileDataWriter = getFileDataCSVPrinter(outputDir);
         topicMessageWriter = getTopicMessageCSVPrinter(outputDir);
         accountBalancesWriter = getAccountBalancesCSVPrinter(outputDir);
-        writeRecordFilesCSV(outputDir);
     }
 
     private static CSVPrinter getTransactionsCSVPrinter(String outputDir) throws IOException {
@@ -111,7 +106,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
                 Files.newBufferedWriter(Paths.get(outputDir, "t_transactions")),
                 CSVFormat.DEFAULT.withHeader(
                         "fk_node_acc_id", "memo", "fk_payer_acc_id", "charged_tx_fee", "initial_balance",
-                        "fk_cud_entity_id", "fk_rec_file_id", "valid_start_ns", "consensus_ns",
+                        "fk_cud_entity_id", "valid_start_ns", "consensus_ns",
                         "valid_duration_seconds", "max_fee", "transaction_hash", "result", "type",
                         "transaction_bytes"));
     }
@@ -150,17 +145,6 @@ public class PostgresCSVDomainWriter implements DomainWriter {
                 CSVFormat.DEFAULT.withHeader("consensus_timestamp", "balance", "account_realm_num", "account_num"));
     }
 
-    private static void writeRecordFilesCSV(String outputDir) throws IOException {
-        CSVPrinter recordFilesWriter = new CSVPrinter(
-                Files.newBufferedWriter(Paths.get(outputDir, "t_record_files")),
-                CSVFormat.DEFAULT.withHeader("id", "name", "load_start", "load_end", "file_hash", "prev_hash"));
-        recordFilesWriter.printRecord(
-                0, "./data/recordstreams/valid/2000-01-01T00_00_01.000001Z.rcd", 1573705657, 1573705657,
-                "420fffe68fcd2a1eadcce589fdf9565bcf5a269d02232fe07cdc565b3b6f76ce46a9418ddc1bbe051d4894e04d091f8e",
-                null);
-        recordFilesWriter.close();
-    }
-
     private static String toHex(byte[] data) {
         if (data == null) {
             return null;
@@ -185,7 +169,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
             transactionsWriter.printRecord(
                     transaction.getNodeAccountId(), toHex(transaction.getMemo()), transaction.getPayerAccountId(),
                     transaction.getChargedTxFee(), transaction.getInitialBalance(), transaction.getEntityId(),
-                    /* record file id */ 0, transaction.getValidStartNs(), transaction.getConsensusNs(),
+                    transaction.getValidStartNs(), transaction.getConsensusNs(),
                     transaction.getValidDurationSeconds(), transaction.getMaxFee(),
                     toHex(transaction.getTransactionHash()), transaction.getResult(), transaction.getType(),
                     toHex(transaction.getTransactionBytes()));

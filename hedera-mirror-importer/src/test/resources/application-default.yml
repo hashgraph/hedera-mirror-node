@@ -1,7 +1,7 @@
 hedera:
   mirror:
     db:
-      name: mirror_node_test
+      name: mirror_node
     downloader:
       bucketName: test
       cloudProvider: LOCAL

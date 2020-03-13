@@ -103,23 +103,16 @@ public class RecordFileParserTest extends IntegrationTest {
                 .to(streamType.getPath(), streamType.getValid());
         file1 = parserProperties.getValidPath().resolve("2019-08-30T18_10_00.419072Z.rcd").toFile();
         file2 = parserProperties.getValidPath().resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
-        recordFile1 = new RecordFile(0L, file1.getPath(), 0L, 0L,
+        recordFile1 = new RecordFile(file1.getPath(), 0L, 0L,
                 "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
                 "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-        recordFile2 = new RecordFile(0L, file2.getPath(), 0L, 0L,
+        recordFile2 = new RecordFile(file2.getPath(), 0L, 0L,
                 "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
                 recordFile1.getFileHash());
 
         when(recordStreamFileListener.onStart(any())).thenAnswer(invocation -> {
             String fileName = invocation.getArgument(0, StreamFileData.class).getFilename();
-            if (filesProcessed.contains(fileName)) {
-                return Optional.empty();
-            }
-            RecordFile recordFile = new RecordFile();
-            recordFile.setId(0L);
-            recordFile.setName(fileName);
-            filesProcessed.add(fileName);
-            return Optional.of(recordFile);
+            return filesProcessed.add(fileName);
         });
     }
 
@@ -265,7 +258,6 @@ public class RecordFileParserTest extends IntegrationTest {
         for (int i = 0; i < recordFiles.length; i++) {
             RecordFile actual = actualArgs.get(i);
             RecordFile expected = recordFiles[i];
-            assertEquals(expected.getId(), actual.getId());
             assertEquals(expected.getName(), actual.getName());
             assertEquals(expected.getFileHash(), actual.getFileHash());
             assertEquals(expected.getPreviousHash(), actual.getPreviousHash());

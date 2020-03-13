@@ -26,12 +26,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +55,7 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
@@ -84,22 +85,23 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
     protected TopicMessageRepository topicMessageRepository;
 
     @Resource
+    protected RecordFileRepository recordFileRepository;
+
+    @Resource
     protected PostgresWritingRecordParsedItemHandler postgresWriter;
 
     @Resource
     protected PostgresWriterProperties postgresWriterProperties;
 
-    private RecordFile recordFile;
-
     private static final String FILE_NAME = "fileName";
 
     @BeforeEach
     final void beforeEach() {
-        recordFile = postgresWriter.onStart(new StreamFileData(FILE_NAME, null)).get();
+        postgresWriter.onStart(new StreamFileData(FILE_NAME, null));
     }
 
     void completeFileAndCommit() {
-        postgresWriter.onEnd(recordFile);
+        postgresWriter.onEnd(new RecordFile(FILE_NAME, 0L, 0L, "", ""));
     }
 
     @Test
@@ -199,7 +201,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
     void onTransaction() throws Exception {
         // given
         Transaction expectedTransaction = new Transaction(101L, 0L, Strings.toByteArray("memo"), 0, 0, 1L, 1L, 1L, null,
-                0L, 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
+                1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
 
         // when
         postgresWriter.onTransaction(expectedTransaction);
@@ -218,11 +220,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         int batchSize = 10;
         postgresWriterProperties.setBatchSize(batchSize);
 
-        CallableStatement fileCreate = mock(CallableStatement.class);
-        when(fileCreate.getLong(any(Integer.class))).thenAnswer(ignore -> 1L);
-
         Connection connection = mock(Connection.class);
-        when(connection.prepareCall(any())).thenReturn(fileCreate);
         List<PreparedStatement> insertStatements = new ArrayList<>(); // tracks all PreparedStatements
         when(connection.prepareStatement(any())).then(ignored -> {
             PreparedStatement preparedStatement = mock(PreparedStatement.class);
@@ -234,8 +232,8 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         DataSource dataSource = mock(DataSource.class);
         when(dataSource.getConnection()).thenReturn(connection);
         PostgresWritingRecordParsedItemHandler postgresWriter2 =
-                new PostgresWritingRecordParsedItemHandler(postgresWriterProperties, dataSource);
-        RecordFile recordFile = postgresWriter2.onStart(new StreamFileData("fileName", null)).get();
+                new PostgresWritingRecordParsedItemHandler(postgresWriterProperties, dataSource, recordFileRepository);
+        postgresWriter2.onStart(new StreamFileData(UUID.randomUUID().toString(), null)); // setup connection
 
         // when
         for (int i = 0; i < batchSize; i++) {
@@ -247,7 +245,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
             verify(ps).executeBatch();
         }
 
-        postgresWriter2.onEnd(recordFile); // close connections
+        postgresWriter2.onEnd(new RecordFile("fileName", 0L, 0L, "", "")); // close connections
         completeFileAndCommit();  // close postgresWriter
     }
 
@@ -269,14 +267,16 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         completeFileAndCommit();
 
         // when
-        var recordFile = postgresWriter.onStart(new StreamFileData(FILE_NAME, null));
+        boolean continueFileLoad = postgresWriter.onStart(new StreamFileData(FILE_NAME, null));
 
         // then
-        assertTrue(recordFile.isEmpty());
+        assertFalse(continueFileLoad);
 
         // Since no onEnd/onError would be called, SQL resource should have been released already. No explicit
         // connection cleanup here.
     }
+
+    // TODO: add test to check contents of recordFileRepo
 
     static <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
         Optional<T> actual = repository.findById(id);

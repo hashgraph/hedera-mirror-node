@@ -87,7 +87,6 @@ const addAccount = async function(accountId, exp_tm_nanosecs = null) {
 
 const addTransaction = async function(
   consensusTimestamp,
-  fileId,
   payerAccountId,
   transfers,
   validDurationSeconds = 11,
@@ -96,11 +95,10 @@ const addTransaction = async function(
   type = 14
 ) {
   await integrationDbOps.runSqlQuery(
-    'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
+    'insert into t_transactions (consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
     [
       consensusTimestamp,
       consensusTimestamp - 1,
-      fileId,
       accountEntityIds[payerAccountId],
       accountEntityIds[2],
       result,
@@ -121,7 +119,6 @@ const addTransaction = async function(
 /**
  * Add a crypto transfer from A to B with A also paying 1 tinybar to account number 2 (fee)
  * @param consensusTimestamp
- * @param fileId
  * @param payerAccountId
  * @param recipientAccountId
  * @param amount
@@ -129,7 +126,6 @@ const addTransaction = async function(
  */
 const addCryptoTransferTransaction = async function(
   consensusTimestamp,
-  fileId,
   payerAccountId,
   recipientAccountId,
   amount,
@@ -139,7 +135,6 @@ const addCryptoTransferTransaction = async function(
 ) {
   await addTransaction(
     consensusTimestamp,
-    fileId,
     payerAccountId,
     [
       [payerAccountId, -1 - amount],
@@ -159,10 +154,6 @@ const testData = fs.readFileSync(testDataPath);
 const testDataJson = JSON.parse(testData);
 
 const setupData = async function() {
-  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', ['test']);
-  let fileId = res.rows[0]['id'];
-  console.log(`Record file id is ${fileId}`);
-
   const balancePerAccountCount = 3;
   const testAccounts = testDataJson['accounts'];
   console.log(`Adding ${testAccounts.length} accounts with ${balancePerAccountCount} balances per account`);
@@ -180,7 +171,7 @@ const setupData = async function() {
 
   console.log('Adding crypto transfer transactions');
   for (let transfer of testDataJson['transfers']) {
-    await addCryptoTransferTransaction(transfer.time, fileId, transfer.from, transfer.to, transfer.amount);
+    await addCryptoTransferTransaction(transfer.time, transfer.from, transfer.to, transfer.amount);
   }
 
   console.log('Finished initializing DB data');
@@ -242,14 +233,9 @@ test('DB integration test - transactions.reqToSql - invalid account', async () =
 });
 
 test('DB integration test - transactions.reqToSql - null validDurationSeconds and maxFee inserts', async () => {
-  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', [
-    'nodurationfee'
-  ]);
-  let fileId = res.rows[0]['id'];
-
-  await addCryptoTransferTransaction(1062, fileId, 3, 4, 50, 5, null); // null maxFee
-  await addCryptoTransferTransaction(1063, fileId, 3, 4, 70, null, 777); //null validDurationSeconds
-  await addCryptoTransferTransaction(1064, fileId, 3, 4, 70, null, null); // valid validDurationSeconds and maxFee
+  await addCryptoTransferTransaction(1062, 3, 4, 50, 5, null); // null maxFee
+  await addCryptoTransferTransaction(1063, 3, 4, 70, null, 777); //null validDurationSeconds
+  await addCryptoTransferTransaction(1064, 3, 4, 70, null, null); // valid validDurationSeconds and maxFee
 
   let sql = transactions.reqToSql({query: {'account.id': '0.15.3'}});
   res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
@@ -268,11 +254,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
 });
 
 test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
-  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', [
-    'unknowntypeandresult'
-  ]);
-  let fileId = res.rows[0]['id'];
-  await addTransaction(1070, fileId, 7, [[2, 1]], 11, 33, -1, -1);
+  await addTransaction(1070, 7, [[2, 1]], 11, 33, -1, -1);
 
   let sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
   res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
@@ -290,19 +272,14 @@ const createAndPopulateNewAccount = async (id, ts, bal) => {
 };
 
 test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
-  let res = await integrationDbOps.runSqlQuery('insert into t_record_files (name) values ($1) returning id;', [
-    'accountrange'
-  ]);
-  let fileId = res.rows[0]['id'];
-
   await createAndPopulateNewAccount(13, 5, 10);
   await createAndPopulateNewAccount(63, 6, 50);
   await createAndPopulateNewAccount(82, 7, 100);
 
   // create 3 transactions - 9 transfers
-  await addCryptoTransferTransaction(2062, fileId, 13, 63, 50, 5000, 50);
-  await addCryptoTransferTransaction(2063, fileId, 63, 82, 70, 7000, 777);
-  await addCryptoTransferTransaction(2064, fileId, 82, 63, 20, 8000, -80);
+  await addCryptoTransferTransaction(2062, 13, 63, 50, 5000, 50);
+  await addCryptoTransferTransaction(2063, 63, 82, 70, 7000, 777);
+  await addCryptoTransferTransaction(2064, 82, 63, 20, 8000, -80);
 
   let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.100']}});
   res = await integrationDbOps.runSqlQuery(sql.query, sql.params);

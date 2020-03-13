@@ -40,7 +40,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -143,11 +142,11 @@ public class RecordFileParser implements FileParser {
      */
     public void loadRecordFile(StreamFileData streamFileData) throws IOException {
         Stopwatch stopwatch = Stopwatch.createStarted();
+        long loadStart = Instant.now().getEpochSecond();
         String fileName = streamFileData.getFilename();
         String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(
                 ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
-        Optional<RecordFile> recordFile = recordStreamFileListener.onStart(streamFileData);
-        if (recordFile.isEmpty()) {
+        if (!recordStreamFileListener.onStart(streamFileData)) {
             return; // skip file
         }
         long counter = 0;
@@ -234,12 +233,10 @@ public class RecordFileParser implements FileParser {
                                 "Unknown record file delimiter %s for file %s", typeDelimiter, fileName));
                 }
             }
-
             String thisFileHash = Hex.encodeHexString(Utility.getFileHash(fileName));
-            recordFile.get().setFileHash(thisFileHash);
-            recordFile.get().setPreviousHash(expectedPrevFileHash);
             log.trace("Calculated file hash for the current file {}", thisFileHash);
-            recordStreamFileListener.onEnd(recordFile.get());
+            recordStreamFileListener.onEnd(new RecordFile(fileName, loadStart, Instant.now().getEpochSecond(),
+                    thisFileHash, expectedPrevFileHash));
 
             if (!Utility.hashIsEmpty(thisFileHash)) {
                 applicationStatusRepository

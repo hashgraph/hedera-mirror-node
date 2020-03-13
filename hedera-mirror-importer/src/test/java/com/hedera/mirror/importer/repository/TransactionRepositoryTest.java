@@ -43,7 +43,6 @@ public class TransactionRepositoryTest extends AbstractRepositoryTest {
     }
 
     private Transaction transaction() {
-        Long recordFileId = insertRecordFile().getId();
         Long nodeAccountId = insertAccountEntity().getId();
         Long payerAccountId = insertAccountEntity().getId();
         Entities entity = new Entities();
@@ -60,7 +59,6 @@ public class TransactionRepositoryTest extends AbstractRepositoryTest {
         transaction.setMemo("transaction memo".getBytes());
         transaction.setNodeAccountId(nodeAccountId);
         transaction.setPayerAccountId(payerAccountId);
-        transaction.setRecordFileId(recordFileId);
         transaction.setResult(ResponseCodeEnum.SUCCESS.getNumber());
         transaction.setType(TransactionBody.DataCase.CRYPTOCREATEACCOUNT.getNumber());
         transaction.setValidStartNs(20L);
