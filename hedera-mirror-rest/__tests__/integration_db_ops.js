@@ -210,7 +210,7 @@ const aggregateTransfers = function(transaction) {
   transaction.transfers = Object.values(set);
 };
 
-const addTransaction = async function(transaction, recordFileId, payerEntityId, nodeEntityId) {
+const addTransaction = async function(transaction, payerEntityId, nodeEntityId) {
   transaction = Object.assign(
     {
       type: 14,
@@ -227,11 +227,10 @@ const addTransaction = async function(transaction, recordFileId, payerEntityId, 
   transaction.consensus_timestamp = math.bignumber(transaction.consensus_timestamp);
 
   await sqlConnection.query(
-    'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee, charged_tx_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);',
+    'insert into t_transactions (consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee, charged_tx_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
     [
       transaction.consensus_timestamp.toString(),
       transaction.consensus_timestamp.minus(1).toString(),
-      recordFileId,
       payerEntityId,
       nodeEntityId,
       transaction.result,

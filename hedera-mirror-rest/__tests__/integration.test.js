@@ -95,7 +95,7 @@ const addTransaction = async function(
   type = 14
 ) {
   await integrationDbOps.runSqlQuery(
-    'insert into t_transactions (consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
+    'insert into t_transactions (consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee) values ($1, $2, $3, $4, $5, $6, $7, $8);',
     [
       consensusTimestamp,
       consensusTimestamp - 1,
