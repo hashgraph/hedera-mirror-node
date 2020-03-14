@@ -108,11 +108,11 @@ public class DomainBuilder {
 
     private Mono<Entity> insert(Entity entity) {
         return Mono.defer(() -> Mono.just(entityRepository.save(entity)))
-                .doOnNext(t -> log.debug("Inserted: {}", t));
+                .doOnNext(t -> log.trace("Inserted: {}", t));
     }
 
     private Mono<TopicMessage> insert(TopicMessage topicMessage) {
         return Mono.defer(() -> Mono.just(topicMessageRepository.save(topicMessage)))
-                .doOnNext(t -> log.debug("Inserted: {}", t));
+                .doOnNext(t -> log.trace("Inserted: {}", t));
     }
 }

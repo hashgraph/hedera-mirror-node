@@ -21,10 +21,10 @@ package com.hedera.mirror.grpc.retriever;
  */
 
 import com.google.common.base.Stopwatch;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
@@ -61,20 +61,21 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
         }
 
         PollingContext context = new PollingContext(filter);
-        return Flux.fromStream(() -> poll(context))
+        return Flux.defer(() -> poll(context))
                 .repeatWhen(Repeat.create(r -> !context.isComplete(), Long.MAX_VALUE)
                         .fixedBackoff(retrieverProperties.getPollingFrequency())
                         .jitter(Jitter.random(0.1))
                         .withBackoffScheduler(scheduler))
                 .name("retriever")
                 .metrics()
+                .retryBackoff(Long.MAX_VALUE, Duration.ofSeconds(1))
                 .timeout(retrieverProperties.getTimeout(), scheduler)
                 .doOnCancel(context::onComplete)
                 .doOnComplete(context::onComplete)
                 .doOnNext(context::onNext);
     }
 
-    private Stream<TopicMessage> poll(PollingContext context) {
+    private Flux<TopicMessage> poll(PollingContext context) {
         TopicMessageFilter filter = context.getFilter();
         TopicMessage last = context.getLast();
         int limit = filter.hasLimit() ? (int) (filter.getLimit() - context.getTotal().get()) : Integer.MAX_VALUE;
@@ -88,7 +89,9 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
                 .build();
 
         log.debug("Executing query: {}", newFilter);
-        return topicMessageRepository.findByFilter(newFilter);
+        return Flux.fromStream(topicMessageRepository.findByFilter(newFilter))
+                .name("findByFilter")
+                .metrics();
     }
 
     @Data

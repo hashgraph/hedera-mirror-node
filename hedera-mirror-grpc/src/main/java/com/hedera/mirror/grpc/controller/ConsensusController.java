@@ -30,6 +30,7 @@ import javax.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.server.service.GrpcService;
+import org.springframework.dao.NonTransientDataAccessResourceException;
 import org.springframework.dao.TransientDataAccessException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -66,9 +67,10 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                 .map(this::toResponse)
                 .onErrorMap(ConstraintViolationException.class, e -> error(e, Status.INVALID_ARGUMENT))
                 .onErrorMap(IllegalArgumentException.class, e -> error(e, Status.INVALID_ARGUMENT))
+                .onErrorMap(NonTransientDataAccessResourceException.class, e -> error(e, Status.UNAVAILABLE, DB_ERROR))
                 .onErrorMap(TimeoutException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
                 .onErrorMap(TopicNotFoundException.class, e -> error(e, Status.NOT_FOUND))
-                .onErrorMap(TransientDataAccessException.class, e -> error(e, Status.UNAVAILABLE, DB_ERROR))
+                .onErrorMap(TransientDataAccessException.class, e -> error(e, Status.RESOURCE_EXHAUSTED, DB_ERROR))
                 .onErrorMap(t -> unknownError(t));
     }
 

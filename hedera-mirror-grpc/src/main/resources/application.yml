@@ -37,9 +37,16 @@ spring:
     url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     username: ${hedera.mirror.grpc.db.username}
     hikari:
+      connection-timeout: 3000
+      data-source-properties:
+        idle_in_transaction_session_timeout: "30000"
+        lock_timeout: "10000"
+        statement_timeout: "60000"
       maximum-pool-size: 50
       minimum-idle: 4
+      validation-timeout: 3000
   jpa:
+    database: postgresql
     properties:
       hibernate.generate_statistics: true
   test:

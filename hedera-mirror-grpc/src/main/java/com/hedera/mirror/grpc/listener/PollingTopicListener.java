@@ -23,7 +23,6 @@ package com.hedera.mirror.grpc.listener;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +52,7 @@ public class PollingTopicListener implements TopicListener {
         PollingContext context = new PollingContext(filter);
         Duration frequency = listenerProperties.getPollingFrequency();
 
-        return Flux.fromStream(() -> poll(context))
+        return Flux.defer(() -> poll(context))
                 .delaySubscription(frequency, scheduler)
                 .repeatWhen(Repeat.times(Long.MAX_VALUE)
                         .fixedBackoff(frequency)
@@ -65,7 +64,7 @@ public class PollingTopicListener implements TopicListener {
                 .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", frequency.toMillis(), filter));
     }
 
-    private Stream<TopicMessage> poll(PollingContext context) {
+    private Flux<TopicMessage> poll(PollingContext context) {
         TopicMessageFilter filter = context.getFilter();
         TopicMessage last = context.getLast();
         int limit = filter.hasLimit() ? (int) (filter.getLimit() - context.getCount().get()) : Integer.MAX_VALUE;
@@ -77,7 +76,9 @@ public class PollingTopicListener implements TopicListener {
                 .startTime(startTime)
                 .build();
 
-        return topicMessageRepository.findByFilter(newFilter);
+        return Flux.fromStream(topicMessageRepository.findByFilter(newFilter))
+                .name("findByFilter")
+                .metrics();
     }
 
     @Data

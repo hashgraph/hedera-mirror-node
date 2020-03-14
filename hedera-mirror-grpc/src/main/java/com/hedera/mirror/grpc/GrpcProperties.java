@@ -45,7 +45,7 @@ public class GrpcProperties {
     private Duration endTimeInterval = Duration.ofSeconds(30);
 
     @Min(1)
-    private int entityCacheSize = 10_000;
+    private int entityCacheSize = 50_000;
 
     @NotNull
     private NettyProperties netty = new NettyProperties();

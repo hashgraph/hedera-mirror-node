@@ -28,7 +28,7 @@ import javax.inject.Named;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.reactivestreams.Subscription;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -68,7 +68,7 @@ public class SharedPollingTopicListener implements TopicListener {
      * Subscribe on startup and ignore messages to start backfilling the buffer. This method is also used by tests to
      * reset the buffer between runs. Outside these two use cases this method should not be used.
      */
-    @EventListener(ApplicationReadyEvent.class)
+    @EventListener(ContextRefreshedEvent.class)
     public void init() {
         if (pollerDisposable != null) {
             pollerDisposable.dispose();
@@ -86,9 +86,9 @@ public class SharedPollingTopicListener implements TopicListener {
                 .name("shared-poll")
                 .metrics()
                 .doOnCancel(() -> log.info("Cancelled polling"))
-                .doOnComplete(() -> log.info("Completed polling"))
                 .doOnNext(context::onNext)
                 .doOnSubscribe(context::onStart)
+                .retry()
                 .replay(listenerProperties.getBufferSize())
                 .autoConnect(1, disposable -> pollerDisposable = disposable);
 
@@ -106,7 +106,7 @@ public class SharedPollingTopicListener implements TopicListener {
         Long consensusTimestamp = instantToLongConverter.convert(instant);
         Pageable pageable = PageRequest.of(0, listenerProperties.getMaxPageSize());
 
-        return Flux.defer(() -> Flux.fromIterable(topicMessageRepository.findLatest(consensusTimestamp, pageable)))
+        return Flux.fromIterable(topicMessageRepository.findLatest(consensusTimestamp, pageable))
                 .name("findLatest")
                 .metrics()
                 .doOnCancel(context::onPollEnd)
