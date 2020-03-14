@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.balance;
 
 import java.nio.file.Path;
 import javax.validation.constraints.Min;
-
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -45,6 +44,8 @@ public class BalanceParserProperties implements ParserProperties {
 
     @Min(1)
     private int fileBufferSize = 200_000;
+
+    private boolean keepFiles = false;
 
     @Override
     public Path getStreamPath() {

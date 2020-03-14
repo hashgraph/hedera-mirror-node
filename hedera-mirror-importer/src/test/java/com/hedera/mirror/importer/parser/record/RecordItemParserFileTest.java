@@ -87,9 +87,9 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
     @BeforeEach
     void before() throws Exception {
         mirrorProperties.setDataPath(dataPath);
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
-        parserProperties.setPersistCryptoTransferAmounts(true);
+        parserProperties.getPersist().setFiles(true);
+        parserProperties.getPersist().setSystemFiles(true);
+        parserProperties.getPersist().setCryptoTransferAmounts(true);
         parserProperties.init();
     }
 
@@ -146,8 +146,8 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
 
     @Test
     void fileCreateDoNotPersist() throws Exception {
-        parserProperties.setPersistFiles(false);
-        parserProperties.setPersistSystemFiles(false);
+        parserProperties.getPersist().setFiles(false);
+        parserProperties.getPersist().setSystemFiles(false);
         Transaction transaction = fileCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody);
@@ -181,7 +181,7 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
 
     @Test
     void fileCreatePersistSystemPositive() throws Exception {
-        parserProperties.setPersistFiles(false);
+        parserProperties.getPersist().setFiles(false);
         Transaction transaction = fileCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();
@@ -233,7 +233,7 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
 
     @Test
     void fileCreatePersistSystemNegative() throws Exception {
-        parserProperties.setPersistFiles(false);
+        parserProperties.getPersist().setFiles(false);
         Transaction transaction = fileCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();
@@ -408,8 +408,8 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
                 .setRealmNum(0).setFileNum(10).build());
 
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
+        parserProperties.getPersist().setFiles(true);
+        parserProperties.getPersist().setSystemFiles(true);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -568,8 +568,8 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
 
         networkAddressBook.update(new byte[0]);
 
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
+        parserProperties.getPersist().setFiles(true);
+        parserProperties.getPersist().setSystemFiles(true);
 
         Transaction transaction = fileAppendTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0)
                 .setFileNum(102).build());
@@ -984,8 +984,8 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
                 .setRealmNum(0).setFileNum(10).build());
 
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
+        parserProperties.getPersist().setFiles(true);
+        parserProperties.getPersist().setSystemFiles(true);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -1040,8 +1040,8 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
                 .setRealmNum(0).setFileNum(102).build());
 
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
+        parserProperties.getPersist().setFiles(true);
+        parserProperties.getPersist().setSystemFiles(true);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 

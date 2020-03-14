@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.record;
 import static com.hedera.mirror.importer.domain.ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH;
 import static com.hedera.mirror.importer.domain.ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
@@ -93,6 +93,7 @@ public class RecordFileParserTest extends IntegrationTest {
     @BeforeEach
     void before() {
         parserProperties.setEnabled(true);
+        parserProperties.setKeepFiles(false);
         streamType = parserProperties.getStreamType();
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
@@ -135,6 +136,19 @@ public class RecordFileParserTest extends IntegrationTest {
     }
 
     @Test
+    void parseAndKeepFiles() throws Exception {
+        // given
+        parserProperties.setKeepFiles(true);
+        fileCopier.copy();
+
+        // when
+        recordFileParser.parse();
+
+        // then
+        assertAllProcessed();
+    }
+
+    @Test
     void disabled() throws Exception {
         // given
         parserProperties.setEnabled(false);
@@ -153,7 +167,9 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFileParser.parse();
 
         // then
-        assertNoneProcessed();
+        assertParsedFiles();
+        verifyNoInteractions(recordItemListener);
+        verifyNoInteractions(recordStreamFileListener);
     }
 
     @Test
@@ -166,7 +182,7 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFileParser.parse();
 
         // then
-        assertParsedFiles();
+        assertValidFiles();
         verifyNoInteractions(recordItemListener);
         verify(recordStreamFileListener).onError();
     }
@@ -181,7 +197,7 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFileParser.parse();
 
         // then
-        assertParsedFiles();
+        assertValidFiles();
         verifyNoInteractions(recordItemListener);
         verify(recordStreamFileListener).onError();
     }
@@ -210,7 +226,7 @@ public class RecordFileParserTest extends IntegrationTest {
         recordFileParser.parse();
 
         // then
-        assertParsedFiles();
+        assertValidFiles();
         verify(recordStreamFileListener).onError();
     }
 
@@ -266,15 +282,32 @@ public class RecordFileParserTest extends IntegrationTest {
                 .contains(fileNames);
     }
 
+    // Asserts that valid files are untouched i.e. neither deleted, nor moved
+    private void assertValidFiles() {
+        assertTrue(Files.exists(file1.toPath()));
+        assertTrue(Files.exists(file2.toPath()));
+    }
+
     private void assertAllProcessed() throws Exception {
-        assertParsedFiles(file1.getName(), file2.getName());
+        // assert no valid files when processing completes successfully
+        assertFalse(Files.exists(file1.toPath()));
+        assertFalse(Files.exists(file2.toPath()));
+
+        // assert parsed files are moved/deleted.
+        if (parserProperties.isKeepFiles()) {
+            assertParsedFiles(file1.getName(), file2.getName());
+        } else {
+            assertParsedFiles(); // assert no files in parsed directory
+        }
+
+        // assert mock interactions
         verify(recordItemListener, times(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)).onItem(any());
         assertOnStart(file1.getPath(), file2.getPath());
         assertOnEnd(recordFile1, recordFile2);
     }
 
-    private void assertNoneProcessed() throws Exception {
-        assertParsedFiles();
+    private void assertNoneProcessed() {
+        assertValidFiles();
         verifyNoInteractions(recordItemListener);
         verifyNoInteractions(recordStreamFileListener);
     }

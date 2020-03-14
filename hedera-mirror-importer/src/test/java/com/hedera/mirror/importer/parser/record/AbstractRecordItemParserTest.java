@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.UUID;
 import javax.annotation.Resource;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -56,8 +57,6 @@ import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionResultRepository;
 import com.hedera.mirror.importer.util.Utility;
-
-import java.util.UUID;
 
 //Class manually commits so have to manually cleanup tables
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
@@ -94,6 +93,32 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
     @Resource
     protected PostgresWritingRecordParsedItemHandler postgresWriter;
 
+    protected static SignatureMap getSigMap() {
+        String key1 = "11111111111111111111c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";
+        String signature1 = "Signature 1 here";
+        String key2 = "22222222222222222222c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";
+        String signature2 = "Signature 2 here";
+
+        SignatureMap.Builder sigMap = SignatureMap.newBuilder();
+        SignaturePair.Builder sigPair = SignaturePair.newBuilder();
+        sigPair.setEd25519(ByteString.copyFromUtf8(signature1));
+        sigPair.setPubKeyPrefix(ByteString.copyFromUtf8(key1));
+
+        sigMap.addSigPair(sigPair);
+
+        sigPair = SignaturePair.newBuilder();
+        sigPair.setEd25519(ByteString.copyFromUtf8(signature2));
+        sigPair.setPubKeyPrefix(ByteString.copyFromUtf8(key2));
+
+        sigMap.addSigPair(sigPair);
+
+        return sigMap.build();
+    }
+
+    protected static Key keyFromString(String key) {
+        return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
+    }
+
     protected final void assertAccount(AccountID accountId, com.hedera.mirror.importer.domain.Entities dbEntity) {
         assertThat(accountId)
                 .isNotEqualTo(AccountID.getDefaultInstance())
@@ -129,7 +154,7 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
 
     protected void assertRecordTransfers(TransactionRecord record) {
         long consensusTimestamp = Utility.timeStampInNanos(record.getConsensusTimestamp());
-        if (parserProperties.isPersistCryptoTransferAmounts()) {
+        if (parserProperties.getPersist().isCryptoTransferAmounts()) {
             TransferList transferList = record.getTransferList();
             for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
                 AccountID account = accountAmount.getAccountID();
@@ -181,32 +206,6 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
                 // By default the raw bytes are not stored
                 , () -> assertEquals(null, dbTransaction.getTransactionBytes())
         );
-    }
-
-    protected static SignatureMap getSigMap() {
-        String key1 = "11111111111111111111c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";
-        String signature1 = "Signature 1 here";
-        String key2 = "22222222222222222222c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";
-        String signature2 = "Signature 2 here";
-
-        SignatureMap.Builder sigMap = SignatureMap.newBuilder();
-        SignaturePair.Builder sigPair = SignaturePair.newBuilder();
-        sigPair.setEd25519(ByteString.copyFromUtf8(signature1));
-        sigPair.setPubKeyPrefix(ByteString.copyFromUtf8(key1));
-
-        sigMap.addSigPair(sigPair);
-
-        sigPair = SignaturePair.newBuilder();
-        sigPair.setEd25519(ByteString.copyFromUtf8(signature2));
-        sigPair.setPubKeyPrefix(ByteString.copyFromUtf8(key2));
-
-        sigMap.addSigPair(sigPair);
-
-        return sigMap.build();
-    }
-
-    protected static Key keyFromString(String key) {
-        return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
     }
 
     protected final Builder defaultTransactionBodyBuilder(String memo) {

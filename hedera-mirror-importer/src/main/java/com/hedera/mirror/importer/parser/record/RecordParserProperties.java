@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.parser.record;
 import java.nio.file.Path;
 import java.time.Duration;
 import javax.validation.constraints.NotNull;
-
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -44,21 +43,10 @@ public class RecordParserProperties implements ParserProperties {
     @NotNull
     private Duration frequency = Duration.ofMillis(500L);
 
-    private boolean persistClaims = false;
+    private boolean keepFiles = false;
 
-    private boolean persistContracts = true;
-
-    private boolean persistCryptoTransferAmounts = true;
-
-    private boolean persistFiles = true;
-
-    private boolean persistNonFeeTransfers = false;
-
-    private boolean persistSystemFiles = true;
-
-    // If configured the mirror node will store the raw transaction
-    // bytes on the t_transaction table
-    private boolean persistTransactionBytes = false;
+    @NotNull
+    private PersistProperties persist = new PersistProperties();
 
     @Override
     public Path getStreamPath() {
@@ -68,5 +56,26 @@ public class RecordParserProperties implements ParserProperties {
     @Override
     public StreamType getStreamType() {
         return StreamType.RECORD;
+    }
+
+    @Data
+    public class PersistProperties {
+
+        private boolean claims = false;
+
+        private boolean contracts = true;
+
+        private boolean cryptoTransferAmounts = true;
+
+        private boolean files = true;
+
+        private boolean nonFeeTransfers = false;
+
+        private boolean systemFiles = true;
+
+        /**
+         * If configured the mirror node will store the raw transaction bytes on the t_transaction table
+         */
+        private boolean transactionBytes = false;
     }
 }

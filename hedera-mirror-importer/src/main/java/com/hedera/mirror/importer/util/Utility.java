@@ -55,6 +55,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
+import com.hedera.mirror.importer.parser.ParserProperties;
+
 @Log4j2
 public class Utility {
 
@@ -593,21 +595,35 @@ public class Utility {
         return StringUtils.isBlank(hash) || hash.equals(EMPTY_HASH);
     }
 
-    public static void moveFileToParsedDir(String fileName, String subDir) {
-        File sourceFile = new File(fileName);
-        String pathToSaveTo = sourceFile.getParentFile().getParentFile().getPath() + subDir;
-        String shortFileName = sourceFile.getName().substring(0, 10).replace("-", "/");
-        pathToSaveTo += shortFileName;
+    public static void moveFileToParsedDir(String filePath, ParserProperties parserProperties) {
+        Path source = Path.of(filePath);
+        String fileName = source.getFileName().toString();
+        String dateSubDir = fileName.substring(0, 10).replace("-", File.separator);
+        Path destination = parserProperties.getParsedPath().resolve(dateSubDir).resolve(fileName);
+        destination.getParent().toFile().mkdirs();
 
-        File parsedDir = new File(pathToSaveTo);
-        parsedDir.mkdirs();
-
-        Path destination = Paths.get(pathToSaveTo, sourceFile.getName());
         try {
-            Files.move(sourceFile.toPath(), destination, StandardCopyOption.REPLACE_EXISTING);
-            log.trace("{} has been moved to {}", sourceFile, pathToSaveTo);
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+            log.trace("Moved {} to {}", source, destination);
         } catch (Exception e) {
-            log.error("Error moving file {} to {}", sourceFile, pathToSaveTo, e);
+            log.error("Error moving file {} to {}", source, destination, e);
+        }
+    }
+
+    public static void deleteFile(String fileName) {
+        try {
+            Files.delete(new File(fileName).toPath());
+            log.trace("Deleted file {}", fileName);
+        } catch (Exception e) {
+            log.error("Error deleting file {}", fileName);
+        }
+    }
+
+    public static void moveOrDeleteParsedFile(String fileName, ParserProperties parserProperties) {
+        if (parserProperties.isKeepFiles()) {
+            Utility.moveFileToParsedDir(fileName, parserProperties);
+        } else {
+            Utility.deleteFile(fileName);
         }
     }
 
