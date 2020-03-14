@@ -26,7 +26,11 @@
  * Tests instantiate the database schema via a flywaydb wrapper using the flyway CLI to clean and migrate the
  * schema (using sql files in the ../src/resources/db/migration directory).
  *
- * Test data is created by:
+ * * Test data for rest-api tests is created by:
+ * 1) reading account id, balance, expiration and crypto transfer information from *.spec.json
+ * 2) applying account creations, balance sets and transfers to the integration DB
+ *
+ * Test data for database tests is created by:
  * 1) reading account id, balance, expiration and crypto transfer information from integration_test_data.json
  * 2) storing those accounts in integration DB
  * 3) creating 3 balances records per account at timestamp 1000, 2000, 3000 in the integration DB
@@ -46,20 +50,20 @@ const request = require('supertest');
 const server = require('../server');
 const fs = require('fs');
 const integrationDbOps = require('./integrationDbOps.js');
+const integrationDomainOps = require('./integrationDomainOps.js');
+let sqlConnection;
 
 beforeAll(async () => {
   jest.setTimeout(20000);
-  await integrationDbOps.instantiateDatabase();
+  sqlConnection = await integrationDbOps.instantiateDatabase();
 });
 
 afterAll(() => {
   integrationDbOps.closeConnection();
 });
 
-let accountEntityIds = {};
 beforeEach(async () => {
   await integrationDbOps.cleanUp();
-  accountEntityIds = {};
   await setupData();
 });
 
@@ -71,6 +75,20 @@ beforeEach(async () => {
 
 const shard = 0;
 const realm = 15;
+
+/**
+ * Setup test data in the postgres instance.
+ */
+
+const setupData = async function() {
+  const testDataPath = path.join(__dirname, 'integration_test_data.json');
+  const testData = fs.readFileSync(testDataPath);
+  const testDataJson = JSON.parse(testData);
+
+  await integrationDomainOps.setUp(testDataJson.setup, sqlConnection);
+
+  console.log('Finished initializing DB data');
+};
 
 /**
  * Add a crypto transfer from A to B with A also paying 1 tinybar to account number 2 (fee)
@@ -92,7 +110,7 @@ const addCryptoTransferTransaction = async function(
   result = 22,
   type = 14
 ) {
-  await integrationDbOps.addCryptoTransaction({
+  await integrationDomainOps.addCryptoTransaction({
     consensus_timestamp: consensusTimestamp,
     payerAccountId: payerAccountId,
     recipientAccountId: recipientAccountId,
@@ -104,18 +122,18 @@ const addCryptoTransferTransaction = async function(
   });
 };
 
-/**
- * Setup test data in the postgres instance.
- */
+const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
+  await integrationDomainOps.addAccount({
+    entity_num: id,
+    entity_realm: realm
+  });
 
-const setupData = async function() {
-  const testDataPath = path.join(__dirname, 'integration_test_data.json');
-  const testData = fs.readFileSync(testDataPath);
-  const testDataJson = JSON.parse(testData);
-
-  await integrationDbOps.setUp(testDataJson.setup);
-
-  console.log('Finished initializing DB data');
+  await integrationDomainOps.setAccountBalance({
+    timestamp: ts,
+    id: id,
+    realm_num: realm,
+    balance: bal
+  });
 };
 
 /**
@@ -196,7 +214,7 @@ test('DB integration test - transactions.reqToSql - invalid account', async () =
 });
 
 test('DB integration test - transactions.reqToSql - null validDurationSeconds and maxFee inserts', async () => {
-  let fileId = await integrationDbOps.addRecordFile('nodurationfee');
+  let fileId = await integrationDomainOps.addRecordFile('nodurationfee');
 
   await addCryptoTransferTransaction(1062, fileId, '0.15.5', '0.15.4', 50, 5, null); // null maxFee
   await addCryptoTransferTransaction(1063, fileId, '0.15.5', '0.15.4', 70, null, 777); // null validDurationSeconds
@@ -231,7 +249,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
 });
 
 test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
-  let fileId = await integrationDbOps.addRecordFile('unknowntypeandresult');
+  let fileId = await integrationDomainOps.addRecordFile('unknowntypeandresult');
   await addCryptoTransferTransaction(1070, fileId, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
 
   let sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
@@ -248,22 +266,8 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
   ]);
 });
 
-const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
-  await integrationDbOps.addAccount({
-    entity_num: id,
-    entity_realm: realm
-  });
-
-  await integrationDbOps.setAccountBalance({
-    timestamp: ts,
-    id: id,
-    realm_num: realm,
-    balance: bal
-  });
-};
-
 test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
-  let fileId = await integrationDbOps.addRecordFile('accountrange');
+  let fileId = await integrationDomainOps.addRecordFile('accountrange');
 
   await createAndPopulateNewAccount(13, 15, 5, 10);
   await createAndPopulateNewAccount(63, 15, 6, 50);
@@ -305,6 +309,7 @@ fs.readdirSync(specPath).forEach(function(file) {
   var spec = JSON.parse(specText);
   test(`DB integration test - ${file} - ${spec.url}`, async () => {
     await specSetupSteps(spec.setup);
+
     let response = await request(server).get(spec.url);
 
     expect(response.status).toEqual(spec.responseStatus);
@@ -313,5 +318,6 @@ fs.readdirSync(specPath).forEach(function(file) {
 });
 
 const specSetupSteps = async function(spec) {
-  await integrationDbOps.setUp(spec);
+  await integrationDbOps.cleanUp();
+  await integrationDomainOps.setUp(spec, sqlConnection);
 };
