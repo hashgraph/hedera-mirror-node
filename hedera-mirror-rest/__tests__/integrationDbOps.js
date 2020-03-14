@@ -145,21 +145,14 @@ const flywayMigrate = function() {
       }
     });
 
-    args = ['node', exePath, '-c', configPath, 'clean'];
-    exec(args.join(' '), flywayEnv, err => {
+    args = ['node', exePath, '-c', configPath, 'migrate'];
+    exec(args.join(' '), flywayEnv, (err, stdout) => {
       if (err) {
         reject(err);
+      } else {
+        console.log(stdout);
+        resolve();
       }
-
-      args = ['node', exePath, '-c', configPath, 'migrate'];
-      exec(args.join(' '), flywayEnv, (err, stdout) => {
-        if (err) {
-          reject(err);
-        } else {
-          console.log(stdout);
-          resolve();
-        }
-      });
     });
   });
 };
