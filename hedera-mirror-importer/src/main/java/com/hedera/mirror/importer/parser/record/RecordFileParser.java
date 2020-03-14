@@ -33,7 +33,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -276,7 +275,7 @@ public class RecordFileParser implements FileParser {
             }
             try {
                 loadRecordFile(new StreamFileData(name, fileInputStream));
-                Utility.moveOrDeleteParsedFile(name, "/parsedRecordFiles/", parserProperties.isKeepFiles());
+                Utility.moveOrDeleteParsedFile(name, parserProperties);
             } catch (Exception e) {
                 log.error("Error parsing file {}", name, e);
                 recordStreamFileListener.onError();

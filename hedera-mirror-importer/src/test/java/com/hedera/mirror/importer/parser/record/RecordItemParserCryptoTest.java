@@ -80,8 +80,8 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
     @BeforeEach
     void before() {
-        parserProperties.setPersistClaims(true);
-        parserProperties.setPersistCryptoTransferAmounts(true);
+        parserProperties.getPersist().setClaims(true);
+        parserProperties.getPersist().setCryptoTransferAmounts(true);
     }
 
     @Test
@@ -709,7 +709,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
     @Test
     void cryptoAddClaimDoNotPersist() throws Exception {
-        parserProperties.setPersistClaims(false);
+        parserProperties.getPersist().setClaims(false);
         // first create the account
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionBody createTransactionBody = TransactionBody.parseFrom(createTransaction.getBodyBytes());
@@ -810,7 +810,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
     @Test
     void cryptoTransferWithPersistence() throws Exception {
-        parserProperties.setPersistCryptoTransferAmounts(true);
+        parserProperties.getPersist().setCryptoTransferAmounts(true);
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -842,7 +842,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
     @Test
     void cryptoTransferWithoutPersistence() throws Exception {
-        parserProperties.setPersistCryptoTransferAmounts(false);
+        parserProperties.getPersist().setCryptoTransferAmounts(false);
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -1195,7 +1195,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
     @Test
     void cryptoTransferPersistRawBytesTrue() throws Exception {
         // Explicitly persist the transaction bytes
-        parserProperties.setPersistTransactionBytes(true);
+        parserProperties.getPersist().setTransactionBytes(true);
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         TransactionRecord record = transactionRecordSuccess(transactionBody);
@@ -1212,7 +1212,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
     @Test
     void cryptoTransferPersistRawBytesFalse() throws Exception {
         // Explicitly DO NOT persist the transaction bytes
-        parserProperties.setPersistTransactionBytes(false);
+        parserProperties.getPersist().setTransactionBytes(false);
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         TransactionRecord record = transactionRecordSuccess(transactionBody);

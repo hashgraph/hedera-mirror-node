@@ -65,10 +65,10 @@ public class RecordItemParserContractTest extends AbstractRecordItemParserTest {
 
     @BeforeEach
     void before() throws Exception {
-        parserProperties.setPersistFiles(true);
-        parserProperties.setPersistSystemFiles(true);
-        parserProperties.setPersistContracts(true);
-        parserProperties.setPersistCryptoTransferAmounts(true);
+        parserProperties.getPersist().setFiles(true);
+        parserProperties.getPersist().setSystemFiles(true);
+        parserProperties.getPersist().setContracts(true);
+        parserProperties.getPersist().setCryptoTransferAmounts(true);
     }
 
     @Test
@@ -182,8 +182,7 @@ public class RecordItemParserContractTest extends AbstractRecordItemParserTest {
     @Test
     @Disabled
     void contractCreateDoNotPersist() throws Exception {
-
-        parserProperties.setPersistContracts(false);
+        parserProperties.getPersist().setContracts(false);
 
         Transaction transaction = contractCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -693,8 +692,7 @@ public class RecordItemParserContractTest extends AbstractRecordItemParserTest {
     @Test
     @Disabled
     void contractCallDoNotPersist() throws Exception {
-
-        parserProperties.setPersistContracts(false);
+        parserProperties.getPersist().setContracts(false);
 
         // now call
         Transaction transaction = contractCallTransaction();

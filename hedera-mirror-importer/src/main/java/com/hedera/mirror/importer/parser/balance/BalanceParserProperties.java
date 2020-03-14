@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.balance;
 
 import java.nio.file.Path;
 import javax.validation.constraints.Min;
-
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
