@@ -9,6 +9,9 @@
         "entity_num": 2
       },
       {
+        "entity_num": 3
+      },
+      {
         "entity_num": 4
       },
       {
@@ -42,6 +45,11 @@
         "timestamp": 2000,
         "id": 2,
         "balance": 20
+      },
+      {
+        "timestamp": 2000,
+        "id": 3,
+        "balance": 30
       },
       {
         "timestamp": 2000,
@@ -103,6 +111,17 @@
           "balance": 20
         },
         "account": "0.0.2",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false
+      },
+      {
+        "balance": {
+          "timestamp": "0.000002000",
+          "balance": 30
+        },
+        "account": "0.0.3",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,

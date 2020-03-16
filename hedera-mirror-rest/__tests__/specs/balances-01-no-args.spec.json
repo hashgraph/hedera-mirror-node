@@ -11,6 +11,10 @@
         "entity_realm": 15
       },
       {
+        "entity_num": 3,
+        "entity_realm": 15
+      },
+      {
         "entity_num": 4,
         "entity_realm": 15
       },
@@ -53,6 +57,12 @@
         "id": 2,
         "realm_num": 15,
         "balance": 20
+      },
+      {
+        "timestamp": 2000,
+        "id": 3,
+        "realm_num": 15,
+        "balance": 30
       },
       {
         "timestamp": 2000,
@@ -132,6 +142,10 @@
       {
         "account": "0.15.4",
         "balance": 40
+      },
+      {
+        "account": "0.15.3",
+        "balance": 30
       },
       {
         "account": "0.15.2",

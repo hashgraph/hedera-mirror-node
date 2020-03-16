@@ -21,8 +21,6 @@
 const utils = require('../utils');
 const math = require('mathjs');
 
-const TREASURY_ACCOUNT_ID = utils.TREASURY_ACCOUNT_ID;
-const NODE_ACCOUNT_ID = '0.0.3';
 const NETWORK_FEE = 1;
 const NODE_FEE = 2;
 const SERVICE_FEE = 4;
@@ -34,8 +32,6 @@ let recordFileId;
 const setUp = async function(testDataJson, sqlconn) {
   accountEntityIds = {};
   sqlConnection = sqlconn;
-  await addAccount(toAccount(TREASURY_ACCOUNT_ID));
-  await addAccount(toAccount(NODE_ACCOUNT_ID));
   await loadAccounts(testDataJson['accounts']);
   await loadBalances(testDataJson['balances']);
   await loadCryptoTransfers(testDataJson['cryptotransfers']);
@@ -121,20 +117,6 @@ const setAccountBalance = async function(account) {
   );
 };
 
-const aggregateTransfers = function(transaction) {
-  let set = new Set();
-  transaction.transfers.forEach(transfer => {
-    let accountId = getAccountId(transfer);
-    let val = set[accountId];
-    if (undefined === val) {
-      set[accountId] = transfer;
-    } else {
-      set[accountId].amount += transfer.amount;
-    }
-  });
-  transaction.transfers = Object.values(set);
-};
-
 const addRecordFile = async function(recordFileName) {
   let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', [recordFileName]);
 
@@ -165,7 +147,7 @@ const addTransaction = async function(transaction) {
       transaction.consensus_timestamp.minus(1).toString(),
       0,
       accountEntityIds[transaction.payerAccountId],
-      accountEntityIds[NODE_ACCOUNT_ID],
+      accountEntityIds[transaction.nodeAccountId],
       transaction.result,
       transaction.type,
       transaction.valid_duration_seconds,
@@ -198,10 +180,9 @@ const addCryptoTransaction = async function(cryptoTransfer) {
 
   let sender = toAccount(cryptoTransfer.senderAccountId);
   let recipient = toAccount(cryptoTransfer.recipientAccountId);
+  let treasury = toAccount(cryptoTransfer.treasuryAccountId);
+
   if (!('transfers' in cryptoTransfer)) {
-    let payer = toAccount(cryptoTransfer.payerAccountId);
-    let node = toAccount(NODE_ACCOUNT_ID);
-    let treasury = toAccount(TREASURY_ACCOUNT_ID);
     cryptoTransfer['transfers'] = [
       Object.assign({}, sender, {amount: -NETWORK_FEE - cryptoTransfer.amount}),
       Object.assign({}, recipient, {amount: cryptoTransfer.amount}),

@@ -3,6 +3,9 @@
   "setup": {
     "accounts": [
       {
+        "entity_num": 3
+      },
+      {
         "entity_num": 8
       },
       {
@@ -10,6 +13,9 @@
       },
       {
         "entity_num": 10
+      },
+      {
+        "entity_num": 98
       }
     ],
     "balances": [],
@@ -19,19 +25,25 @@
         "consensus_timestamp": "1234567890000000001",
         "payerAccountId": "0.0.10",
         "recipientAccountId": "0.0.9",
-        "amount": 10
+        "amount": 10,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
       },
       {
         "consensus_timestamp": "1234567890000000002",
         "payerAccountId": "0.0.10",
         "recipientAccountId": "0.0.9",
-        "amount": 20
+        "amount": 20,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
       },
       {
         "consensus_timestamp": "1234567890000000003",
         "payerAccountId": "0.0.8",
         "recipientAccountId": "0.0.9",
-        "amount": 30
+        "amount": 30,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
       }
     ]
   },

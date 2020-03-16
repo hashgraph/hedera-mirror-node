@@ -107,7 +107,9 @@ const addCryptoTransferTransaction = async function(
   validDurationSeconds,
   maxFee,
   result = 22,
-  type = 14
+  type = 14,
+  nodeAccountId = '0.15.3',
+  treasuryAccountId = '0.15.98'
 ) {
   await integrationDomainOps.addCryptoTransaction({
     consensus_timestamp: consensusTimestamp,
@@ -117,7 +119,9 @@ const addCryptoTransferTransaction = async function(
     valid_duration_seconds: validDurationSeconds,
     max_fee: maxFee,
     result: result,
-    type: type
+    type: type,
+    nodeAccountId: nodeAccountId,
+    treasuryAccountId: treasuryAccountId
   });
 };
 
@@ -240,7 +244,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   await addCryptoTransferTransaction(2063, '0.15.63', '0.15.82', 70, 7000, 777);
   await addCryptoTransferTransaction(2064, '0.15.82', '0.15.63', 20, 8000, -80);
 
-  let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.100']}});
+  let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
 
   // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
