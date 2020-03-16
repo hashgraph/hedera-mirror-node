@@ -271,7 +271,7 @@ public class RecordFileParser implements FileParser {
             }
             try {
                 loadRecordFile(new StreamFileData(name, fileInputStream));
-                Utility.moveOrDeleteParsedFile(name, "/parsedRecordFiles/", parserProperties.isKeepFiles());
+                Utility.moveOrDeleteParsedFile(name, parserProperties);
             } catch (Exception e) {
                 log.error("Error parsing file {}", name, e);
                 recordStreamFileListener.onError();

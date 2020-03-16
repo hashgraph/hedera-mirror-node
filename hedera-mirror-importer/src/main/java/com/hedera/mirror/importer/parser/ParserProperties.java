@@ -42,6 +42,8 @@ public interface ParserProperties {
 
     boolean isEnabled();
 
+    boolean isKeepFiles();
+
     @PostConstruct
     default void init() {
         Utility.ensureDirectory(getParsedPath());

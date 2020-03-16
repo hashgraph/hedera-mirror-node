@@ -38,7 +38,7 @@
   ],
   "devDependencies": {
     "husky": "^3.0.9",
-    "jest": "^24.9.0",
+    "jest": "^25.1.0",
     "jest-junit": "^8.0.0",
     "node-flywaydb": "^2.1.0",
     "nodemon": "^1.19.1",
@@ -60,7 +60,7 @@
     "testPathIgnorePatterns": [
       "__tests__/testutils.js",
       "__tests__/mockpool.js",
-      "__tests__/integration_db_ops.js"
+      "__tests__/integrationDbOps.js"
     ]
   },
   "jest-junit": {

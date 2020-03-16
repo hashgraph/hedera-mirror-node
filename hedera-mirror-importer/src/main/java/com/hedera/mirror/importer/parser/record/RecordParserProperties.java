@@ -45,21 +45,8 @@ public class RecordParserProperties implements ParserProperties {
 
     private boolean keepFiles = false;
 
-    private boolean persistClaims = false;
-
-    private boolean persistContracts = true;
-
-    private boolean persistCryptoTransferAmounts = true;
-
-    private boolean persistFiles = true;
-
-    private boolean persistNonFeeTransfers = false;
-
-    private boolean persistSystemFiles = true;
-
-    // If configured the mirror node will store the raw transaction
-    // bytes on the t_transaction table
-    private boolean persistTransactionBytes = false;
+    @NotNull
+    private PersistProperties persist = new PersistProperties();
 
     @Override
     public Path getStreamPath() {
@@ -69,5 +56,26 @@ public class RecordParserProperties implements ParserProperties {
     @Override
     public StreamType getStreamType() {
         return StreamType.RECORD;
+    }
+
+    @Data
+    public class PersistProperties {
+
+        private boolean claims = false;
+
+        private boolean contracts = true;
+
+        private boolean cryptoTransferAmounts = true;
+
+        private boolean files = true;
+
+        private boolean nonFeeTransfers = false;
+
+        private boolean systemFiles = true;
+
+        /**
+         * If configured the mirror node will store the raw transaction bytes on the t_transaction table
+         */
+        private boolean transactionBytes = false;
     }
 }

@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ const path = require('path');
 const request = require('supertest');
 const server = require('../server');
 const fs = require('fs');
-const integrationDbOps = require('./integration_db_ops.js');
+const integrationDbOps = require('./integrationDbOps.js');
 
 beforeAll(async () => {
   jest.setTimeout(20000);
@@ -303,8 +303,19 @@ fs.readdirSync(specPath).forEach(function(file) {
   let specText = fs.readFileSync(p, 'utf8');
   var spec = JSON.parse(specText);
   test(`DB integration test - ${file} - ${spec.url}`, async () => {
+    // await specSetupSteps(spec);
     let response = await request(server).get(spec.url);
     expect(response.status).toEqual(spec.responseStatus);
     expect(JSON.parse(response.text)).toEqual(spec.responseJson);
   });
 });
+
+const specSetupSteps = async function(spec) {
+  let recordFile = spec.fileName;
+  await integrationDbOps.setUp(recordFile);
+
+  await integrationDbOps.loadAccounts(spec.setup.accounts);
+  await integrationDbOps.loadBalances(spec.setup.balances);
+  await integrationDbOps.loadCryptoTransfers(spec.setup.cryptotransfers);
+  await integrationDbOps.loadTransactions(spec.setup.transactions);
+};

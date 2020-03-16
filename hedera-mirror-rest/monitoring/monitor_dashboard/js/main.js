@@ -20,11 +20,7 @@
 
 'use strict';
 
-// TODO: Make this configurable
-// This needs to be configured before deploying this file
-let config = {
-  server: 'localhost:3000'
-};
+let monitorAddress = 'localhost:3000';
 
 /**
  * Initializer - fetches the status of tests from the server
@@ -42,6 +38,18 @@ const init = () => {
   app.appendChild(container);
 
   fetchAndDisplay(container);
+};
+
+const loadConfig = async () => {
+  return fetch('/config.json', {mode: 'no-cors'})
+    .then(response => response.json())
+    .then(config => {
+      if (!!config.monitorAddress) {
+        console.log('Loaded config.json');
+        monitorAddress = config.monitorAddress;
+      }
+    })
+    .catch(error => console.log('Unable to load config.json. Using default config.'));
 };
 
 /**
@@ -117,16 +125,14 @@ const makeCard = (data, server) => {
   h += `
         <div class="card my-card">
           <div class="card-body" data-toggle="modal" data-target="#modal-${server}">
-            <div class="card-title">Network: ${server}, ${new Date(Number(startTime)).toISOString()} - ${new Date(
-    Number(endTime)
-  ).toISOString()}
-            </div>
+            <div class="card-title">Node: ${server}</div>
             <div class="ip-addr"> (${data.ip}:${data.port})</div>
             <div class="card-text">
-               <div style="display: inline-block; verticle-align: bottom">
-            <span class="dot" style="background-color: ${dotcolor}"></span>
-               ${data.results.numPassedTests} / ${cntTotal} Passed,
-               ${data.results.numFailedTests} / ${cntTotal} Failed.&nbsp;&nbsp;&nbsp;
+               <div class="results">
+                 <span class="dot" style="background-color: ${dotcolor}"></span>
+                 ${data.results.numPassedTests} / ${cntTotal} Passed,
+                 ${data.results.numFailedTests} / ${cntTotal} Failed
+	         at ${new Date(Number(endTime)).toISOString()}
                </div>
                <div class="card-arrow">&#x25B6</div>
             </div>
@@ -159,14 +165,17 @@ const makeCard = (data, server) => {
  * @param {} None
  * @return {} None
  */
-const fetchAndDisplay = () => {
+const fetchAndDisplay = async () => {
   const container = document.getElementById('rootcontainer');
   if (container === null) {
     console.log('No container found!');
     return;
   }
 
-  fetch(`http://${config.server}/api/v1/status`)
+  await loadConfig();
+  console.log(`Fetching ${monitorAddress}`);
+
+  fetch(`http://${monitorAddress}/api/v1/status`)
     .then(function(response) {
       return response.json();
     })
