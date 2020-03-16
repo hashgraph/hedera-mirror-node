@@ -1,4 +1,95 @@
 {
+  "description": "Account api calls for all accounts",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 1
+      },
+      {
+        "entity_num": 2
+      },
+      {
+        "entity_num": 3
+      },
+      {
+        "entity_num": 4
+      },
+      {
+        "entity_num": 5
+      },
+      {
+        "entity_num": 6
+      },
+      {
+        "entity_num": 7
+      },
+      {
+        "entity_num": 8
+      },
+      {
+        "entity_num": 9,
+        "exp_time_ns": "-9223372036854775808"
+      },
+      {
+        "entity_num": 10,
+        "exp_time_ns": "9223372036854775807"
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2000,
+        "id": 1,
+        "balance": 10
+      },
+      {
+        "timestamp": 2000,
+        "id": 2,
+        "balance": 20
+      },
+      {
+        "timestamp": 2000,
+        "id": 3,
+        "balance": 30
+      },
+      {
+        "timestamp": 2000,
+        "id": 4,
+        "balance": 40
+      },
+      {
+        "timestamp": 2000,
+        "id": 5,
+        "balance": 50
+      },
+      {
+        "timestamp": 2000,
+        "id": 6,
+        "balance": 60
+      },
+      {
+        "timestamp": 2000,
+        "id": 7,
+        "balance": 70
+      },
+      {
+        "timestamp": 2000,
+        "id": 8,
+        "balance": 80
+      },
+      {
+        "timestamp": 2000,
+        "id": 9,
+        "balance": 90
+      },
+      {
+        "timestamp": 2000,
+        "id": 10,
+        "balance": 100
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
   "url": "/api/v1/accounts",
   "responseStatus": 200,
   "responseJson": {
@@ -8,7 +99,7 @@
           "timestamp": "0.000002000",
           "balance": 10
         },
-        "account": "0.15.1",
+        "account": "0.0.1",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -19,7 +110,7 @@
           "timestamp": "0.000002000",
           "balance": 20
         },
-        "account": "0.15.2",
+        "account": "0.0.2",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -30,7 +121,7 @@
           "timestamp": "0.000002000",
           "balance": 30
         },
-        "account": "0.15.3",
+        "account": "0.0.3",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -41,7 +132,7 @@
           "timestamp": "0.000002000",
           "balance": 40
         },
-        "account": "0.15.4",
+        "account": "0.0.4",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -52,7 +143,7 @@
           "timestamp": "0.000002000",
           "balance": 50
         },
-        "account": "0.15.5",
+        "account": "0.0.5",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -63,7 +154,7 @@
           "timestamp": "0.000002000",
           "balance": 60
         },
-        "account": "0.15.6",
+        "account": "0.0.6",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -74,7 +165,7 @@
           "timestamp": "0.000002000",
           "balance": 70
         },
-        "account": "0.15.7",
+        "account": "0.0.7",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -85,7 +176,7 @@
           "timestamp": "0.000002000",
           "balance": 80
         },
-        "account": "0.15.8",
+        "account": "0.0.8",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -96,7 +187,7 @@
           "timestamp": "0.000002000",
           "balance": 90
         },
-        "account": "0.15.9",
+        "account": "0.0.9",
         "expiry_timestamp": "-9223372036.854775808",
         "auto_renew_period": null,
         "key": null,
@@ -107,7 +198,7 @@
           "timestamp": "0.000002000",
           "balance": 100
         },
-        "account": "0.15.10",
+        "account": "0.0.10",
         "expiry_timestamp": "9223372036.854775807",
         "auto_renew_period": null,
         "key": null,

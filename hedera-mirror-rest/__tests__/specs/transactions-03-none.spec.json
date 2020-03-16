@@ -1,0 +1,17 @@
+{
+  "description": "No transactions",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/transactions",
+  "responseStatus": 200,
+  "responseJson": {
+    "transactions": [],
+    "links": {
+      "next": null
+    }
+  }
+}
