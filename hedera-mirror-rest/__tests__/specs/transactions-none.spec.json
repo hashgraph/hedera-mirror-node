@@ -1,0 +1,14 @@
+{
+  "description": "No transactions",
+  "setup": {
+    "filename": "notransactions"
+  },
+  "url": "/api/v1/transactions",
+  "responseStatus": 200,
+  "responseJson": {
+    "transactions": [],
+    "links": {
+      "next": null
+    }
+  }
+}
