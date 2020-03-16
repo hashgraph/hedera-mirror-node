@@ -43,8 +43,12 @@ const init = () => {
 const loadConfig = async () => {
   return fetch('/config.json', {mode: 'no-cors'})
     .then(response => response.json())
-    .then(config => (monitorAddress = config.monitorAddress))
-    .then(data => console.log('Loaded config.json'))
+    .then(config => {
+      if (!!config.monitorAddress) {
+        console.log('Loaded config.json');
+        monitorAddress = config.monitorAddress;
+      }
+    })
     .catch(error => console.log('Unable to load config.json. Using default config.'));
 };
 
