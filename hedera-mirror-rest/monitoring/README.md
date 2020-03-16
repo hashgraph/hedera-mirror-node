@@ -16,7 +16,7 @@ The results of these checks are exposed as a set of REST APIs exposed by this mo
 
 | API                 | HTTP return code | Description                                                                                                                                          |
 | ------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| /api/v1/status      | 200(OK)          | Provides a list of results of all tests run on all servers                                                                                           |
+| /api/v1/status      | 200 (OK)         | Provides a list of results of all tests run on all servers                                                                                           |
 | /api/v1/status/{id} | 200 (OK)         | If all tests pass for a server, then it returns the results                                                                                          |
 |                     | 4xx              | If any tests fail for a server, or if the server is not running, then it returns a 4xx error code to make it easy to integrate with alerting systems |
 
@@ -45,29 +45,19 @@ To run the monitor_apis backend:
 cd monitor_apis
 cp config/sample.serverlist.json config/serverlist.json // Start with the sample configuration file
 nano config/serverlist.json // Insert the mirror node deployments you want to monitor
-npm install  // Install npm dependencies
-PORT=xxxx npm start  // To start the monitoring server on port xxxx (Note: please enter a number for xxxx)
+npm install
+PORT=3000 pm2 start server.js
 ```
 
 The server will start polling Hedera mirror nodes specified in the config/serverlist.json file.
-The default timeout to populate the data is 2 minutes. After 2 minutes, you can verify the output using `curl <ip-address-where-you-run-monitoring-service>:<port>/api/v1/status` command.
+The default timeout to populate the data is 60 seconds. After the interval, you can verify the output using `curl http://<host>:<port>/api/v1/status` command.
 
 To run the dashboard (from `hedera-mirror-rest/monitoring` directory):
 
 ```
 cd monitor_dashboard
-nano js/main.js // Change the server: 'localhost:3000' line to point to the ip-address/name and port of the server where you are running the monitoring backed as described in the above tests.
-pm2 serve . yyyy // Serve the dashboard html pages on another port...(Note: please enter a number for yyyy)
+echo '{"monitorAddress": "localhost:3000"}' > config.json
+pm2 serve . 3001 // Serve the dashboard html pages on another port
 ```
 
-Using your browser, connect to `http:<ip-address-where-you-run-monitoring-service>:<yyyy>/index.html`
-
----
-
-## Contributing
-
-Refer to [CONTRIBUTING.md](CONTRIBUTING.md)
-
-## License
-
-Apache License 2.0, see [LICENSE](LICENSE).
+Using your browser, connect to `http://<host>:<port>/index.html`
