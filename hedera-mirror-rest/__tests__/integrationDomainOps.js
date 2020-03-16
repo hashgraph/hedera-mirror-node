@@ -23,8 +23,8 @@ const math = require('mathjs');
 
 const TREASURY_ACCOUNT_ID = utils.TREASURY_ACCOUNT_ID;
 const NODE_ACCOUNT_ID = '0.0.3';
-const NODE_FEE = 1;
-const NETWORK_FEE = 2;
+const NETWORK_FEE = 1;
+const NODE_FEE = 2;
 const SERVICE_FEE = 4;
 
 let sqlConnection;
@@ -174,10 +174,6 @@ const addTransaction = async function(transaction) {
     ]
   );
 
-  if (transaction['aggregate_transfers']) {
-    aggregateTransfers(transaction);
-  }
-
   for (let i = 0; i < transaction.transfers.length; ++i) {
     let transfer = transaction.transfers[i];
     await sqlConnection.query(
@@ -199,6 +195,7 @@ const addCryptoTransaction = async function(cryptoTransfer) {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }
+
   let sender = toAccount(cryptoTransfer.senderAccountId);
   let recipient = toAccount(cryptoTransfer.recipientAccountId);
   if (!('transfers' in cryptoTransfer)) {
@@ -206,21 +203,12 @@ const addCryptoTransaction = async function(cryptoTransfer) {
     let node = toAccount(NODE_ACCOUNT_ID);
     let treasury = toAccount(TREASURY_ACCOUNT_ID);
     cryptoTransfer['transfers'] = [
-      Object.assign({}, payer, {amount: 0 - NODE_FEE - SERVICE_FEE}),
-      Object.assign({}, payer, {amount: 0 - NETWORK_FEE}),
-      Object.assign({}, sender, {amount: 0 - cryptoTransfer.amount}),
+      Object.assign({}, sender, {amount: -NETWORK_FEE - cryptoTransfer.amount}),
       Object.assign({}, recipient, {amount: cryptoTransfer.amount}),
-      Object.assign({}, node, {amount: NODE_FEE}),
-      Object.assign({}, treasury, {amount: SERVICE_FEE}),
       Object.assign({}, treasury, {amount: NETWORK_FEE})
     ];
   }
-  if (cryptoTransfer['include_non_fee_transfers']) {
-    cryptoTransfer['non_fee_transfers'] = [
-      Object.assign({}, sender, {amount: 0 - cryptoTransfer.amount}),
-      Object.assign({}, recipient, {amount: cryptoTransfer.amount})
-    ];
-  }
+
   await addTransaction(cryptoTransfer);
 };
 

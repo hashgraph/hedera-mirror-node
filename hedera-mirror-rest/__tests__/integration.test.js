@@ -165,44 +165,28 @@ function extractNameAndResultFromTransactionResults(rows) {
 test('DB integration test - transactions.reqToSql - no query string - 3 txn 21 xfers', async () => {
   let sql = transactions.reqToSql({query: {}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(21);
+  expect(res.rowCount).toEqual(9);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '@1050: account 10 \u0127-10',
-    '@1050: account 10 \u0127-2',
-    '@1050: account 10 \u0127-5',
-    '@1050: account 3 \u01271',
+    '@1050: account 10 \u0127-11',
     '@1050: account 9 \u012710',
-    '@1050: account 98 \u01272',
-    '@1050: account 98 \u01274',
-    '@1051: account 10 \u0127-2',
-    '@1051: account 10 \u0127-20',
-    '@1051: account 10 \u0127-5',
-    '@1051: account 3 \u01271',
+    '@1050: account 98 \u01271',
+    '@1051: account 10 \u0127-21',
     '@1051: account 9 \u012720',
-    '@1051: account 98 \u01272',
-    '@1051: account 98 \u01274',
-    '@1052: account 3 \u01271',
-    '@1052: account 8 \u0127-2',
-    '@1052: account 8 \u0127-30',
-    '@1052: account 8 \u0127-5',
+    '@1051: account 98 \u01271',
+    '@1052: account 8 \u0127-31',
     '@1052: account 9 \u012730',
-    '@1052: account 98 \u01272',
-    '@1052: account 98 \u01274'
+    '@1052: account 98 \u01271'
   ]);
 });
 
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 7 xfers', async () => {
   let sql = transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(7);
+  expect(res.rowCount).toEqual(3);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '@1052: account 3 \u01271',
-    '@1052: account 8 \u0127-2',
-    '@1052: account 8 \u0127-30',
-    '@1052: account 8 \u0127-5',
+    '@1052: account 8 \u0127-31',
     '@1052: account 9 \u012730',
-    '@1052: account 98 \u01272',
-    '@1052: account 98 \u01274'
+    '@1052: account 98 \u01271'
   ]);
 });
 
@@ -219,26 +203,14 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
 
   let sql = transactions.reqToSql({query: {'account.id': '0.15.5'}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(21);
+  expect(res.rowCount).toEqual(9);
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual([
     '@5,null',
     '@5,null',
     '@5,null',
-    '@5,null',
-    '@5,null',
-    '@5,null',
-    '@5,null',
     '@null,777',
     '@null,777',
     '@null,777',
-    '@null,777',
-    '@null,777',
-    '@null,777',
-    '@null,777',
-    '@null,null',
-    '@null,null',
-    '@null,null',
-    '@null,null',
     '@null,null',
     '@null,null',
     '@null,null'
@@ -250,12 +222,8 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
 
   let sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(7);
+  expect(res.rowCount).toEqual(3);
   expect(extractNameAndResultFromTransactionResults(res.rows).sort()).toEqual([
-    '@UNKNOWN,UNKNOWN',
-    '@UNKNOWN,UNKNOWN',
-    '@UNKNOWN,UNKNOWN',
-    '@UNKNOWN,UNKNOWN',
     '@UNKNOWN,UNKNOWN',
     '@UNKNOWN,UNKNOWN',
     '@UNKNOWN,UNKNOWN'
@@ -277,22 +245,14 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
   // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
   // Note bank is out of desired range but is expected in query result
-  expect(res.rowCount).toEqual(14);
+  expect(res.rowCount).toEqual(6);
   expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '@2063: account 3 ħ1',
-    '@2063: account 63 ħ-2',
-    '@2063: account 63 ħ-5',
-    '@2063: account 63 ħ-70',
-    '@2063: account 82 ħ70',
-    '@2063: account 98 ħ2',
-    '@2063: account 98 ħ4',
-    '@2064: account 3 ħ1',
-    '@2064: account 63 ħ20',
-    '@2064: account 82 ħ-2',
-    '@2064: account 82 ħ-20',
-    '@2064: account 82 ħ-5',
-    '@2064: account 98 ħ2',
-    '@2064: account 98 ħ4'
+    '@2063: account 63 \u0127-71',
+    '@2063: account 82 \u012770',
+    '@2063: account 98 \u01271',
+    '@2064: account 63 \u012720',
+    '@2064: account 82 \u0127-21',
+    '@2064: account 98 \u01271'
   ]);
 });
 
