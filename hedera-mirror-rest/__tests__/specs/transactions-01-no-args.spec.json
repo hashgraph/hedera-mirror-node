@@ -12,23 +12,7 @@
         "entity_num": 10
       }
     ],
-    "balances": [
-      {
-        "timestamp": 3,
-        "id": 8,
-        "balance": 80
-      },
-      {
-        "timestamp": 3,
-        "id": 9,
-        "balance": 90
-      },
-      {
-        "timestamp": 3,
-        "id": 10,
-        "balance": 100
-      }
-    ],
+    "balances": [],
     "transactions": [],
     "cryptotransfers": [
       {
