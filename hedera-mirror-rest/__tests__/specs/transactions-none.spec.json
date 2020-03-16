@@ -1,7 +1,10 @@
 {
   "description": "No transactions",
   "setup": {
-    "filename": "notransactions"
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": []
   },
   "url": "/api/v1/transactions",
   "responseStatus": 200,

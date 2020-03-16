@@ -1,7 +1,6 @@
 {
   "description": "Transaction api calls with no arguments",
   "setup": {
-    "filename": "transactionsnoarg",
     "accounts": [
       {
         "entity_num": 8

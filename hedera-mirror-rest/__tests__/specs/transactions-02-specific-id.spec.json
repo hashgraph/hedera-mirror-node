@@ -1,7 +1,6 @@
 {
   "description": "Transaction api calls for a specific transactions",
   "setup": {
-    "filename": "transactionswargs",
     "accounts": [
       {
         "entity_num": 9

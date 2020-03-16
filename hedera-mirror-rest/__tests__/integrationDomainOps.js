@@ -36,7 +36,6 @@ const setUp = async function(testDataJson, sqlconn) {
   sqlConnection = sqlconn;
   await addAccount(toAccount(TREASURY_ACCOUNT_ID));
   await addAccount(toAccount(NODE_ACCOUNT_ID));
-  await addRecordFile(testDataJson['filename']);
   await loadAccounts(testDataJson['accounts']);
   await loadBalances(testDataJson['balances']);
   await loadCryptoTransfers(testDataJson['cryptotransfers']);
@@ -164,7 +163,7 @@ const addTransaction = async function(transaction) {
     [
       transaction.consensus_timestamp.toString(),
       transaction.consensus_timestamp.minus(1).toString(),
-      recordFileId,
+      0,
       accountEntityIds[transaction.payerAccountId],
       accountEntityIds[NODE_ACCOUNT_ID],
       transaction.result,

@@ -1,7 +1,6 @@
 {
   "description": "Account api calls for all accounts",
   "setup": {
-    "filename": "accountsnoarg",
     "accounts": [
       {
         "entity_num": 1

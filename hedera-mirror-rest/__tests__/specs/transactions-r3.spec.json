@@ -1,7 +1,6 @@
 {
   "description": "R3-style transferlist (already itemized by HAPI)",
   "setup": {
-    "filename": "r3transferlist",
     "accounts": [
       {
         "entity_num": 1234

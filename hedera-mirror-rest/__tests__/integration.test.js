@@ -101,7 +101,6 @@ const setupData = async function() {
  */
 const addCryptoTransferTransaction = async function(
   consensusTimestamp,
-  fileId,
   payerAccountId,
   recipientAccountId,
   amount,
@@ -214,11 +213,9 @@ test('DB integration test - transactions.reqToSql - invalid account', async () =
 });
 
 test('DB integration test - transactions.reqToSql - null validDurationSeconds and maxFee inserts', async () => {
-  let fileId = await integrationDomainOps.addRecordFile('nodurationfee');
-
-  await addCryptoTransferTransaction(1062, fileId, '0.15.5', '0.15.4', 50, 5, null); // null maxFee
-  await addCryptoTransferTransaction(1063, fileId, '0.15.5', '0.15.4', 70, null, 777); // null validDurationSeconds
-  await addCryptoTransferTransaction(1064, fileId, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
+  await addCryptoTransferTransaction(1062, '0.15.5', '0.15.4', 50, 5, null); // null maxFee
+  await addCryptoTransferTransaction(1063, '0.15.5', '0.15.4', 70, null, 777); // null validDurationSeconds
+  await addCryptoTransferTransaction(1064, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
 
   let sql = transactions.reqToSql({query: {'account.id': '0.15.5'}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
@@ -249,8 +246,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
 });
 
 test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
-  let fileId = await integrationDomainOps.addRecordFile('unknowntypeandresult');
-  await addCryptoTransferTransaction(1070, fileId, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
+  await addCryptoTransferTransaction(1070, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
 
   let sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
@@ -267,16 +263,14 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
 });
 
 test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
-  let fileId = await integrationDomainOps.addRecordFile('accountrange');
-
   await createAndPopulateNewAccount(13, 15, 5, 10);
   await createAndPopulateNewAccount(63, 15, 6, 50);
   await createAndPopulateNewAccount(82, 15, 7, 100);
 
   // create 3 transactions - 9 transfers
-  await addCryptoTransferTransaction(2062, fileId, '0.15.13', '0.15.63', 50, 5000, 50);
-  await addCryptoTransferTransaction(2063, fileId, '0.15.63', '0.15.82', 70, 7000, 777);
-  await addCryptoTransferTransaction(2064, fileId, '0.15.82', '0.15.63', 20, 8000, -80);
+  await addCryptoTransferTransaction(2062, '0.15.13', '0.15.63', 50, 5000, 50);
+  await addCryptoTransferTransaction(2063, '0.15.63', '0.15.82', 70, 7000, 777);
+  await addCryptoTransferTransaction(2064, '0.15.82', '0.15.63', 20, 8000, -80);
 
   let sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.100']}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);

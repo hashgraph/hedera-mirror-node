@@ -1,7 +1,6 @@
 {
   "description": "Balance api calls for all accounts",
   "setup": {
-    "filename": "balancesnoarg",
     "accounts": [
       {
         "entity_num": 1,
