@@ -77,8 +77,8 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
-        recordFileRepository.save(recordFile);
         try {
+            recordFileRepository.save(recordFile);
             // commit the changes to the database
             connection.commit();
             closeConnectionAndStatements();
@@ -157,7 +157,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
         }
     }
 
-    void executeBatches() {
+    private void executeBatches() {
         try {
             int[] transactions = sqlInsertTransaction.executeBatch();
             int[] transferLists = sqlInsertTransferList.executeBatch();

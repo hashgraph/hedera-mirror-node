@@ -231,7 +231,6 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
             verify(ps).executeBatch();
         }
 
-        postgresWriter2.onEnd(new RecordFile(null, "fileName", 0L, 0L, "", "")); // close connections
         completeFileAndCommit();  // close postgresWriter
     }
 

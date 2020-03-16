@@ -21,9 +21,6 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import com.google.common.base.Stopwatch;
-
-import com.hedera.mirror.importer.exception.DuplicateFileException;
-
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -36,7 +33,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -51,6 +47,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.FileParser;
 import com.hedera.mirror.importer.parser.RecordStreamFileListener;
