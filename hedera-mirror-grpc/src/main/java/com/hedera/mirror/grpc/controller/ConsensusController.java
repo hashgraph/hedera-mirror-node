@@ -70,7 +70,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                 .onErrorMap(NonTransientDataAccessResourceException.class, e -> error(e, Status.UNAVAILABLE, DB_ERROR))
                 .onErrorMap(TimeoutException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
                 .onErrorMap(TopicNotFoundException.class, e -> error(e, Status.NOT_FOUND))
-                .onErrorMap(TransientDataAccessException.class, e -> error(e, Status.RESOURCE_EXHAUSTED, DB_ERROR))
+                .onErrorMap(TransientDataAccessException.class, e -> error(e, Status.RESOURCE_EXHAUSTED))
                 .onErrorMap(t -> unknownError(t));
     }
 
