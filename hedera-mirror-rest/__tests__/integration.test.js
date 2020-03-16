@@ -166,7 +166,7 @@ function extractNameAndResultFromTransactionResults(rows) {
 // TESTS
 //
 
-test('DB integration test - transactions.reqToSql - no query string - 3 txn 21 xfers', async () => {
+test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
   let sql = transactions.reqToSql({query: {}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(9);
@@ -183,7 +183,7 @@ test('DB integration test - transactions.reqToSql - no query string - 3 txn 21 x
   ]);
 });
 
-test('DB integration test - transactions.reqToSql - single valid account - 1 txn 7 xfers', async () => {
+test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
   let sql = transactions.reqToSql({query: {'account.id': `${shard}.${realm}.8`}});
   let res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(3);
