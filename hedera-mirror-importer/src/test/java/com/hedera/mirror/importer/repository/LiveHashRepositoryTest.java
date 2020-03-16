@@ -27,7 +27,6 @@ import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.LiveHash;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Transaction;
 
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
@@ -36,9 +35,8 @@ public class LiveHashRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-        RecordFile recordfile = insertRecordFile();
         Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(recordfile.getId(), entity, "CRYPTOADDCLAIM");
+        Transaction transaction = insertTransaction(entity, "CRYPTOADDCLAIM");
 
         LiveHash liveHash = new LiveHash();
         liveHash.setConsensusTimestamp(transaction.getConsensusNs());

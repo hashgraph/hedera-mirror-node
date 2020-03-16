@@ -25,16 +25,14 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Transaction;
 
 public class ContractResultRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-        RecordFile recordfile = insertRecordFile();
         Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(recordfile.getId(), entity, "CONTRACTCALL");
+        Transaction transaction = insertTransaction(entity, "CONTRACTCALL");
 
         ContractResult contractResult = new ContractResult();
         contractResult.setCallResult("CallResult".getBytes());

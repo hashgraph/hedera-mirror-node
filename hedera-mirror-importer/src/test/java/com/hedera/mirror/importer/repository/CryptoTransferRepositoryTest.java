@@ -26,15 +26,13 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Transaction;
 
 public class CryptoTransferRepositoryTest extends AbstractRepositoryTest {
     @Test
     void findByConsensusTimestampAndEntityNum() {
-        RecordFile recordfile = insertRecordFile();
         Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(recordfile.getId(), entity, "CRYPTOTRANSFER");
+        Transaction transaction = insertTransaction(entity, "CRYPTOTRANSFER");
 
         long consensusNs = transaction.getConsensusNs();
         long accountNum = 2;

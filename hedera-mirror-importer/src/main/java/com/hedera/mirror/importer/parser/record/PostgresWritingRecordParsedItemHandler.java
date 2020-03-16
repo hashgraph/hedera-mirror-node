@@ -20,12 +20,9 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Optional;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
@@ -39,12 +36,13 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
-import com.hedera.mirror.importer.util.Utility;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Log4j2
 @Named
@@ -60,60 +58,27 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
     private PreparedStatement sqlInsertTopicMessage;
     private final PostgresWriterProperties properties;
     private final DataSource dataSource;
+    private final RecordFileRepository recordFileRepository;
     private Connection connection;
 
     @Override
-    public Optional<RecordFile> onStart(StreamFileData streamFileData) {
+    public void onStart(StreamFileData streamFileData) {
         String fileName = streamFileData.getFilename();
+        if (recordFileRepository.findByName(fileName).size() > 0) {
+            throw new DuplicateFileException("File already exists in the database: " + fileName);
+        }
         try {
             initConnectionAndStatements();
-            long fileId;
-
-            try (CallableStatement fileCreate = connection.prepareCall("{? = call f_file_create( ? ) }")) {
-                fileCreate.registerOutParameter(1, Types.BIGINT);
-                fileCreate.setString(2, fileName);
-                fileCreate.execute();
-                fileId = fileCreate.getLong(1);
-            }
-
-            if (fileId == 0) {
-                log.trace("File {} already exists in the database.", fileName);
-                closeConnectionAndStatements();
-                return Optional.empty();
-            } else {
-                log.trace("Added file {} to the database.", fileName);
-            }
-            RecordFile recordFile = new RecordFile();
-            recordFile.setId(fileId);
-            recordFile.setName(fileName);
-            return Optional.of(recordFile);
         } catch (Exception e) {
-            throw new ParserException("Error saving file in database: " + fileName, e);
+            throw new ParserException("Error setting up connection and statements", e);
         }
     }
 
     @Override
     public void onEnd(RecordFile recordFile) {
-        try (CallableStatement fileClose = connection.prepareCall("{call f_file_complete( ?, ?, ? ) }")) {
-            executeBatches();
-
-            // update the file to processed
-
-            fileClose.setLong(1, recordFile.getId());
-
-            if (Utility.hashIsEmpty(recordFile.getFileHash())) {
-                fileClose.setObject(2, null);
-            } else {
-                fileClose.setString(2, recordFile.getFileHash());
-            }
-
-            if (Utility.hashIsEmpty(recordFile.getPreviousHash())) {
-                fileClose.setObject(3, null);
-            } else {
-                fileClose.setString(3, recordFile.getPreviousHash());
-            }
-
-            fileClose.execute();
+        executeBatches();
+        try {
+            recordFileRepository.save(recordFile);
             // commit the changes to the database
             connection.commit();
             closeConnectionAndStatements();
@@ -136,7 +101,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
         try {
             connection = dataSource.getConnection();
             connection.setAutoCommit(false); // do not auto-commit
-            connection.setClientInfo("ApplicationName", getClass().getName());
+            connection.setClientInfo("ApplicationName", getClass().getCanonicalName());
         } catch (SQLException e) {
             throw new ParserSQLException("Error setting up connection to database", e);
         }
@@ -144,9 +109,9 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             sqlInsertTransaction = connection.prepareStatement("INSERT INTO t_transactions"
                     + " (fk_node_acc_id, memo, valid_start_ns, type, fk_payer_acc_id"
                     + ", result, consensus_ns, fk_cud_entity_id, charged_tx_fee"
-                    + ", initial_balance, fk_rec_file_id, valid_duration_seconds, max_fee"
+                    + ", initial_balance, valid_duration_seconds, max_fee"
                     + ", transaction_hash, transaction_bytes)"
-                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             sqlInsertTransferList = connection.prepareStatement("INSERT INTO t_cryptotransferlists"
                     + " (consensus_timestamp, amount, realm_num, entity_num)"
@@ -192,7 +157,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
         }
     }
 
-    void executeBatches() {
+    private void executeBatches() {
         try {
             int[] transactions = sqlInsertTransaction.executeBatch();
             int[] transferLists = sqlInsertTransferList.executeBatch();
@@ -202,8 +167,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             int[] liveHashes = sqlInsertLiveHashes.executeBatch();
             int[] topicMessages = sqlInsertTopicMessage.executeBatch();
             log.info("Inserted {} transactions, {} transfer lists, {} files, {} contracts, {} claims, {} topic " +
-                            "messages, " +
-                            "{} non-fee transfers",
+                            "messages, {} non-fee transfers",
                     transactions.length, transferLists.length, fileData.length, contractResult.length,
                     liveHashes.length, topicMessages.length, nonFeeTransfers.length);
         } catch (SQLException e) {
@@ -222,8 +186,6 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             } else {
                 sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), null);
             }
-            sqlInsertTransaction.setLong(
-                    F_TRANSACTION.FK_REC_FILE_ID.ordinal(), 0); // deprecated. set to 0 until removed.
             sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), transaction.getNodeAccountId());
             sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), transaction.getMemo());
             sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), transaction.getValidStartNs());
@@ -337,7 +299,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
     enum F_TRANSACTION {
         ZERO // column indices start at 1, this creates the necessary offset
         , FK_NODE_ACCOUNT_ID, MEMO, VALID_START_NS, TYPE, FK_PAYER_ACCOUNT_ID, RESULT, CONSENSUS_NS,
-        CUD_ENTITY_ID, CHARGED_TX_FEE, INITIAL_BALANCE, FK_REC_FILE_ID, VALID_DURATION_SECONDS, MAX_FEE,
+        CUD_ENTITY_ID, CHARGED_TX_FEE, INITIAL_BALANCE, VALID_DURATION_SECONDS, MAX_FEE,
         TRANSACTION_HASH, TRANSACTION_BYTES
     }
 

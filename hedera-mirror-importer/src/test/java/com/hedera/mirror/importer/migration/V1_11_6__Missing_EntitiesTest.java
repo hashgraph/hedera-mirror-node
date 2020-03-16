@@ -76,8 +76,6 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
     @Resource
     private EntityTypeRepository entityTypeRepository;
     @Resource
-    private RecordFileRepository recordFileRepository;
-    @Resource
     private MirrorProperties mirrorProperties;
     @Resource
     private JdbcTemplate jdbcTemplate;
@@ -124,17 +122,13 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
         Entities node = entity(2);
         Entities payer = entity(3);
 
-        RecordFile recordFile = new RecordFile();
-        recordFile.setName("foo.rcd");
-        recordFile = recordFileRepository.save(recordFile);
-
         long transactionTypeId = jdbcTemplate
                 .queryForObject("select id from t_transaction_types where name = ?", new Object[] {
                         "CRYPTOCREATEACCOUNT"}, Integer.class);
 
         jdbcTemplate.update("insert into t_transactions (consensus_ns, fk_cud_entity_id, fk_node_acc_id, " +
-                        "fk_payer_acc_id, fk_rec_file_id, fk_trans_type_id, valid_start_ns) values(?,?,?,?,?,?,?)",
-                1L, entity.getId(), node.getId(), payer.getId(), recordFile.getId(), transactionTypeId, 1L);
+                        "fk_payer_acc_id, fk_trans_type_id, valid_start_ns) values(?,?,?,?,?,?,?)",
+                1L, entity.getId(), node.getId(), payer.getId(), transactionTypeId, 1L);
 
         migration.migrate(new FlywayContext());
 

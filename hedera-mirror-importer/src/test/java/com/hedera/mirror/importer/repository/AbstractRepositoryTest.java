@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Transaction;
 
 @Transactional
@@ -54,15 +53,6 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     protected TransactionTypeRepository transactionTypeRepository;
     @Resource
     protected EntityTypeRepository entityTypeRepository;
-
-    protected final RecordFile insertRecordFile() {
-        String fileName = "testfile";
-        RecordFile recordFile = new RecordFile();
-        recordFile.setName(fileName);
-        recordFile = recordFileRepository.save(recordFile);
-
-        return recordFile;
-    }
 
     private Entities insertEntity(EntityType entityType) {
         Random rand = new Random();
@@ -90,13 +80,12 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
         return insertEntity(EntityType.contract);
     }
 
-    protected final Transaction insertTransaction(long recordFileId, Entities entity, String type) {
+    protected final Transaction insertTransaction(Entities entity, String type) {
         long chargedTxFee = 100;
         long consensusNs = 10;
         long validStartNs = 20;
 
         Transaction transaction = new Transaction();
-        transaction.setRecordFileId(recordFileId);
         transaction.setChargedTxFee(chargedTxFee);
         transaction.setConsensusNs(consensusNs);
         transaction.setEntity(entity);

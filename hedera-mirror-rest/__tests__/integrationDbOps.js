@@ -55,7 +55,6 @@ const NETWORK_FEE = 2;
 const SERVICE_FEE = 4;
 
 let accountEntityIds = {};
-let recordFileId;
 
 const isDockerInstalled = function() {
   return new Promise(resolve => {

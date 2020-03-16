@@ -27,7 +27,6 @@ const SERVICE_FEE = 4;
 
 let sqlConnection;
 let accountEntityIds;
-let recordFileId;
 
 const setUp = async function(testDataJson, sqlconn) {
   accountEntityIds = {};
@@ -117,13 +116,6 @@ const setAccountBalance = async function(account) {
   );
 };
 
-const addRecordFile = async function(recordFileName) {
-  let res = await sqlConnection.query('insert into t_record_files (name) values ($1) returning id;', [recordFileName]);
-
-  recordFileId = res.rows[0]['id'];
-  return recordFileId;
-};
-
 const addTransaction = async function(transaction) {
   transaction = Object.assign(
     {
@@ -141,11 +133,10 @@ const addTransaction = async function(transaction) {
   transaction.consensus_timestamp = math.bignumber(transaction.consensus_timestamp);
 
   await sqlConnection.query(
-    'insert into t_transactions (consensus_ns, valid_start_ns, fk_rec_file_id, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee, charged_tx_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);',
+    'insert into t_transactions (consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee, charged_tx_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
     [
       transaction.consensus_timestamp.toString(),
       transaction.consensus_timestamp.minus(1).toString(),
-      0,
       accountEntityIds[transaction.payerAccountId],
       accountEntityIds[transaction.nodeAccountId],
       transaction.result,
@@ -196,7 +187,6 @@ const addCryptoTransaction = async function(cryptoTransfer) {
 module.exports = {
   addAccount: addAccount,
   addCryptoTransaction: addCryptoTransaction,
-  addRecordFile: addRecordFile,
   addTransaction: addTransaction,
   loadAccounts: loadAccounts,
   loadBalances: loadBalances,

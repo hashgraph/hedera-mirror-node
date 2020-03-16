@@ -32,15 +32,8 @@ public class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-        RecordFile recordFile = new RecordFile();
-        recordFile.setName("testfile");
-        recordFile.setFileHash("fileHash");
-        recordFile.setLoadEnd(20L);
-        recordFile.setLoadStart(30L);
-        recordFile.setPreviousHash("previousHash");
-
+        RecordFile recordFile = new RecordFile(null, "fileName", 20L, 30L, "fileHash", "previousHash");
         recordFile = recordFileRepository.save(recordFile);
-
         Assertions.assertThat(recordFileRepository.findById(recordFile.getId()).get())
                 .isNotNull()
                 .isEqualTo(recordFile);

@@ -64,11 +64,6 @@ public class Transaction implements Persistable<Long> {
     @ManyToOne(cascade = CascadeType.PERSIST)
     private Entities entity;
 
-    // Deprecated, value set to 0 until removed.
-    @Column(name = "fk_rec_file_id")
-    @Deprecated(forRemoval = true, since = "v0.7.0")
-    private Long recordFileId;
-
     private Long validStartNs;
 
     private Long validDurationSeconds;

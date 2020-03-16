@@ -93,7 +93,6 @@ const setupData = async function() {
 /**
  * Add a crypto transfer from A to B with A also paying 1 tinybar to account number 2 (fee)
  * @param consensusTimestamp
- * @param fileId
  * @param payerAccountId
  * @param recipientAccountId
  * @param amount

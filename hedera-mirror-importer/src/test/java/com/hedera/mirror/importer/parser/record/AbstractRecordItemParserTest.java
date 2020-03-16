@@ -22,8 +22,12 @@ package com.hedera.mirror.importer.parser.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.importer.parser.RecordStreamFileListener;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -55,7 +59,6 @@ import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
-import com.hedera.mirror.importer.repository.TransactionResultRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 //Class manually commits so have to manually cleanup tables
@@ -76,8 +79,6 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
     @Resource
     protected FileDataRepository fileDataRepository;
     @Resource
-    protected TransactionResultRepository transactionResultRepository;
-    @Resource
     protected EntityTypeRepository entityTypeRepository;
     @Resource
     protected TopicMessageRepository topicMessageRepository;
@@ -91,7 +92,7 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
     protected RecordParserProperties parserProperties;
 
     @Resource
-    protected PostgresWritingRecordParsedItemHandler postgresWriter;
+    protected RecordStreamFileListener recordStreamFileListener;
 
     protected static SignatureMap getSigMap() {
         String key1 = "11111111111111111111c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";
@@ -147,9 +148,11 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
-        RecordFile recordFile = postgresWriter.onStart(new StreamFileData(UUID.randomUUID().toString(), null)).get();
+        String fileName = UUID.randomUUID().toString();
+        recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
         recordItemParser.onItem(recordItem);
-        postgresWriter.onEnd(recordFile);
+        // commit, close connection
+        recordStreamFileListener.onEnd(new RecordFile(null, fileName, 0L, 0L, UUID.randomUUID().toString(), ""));
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {
