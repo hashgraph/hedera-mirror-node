@@ -123,9 +123,11 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
-        recordStreamFileListener.onStart(new StreamFileData(UUID.randomUUID().toString(), null)); // open connection
+        String fileName = UUID.randomUUID().toString();
+        recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
         recordItemParser.onItem(recordItem);
-        recordStreamFileListener.onEnd(new RecordFile("fileName", 0L, 0L, "", "")); // commit, close connection
+        // commit, close connection
+        recordStreamFileListener.onEnd(new RecordFile(null, fileName, 0L, 0L, UUID.randomUUID().toString(), ""));
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {

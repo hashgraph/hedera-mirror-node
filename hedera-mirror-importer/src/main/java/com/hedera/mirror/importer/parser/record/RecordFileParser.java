@@ -21,6 +21,9 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import com.google.common.base.Stopwatch;
+
+import com.hedera.mirror.importer.exception.DuplicateFileException;
+
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -143,12 +146,10 @@ public class RecordFileParser implements FileParser {
     public void loadRecordFile(StreamFileData streamFileData) throws IOException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         long loadStart = Instant.now().getEpochSecond();
+        recordStreamFileListener.onStart(streamFileData);
         String fileName = streamFileData.getFilename();
         String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(
                 ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
-        if (!recordStreamFileListener.onStart(streamFileData)) {
-            return; // skip file
-        }
         long counter = 0;
         Integer recordFileVersion = 0;
         Boolean success = false;
@@ -235,7 +236,7 @@ public class RecordFileParser implements FileParser {
             }
             String thisFileHash = Hex.encodeHexString(Utility.getFileHash(fileName));
             log.trace("Calculated file hash for the current file {}", thisFileHash);
-            recordStreamFileListener.onEnd(new RecordFile(fileName, loadStart, Instant.now().getEpochSecond(),
+            recordStreamFileListener.onEnd(new RecordFile(null, fileName, loadStart, Instant.now().getEpochSecond(),
                     thisFileHash, expectedPrevFileHash));
 
             if (!Utility.hashIsEmpty(thisFileHash)) {
@@ -277,7 +278,9 @@ public class RecordFileParser implements FileParser {
             } catch (Exception e) {
                 log.error("Error parsing file {}", name, e);
                 recordStreamFileListener.onError();
-                return;
+                if (!(e instanceof DuplicateFileException)) { // if DuplicateFileException, continue with other files
+                    return;
+                }
             }
         }
     }

@@ -36,6 +36,7 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
@@ -61,18 +62,15 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
     private Connection connection;
 
     @Override
-    public boolean onStart(StreamFileData streamFileData) {
+    public void onStart(StreamFileData streamFileData) {
         String fileName = streamFileData.getFilename();
+        if (recordFileRepository.findByName(fileName).size() > 0) {
+            throw new DuplicateFileException("File already exists in the database: " + fileName);
+        }
         try {
             initConnectionAndStatements();
-            if (recordFileRepository.findById(fileName).isPresent()) {
-                log.trace("File {} already exists in the database.", fileName);
-                closeConnectionAndStatements();
-                return false;
-            }
-            return true;
         } catch (Exception e) {
-            throw new ParserException("Error saving file in database: " + fileName, e);
+            throw new ParserException("Error setting up connection and statements", e);
         }
     }
 

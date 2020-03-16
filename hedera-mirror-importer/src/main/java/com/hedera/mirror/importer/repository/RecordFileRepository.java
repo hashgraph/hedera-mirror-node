@@ -24,5 +24,8 @@ import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 
-public interface RecordFileRepository extends CrudRepository<RecordFile, String> {
+import java.util.List;
+
+public interface RecordFileRepository extends CrudRepository<RecordFile, Long> {
+    List<RecordFile> findByName(String name);
 }

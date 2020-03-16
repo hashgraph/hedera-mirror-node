@@ -1,10 +1,10 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 Hedera Hashgraph, LLC
+ * Copyright (C) 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,31 +20,19 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+public class DuplicateFileException extends ImporterException {
 
-import javax.persistence.*;
+    private static final long serialVersionUID = 3080406728758534575L;
 
-@Data
-@Entity
-@AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "t_record_files")
-public class RecordFile {
+    public DuplicateFileException(String message) {
+        super(message);
+    }
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    public DuplicateFileException(Throwable throwable) {
+        super(throwable);
+    }
 
-    private String name;
-
-    private Long loadStart;
-
-    private Long loadEnd;
-
-    private String fileHash;
-
-    @Column(name = "prev_hash")
-    private String previousHash;
+    public DuplicateFileException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

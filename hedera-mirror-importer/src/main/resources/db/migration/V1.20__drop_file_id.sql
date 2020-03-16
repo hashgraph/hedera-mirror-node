@@ -1,7 +1,5 @@
 -- Drop id in t_record_files
 
-ALTER TABLE IF EXISTS t_record_files
-    DROP COLUMN IF EXISTS id;
 ALTER TABLE IF EXISTS t_transactions
     DROP COLUMN IF EXISTS fk_rec_file_id;
 
