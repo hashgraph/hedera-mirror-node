@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /*-
- *
+ * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * ‍
  */
 
 const fs = require('fs');
@@ -60,10 +60,10 @@ const sampleEntityIds = n => {
  */
 const sampleConsensusTimestamps = n => {
   return pool
-    .query(`select consensus_ns as value from t_transactions order by RANDOM() limit ${n};`, null)
-    .then(result => {
-      return result.rows.map(getRowValueAsInt);
-    });
+          .query(`select consensus_ns as value from t_transactions order by RANDOM() limit ${n};`, null)
+          .then(result => {
+            return result.rows.map(getRowValueAsInt);
+          });
 };
 
 /**
@@ -71,10 +71,10 @@ const sampleConsensusTimestamps = n => {
  */
 const sampleBalanceValues = n => {
   return pool
-    .query(`select balance as value from account_balances order by RANDOM() limit ${n};`, null)
-    .then(result => {
-      return result.rows.map(getRowValueAsInt);
-    });
+          .query(`select balance as value from account_balances order by RANDOM() limit ${n};`, null)
+          .then(result => {
+            return result.rows.map(getRowValueAsInt);
+          });
 };
 
 /**
@@ -114,13 +114,13 @@ const makeQuerySet = async test => {
   } else if (test.filterAxis === 'CONSENSUS_TIMESTAMP') {
     paramName = 'timestamp';
     paramValues = await populateParamValues(
-      test,
-      paramName,
-      'rangeDurationNanos',
-      sampleConsensusTimestamps,
-      sample => {
-        return timestampToParamValue(sample);
-      }
+            test,
+            paramName,
+            'rangeDurationNanos',
+            sampleConsensusTimestamps,
+            sample => {
+              return timestampToParamValue(sample);
+            }
     );
   } else if (test.filterAxis === 'ACCOUNTID') {
     paramName = 'account.id';

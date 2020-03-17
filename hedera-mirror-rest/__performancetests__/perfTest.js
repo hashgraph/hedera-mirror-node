@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /*-
- *
+ * ‌
  * Hedera Mirror Node
- *
- * Copyright (C) 2019 Hedera Hashgraph, LLC
- *
+ * ​
+ * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * ‍
  */
 
 // See testing.md for documentation
@@ -59,12 +59,12 @@ const executeQuerySet = async querySet => {
     let query = vsprintf(url, querySet.paramValues[i]);
     let hrstart = process.hrtime();
     let response = await fetch(query)
-      .then(response => {
-        return response.text();
-      })
-      .catch(error => {
-        console.log(`Error when querying ${query} : ${error}`);
-      });
+            .then(response => {
+              return response.text();
+            })
+            .catch(error => {
+              console.log(`Error when querying ${query} : ${error}`);
+            });
     let hrend = process.hrtime(hrstart);
     querySetResult.elapsedTimesMs.push(hrend[0] * 1000 + hrend[1] / 1000000);
     querySetResult.responseSizes.push(response.length);
