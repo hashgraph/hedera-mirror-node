@@ -61,20 +61,18 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
         }
 
         PollingContext context = new PollingContext(filter);
-        Duration frequency = retrieverProperties.getPollingFrequency();
-
         return Flux.defer(() -> poll(context))
                 .repeatWhen(Repeat.create(r -> !context.isComplete(), Long.MAX_VALUE)
-                        .fixedBackoff(frequency)
+                        .fixedBackoff(retrieverProperties.getPollingFrequency())
                         .jitter(Jitter.random(0.1))
                         .withBackoffScheduler(scheduler))
                 .name("retriever")
                 .metrics()
+                .retryBackoff(Long.MAX_VALUE, Duration.ofSeconds(1))
                 .timeout(retrieverProperties.getTimeout(), scheduler)
                 .doOnCancel(context::onComplete)
                 .doOnComplete(context::onComplete)
-                .doOnNext(context::onNext)
-                .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", frequency.toMillis(), filter));
+                .doOnNext(context::onNext);
     }
 
     private Flux<TopicMessage> poll(PollingContext context) {
@@ -82,15 +80,18 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
         TopicMessage last = context.getLast();
         int limit = filter.hasLimit() ? (int) (filter.getLimit() - context.getTotal().get()) : Integer.MAX_VALUE;
         int pageSize = Math.min(limit, retrieverProperties.getMaxPageSize());
-        Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
+        Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
+        context.getPageSize().set(0L);
 
         TopicMessageFilter newFilter = filter.toBuilder()
                 .limit(pageSize)
                 .startTime(startTime)
                 .build();
 
-        return topicMessageRepository.findByFilter(newFilter)
-                .doOnSubscribe(s -> context.getPageSize().set(0L));
+        log.debug("Executing query: {}", newFilter);
+        return Flux.fromStream(topicMessageRepository.findByFilter(newFilter))
+                .name("findByFilter")
+                .metrics();
     }
 
     @Data

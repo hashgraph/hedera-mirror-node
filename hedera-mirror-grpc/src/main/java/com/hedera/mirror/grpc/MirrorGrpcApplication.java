@@ -22,12 +22,11 @@ package com.hedera.mirror.grpc;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.data.r2dbc.R2dbcTransactionManagerAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import reactor.core.scheduler.Schedulers;
 
 @ConfigurationPropertiesScan
-@SpringBootApplication(exclude = R2dbcTransactionManagerAutoConfiguration.class)
+@SpringBootApplication
 public class MirrorGrpcApplication {
 
     public static void main(String[] args) {

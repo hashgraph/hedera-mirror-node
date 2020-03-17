@@ -69,14 +69,16 @@ public class PollingTopicListener implements TopicListener {
         TopicMessage last = context.getLast();
         int limit = filter.hasLimit() ? (int) (filter.getLimit() - context.getCount().get()) : Integer.MAX_VALUE;
         int pageSize = Math.min(limit, listenerProperties.getMaxPageSize());
-        Instant startTime = last != null ? last.getConsensusTimestamp().plusNanos(1) : filter.getStartTime();
+        Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
 
         TopicMessageFilter newFilter = filter.toBuilder()
                 .limit(pageSize)
                 .startTime(startTime)
                 .build();
 
-        return topicMessageRepository.findByFilter(newFilter);
+        return Flux.fromStream(topicMessageRepository.findByFilter(newFilter))
+                .name("findByFilter")
+                .metrics();
     }
 
     @Data

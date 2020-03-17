@@ -7,11 +7,6 @@ hedera:
         password: mirror_grpc_pass
         port: 5432
         username: mirror_grpc
-      connectionOptions:
-        default_transaction_read_only: "on"
-        idle_in_transaction_session_timeout: "30s"
-        lock_timeout: "30s"
-        statement_timeout: "120s"
       port: 5600
 grpc:
   server:
@@ -20,6 +15,8 @@ logging:
   level:
     root: warn
     com.hedera.mirror.grpc: info
+    # org.hibernate.SQL: debug
+    # org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
   metrics:
     export:
@@ -34,10 +31,24 @@ server:
 spring:
   application:
     name: hedera-mirror-grpc
-  r2dbc:
+  datasource:
     name: ${hedera.mirror.grpc.db.name}
     password: ${hedera.mirror.grpc.db.password}
-    url: r2dbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}?useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     username: ${hedera.mirror.grpc.db.username}
-    pool:
-      max-size: 100
+    hikari:
+      connection-timeout: 3000
+      data-source-properties:
+        idle_in_transaction_session_timeout: "30000"
+        lock_timeout: "10000"
+        statement_timeout: "60000"
+      maximum-pool-size: 50
+      minimum-idle: 4
+      validation-timeout: 3000
+  jpa:
+    database: postgresql
+    properties:
+      hibernate.generate_statistics: true
+  test:
+    database:
+      replace: NONE

@@ -20,9 +20,10 @@ package com.hedera.mirror.grpc.repository;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
-import reactor.test.StepVerifier;
 
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
@@ -38,15 +39,11 @@ public class EntityRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findByCompositeKey() {
-        entityRepository.findByCompositeKey(0, 0, 999)
-                .as(StepVerifier::create)
-                .expectNextCount(0)
-                .verifyComplete();
+        assertThat(entityRepository.findByCompositeKey(0, 0, 999)).isNotPresent();
 
         Entity entity = domainBuilder.entity().block();
-        entityRepository.findByCompositeKey(0, entity.getEntityRealm(), entity.getEntityNum())
-                .as(StepVerifier::create)
-                .expectNextMatches(e -> e.getEntityNum() == entity.getEntityNum())
-                .verifyComplete();
+        assertThat(entityRepository.findByCompositeKey(0, entity.getEntityRealm(), entity.getEntityNum()))
+                .get()
+                .isEqualTo(entity);
     }
 }

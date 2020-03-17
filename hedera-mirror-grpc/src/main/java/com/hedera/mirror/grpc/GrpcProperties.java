@@ -23,6 +23,7 @@ package com.hedera.mirror.grpc;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -42,6 +43,9 @@ public class GrpcProperties {
 
     @NotNull
     private Duration endTimeInterval = Duration.ofSeconds(30);
+
+    @Min(1)
+    private int entityCacheSize = 50_000;
 
     @NotNull
     private NettyProperties netty = new NettyProperties();

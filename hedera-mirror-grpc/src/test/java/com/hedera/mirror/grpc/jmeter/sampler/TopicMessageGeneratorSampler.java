@@ -22,7 +22,6 @@ package com.hedera.mirror.grpc.jmeter.sampler;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -50,7 +49,6 @@ public class TopicMessageGeneratorSampler {
 
         long topicNum = messageGen.getTopicNum();
         connectionHandler.clearTopicMessages(topicNum, messageGen.getDeleteFromSequence());
-        topicNum = topicNum == -1 ? connectionHandler.getNextAvailableTopicID() : topicNum;
 
         populateHistoricalMessages(messageGen);
         generateIncomingMessages(messageGen);
@@ -58,11 +56,8 @@ public class TopicMessageGeneratorSampler {
     }
 
     private void populateHistoricalMessages(MessageGenerator messageGenerator) {
-        if (messageGenerator.getHistoricMessagesCount() > 0) {
-            Instant pastInstant = Instant.EPOCH.plus(7, ChronoUnit.DAYS);
-            connectionHandler.insertTopicMessage(messageGenerator.getHistoricMessagesCount(), messageGenerator
-                    .getTopicNum(), Instant.now(), -1);
-        }
+        connectionHandler.insertTopicMessage(messageGenerator.getHistoricMessagesCount(), messageGenerator
+                .getTopicNum(), Instant.now(), -1);
 
         // all messages from this point will be considered future
         INCOMING_START = Instant.now();

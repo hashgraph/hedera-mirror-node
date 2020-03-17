@@ -31,6 +31,7 @@ import java.time.Duration;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.client.inject.GrpcClient;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -44,6 +45,7 @@ import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.listener.ListenerProperties;
 import com.hedera.mirror.grpc.listener.SharedPollingTopicListener;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
@@ -59,16 +61,25 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     private DomainBuilder domainBuilder;
 
     @Resource
+    private ListenerProperties listenerProperties;
+
+    @Resource
     private SharedPollingTopicListener sharedPollingTopicListener;
 
     @BeforeEach
     void setup() {
+        listenerProperties.setEnabled(true);
         domainBuilder.entity().block();
         sharedPollingTopicListener.init();  // Clear the buffer between runs
     }
 
+    @AfterEach
+    void after() {
+        listenerProperties.setEnabled(false);
+    }
+
     @Test
-    void missingTopicID() throws Exception {
+    void missingTopicID() {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder().build();
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
@@ -77,7 +88,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void constraintViolationException() throws Exception {
+    void constraintViolationException() {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setTopicID(TopicID.newBuilder().build())
                 .setLimit(-1)
@@ -198,7 +209,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
     private ConsensusTopicResponse response(TopicMessage topicMessage) throws Exception {
         return ConsensusTopicResponse.newBuilder()
-                .setConsensusTimestamp(ProtoUtil.toTimestamp(topicMessage.getConsensusTimestamp()))
+                .setConsensusTimestamp(ProtoUtil.toTimestamp(topicMessage.getConsensusTimestampInstant()))
                 .setMessage(ByteString.copyFrom(topicMessage.getMessage()))
                 .setSequenceNumber(topicMessage.getSequenceNumber())
                 .setRunningHash(ByteString.copyFrom(topicMessage.getRunningHash()))

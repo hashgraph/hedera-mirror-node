@@ -20,17 +20,23 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
+import javax.persistence.Column;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
-import org.springframework.data.relational.core.mapping.Table;
+import lombok.NoArgsConstructor;
 
 @Builder
 @Data
-@Table("t_entities")
+@javax.persistence.Entity(name = "t_entities")
+@NoArgsConstructor
+@AllArgsConstructor
 public class Entity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long entityNum;
@@ -39,6 +45,6 @@ public class Entity {
 
     private Long entityShard;
 
-    @Column("fk_entity_type_id")
+    @Column(name = "fk_entity_type_id")
     private EntityType entityTypeId;
 }
