@@ -15,7 +15,7 @@ hedera:
         username: mirror_node
       endTimeInterval: 100ms
       listener:
-        enabled: false
+        enabled: false # Disabled except in tests that use it since it polls in background repeatedly every 50ms
         pollingFrequency: 50ms
       retriever:
         pollingFrequency: 50ms
