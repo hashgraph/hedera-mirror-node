@@ -9,9 +9,9 @@ package com.hedera.mirror.grpc.service;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,6 +28,7 @@ import javax.inject.Named;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.reactivestreams.Subscription;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -120,18 +121,24 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
         TopicMessage last = topicContext.getLastTopicMessage();
         TopicMessageFilter filter = topicContext.getFilter();
+        long numMissingMessages = Math.abs(current.getSequenceNumber() - last.getSequenceNumber() - 1);
+
         TopicMessageFilter newFilter = filter.toBuilder()
                 .endTime(current.getConsensusTimestampInstant())
-                .limit(current.getSequenceNumber() - last.getSequenceNumber() - 1)
+                .limit(numMissingMessages)
                 .startTime(last.getConsensusTimestampInstant().plusNanos(1))
                 .build();
 
-        log.info("[{}] Querying topic {} for missing messages between sequence {} and {}",
-                filter.getSubscriberId(), topicContext.getTopicId(), last.getSequenceNumber(),
-                current.getSequenceNumber());
+        MissingMessageContext missingMessageContext = new MissingMessageContext(last.getSequenceNumber(), current
+                .getSequenceNumber(), newFilter, numMissingMessages);
 
         return topicMessageRetriever.retrieve(newFilter)
-                .concatWithValues(current);
+                .concatWithValues(current)
+                .name("findMissing")
+                .metrics()
+                .doOnSubscribe(missingMessageContext::onStart)
+                .doOnNext(missingMessageContext::onNext)
+                .doOnComplete(missingMessageContext::onEnd);
     }
 
     @Data
@@ -188,6 +195,55 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             lastTopicMessage = topicMessage;
             count.incrementAndGet();
             log.trace("[{}] Topic {} received message #{}: {}", filter.getSubscriberId(), topicId, count, topicMessage);
+        }
+    }
+
+    @Data
+    private class MissingMessageContext {
+        private final long startingSequence;
+        private final long endingSequence;
+        private final TopicMessageFilter topicMessageFilter;
+        private final long numMissingMessages;
+        private final AtomicLong count = new AtomicLong(0L);
+        private final Stopwatch stopwatch = Stopwatch.createUnstarted();
+        private volatile TopicMessage lastMessage;
+        private String topicId;
+
+        void onNext(TopicMessage topicMessage) {
+            if (topicMessage.getSequenceNumber() < startingSequence || topicMessage
+                    .getSequenceNumber() >= endingSequence) {
+                log.trace("Out of range Topic message: {}, ignore as a missing message", topicMessage);
+                return;
+            }
+
+            count.incrementAndGet();
+            lastMessage = topicMessage;
+            log.trace("Next missing message: {}", topicMessage);
+        }
+
+        void onStart(Subscription subscription) {
+            count.set(0L);
+            stopwatch.reset().start();
+            topicId = grpcProperties.getShard() + "." + topicMessageFilter.getRealmNum() + "." + topicMessageFilter
+                    .getTopicNum();
+            log.info("[{}] Querying topic {} for missing messages between sequence {} and {}",
+                    topicMessageFilter.getSubscriberId(), topicId, startingSequence, endingSequence);
+        }
+
+        void onEnd() {
+            var elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+            var rate = elapsed > 0 ? (int) (1000.0 * count.get() / elapsed) : 0;
+            log.debug("Finished querying for missing messages with {} messages in {} ({}/s)", count, stopwatch, rate);
+
+            long numMessagesLeft = numMissingMessages - count.get();
+            if (numMessagesLeft > 0) {
+                log.debug("Failed to retrieve {} of {} total missing messages. Last topic message: {}", numMessagesLeft
+                        , numMissingMessages, lastMessage);
+                throw new IllegalStateException(String
+                        .format("Unable to retrieve %s missing messages between %s and %s for topic %s",
+                                numMessagesLeft, lastMessage == null ? startingSequence : lastMessage
+                                        .getSequenceNumber(), endingSequence, topicId));
+            }
         }
     }
 }
