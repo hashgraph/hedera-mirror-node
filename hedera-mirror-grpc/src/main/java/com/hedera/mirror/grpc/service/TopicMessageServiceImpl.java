@@ -9,9 +9,9 @@ package com.hedera.mirror.grpc.service;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,7 +62,6 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         return topicExists(filter).thenMany(topicMessageRetriever.retrieve(filter)
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
-                .concatMap(t -> missingMessages(topicContext, t))
                 .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestampInstant()
                         .isBefore(filter.getEndTime()))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
@@ -96,7 +95,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .build();
 
         return topicListener.listen(newFilter)
-                .takeUntilOther(pastEndTime(topicContext));
+                .takeUntilOther(pastEndTime(topicContext))
+                .concatMap(t -> missingMessages(topicContext, t));
     }
 
     private Flux<Object> pastEndTime(TopicContext topicContext) {
@@ -119,19 +119,34 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         TopicMessage last = topicContext.getLastTopicMessage();
-        TopicMessageFilter filter = topicContext.getFilter();
-        TopicMessageFilter newFilter = filter.toBuilder()
+        long numMissingMessages = current.getSequenceNumber() - last.getSequenceNumber() - 1;
+
+        // fail fast on out of order messages
+        if (numMissingMessages < -1) {
+            throw new IllegalStateException(String
+                    .format("Encountered out of order missing messages, last: %s, current: %s", last, current));
+        }
+
+        // ignore duplicate message already processed by larger subscribe context
+        if (numMissingMessages == -1) {
+            log.debug("Encountered duplicate missing message to be ignored, last: {}, current: {}", last, current);
+            return Flux.empty();
+        }
+
+        TopicMessageFilter newFilter = topicContext.getFilter().toBuilder()
                 .endTime(current.getConsensusTimestampInstant())
-                .limit(current.getSequenceNumber() - last.getSequenceNumber() - 1)
+                .limit(numMissingMessages)
                 .startTime(last.getConsensusTimestampInstant().plusNanos(1))
                 .build();
 
         log.info("[{}] Querying topic {} for missing messages between sequence {} and {}",
-                filter.getSubscriberId(), topicContext.getTopicId(), last.getSequenceNumber(),
+                newFilter.getSubscriberId(), topicContext.getTopicId(), last.getSequenceNumber(),
                 current.getSequenceNumber());
 
         return topicMessageRetriever.retrieve(newFilter)
-                .concatWithValues(current);
+                .concatWithValues(current)
+                .name("findMissing")
+                .metrics();
     }
 
     @Data
@@ -185,6 +200,12 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         void onNext(TopicMessage topicMessage) {
+            if (!isNext(topicMessage)) {
+                throw new IllegalStateException(String
+                        .format("Encountered out of order messages, last: %s, current: %s", lastTopicMessage,
+                                topicMessage));
+            }
+
             lastTopicMessage = topicMessage;
             count.incrementAndGet();
             log.trace("[{}] Topic {} received message #{}: {}", filter.getSubscriberId(), topicId, count, topicMessage);
