@@ -570,7 +570,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         topicMessageService.subscribeTopic(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 8L)
+                .expectNext(1L, 2L, 3L, 4L, 5L, 6L)
                 .expectError(IllegalStateException.class)
                 .verify(Duration.ofMillis(700));
     }
@@ -586,13 +586,13 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         topicMessageService.subscribeTopic(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .expectNext(1L, 2L, 3L, 4L, 8L)
+                .expectNext(1L, 2L, 3L, 4L)
                 .expectError(IllegalStateException.class)
                 .verify(Duration.ofMillis(700));
     }
 
     @Test
-    void missingMessagesFromRetriever() {
+    void missingMessagesFromRetrieverAndListener() {
         TopicListener topicListener = Mockito.mock(TopicListener.class);
         EntityRepository entityRepository = Mockito.mock(EntityRepository.class);
         TopicMessageRetriever topicMessageRetriever = Mockito.mock(TopicMessageRetriever.class);
@@ -628,7 +628,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers
                 .any()))
                 .thenReturn(Flux.just(retrieved1),
-                        Flux.empty(), // missing historic
+                        Flux.just(retrieved2), // missing historic
                         Flux.just(
                                 topicMessage(5), // missing incoming
                                 topicMessage(6),
@@ -637,8 +637,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         topicMessageService.subscribeTopic(retrieverFilter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .expectNext(1L, 3L)
-                .expectError(IllegalStateException.class)
+                .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
+                .expectComplete()
                 .verify(Duration.ofMillis(700));
     }
 

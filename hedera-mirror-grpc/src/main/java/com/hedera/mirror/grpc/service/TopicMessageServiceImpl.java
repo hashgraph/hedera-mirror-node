@@ -28,7 +28,6 @@ import javax.inject.Named;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.reactivestreams.Subscription;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -63,7 +62,6 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         return topicExists(filter).thenMany(topicMessageRetriever.retrieve(filter)
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
                 .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0) // Ignore duplicates
-                .concatMap(t -> missingMessages(topicContext, t))
                 .takeWhile(t -> filter.getEndTime() == null || t.getConsensusTimestampInstant()
                         .isBefore(filter.getEndTime()))
                 .as(t -> filter.hasLimit() ? t.limitRequest(filter.getLimit()) : t)
@@ -97,7 +95,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .build();
 
         return topicListener.listen(newFilter)
-                .takeUntilOther(pastEndTime(topicContext));
+                .takeUntilOther(pastEndTime(topicContext))
+                .concatMap(t -> missingMessages(topicContext, t));
     }
 
     private Flux<Object> pastEndTime(TopicContext topicContext) {
@@ -122,9 +121,15 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         TopicMessage last = topicContext.getLastTopicMessage();
         long numMissingMessages = current.getSequenceNumber() - last.getSequenceNumber() - 1;
 
-        // ignore messages flowing to this missing messages context but already processed by larger subscribe context
-        if (numMissingMessages <= -1) {
-            log.debug("Encountered out of order messages, last: {}, current: {}", last, current);
+        // fail fast on out of order messages
+        if (numMissingMessages < -1) {
+            throw new IllegalStateException(String
+                    .format("Encountered out of order missing messages, last: %s, current: %s", last, current));
+        }
+
+        // ignore duplicate message already processed by larger subscribe context
+        if (numMissingMessages == -1) {
+            log.debug("Encountered duplicate missing message to be ignored, last: {}, current: {}", last, current);
             return Flux.empty();
         }
 
@@ -134,16 +139,14 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .startTime(last.getConsensusTimestampInstant().plusNanos(1))
                 .build();
 
-        MissingMessageContext missingMessageContext = new MissingMessageContext(last.getSequenceNumber(),
-                current.getSequenceNumber(), newFilter, numMissingMessages);
+        log.info("[{}] Querying topic {} for missing messages between sequence {} and {}",
+                newFilter.getSubscriberId(), topicContext.getTopicId(), last.getSequenceNumber(),
+                current.getSequenceNumber());
 
         return topicMessageRetriever.retrieve(newFilter)
                 .concatWithValues(current)
                 .name("findMissing")
-                .metrics()
-                .doOnSubscribe(missingMessageContext::onStart)
-                .doOnNext(missingMessageContext::onNext)
-                .doOnComplete(missingMessageContext::onEnd);
+                .metrics();
     }
 
     @Data
@@ -197,61 +200,15 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         void onNext(TopicMessage topicMessage) {
+            if (!isNext(topicMessage)) {
+                throw new IllegalStateException(String
+                        .format("Encountered out of order messages, last: %s, current: %s", lastTopicMessage,
+                                topicMessage));
+            }
+
             lastTopicMessage = topicMessage;
             count.incrementAndGet();
             log.trace("[{}] Topic {} received message #{}: {}", filter.getSubscriberId(), topicId, count, topicMessage);
-        }
-    }
-
-    /*
-     * Provides logic to easily track missing messages encountered and ensure all are retrieved
-     */
-    @Data
-    private class MissingMessageContext {
-        private final long startingSequence;
-        private final long endingSequence;
-        private final TopicMessageFilter topicMessageFilter;
-        private final long numMissingMessages;
-        private final AtomicLong count = new AtomicLong(0L);
-        private final Stopwatch stopwatch = Stopwatch.createUnstarted();
-        private volatile TopicMessage lastMessage;
-        private String topicId;
-
-        void onNext(TopicMessage topicMessage) {
-            if (topicMessage.getSequenceNumber() < startingSequence || topicMessage
-                    .getSequenceNumber() >= endingSequence) {
-                log.trace("Out of range Topic message: {}, ignore as a missing message", topicMessage);
-                return;
-            }
-
-            count.incrementAndGet();
-            lastMessage = topicMessage;
-            log.trace("Next missing message: {}", topicMessage);
-        }
-
-        void onStart(Subscription subscription) {
-            count.set(0L);
-            stopwatch.reset().start();
-            topicId = grpcProperties.getShard() + "." + topicMessageFilter.getRealmNum() + "." + topicMessageFilter
-                    .getTopicNum();
-            log.info("[{}] Querying topic {} for missing messages between sequence {} and {}",
-                    topicMessageFilter.getSubscriberId(), topicId, startingSequence, endingSequence);
-        }
-
-        void onEnd() {
-            var elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-            var rate = elapsed > 0 ? (int) (1000.0 * count.get() / elapsed) : 0;
-            log.debug("Finished querying for missing messages with {} messages in {} ({}/s)", count, stopwatch, rate);
-
-            long numMessagesLeft = numMissingMessages - count.get();
-            if (numMessagesLeft > 0) {
-                log.debug("Failed to retrieve {} of {} total missing messages. Last topic message: {}", numMessagesLeft
-                        , numMissingMessages, lastMessage);
-                throw new IllegalStateException(String
-                        .format("Unable to retrieve %s missing messages between sequence %s and %s for topic %s",
-                                numMessagesLeft, lastMessage == null ? startingSequence : lastMessage
-                                        .getSequenceNumber(), endingSequence, topicId));
-            }
         }
     }
 }
