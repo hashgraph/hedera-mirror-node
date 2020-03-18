@@ -120,17 +120,22 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         TopicMessage last = topicContext.getLastTopicMessage();
-        TopicMessageFilter filter = topicContext.getFilter();
-        long numMissingMessages = Math.abs(current.getSequenceNumber() - last.getSequenceNumber() - 1);
+        long numMissingMessages = current.getSequenceNumber() - last.getSequenceNumber() - 1;
 
-        TopicMessageFilter newFilter = filter.toBuilder()
+        // ignore messages flowing to this missing messages context but already processed by larger subscribe context
+        if (numMissingMessages <= -1) {
+            log.debug("Encountered out of order messages, last: {}, current: {}", last, current);
+            return Flux.empty();
+        }
+
+        TopicMessageFilter newFilter = topicContext.getFilter().toBuilder()
                 .endTime(current.getConsensusTimestampInstant())
                 .limit(numMissingMessages)
                 .startTime(last.getConsensusTimestampInstant().plusNanos(1))
                 .build();
 
-        MissingMessageContext missingMessageContext = new MissingMessageContext(last.getSequenceNumber(), current
-                .getSequenceNumber(), newFilter, numMissingMessages);
+        MissingMessageContext missingMessageContext = new MissingMessageContext(last.getSequenceNumber(),
+                current.getSequenceNumber(), newFilter, numMissingMessages);
 
         return topicMessageRetriever.retrieve(newFilter)
                 .concatWithValues(current)
@@ -198,6 +203,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
     }
 
+    /*
+     * Provides logic to easily track missing messages encountered and ensure all are retrieved
+     */
     @Data
     private class MissingMessageContext {
         private final long startingSequence;
@@ -240,7 +248,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 log.debug("Failed to retrieve {} of {} total missing messages. Last topic message: {}", numMessagesLeft
                         , numMissingMessages, lastMessage);
                 throw new IllegalStateException(String
-                        .format("Unable to retrieve %s missing messages between %s and %s for topic %s",
+                        .format("Unable to retrieve %s missing messages between sequence %s and %s for topic %s",
                                 numMessagesLeft, lastMessage == null ? startingSequence : lastMessage
                                         .getSequenceNumber(), endingSequence, topicId));
             }
