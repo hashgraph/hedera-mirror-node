@@ -209,7 +209,7 @@ const getTransactions = function(req) {
 
   let query = reqToSql(req);
 
-  logger.debug('getTransactions query: ' + query.query + JSON.stringify(query.params));
+  logger.trace('getTransactions query: ' + query.query + JSON.stringify(query.params));
 
   // Execute query
   return pool.query(query.query, query.params).then(results => {
@@ -295,7 +295,7 @@ const getOneTransaction = function(req, res) {
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
-  logger.debug('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  logger.trace('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
   pool.query(pgSqlQuery, sqlParams, (error, results) => {

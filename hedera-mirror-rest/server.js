@@ -58,8 +58,7 @@ if (port === undefined || isNaN(Number(port))) {
 log4js.configure({
   appenders: {
     everything: {
-      type: 'file',
-      filename: '../logs/hedera_mirrornode_api_' + port + '.log' // ensure port is a legit number above
+      type: 'stdout'
     }
   },
   categories: {

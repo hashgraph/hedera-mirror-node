@@ -55,3 +55,11 @@ postgresql:
     synchronousCommit: "on"
   serviceAccount:
     enabled: true
+
+rest:
+  enabled: true
+  config:
+    hedera:
+      mirror:
+        db:
+          host: postgresql

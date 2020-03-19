@@ -1,10 +1,11 @@
-FROM node:12.10.0-alpine as build
+FROM node:13.10-alpine3.11 as build
 WORKDIR /usr/src/app
 COPY package*.json ./
-RUN npm install
+RUN npm install --no-package-lock
 
-FROM node:12.10.0-alpine
+FROM node:13.10-alpine3.11
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app .
 COPY . ./
+USER node
 CMD npm start

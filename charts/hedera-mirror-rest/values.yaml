@@ -1,0 +1,91 @@
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: rest
+
+annotations: {}
+
+config: {}
+
+labels:
+  role: app
+  tier: api
+
+fullnameOverride: ""
+
+global:
+  namespaceOverride: ""
+
+image:
+  pullPolicy: IfNotPresent
+  repository: gcr.io/mirrornode/hedera-mirror-rest
+  tag: 0.7.0
+
+imagePullSecrets: []
+
+livenessProbe:
+  httpGet:
+    path: /api/v1/transactions?limit=1
+    port: http
+  initialDelaySeconds: 10
+  timeoutSeconds: 2
+
+nodeSelector: {}
+
+podSecurityContext:
+  fsGroup: 1000
+
+priorityClassName: ""
+
+readinessProbe:
+  httpGet:
+    path: /api/v1/transactions?limit=1
+    port: http
+  initialDelaySeconds: 10
+  timeoutSeconds: 2
+
+replicas: 1
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 20m
+    memory: 32Mi
+
+revisionHistoryLimit: 3
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  port: 80
+  type: LoadBalancer
+
+serviceAccount:
+  create: true
+  # The name of the service account to use. If not set and create is true, a name is generated using the fullname template
+  name:
+
+terminationGracePeriodSeconds: 60
+
+tolerations: []
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 10%
+    maxUnavailable: 25%
+

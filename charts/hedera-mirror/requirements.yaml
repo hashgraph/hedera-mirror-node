@@ -28,4 +28,15 @@ dependencies:
       - database
       - sql
     version: 8.1.5
-
+  - alias: rest
+    condition: rest.enabled
+    name: hedera-mirror-rest
+    repository: file://../hedera-mirror-rest
+    tags:
+      - hedera
+      - mirror
+      - api
+      - http
+      - rest
+      - application
+    version: 0.1.0

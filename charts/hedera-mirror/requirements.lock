@@ -8,5 +8,8 @@ dependencies:
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
   version: 8.1.5
-digest: sha256:b5c34231131aaa4f26c901608166a2b918b47b54f962a057541da6b8de954820
-generated: "2020-01-28T14:33:45.145546-06:00"
+- name: hedera-mirror-rest
+  repository: file://../hedera-mirror-rest
+  version: 0.1.0
+digest: sha256:bb73a18e765b9d6d8ad4a562487f2837f80a09bc1c53591bc63e378141d9eab1
+generated: "2020-03-18T14:08:40.598097-05:00"
