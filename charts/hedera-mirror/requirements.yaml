@@ -3,40 +3,24 @@ dependencies:
     condition: grpc.enabled
     name: hedera-mirror-grpc
     repository: file://../hedera-mirror-grpc
-    tags:
-      - hedera
-      - mirror
-      - api
-      - grpc
-      - application
-    version: 0.1.0
+    version: ^0.1.0
   - alias: importer
     condition: importer.enabled
     name: hedera-mirror-importer
     repository: file://../hedera-mirror-importer
-    tags:
-      - hedera
-      - mirror
-      - importer
-      - application
-    version: 0.1.0
+    version: ^0.1.0
   - alias: postgresql
     condition: postgresql.enabled
     name: postgresql
     repository: https://charts.bitnami.com/bitnami
-    tags:
-      - database
-      - sql
-    version: 8.1.5
+    version: ^8.1.5
+  - alias: prometheus-operator
+    condition: prometheus-operator.enabled
+    name: prometheus-operator
+    repository: https://kubernetes-charts.storage.googleapis.com
+    version: ^8.12.3
   - alias: rest
     condition: rest.enabled
     name: hedera-mirror-rest
     repository: file://../hedera-mirror-rest
-    tags:
-      - hedera
-      - mirror
-      - api
-      - http
-      - rest
-      - application
-    version: 0.1.0
+    version: ^0.1.0

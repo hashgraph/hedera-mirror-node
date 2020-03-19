@@ -11,6 +11,10 @@ spec:
       targetPort: grpc
       protocol: TCP
       name: grpc
+    - port: 8081
+      targetPort: http
+      protocol: TCP
+      name: http
   selector:
     {{- include "hedera-mirror-grpc.selectorLabels" . | nindent 4 }}
   type: {{ .Values.service.type }}

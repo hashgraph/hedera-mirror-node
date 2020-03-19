@@ -12,21 +12,21 @@ annotations: {}
 
 config: {}
 
-labels:
-  role: app
-  tier: api
-
 fullnameOverride: ""
 
 global:
   namespaceOverride: ""
 
 image:
-  pullPolicy: IfNotPresent
+  pullPolicy: Never
   repository: gcr.io/mirrornode/hedera-mirror-rest
-  tag: 0.7.0
+  tag: latest
 
 imagePullSecrets: []
+
+labels:
+  role: app
+  tier: api
 
 livenessProbe:
   httpGet:
@@ -78,6 +78,9 @@ serviceAccount:
   # The name of the service account to use. If not set and create is true, a name is generated using the fullname template
   name:
 
+serviceMonitor:
+  enabled: true
+
 terminationGracePeriodSeconds: 60
 
 tolerations: []
@@ -87,4 +90,3 @@ updateStrategy:
   rollingUpdate:
     maxSurge: 10%
     maxUnavailable: 25%
-

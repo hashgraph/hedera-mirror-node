@@ -16,6 +16,10 @@ logging:
     #org.hibernate.SQL: debug
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
   metrics:
     export:
       elastic:
@@ -23,7 +27,7 @@ management:
         index: mirror
         step: 30s
     tags:
-      app: ${spring.application.name}
+      application: ${spring.application.name}
 spring:
   application:
     name: hedera-mirror-importer

@@ -15,20 +15,20 @@ config:
     mirror:
       dataPath: /var/lib/hedera-mirror-importer
 
-labels:
-  role: app
-
 fullnameOverride: ""
 
 global:
   namespaceOverride: ""
 
 image:
-  pullPolicy: IfNotPresent
+  pullPolicy: Never
   repository: gcr.io/mirrornode/hedera-mirror-importer
-  tag: 0.7.0
+  tag: latest
 
 imagePullSecrets: []
+
+labels:
+  role: app
 
 livenessProbe:
   httpGet:
@@ -89,10 +89,18 @@ securityContext:
   runAsNonRoot: true
   runAsUser: 1000
 
+service:
+  port: 8080
+  type: LoadBalancer
+
 serviceAccount:
   create: true
   # The name of the service account to use. If not set and create is true, a name is generated using the fullname template
   name:
+
+serviceMonitor:
+  enabled: true
+  interval: 30s
 
 terminationGracePeriodSeconds: 30
 

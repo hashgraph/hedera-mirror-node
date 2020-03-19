@@ -48,16 +48,34 @@ postgresql:
   postgresqlPassword: password
   replication:
     applicationName: mirror_node
-    enabled: true
+    enabled: false
     numSynchronousReplicas: 1
     password: foobar
     slaveReplicas: 1
     synchronousCommit: "on"
   serviceAccount:
     enabled: true
+  serviceMonitor:
+    enabled: true
   slave:
     labels:
       role: db
+
+prometheus-operator:
+  alertmanager:
+    service:
+      type: LoadBalancer
+  grafana:
+    adminPassword: password
+    defaultDashboardsEnabled: true
+    service:
+      type: LoadBalancer
+  prometheus:
+    prometheusSpec:
+      retention: 90d
+      serviceMonitorSelectorNilUsesHelmValues: false
+    service:
+      type: LoadBalancer
 
 rest:
   enabled: true

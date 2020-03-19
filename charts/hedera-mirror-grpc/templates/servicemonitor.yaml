@@ -1,0 +1,17 @@
+{{- if .Values.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    {{- include "hedera-mirror-grpc.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-grpc.fullname" . }}
+  namespace: {{ include "hedera-mirror-grpc.namespace" . }}
+spec:
+  endpoints:
+  - interval: {{ .Values.serviceMonitor.interval }}
+    path: /actuator/prometheus
+    port: http
+  selector:
+    matchLabels:
+      {{- include "hedera-mirror-grpc.selectorLabels" . | nindent 6 }}
+{{- end -}}
