@@ -1,0 +1,91 @@
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: grpc
+
+annotations: {}
+
+config: {}
+
+labels:
+  role: app
+  tier: api
+
+fullnameOverride: ""
+
+global:
+  namespaceOverride: ""
+
+image:
+  pullPolicy: IfNotPresent
+  repository: gcr.io/mirrornode/hedera-mirror-grpc
+  tag: 0.7.0
+
+imagePullSecrets: []
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health
+    port: http
+  initialDelaySeconds: 30
+  timeoutSeconds: 2
+
+nodeSelector: {}
+
+podSecurityContext:
+  fsGroup: 1000
+
+priorityClassName: ""
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health
+    port: http
+  initialDelaySeconds: 10
+  timeoutSeconds: 1
+
+replicas: 1
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 750Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+revisionHistoryLimit: 3
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  port: 5600
+  type: LoadBalancer
+
+serviceAccount:
+  create: true
+  # The name of the service account to use. If not set and create is true, a name is generated using the fullname template
+  name:
+
+terminationGracePeriodSeconds: 60
+
+tolerations: []
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 10%
+    maxUnavailable: 25%
+

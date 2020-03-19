@@ -1,0 +1,31 @@
+dependencies:
+  - alias: grpc
+    condition: grpc.enabled
+    name: hedera-mirror-grpc
+    repository: file://../hedera-mirror-grpc
+    tags:
+      - hedera
+      - mirror
+      - api
+      - grpc
+      - application
+    version: 0.1.0
+  - alias: importer
+    condition: importer.enabled
+    name: hedera-mirror-importer
+    repository: file://../hedera-mirror-importer
+    tags:
+      - hedera
+      - mirror
+      - importer
+      - application
+    version: 0.1.0
+  - alias: postgresql
+    condition: postgresql.enabled
+    name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    tags:
+      - database
+      - sql
+    version: 8.1.5
+

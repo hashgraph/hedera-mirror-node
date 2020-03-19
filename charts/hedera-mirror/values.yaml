@@ -1,0 +1,57 @@
+fullnameOverride: mirror
+
+global:
+  namespaceOverride: ""
+
+grpc:
+  config:
+    hedera:
+      mirror:
+        grpc:
+          db:
+            host: postgresql
+            password: mirror_node_pass
+            username: mirror_node
+  enabled: true
+
+importer:
+  config:
+    hedera:
+      mirror:
+        db:
+          host: postgresql
+          name: mirror_node
+          password: mirror_node_pass
+          username: mirror_node
+  enabled: true
+
+labels: {}
+
+networkPolicy:
+  enabled: true
+
+postgresql:
+  enabled: true
+  fullnameOverride: postgresql
+  initdbScriptsSecret: mirror-postgresql-init
+  master:
+    labels:
+      role: db
+  metrics:
+    enabled: true
+    securityContext:
+      enabled: true
+  networkPolicy:
+    allowExternal: false
+    enabled: true
+  postgresqlDatabase: mirror_node
+  postgresqlPassword: password
+  replication:
+    applicationName: mirror_node
+    enabled: true
+    numSynchronousReplicas: 1
+    password: foobar
+    slaveReplicas: 1
+    synchronousCommit: "on"
+  serviceAccount:
+    enabled: true

@@ -1,0 +1,12 @@
+dependencies:
+- name: hedera-mirror-grpc
+  repository: file://../hedera-mirror-grpc
+  version: 0.1.0
+- name: hedera-mirror-importer
+  repository: file://../hedera-mirror-importer
+  version: 0.1.0
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 8.1.5
+digest: sha256:b5c34231131aaa4f26c901608166a2b918b47b54f962a057541da6b8de954820
+generated: "2020-01-28T14:33:45.145546-06:00"
