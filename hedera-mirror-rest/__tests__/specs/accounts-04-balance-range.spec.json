@@ -1,0 +1,82 @@
+{
+  "description": "Account api call for all accounts with a balance that matches the range",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 17
+      },
+      {
+        "entity_num": 18
+      },
+      {
+        "entity_num": 19
+      },
+      {
+        "entity_num": 20
+      },
+      {
+        "entity_num": 21
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2345,
+        "id": 17,
+        "balance": 70
+      },
+      {
+        "timestamp": 2345,
+        "id": 18,
+        "balance": 20
+      },
+      {
+        "timestamp": 2345,
+        "id": 19,
+        "balance": 90
+      },
+      {
+        "timestamp": 2345,
+        "id": 20,
+        "balance": 45
+      },
+      {
+        "timestamp": 2345,
+        "id": 21,
+        "balance": 30
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/accounts?account.balance=gt:45&order=desc",
+  "responseStatus": 200,
+  "responseJson": {
+    "accounts": [
+      {
+        "balance": {
+          "timestamp": "0.000002345",
+          "balance": 90
+        },
+        "account": "0.0.19",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false
+      },
+      {
+        "balance": {
+          "timestamp": "0.000002345",
+          "balance": 70
+        },
+        "account": "0.0.17",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

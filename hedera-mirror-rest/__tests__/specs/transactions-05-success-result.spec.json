@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls with no arguments",
+  "description": "Transaction api calls for transactions with success result type",
   "setup": {
     "accounts": [
       {
@@ -22,15 +22,16 @@
     "transactions": [],
     "cryptotransfers": [
       {
-        "consensus_timestamp": "1234567890000000001",
+        "consensus_timestamp": "1565779111711927001",
         "payerAccountId": "0.0.10",
         "recipientAccountId": "0.0.9",
         "amount": 10,
         "nodeAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98"
+        "treasuryAccountId": "0.0.98",
+        "result": 24
       },
       {
-        "consensus_timestamp": "1234567890000000002",
+        "consensus_timestamp": "1565779209711927001",
         "payerAccountId": "0.0.10",
         "recipientAccountId": "0.0.9",
         "amount": 20,
@@ -38,38 +39,47 @@
         "treasuryAccountId": "0.0.98"
       },
       {
-        "consensus_timestamp": "1234567890000000003",
+        "consensus_timestamp": "1565779333711927001",
         "payerAccountId": "0.0.8",
         "recipientAccountId": "0.0.9",
         "amount": 30,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98",
+        "result": 25
+      },
+      {
+        "consensus_timestamp": "1565779666711927001",
+        "payerAccountId": "0.0.8",
+        "recipientAccountId": "0.0.9",
+        "amount": 40,
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98"
       }
     ]
   },
-  "url": "/api/v1/transactions",
+  "url": "/api/v1/transactions?result=success",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
       {
-        "consensus_timestamp": "1234567890.000000003",
-        "valid_start_timestamp": "1234567890.000000002",
+        "consensus_timestamp": "1565779666.711927001",
+        "valid_start_timestamp": "1565779666.711927000",
         "charged_tx_fee": 7,
         "memo_base64": null,
         "result": "SUCCESS",
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
-        "transaction_id": "0.0.8-1234567890-000000002",
+        "transaction_id": "0.0.8-1565779666-711927000",
         "valid_duration_seconds": "11",
         "max_fee": "33",
         "transfers": [
           {
             "account": "0.0.8",
-            "amount": -31
+            "amount": -41
           },
           {
             "account": "0.0.9",
-            "amount": 30
+            "amount": 40
           },
           {
             "account": "0.0.98",
@@ -78,14 +88,14 @@
         ]
       },
       {
-        "consensus_timestamp": "1234567890.000000002",
-        "valid_start_timestamp": "1234567890.000000001",
+        "consensus_timestamp": "1565779209.711927001",
+        "valid_start_timestamp": "1565779209.711927000",
         "charged_tx_fee": 7,
         "memo_base64": null,
         "result": "SUCCESS",
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
-        "transaction_id": "0.0.10-1234567890-000000001",
+        "transaction_id": "0.0.10-1565779209-711927000",
         "valid_duration_seconds": "11",
         "max_fee": "33",
         "transfers": [
@@ -96,32 +106,6 @@
           {
             "account": "0.0.10",
             "amount": -21
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1
-          }
-        ]
-      },
-      {
-        "consensus_timestamp": "1234567890.000000001",
-        "valid_start_timestamp": "1234567890.000000000",
-        "charged_tx_fee": 7,
-        "memo_base64": null,
-        "result": "SUCCESS",
-        "name": "CRYPTOTRANSFER",
-        "node": "0.0.3",
-        "transaction_id": "0.0.10-1234567890-000000000",
-        "valid_duration_seconds": "11",
-        "max_fee": "33",
-        "transfers": [
-          {
-            "account": "0.0.9",
-            "amount": 10
-          },
-          {
-            "account": "0.0.10",
-            "amount": -11
           },
           {
             "account": "0.0.98",

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,7 @@ const SERVICE_FEE = 4;
 let sqlConnection;
 let accountEntityIds;
 
-const setUp = async function (testDataJson, sqlconn) {
+const setUp = async function(testDataJson, sqlconn) {
   accountEntityIds = {};
   sqlConnection = sqlconn;
   await loadAccounts(testDataJson['accounts']);
@@ -38,7 +38,7 @@ const setUp = async function (testDataJson, sqlconn) {
   await loadTransactions(testDataJson['transactions']);
 };
 
-const loadAccounts = async function (accounts) {
+const loadAccounts = async function(accounts) {
   if (accounts == null) {
     return;
   }
@@ -48,7 +48,7 @@ const loadAccounts = async function (accounts) {
   }
 };
 
-const loadBalances = async function (balances) {
+const loadBalances = async function(balances) {
   if (balances == null) {
     return;
   }
@@ -58,7 +58,7 @@ const loadBalances = async function (balances) {
   }
 };
 
-const loadCryptoTransfers = async function (cryptoTransfers) {
+const loadCryptoTransfers = async function(cryptoTransfers) {
   if (cryptoTransfers == null) {
     return;
   }
@@ -68,7 +68,7 @@ const loadCryptoTransfers = async function (cryptoTransfers) {
   }
 };
 
-const loadTransactions = async function (transactions) {
+const loadTransactions = async function(transactions) {
   if (transactions == null) {
     return;
   }
@@ -78,11 +78,11 @@ const loadTransactions = async function (transactions) {
   }
 };
 
-const getAccountId = function (account) {
+const getAccountId = function(account) {
   return account.entity_shard + '.' + account.entity_realm + '.' + account.entity_num;
 };
 
-const toAccount = function (str) {
+const toAccount = function(str) {
   let tokens = str.split('.');
   return {
     entity_shard: tokens[0],
@@ -91,8 +91,16 @@ const toAccount = function (str) {
   };
 };
 
-const addAccount = async function (account) {
-  account = Object.assign({entity_shard: 0, entity_realm: 0, exp_time_ns: null}, account);
+const addAccount = async function(account) {
+  account = Object.assign(
+    {
+      entity_shard: 0,
+      entity_realm: 0,
+      exp_time_ns: null,
+      public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'
+    },
+    account
+  );
 
   let e = accountEntityIds[account.entity_num];
   if (e) {
@@ -100,8 +108,8 @@ const addAccount = async function (account) {
   }
 
   let res = await sqlConnection.query(
-          'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted) values ($1, $2, $3, $4, $5, $6) returning id;',
-          [1, account.entity_shard, account.entity_realm, account.entity_num, account.exp_time_ns, false]
+    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted, ed25519_public_key_hex) values ($1, $2, $3, $4, $5, $6, $7) returning id;',
+    [1, account.entity_shard, account.entity_realm, account.entity_num, account.exp_time_ns, false, account.public_key]
   );
   e = res.rows[0]['id'];
   accountEntityIds[getAccountId(account)] = e;
@@ -109,63 +117,63 @@ const addAccount = async function (account) {
   return e;
 };
 
-const setAccountBalance = async function (account) {
+const setAccountBalance = async function(account) {
   account = Object.assign({timestamp: 0, realm_num: 0, id: null, balance: 0}, account);
   await sqlConnection.query(
-          'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
-          [account.timestamp, account.realm_num, account.id, account.balance]
+    'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
+    [account.timestamp, account.realm_num, account.id, account.balance]
   );
 };
 
-const addTransaction = async function (transaction) {
+const addTransaction = async function(transaction) {
   transaction = Object.assign(
-          {
-            type: 14,
-            result: 22,
-            max_fee: 33,
-            valid_duration_seconds: 11,
-            transfers: [],
-            non_fee_transfers: [],
-            charged_tx_fee: NODE_FEE + NETWORK_FEE + SERVICE_FEE
-          },
-          transaction
+    {
+      type: 14,
+      result: 22,
+      max_fee: 33,
+      valid_duration_seconds: 11,
+      transfers: [],
+      non_fee_transfers: [],
+      charged_tx_fee: NODE_FEE + NETWORK_FEE + SERVICE_FEE
+    },
+    transaction
   );
 
   transaction.consensus_timestamp = math.bignumber(transaction.consensus_timestamp);
 
   await sqlConnection.query(
-          'insert into t_transactions (consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee, charged_tx_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
-          [
-            transaction.consensus_timestamp.toString(),
-            transaction.consensus_timestamp.minus(1).toString(),
-            accountEntityIds[transaction.payerAccountId],
-            accountEntityIds[transaction.nodeAccountId],
-            transaction.result,
-            transaction.type,
-            transaction.valid_duration_seconds,
-            transaction.max_fee,
-            transaction.charged_tx_fee
-          ]
+    'insert into t_transactions (consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee, charged_tx_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
+    [
+      transaction.consensus_timestamp.toString(),
+      transaction.consensus_timestamp.minus(1).toString(),
+      accountEntityIds[transaction.payerAccountId],
+      accountEntityIds[transaction.nodeAccountId],
+      transaction.result,
+      transaction.type,
+      transaction.valid_duration_seconds,
+      transaction.max_fee,
+      transaction.charged_tx_fee
+    ]
   );
 
   for (let i = 0; i < transaction.transfers.length; ++i) {
     let transfer = transaction.transfers[i];
     await sqlConnection.query(
-            'insert into t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
-            [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
+      'insert into t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
+      [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
     );
   }
 
   for (let i = 0; i < transaction.non_fee_transfers.length; ++i) {
     let transfer = transaction.non_fee_transfers[i];
     await sqlConnection.query(
-            'insert into non_fee_transfers (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
-            [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
+      'insert into non_fee_transfers (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
+      [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
     );
   }
 };
 
-const addCryptoTransaction = async function (cryptoTransfer) {
+const addCryptoTransaction = async function(cryptoTransfer) {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }

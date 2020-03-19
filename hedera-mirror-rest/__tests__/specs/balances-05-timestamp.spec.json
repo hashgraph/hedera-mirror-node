@@ -1,0 +1,94 @@
+{
+  "description": "Balance api calls for all account balances referencing the latest snapshot that occurred prior to timestamp",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 4
+      },
+      {
+        "entity_num": 5
+      },
+      {
+        "entity_num": 6
+      },
+      {
+        "entity_num": 7
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 1566560001000000000,
+        "id": 4,
+        "balance": 40
+      },
+      {
+        "timestamp": 1566560001000000000,
+        "id": 5,
+        "balance": 50
+      },
+      {
+        "timestamp": 1566560001000000000,
+        "id": 6,
+        "balance": 60
+      },
+      {
+        "timestamp": 1566560003000000000,
+        "id": 4,
+        "balance": 444
+      },
+      {
+        "timestamp": 1566560003000000000,
+        "id": 5,
+        "balance": 555
+      },
+      {
+        "timestamp": 1566560003000000000,
+        "id": 6,
+        "balance": 666
+      },
+      {
+        "timestamp": 1566560003000000000,
+        "id": 7,
+        "balance": 777
+      },
+      {
+        "timestamp": 1566560007000000000,
+        "id": 5,
+        "balance": 5
+      },
+      {
+        "timestamp": 1566560007000000000,
+        "id": 6,
+        "balance": 6
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/balances?timestamp=1566560004.000000000",
+  "responseStatus": 200,
+  "responseJson": {
+    "timestamp": "1566560003.000000000",
+    "balances": [
+      {
+        "account": "0.0.7",
+        "balance": 777
+      },
+      {
+        "account": "0.0.6",
+        "balance": 666
+      },
+      {
+        "account": "0.0.5",
+        "balance": 555
+      },
+      {
+        "account": "0.0.4",
+        "balance": 444
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}
