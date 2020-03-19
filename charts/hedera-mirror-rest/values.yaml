@@ -63,8 +63,7 @@ revisionHistoryLimit: 3
 
 securityContext:
   capabilities:
-    drop:
-      - ALL
+    drop: [ALL]
   readOnlyRootFilesystem: true
   runAsGroup: 1000
   runAsNonRoot: true

@@ -55,6 +55,9 @@ postgresql:
     synchronousCommit: "on"
   serviceAccount:
     enabled: true
+  slave:
+    labels:
+      role: db
 
 rest:
   enabled: true

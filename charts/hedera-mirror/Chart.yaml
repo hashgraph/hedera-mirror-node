@@ -7,4 +7,3 @@ name: hedera-mirror
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
 version: 0.1.0
-
