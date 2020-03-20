@@ -9,7 +9,7 @@ grpc:
       mirror:
         grpc:
           db:
-            host: postgresql
+            host: mirror-postgresql
             password: mirror_node_pass
             username: mirror_node
   enabled: true
@@ -19,7 +19,7 @@ importer:
     hedera:
       mirror:
         db:
-          host: postgresql
+          host: mirror-postgresql
           name: mirror_node
           password: mirror_node_pass
           username: mirror_node
@@ -27,12 +27,42 @@ importer:
 
 labels: {}
 
+loki-stack:
+  enabled: true
+  loki:
+    config:
+      table_manager:
+        retention_deletes_enabled: true
+        retention_period: 2184h
+    networkPolicy:
+      enabled: true
+    persistence:
+      enabled: true
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+    serviceMonitor:
+      enabled: true
+  promtail:
+    resources:
+      limits:
+        cpu: 125m
+        memory: 100Mi
+      requests:
+        cpu: 50m
+        memory: 32Mi
+    serviceMonitor:
+      enabled: true
+
 networkPolicy:
   enabled: true
 
 postgresql:
   enabled: true
-  fullnameOverride: postgresql
   initdbScriptsSecret: mirror-postgresql-init
   master:
     labels:
@@ -62,8 +92,6 @@ postgresql:
       role: db
 
 prometheus-adapter:
-  fullnameOverride: prometheus-adapter
-  logLevel: 8
   prometheus:
     url: http://mirror-prometheus-operator-prometheus
   resources:
@@ -107,6 +135,13 @@ prometheus-operator:
     service:
       type: LoadBalancer
   grafana:
+    additionalDataSources:
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://mirror-loki:3100
+        jsonData:
+          maxLines: 500
     adminPassword: password
     defaultDashboardsEnabled: true
     service:
@@ -115,6 +150,12 @@ prometheus-operator:
     prometheusSpec:
       retention: 90d
       serviceMonitorSelectorNilUsesHelmValues: false
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            resources:
+              requests:
+                storage: 10Gi
     service:
       type: LoadBalancer
 
@@ -124,4 +165,4 @@ rest:
     hedera:
       mirror:
         db:
-          host: postgresql
+          host: mirror-postgresql

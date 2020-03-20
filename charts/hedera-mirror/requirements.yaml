@@ -9,6 +9,10 @@ dependencies:
     name: hedera-mirror-importer
     repository: file://../hedera-mirror-importer
     version: ^0.1.0
+  - name: loki-stack
+    version: ~0.32.1
+    repository: https://grafana.github.io/loki/charts
+    condition: loki-stack.enabled
   - alias: postgresql
     condition: postgresql.enabled
     name: postgresql
