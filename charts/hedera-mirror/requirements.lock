@@ -7,12 +7,15 @@ dependencies:
   version: 0.1.0
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
-  version: 8.6.4
+  version: 8.6.8
+- name: prometheus-adapter
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  version: 2.1.3
 - name: prometheus-operator
   repository: https://kubernetes-charts.storage.googleapis.com
   version: 8.12.3
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
   version: 0.1.0
-digest: sha256:1a0d8f043a29dc8436dc901c64a4e10eedd383e45034e1dda141c441f2b15046
-generated: "2020-03-19T09:49:32.850169-05:00"
+digest: sha256:f12fe8c70231c8824542d9a87cc0b28dff157e31f4ea420bfffe9f26bb40909f
+generated: "2020-03-20T10:45:20.070623-05:00"
