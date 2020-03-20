@@ -1,0 +1,69 @@
+{
+  "description": "Balance api calls for a range of balances",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 17
+      },
+      {
+        "entity_num": 18
+      },
+      {
+        "entity_num": 19
+      },
+      {
+        "entity_num": 20
+      },
+      {
+        "entity_num": 21
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2345,
+        "id": 17,
+        "balance": 700
+      },
+      {
+        "timestamp": 2345,
+        "id": 18,
+        "balance": 200
+      },
+      {
+        "timestamp": 2345,
+        "id": 19,
+        "balance": 900
+      },
+      {
+        "timestamp": 2345,
+        "id": 20,
+        "balance": 450
+      },
+      {
+        "timestamp": 2345,
+        "id": 21,
+        "balance": 300
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/balances?account.balance=gt:300&account.balance=lte:700&&order=asc",
+  "responseStatus": 200,
+  "responseJson": {
+    "timestamp": "0.000002345",
+    "balances": [
+      {
+        "account": "0.0.17",
+        "balance": 700
+      },
+      {
+        "account": "0.0.20",
+        "balance": 450
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

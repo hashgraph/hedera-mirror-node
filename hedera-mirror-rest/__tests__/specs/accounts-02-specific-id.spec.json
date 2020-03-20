@@ -1,0 +1,55 @@
+{
+  "description": "Account api calls for specific account",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 7
+      },
+      {
+        "entity_num": 8
+      },
+      {
+        "entity_num": 9
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2345,
+        "id": 7,
+        "balance": 70
+      },
+      {
+        "timestamp": 2345,
+        "id": 8,
+        "balance": 80
+      },
+      {
+        "timestamp": 2345,
+        "id": 9,
+        "balance": 90
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/accounts?account.id=0.0.8",
+  "responseStatus": 200,
+  "responseJson": {
+    "accounts": [
+      {
+        "balance": {
+          "timestamp": "0.000002345",
+          "balance": 80
+        },
+        "account": "0.0.8",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}
