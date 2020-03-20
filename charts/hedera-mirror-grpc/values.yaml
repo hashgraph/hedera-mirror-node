@@ -17,6 +17,12 @@ fullnameOverride: ""
 global:
   namespaceOverride: ""
 
+hpa:
+  enabled: true
+  maxReplicas: 3
+  minReplicas: 1
+  utilization: 80
+
 image:
   pullPolicy: Never
   repository: gcr.io/mirrornode/hedera-mirror-grpc
