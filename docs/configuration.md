@@ -58,7 +58,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.downloader.accessKey`                        | ""                      | The cloud storage access key                                                                   |
 | `hedera.mirror.downloader.balance.batchSize`                | 15                      | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.downloader.balance.enabled`                  | true                    | Whether to enable balance file downloads                                                       |
-| `hedera.mirror.downloader.balance.frequency`                | 500ms                   | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
+| `hedera.mirror.downloader.balance.frequency`                | 30s                     | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
 | `hedera.mirror.downloader.balance.prefix`                   | accountBalances/balance | The prefix to search cloud storage for balance files                                           |
 | `hedera.mirror.downloader.balance.threads`                  | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.downloader.bucketName`                       | "hedera-demo-streams"   | The cloud storage bucket name to download streamed files                                       |
