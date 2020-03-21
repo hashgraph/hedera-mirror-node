@@ -97,7 +97,9 @@ const addAccount = async function(account) {
       entity_shard: 0,
       entity_realm: 0,
       exp_time_ns: null,
-      public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'
+      public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      auto_renew_period: null,
+      key: null
     },
     account
   );
@@ -108,8 +110,19 @@ const addAccount = async function(account) {
   }
 
   let res = await sqlConnection.query(
-    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted, ed25519_public_key_hex) values ($1, $2, $3, $4, $5, $6, $7) returning id;',
-    [1, account.entity_shard, account.entity_realm, account.entity_num, account.exp_time_ns, false, account.public_key]
+    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted, ed25519_public_key_hex, auto_renew_period, key) ' +
+      'values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id;',
+    [
+      1,
+      account.entity_shard,
+      account.entity_realm,
+      account.entity_num,
+      account.exp_time_ns,
+      false,
+      account.public_key,
+      account.auto_renew_period,
+      account.key
+    ]
   );
   e = res.rows[0]['id'];
   accountEntityIds[getAccountId(account)] = e;

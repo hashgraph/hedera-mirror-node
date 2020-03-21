@@ -57,7 +57,7 @@
       }
     ]
   },
-  "url": "/api/v1/transactions?result=fail",
+  "url": "/api/v1/transactions?result=fail&limit=2",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
@@ -115,7 +115,7 @@
       }
     ],
     "links": {
-      "next": null
+      "next": "/api/v1/transactions?result=fail&limit=2&timestamp=lt:1565779111.711927001"
     }
   }
 }

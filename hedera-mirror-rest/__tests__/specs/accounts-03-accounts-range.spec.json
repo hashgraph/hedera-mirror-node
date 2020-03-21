@@ -48,7 +48,7 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/accounts?account.id=gte:0.0.18&account.id=lt:0.0.20",
+  "url": "/api/v1/accounts?account.id=gte:0.0.18&account.id=lt:0.0.21&limit=2",
   "responseStatus": 200,
   "responseJson": {
     "accounts": [
@@ -76,7 +76,7 @@
       }
     ],
     "links": {
-      "next": null
+      "next": "/api/v1/accounts?account.id=lt:0.0.21&account.id=gt:0.0.19&limit=2"
     }
   }
 }

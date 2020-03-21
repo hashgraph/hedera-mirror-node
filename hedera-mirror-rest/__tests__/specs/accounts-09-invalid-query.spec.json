@@ -1,0 +1,20 @@
+{
+  "description": "Account api invalid account id format",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/accounts?consensus=hashgraph",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: consensus"
+        }
+      ]
+    }
+  }
+}
