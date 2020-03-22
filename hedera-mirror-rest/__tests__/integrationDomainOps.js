@@ -36,6 +36,7 @@ const setUp = async function(testDataJson, sqlconn) {
   await loadBalances(testDataJson['balances']);
   await loadCryptoTransfers(testDataJson['cryptotransfers']);
   await loadTransactions(testDataJson['transactions']);
+  await loadTopicMessages(testDataJson['topicmessages']);
 };
 
 const loadAccounts = async function(accounts) {
@@ -78,6 +79,16 @@ const loadTransactions = async function(transactions) {
   }
 };
 
+const loadTopicMessages = async function(messages) {
+  if (messages == null) {
+    return;
+  }
+
+  for (let i = 0; i < messages.length; ++i) {
+    await addTopicMessage(messages[i]);
+  }
+};
+
 const getAccountId = function(account) {
   return account.entity_shard + '.' + account.entity_realm + '.' + account.entity_num;
 };
@@ -97,7 +108,8 @@ const addAccount = async function(account) {
       entity_shard: 0,
       entity_realm: 0,
       exp_time_ns: null,
-      public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'
+      public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      entity_type: 1
     },
     account
   );
@@ -109,7 +121,15 @@ const addAccount = async function(account) {
 
   let res = await sqlConnection.query(
     'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted, ed25519_public_key_hex) values ($1, $2, $3, $4, $5, $6, $7) returning id;',
-    [1, account.entity_shard, account.entity_realm, account.entity_num, account.exp_time_ns, false, account.public_key]
+    [
+      account.entity_type,
+      account.entity_shard,
+      account.entity_realm,
+      account.entity_num,
+      account.exp_time_ns,
+      false,
+      account.public_key
+    ]
   );
   e = res.rows[0]['id'];
   accountEntityIds[getAccountId(account)] = e;
@@ -191,6 +211,14 @@ const addCryptoTransaction = async function(cryptoTransfer) {
   }
 
   await addTransaction(cryptoTransfer);
+};
+
+const addTopicMessage = async function(message) {
+  message = Object.assign({realm_num: 0, message: ['a', 'b', 'c'], hash: ['c', 'd', 'e']}, message);
+  await sqlConnection.query(
+    'insert into topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number) values ($1, $2, $3, $4, $5, $6);',
+    [message.timestamp, message.realm_num, message.topic_num, message.message, message.hash, message.seq_num]
+  );
 };
 
 module.exports = {
