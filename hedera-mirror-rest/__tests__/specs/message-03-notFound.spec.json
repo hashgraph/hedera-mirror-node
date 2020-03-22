@@ -1,0 +1,15 @@
+{
+  "description": "Invalid consensus timestamp",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "topicmessages": []
+  },
+  "url": "/api/v1/message/123.123456789",
+  "responseStatus": 404,
+  "responseJson": {
+    "message": "hcs message not found"
+  }
+}

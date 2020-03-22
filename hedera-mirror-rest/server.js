@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,7 @@ const transactions = require('./transactions.js');
 const balances = require('./balances.js');
 const events = require('./events.js');
 const accounts = require('./accounts.js');
+const message = require('./message.js');
 const eventAnalytics = require('./eventAnalytics.js');
 const utils = require('./utils.js');
 const Cacher = require('./cacher.js');
@@ -83,9 +84,9 @@ global.pool = pool;
 app.set('trust proxy', true);
 app.set('port', port);
 app.use(
-  bodyParser.urlencoded({
-    extended: false
-  })
+        bodyParser.urlencoded({
+          extended: false
+        })
 );
 app.use(bodyParser.json());
 app.use(compression());
@@ -105,12 +106,13 @@ let apiPrefix = '/api/v1';
 
 // routes
 app.get(apiPrefix + '/transactions', (req, res) =>
-  caches['transactions'].getResponse(req, res, transactions.getTransactions)
+        caches['transactions'].getResponse(req, res, transactions.getTransactions)
 );
 app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
 app.get(apiPrefix + '/balances', (req, res) => caches['balances'].getResponse(req, res, balances.getBalances));
 app.get(apiPrefix + '/accounts', (req, res) => caches['accounts'].getResponse(req, res, accounts.getAccounts));
 app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
+app.get(apiPrefix + '/message/:consensusTimestamp', message.getMessageByConsensusTimestamp);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {

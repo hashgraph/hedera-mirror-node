@@ -1,0 +1,19 @@
+{
+  "description": "Invalid consensus timestamp",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "topicmessages": []
+  },
+  "url": "/api/v1/message/123abc",
+  "responseStatus": 400,
+  "responseJson": {
+    "messages": [
+      {
+        "message":"Invalid parameter: consensusTimestamp"
+      }
+    ]
+  }
+}
