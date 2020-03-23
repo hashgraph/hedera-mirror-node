@@ -1,5 +1,5 @@
 {
-  "description": "Account api invalid account id format",
+  "description": "Account api invalid parameters",
   "setup": {
     "accounts": [],
     "balances": [],

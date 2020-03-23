@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for a specific transactions",
+  "description": "Transaction api calls for a specific transaction using transaction id",
   "setup": {
     "accounts": [
       {

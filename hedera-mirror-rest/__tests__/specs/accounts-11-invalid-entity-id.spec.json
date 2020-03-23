@@ -1,5 +1,5 @@
 {
-  "description": "Account api calls for specific account",
+  "description": "Account api calls for invalid account id using path url",
   "setup": {
     "accounts": [
       {
