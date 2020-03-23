@@ -37,7 +37,7 @@ const transactions = require('./transactions.js');
 const balances = require('./balances.js');
 const events = require('./events.js');
 const accounts = require('./accounts.js');
-const topicmessages = require('./topicmessages.js');
+const topicmessage = require('./topicmessage.js');
 const eventAnalytics = require('./eventAnalytics.js');
 const utils = require('./utils.js');
 const Cacher = require('./cacher.js');
@@ -114,6 +114,7 @@ app.get(apiPrefix + '/balances', (req, res) => caches['balances'].getResponse(re
 app.get(apiPrefix + '/accounts', (req, res) => caches['accounts'].getResponse(req, res, accounts.getAccounts));
 app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
 app.get(apiPrefix + '/topic/:id/message/:seqnum', topicmessages.getTopicMessage);
+app.get(apiPrefix + '/topic/message/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
