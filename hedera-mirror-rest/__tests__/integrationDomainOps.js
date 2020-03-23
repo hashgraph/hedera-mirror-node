@@ -36,6 +36,7 @@ const setUp = async function(testDataJson, sqlconn) {
   await loadBalances(testDataJson['balances']);
   await loadCryptoTransfers(testDataJson['cryptotransfers']);
   await loadTransactions(testDataJson['transactions']);
+  await loadTopicMessages(testDataJson['topicmessages']);
 };
 
 const loadAccounts = async function(accounts) {
@@ -75,6 +76,16 @@ const loadTransactions = async function(transactions) {
 
   for (let i = 0; i < transactions.length; ++i) {
     await addTransaction(transactions[i]);
+  }
+};
+
+const loadTopicMessages = async function(messages) {
+  if (messages == null) {
+    return;
+  }
+
+  for (let i = 0; i < messages.length; ++i) {
+    await addTopicMessage(messages[i]);
   }
 };
 
@@ -191,6 +202,21 @@ const addCryptoTransaction = async function(cryptoTransfer) {
   }
 
   await addTransaction(cryptoTransfer);
+};
+
+const addTopicMessage = async function(message) {
+  message = Object.assign(
+    {
+      realm_num: 0,
+      message: 'message', // Base64 encoding: bWVzc2FnZQ==
+      running_hash: 'running_hash' // Base64 encoding: cnVubmluZ19oYXNo
+    },
+    message
+  );
+  await sqlConnection.query(
+    'insert into topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number) values ($1, $2, $3, $4, $5, $6);',
+    [message.timestamp, message.realm_num, message.topic_num, message.message, message.running_hash, message.seq_num]
+  );
 };
 
 module.exports = {
