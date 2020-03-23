@@ -113,8 +113,11 @@ app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
 app.get(apiPrefix + '/balances', (req, res) => caches['balances'].getResponse(req, res, balances.getBalances));
 app.get(apiPrefix + '/accounts', (req, res) => caches['accounts'].getResponse(req, res, accounts.getAccounts));
 app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
-app.get(apiPrefix + '/topic/:id/message/:seqnum', topicmessages.getTopicMessage);
 app.get(apiPrefix + '/topic/message/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
+
+// support singular and plural resource naming for single topic message via id and sequence
+app.get(apiPrefix + '/topic/:id/message/:seqnum', topicmessage.getMessageByTopicAndSequenceRequest);
+app.get(apiPrefix + '/topics/:id/messages/:seqnum', topicmessage.getMessageByTopicAndSequenceRequest);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {

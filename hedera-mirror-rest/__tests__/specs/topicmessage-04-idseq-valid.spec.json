@@ -24,23 +24,24 @@
       {
         "timestamp": "1234567890000000003",
         "topic_num": 7,
-        "seq_num": 3
+        "seq_num": 3,
+        "message": ["a", "b", "c"],
+        "running_hash": ["d", "e", "f"]
       }
     ]
   },
   "url": "/api/v1/topic/7/message/3",
   "responseStatus": 200,
   "responseJson": {
-    "topicmessages": {
+    "topicmessage": {
       "consensus_timestamp": "1234567890.000000003",
-      "realm_num": 0,
-      "topic_num": 7,
       "message": "eyJhIiwiYiIsImMifQ==",
-      "running_hash": "eyJjIiwiZCIsImUifQ==",
-      "sequence_number": "3"
+      "running_hash": "eyJkIiwiZSIsImYifQ==",
+      "sequence_number": 3,
+      "topic_id": "0.0.7"
     },
     "links": {
-      "next": null
+      "next": "/api/v1/topic/7/message/4"
     }
   }
 }

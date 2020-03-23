@@ -1,0 +1,26 @@
+{
+  "description": "Topic messages for single message with non matching response",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 7,
+        "entity_type": 4
+      }
+    ],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "topicmessages": [
+      {
+        "timestamp": "1234567890000000001",
+        "topic_num": 7,
+        "seq_num": 1
+      }
+    ]
+  },
+  "url": "/api/v1/topic/7/message/2",
+  "responseStatus": 200,
+  "responseJson": {
+    "message": "hcs message not found"
+  }
+}

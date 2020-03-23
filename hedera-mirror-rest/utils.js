@@ -45,6 +45,10 @@ const isValidTimestampParam = function(timestamp) {
   return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
 };
 
+const isValidEntityNum = entity_num => {
+  return /^\d{1,10}\.\d{1,10}\.\d{1,10}$/.test(entity_num) || /^\d{1,10}$/.test(entity_num);
+};
+
 /**
  * Validate input parameters for the rest apis
  * @param {String} param Parameter to be validated
@@ -81,7 +85,7 @@ const paramValidityChecks = function(param, opAndVal) {
   switch (param) {
     case 'account.id':
       // Accepted forms: shard.realm.num or num
-      ret = /^\d{1,10}\.\d{1,10}\.\d{1,10}$/.test(val) || /^\d{1,10}$/.test(val);
+      ret = isValidEntityNum(val);
       break;
     case 'timestamp':
       ret = isValidTimestampParam(val);
@@ -658,5 +662,6 @@ module.exports = {
   createTransactionId: createTransactionId,
   TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
   isValidTimestampParam: isValidTimestampParam,
-  parseTimestampParam: parseTimestampParam
+  parseTimestampParam: parseTimestampParam,
+  isValidEntityNum: isValidEntityNum
 };
