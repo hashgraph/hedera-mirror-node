@@ -39,7 +39,7 @@ const formatTopicMessageRow = function(row) {
     consensus_timestamp: utils.nsToSecNs(row['consensus_timestamp']),
     topic_id: `${config.shard}.${row['realm_num']}.${row['topic_num']}`,
     message: utils.encodeBase64(row['message']),
-    running_hash: utils.toHexString(row['running_hash']),
+    running_hash: utils.encodeBase64(row['running_hash']),
     sequence_number: parseInt(row['sequence_number'])
   };
 };

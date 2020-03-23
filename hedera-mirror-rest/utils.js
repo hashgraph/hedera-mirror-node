@@ -143,7 +143,7 @@ const validateReq = function(req) {
 };
 
 const makeValidationResponse = function(badParams) {
-  if (badParams.length !== 0) {
+  if (badParams && badParams.length !== 0) {
     return {
       isValid: false,
       code: httpStatusCodes.BAD_REQUEST,
@@ -195,7 +195,13 @@ const parseTimestampParam = function(timestampParam) {
   // or (c) seconds.nnnnnnnnn (9-digit nanoseconds)
   // Convert all of these formats to (seconds * 10^9 + nanoseconds) format,
   // after validating that all characters are digits
+  if (!timestampParam) {
+    return '';
+  }
   let tsSplit = timestampParam.split('.');
+  if (tsSplit.length <= 0 || tsSplit.length > 2) {
+    return '';
+  }
   let seconds = /^(\d)+$/.test(tsSplit[0]) ? tsSplit[0] : 0;
   let nanos = tsSplit.length === 2 && /^(\d)+$/.test(tsSplit[1]) ? tsSplit[1] : 0;
   return '' + seconds + (nanos + '000000000').substring(0, 9);

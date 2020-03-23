@@ -204,15 +204,18 @@ const addCryptoTransaction = async function(cryptoTransfer) {
   await addTransaction(cryptoTransfer);
 };
 
-const addTopicMessage = async function (message) {
-  message = Object.assign({
-    realm_num: 0,
-    message: "message", // Base64 encoding: bWVzc2FnZQ==
-    running_hash: "running_hash" // hex encoding: 72756e6e696e675f68617368
-  }, message);
+const addTopicMessage = async function(message) {
+  message = Object.assign(
+    {
+      realm_num: 0,
+      message: 'message', // Base64 encoding: bWVzc2FnZQ==
+      running_hash: 'running_hash' // Base64 encoding: cnVubmluZ19oYXNo
+    },
+    message
+  );
   await sqlConnection.query(
-          'insert into topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number) values ($1, $2, $3, $4, $5, $6);',
-          [message.timestamp, message.realm_num, message.topic_num, message.message, message.running_hash, message.seq_num]
+    'insert into topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number) values ($1, $2, $3, $4, $5, $6);',
+    [message.timestamp, message.realm_num, message.topic_num, message.message, message.running_hash, message.seq_num]
   );
 };
 

@@ -12,7 +12,7 @@
   "responseJson": {
     "messages": [
       {
-        "message":"Invalid parameter: consensusTimestamp"
+        "message": "Invalid parameter: consensusTimestamp"
       }
     ]
   }
