@@ -1,18 +1,18 @@
 {
-  "description": "Account api invalid account id format",
+  "description": "Balance api invalid query",
   "setup": {
     "accounts": [],
     "balances": [],
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/accounts?account.id=gte:0.1",
+  "url": "/api/v1/balances?consensus=hashgraph",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Invalid parameter: account.id"
+          "message": "Invalid parameter: consensus"
         }
       ]
     }

@@ -1,5 +1,5 @@
 {
-  "description": "Account api call for non matching",
+  "description": "Balance api call for non matching",
   "setup": {
     "accounts": [
       {
@@ -53,10 +53,11 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/accounts?account.id=0.0.7",
+  "url": "/api/v1/balances?account.id=0.0.3",
   "responseStatus": 200,
   "responseJson": {
-    "accounts": [],
+    "timestamp": null,
+    "balances": [],
     "links": {
       "next": null
     }

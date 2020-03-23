@@ -1,0 +1,53 @@
+{
+  "description": "Account api calls for specific account",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 3
+      },
+      {
+        "entity_num": 7
+      },
+      {
+        "entity_num": 8
+      },
+      {
+        "entity_num": 98
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2345,
+        "id": 7,
+        "balance": 70
+      },
+      {
+        "timestamp": 2345,
+        "id": 8,
+        "balance": 80
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": [
+      {
+        "consensus_timestamp": "1234567890000000001",
+        "payerAccountId": "0.0.7",
+        "recipientAccountId": "0.0.8",
+        "amount": 25,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      }
+    ]
+  },
+  "url": "/api/v1/accounts/0.0.5",
+  "responseStatus": 500,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Error: Could not get entity information"
+        }
+      ]
+    }
+  }
+}

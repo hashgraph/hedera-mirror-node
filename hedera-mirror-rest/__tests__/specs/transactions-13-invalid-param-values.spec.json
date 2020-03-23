@@ -1,0 +1,29 @@
+{
+  "description": "Transaction api calls for a specific transactions",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/transactions?timestamp=-1&account.id=0.x&type=good&result=best",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: timestamp"
+        },
+        {
+          "message": "Invalid parameter: account.id"
+        },
+        {
+          "message": "Invalid parameter: type"
+        },
+        {
+          "message": "Invalid parameter: result"
+        }
+      ]
+    }
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "description": "Account api call using all queries",
+  "description": "Balances api call using all queries",
   "setup": {
     "accounts": [
       {
@@ -50,56 +50,71 @@
     ],
     "balances": [
       {
-        "timestamp": 2345,
+        "timestamp": 1566560001000000000,
         "id": 17,
         "realm_num": 1,
         "balance": 70
       },
       {
-        "timestamp": 2345,
+        "timestamp": 1566560001000000000,
         "id": 18,
         "realm_num": 1,
         "balance": 80
       },
       {
-        "timestamp": 2345,
+        "timestamp": 1566560001000000000,
         "id": 19,
         "realm_num": 1,
         "balance": 90
       },
       {
-        "timestamp": 2345,
+        "timestamp": 1566560001000000000,
         "id": 20,
         "realm_num": 1,
         "balance": 100
       },
       {
-        "timestamp": 2345,
+        "timestamp": 1566560001000000000,
         "id": 21,
         "realm_num": 1,
         "balance": 110
+      },
+      {
+        "timestamp": 1566560003000000000,
+        "id": 18,
+        "realm_num": 1,
+        "balance": 800
+      },
+      {
+        "timestamp": 1566560003000000000,
+        "id": 19,
+        "realm_num": 1,
+        "balance": 900
+      },
+      {
+        "timestamp": 1566560003000000000,
+        "id": 20,
+        "realm_num": 1,
+        "balance": 1000
+      },
+      {
+        "timestamp": 1566560009000000000,
+        "id": 19,
+        "realm_num": 1,
+        "balance": 999
       }
     ],
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/accounts?account.id=gte:0.1.18&account.id=lt:0.1.20&account.balance=gt:45&account.publickey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be&order=desc",
+  "url": "/api/v1/balances?account.id=gte:0.1.18&account.id=lt:0.1.20&account.balance=gt:45&account.publickey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be&timestamp=1566560003.000000000&order=asc",
   "responseStatus": 200,
   "responseJson": {
-    "accounts": [
+    "timestamp": "1566560003.000000000",
+    "balances": [
       {
         "account": "0.1.19",
-        "auto_renew_period": 33333,
-        "balance": {
-          "balance": 90,
-          "timestamp": "0.000002345"
-        },
-        "deleted": false,
-        "expiry_timestamp": "0.123456783",
-        "key": {
-          "_type": "ProtobufEncoded",
-          "key": "7b2233222c2233222c2233227d"
-        }
+        "balance": 900
       }
     ],
     "links": {

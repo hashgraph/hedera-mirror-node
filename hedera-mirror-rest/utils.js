@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -141,18 +141,31 @@ const validateReq = function(req) {
     }
   }
 
+  let errorMessages = errorMessageFormat();
+  errorMessages._status.messages = badParams;
+
   if (badParams.length !== 0) {
     ret = {
       isValid: false,
       code: httpStatusCodes.BAD_REQUEST,
-      contents: {
-        _status: {
-          messages: badParams
-        }
-      }
+      contents: errorMessages
     };
   }
   return ret;
+};
+
+const errorMessageFormat = () => {
+  return {
+    _status: {
+      messages: []
+    }
+  };
+};
+
+const createSingleErrorJsonResponse = message => {
+  let response = errorMessageFormat();
+  response._status.messages.push({message: message});
+  return response;
 };
 
 /**
@@ -638,5 +651,6 @@ module.exports = {
   getNullableNumber: getNullableNumber,
   nsToSecNsWithHyphen: nsToSecNsWithHyphen,
   createTransactionId: createTransactionId,
-  TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS
+  TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
+  createSingleErrorJsonResponse: createSingleErrorJsonResponse
 };
