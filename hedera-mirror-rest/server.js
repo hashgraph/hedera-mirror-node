@@ -37,7 +37,7 @@ const transactions = require('./transactions.js');
 const balances = require('./balances.js');
 const events = require('./events.js');
 const accounts = require('./accounts.js');
-const message = require('./message.js');
+const topicmessage = require('./topicmessage.js');
 const eventAnalytics = require('./eventAnalytics.js');
 const utils = require('./utils.js');
 const Cacher = require('./cacher.js');
@@ -84,9 +84,9 @@ global.pool = pool;
 app.set('trust proxy', true);
 app.set('port', port);
 app.use(
-        bodyParser.urlencoded({
-          extended: false
-        })
+  bodyParser.urlencoded({
+    extended: false
+  })
 );
 app.use(bodyParser.json());
 app.use(compression());
@@ -106,13 +106,13 @@ let apiPrefix = '/api/v1';
 
 // routes
 app.get(apiPrefix + '/transactions', (req, res) =>
-        caches['transactions'].getResponse(req, res, transactions.getTransactions)
+  caches['transactions'].getResponse(req, res, transactions.getTransactions)
 );
 app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
 app.get(apiPrefix + '/balances', (req, res) => caches['balances'].getResponse(req, res, balances.getBalances));
 app.get(apiPrefix + '/accounts', (req, res) => caches['accounts'].getResponse(req, res, accounts.getAccounts));
 app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
-app.get(apiPrefix + '/message/:consensusTimestamp', message.getMessageByConsensusTimestamp);
+app.get(apiPrefix + '/topic/message/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
