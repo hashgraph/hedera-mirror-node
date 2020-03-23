@@ -171,5 +171,7 @@ const getMessageByTopicAndSequenceRequest = function(req, res) {
 
 module.exports = {
   getMessageByConsensusTimestamp: getMessageByConsensusTimestamp,
-  getMessageByTopicAndSequenceRequest: getMessageByTopicAndSequenceRequest
+  getMessageByTopicAndSequenceRequest: getMessageByTopicAndSequenceRequest,
+  validateConsensusTimestampParam: validateConsensusTimestampParam,
+  validateGetSequenceMessageParams: validateGetSequenceMessageParams
 };

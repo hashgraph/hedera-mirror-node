@@ -3,4 +3,4 @@
 ---
 
 create index if not exists topic_message__topic_num_realm_num_seqnum
-    on topic_message (topic_num, realm_num, sequence_number);
+    on topic_message (realm_num, topic_num, sequence_number);
