@@ -27,7 +27,8 @@ const TRANSACTION_RESULT_SUCCESS = 22;
 
 const httpStatusCodes = {
   OK: 200,
-  BAD_REQUEST: 400
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404
 };
 
 /**
@@ -38,6 +39,11 @@ const httpStatusCodes = {
 function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
+
+const isValidTimestampParam = function(timestamp) {
+  // Accepted forms: seconds or seconds.upto 9 digits
+  return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
+};
 
 /**
  * Validate input parameters for the rest apis
@@ -78,8 +84,7 @@ const paramValidityChecks = function(param, opAndVal) {
       ret = /^\d{1,10}\.\d{1,10}\.\d{1,10}$/.test(val) || /^\d{1,10}$/.test(val);
       break;
     case 'timestamp':
-      // Accepted forms: seconds or seconds.upto 9 digits
-      ret = /^\d{1,10}$/.test(val) || /^\d{1,10}\.\d{1,9}$/.test(val);
+      ret = isValidTimestampParam(val);
       break;
     case 'account.balance':
       // Accepted forms: Upto 50 billion
@@ -119,13 +124,7 @@ const paramValidityChecks = function(param, opAndVal) {
  * @return {Object} result of validity check, and return http code/contents
  */
 const validateReq = function(req) {
-  let ret = {
-    isValid: true,
-    code: httpStatusCodes.OK,
-    contents: 'OK'
-  };
   let badParams = [];
-
   // Check the validity of every query parameter
   for (const key in req.query) {
     if (Array.isArray(req.query[key])) {
@@ -140,18 +139,23 @@ const validateReq = function(req) {
       }
     }
   }
+  return makeValidationResponse(badParams);
+};
 
-  let errorMessages = errorMessageFormat();
-  errorMessages._status.messages = badParams;
-
-  if (badParams.length !== 0) {
-    ret = {
+const makeValidationResponse = function(badParams) {
+  if (badParams && badParams.length !== 0) {
+    return {
       isValid: false,
       code: httpStatusCodes.BAD_REQUEST,
       contents: errorMessages
     };
+  } else {
+    return {
+      isValid: true,
+      code: httpStatusCodes.OK,
+      contents: 'OK'
+    };
   }
-  return ret;
 };
 
 const errorMessageFormat = () => {
@@ -193,6 +197,24 @@ const parseEntityId = function(acc) {
     }
   }
   return ret;
+};
+
+const parseTimestampParam = function(timestampParam) {
+  // Expect timestamp input as (a) just seconds,
+  // (b) seconds.mmm (3-digit milliseconds),
+  // or (c) seconds.nnnnnnnnn (9-digit nanoseconds)
+  // Convert all of these formats to (seconds * 10^9 + nanoseconds) format,
+  // after validating that all characters are digits
+  if (!timestampParam) {
+    return '';
+  }
+  let tsSplit = timestampParam.split('.');
+  if (tsSplit.length <= 0 || tsSplit.length > 2) {
+    return '';
+  }
+  let seconds = /^(\d)+$/.test(tsSplit[0]) ? tsSplit[0] : 0;
+  let nanos = tsSplit.length === 2 && /^(\d)+$/.test(tsSplit[1]) ? tsSplit[1] : 0;
+  return '' + seconds + (nanos + '000000000').substring(0, 9);
 };
 
 /**
@@ -257,15 +279,7 @@ const parseComparatorSymbol = function(fields, valArr, type = null, valueTransla
             fquery += f.num + ' ' + opsMap[op] + ' ? ';
             vals = vals.concat([entity.realm, entity.num]);
           } else if (type === 'timestamp_ns') {
-            // Expect timestamp input as (a) just seconds,
-            // (b) seconds.mmm (3-digit milliseconds),
-            // or (c) seconds.nnnnnnnnn (9-digit nanoseconds)
-            // Convert all of these formats to (seconds * 10^9 + nanoseconds) format,
-            // after validating that all characters are digits
-            let tsSplit = val.split('.');
-            let seconds = /^(\d)+$/.test(tsSplit[0]) ? tsSplit[0] : 0;
-            let nanos = tsSplit.length == 2 && /^(\d)+$/.test(tsSplit[1]) ? tsSplit[1] : 0;
-            let ts = '' + seconds + (nanos + '000000000').substring(0, 9);
+            let ts = parseTimestampParam(val);
             fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
             vals.push(ts);
           } else if (type === 'balance') {
@@ -646,11 +660,14 @@ module.exports = {
   encodeKey: encodeKey,
   encodeBase64: encodeBase64,
   validateReq: validateReq,
+  makeValidationResponse: makeValidationResponse,
   httpStatusCodes: httpStatusCodes,
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
   getNullableNumber: getNullableNumber,
   nsToSecNsWithHyphen: nsToSecNsWithHyphen,
   createTransactionId: createTransactionId,
   TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
-  createSingleErrorJsonResponse: createSingleErrorJsonResponse
+  createSingleErrorJsonResponse: createSingleErrorJsonResponse,
+  isValidTimestampParam: isValidTimestampParam,
+  parseTimestampParam: parseTimestampParam
 };
