@@ -1,5 +1,5 @@
 {
-  "description": "Account api call for specific a range of account",
+  "description": "Account api call for specific a range of accounts with a limit",
   "setup": {
     "accounts": [
       {
@@ -48,7 +48,7 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/accounts?account.id=gte:0.0.18&account.id=lt:0.0.21&limit=2",
+  "url": "/api/v1/accounts?account.id=gt:0.0.17&limit=2",
   "responseStatus": 200,
   "responseJson": {
     "accounts": [
@@ -76,7 +76,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/accounts?account.id=lt:0.0.21&account.id=gt:0.0.19&limit=2"
+      "next": "/api/v1/accounts?limit=2&account.id=gt:0.0.19"
     }
   }
 }

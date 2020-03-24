@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -195,7 +195,7 @@ const getOneAccount = function(req, res) {
   const acc = utils.parseEntityId(req.params.id);
 
   if (acc.num === 0) {
-    res.status(400).send('Invalid account number');
+    res.status(400).send(utils.createSingleErrorJsonResponse('Invalid account number'));
     return;
   }
 
@@ -264,8 +264,15 @@ const getOneAccount = function(req, res) {
       const transactionsResults = values[1];
 
       // Process the results of entities query
+      if (entityResults.rows.length === 0) {
+        res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
+        return;
+      }
+
       if (entityResults.rows.length !== 1) {
-        res.status(500).send('Error: Could not get entity information');
+        res
+          .status(utils.httpStatusCodes.NOT_FOUND)
+          .send(utils.createSingleErrorJsonResponse('Error: Could not get entity information'));
         return;
       }
 
@@ -299,7 +306,7 @@ const getOneAccount = function(req, res) {
     })
     .catch(err => {
       logger.error('getOneAccount error: ' + JSON.stringify(err.stack));
-      res.status(500).send('Internal error');
+      res.status(utils.httpStatusCodes.INTERNAL_ERROR).send(utils.createSingleErrorJsonResponse('Internal error'));
     });
 };
 

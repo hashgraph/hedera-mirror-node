@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for transactions with fail result type",
+  "description": "Transaction api calls for a specific transactions using all params",
   "setup": {
     "accounts": [
       {
@@ -57,55 +57,29 @@
       }
     ]
   },
-  "url": "/api/v1/transactions?result=fail&limit=2",
+  "url": "/api/v1/transactions?timestamp=1565779209.711927001&account.id=0.0.9&type=credit&result=success",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
       {
-        "consensus_timestamp": "1565779333.711927001",
-        "valid_start_timestamp": "1565779333.711927000",
+        "consensus_timestamp": "1565779209.711927001",
+        "valid_start_timestamp": "1565779209.711927000",
         "charged_tx_fee": 7,
         "memo_base64": null,
-        "result": "FAIL_BALANCE",
+        "result": "SUCCESS",
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
-        "transaction_id": "0.0.8-1565779333-711927000",
-        "valid_duration_seconds": "11",
-        "max_fee": "33",
-        "transfers": [
-          {
-            "account": "0.0.8",
-            "amount": -31
-          },
-          {
-            "account": "0.0.9",
-            "amount": 30
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1
-          }
-        ]
-      },
-      {
-        "consensus_timestamp": "1565779111.711927001",
-        "valid_start_timestamp": "1565779111.711927000",
-        "charged_tx_fee": 7,
-        "memo_base64": null,
-        "result": "FAIL_FEE",
-        "name": "CRYPTOTRANSFER",
-        "node": "0.0.3",
-        "transaction_id": "0.0.10-1565779111-711927000",
+        "transaction_id": "0.0.10-1565779209-711927000",
         "valid_duration_seconds": "11",
         "max_fee": "33",
         "transfers": [
           {
             "account": "0.0.9",
-            "amount": 10
+            "amount": 20
           },
           {
             "account": "0.0.10",
-            "amount": -11
+            "amount": -21
           },
           {
             "account": "0.0.98",
@@ -115,7 +89,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/transactions?result=fail&limit=2&timestamp=lt:1565779111.711927001"
+      "next": null
     }
   }
 }

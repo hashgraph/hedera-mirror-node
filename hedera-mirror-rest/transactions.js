@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -256,12 +256,10 @@ const getOneTransaction = function(req, res) {
   let txIdMatches = req.params.id.match(/(\d+)\.(\d+)\.(\d+)-(\d{10})-(\d{9})/);
   if (txIdMatches === null || txIdMatches.length != 6) {
     logger.info(`getOneTransaction: Invalid transaction id ${req.params.id}`);
-    res
-      .status(404)
-      .send(
-        'Invalid Transaction id. Please use "shard.realm.num-ssssssssss.nnnnnnnnn" ' +
-          'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds'
-      );
+    let message =
+      'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" ' +
+      'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
+    res.status(utils.httpStatusCodes.BAD_REQUEST).send(utils.createSingleErrorJsonResponse(message));
     return;
   }
   const sqlParams = [txIdMatches[1], txIdMatches[2], txIdMatches[3], txIdMatches[4] + '' + txIdMatches[5]];
@@ -307,7 +305,7 @@ const getOneTransaction = function(req, res) {
 
     if (error) {
       logger.error('getOneTransaction error: ' + JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      res.status(404).send('Not found');
+      res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
       return;
     }
 
@@ -316,7 +314,7 @@ const getOneTransaction = function(req, res) {
     ret = tl.ret;
 
     if (ret.transactions.length === 0) {
-      res.status(404).send('Not found');
+      res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
       return;
     }
 
