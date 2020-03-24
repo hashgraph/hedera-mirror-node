@@ -33,15 +33,10 @@
   "url": "/api/v1/topic/7/message/3",
   "responseStatus": 200,
   "responseJson": {
-    "topicmessage": {
-      "consensus_timestamp": "1234567890.000000003",
-      "message": "eyJhIiwiYiIsImMifQ==",
-      "running_hash": "eyJkIiwiZSIsImYifQ==",
-      "sequence_number": 3,
-      "topic_id": "0.0.7"
-    },
-    "links": {
-      "next": "/api/v1/topic/7/message/4"
-    }
+    "consensus_timestamp": "1234567890.000000003",
+    "message": "eyJhIiwiYiIsImMifQ==",
+    "running_hash": "eyJkIiwiZSIsImYifQ==",
+    "sequence_number": 3,
+    "topic_id": "0.0.7"
   }
 }

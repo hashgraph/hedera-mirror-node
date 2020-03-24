@@ -64,18 +64,6 @@ const formatTopicMessageRow = function(row) {
 };
 
 /**
- * Provides topic message response format
- */
-const topicMessagesResponseFormat = () => {
-  return {
-    topicmessage: null,
-    links: {
-      next: null
-    }
-  };
-};
-
-/**
  * Extracts and validates timestamp input, creates db query logic in preparation for db call to get message
  */
 const processGetMessageByConsensusTimestampRequest = (params, httpResponse) => {
@@ -99,9 +87,9 @@ const processGetMessageByConsensusTimestampRequest = (params, httpResponse) => {
 /**
  * Extracts and validates topic and sequence params and creates db query statement in preparation for db call to get message
  */
-const processGetMessageByTopicAndSequenceRequest = (req, httpResponse) => {
-  const topicId = req.params.id;
-  const seqNum = req.params.seqnum;
+const processGetMessageByTopicAndSequenceRequest = (params, httpResponse) => {
+  const topicId = params.id;
+  const seqNum = params.seqnum;
 
   const validationResult = validateGetSequenceMessageParams(topicId, seqNum);
   if (!validationResult.isValid) {
@@ -118,29 +106,17 @@ const processGetMessageByTopicAndSequenceRequest = (req, httpResponse) => {
     ' from topic_message where realm_num = $1 and topic_num = $2 and sequence_number = $3 limit 1';
   const pgSqlParams = [entity.realm, entity.num, seqNum];
 
-  return getMessage(pgSqlQuery, pgSqlParams, httpResponse, req.path);
+  return getMessage(pgSqlQuery, pgSqlParams, httpResponse);
 };
 
 /**
  * Retrieves topic message from
  */
-const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse, reqPath) {
+const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
   return pool.query(pgSqlQuery, pgSqlParams).then(results => {
     // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
     if (results.rowCount === 1) {
-      let json;
-      let topicMessage = formatTopicMessageRow(results.rows[0]);
-
-      // handle response format based on path provision
-      if (reqPath) {
-        json = topicMessagesResponseFormat();
-        json.topicmessage = topicMessage;
-        json.links.next = `${reqPath.substr(0, reqPath.length - 1)}${topicMessage.sequence_number + 1}`;
-      } else {
-        json = topicMessage;
-      }
-
-      httpResponse.json(json);
+      httpResponse.json(formatTopicMessageRow(results.rows[0]));
     } else {
       httpResponse.status(utils.httpStatusCodes.NOT_FOUND).json(MESSAGE_NOT_FOUND);
     }
@@ -166,7 +142,7 @@ const getMessageByConsensusTimestamp = function(req, res) {
 const getMessageByTopicAndSequenceRequest = function(req, res) {
   logger.debug('--------------------  getMessageByTopicAndSequenceRequest --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByTopicAndSequenceRequest(req, res);
+  return processGetMessageByTopicAndSequenceRequest(req.params, res);
 };
 
 module.exports = {
