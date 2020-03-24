@@ -37,6 +37,8 @@ const httpErrorMessages = {
   INTERNAL_ERROR: 'Internal error'
 };
 
+const successValidationResponse = {isValid: true, code: 200, contents: 'OK'};
+
 /**
  * Check if the given number is numeric
  * @param {String} n Number to test
@@ -168,11 +170,7 @@ const makeValidationResponse = function(badParams) {
       contents: errorMessageFormat(badParams)
     };
   } else {
-    return {
-      isValid: true,
-      code: httpStatusCodes.OK,
-      contents: 'OK'
-    };
+    return successValidationResponse;
   }
 };
 
@@ -687,6 +685,7 @@ module.exports = {
   returnEntriesLimit: returnEntriesLimit,
   secNsToNs: secNsToNs,
   secNsToSeconds: secNsToSeconds,
+  successValidationResponse: successValidationResponse,
   toHexString: toHexString,
   TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
   validateReq: validateReq

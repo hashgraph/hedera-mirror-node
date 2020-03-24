@@ -20,17 +20,13 @@
 'use strict';
 
 const topicmessage = require('../topicmessage.js');
+const utils = require('../utils.js');
 
 beforeAll(async () => {
   jest.setTimeout(1000);
 });
 
 afterAll(() => {});
-
-const invalidTimestamp = 'Invalid parameter: consensusTimestamp';
-const invalidTopicNumber = 'Invalid parameter: topic_num';
-const invalidSequenceNumber = 'Invalid parameter: sequence_number';
-const successResponse = {code: 200, contents: 'OK', isValid: true};
 
 describe('topicmessage validateConsensusTimestampParam tests', () => {
   test('Verify validateConsensusTimestampParam returns correct result for -1234567890.000000001', () => {
@@ -107,21 +103,20 @@ describe('topicmessage formatTopicMessageRow tests', () => {
 });
 
 const verifyValidParamResponse = val => {
-  expect(val).toStrictEqual(successResponse);
+  expect(val).toStrictEqual(utils.successValidationResponse);
 };
 
 const verifyInvalidConsensusTimestamp = val => {
-  expect(val).toStrictEqual({
-    code: 400,
-    contents: {_status: {messages: [{message: invalidTimestamp}]}},
-    isValid: false
-  });
+  expect(val).toStrictEqual(
+    utils.makeValidationResponse([utils.getInvalidParameterMessageObject('consensusTimestamp')])
+  );
 };
 
 const verifyInvalidTopicAndSequenceNum = val => {
-  expect(val).toStrictEqual({
-    code: 400,
-    contents: {_status: {messages: [{message: invalidTopicNumber}, {message: invalidSequenceNumber}]}},
-    isValid: false
-  });
+  expect(val).toStrictEqual(
+    utils.makeValidationResponse([
+      utils.getInvalidParameterMessageObject('topic_num'),
+      utils.getInvalidParameterMessageObject('sequence_number')
+    ])
+  );
 };
