@@ -29,12 +29,12 @@
     ]
   },
   "url": "/api/v1/transactions/0.1.10-9999999999.000000000",
-  "responseStatus": 404,
+  "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Invalid Transaction id. Please use \"shard.realm.num-ssssssssss.nnnnnnnnn\" format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds"
+          "message": "Invalid Transaction id. Please use \"shard.realm.num-ssssssssss-nnnnnnnnn\" format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds"
         }
       ]
     }

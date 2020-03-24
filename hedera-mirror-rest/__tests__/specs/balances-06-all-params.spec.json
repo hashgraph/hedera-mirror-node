@@ -1,5 +1,5 @@
 {
-  "description": "Balances api call using all queries",
+  "description": "Balances api call using all params",
   "setup": {
     "accounts": [
       {

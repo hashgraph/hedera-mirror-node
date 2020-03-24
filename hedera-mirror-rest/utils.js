@@ -28,7 +28,8 @@ const TRANSACTION_RESULT_SUCCESS = 22;
 const httpStatusCodes = {
   OK: 200,
   BAD_REQUEST: 400,
-  NOT_FOUND: 404
+  NOT_FOUND: 404,
+  INTERNAL_ERROR: 500
 };
 
 /**
@@ -147,7 +148,11 @@ const makeValidationResponse = function(badParams) {
     return {
       isValid: false,
       code: httpStatusCodes.BAD_REQUEST,
-      contents: errorMessages
+      contents: {
+        _status: {
+          messages: badParams
+        }
+      }
     };
   } else {
     return {
@@ -158,18 +163,16 @@ const makeValidationResponse = function(badParams) {
   }
 };
 
-const errorMessageFormat = () => {
+const errorMessageFormat = messages => {
   return {
     _status: {
-      messages: []
+      messages: messages
     }
   };
 };
 
 const createSingleErrorJsonResponse = message => {
-  let response = errorMessageFormat();
-  response._status.messages.push({message: message});
-  return response;
+  return errorMessageFormat([{message: message}]);
 };
 
 /**

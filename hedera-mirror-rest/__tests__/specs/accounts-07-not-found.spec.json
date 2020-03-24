@@ -53,12 +53,15 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/accounts?account.id=0.0.7",
-  "responseStatus": 200,
+  "url": "/api/v1/accounts/0.0.7",
+  "responseStatus": 404,
   "responseJson": {
-    "accounts": [],
-    "links": {
-      "next": null
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
     }
   }
 }

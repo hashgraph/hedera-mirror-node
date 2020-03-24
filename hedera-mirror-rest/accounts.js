@@ -264,8 +264,15 @@ const getOneAccount = function(req, res) {
       const transactionsResults = values[1];
 
       // Process the results of entities query
+      if (entityResults.rows.length === 0) {
+        res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
+        return;
+      }
+
       if (entityResults.rows.length !== 1) {
-        res.status(500).send(utils.createSingleErrorJsonResponse('Error: Could not get entity information'));
+        res
+          .status(utils.httpStatusCodes.NOT_FOUND)
+          .send(utils.createSingleErrorJsonResponse('Error: Could not get entity information'));
         return;
       }
 
@@ -299,7 +306,7 @@ const getOneAccount = function(req, res) {
     })
     .catch(err => {
       logger.error('getOneAccount error: ' + JSON.stringify(err.stack));
-      res.status(500).send(utils.createSingleErrorJsonResponse('Internal error'));
+      res.status(utils.httpStatusCodes.INTERNAL_ERROR).send(utils.createSingleErrorJsonResponse('Internal error'));
     });
 };
 

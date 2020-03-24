@@ -39,13 +39,13 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.5",
-  "responseStatus": 500,
+  "url": "/api/v1/accounts/0.5",
+  "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Error: Could not get entity information"
+          "message": "Invalid account number"
         }
       ]
     }

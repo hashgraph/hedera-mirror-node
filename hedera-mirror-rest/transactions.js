@@ -257,9 +257,9 @@ const getOneTransaction = function(req, res) {
   if (txIdMatches === null || txIdMatches.length != 6) {
     logger.info(`getOneTransaction: Invalid transaction id ${req.params.id}`);
     let message =
-      'Invalid Transaction id. Please use "shard.realm.num-ssssssssss.nnnnnnnnn" ' +
+      'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" ' +
       'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
-    res.status(404).send(utils.createSingleErrorJsonResponse(message));
+    res.status(utils.httpStatusCodes.BAD_REQUEST).send(utils.createSingleErrorJsonResponse(message));
     return;
   }
   const sqlParams = [txIdMatches[1], txIdMatches[2], txIdMatches[3], txIdMatches[4] + '' + txIdMatches[5]];
@@ -305,7 +305,7 @@ const getOneTransaction = function(req, res) {
 
     if (error) {
       logger.error('getOneTransaction error: ' + JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      res.status(404).send(utils.createSingleErrorJsonResponse('Not found'));
+      res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
       return;
     }
 
@@ -314,7 +314,7 @@ const getOneTransaction = function(req, res) {
     ret = tl.ret;
 
     if (ret.transactions.length === 0) {
-      res.status(404).send(utils.createSingleErrorJsonResponse('Not found'));
+      res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
       return;
     }
 
