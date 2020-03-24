@@ -32,6 +32,11 @@ const httpStatusCodes = {
   INTERNAL_ERROR: 500
 };
 
+const httpErrorMessages = {
+  NOT_FOUND: 'Not found',
+  INTERNAL_ERROR: 'Internal error'
+};
+
 /**
  * Check if the given number is numeric
  * @param {String} n Number to test
@@ -123,6 +128,14 @@ const paramValidityChecks = function(param, opAndVal) {
   return ret;
 };
 
+const getInvalidParameterMessage = message => {
+  return `Invalid parameter: ${message}`;
+};
+
+const getInvalidParameterMessageObject = message => {
+  return {message: getInvalidParameterMessage(message)};
+};
+
 /**
  * Validate input http request object
  * @param {HTTPRequest} req HTTP request object
@@ -135,12 +148,12 @@ const validateReq = function(req) {
     if (Array.isArray(req.query[key])) {
       for (const val of req.query[key]) {
         if (!paramValidityChecks(key, val)) {
-          badParams.push({message: `Invalid parameter: ${key}`});
+          badParams.push(getInvalidParameterMessageObject(key));
         }
       }
     } else {
       if (!paramValidityChecks(key, req.query[key])) {
-        badParams.push({message: `Invalid parameter: ${key}`});
+        badParams.push(getInvalidParameterMessageObject(key));
       }
     }
   }
@@ -152,11 +165,7 @@ const makeValidationResponse = function(badParams) {
     return {
       isValid: false,
       code: httpStatusCodes.BAD_REQUEST,
-      contents: {
-        _status: {
-          messages: badParams
-        }
-      }
+      contents: errorMessageFormat(badParams)
     };
   } else {
     return {
@@ -438,7 +447,7 @@ const parseLimitAndOrderParams = function(req, defaultOrder = 'desc') {
  * @param {Array of values} sqlParams Values of positional parameters
  * @return {String} SQL query with Postgres style positional parameters
  */
-const convertMySqlStyleQueryToPostgress = function(sqlQuery, sqlParams) {
+const convertMySqlStyleQueryToPostgres = function(sqlQuery, sqlParams) {
   let paramsCount = 0;
   let sqlQueryNonInject = sqlQuery.replace(/\?/g, function() {
     return '$' + ++paramsCount;
@@ -652,30 +661,33 @@ const createTransactionId = function(shard, realm, num, validStartTimestamp) {
 };
 
 module.exports = {
-  parseParams: parseParams,
-  parseCreditDebitParams: parseCreditDebitParams,
-  parseLimitAndOrderParams: parseLimitAndOrderParams,
-  parseResultParams: parseResultParams,
-  convertMySqlStyleQueryToPostgress: convertMySqlStyleQueryToPostgress,
+  createSingleErrorJsonResponse: createSingleErrorJsonResponse,
+  createTransactionId: createTransactionId,
+  convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,
+  encodeBase64: encodeBase64,
+  encodeKey: encodeKey,
+  ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
+  getInvalidParameterMessage: getInvalidParameterMessage,
+  getInvalidParameterMessageObject: getInvalidParameterMessageObject,
+  getNullableNumber: getNullableNumber,
   getPaginationLink: getPaginationLink,
+  httpErrorMessages: httpErrorMessages,
+  httpStatusCodes: httpStatusCodes,
+  isValidEntityNum: isValidEntityNum,
+  isValidTimestampParam: isValidTimestampParam,
+  parseCreditDebitParams: parseCreditDebitParams,
   parseEntityId: parseEntityId,
+  parseLimitAndOrderParams: parseLimitAndOrderParams,
+  parseParams: parseParams,
+  parseResultParams: parseResultParams,
+  parseTimestampParam: parseTimestampParam,
+  makeValidationResponse: makeValidationResponse,
   nsToSecNs: nsToSecNs,
+  nsToSecNsWithHyphen: nsToSecNsWithHyphen,
+  returnEntriesLimit: returnEntriesLimit,
   secNsToNs: secNsToNs,
   secNsToSeconds: secNsToSeconds,
-  returnEntriesLimit: returnEntriesLimit,
   toHexString: toHexString,
-  encodeKey: encodeKey,
-  encodeBase64: encodeBase64,
-  validateReq: validateReq,
-  makeValidationResponse: makeValidationResponse,
-  httpStatusCodes: httpStatusCodes,
-  ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
-  getNullableNumber: getNullableNumber,
-  nsToSecNsWithHyphen: nsToSecNsWithHyphen,
-  createTransactionId: createTransactionId,
   TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
-  createSingleErrorJsonResponse: createSingleErrorJsonResponse,
-  isValidTimestampParam: isValidTimestampParam,
-  parseTimestampParam: parseTimestampParam,
-  isValidEntityNum: isValidEntityNum
+  validateReq: validateReq
 };

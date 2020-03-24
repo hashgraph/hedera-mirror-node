@@ -21,8 +21,6 @@
 const config = require('./config.js');
 const utils = require('./utils.js');
 
-const MESSAGE_NOT_FOUND = {message: 'hcs message not found'};
-
 /**
  * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
  */
@@ -40,11 +38,11 @@ const validateConsensusTimestampParam = function(consensusTimestamp) {
 const validateGetSequenceMessageParams = function(topicId, seqNum) {
   let badParams = [];
   if (!utils.isValidEntityNum(topicId)) {
-    badParams.push({message: `Invalid parameter: topic_num`});
+    badParams.push(utils.getInvalidParameterMessageObject('topic_num'));
   }
 
   if (!utils.isValidEntityNum(seqNum)) {
-    badParams.push({message: `Invalid parameter: sequence_number`});
+    badParams.push(utils.getInvalidParameterMessageObject('sequence_number'));
   }
 
   return utils.makeValidationResponse(badParams);
@@ -67,11 +65,11 @@ const formatTopicMessageRow = function(row) {
  * Extracts and validates timestamp input, creates db query logic in preparation for db call to get message
  */
 const processGetMessageByConsensusTimestampRequest = (params, httpResponse) => {
-  let consensusTimestampParam = params.consensusTimestamp;
+  const consensusTimestampParam = params.consensusTimestamp;
   const validationResult = validateConsensusTimestampParam(consensusTimestampParam);
   if (!validationResult.isValid) {
     return new Promise((resolve, reject) => {
-      httpResponse.status(validationResult.code).json(validationResult.contents._status);
+      httpResponse.status(validationResult.code).json(validationResult.contents);
       resolve();
     });
   }
@@ -90,11 +88,10 @@ const processGetMessageByConsensusTimestampRequest = (params, httpResponse) => {
 const processGetMessageByTopicAndSequenceRequest = (params, httpResponse) => {
   const topicId = params.id;
   const seqNum = params.seqnum;
-
   const validationResult = validateGetSequenceMessageParams(topicId, seqNum);
   if (!validationResult.isValid) {
     return new Promise((resolve, reject) => {
-      httpResponse.status(validationResult.code).json(validationResult.contents._status);
+      httpResponse.status(validationResult.code).json(validationResult.contents);
       resolve();
     });
   }
@@ -118,7 +115,9 @@ const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
     if (results.rowCount === 1) {
       httpResponse.json(formatTopicMessageRow(results.rows[0]));
     } else {
-      httpResponse.status(utils.httpStatusCodes.NOT_FOUND).json(MESSAGE_NOT_FOUND);
+      httpResponse
+        .status(utils.httpStatusCodes.NOT_FOUND)
+        .json(utils.createSingleErrorJsonResponse(utils.httpErrorMessages.NOT_FOUND));
     }
   });
 };
@@ -146,6 +145,7 @@ const getMessageByTopicAndSequenceRequest = function(req, res) {
 };
 
 module.exports = {
+  formatTopicMessageRow: formatTopicMessageRow,
   getMessageByConsensusTimestamp: getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest: getMessageByTopicAndSequenceRequest,
   validateConsensusTimestampParam: validateConsensusTimestampParam,

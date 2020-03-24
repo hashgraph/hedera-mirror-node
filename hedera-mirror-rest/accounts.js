@@ -142,7 +142,7 @@ const getAccounts = function(req) {
     .concat(pubKeyParams)
     .concat(limitParams);
 
-  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgress(entitySql, entityParams);
+  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
   logger.debug('getAccounts query: ' + pgEntityQuery + JSON.stringify(entityParams));
 
@@ -195,7 +195,7 @@ const getOneAccount = function(req, res) {
   const acc = utils.parseEntityId(req.params.id);
 
   if (acc.num === 0) {
-    res.status(400).send(utils.createSingleErrorJsonResponse('Invalid account number'));
+    res.status(400).send(utils.createSingleErrorJsonResponse(utils.getInvalidParameterMessage('account.id')));
     return;
   }
 
@@ -221,7 +221,7 @@ const getOneAccount = function(req, res) {
     ')\n';
 
   const entityParams = [acc.realm, acc.num, config.shard, acc.realm, acc.num];
-  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgress(entitySql, entityParams);
+  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
   logger.debug('getOneAccount entity query: ' + pgEntityQuery + JSON.stringify(entityParams));
   // Execute query & get a promise
@@ -250,7 +250,7 @@ const getOneAccount = function(req, res) {
 
   let transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
 
-  const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgress(transactionsQuery, innerParams);
+  const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery, innerParams);
 
   logger.debug('getOneAccount transactions query: ' + pgTransactionsQuery + JSON.stringify(innerParams));
 
@@ -265,7 +265,9 @@ const getOneAccount = function(req, res) {
 
       // Process the results of entities query
       if (entityResults.rows.length === 0) {
-        res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
+        res
+          .status(utils.httpStatusCodes.NOT_FOUND)
+          .send(utils.createSingleErrorJsonResponse(utils.httpErrorMessages.NOT_FOUND));
         return;
       }
 
@@ -306,7 +308,9 @@ const getOneAccount = function(req, res) {
     })
     .catch(err => {
       logger.error('getOneAccount error: ' + JSON.stringify(err.stack));
-      res.status(utils.httpStatusCodes.INTERNAL_ERROR).send(utils.createSingleErrorJsonResponse('Internal error'));
+      res
+        .status(utils.httpStatusCodes.INTERNAL_ERROR)
+        .send(utils.createSingleErrorJsonResponse(utils.httpErrorMessages.INTERNAL_ERROR));
     });
 };
 

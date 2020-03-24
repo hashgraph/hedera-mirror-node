@@ -10,10 +10,12 @@
   "url": "/api/v1/topic/message/123abc",
   "responseStatus": 400,
   "responseJson": {
-    "messages": [
-      {
-        "message": "Invalid parameter: consensusTimestamp"
-      }
-    ]
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: consensusTimestamp"
+        }
+      ]
+    }
   }
 }

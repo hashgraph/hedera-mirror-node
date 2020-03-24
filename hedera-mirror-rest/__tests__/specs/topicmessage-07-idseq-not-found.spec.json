@@ -21,6 +21,12 @@
   "url": "/api/v1/topic/7/message/2",
   "responseStatus": 404,
   "responseJson": {
-    "message": "hcs message not found"
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
   }
 }

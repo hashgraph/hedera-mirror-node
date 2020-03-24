@@ -10,13 +10,15 @@
   "url": "/api/v1/topic/0.0.-3/message/a",
   "responseStatus": 400,
   "responseJson": {
-    "messages": [
-      {
-        "message": "Invalid parameter: topic_num"
-      },
-      {
-        "message": "Invalid parameter: sequence_number"
-      }
-    ]
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: topic_num"
+        },
+        {
+          "message": "Invalid parameter: sequence_number"
+        }
+      ]
+    }
   }
 }

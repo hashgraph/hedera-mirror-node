@@ -187,7 +187,7 @@ const reqToSql = function(req) {
 
   return {
     limit: limit,
-    query: utils.convertMySqlStyleQueryToPostgress(sqlQuery, sqlParams),
+    query: utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams),
     order: order,
     params: sqlParams
   };
@@ -293,7 +293,7 @@ const getOneTransaction = function(req, res) {
     '   and  t.valid_start_ns = ?\n' +
     ' order by consensus_ns asc, account_num asc, amount asc'; // In case of duplicate transactions, only the first succeeds
 
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(sqlQuery, sqlParams);
+  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
   logger.debug('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
