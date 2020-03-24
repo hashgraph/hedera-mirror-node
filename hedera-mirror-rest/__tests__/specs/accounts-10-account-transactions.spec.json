@@ -1,0 +1,128 @@
+{
+  "description": "Account api calls for specific account using path",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 3
+      },
+      {
+        "entity_num": 7
+      },
+      {
+        "entity_num": 8
+      },
+      {
+        "entity_num": 9
+      },
+      {
+        "entity_num": 98
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2345,
+        "id": 7,
+        "balance": 70
+      },
+      {
+        "timestamp": 2345,
+        "id": 8,
+        "balance": 80
+      },
+      {
+        "timestamp": 2345,
+        "id": 9,
+        "balance": 90
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": [
+      {
+        "consensus_timestamp": "1234567890000000001",
+        "payerAccountId": "0.0.7",
+        "recipientAccountId": "0.0.8",
+        "amount": 25,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      },
+      {
+        "consensus_timestamp": "1234567890000000005",
+        "payerAccountId": "0.0.8",
+        "recipientAccountId": "0.0.9",
+        "amount": 10,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      }
+    ]
+  },
+  "url": "/api/v1/accounts/0.0.8",
+  "responseStatus": 200,
+  "responseJson": {
+    "transactions": [
+      {
+        "charged_tx_fee": 7,
+        "consensus_timestamp": "1234567890.000000005",
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.3",
+        "result": "SUCCESS",
+        "transaction_id": "0.0.8-1234567890-000000004",
+        "transfers": [
+          {
+            "account": "0.0.8",
+            "amount": -11
+          },
+          {
+            "account": "0.0.9",
+            "amount": 10
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1234567890.000000004"
+      },
+      {
+        "charged_tx_fee": 7,
+        "consensus_timestamp": "1234567890.000000001",
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.3",
+        "result": "SUCCESS",
+        "transaction_id": "0.0.7-1234567890-000000000",
+        "transfers": [
+          {
+            "account": "0.0.7",
+            "amount": -26
+          },
+          {
+            "account": "0.0.8",
+            "amount": 25
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1234567890.000000000"
+      }
+    ],
+    "balance": {
+      "timestamp": "0.000002345",
+      "balance": 80
+    },
+    "account": "0.0.8",
+    "expiry_timestamp": null,
+    "auto_renew_period": null,
+    "key": null,
+    "deleted": false,
+    "links": {
+      "next": null
+    }
+  }
+}

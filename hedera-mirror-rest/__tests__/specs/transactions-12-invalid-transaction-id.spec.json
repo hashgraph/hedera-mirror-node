@@ -1,0 +1,42 @@
+{
+  "description": "Transaction api calls with invalid transaction id value",
+  "setup": {
+    "accounts": [
+      {
+        "entity_num": 3
+      },
+      {
+        "entity_num": 9
+      },
+      {
+        "entity_num": 10
+      },
+      {
+        "entity_num": 98
+      }
+    ],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [
+      {
+        "consensus_timestamp": "1234567890000000001",
+        "payerAccountId": "0.0.10",
+        "recipientAccountId": "0.0.9",
+        "amount": 10,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      }
+    ]
+  },
+  "url": "/api/v1/transactions/0.1.10-9999999999.000000000",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid Transaction id. Please use \"shard.realm.num-ssssssssss-nnnnnnnnn\" format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds"
+        }
+      ]
+    }
+  }
+}

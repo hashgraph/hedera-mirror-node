@@ -28,7 +28,8 @@ const TRANSACTION_RESULT_SUCCESS = 22;
 const httpStatusCodes = {
   OK: 200,
   BAD_REQUEST: 400,
-  NOT_FOUND: 404
+  NOT_FOUND: 404,
+  INTERNAL_ERROR: 500
 };
 
 /**
@@ -164,6 +165,18 @@ const makeValidationResponse = function(badParams) {
       contents: 'OK'
     };
   }
+};
+
+const errorMessageFormat = messages => {
+  return {
+    _status: {
+      messages: messages
+    }
+  };
+};
+
+const createSingleErrorJsonResponse = message => {
+  return errorMessageFormat([{message: message}]);
 };
 
 /**
@@ -661,6 +674,7 @@ module.exports = {
   nsToSecNsWithHyphen: nsToSecNsWithHyphen,
   createTransactionId: createTransactionId,
   TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
+  createSingleErrorJsonResponse: createSingleErrorJsonResponse,
   isValidTimestampParam: isValidTimestampParam,
   parseTimestampParam: parseTimestampParam,
   isValidEntityNum: isValidEntityNum
