@@ -20,8 +20,6 @@ hedera:
       retriever:
         pollingFrequency: 50ms
 spring:
-  cache:
-    enabled: false
   datasource:
     name: ${hedera.mirror.grpc.db.name}
     password: ${hedera.mirror.grpc.db.password}
