@@ -35,6 +35,7 @@ livenessProbe:
     path: /actuator/health
     port: http
   initialDelaySeconds: 60
+  periodSeconds: 30
   timeoutSeconds: 2
 
 nameOverride: ""

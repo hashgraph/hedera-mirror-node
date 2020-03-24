@@ -28,6 +28,8 @@ management:
         enabled: false
         index: mirror
         step: 30s
+      prometheus:
+        step: 30s
     tags:
       application: ${spring.application.name}
 server:
@@ -35,6 +37,12 @@ server:
 spring:
   application:
     name: hedera-mirror-grpc
+  cloud:
+    kubernetes:
+      reload:
+        enabled: true
+      secrets:
+        paths: /usr/etc/${spring.application.name}
   datasource:
     name: ${hedera.mirror.grpc.db.name}
     password: ${hedera.mirror.grpc.db.password}

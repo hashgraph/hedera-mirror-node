@@ -26,11 +26,19 @@ management:
         enabled: false
         index: mirror
         step: 30s
+      prometheus:
+        step: 30s
     tags:
       application: ${spring.application.name}
 spring:
   application:
     name: hedera-mirror-importer
+  cloud:
+    kubernetes:
+      reload:
+        enabled: true
+      secrets:
+        paths: /usr/etc/${spring.application.name}
   datasource:
     name: ${hedera.mirror.db.name}
     password: ${hedera.mirror.db.password}

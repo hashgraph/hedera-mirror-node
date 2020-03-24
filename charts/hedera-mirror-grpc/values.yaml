@@ -35,11 +35,11 @@ labels:
   tier: api
 
 livenessProbe:
-  failureThreshold: 5
   httpGet:
     path: /actuator/health
     port: http
   initialDelaySeconds: 45
+  periodSeconds: 30
   timeoutSeconds: 2
 
 nodeSelector: {}
@@ -49,8 +49,10 @@ podSecurityContext:
 
 priorityClassName: ""
 
+rbac:
+  enabled: true
+
 readinessProbe:
-  failureThreshold: 3
   httpGet:
     path: /actuator/health
     port: http
