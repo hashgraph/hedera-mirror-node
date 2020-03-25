@@ -31,7 +31,7 @@ Feature: HCS Base Coverage Feature
         Then the network should successfully observe these messages
         Examples:
             | topicId | startTimestamp | numMessages |
-            | "1249"  | "-86400"       | 5           |
+            | ""      | "-86400"       | 5           |
 
     @PublishOnly
     Scenario Outline: Validate topic message subscription
