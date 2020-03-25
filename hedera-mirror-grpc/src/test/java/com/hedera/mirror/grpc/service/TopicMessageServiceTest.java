@@ -481,6 +481,42 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     }
 
     @Test
+    void duplicateMessages() {
+        TopicListener topicListener = Mockito.mock(TopicListener.class);
+        EntityRepository entityRepository = Mockito.mock(EntityRepository.class);
+        TopicMessageRetriever topicMessageRetriever = Mockito.mock(TopicMessageRetriever.class);
+        topicMessageService = new TopicMessageServiceImpl(new GrpcProperties(), topicListener, entityRepository,
+                topicMessageRetriever);
+
+        TopicMessageFilter retrieverFilter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        Mockito.when(entityRepository
+                .findByCompositeKey(0, retrieverFilter.getRealmNum(), retrieverFilter.getTopicNum()))
+                .thenReturn(Optional
+                        .of(Entity.builder().entityTypeId(EntityType.TOPIC).build()));
+        
+        Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers
+                .any()))
+                .thenReturn(Flux
+                        .just(topicMessage(1, Instant.EPOCH),
+                                topicMessage(1, Instant.EPOCH.plus(1, ChronoUnit.NANOS)),
+                                topicMessage(2, Instant.EPOCH.plus(2, ChronoUnit.NANOS)),
+                                topicMessage(1, Instant.EPOCH.plus(3, ChronoUnit.NANOS))));
+
+        Mockito.when(topicListener.listen(ArgumentMatchers
+                .any())).thenReturn(Flux.empty());
+
+        topicMessageService.subscribeTopic(retrieverFilter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .expectNext(1L, 2L)
+                .expectComplete()
+                .verify(Duration.ofMillis(700));
+    }
+
+    @Test
     void missingMessages() {
         TopicListener topicListener = Mockito.mock(TopicListener.class);
         EntityRepository entityRepository = Mockito.mock(EntityRepository.class);
@@ -660,6 +696,14 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     private TopicMessage topicMessage(long sequenceNumber) {
         return TopicMessage.builder()
                 .consensusTimestamp(Instant.EPOCH.plus(sequenceNumber, ChronoUnit.NANOS))
+                .realmNum(0)
+                .sequenceNumber(sequenceNumber)
+                .build();
+    }
+
+    private TopicMessage topicMessage(long sequenceNumber, Instant consensusTimestamp) {
+        return TopicMessage.builder()
+                .consensusTimestamp(consensusTimestamp)
                 .realmNum(0)
                 .sequenceNumber(sequenceNumber)
                 .build();
