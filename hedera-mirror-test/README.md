@@ -8,6 +8,8 @@ In an effort to quickly confirm product capability during deployment windows, we
 HCS specifically is a key scenario where transactions are submitted to the main network, the mirror node parser ingests these to the DB and the mirror node GRCP endpoint is subscribed to to obtain messages verifying transactions.
 This E2E suite gives us the ability to execute scenarios as external users would and gain the required confidence during development cycles.
 
+To achieve this the tests utilize the Hedera Java SDK under the hood - https://github.com/hashgraph/hedera-sdk-java
+
 ## Cucumber
 
 A BDD approach was desired for our E2E test strategy as it would ensure we more closely tracked valid customer scenarios.
@@ -47,15 +49,15 @@ Options can also be set through the command line as follows
 -   Tags : Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
     -   Acceptance test cases
 
-*                           `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance"`
+*                             `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance"`
     -   All cases
-*                           `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
+*                             `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
     -   Negative cases
-*                           `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
+*                             `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
     -   Edge cases
-*                           `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
+*                             `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
     -   ... (search for @? tags within the .feature files for further tags)
-*                             `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests  -Dcucumber.filter.tags="@BalanceCheck"`
+*                               `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests  -Dcucumber.filter.tags="@BalanceCheck"`
     -   Account check case
 
 ### Test Layout
