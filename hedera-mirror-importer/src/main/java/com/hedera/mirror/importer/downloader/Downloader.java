@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.downloader;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,6 +50,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
+import software.amazon.awssdk.services.s3.model.RequestPayer;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
@@ -151,6 +152,7 @@ public abstract class Downloader {
                             .delimiter("/")
                             .marker(s3Prefix + lastValidSigFileName)
                             .maxKeys(listSize)
+                            .requestPayer(RequestPayer.REQUESTER)
                             .build();
                     CompletableFuture<ListObjectsResponse> response = s3Client.listObjects(listRequest);
                     Collection<PendingDownload> pendingDownloads = new ArrayList<>(downloaderProperties.getBatchSize());
@@ -233,6 +235,7 @@ public abstract class Downloader {
         }
         var future = s3Client.getObject(
                 GetObjectRequest.builder().bucket(downloaderProperties.getCommon().getBucketName()).key(s3ObjectKey)
+                        .requestPayer(RequestPayer.REQUESTER)
                         .build(),
                 AsyncResponseTransformer.toFile(file));
         return new PendingDownload(future, file, s3ObjectKey);
