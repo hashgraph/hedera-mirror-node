@@ -3,8 +3,9 @@ hedera:
     test:
       acceptance:
         messageTimeout: 20
+        mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
         nodeId: 0.0.3
         nodeAddress: testnet
-        mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
         operatorId:
         operatorKey:
+        subscribeDelay: 2

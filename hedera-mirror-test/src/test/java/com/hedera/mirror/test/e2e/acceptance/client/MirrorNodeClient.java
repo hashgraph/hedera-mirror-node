@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,16 +38,19 @@ import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 public class MirrorNodeClient {
     private final MirrorClient mirrorClient;
     private final int messageTimeout;
+    private final int subscribeDelay;
 
     public MirrorNodeClient(AcceptanceTestProperties acceptanceTestProperties) {
         String mirrorNodeAddress = acceptanceTestProperties.getMirrorNodeAddress();
         log.debug("Creating Mirror Node client for {}", mirrorNodeAddress);
         mirrorClient = new MirrorClient(Objects.requireNonNull(mirrorNodeAddress));
         messageTimeout = acceptanceTestProperties.getMessageTimeout();
+        subscribeDelay = acceptanceTestProperties.getSubscribeDelay() * 1000;
     }
 
     public SubscriptionResponse subscribeToTopic(MirrorConsensusTopicQuery mirrorConsensusTopicQuery) throws Throwable {
-        log.debug("Subscribing to topic");
+        log.debug("Subscribing to topic. Subscribe is delayed by {} ms", subscribeDelay);
+        Thread.sleep(subscribeDelay, 0);
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
                 .subscribe(mirrorClient,
@@ -66,7 +69,9 @@ public class MirrorNodeClient {
                                                                     int numMessages,
                                                                     int latency) throws Exception {
         latency = latency <= 0 ? messageTimeout : latency;
-        log.debug("Subscribing to topic, expecting {} within {} seconds", numMessages, latency);
+        log.debug("Subscribing to topic, expecting {} within {} seconds. Subscribe is delayed by {} ms",
+                numMessages,
+                latency, subscribeDelay);
 
         CountDownLatch messageLatch = new CountDownLatch(numMessages);
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
