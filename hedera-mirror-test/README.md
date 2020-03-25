@@ -15,6 +15,10 @@ Cucumber is one framework that provides tools to follow this methodology. One be
 Cucumber uses the Gherkin plain language parser to describe tests.
 Further details may be explored at https://cucumber.io/. Additionally, cucumbers BDD approach is explained here https://cucumber.io/docs/bdd/
 
+### Requirements
+
+-   Java (JDK 11 and above recommended), can follow https://sdkman.io/install for instructions
+
 ### Test Execution
 
 Tests can be compiled and run by running the following command from the root folder
@@ -23,7 +27,7 @@ Tests can be compiled and run by running the following command from the root fol
 
 ### Test Configuration
 
--   Test run Config Properties: Configuration properties are set in the application.yml file located under /src/test/resources utilizing the spring boot application context for DI logic. Properties include
+-   Test run Config Properties: Configuration properties are set in the application-default.yml file located under /src/test/resources utilizing the spring boot application context for DI logic. Properties include
 
     -   messageTimeout - number of seconds to wait on messages representing transactions (default is 20)
     -   nodeId - main node id to submit transactions to in 'x.y.z' format (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book)
@@ -31,22 +35,28 @@ Tests can be compiled and run by running the following command from the root fol
     -   mirrorNodeAddress - mirror node grpc server (refer to https://docs.hedera.com/guides/docs/mirror-node-api/hedera-consensus-service-api-1)
     -   operatorId - account id on network 'x.y.z' format
     -   operatorKey - account private key, to be used for signing transaction and client identification #Be careful with showing this, do not check this value in.
+    -   subscribeDelay - number of seconds to wait before subscribing.
 
-Options can be set through the command line as follows
+(Recommended) Options can be set by creating your own configuration file with the above properties. This allows for multiple files per env. The following command will help to point out which file to use
+`./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance" -Dspring.config.name=application-testnet`
+
+Options can also be set through the command line as follows
 
     `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dhedera.mirror.test.acceptance.nodeId=0.0.4 -Dhedera.mirror.test.acceptance.nodeAddress=1.testnet.hedera.com:50211`
 
 -   Tags : Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
-    -   All test cases
+    -   Acceptance test cases
 
-*                         `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance"`
+*                           `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance"`
+    -   All cases
+*                           `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
     -   Negative cases
-*                         `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
-    -   Negative cases
-*                         `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
+*                           `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
     -   Edge cases
-*                         `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
+*                           `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
     -   ... (search for @? tags within the .feature files for further tags)
+*                             `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests  -Dcucumber.filter.tags="@BalanceCheck"`
+    -   Account check case
 
 ### Test Layout
 
