@@ -481,32 +481,6 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void duplicateMessages() {
-        Instant now = Instant.now();
-
-        // Timestamps have to be unique in the DB, so just fake sequence numbers
-        Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.sequenceNumber(1).consensusTimestamp(now)),
-                domainBuilder.topicMessage(t -> t.sequenceNumber(1).consensusTimestamp(now.plusSeconds(1))),
-                domainBuilder.topicMessage(t -> t.sequenceNumber(2).consensusTimestamp(now.plusSeconds(2))),
-                domainBuilder.topicMessage(t -> t.sequenceNumber(1).consensusTimestamp(now.plusSeconds(3)))
-        );
-
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .build();
-
-        topicMessageService.subscribeTopic(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
-                .then(() -> generator.blockLast())
-                .expectNext(1L, 2L)
-                .thenCancel()
-                .verify(Duration.ofMillis(500));
-    }
-
-    @Test
     void missingMessages() {
         TopicListener topicListener = Mockito.mock(TopicListener.class);
         EntityRepository entityRepository = Mockito.mock(EntityRepository.class);

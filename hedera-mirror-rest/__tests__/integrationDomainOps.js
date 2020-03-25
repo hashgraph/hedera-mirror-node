@@ -109,6 +109,7 @@ const addAccount = async function(account) {
       entity_realm: 0,
       exp_time_ns: null,
       public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      entity_type: 1,
       auto_renew_period: null,
       key: null
     },
@@ -124,7 +125,7 @@ const addAccount = async function(account) {
     'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted, ed25519_public_key_hex, auto_renew_period, key) ' +
       'values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id;',
     [
-      1,
+      account.entity_type,
       account.entity_shard,
       account.entity_realm,
       account.entity_num,
@@ -226,6 +227,7 @@ const addTopicMessage = async function(message) {
     },
     message
   );
+
   await sqlConnection.query(
     'insert into topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number) values ($1, $2, $3, $4, $5, $6);',
     [message.timestamp, message.realm_num, message.topic_num, message.message, message.running_hash, message.seq_num]

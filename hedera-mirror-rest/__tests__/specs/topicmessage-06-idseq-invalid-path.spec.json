@@ -1,5 +1,5 @@
 {
-  "description": "Invalid consensus timestamp",
+  "description": "Topic messages for single message with invalid param values",
   "setup": {
     "accounts": [],
     "balances": [],
@@ -7,13 +7,16 @@
     "cryptotransfers": [],
     "topicmessages": []
   },
-  "url": "/api/v1/topic/message/123abc",
+  "url": "/api/v1/topic/0.0.-3/message/a",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Invalid parameter: consensusTimestamp"
+          "message": "Invalid parameter: topic_num"
+        },
+        {
+          "message": "Invalid parameter: sequence_number"
         }
       ]
     }

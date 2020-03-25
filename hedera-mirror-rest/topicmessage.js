@@ -21,13 +21,30 @@
 const config = require('./config.js');
 const utils = require('./utils.js');
 
-const MESSAGE_NOT_FOUND = {message: 'hcs message not found'};
-
-const validateParams = function(consensusTimestamp) {
+/**
+ * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
+ */
+const validateConsensusTimestampParam = function(consensusTimestamp) {
   let badParams = [];
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
     badParams.push({message: `Invalid parameter: consensusTimestamp`});
   }
+  return utils.makeValidationResponse(badParams);
+};
+
+/**
+ * Verify topicId and seqNum meet entity_num format
+ */
+const validateGetSequenceMessageParams = function(topicId, seqNum) {
+  let badParams = [];
+  if (!utils.isValidEntityNum(topicId)) {
+    badParams.push(utils.getInvalidParameterMessageObject('topic_num'));
+  }
+
+  if (!utils.isValidEntityNum(seqNum)) {
+    badParams.push(utils.getInvalidParameterMessageObject('sequence_number'));
+  }
+
   return utils.makeValidationResponse(badParams);
 };
 
@@ -44,24 +61,63 @@ const formatTopicMessageRow = function(row) {
   };
 };
 
-const getMessage = function(consensusTimestampParam, httpResponse) {
-  const validationResult = validateParams(consensusTimestampParam);
+/**
+ * Extracts and validates timestamp input, creates db query logic in preparation for db call to get message
+ */
+const processGetMessageByConsensusTimestampRequest = (params, httpResponse) => {
+  const consensusTimestampParam = params.consensusTimestamp;
+  const validationResult = validateConsensusTimestampParam(consensusTimestampParam);
   if (!validationResult.isValid) {
     return new Promise((resolve, reject) => {
-      httpResponse.status(validationResult.code).json(validationResult.contents._status);
+      httpResponse.status(validationResult.code).json(validationResult.contents);
       resolve();
     });
   }
+
   let consensusTimestamp = utils.parseTimestampParam(consensusTimestampParam);
 
   const pgSqlQuery = `SELECT * FROM topic_message WHERE consensus_timestamp = $1`;
   const pgSqlParams = [consensusTimestamp];
+
+  return getMessage(pgSqlQuery, pgSqlParams, httpResponse);
+};
+
+/**
+ * Extracts and validates topic and sequence params and creates db query statement in preparation for db call to get message
+ */
+const processGetMessageByTopicAndSequenceRequest = (params, httpResponse) => {
+  const topicId = params.id;
+  const seqNum = params.seqnum;
+  const validationResult = validateGetSequenceMessageParams(topicId, seqNum);
+  if (!validationResult.isValid) {
+    return new Promise((resolve, reject) => {
+      httpResponse.status(validationResult.code).json(validationResult.contents);
+      resolve();
+    });
+  }
+
+  // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7. Defaults realm to 0 if not stated
+  const entity = utils.parseEntityId(topicId);
+  const pgSqlQuery =
+    'select consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number' +
+    ' from topic_message where realm_num = $1 and topic_num = $2 and sequence_number = $3 limit 1';
+  const pgSqlParams = [entity.realm, entity.num, seqNum];
+
+  return getMessage(pgSqlQuery, pgSqlParams, httpResponse);
+};
+
+/**
+ * Retrieves topic message from
+ */
+const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
   return pool.query(pgSqlQuery, pgSqlParams).then(results => {
     // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
     if (results.rowCount === 1) {
       httpResponse.json(formatTopicMessageRow(results.rows[0]));
     } else {
-      httpResponse.status(utils.httpStatusCodes.NOT_FOUND).json(MESSAGE_NOT_FOUND);
+      httpResponse
+        .status(utils.httpStatusCodes.NOT_FOUND)
+        .json(utils.createSingleErrorJsonResponse(utils.httpErrorMessages.NOT_FOUND));
     }
   });
 };
@@ -74,9 +130,24 @@ const getMessage = function(consensusTimestampParam, httpResponse) {
 const getMessageByConsensusTimestamp = function(req, res) {
   logger.debug('--------------------  getMessageByConsensusTimestamp --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return getMessage(req.params.consensusTimestamp, res);
+  return processGetMessageByConsensusTimestampRequest(req.params, res);
+};
+
+/**
+ * Handler function for /:id/message/:seqnum API.
+ * @param {Request} req HTTP request object
+ * @return {Promise} Promise for PostgreSQL query
+ */
+const getMessageByTopicAndSequenceRequest = function(req, res) {
+  logger.debug('--------------------  getMessageByTopicAndSequenceRequest --------------------');
+  logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
+  return processGetMessageByTopicAndSequenceRequest(req.params, res);
 };
 
 module.exports = {
-  getMessageByConsensusTimestamp: getMessageByConsensusTimestamp
+  formatTopicMessageRow: formatTopicMessageRow,
+  getMessageByConsensusTimestamp: getMessageByConsensusTimestamp,
+  getMessageByTopicAndSequenceRequest: getMessageByTopicAndSequenceRequest,
+  validateConsensusTimestampParam: validateConsensusTimestampParam,
+  validateGetSequenceMessageParams: validateGetSequenceMessageParams
 };

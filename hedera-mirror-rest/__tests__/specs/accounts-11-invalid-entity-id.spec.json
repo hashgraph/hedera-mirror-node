@@ -45,7 +45,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Invalid account number"
+          "message": "Invalid parameter: account.id"
         }
       ]
     }

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -73,7 +73,7 @@ const getEvents = function(req) {
     '\n' +
     limitQuery;
 
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(sqlQuery, sqlParams);
+  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
   logger.debug('getEvents query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
@@ -117,7 +117,7 @@ const getOneEvent = function(req, res) {
 
   let sqlQuery = 'select  *\n' + ' from t_events\n' + ' where ' + eventQuery;
 
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgress(sqlQuery, sqlParams);
+  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
   logger.debug('getOneEvent query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
