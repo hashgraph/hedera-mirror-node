@@ -75,16 +75,6 @@ Run the unit tests using jest by using:
 npm test
 ```
 
-#### Acceptance Tests
-
-The acceptance tests can be used against a live instance to verify the REST API is functioning correctly. To use specify
-the instance IP address and port as a `TARGET` environment variable. See the
-[monitoring](../hedera-mirror-rest/monitoring/README.md) documentation for more detail.
-
-```console
-TARGET=127.0.0.1:5551 npm run acceptancetest
-```
-
 ## Running via Docker Compose
 
 Docker Compose scripts are provided and run all the mirror node components:
