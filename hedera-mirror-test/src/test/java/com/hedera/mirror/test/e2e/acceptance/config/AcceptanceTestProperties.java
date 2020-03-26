@@ -22,6 +22,7 @@ package com.hedera.mirror.test.e2e.acceptance.config;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -46,4 +47,6 @@ public class AcceptanceTestProperties {
     private int messageTimeout;
     @Min(0)
     private int subscribeDelay;
+    @NotNull
+    private Long existingTopicNum;
 }

@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,11 +41,13 @@ import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
 @Log4j2
 @Cucumber
 public class TopicFeature {
+    private final long existingTopicNum;
     private int messageSubscribeCount;
     private int latency;
     private MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
@@ -54,12 +56,15 @@ public class TopicFeature {
     private Ed25519PrivateKey submitKey;
     private Instant testInstantReference;
     private List<TransactionReceipt> publishedTransactionReceipts;
-
     @Autowired
     private MirrorNodeClient mirrorClient;
 
     @Autowired
     private TopicClient topicClient;
+
+    public TopicFeature(AcceptanceTestProperties acceptanceTestProperties) {
+        existingTopicNum = acceptanceTestProperties.getExistingTopicNum();
+    }
 
     @Given("I successfully create a new topic id")
     public void createNewTopic() throws HederaStatusException {
@@ -115,13 +120,14 @@ public class TopicFeature {
     public void setTopicIdParam(String topicId) {
         testInstantReference = Instant.now();
         mirrorConsensusTopicQuery = new MirrorConsensusTopicQuery();
-        if (!topicId.isEmpty()) {
-            consensusTopicId = new ConsensusTopicId(0, 0, Long.parseLong(topicId));
-            mirrorConsensusTopicQuery
-                    .setTopicId(consensusTopicId)
-                    .setStartTime(Instant.EPOCH);
-            log.debug("Set mirrorConsensusTopicQuery with topic {}, {}", topicId, mirrorConsensusTopicQuery);
-        }
+
+        Long topicNum = topicId.isEmpty() ? existingTopicNum : Long.parseLong(topicId);
+        consensusTopicId = new ConsensusTopicId(0, 0, topicNum);
+
+        mirrorConsensusTopicQuery
+                .setTopicId(consensusTopicId)
+                .setStartTime(Instant.EPOCH);
+        log.debug("Set mirrorConsensusTopicQuery with topic {}, {}", topicNum, mirrorConsensusTopicQuery);
 
         messageSubscribeCount = 0;
     }
