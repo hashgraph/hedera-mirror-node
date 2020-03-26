@@ -9,3 +9,4 @@ hedera:
         operatorId:
         operatorKey:
         subscribeDelay: 2
+        existingTopicNum:
