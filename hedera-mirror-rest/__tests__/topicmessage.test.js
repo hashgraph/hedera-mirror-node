@@ -21,6 +21,7 @@
 
 const topicmessage = require('../topicmessage.js');
 const utils = require('../utils.js');
+const config = require('../config.js');
 
 beforeAll(async () => {
   jest.setTimeout(1000);
@@ -91,7 +92,7 @@ describe('topicmessage formatTopicMessageRow tests', () => {
 
   const expectedFormat = {
     consensus_timestamp: '1234567890.000000003',
-    topic_id: '0.1.7',
+    topic_id: `${config.shard}.1.7`,
     message: 'eyJhIiwiYiIsImMifQ==',
     running_hash: 'eyJjIiwiZCIsImUifQ==',
     sequence_number: 3
