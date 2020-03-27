@@ -53,6 +53,8 @@
     }
   },
   "jest": {
+    "coverageDirectory": "./coverage/",
+    "collectCoverage": true,
     "reporters": [
       "default",
       "jest-junit"
@@ -66,9 +68,5 @@
   },
   "jest-junit": {
     "outputDirectory": "target/jest-junit"
-  },
-  "jest": {
-    "coverageDirectory": "./coverage/",
-    "collectCoverage": true
   }
 }
