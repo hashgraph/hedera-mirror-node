@@ -175,6 +175,10 @@ jobs:
           path: hedera-mirror-rest/target/jest-junit
       - run:
           working_directory: "hedera-mirror-rest"
+          name: Upload Code Coverage
+          command: node_modules/codecov/bin/codecov
+      - run:
+          working_directory: "hedera-mirror-rest"
           name: Collecting assets
           command: |
             set -ex
