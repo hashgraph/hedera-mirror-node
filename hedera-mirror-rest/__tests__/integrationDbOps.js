@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,7 +52,7 @@ const SERVICE_FEE = 4;
 
 let accountEntityIds = {};
 
-const isDockerInstalled = function () {
+const isDockerInstalled = function() {
   return new Promise(resolve => {
     exec('docker --version', err => {
       resolve(!err);
@@ -64,7 +64,7 @@ const isDockerInstalled = function () {
  * Instantiate sqlConnection by either pointing at a DB specified by environment variables or instantiating a
  * testContainers/dockerized postgresql instance.
  */
-const instantiateDatabase = async function () {
+const instantiateDatabase = async function() {
   if (!process.env.TEST_DB_HOST) {
     if (!(await isDockerInstalled())) {
       dbPort = dbHost = dbName = null;
@@ -73,14 +73,14 @@ const instantiateDatabase = async function () {
     }
 
     dockerDb = await new GenericContainer('postgres', dockerPostgresTag)
-            .withEnv('POSTGRES_DB', dbName)
-            .withEnv('POSTGRES_USER', dbUser)
-            .withEnv('POSTGRES_PASSWORD', dbPassword)
-            .withExposedPorts(defaultPostgresqlPort)
-            .start();
+      .withEnv('POSTGRES_DB', dbName)
+      .withEnv('POSTGRES_USER', dbUser)
+      .withEnv('POSTGRES_PASSWORD', dbPassword)
+      .withExposedPorts(defaultPostgresqlPort)
+      .start();
     dbPort = dockerDb.getMappedPort(defaultPostgresqlPort);
     console.log(
-            `Setup testContainer (dockerized version of) postgres ${dockerPostgresTag}, listening on port ${dbPort}`
+      `Setup testContainer (dockerized version of) postgres ${dockerPostgresTag}, listening on port ${dbPort}`
     );
   } else {
     dbHost = process.env.TEST_DB_HOST;
@@ -109,25 +109,25 @@ const instantiateDatabase = async function () {
  * Run the sql (non-java) based migrations stored in the importer project against the target database.
  * @returns {Promise}
  */
-const flywayMigrate = function () {
+const flywayMigrate = function() {
   console.log('Using flyway CLI to construct schema');
   let exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   let configPath = path.join('config', '.node-flywaydb.integration.conf');
   let flywayEnv = {
     env: Object.assign(
-            {},
-            {
-              FLYWAY_URL: `jdbc:postgresql://${dbHost}:${dbPort}/${dbName}`,
-              FLYWAY_USER: dbUser,
-              FLYWAY_PASSWORD: dbPassword,
-              'FLYWAY_PLACEHOLDERS_db-name': dbName,
-              'FLYWAY_PLACEHOLDERS_db-user': dbUser,
-              'FLYWAY_PLACEHOLDERS_api-user': 'mirror_api',
-              'FLYWAY_PLACEHOLDERS_api-password': 'mirror_api_pass',
-              FLYWAY_LOCATIONS:
-                      'filesystem:' + path.join('..', 'hedera-mirror-importer', 'src', 'main', 'resources', 'db', 'migration')
-            },
-            process.env
+      {},
+      {
+        FLYWAY_URL: `jdbc:postgresql://${dbHost}:${dbPort}/${dbName}`,
+        FLYWAY_USER: dbUser,
+        FLYWAY_PASSWORD: dbPassword,
+        'FLYWAY_PLACEHOLDERS_db-name': dbName,
+        'FLYWAY_PLACEHOLDERS_db-user': dbUser,
+        'FLYWAY_PLACEHOLDERS_api-user': 'mirror_api',
+        'FLYWAY_PLACEHOLDERS_api-password': 'mirror_api_pass',
+        FLYWAY_LOCATIONS:
+          'filesystem:' + path.join('..', 'hedera-mirror-importer', 'src', 'main', 'resources', 'db', 'migration')
+      },
+      process.env
     )
   };
   return new Promise((resolve, reject) => {
@@ -149,7 +149,7 @@ const flywayMigrate = function () {
   });
 };
 
-const closeConnection = function () {
+const closeConnection = function() {
   if (sqlConnection) {
     sqlConnection.end();
     sqlConnection = null;
@@ -173,27 +173,29 @@ const closeConnection = function () {
   }
 };
 
-const cleanUp = async function () {
-  await sqlConnection.query(cleanupSql);
+const cleanUp = async function() {
+  if (sqlConnection) {
+    await sqlConnection.query(cleanupSql);
+  }
 };
 
 const cleanupSql = fs.readFileSync(
-        path.join(
-                __dirname,
-                '..',
-                '..',
-                'hedera-mirror-importer',
-                'src',
-                'main',
-                'resources',
-                'db',
-                'scripts',
-                'cleanup.sql'
-        ),
-        'utf8'
+  path.join(
+    __dirname,
+    '..',
+    '..',
+    'hedera-mirror-importer',
+    'src',
+    'main',
+    'resources',
+    'db',
+    'scripts',
+    'cleanup.sql'
+  ),
+  'utf8'
 );
 
-const runSqlQuery = async function (query, params) {
+const runSqlQuery = async function(query, params) {
   return await sqlConnection.query(query, params);
 };
 

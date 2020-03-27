@@ -306,12 +306,7 @@ const getOneAccount = function(req, res) {
       logger.debug('getOneAccount returning ' + ret.transactions.length + ' transactions entries');
       res.json(ret);
     })
-    .catch(err => {
-      logger.error('getOneAccount error: ' + JSON.stringify(err.stack));
-      res
-        .status(utils.httpStatusCodes.INTERNAL_ERROR)
-        .send(utils.createSingleErrorJsonResponse(utils.httpErrorMessages.INTERNAL_ERROR));
-    });
+    .catch(err => utils.errorHandler(err, req, res, null));
 };
 
 module.exports = {

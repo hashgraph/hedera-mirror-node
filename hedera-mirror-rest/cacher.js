@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -58,21 +58,20 @@ class Cacher {
           res.json(data.contents);
         }
       })
-      .catch(error => {
-        logger.error('Error processing ' + req.originalUrl + JSON.stringify(error, Object.getOwnPropertyNames(error)));
-        res.status(500).send('Internal error');
+      .catch(err => {
+        utils.errorHandler(err, req, res, null);
       });
 
     /*
                 // TODO: Enable this code for caching later
-        
+
                 // If a cached copy exists, return that.
                 const url = this.getUrlFromRequest(req);
                 const content = this.cache.get(url);
                 if (content) {
                     res.json(content);
                 } else {
-                    // Invoke the function to query the database, and store the results 
+                    // Invoke the function to query the database, and store the results
                     // before returning from the API
                     func(req)
                         .then(content => {
