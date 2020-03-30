@@ -20,7 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * ‍
  */
 
-import javax.validation.constraints.Min;
+import java.time.Duration;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -43,10 +43,10 @@ public class AcceptanceTestProperties {
     private String operatorId;
     @NotBlank
     private String operatorKey;
-    @Min(0)
-    private int messageTimeout;
-    @Min(0)
-    private int subscribeDelay;
+    @NotNull
+    private Duration messageTimeout;
     @NotNull
     private Long existingTopicNum;
+
+    private boolean emitBackgroundMessages = false;
 }

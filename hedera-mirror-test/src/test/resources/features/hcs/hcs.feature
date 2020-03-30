@@ -5,23 +5,23 @@ Feature: HCS Base Coverage Feature
     Scenario Outline: Validate Topic message submission
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent
-        When I provide a number of messages <expectedCount> I want to receive
+        When I provide a number of messages <numMessages> I want to receive
         And I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages
         Examples:
-            | numMessages | expectedCount |
-            | 15          | 10            |
+            | numMessages |
+            | 10          |
 
     @OpenSubscribe @Acceptance
     Scenario Outline: Validate Topic message submission to an open submit topic
         Given I successfully create a new open topic
         And I publish and verify <numMessages> messages sent
-        When I provide a number of messages <expectedCount> I want to receive
+        When I provide a number of messages <numMessages> I want to receive
         And I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages
         Examples:
-            | numMessages | expectedCount |
-            | 5           | 2             |
+            | numMessages |
+            | 2           |
 
     @SubscribeOnly @Acceptance
     Scenario Outline: Validate topic message subscription only
@@ -40,8 +40,8 @@ Feature: HCS Base Coverage Feature
         And I subscribe with a filter to retrieve these published messages
         Then the network should successfully observe these messages
         Examples:
-            | topicId  | numBatches | numMessages | milliSleep |
-            | "171231" | 2          | 3           | 2000       |
+            | topicId | numBatches | numMessages | milliSleep |
+            | ""      | 2          | 3           | 2000       |
 
     @PublishAndVerify
     Scenario Outline: Validate topic message subscription
@@ -67,13 +67,13 @@ Feature: HCS Base Coverage Feature
     Scenario Outline: Validate Topic message listener latency
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent
-        When I provide a number of messages <expectedCount> I want to receive within <latency> seconds
+        When I provide a number of messages <numMessages> I want to receive within <latency> seconds
         And I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages
         Examples:
-            | numMessages | latency | expectedCount |
-            | 5           | 30      | 2             |
-            | 10          | 30      | 5             |
+            | numMessages | latency |
+            | 2           | 30      |
+            | 5           | 30      |
 
     @Negative @Acceptance
     Scenario Outline: Validate topic subscription with missing topic id

@@ -2,11 +2,12 @@ hedera:
   mirror:
     test:
       acceptance:
-        messageTimeout: 20
+        emitBackgroundMessages: false
+        existingTopicNum:
+        messageTimeout: 20s
         mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
         nodeId: 0.0.3
         nodeAddress: testnet
         operatorId:
         operatorKey:
-        subscribeDelay: 2
-        existingTopicNum:
+        subscribeDelay: 2s

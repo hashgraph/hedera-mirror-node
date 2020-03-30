@@ -21,12 +21,15 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import com.google.common.base.Stopwatch;
+import io.grpc.StatusRuntimeException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 
 import com.hedera.hashgraph.sdk.mirror.MirrorClient;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
@@ -37,20 +40,17 @@ import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 @Log4j2
 public class MirrorNodeClient {
     private final MirrorClient mirrorClient;
-    private final int messageTimeout;
-    private final int subscribeDelay;
+    private final AcceptanceTestProperties acceptanceProps;
 
     public MirrorNodeClient(AcceptanceTestProperties acceptanceTestProperties) {
         String mirrorNodeAddress = acceptanceTestProperties.getMirrorNodeAddress();
         log.debug("Creating Mirror Node client for {}", mirrorNodeAddress);
         mirrorClient = new MirrorClient(Objects.requireNonNull(mirrorNodeAddress));
-        messageTimeout = acceptanceTestProperties.getMessageTimeout();
-        subscribeDelay = acceptanceTestProperties.getSubscribeDelay() * 1000;
+        acceptanceProps = acceptanceTestProperties;
     }
 
     public SubscriptionResponse subscribeToTopic(MirrorConsensusTopicQuery mirrorConsensusTopicQuery) throws Throwable {
-        log.debug("Subscribing to topic. Subscribe is delayed by {} ms", subscribeDelay);
-        Thread.sleep(subscribeDelay, 0);
+        log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
                 .subscribe(mirrorClient,
@@ -65,13 +65,12 @@ public class MirrorNodeClient {
         return subscriptionResponse;
     }
 
+    @Retryable(value = {StatusRuntimeException.class})
     public SubscriptionResponse subscribeToTopicAndRetrieveMessages(MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
                                                                     int numMessages,
-                                                                    int latency) throws Exception {
-        latency = latency <= 0 ? messageTimeout : latency;
-        log.debug("Subscribing to topic, expecting {} within {} seconds. Subscribe is delayed by {} ms",
-                numMessages,
-                latency, subscribeDelay);
+                                                                    long latency) throws Throwable {
+        latency = latency <= 0 ? acceptanceProps.getMessageTimeout().toSeconds() : latency;
+        log.debug("Subscribing to topic, expecting {} within {} seconds.", numMessages, latency);
 
         CountDownLatch messageLatch = new CountDownLatch(numMessages);
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
@@ -102,6 +101,11 @@ public class MirrorNodeClient {
 
         subscriptionResponse.setElapsedTime(stopwatch);
         subscriptionResponse.setMessages(messages);
+
+        if (subscriptionResponse.errorEncountered()) {
+            throw subscriptionResponse.getResponseError();
+        }
+
         return subscriptionResponse;
     }
 
@@ -113,5 +117,11 @@ public class MirrorNodeClient {
     public void close() throws InterruptedException {
         log.debug("Closing Mirror Node client, waits up to 10 s for valid close");
         mirrorClient.close(10, TimeUnit.SECONDS);
+    }
+
+    @Recover
+    public void recover(StatusRuntimeException t) throws InterruptedException {
+        log.error("Subscription w retry failure: {}", t.getMessage());
+        throw t;
     }
 }
