@@ -92,7 +92,7 @@ jobs:
       - *save_maven_cache
       - run:
           name: Running maven (validate, compile, test, package)
-          command: ./mvnw ${MAVEN_CLI_OPTS} package -Xmx1024m
+          command: ./mvnw ${MAVEN_CLI_OPTS} package
       - store_artifacts:
           path: hedera-mirror-importer/target/surefire-reports
           destination: /importer-surefire
