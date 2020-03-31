@@ -21,9 +21,9 @@ global:
   namespaceOverride: ""
 
 image:
-  pullPolicy: Never
+  pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-importer
-  tag: latest
+  tag: 0.8.0-rc1
 
 imagePullSecrets: []
 
@@ -75,10 +75,10 @@ replicas: 1
 resources:
   limits:
     cpu: 500m
-    memory: 1024Mi
+    memory: 750Mi
   requests:
-    cpu: 300m
-    memory: 512Mi
+    cpu: 200m
+    memory: 256Mi
 
 revisionHistoryLimit: 3
 
@@ -92,7 +92,7 @@ securityContext:
 
 service:
   port: 8080
-  type: LoadBalancer
+  type: ClusterIP
 
 serviceAccount:
   create: true

@@ -9,9 +9,9 @@ grpc:
       mirror:
         grpc:
           db:
-            host: mirror-postgresql
-            password: mirror_node_pass
-            username: mirror_node
+            host: postgresql-pgpool
+            password: mirror_grpc_pass
+            username: mirror_grpc
   enabled: true
 
 importer:
@@ -19,7 +19,7 @@ importer:
     hedera:
       mirror:
         db:
-          host: mirror-postgresql
+          host: postgresql-pgpool
           name: mirror_node
           password: mirror_node_pass
           username: mirror_node
@@ -34,6 +34,7 @@ loki-stack:
       table_manager:
         retention_deletes_enabled: true
         retention_period: 2184h
+    fullnameOverride: loki
     networkPolicy:
       enabled: true
     persistence:
@@ -48,6 +49,9 @@ loki-stack:
     serviceMonitor:
       enabled: true
   promtail:
+    fullnameOverride: promtail
+    loki:
+      serviceName: loki
     resources:
       limits:
         cpu: 125m
@@ -59,48 +63,69 @@ loki-stack:
       enabled: true
 
 networkPolicy:
-  enabled: true
+  enabled: false
 
 postgresql:
   enabled: true
-  initdbScriptsSecret: mirror-postgresql-init
-  master:
-    labels:
-      role: db
   metrics:
     enabled: true
-    securityContext:
+    resources:
+      limits:
+        cpu: 50m
+        memory: 50Mi
+      requests:
+        cpu: 20m
+        memory: 25Mi
+    serviceMonitor:
       enabled: true
+  fullnameOverride: postgresql
   networkPolicy:
     allowExternal: false
     enabled: true
-  postgresqlDatabase: mirror_node
-  postgresqlPassword: password
-  replication:
-    applicationName: mirror_node
-    enabled: false
-    numSynchronousReplicas: 1
-    password: foobar
-    slaveReplicas: 1
-    synchronousCommit: "on"
-  serviceAccount:
-    enabled: true
-  serviceMonitor:
-    enabled: true
-  slave:
-    labels:
-      role: db
+  persistence:
+    size: 750Gi
+  pgpool:
+    adminPassword: password
+    initdbScripts:
+      init.sh: |-
+        #!/bin/bash
+        pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "mirror_node" "mirror_node_pass"
+        pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "mirror_grpc" "mirror_grpc_pass"
+        pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "mirror_api" "mirror_api_pass"
+    pdb:
+      create: true
+    replicaCount: 2
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+  postgresql:
+    initdbScriptsCM: postgresql-init
+    password: password
+    repmgrPassword: password
+    resources:
+      limits:
+        cpu: 1500m
+        memory: 1000Mi
+      requests:
+        cpu: 250m
+        memory: 500Mi
 
 prometheus-adapter:
+  enabled: true
+  fullnameOverride: prometheus-adapter
   prometheus:
-    url: http://mirror-prometheus-operator-prometheus
+    url: http://prometheus-prometheus
   resources:
     limits:
-      cpu: 75m
-      memory: 128Mi
+      cpu: 50m
+      memory: 100Mi
     requests:
       cpu: 25m
-      memory: 64Mi
+      memory: 50Mi
   rules:
     default: false
     resource:
@@ -132,22 +157,64 @@ prometheus-adapter:
 
 prometheus-operator:
   alertmanager:
-    service:
-      type: LoadBalancer
+    alertmanagerSpec:
+      resources:
+        limits:
+          cpu: 50m
+          memory: 80Mi
+        requests:
+          cpu: 30m
+          memory: 30Mi
+  enabled: true
+  fullnameOverride: prometheus
   grafana:
     additionalDataSources:
       - name: Loki
         type: loki
         access: proxy
-        url: http://mirror-loki:3100
+        url: http://loki:3100
         jsonData:
           maxLines: 500
     adminPassword: password
     defaultDashboardsEnabled: true
+    fullnameOverride: grafana
+    resources:
+      limits:
+        cpu: 100m
+        memory: 100Mi
+      requests:
+        cpu: 50m
+        memory: 30Mi
     service:
       type: LoadBalancer
+  kube-state-metrics:
+    fullnameOverride: prometheus-kube-state-metrics
+    resources:
+      limits:
+        cpu: 10m
+        memory: 64Mi
+      requests:
+        cpu: 5m
+        memory: 16Mi
+  prometheus-node-exporter:
+    fullnameOverride: prometheus-node-exporter
+    hostNetwork: false
+    resources:
+      limits:
+        cpu: 20m
+        memory: 30Mi
+      requests:
+        cpu: 10m
+        memory: 10Mi
   prometheus:
     prometheusSpec:
+      resources:
+        limits:
+          cpu: 400m
+          memory: 500Mi
+        requests:
+          cpu: 200m
+          memory: 200Mi
       retention: 90d
       serviceMonitorSelectorNilUsesHelmValues: false
       storageSpec:
@@ -155,9 +222,15 @@ prometheus-operator:
           spec:
             resources:
               requests:
-                storage: 10Gi
-    service:
-      type: LoadBalancer
+                storage: 50Gi
+  prometheusOperator:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 100Mi
+      requests:
+        cpu: 50m
+        memory: 50Mi
 
 rest:
   enabled: true
@@ -165,4 +238,4 @@ rest:
     hedera:
       mirror:
         db:
-          host: mirror-postgresql
+          host: postgresql-pgpool

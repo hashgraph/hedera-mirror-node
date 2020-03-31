@@ -9,19 +9,21 @@ dependencies:
     name: hedera-mirror-importer
     repository: file://../hedera-mirror-importer
     version: ^0.1.0
-  - name: loki-stack
+  - alias: loki-stack
+    condition: loki-stack.enabled
+    name: loki-stack
     version: ~0.32.1
     repository: https://grafana.github.io/loki/charts
-    condition: loki-stack.enabled
   - alias: postgresql
     condition: postgresql.enabled
-    name: postgresql
+    name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: ~8.6.8
-  - name: prometheus-adapter
+    version: ~2.0.0
+  - alias: prometheus-adapter
+    condition: prometheus-adapter.enabled
+    name: prometheus-adapter
     version: ~2.1.3
     repository: https://kubernetes-charts.storage.googleapis.com/
-    condition: prometheus.enabled
   - alias: prometheus-operator
     condition: prometheus-operator.enabled
     name: prometheus-operator

@@ -24,9 +24,9 @@ hpa:
   utilization: 80
 
 image:
-  pullPolicy: Never
+  pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-grpc
-  tag: latest
+  tag: 0.8.0-rc1
 
 imagePullSecrets: []
 
@@ -63,7 +63,7 @@ replicas: 1
 
 resources:
   limits:
-    cpu: 300m
+    cpu: 500m
     memory: 750Mi
   requests:
     cpu: 100m

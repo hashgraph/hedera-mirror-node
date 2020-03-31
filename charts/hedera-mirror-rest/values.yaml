@@ -24,9 +24,9 @@ hpa:
   utilization: 80
 
 image:
-  pullPolicy: Never
+  pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-rest
-  tag: latest
+  tag: 0.8.0-rc1
 
 imagePullSecrets: []
 

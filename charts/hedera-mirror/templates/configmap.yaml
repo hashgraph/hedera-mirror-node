@@ -1,0 +1,24 @@
+# This file is temporarily a ConfigMap until I can make changes with the upstream chart
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: postgresql-init
+  namespace: {{ include "hedera-mirror.namespace" . }}
+data:
+  init.sql: |-
+    {{- $dbname := .Values.importer.config.hedera.mirror.db.name }}
+    {{- $password := .Values.importer.config.hedera.mirror.db.password }}
+    {{- $username := .Values.importer.config.hedera.mirror.db.username }}
+    {{- $grpcPassword := .Values.grpc.config.hedera.mirror.grpc.db.password }}
+    {{- $grpcUsername := .Values.grpc.config.hedera.mirror.grpc.db.username }}
+    create user {{ $username }} with createrole password '{{ $password }}';
+    create database {{ $dbname }} with owner {{ $username }};
+    \c {{ $dbname }};
+    alter schema public owner to {{ $username }};
+    create role viewer;
+    grant connect on database {{ $dbname }} to viewer;
+    grant select on all tables in schema public to viewer;
+    alter default privileges for role {{ $username }} in schema public grant select on tables to viewer;
+    create user {{ $grpcUsername }} password '{{ $grpcPassword }}' in role viewer;
