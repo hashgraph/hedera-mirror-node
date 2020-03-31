@@ -369,7 +369,8 @@ public class TopicFeature {
     }
 
     /**
-     * Recover method for topic message retry operations
+     * Recover method for retry operations Method parameters of retry method must match this method after exception
+     * parameter
      *
      * @param t
      */
@@ -380,7 +381,20 @@ public class TopicFeature {
     }
 
     /**
-     * Recover method for message publish retry operations
+     * Recover method for publishTopicMessages retry operations. Method parameters of retry method must match this
+     * method after exception parameter
+     *
+     * @param t
+     */
+    @Recover
+    public void recover(StatusRuntimeException t, int messageCount) {
+        log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
+        throw t;
+    }
+
+    /**
+     * Recover method for publishTopicMessages retry operations. Method parameters of retry method must match this
+     * method after exception parameter
      *
      * @param t
      */

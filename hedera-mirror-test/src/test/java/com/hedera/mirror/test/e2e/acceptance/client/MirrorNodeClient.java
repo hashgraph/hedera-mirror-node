@@ -49,6 +49,7 @@ public class MirrorNodeClient {
         acceptanceProps = acceptanceTestProperties;
     }
 
+    @Retryable(value = {StatusRuntimeException.class})
     public SubscriptionResponse subscribeToTopic(MirrorConsensusTopicQuery mirrorConsensusTopicQuery) throws Throwable {
         log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
@@ -119,8 +120,34 @@ public class MirrorNodeClient {
         mirrorClient.close(10, TimeUnit.SECONDS);
     }
 
+    /**
+     * Recover method of subscribeToTopic retry logic. Method parameters of retry method must match this method after
+     * exception parameter
+     *
+     * @param t
+     * @param mirrorConsensusTopicQuery
+     * @throws InterruptedException
+     */
     @Recover
-    public void recover(StatusRuntimeException t) throws InterruptedException {
+    public void recover(StatusRuntimeException t, MirrorConsensusTopicQuery mirrorConsensusTopicQuery) throws InterruptedException {
+        log.error("Subscription w retry failure: {}", t.getMessage());
+        throw t;
+    }
+
+    /**
+     * Recover method of subscribeToTopicAndRetrieveMessages retry logic. Method parameters of retry method must match
+     * this method after exception parameter
+     *
+     * @param t
+     * @param mirrorConsensusTopicQuery
+     * @param numMessages
+     * @param latency
+     * @throws InterruptedException
+     */
+    @Recover
+    public void recover(StatusRuntimeException t, MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
+                        int numMessages,
+                        long latency) throws InterruptedException {
         log.error("Subscription w retry failure: {}", t.getMessage());
         throw t;
     }
