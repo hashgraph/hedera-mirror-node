@@ -123,6 +123,12 @@ jobs:
             mkdir -p ${WORKSPACE}/artifacts
             tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}
       - *persist_artifacts
+      - run:
+          - Storing surefire logs for debugging
+          - command: |
+              mv hedera-mirror-importer/target/surefire-reports ${WORKSPACE}/importer-surefire
+      - store_artifacts:
+          path: ${WORKSPACE}/importer-surefire
 
   perf_maven:
     environment:
