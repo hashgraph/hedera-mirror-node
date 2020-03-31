@@ -93,6 +93,12 @@ jobs:
       - run:
           name: Running maven (validate, compile, test, package)
           command: ./mvnw ${MAVEN_CLI_OPTS} package
+      - store_artifacts:
+          path: hedera-mirror-importer/target/surefire-reports
+          destination: /importer-surefire
+      - store_artifacts:
+          path: hedera-mirror-grpc/target/surefire-reports
+          destination: /grpc-surefire
       - store_test_results:
           path: hedera-mirror-importer/target/surefire-reports
       - run:
@@ -123,12 +129,6 @@ jobs:
             mkdir -p ${WORKSPACE}/artifacts
             tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}
       - *persist_artifacts
-      - run:
-          name: Storing surefire logs for debugging
-          command: |
-            mv hedera-mirror-importer/target/surefire-reports ${WORKSPACE}/importer-surefire
-      - store_artifacts:
-          path: ${WORKSPACE}/importer-surefire
 
   perf_maven:
     environment:
