@@ -165,6 +165,7 @@ prometheus-operator:
         requests:
           cpu: 30m
           memory: 30Mi
+    enabled: false
   enabled: true
   fullnameOverride: prometheus
   grafana:
