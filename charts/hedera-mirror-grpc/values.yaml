@@ -26,7 +26,7 @@ hpa:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-grpc
-  tag: 0.8.0-rc1
+  tag: 0.8.0
 
 imagePullSecrets: []
 
@@ -59,7 +59,8 @@ readinessProbe:
   initialDelaySeconds: 30
   timeoutSeconds: 1
 
-replicas: 1
+# Only set if HPA is disabled
+# replicas: 1
 
 resources:
   limits:

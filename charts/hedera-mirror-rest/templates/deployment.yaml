@@ -8,7 +8,9 @@ metadata:
   name: {{ include "hedera-mirror-rest.fullname" . }}
   namespace: {{ include "hedera-mirror-rest.namespace" . }}
 spec:
+  {{- if .Values.replicas }}
   replicas: {{ .Values.replicas }}
+  {{- end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   selector:
     matchLabels:
