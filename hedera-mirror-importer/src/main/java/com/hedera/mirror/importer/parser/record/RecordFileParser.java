@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -186,34 +186,31 @@ public class RecordFileParser implements FileParser {
                         int byteLength = dis.readInt();
                         byte[] transactionRawBytes = new byte[byteLength];
                         dis.readFully(transactionRawBytes);
-                        Transaction transaction = Transaction.parseFrom(transactionRawBytes);
 
                         byteLength = dis.readInt();
                         byte[] recordRawBytes = new byte[byteLength];
                         dis.readFully(recordRawBytes);
-                        TransactionRecord txRecord = TransactionRecord.parseFrom(recordRawBytes);
+                        RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);;
 
                         try {
                             if (log.isTraceEnabled()) {
-                                log.trace("Transaction = {}, Record = {}", Utility
-                                        .printProtoMessage(transaction), Utility.printProtoMessage(txRecord));
+                                log.trace("Transaction = {}, Record = {}",
+                                        Utility.printProtoMessage(recordItem.getTransaction()),
+                                        Utility.printProtoMessage(recordItem.getRecord()));
                             } else {
-                                log.debug("Storing transaction with consensus timestamp {}", () -> Utility
-                                        .printProtoMessage(txRecord.getConsensusTimestamp()));
+                                log.debug("Storing transaction with consensus timestamp {}", () ->
+                                        Utility.printProtoMessage(recordItem.getRecord().getConsensusTimestamp()));
                             }
-
-                            recordItemListener.onItem(
-                                    new RecordItem(transaction, txRecord, transactionRawBytes, recordRawBytes));
+                            recordItemListener.onItem(recordItem);
                         } finally {
-                            // TODO: Refactor to not parse TransactionBody twice
-                            DataCase dc = Utility.getTransactionBody(transaction).getDataCase();
+                            DataCase dc = recordItem.getTransactionBody().getDataCase();
                             String type = dc != null && dc != DataCase.DATA_NOT_SET ? dc.name() : "UNKNOWN";
                             transactionSizeMetric.tag("type", type)
                                     .register(meterRegistry)
                                     .record(transactionRawBytes.length);
 
-                            Instant consensusTimestamp = Utility
-                                    .convertToInstant(txRecord.getConsensusTimestamp());
+                            Instant consensusTimestamp = Utility.convertToInstant(
+                                    recordItem.getRecord().getConsensusTimestamp());
                             transactionLatencyMetric.tag("type", type)
                                     .register(meterRegistry)
                                     .record(Duration.between(consensusTimestamp, Instant.now()));
