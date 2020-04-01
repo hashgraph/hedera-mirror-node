@@ -118,6 +118,8 @@ app.get(apiPrefix + '/topic/message/:consensusTimestamp', topicmessage.getMessag
 app.get(apiPrefix + '/topic/:id/message/:seqnum', topicmessage.getMessageByTopicAndSequenceRequest);
 app.get(apiPrefix + '/topics/:id/messages/:seqnum', topicmessage.getMessageByTopicAndSequenceRequest);
 
+app.get(apiPrefix + '/topic/:id', topicmessage.getTopicMessages);
+
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
     console.log(`Server running on port: ${port}`);

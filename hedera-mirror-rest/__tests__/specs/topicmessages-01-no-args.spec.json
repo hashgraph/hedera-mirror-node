@@ -1,0 +1,53 @@
+{
+  "description": "Get single message by valid consensus timestamp",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "topicmessages": [
+      {
+        "timestamp": "1234567890000000001",
+        "topic_num": 7,
+        "seq_num": 1
+      },
+      {
+        "timestamp": "1234567890000000002",
+        "topic_num": 7,
+        "seq_num": 2
+      },
+      {
+        "timestamp": "1234567890000000003",
+        "topic_num": 7,
+        "seq_num": 3
+      }
+    ]
+  },
+  "url": "/api/v1/topic/7",
+  "responseStatus": 200,
+  "responseJson": {
+    "messages": [
+      {
+        "consensus_timestamp": "1234567890.000000001",
+        "topic_id": "0.0.7",
+        "message": "bWVzc2FnZQ==",
+        "running_hash": "cnVubmluZ19oYXNo",
+        "sequence_number": 1
+      },
+      {
+        "consensus_timestamp": "1234567890.000000002",
+        "topic_id": "0.0.7",
+        "message": "bWVzc2FnZQ==",
+        "running_hash": "cnVubmluZ19oYXNo",
+        "sequence_number": 2
+      },
+      {
+        "consensus_timestamp": "1234567890.000000003",
+        "topic_id": "0.0.7",
+        "message": "bWVzc2FnZQ==",
+        "running_hash": "cnVubmluZ19oYXNo",
+        "sequence_number": 3
+      }
+    ]
+  }
+}
