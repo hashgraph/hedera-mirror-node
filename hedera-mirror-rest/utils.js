@@ -39,6 +39,15 @@ const httpErrorMessages = {
 
 const successValidationResponse = {isValid: true, code: 200, contents: 'OK'};
 
+const opsMap = {
+  lt: ' < ',
+  lte: ' <= ',
+  gt: ' > ',
+  gte: ' >= ',
+  eq: ' = ',
+  ne: ' != '
+};
+
 /**
  * Check if the given number is numeric
  * @param {String} n Number to test
@@ -55,6 +64,10 @@ const isValidTimestampParam = function(timestamp) {
 
 const isValidEntityNum = entity_num => {
   return /^\d{1,10}\.\d{1,10}\.\d{1,10}$/.test(entity_num) || /^\d{1,10}$/.test(entity_num);
+};
+
+const isValidLimitNum = limit => {
+  return /^\d{1,4}$/.test(limit);
 };
 
 /**
@@ -84,6 +97,16 @@ const paramValidityChecks = function(param, opAndVal) {
     return ret;
   }
 
+  return filterValidityChecks(param, op, val);
+};
+
+const filterValidityChecks = function(param, op, val) {
+  let ret = false;
+
+  if (op === undefined || val === undefined) {
+    return ret;
+  }
+
   // Validate operator
   if (!/^(gte?|lte?|eq|ne)$/.test(op)) {
     return ret;
@@ -108,7 +131,7 @@ const paramValidityChecks = function(param, opAndVal) {
       break;
     case 'limit':
       // Acceptable forms: upto 4 digits
-      ret = /^\d{1,4}$/.test(val);
+      ret = isValidLimitNum(val);
       break;
     case 'order':
       // Acceptable words: asc or desc
@@ -121,6 +144,10 @@ const paramValidityChecks = function(param, opAndVal) {
     case 'result':
       // Acceptable words: success or fail
       ret = ['success', 'fail'].includes(val);
+      break;
+    case 'seqnum':
+      // Acceptable words: bigint
+      ret = isValidEntityNum(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -246,15 +273,6 @@ const parseTimestampParam = function(timestampParam) {
 const parseComparatorSymbol = function(fields, valArr, type = null, valueTranslate = null) {
   let queryStr = '';
   let vals = [];
-
-  const opsMap = {
-    lt: ' < ',
-    lte: ' <= ',
-    gt: ' > ',
-    gte: ' >= ',
-    eq: ' = ',
-    ne: ' != '
-  };
 
   for (let item of valArr) {
     // Split the gt:number into operation and value and create a SQL query string
@@ -663,16 +681,100 @@ const createTransactionId = function(shard, realm, num, validStartTimestamp) {
  * @param filters
  */
 const buildFilterObject = filters => {
-  let filterObject = {};
+  let filterObject = [];
   if (filters === null) {
     return null;
   }
 
-  for (const [key, val] of Object.entries(filters)) {
-    filterObject[key] = val;
+  for (const [key, values] of Object.entries(filters)) {
+    // for repeated params val will be an array
+    if (Array.isArray(values)) {
+      for (const val of values) {
+        filterObject.push(buildComparatorFilter(key, val));
+      }
+    } else {
+      filterObject.push(buildComparatorFilter(key, values));
+    }
   }
 
   return filterObject;
+};
+
+const buildComparatorFilter = (name, filter) => {
+  let splitVal = filter.split(':');
+  let opVal = splitVal.length === 1 ? ['eq', filter] : splitVal;
+
+  return {
+    key: name,
+    operator: opVal[0],
+    value: opVal[1]
+  };
+};
+
+/**
+ * Verify topicId and seqNum meet entity_num format
+ */
+const validateFilters = filters => {
+  let badParams = [];
+
+  for (const filter of filters) {
+    if (!filterValidityChecks(filter.key, filter.operator, filter.value)) {
+      badParams.push(getInvalidParameterMessageObject(filter.key));
+    }
+  }
+
+  return makeValidationResponse(badParams);
+};
+
+/**
+ * Verify param and filters meet expected format
+ * Additionally update format to be persistence query compatible
+ * @param filters
+ * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
+ */
+const validateAndParseFilters = filters => {
+  let badParams = [];
+
+  for (const filter of filters) {
+    if (!filterValidityChecks(filter.key, filter.operator, filter.value)) {
+      badParams.push(getInvalidParameterMessageObject(filter.key));
+    } else {
+      formatComparator(filter);
+    }
+  }
+
+  return makeValidationResponse(badParams);
+};
+
+const formatComparator = comparator => {
+  if (comparator.operator in opsMap) {
+    // update operator
+    comparator.operator = opsMap[comparator.operator];
+
+    // format value
+    switch (comparator.key) {
+      case 'id':
+        // Accepted forms: shard.realm.num or num
+        comparator.value = utils.parseEntityId(comparator.value);
+        break;
+      case 'timestamp':
+        comparator.value = parseTimestampParam(comparator.value);
+        break;
+      case 'publickey':
+        // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
+        comparator.value = ed25519.derToEd25519(comparator.value);
+        break;
+      // case 'type':
+      //   // Acceptable words: credit or debig
+      //   comparator.value = ;
+      //   break;
+      // case 'result':
+      //   // Acceptable words: success or fail
+      //   comparator.value = ;
+      //   break;
+      default:
+    }
+  }
 };
 
 module.exports = {
@@ -683,6 +785,7 @@ module.exports = {
   encodeBase64: encodeBase64,
   encodeKey: encodeKey,
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
+  filterValidityChecks: filterValidityChecks,
   getInvalidParameterMessage: getInvalidParameterMessage,
   getInvalidParameterMessageObject: getInvalidParameterMessageObject,
   getNullableNumber: getNullableNumber,
@@ -690,6 +793,7 @@ module.exports = {
   httpErrorMessages: httpErrorMessages,
   httpStatusCodes: httpStatusCodes,
   isValidEntityNum: isValidEntityNum,
+  isValidLimitNum: isValidLimitNum,
   isValidTimestampParam: isValidTimestampParam,
   parseCreditDebitParams: parseCreditDebitParams,
   parseEntityId: parseEntityId,
@@ -706,5 +810,7 @@ module.exports = {
   successValidationResponse: successValidationResponse,
   toHexString: toHexString,
   TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
+  validateAndParseFilters: validateAndParseFilters,
+  validateFilters: validateFilters,
   validateReq: validateReq
 };
