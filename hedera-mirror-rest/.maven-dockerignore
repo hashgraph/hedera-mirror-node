@@ -6,7 +6,6 @@
 .npmignore
 .prettierrc
 Dockerfile
-__acceptancetests__/
 __tests__/
 application.yml
 monitoring/

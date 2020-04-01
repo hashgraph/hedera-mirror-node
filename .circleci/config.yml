@@ -93,6 +93,12 @@ jobs:
       - run:
           name: Running maven (validate, compile, test, package)
           command: ./mvnw ${MAVEN_CLI_OPTS} package
+      - store_artifacts:
+          path: hedera-mirror-importer/target/surefire-reports
+          destination: /importer-surefire
+      - store_artifacts:
+          path: hedera-mirror-grpc/target/surefire-reports
+          destination: /grpc-surefire
       - store_test_results:
           path: hedera-mirror-importer/target/surefire-reports
       - run:
@@ -171,8 +177,15 @@ jobs:
           environment:
             TEST_DB_HOST: "127.0.0.1"
             TEST_DB_NAME: "mirror_node_integration"
+      - store_artifacts:
+          path: hedera-mirror-rest/target/jest-junit
+          destination: /rest-jest
       - store_test_results:
           path: hedera-mirror-rest/target/jest-junit
+      - run:
+          working_directory: "hedera-mirror-rest"
+          name: Upload Code Coverage
+          command: node_modules/codecov/bin/codecov
       - run:
           working_directory: "hedera-mirror-rest"
           name: Collecting assets
