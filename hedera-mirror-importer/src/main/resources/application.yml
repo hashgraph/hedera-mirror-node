@@ -1,3 +1,4 @@
+debug: true
 hedera:
   mirror:
     db:
@@ -13,6 +14,7 @@ logging:
     root: warn
     com.hedera.mirror.importer: info
     org.flywaydb.core.internal.command.DbMigrate: info
+    org.springframework.boot: trace
     #org.hibernate.SQL: debug
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:

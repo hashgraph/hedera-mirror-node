@@ -38,6 +38,7 @@ hedera-mirror-*/application.yml
 /data/
 /db/
 *.log
+!/charts/**/*.tgz
 
 ### VisualStudioCode ###
 .vscode/
