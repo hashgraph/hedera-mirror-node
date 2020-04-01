@@ -33,9 +33,11 @@
     "cors",
     "express",
     "extend",
+    "js-yaml",
     "log4js",
     "mathjs",
     "node-cache",
+    "node-fetch",
     "pg"
   ],
   "devDependencies": {
