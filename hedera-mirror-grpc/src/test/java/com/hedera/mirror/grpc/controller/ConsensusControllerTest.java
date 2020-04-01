@@ -222,7 +222,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .then(() -> generator.blockLast())
                 .expectNext(4L, 5L, 6L, 7L)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofMillis(1000));
     }
 
     void assertException(Throwable t, Status.Code status, String message) {

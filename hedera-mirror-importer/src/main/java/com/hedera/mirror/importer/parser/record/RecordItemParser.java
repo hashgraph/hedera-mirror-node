@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -127,19 +127,8 @@ public class RecordItemParser implements RecordItemListener {
 
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
-        Transaction transaction = recordItem.getTransaction();
         TransactionRecord txRecord = recordItem.getRecord();
-
-        TransactionBody body;
-        if (transaction.hasBody()) {
-            body = transaction.getBody();
-        } else {
-            try {
-                body = TransactionBody.parseFrom(transaction.getBodyBytes());
-            } catch (InvalidProtocolBufferException e) {
-                throw new ParserException("Error parsing transaction from body bytes", e);
-            }
-        }
+        TransactionBody body = recordItem.getTransactionBody();
 
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
         long initialBalance = 0;

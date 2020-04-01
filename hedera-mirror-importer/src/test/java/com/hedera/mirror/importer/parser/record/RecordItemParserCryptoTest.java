@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -1177,19 +1177,9 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
     @Test
     void cryptoTransferPersistRawBytesDefault() throws Exception {
-        // Use the default properties for record parsing - the raw bytes
-        // should NOT be stored in the db
+        // Use the default properties for record parsing - the raw bytes should NOT be stored in the db
         Transaction transaction = cryptoTransferTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
-        byte[] rawBytes = transaction.getBodyBytes().toByteArray();
-
-        parseRecordItemAndCommit(new RecordItem(transaction, record, rawBytes, null));
-
-        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
-                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
-
-        assertEquals(null, dbTransaction.getTransactionBytes());
+        testRawBytes(transaction, null);
     }
 
     @Test
@@ -1197,16 +1187,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
         // Explicitly persist the transaction bytes
         parserProperties.getPersist().setTransactionBytes(true);
         Transaction transaction = cryptoTransferTransaction();
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
-        byte[] rawBytes = transaction.getBodyBytes().toByteArray();
-
-        parseRecordItemAndCommit(new RecordItem(transaction, record, rawBytes, null));
-
-        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
-                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
-
-        assertEquals(0, java.util.Arrays.compare(dbTransaction.getTransactionBytes(), rawBytes));
+        testRawBytes(transaction, transaction.toByteArray());
     }
 
     @Test
@@ -1214,15 +1195,20 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
         // Explicitly DO NOT persist the transaction bytes
         parserProperties.getPersist().setTransactionBytes(false);
         Transaction transaction = cryptoTransferTransaction();
+        testRawBytes(transaction, null);
+    }
+
+    private void testRawBytes(Transaction transaction, byte[] expectedBytes) throws Exception {
+        // given
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         TransactionRecord record = transactionRecordSuccess(transactionBody);
-        byte[] rawBytes = transaction.getBodyBytes().toByteArray();
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record, rawBytes, null));
+        // when
+        parseRecordItemAndCommit(new RecordItem(transaction.toByteArray(), record.toByteArray()));
 
+        // then
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
-
-        assertEquals(null, dbTransaction.getTransactionBytes());
+        assertArrayEquals(expectedBytes, dbTransaction.getTransactionBytes());
     }
 }
