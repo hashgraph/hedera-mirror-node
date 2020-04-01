@@ -1,8 +1,9 @@
 {
   "name": "hedera-mirror-rest",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Hedera Mirror Node REST API",
   "main": "server.js",
+  "private": true,
   "scripts": {
     "test": "jest --testPathPattern='__tests__/*'",
     "acceptancetest": "__acceptancetests__/acceptancetests",
@@ -31,6 +32,7 @@
     "compression",
     "cors",
     "express",
+    "extend",
     "log4js",
     "mathjs",
     "node-cache",
