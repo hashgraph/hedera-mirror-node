@@ -21,6 +21,7 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  */
 
 import java.time.Duration;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -44,9 +45,14 @@ public class AcceptanceTestProperties {
     @NotBlank
     private String operatorKey;
     @NotNull
-    private Duration messageTimeout;
+    private Duration messageTimeout = Duration.ofSeconds(20);
     @NotNull
     private Long existingTopicNum;
 
     private boolean emitBackgroundMessages = false;
+
+    @Max(5)
+    private int subscribeRetries = 3;
+
+    private long subscribeRetryOffPeriod = 2000l;
 }

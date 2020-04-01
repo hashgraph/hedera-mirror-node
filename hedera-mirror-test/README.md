@@ -39,6 +39,8 @@ Tests can be compiled and run by running the following command from the root fol
     -   operatorKey - account private key, to be used for signing transaction and client identification #Be careful with showing this, do not check this value in.
     -   emitBackgroundMessages - Flag to set if background messages should be emitted. For OPS use in non production environments
     -   existingTopicNum - a pre existing default topic number that can be used when no topicId is specified in a test. Used initially by @SubscribeOnly test
+    -   subscribeRetries - number of times client should retryable on supported failures
+    -   subscribeRetryOffPeriod - number of milliseconds client should wait before retrying on a retryable failure
 
 (Recommended) Options can be set by creating your own configuration file with the above properties. This allows for multiple files per env. The following command will help to point out which file to use
 `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance" -Dspring.config.name=application-testnet`
@@ -50,15 +52,15 @@ Options can also be set through the command line as follows
 -   Tags : Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
     -   Acceptance test cases
 
-*                                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance"`
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance"`
     -   All cases
-*                                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
     -   Negative cases
-*                                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
     -   Edge cases
-*                                 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
     -   ... (search for @? tags within the .feature files for further tags)
-*                                   `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests  -Dcucumber.filter.tags="@BalanceCheck"`
+*                                     `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests  -Dcucumber.filter.tags="@BalanceCheck"`
     -   Account check case
 
 ### Test Layout

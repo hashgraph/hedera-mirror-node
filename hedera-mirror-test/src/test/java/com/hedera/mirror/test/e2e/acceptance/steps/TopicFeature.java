@@ -30,6 +30,9 @@ import io.cucumber.junit.platform.engine.Cucumber;
 import io.grpc.StatusRuntimeException;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Recover;
@@ -69,7 +72,7 @@ public class TopicFeature {
     }
 
     @Given("I successfully create a new topic id")
-    @Retryable(value = {StatusRuntimeException.class})
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "UNAVAILABLE")
     public void createNewTopic() throws HederaStatusException {
         testInstantReference = Instant.now();
 
@@ -92,7 +95,7 @@ public class TopicFeature {
     }
 
     @Given("I successfully create a new open topic")
-    @Retryable(value = {StatusRuntimeException.class})
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "UNAVAILABLE")
     public void createNewOpenTopic() throws HederaStatusException {
         testInstantReference = Instant.now();
 
@@ -346,22 +349,27 @@ public class TopicFeature {
      * @throws InterruptedException
      */
     public SubscriptionResponse subscribeWithBackgroundMessageEmission() throws Throwable {
-        Thread backgroundMessageThread = null;
-
+        ScheduledExecutorService scheduler = null;
         if (acceptanceProps.isEmitBackgroundMessages()) {
-            backgroundMessageThread = new Thread(topicClient
-                    .getBackgroundMessagePublisher(consensusTopicId, submitKey, (int) acceptanceProps
-                            .getMessageTimeout().getSeconds(), 1, 1000));
-            backgroundMessageThread.start();
+            log.debug("Emit a background message every second during subscription");
+            scheduler = Executors.newSingleThreadScheduledExecutor();
+            scheduler.scheduleAtFixedRate(() -> {
+                try {
+                    topicClient.publishMessageToTopic(consensusTopicId, "backgroundMessage", submitKey);
+                } catch (HederaStatusException e) {
+                    e.printStackTrace();
+                }
+            }, 0, 1, TimeUnit.SECONDS);
         }
 
-        SubscriptionResponse subscriptionResponse = mirrorClient
-                .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, messageSubscribeCount, latency);
+        SubscriptionResponse subscriptionResponse;
 
-        if (acceptanceProps.isEmitBackgroundMessages()) {
-            if (backgroundMessageThread.isAlive()) {
-                // stop background publisher after successful subscription
-                backgroundMessageThread.interrupt();
+        try {
+            subscriptionResponse = mirrorClient
+                    .subscribeToTopicAndRetrieveMessages(mirrorConsensusTopicQuery, messageSubscribeCount, latency);
+        } finally {
+            if (scheduler != null) {
+                scheduler.shutdownNow();
             }
         }
 

@@ -74,11 +74,11 @@ public class ClientConfiguration {
         RetryTemplate retryTemplate = new RetryTemplate();
 
         FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(2000l);
+        fixedBackOffPolicy.setBackOffPeriod(acceptanceTestProperties.getSubscribeRetryOffPeriod());
         retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
 
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
-        retryPolicy.setMaxAttempts(3);
+        retryPolicy.setMaxAttempts(acceptanceTestProperties.getSubscribeRetries());
         retryTemplate.setRetryPolicy(retryPolicy);
         return retryTemplate;
     }
