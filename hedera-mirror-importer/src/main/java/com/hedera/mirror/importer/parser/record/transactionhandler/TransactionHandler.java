@@ -20,5 +20,36 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.parser.domain.RecordItem;
+
+/**
+ * TransactionHandler interface abstracts the logic for processing different kinds for transactions. For each
+ * transaction type, there exists an unique implementation of TransactionHandler which encapsulates all logic specific
+ * to processing of that transaction type. A single {@link com.hederahashgraph.api.proto.java.Transaction} and its
+ * associated info (TransactionRecord, deserialized TransactionBody, etc) are all encapsulated together in a single
+ * {@link RecordItem}. Hence, most functions of this interface require RecordItem as a parameter.
+ */
 public interface TransactionHandler {
+    /**
+     * @return main entity associated with this transaction
+     */
+    EntityId getEntityId(RecordItem recordItem);
+
+    /**
+     * Override this function if a transaction needs to update proxyAccountId in {@link
+     * com.hedera.mirror.importer.domain.Entities}. If value returned is null, or if {@link EntityId#getEntityNum()} is
+     * 0 for the returned value, then proxyAccountId is not updated.
+     */
+    default EntityId getProxyAccountId(RecordItem recordItem) {
+        return null;
+    }
+
+    /**
+     * Override to return true if an implementation wants to be able to update the entity returned by
+     * {@link #getEntityId(RecordItem)}.
+     */
+    default boolean updatesEntity() {
+        return false;
+    }
 }

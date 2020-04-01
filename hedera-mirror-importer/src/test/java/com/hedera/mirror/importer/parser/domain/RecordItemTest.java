@@ -20,11 +20,10 @@ package com.hedera.mirror.importer.parser.domain;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.google.protobuf.ByteString;
-
-import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.record.transactionhandler.AbstractTransactionHandlerTest;
-
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -33,7 +32,8 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.record.transactionhandler.AbstractTransactionHandlerTest;
 
 class RecordItemTest extends AbstractTransactionHandlerTest {
 
@@ -95,17 +95,16 @@ class RecordItemTest extends AbstractTransactionHandlerTest {
     }
 
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
-        Exception exception = assertThrows(ParserException.class, () -> {
-            new RecordItem(transactionBytes, recordBytes);
-        });
-        assertEquals(expectedMessage, exception.getMessage());
+        assertThatThrownBy(() -> new RecordItem(transactionBytes, recordBytes))
+                .isInstanceOf(ParserException.class)
+                .hasMessage(expectedMessage);
     }
 
     private void assertRecordItem(Transaction transaction, RecordItem recordItem) {
-        assertEquals(transaction, recordItem.getTransaction());
-        assertEquals(TRANSACTION_RECORD, recordItem.getRecord());
-        assertEquals(TRANSACTION_BODY, recordItem.getTransactionBody());
-        assertArrayEquals(transaction.toByteArray(), recordItem.getTransactionBytes());
-        assertArrayEquals(TRANSACTION_RECORD.toByteArray(), recordItem.getRecordBytes());
+        assertThat(recordItem.getTransaction()).isEqualTo(transaction);
+        assertThat(recordItem.getRecord()).isEqualTo(TRANSACTION_RECORD);
+        assertThat(recordItem.getTransactionBody()).isEqualTo(TRANSACTION_BODY);
+        assertThat(recordItem.getTransactionBytes()).isEqualTo(transaction.toByteArray());
+        assertThat(recordItem.getRecordBytes()).isEqualTo(TRANSACTION_RECORD.toByteArray());
     }
 }
