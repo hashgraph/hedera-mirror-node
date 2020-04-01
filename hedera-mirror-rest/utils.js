@@ -658,7 +658,25 @@ const createTransactionId = function(shard, realm, num, validStartTimestamp) {
   return shard + '.' + realm + '.' + num + '-' + nsToSecNsWithHyphen(validStartTimestamp);
 };
 
+/**
+ * Given the req.query object build the filters object
+ * @param filters
+ */
+const buildFilterObject = filters => {
+  let filterObject = {};
+  if (filters === null) {
+    return null;
+  }
+
+  for (const [key, val] of Object.entries(filters)) {
+    filterObject[key] = val;
+  }
+
+  return filterObject;
+};
+
 module.exports = {
+  buildFilterObject: buildFilterObject,
   createSingleErrorJsonResponse: createSingleErrorJsonResponse,
   createTransactionId: createTransactionId,
   convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,

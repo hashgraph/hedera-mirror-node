@@ -49,6 +49,18 @@ const validateGetSequenceMessageParams = function(topicId, seqNum) {
 };
 
 /**
+ * Verify topicId and seqNum meet entity_num format
+ */
+const validateGetTopicMessagesParams = function(topicId) {
+  let badParams = [];
+  if (!utils.isValidEntityNum(topicId)) {
+    badParams.push(utils.getInvalidParameterMessageObject('topic_num'));
+  }
+
+  return utils.makeValidationResponse(badParams);
+};
+
+/**
  * Format row in postgres query's result to object which is directly returned to user as json.
  */
 const formatTopicMessageRow = function(row) {
@@ -106,6 +118,36 @@ const processGetMessageByTopicAndSequenceRequest = (params, httpResponse) => {
   return getMessage(pgSqlQuery, pgSqlParams, httpResponse);
 };
 
+const processGetTopicMessages = (req, res) => {
+  const topicId = req.params.id;
+  logger.debug(`***topicId: ${topicId}, query: ${req.query}`);
+  const filters = utils.buildFilterObject(req.query);
+  logger.debug(`***filters: ${JSON.stringify(filters)}`);
+
+  const validationResult = validateGetTopicMessagesParams(topicId);
+  if (!validationResult.isValid) {
+    return new Promise((resolve, reject) => {
+      httpResponse.status(validationResult.code).json(validationResult.contents);
+      resolve();
+    });
+  }
+
+  const entity = utils.parseEntityId(topicId);
+  let pgSqlQuery =
+    'select consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number' +
+    ' from topic_message where realm_num = $1 and topic_num = $2';
+  let nextParamCount = 3;
+  let pgSqlParams = [entity.realm, entity.num];
+
+  // add filters
+
+  // add limit
+  pgSqlQuery += ` limit $${nextParamCount}`;
+  pgSqlParams.push(config.api.maxLimit);
+  logger.debug(`***pgSqlQuery: ${pgSqlQuery}, pgSqlParams: ${pgSqlParams}`);
+  return getMessages(pgSqlQuery, pgSqlParams, res);
+};
+
 /**
  * Retrieves topic message from
  */
@@ -119,6 +161,19 @@ const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
         .status(utils.httpStatusCodes.NOT_FOUND)
         .json(utils.createSingleErrorJsonResponse(utils.httpErrorMessages.NOT_FOUND));
     }
+  });
+};
+
+const getMessages = (pgSqlQuery, pgSqlParams, httpResponse) => {
+  return pool.query(pgSqlQuery, pgSqlParams).then(results => {
+    let topicMessages = [];
+
+    logger.debug(`***results.rowCount: ${results.rowCount}`);
+    for (let i = 0; i < results.rowCount; i++) {
+      topicMessages.push(formatTopicMessageRow(results.rows[i]));
+    }
+
+    httpResponse.json({messages: topicMessages});
   });
 };
 
@@ -144,10 +199,17 @@ const getMessageByTopicAndSequenceRequest = function(req, res) {
   return processGetMessageByTopicAndSequenceRequest(req.params, res);
 };
 
+const getTopicMessages = (req, res) => {
+  logger.debug('--------------------  getTopicMessages --------------------');
+  logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
+  return processGetTopicMessages(req, res);
+};
+
 module.exports = {
   formatTopicMessageRow: formatTopicMessageRow,
   getMessageByConsensusTimestamp: getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest: getMessageByTopicAndSequenceRequest,
+  getTopicMessages: getTopicMessages,
   validateConsensusTimestampParam: validateConsensusTimestampParam,
   validateGetSequenceMessageParams: validateGetSequenceMessageParams
 };
