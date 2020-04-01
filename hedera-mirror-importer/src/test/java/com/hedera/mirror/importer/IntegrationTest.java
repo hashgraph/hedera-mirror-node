@@ -35,7 +35,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 @ContextConfiguration(initializers = IntegrationTest.TestDatabaseConfiguration.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.cloud.kubernetes.enabled=false")
 public abstract class IntegrationTest {
 
     @Resource

@@ -14,9 +14,6 @@ hedera:
       balance:
         enabled: false
 spring:
-  cloud:
-    kubernetes:
-      enabled: false
   task:
     scheduling:
       enabled: false
