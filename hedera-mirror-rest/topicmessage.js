@@ -21,6 +21,11 @@
 const config = require('./config.js');
 const utils = require('./utils.js');
 
+const columnMap = {
+  seqnum: 'sequence_number',
+  timestamp: 'consensus_timestamp'
+};
+
 /**
  * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
  */
@@ -51,7 +56,7 @@ const validateGetSequenceMessageParams = function(topicId, seqNum) {
 /**
  * Verify topicId and seqNum meet entity_num format
  */
-const validateGetTopicMessagesParams = function(topicId) {
+const validateGetTopicMessagesParams = function(topicId, limit) {
   let badParams = [];
   if (!utils.isValidEntityNum(topicId)) {
     badParams.push(utils.getInvalidParameterMessageObject('topic_num'));
@@ -120,14 +125,22 @@ const processGetMessageByTopicAndSequenceRequest = (params, httpResponse) => {
 
 const processGetTopicMessages = (req, res) => {
   const topicId = req.params.id;
-  logger.debug(`***topicId: ${topicId}, query: ${req.query}`);
   const filters = utils.buildFilterObject(req.query);
-  logger.debug(`***filters: ${JSON.stringify(filters)}`);
 
-  const validationResult = validateGetTopicMessagesParams(topicId);
-  if (!validationResult.isValid) {
+  // validate params
+  const paramValidationResult = validateGetTopicMessagesParams(topicId);
+  if (!paramValidationResult.isValid) {
     return new Promise((resolve, reject) => {
-      httpResponse.status(validationResult.code).json(validationResult.contents);
+      res.status(paramValidationResult.code).json(paramValidationResult.contents);
+      resolve();
+    });
+  }
+
+  // validate filters
+  const filterValidationResult = utils.validateAndParseFilters(filters);
+  if (!filterValidationResult.isValid) {
+    return new Promise((resolve, reject) => {
+      res.status(filterValidationResult.code).json(filterValidationResult.contents);
       resolve();
     });
   }
@@ -140,11 +153,22 @@ const processGetTopicMessages = (req, res) => {
   let pgSqlParams = [entity.realm, entity.num];
 
   // add filters
+  let limit;
+  for (let filter of filters) {
+    if (filter.key === 'limit') {
+      limit = filter.value;
+      continue;
+    }
+
+    // pgSqlQuery += utils.getFilterSqlQuery(columnMap[filter.key], filter.operator, nextParamCount++);
+    pgSqlQuery += ` and ${columnMap[filter.key]}${filter.operator}$${nextParamCount++}`;
+    pgSqlParams.push(filter.value);
+  }
 
   // add limit
   pgSqlQuery += ` limit $${nextParamCount}`;
-  pgSqlParams.push(config.api.maxLimit);
-  logger.debug(`***pgSqlQuery: ${pgSqlQuery}, pgSqlParams: ${pgSqlParams}`);
+  pgSqlParams.push(limit === undefined ? config.api.maxLimit : limit);
+
   return getMessages(pgSqlQuery, pgSqlParams, res);
 };
 
@@ -152,6 +176,8 @@ const processGetTopicMessages = (req, res) => {
  * Retrieves topic message from
  */
 const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
+  logger.debug(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+
   return pool.query(pgSqlQuery, pgSqlParams).then(results => {
     // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
     if (results.rowCount === 1) {
@@ -165,10 +191,10 @@ const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
 };
 
 const getMessages = (pgSqlQuery, pgSqlParams, httpResponse) => {
+  logger.debug(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   return pool.query(pgSqlQuery, pgSqlParams).then(results => {
     let topicMessages = [];
 
-    logger.debug(`***results.rowCount: ${results.rowCount}`);
     for (let i = 0; i < results.rowCount; i++) {
       topicMessages.push(formatTopicMessageRow(results.rows[i]));
     }

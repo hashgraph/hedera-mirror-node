@@ -1,0 +1,37 @@
+{
+  "description": "Get single message by valid topic and sequence",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "topicmessages": [
+      {
+        "timestamp": "1234567890000000001",
+        "topic_num": 7,
+        "seq_num": 1
+      },
+      {
+        "timestamp": "1234567890000000002",
+        "topic_num": 7,
+        "seq_num": 2
+      },
+      {
+        "timestamp": "1234567890000000003",
+        "topic_num": 7,
+        "seq_num": 3
+      }
+    ]
+  },
+  "url": "/api/v1/topic/-1",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: topic_num"
+        }
+      ]
+    }
+  }
+}
