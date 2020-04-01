@@ -19,11 +19,21 @@
  */
 'use strict';
 const config = require('./config.js');
+const constants = require('./constants.js');
 const utils = require('./utils.js');
 
+const topicMessageColumns = {
+  CONSENSUS_TIMESTAMP: 'consensus_timestamp',
+  MESSAGE: 'message',
+  REALM_NUM: 'realm_num',
+  RUNNING_HASH: 'running_hash',
+  SEQUENCE_NUMBER: 'sequence_number',
+  TOPIC_NUM: 'topic_num'
+};
+
 const columnMap = {
-  seqnum: 'sequence_number',
-  timestamp: 'consensus_timestamp'
+  seqnum: topicMessageColumns.SEQUENCE_NUMBER,
+  timestamp: topicMessageColumns.CONSENSUS_TIMESTAMP
 };
 
 /**
@@ -43,11 +53,11 @@ const validateConsensusTimestampParam = function(consensusTimestamp) {
 const validateGetSequenceMessageParams = function(topicId, seqNum) {
   let badParams = [];
   if (!utils.isValidEntityNum(topicId)) {
-    badParams.push(utils.getInvalidParameterMessageObject('topic_num'));
+    badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.TOPIC_NUM));
   }
 
   if (!utils.isValidEntityNum(seqNum)) {
-    badParams.push(utils.getInvalidParameterMessageObject('sequence_number'));
+    badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.SEQUENCE_NUMBER));
   }
 
   return utils.makeValidationResponse(badParams);
@@ -56,10 +66,10 @@ const validateGetSequenceMessageParams = function(topicId, seqNum) {
 /**
  * Verify topicId and seqNum meet entity_num format
  */
-const validateGetTopicMessagesParams = function(topicId, limit) {
+const validateGetTopicMessagesParams = function(topicId) {
   let badParams = [];
   if (!utils.isValidEntityNum(topicId)) {
-    badParams.push(utils.getInvalidParameterMessageObject('topic_num'));
+    badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.TOPIC_NUM));
   }
 
   return utils.makeValidationResponse(badParams);
@@ -70,11 +80,11 @@ const validateGetTopicMessagesParams = function(topicId, limit) {
  */
 const formatTopicMessageRow = function(row) {
   return {
-    consensus_timestamp: utils.nsToSecNs(row['consensus_timestamp']),
-    topic_id: `${config.shard}.${row['realm_num']}.${row['topic_num']}`,
-    message: utils.encodeBase64(row['message']),
-    running_hash: utils.encodeBase64(row['running_hash']),
-    sequence_number: parseInt(row['sequence_number'])
+    consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
+    topic_id: `${config.shard}.${row[topicMessageColumns.REALM_NUM]}.${row[topicMessageColumns.TOPIC_NUM]}`,
+    message: utils.encodeBase64(row[topicMessageColumns.MESSAGE]),
+    running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
+    sequence_number: parseInt(row[topicMessageColumns.SEQUENCE_NUMBER])
   };
 };
 
@@ -154,9 +164,15 @@ const processGetTopicMessages = (req, res) => {
 
   // add filters
   let limit;
+  let order = '';
   for (let filter of filters) {
-    if (filter.key === 'limit') {
+    if (filter.key === constants.filterKeys.LIMIT) {
       limit = filter.value;
+      continue;
+    }
+
+    if (filter.key === constants.filterKeys.ORDER) {
+      order = filter.value;
       continue;
     }
 
@@ -165,9 +181,15 @@ const processGetTopicMessages = (req, res) => {
     pgSqlParams.push(filter.value);
   }
 
+  // add order
+  pgSqlQuery += ` order by ${topicMessageColumns.CONSENSUS_TIMESTAMP} ${order}`;
+
   // add limit
-  pgSqlQuery += ` limit $${nextParamCount}`;
+  pgSqlQuery += ` limit $${nextParamCount++}`;
   pgSqlParams.push(limit === undefined ? config.api.maxLimit : limit);
+
+  // close query
+  pgSqlQuery += ';';
 
   return getMessages(pgSqlQuery, pgSqlParams, res);
 };
@@ -192,14 +214,20 @@ const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
 
 const getMessages = (pgSqlQuery, pgSqlParams, httpResponse) => {
   logger.debug(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
-  return pool.query(pgSqlQuery, pgSqlParams).then(results => {
-    let topicMessages = [];
+  let topicMessagesResponse = {
+    messages: []
+    // next: null
+  };
 
+  return pool.query(pgSqlQuery, pgSqlParams).then(results => {
     for (let i = 0; i < results.rowCount; i++) {
-      topicMessages.push(formatTopicMessageRow(results.rows[i]));
+      topicMessagesResponse.messages.push(formatTopicMessageRow(results.rows[i]));
     }
 
-    httpResponse.json({messages: topicMessages});
+    // populate next
+    // topicMessagesResponse.next: utils.getPaginationLink(req, topicMessagesResponse.messages.length !== query.limit, 'timestamp', anchorSecNs, query.order)
+
+    httpResponse.json(topicMessagesResponse);
   });
 };
 

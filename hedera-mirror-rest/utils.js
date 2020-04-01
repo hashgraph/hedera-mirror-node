@@ -21,6 +21,7 @@
 const math = require('mathjs');
 const config = require('./config.js');
 const ed25519 = require('./ed25519.js');
+const constants = require('./constants.js');
 
 const ENTITY_TYPE_FILE = 3;
 const TRANSACTION_RESULT_SUCCESS = 22;
@@ -46,6 +47,18 @@ const opsMap = {
   gte: ' >= ',
   eq: ' = ',
   ne: ' != '
+};
+
+const filterKeys = {
+  ACCOUNT_ID: 'account.id',
+  ACCOUNT_BALANCE: 'account.balance',
+  ACCOUNT_PUBLICKEY: 'account.publickey',
+  LIMIT: 'limit',
+  ORDER: 'order',
+  RESULT: 'result',
+  SEQUENCE_NUMBER: 'seqnum',
+  TIMESTAMP: 'timestamp',
+  TYPE: 'type'
 };
 
 /**
@@ -114,38 +127,38 @@ const filterValidityChecks = function(param, op, val) {
 
   // Validate the value
   switch (param) {
-    case 'account.id':
+    case filterKeys.ACCOUNT_ID:
       // Accepted forms: shard.realm.num or num
       ret = isValidEntityNum(val);
       break;
-    case 'timestamp':
+    case filterKeys.TIMESTAMP:
       ret = isValidTimestampParam(val);
       break;
-    case 'account.balance':
+    case filterKeys.ACCOUNT_BALANCE:
       // Accepted forms: Upto 50 billion
       ret = /^\d{1,19}$/.test(val);
       break;
-    case 'account.publickey':
+    case filterKeys.ACCOUNT_PUBLICKEY:
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = /^[0-9a-fA-F]{64}$/.test(val) || /^[0-9a-fA-F]{88}$/.test(val);
       break;
-    case 'limit':
+    case filterKeys.LIMIT:
       // Acceptable forms: upto 4 digits
       ret = isValidLimitNum(val);
       break;
-    case 'order':
+    case filterKeys.ORDER:
       // Acceptable words: asc or desc
       ret = ['asc', 'desc'].includes(val);
       break;
-    case 'type':
+    case filterKeys.TYPE:
       // Acceptable words: credit or debig
       ret = ['credit', 'debit'].includes(val);
       break;
-    case 'result':
+    case filterKeys.RESULT:
       // Acceptable words: success or fail
       ret = ['success', 'fail'].includes(val);
       break;
-    case 'seqnum':
+    case filterKeys.SEQUENCE_NUMBER:
       // Acceptable words: bigint
       ret = isValidEntityNum(val);
       break;
@@ -753,14 +766,14 @@ const formatComparator = comparator => {
 
     // format value
     switch (comparator.key) {
-      case 'id':
+      case filterKeys.ACCOUNT_ID:
         // Accepted forms: shard.realm.num or num
         comparator.value = utils.parseEntityId(comparator.value);
         break;
-      case 'timestamp':
+      case filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
         break;
-      case 'publickey':
+      case filterKeys.ACCOUNT_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = ed25519.derToEd25519(comparator.value);
         break;
