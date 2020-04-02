@@ -226,13 +226,21 @@ public class TopicFeature {
     }
 
     @When("I publish {int} batches of {int} messages every {long} milliseconds")
-    @Retryable(value = {StatusRuntimeException.class})
     public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException,
             HederaStatusException {
-        topicClient
-                .batchPublishMessages(consensusTopicId, submitKey, "New message", numGroups, messageCount, milliSleep);
+        for (int i = 0; i < numGroups; i++) {
+            Thread.sleep(milliSleep, 0);
+            publishTopicMessages(messageCount);
+            log.trace("Emitted {} message(s) in batch {} of {} potential batches. Will sleep {} ms until " +
+                    "next batch", messageCount, i + 1, numGroups, milliSleep);
+        }
 
         messageSubscribeCount = numGroups * messageCount;
+    }
+
+    @Retryable(value = {StatusRuntimeException.class})
+    public void publishTopicMessages(int messageCount) throws InterruptedException, HederaStatusException {
+        topicClient.publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount, false);
     }
 
     @When("I publish and verify {int} messages sent")
