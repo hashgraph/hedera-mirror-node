@@ -178,11 +178,11 @@ const reqToSql = function(req) {
 
   const resultTypeQuery = utils.parseResultParams(req);
 
-  const {limitQuery, limitParams, order, limit} = utils.parseLimitAndOrderParams(req);
+  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
-  let sqlParams = accountParams.concat(tsParams).concat(limitParams);
+  let sqlParams = accountParams.concat(tsParams).concat(params);
 
-  let innerQuery = getTransactionsInnerQuery(accountQuery, tsQuery, resultTypeQuery, limitQuery, creditDebit, order);
+  let innerQuery = getTransactionsInnerQuery(accountQuery, tsQuery, resultTypeQuery, query, creditDebit, order);
   let sqlQuery = getTransactionsOuterQuery(innerQuery, order);
 
   return {

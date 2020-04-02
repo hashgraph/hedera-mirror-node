@@ -34,6 +34,9 @@
         "running_hash": "cnVubmluZ19oYXNo",
         "sequence_number": 2
       }
-    ]
+    ],
+    "links": {
+      "next": null
+    }
   }
 }

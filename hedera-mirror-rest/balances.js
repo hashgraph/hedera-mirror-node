@@ -74,7 +74,7 @@ const getBalances = function(req, res) {
   );
   let joinEntities = '' !== pubKeyQuery; // Only need to join t_entites if we're selecting on publickey.
 
-  const {limitQuery, limitParams, order, limit} = utils.parseLimitAndOrderParams(req, 'desc');
+  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'desc');
 
   // Use the inner query to find the latest snapshot timestamp from the balance history table
   let innerQuery =
@@ -110,13 +110,13 @@ const getBalances = function(req, res) {
     ' order by consensus_timestamp desc, ' +
     ['account_realm_num', 'account_num'].map(q => q + ' ' + order).join(',') +
     ' ' +
-    limitQuery;
+    query;
 
   let sqlParams = tsParams
     .concat(accountParams)
     .concat(pubKeyParams)
     .concat(balanceParams)
-    .concat(limitParams);
+    .concat(params);
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 

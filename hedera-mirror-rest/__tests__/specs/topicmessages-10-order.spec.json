@@ -63,6 +63,9 @@
         "running_hash": "cnVubmluZ19oYXNo",
         "sequence_number": 4
       }
-    ]
+    ],
+    "links": {
+      "next": "/api/v1/topic/7?seqnum=gt:2&limit=3&order=desc&timestamp=lt:1234567890.000000004"
+    }
   }
 }
