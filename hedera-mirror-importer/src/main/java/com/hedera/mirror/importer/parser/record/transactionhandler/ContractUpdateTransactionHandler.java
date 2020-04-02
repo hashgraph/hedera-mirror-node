@@ -36,11 +36,6 @@ public class ContractUpdateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public EntityId getProxyAccountId(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getContractUpdateInstance().getProxyAccountID());
-    }
-
-    @Override
     public boolean updatesEntity() {
         return true;
     }

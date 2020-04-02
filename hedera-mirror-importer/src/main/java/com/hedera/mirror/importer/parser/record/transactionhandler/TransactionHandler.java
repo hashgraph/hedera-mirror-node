@@ -37,15 +37,6 @@ public interface TransactionHandler {
     EntityId getEntityId(RecordItem recordItem);
 
     /**
-     * Override this function if a transaction needs to update proxyAccountId in {@link
-     * com.hedera.mirror.importer.domain.Entities}. If value returned is null, or if {@link EntityId#getEntityNum()} is
-     * 0 for the returned value, then proxyAccountId is not updated.
-     */
-    default EntityId getProxyAccountId(RecordItem recordItem) {
-        return null;
-    }
-
-    /**
      * Override to return true if an implementation wants to be able to update the entity returned by
      * {@link #getEntityId(RecordItem)}.
      */

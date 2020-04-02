@@ -36,11 +36,6 @@ public class CryptoCreateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public EntityId getProxyAccountId(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getCryptoCreateAccount().getProxyAccountID());
-    }
-
-    @Override
     public boolean updatesEntity() {
         return true;
     }

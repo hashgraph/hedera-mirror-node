@@ -33,9 +33,8 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.record.transactionhandler.AbstractTransactionHandlerTest;
 
-class RecordItemTest extends AbstractTransactionHandlerTest {
+class RecordItemTest {
 
     private static final Transaction DEFAULT_TRANSACTION = Transaction.newBuilder()
             .setBodyBytes(TransactionBody.getDefaultInstance().toByteString())

@@ -24,6 +24,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -36,6 +40,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
@@ -215,7 +220,7 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
         );
     }
 
-    protected final Builder defaultTransactionBodyBuilder(String memo) {
+    protected static Builder defaultTransactionBodyBuilder(String memo) {
 
         long validDuration = 120;
         AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build();
@@ -229,5 +234,22 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
         body.setTransactionID(Utility.getTransactionId(payerAccountId));
         body.setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration).build());
         return body;
+    }
+
+    public Long assertEntityExistsAndLookupId(Long entityNum) {
+        if (entityNum == null) { // ignore when entity is not set in test case
+            return null;
+        }
+        Optional<Entities> entity = entityRepository.findByPrimaryKey(0L, 0L, entityNum);
+        assertThat(entity).isPresent();
+        return entity.get().getId();
+    }
+
+    public Long createIdForAccountNum(Long accountNum) {
+        if (accountNum == null) { // ignore when entity is not set in test case
+            return null;
+        }
+        EntityId entityId = new EntityId(null, 0L, 0L, accountNum, EntityTypeEnum.ACCOUNT.getId());
+        return entityRepository.saveAndCacheEntityId(entityId.toEntity()).getId();
     }
 }

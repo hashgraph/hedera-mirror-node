@@ -20,13 +20,11 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import lombok.Data;
 import lombok.ToString;
@@ -54,8 +52,7 @@ public class Entities {
     @Column(name = "fk_entity_type_id")
     private Integer entityTypeId;
 
-    @ManyToOne
-    private Entities autoRenewAccount;
+    private Long autoRenewAccountId;
 
     private Long autoRenewPeriod;
 
@@ -85,10 +82,6 @@ public class Entities {
                     "will be nulled", entityShard, entityRealm, entityNum, e);
             ed25519PublicKeyHex = null;
         }
-    }
-
-    public String getDisplayId() {
-        return String.format("%d.%d.%d", entityShard, entityRealm, entityNum);
     }
 
     public EntityId toEntityId() {

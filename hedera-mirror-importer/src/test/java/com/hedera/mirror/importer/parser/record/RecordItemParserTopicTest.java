@@ -74,20 +74,17 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var transaction = createCreateTopicTransaction(adminKey, submitKey, memo, autoRenewAccount, autoRenewPeriod);
         var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
                 responseCode);
-        var expectedEntity = createTopicEntity(topicId, null, null, adminKey, submitKey, memo, autoRenewAccount,
-                autoRenewPeriod);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
         long entityCount = autoRenewAccount != null ? 4 : 3; // Node, payer, topic & optionally autorenew
-        var entity = entityRepository
-                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        var entity = entityRepository.findByPrimaryKey(
+                topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(entityCount, entityRepository.count());
-        assertThat(entity).isEqualToIgnoringGivenFields(expectedEntity, "id", "autoRenewAccount");
-        if (autoRenewAccount != null) {
-            assertThat(entity.getAutoRenewAccount()).isEqualToIgnoringGivenFields(entity.getAutoRenewAccount(), "id");
-        }
+        var expectedEntity = createTopicEntity(topicId, null, null, adminKey, submitKey, memo,
+                assertEntityExistsAndLookupId(autoRenewAccount), autoRenewPeriod);
+        assertThat(entity).isEqualToIgnoringGivenFields(expectedEntity, "id");
     }
 
     @Test
@@ -115,11 +112,12 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
     // https://github.com/hashgraph/hedera-mirror-node/issues/501
     @Test
     void createTopicTestExistingAutoRenewAccount() throws Exception {
-        Entities autoRenewAccount = createEntity(100L, EntityTypeEnum.ACCOUNT);
+        Long autoRenewAccount = 100L;
+        Long autoRenewAccountId = createIdForAccountNum(autoRenewAccount);
         var topicId = 200L;
         var consensusTimestamp = 2_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
-        var transaction = createCreateTopicTransaction(null, null, null, autoRenewAccount.getEntityNum(), null);
+        var transaction = createCreateTopicTransaction(null, null, null, autoRenewAccount, null);
         var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
                 .build(), null, null, consensusTimestamp, responseCode);
 
@@ -134,7 +132,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
                 .returns("", from(Entities::getMemo))
                 .returns(false, from(Entities::isDeleted))
                 .returns(EntityTypeEnum.TOPIC.getId(), from(Entities::getEntityTypeId))
-                .returns(autoRenewAccount, from(Entities::getAutoRenewAccount));
+                .returns(autoRenewAccountId, from(Entities::getAutoRenewAccountId));
     }
 
     @Test
@@ -180,11 +178,9 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
                          @ConvertWith(KeyConverter.class) Key updatedSubmitKey,
                          String updatedMemo, long consensusTimestamp, Long autoRenewAccount, Long autoRenewPeriod) throws Exception {
         // Store topic to be updated.
+        Long autoRenewAccountEntityId = createIdForAccountNum(autoRenewAccount);
         var topic = createTopicEntity(topicId, expirationTimeSeconds, expirationTimeNanos, adminKey, submitKey, memo,
-                autoRenewAccount, autoRenewPeriod);
-        if (topic.getAutoRenewAccount() != null) {
-            topic.setAutoRenewAccount(entityRepository.save(topic.getAutoRenewAccount()));
-        }
+                autoRenewAccountEntityId, autoRenewPeriod);
         entityRepository.save(topic);
 
         var responseCode = ResponseCodeEnum.SUCCESS;
@@ -194,7 +190,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
                 responseCode);
         var expectedEntity = createTopicEntity(topicId, updatedExpirationTimeSeconds, updatedExpirationTimeNanos,
-                updatedAdminKey, updatedSubmitKey, updatedMemo, autoRenewAccount, autoRenewPeriod);
+                updatedAdminKey, updatedSubmitKey, updatedMemo, autoRenewAccountEntityId, autoRenewPeriod);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -203,10 +199,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
                 .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(entityCount, entityRepository.count());
-        assertThat(entity).isEqualToIgnoringGivenFields(expectedEntity, "id", "autoRenewAccount");
-        if (autoRenewAccount != null) {
-            assertThat(entity.getAutoRenewAccount()).isEqualToIgnoringGivenFields(entity.getAutoRenewAccount(), "id");
-        }
+        assertThat(entity).isEqualToIgnoringGivenFields(expectedEntity, "id");
     }
 
     @Test
@@ -245,25 +238,24 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var submitKey = (Key) new KeyConverter().convert("updated-submit-key", null);
         var consensusTimestamp = 6_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
-
-        var topic = createTopicEntity(topicId, 11L, 0, adminKey, submitKey, "updated-memo", 1L, 30L);
+        var memo = "updated-memo";
+        Long autoRenewAccount = 1L;
         // Topic does not get stored in the repository beforehand.
 
-        var transaction = createUpdateTopicTransaction(topicId, 11L, 0, adminKey, submitKey, topic
-                .getMemo(), 1L, 30L);
-        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
-                responseCode);
+        var transaction = createUpdateTopicTransaction(topicId, 11L, 0, adminKey, submitKey, memo, autoRenewAccount,
+                30L);
+        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
-        var entity = entityRepository
-                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        var entity = entityRepository.findByPrimaryKey(
+                topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(4L, entityRepository.count()); // Node, payer, topic, autorenew
-        assertThat(entity)
-                .isEqualToIgnoringGivenFields(topic, "id", "autoRenewAccount")
-                .extracting(Entities::getAutoRenewAccount)
-                .isEqualToIgnoringGivenFields(entity.getAutoRenewAccount(), "id");
+
+        var expectedTopic = createTopicEntity(topicId, 11L, 0, adminKey, submitKey, memo,
+                assertEntityExistsAndLookupId(autoRenewAccount), 30L);
+        assertThat(entity).isEqualToIgnoringGivenFields(expectedTopic, "id");
     }
 
     @ParameterizedTest
@@ -285,22 +277,11 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
                                        Long autoRenewAccount, Long autoRenewPeriod, Long updatedAutoRenewAccount,
                                        Long updatedAutoRenewPeriod) throws Exception {
         // Store topic to be updated.
+        Long autoRenewAccountEntityId = createIdForAccountNum(autoRenewAccount);
         var topic = createTopicEntity(topicId, expirationTimeSeconds, expirationTimeNanos, adminKey, submitKey, memo,
-                autoRenewAccount, autoRenewPeriod);
-        if (topic.getAutoRenewAccount() != null) {
-            topic.setAutoRenewAccount(entityRepository.save(topic.getAutoRenewAccount()));
-        }
+                autoRenewAccountEntityId, autoRenewPeriod);
         entityRepository.save(topic);
 
-        // Setup the expected entity.
-        if (updatedAutoRenewAccount != null) {
-            var autoRenewEntity = new Entities();
-            autoRenewEntity.setEntityShard(topic.getEntityShard());
-            autoRenewEntity.setEntityRealm(topic.getEntityRealm());
-            autoRenewEntity.setEntityNum(updatedAutoRenewAccount);
-            autoRenewEntity.setEntityTypeId(1);
-            topic.setAutoRenewAccount(autoRenewEntity);
-        }
         if (updatedAutoRenewPeriod != null) {
             topic.setAutoRenewPeriod(updatedAutoRenewPeriod);
         }
@@ -332,15 +313,13 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         }
         if (updatedAutoRenewAccount != null) {
             ++entityCount;
+            topic.setAutoRenewAccountId(assertEntityExistsAndLookupId(updatedAutoRenewAccount));
         }
         var entity = entityRepository
                 .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(entityCount, entityRepository.count());
-        assertThat(entity).isEqualToIgnoringGivenFields(topic, "id", "autoRenewAccount");
-        if (autoRenewAccount != null) {
-            assertThat(entity.getAutoRenewAccount()).isEqualToIgnoringGivenFields(entity.getAutoRenewAccount(), "id");
-        }
+        assertThat(entity).isEqualToIgnoringGivenFields(topic, "id");
     }
 
     @Test
@@ -591,19 +570,14 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
     }
 
     private Entities createTopicEntity(TopicID topicId, Long expirationTimeSeconds, Integer expirationTimeNanos,
-                                       Key adminKey, Key submitKey, String memo, Long autoRenewAccount,
+                                       Key adminKey, Key submitKey, String memo, Long autoRenewAccountEntityId,
                                        Long autoRenewPeriod) {
         var topic = new Entities();
         topic.setEntityShard(topicId.getShardNum());
         topic.setEntityRealm(topicId.getRealmNum());
         topic.setEntityNum(topicId.getTopicNum());
-        if (autoRenewAccount != null) {
-            var autoRenewEntity = new Entities();
-            autoRenewEntity.setEntityShard(topic.getEntityShard());
-            autoRenewEntity.setEntityRealm(topic.getEntityRealm());
-            autoRenewEntity.setEntityNum(autoRenewAccount);
-            autoRenewEntity.setEntityTypeId(EntityTypeEnum.ACCOUNT.getId());
-            topic.setAutoRenewAccount(autoRenewEntity);
+        if (autoRenewAccountEntityId != null) {
+            topic.setAutoRenewAccountId(autoRenewAccountEntityId);
         }
         if (autoRenewPeriod != null) {
             topic.setAutoRenewPeriod(autoRenewPeriod);

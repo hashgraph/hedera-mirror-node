@@ -51,6 +51,10 @@ public class EntityId {
         return entity;
     }
 
+    public String getDisplayId() {
+        return String.format("%d.%d.%d", entityShard, entityRealm, entityNum);
+    }
+
     public static EntityId of(AccountID accountID) {
         return of(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum(), EntityTypeEnum.ACCOUNT);
     }
