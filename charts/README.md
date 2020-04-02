@@ -53,9 +53,7 @@ $ kubectl create configmap hedera-mirror-grpc --from-file=application.properties
 Dashboard and metrics can be viewed via [Grafana](https://grafana.com). To access, get the external IP and open it in a browser:
 
 ```shell script
-$ kubectl get service grafana
-NAME      TYPE           CLUSTER-IP       EXTERNAL-IP      PORT(S)        AGE
-grafana   LoadBalancer   10.102.234.103   10.102.234.103   80:30125/TCP   38m
+$ open "http://$(kubectl get service grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 ```
 
 To connect to the database and run queries:
