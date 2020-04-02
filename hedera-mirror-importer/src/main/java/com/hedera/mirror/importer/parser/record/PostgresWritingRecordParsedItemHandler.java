@@ -101,7 +101,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
         try {
             connection = dataSource.getConnection();
             connection.setAutoCommit(false); // do not auto-commit
-            connection.setClientInfo("ApplicationName", "hedera-mirror-importer");
+            connection.setClientInfo("ApplicationName", getClass().getSimpleName());
         } catch (SQLException e) {
             throw new ParserSQLException("Error setting up connection to database", e);
         }
