@@ -45,7 +45,7 @@ spring:
     url: jdbc:postgresql://${hedera.mirror.db.host}:${hedera.mirror.db.port}/${hedera.mirror.db.name}?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     username: ${hedera.mirror.db.username}
   flyway:
-    connectRetries: 10
+    connectRetries: 20
     baselineOnMigrate: true
     baselineVersion: 0
     ignoreMissingMigrations: true
