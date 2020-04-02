@@ -1,5 +1,5 @@
 {
-  "description": "Get messages by with repeated valid sequence and timestamp params",
+  "description": "Get messages with all valid params",
   "setup": {
     "accounts": [],
     "balances": [],

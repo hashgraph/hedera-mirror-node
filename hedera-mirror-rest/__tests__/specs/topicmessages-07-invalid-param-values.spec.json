@@ -1,5 +1,5 @@
 {
-  "description": "Get single message by valid topic and sequence",
+  "description": "Get messages with invalid params",
   "setup": {
     "accounts": [],
     "balances": [],
