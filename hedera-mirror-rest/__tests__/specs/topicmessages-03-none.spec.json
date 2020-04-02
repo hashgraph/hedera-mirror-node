@@ -26,6 +26,9 @@
   "url": "/api/v1/topic/7?seqnum=2&seqnum=gte:3&timestamp=lt:1234567890.000000004",
   "responseStatus": 200,
   "responseJson": {
-    "messages": []
+    "messages": [],
+    "links": {
+      "next": null
+    }
   }
 }

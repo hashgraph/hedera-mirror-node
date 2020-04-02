@@ -75,6 +75,30 @@ const validateGetTopicMessagesParams = function(topicId) {
   return utils.makeValidationResponse(badParams);
 };
 
+const validateGetTopicMessagesRequest = (topicId, filters, res) => {
+  let valid = true;
+  const paramValidationResult = validateGetTopicMessagesParams(topicId);
+  if (!paramValidationResult.isValid) {
+    // return new Promise((resolve, reject) => {
+    res.status(paramValidationResult.code).json(paramValidationResult.contents);
+    valid = false;
+    // resolve();
+    // });
+  }
+
+  // validate filters
+  const filterValidationResult = utils.validateAndParseFilters(filters);
+  if (!filterValidationResult.isValid) {
+    // return new Promise((resolve, reject) => {
+    res.status(filterValidationResult.code).json(filterValidationResult.contents);
+    valid = false;
+    // resolve();
+    // });
+  }
+
+  return valid;
+};
+
 /**
  * Format row in postgres query's result to object which is directly returned to user as json.
  */
@@ -134,27 +158,48 @@ const processGetMessageByTopicAndSequenceRequest = (params, httpResponse) => {
 };
 
 const processGetTopicMessages = (req, res) => {
+  // retrieve param and filters from request
   const topicId = req.params.id;
   const filters = utils.buildFilterObject(req.query);
 
   // validate params
-  const paramValidationResult = validateGetTopicMessagesParams(topicId);
-  if (!paramValidationResult.isValid) {
-    return new Promise((resolve, reject) => {
-      res.status(paramValidationResult.code).json(paramValidationResult.contents);
-      resolve();
-    });
+  const validQuery = validateGetTopicMessagesRequest(topicId, filters, res);
+  if (!validQuery) {
+    return Promise.resolve;
   }
 
-  // validate filters
-  const filterValidationResult = utils.validateAndParseFilters(filters);
-  if (!filterValidationResult.isValid) {
-    return new Promise((resolve, reject) => {
-      res.status(filterValidationResult.code).json(filterValidationResult.contents);
-      resolve();
-    });
-  }
+  // build sql query validated param and filters
+  let {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
 
+  let topicMessagesResponse = {
+    messages: [],
+    links: {
+      next: null
+    }
+  };
+
+  // get results and return formatted response
+  getMessages(query, params).then(messages => {
+    topicMessagesResponse.messages = messages;
+
+    // populate next
+    if (limit) {
+      let lastTimeStamp =
+        messages.length > 0 ? messages[messages.length - 1][topicMessageColumns.CONSENSUS_TIMESTAMP] : null;
+      topicMessagesResponse.links.next = utils.getPaginationLink(
+        req,
+        topicMessagesResponse.messages.length !== limit,
+        constants.filterKeys.TIMESTAMP,
+        lastTimeStamp,
+        order
+      );
+    }
+
+    res.json(topicMessagesResponse);
+  });
+};
+
+const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
   const entity = utils.parseEntityId(topicId);
   let pgSqlQuery =
     'select consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number' +
@@ -164,7 +209,7 @@ const processGetTopicMessages = (req, res) => {
 
   // add filters
   let limit;
-  let order = '';
+  let order = 'asc';
   for (let filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
       limit = filter.value;
@@ -176,7 +221,6 @@ const processGetTopicMessages = (req, res) => {
       continue;
     }
 
-    // pgSqlQuery += utils.getFilterSqlQuery(columnMap[filter.key], filter.operator, nextParamCount++);
     pgSqlQuery += ` and ${columnMap[filter.key]}${filter.operator}$${nextParamCount++}`;
     pgSqlParams.push(filter.value);
   }
@@ -191,14 +235,14 @@ const processGetTopicMessages = (req, res) => {
   // close query
   pgSqlQuery += ';';
 
-  return getMessages(pgSqlQuery, pgSqlParams, res);
+  return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
 };
 
 /**
  * Retrieves topic message from
  */
 const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
-  logger.debug(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
 
   return pool.query(pgSqlQuery, pgSqlParams).then(results => {
     // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
@@ -212,22 +256,16 @@ const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
   });
 };
 
-const getMessages = (pgSqlQuery, pgSqlParams, httpResponse) => {
-  logger.debug(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
-  let topicMessagesResponse = {
-    messages: []
-    // next: null
-  };
+const getMessages = async (pgSqlQuery, pgSqlParams) => {
+  logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  let messages = [];
 
-  return pool.query(pgSqlQuery, pgSqlParams).then(results => {
+  return await pool.query(pgSqlQuery, pgSqlParams).then(results => {
     for (let i = 0; i < results.rowCount; i++) {
-      topicMessagesResponse.messages.push(formatTopicMessageRow(results.rows[i]));
+      messages.push(formatTopicMessageRow(results.rows[i]));
     }
 
-    // populate next
-    // topicMessagesResponse.next: utils.getPaginationLink(req, topicMessagesResponse.messages.length !== query.limit, 'timestamp', anchorSecNs, query.order)
-
-    httpResponse.json(topicMessagesResponse);
+    return messages;
   });
 };
 

@@ -461,11 +461,15 @@ const parseLimitAndOrderParams = function(req, defaultOrder = 'desc') {
     order = req.query['order'];
   }
 
+  return buildPgSqlObject(limitQuery, limitParams, order, limitValue);
+};
+
+const buildPgSqlObject = (query, params, order, limit) => {
   return {
-    limitQuery: limitQuery,
-    limitParams: limitParams,
+    query: query,
+    params: params,
     order: order,
-    limit: Number(limitValue)
+    limit: Number(limit)
   };
 };
 
@@ -792,6 +796,7 @@ const formatComparator = comparator => {
 
 module.exports = {
   buildFilterObject: buildFilterObject,
+  buildPgSqlObject: buildPgSqlObject,
   createSingleErrorJsonResponse: createSingleErrorJsonResponse,
   createTransactionId: createTransactionId,
   convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,

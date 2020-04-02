@@ -59,9 +59,9 @@ const getEvents = function(req) {
 
   const [nodeQuery, nodeParams] = utils.parseParams(req, 'creatornode', ['tev.creator_node_id']);
 
-  const {limitQuery, limitParams, order, limit} = utils.parseLimitAndOrderParams(req);
+  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
-  let sqlParams = tsParams.concat(nodeParams).concat(limitParams);
+  let sqlParams = tsParams.concat(nodeParams).concat(params);
 
   let sqlQuery =
     'select  *\n' +
@@ -71,7 +71,7 @@ const getEvents = function(req) {
     'order by tev.consensus_timestamp_ns ' +
     order +
     '\n' +
-    limitQuery;
+    query;
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 

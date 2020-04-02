@@ -125,7 +125,7 @@ const getAccounts = function(req) {
     }
   );
 
-  const {limitQuery, limitParams, order, limit} = utils.parseLimitAndOrderParams(req, 'asc');
+  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'asc');
 
   const entitySql =
     getAccountQueryPrefix() +
@@ -134,13 +134,13 @@ const getAccounts = function(req) {
     ' order by coalesce(ab.account_num, e.entity_num) ' +
     order +
     '\n' +
-    limitQuery;
+    query;
 
   const entityParams = accountParamsForAccountBalances
     .concat(accountParamsForEntity)
     .concat(balanceParams)
     .concat(pubKeyParams)
-    .concat(limitParams);
+    .concat(params);
 
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
@@ -202,7 +202,7 @@ const getOneAccount = function(req, res) {
   const [tsQuery, tsParams] = utils.parseParams(req, 'timestamp', ['t.consensus_ns'], 'timestamp_ns');
 
   const resultTypeQuery = utils.parseResultParams(req);
-  const {limitQuery, limitParams, order, limit} = utils.parseLimitAndOrderParams(req);
+  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
   let ret = {
     transactions: []
@@ -241,12 +241,12 @@ const getOneAccount = function(req, res) {
     accountQuery,
     tsQuery,
     resultTypeQuery,
-    limitQuery,
+    query,
     creditDebit,
     order
   );
 
-  const innerParams = accountParams.concat(tsParams).concat(limitParams);
+  const innerParams = accountParams.concat(tsParams).concat(params);
 
   let transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
 
