@@ -729,7 +729,7 @@ const buildComparatorFilter = (name, filter) => {
 };
 
 /**
- * Verify topicId and seqNum meet entity_num format
+ * Verify filters meet expected formats
  */
 const validateFilters = filters => {
   let badParams = [];
@@ -772,7 +772,7 @@ const formatComparator = comparator => {
     switch (comparator.key) {
       case filterKeys.ACCOUNT_ID:
         // Accepted forms: shard.realm.num or num
-        comparator.value = utils.parseEntityId(comparator.value);
+        comparator.value = parseEntityId(comparator.value);
         break;
       case filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
@@ -782,7 +782,7 @@ const formatComparator = comparator => {
         comparator.value = ed25519.derToEd25519(comparator.value);
         break;
       // case 'type':
-      //   // Acceptable words: credit or debig
+      //   // Acceptable words: credit or debit
       //   comparator.value = ;
       //   break;
       // case 'result':
@@ -796,6 +796,7 @@ const formatComparator = comparator => {
 
 module.exports = {
   buildFilterObject: buildFilterObject,
+  buildComparatorFilter: buildComparatorFilter,
   buildPgSqlObject: buildPgSqlObject,
   createSingleErrorJsonResponse: createSingleErrorJsonResponse,
   createTransactionId: createTransactionId,
@@ -804,6 +805,7 @@ module.exports = {
   encodeKey: encodeKey,
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
   filterValidityChecks: filterValidityChecks,
+  formatComparator: formatComparator,
   getInvalidParameterMessage: getInvalidParameterMessage,
   getInvalidParameterMessageObject: getInvalidParameterMessageObject,
   getNullableNumber: getNullableNumber,

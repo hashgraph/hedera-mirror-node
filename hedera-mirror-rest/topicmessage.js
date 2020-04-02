@@ -79,21 +79,15 @@ const validateGetTopicMessagesRequest = (topicId, filters, res) => {
   let valid = true;
   const paramValidationResult = validateGetTopicMessagesParams(topicId);
   if (!paramValidationResult.isValid) {
-    // return new Promise((resolve, reject) => {
     res.status(paramValidationResult.code).json(paramValidationResult.contents);
     valid = false;
-    // resolve();
-    // });
   }
 
   // validate filters
   const filterValidationResult = utils.validateAndParseFilters(filters);
   if (!filterValidationResult.isValid) {
-    // return new Promise((resolve, reject) => {
     res.status(filterValidationResult.code).json(filterValidationResult.contents);
     valid = false;
-    // resolve();
-    // });
   }
 
   return valid;
@@ -257,7 +251,7 @@ const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
 };
 
 const getMessages = async (pgSqlQuery, pgSqlParams) => {
-  logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  logger.debug(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   let messages = [];
 
   return await pool.query(pgSqlQuery, pgSqlParams).then(results => {
@@ -298,10 +292,12 @@ const getTopicMessages = (req, res) => {
 };
 
 module.exports = {
+  extractSqlFromTopicMessagesRequest: extractSqlFromTopicMessagesRequest,
   formatTopicMessageRow: formatTopicMessageRow,
   getMessageByConsensusTimestamp: getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest: getMessageByTopicAndSequenceRequest,
   getTopicMessages: getTopicMessages,
   validateConsensusTimestampParam: validateConsensusTimestampParam,
-  validateGetSequenceMessageParams: validateGetSequenceMessageParams
+  validateGetSequenceMessageParams: validateGetSequenceMessageParams,
+  validateGetTopicMessagesParams: validateGetTopicMessagesParams
 };
