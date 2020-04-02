@@ -28,7 +28,7 @@ import lombok.Value;
 
 /**
  * Common encapsulation for accountID, fileID, contractID, and topicID.
- *
+ * <p>
  * There is no valid entity in Hedera network with an id '0.0.0'. When AccountID/FileID/ContractID/TopicID are not set,
  * their values default to '0.0.0'. If such an unset (default) instance is used to create EntityId using one of the
  * of(..) functions, null is returned.
@@ -72,6 +72,6 @@ public class EntityId {
         if (entityNum == 0 && entityRealm == 0 && entityShard == 0) {
             return null;
         }
-        return new EntityId(null, entityShard, entityRealm, entityNum, type.ordinal());
+        return new EntityId(null, entityShard, entityRealm, entityNum, type.getId());
     }
 }

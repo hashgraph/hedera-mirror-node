@@ -675,7 +675,7 @@ public class RecordItemParser implements RecordItemListener {
      */
     public long lookupOrCreateId(EntityId entityId) {
         log.debug("lookupOrCreateId for {}", entityId);
-        if (entityId.getId() != 0) {
+        if (entityId.getId() != null && entityId.getId() != 0) {
             return entityId.getId();
         }
         return entityRepository.findEntityIdByNativeIds(

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,12 +22,8 @@ package com.hedera.mirror.importer.parser.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
-
-import com.hedera.mirror.importer.parser.RecordStreamFileListener;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -42,12 +38,15 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.UUID;
 import javax.annotation.Resource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.parser.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -114,6 +113,11 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
         sigMap.addSigPair(sigPair);
 
         return sigMap.build();
+    }
+
+    @BeforeEach
+    void beforeEach(TestInfo testInfo) {
+        System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
     }
 
     protected static Key keyFromString(String key) {
