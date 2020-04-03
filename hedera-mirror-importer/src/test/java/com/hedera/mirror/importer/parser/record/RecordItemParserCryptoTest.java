@@ -1028,7 +1028,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
         return transaction.build();
     }
 
-    private Transaction cryptoUpdateTransaction() {
+    private static Transaction cryptoUpdateTransaction() {
 
         Transaction.Builder transaction = Transaction.newBuilder();
         CryptoUpdateTransactionBody.Builder cryptoUpdate = CryptoUpdateTransactionBody.newBuilder();

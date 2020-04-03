@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,11 +22,11 @@ package com.hedera.mirror.importer.parser.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
 
-import com.hedera.mirror.importer.parser.RecordStreamFileListener;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -40,14 +40,18 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Resource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.parser.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -114,6 +118,11 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
         sigMap.addSigPair(sigPair);
 
         return sigMap.build();
+    }
+
+    @BeforeEach
+    void beforeEach(TestInfo testInfo) {
+        System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
     }
 
     protected static Key keyFromString(String key) {
@@ -211,7 +220,7 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
         );
     }
 
-    protected final Builder defaultTransactionBodyBuilder(String memo) {
+    protected static Builder defaultTransactionBodyBuilder(String memo) {
 
         long validDuration = 120;
         AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build();
@@ -225,5 +234,22 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
         body.setTransactionID(Utility.getTransactionId(payerAccountId));
         body.setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration).build());
         return body;
+    }
+
+    public Long assertEntityExistsAndLookupId(Long entityNum) {
+        if (entityNum == null) { // ignore when entity is not set in test case
+            return null;
+        }
+        Optional<Entities> entity = entityRepository.findByPrimaryKey(0L, 0L, entityNum);
+        assertThat(entity).isPresent();
+        return entity.get().getId();
+    }
+
+    public Long createIdForAccountNum(Long accountNum) {
+        if (accountNum == null) { // ignore when entity is not set in test case
+            return null;
+        }
+        EntityId entityId = new EntityId(null, 0L, 0L, accountNum, EntityTypeEnum.ACCOUNT.getId());
+        return entityRepository.saveAndCacheEntityId(entityId.toEntity()).getId();
     }
 }

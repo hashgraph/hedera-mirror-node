@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.domain;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,6 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import lombok.Data;
 import lombok.ToString;
@@ -53,8 +52,7 @@ public class Entities {
     @Column(name = "fk_entity_type_id")
     private Integer entityTypeId;
 
-    @ManyToOne
-    private Entities autoRenewAccount;
+    private Long autoRenewAccountId;
 
     private Long autoRenewPeriod;
 
@@ -86,7 +84,7 @@ public class Entities {
         }
     }
 
-    public String getDisplayId() {
-        return String.format("%d.%d.%d", entityShard, entityRealm, entityNum);
+    public EntityId toEntityId() {
+        return new EntityId(id, entityShard, entityRealm, entityNum, entityTypeId);
     }
 }

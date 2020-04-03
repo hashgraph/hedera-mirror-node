@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,12 +26,14 @@ import java.util.LinkedHashSet;
 import java.util.function.Predicate;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionFilterFields;
+
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
 @Data
@@ -48,11 +50,11 @@ public class CommonParserProperties {
     @NotNull
     private Collection<TransactionFilter> include = new ArrayList<>();
 
-    public Predicate<Transaction> getFilter() {
+    public Predicate<TransactionFilterFields> getFilter() {
         return includeFilter().and(excludeFilter());
     }
 
-    private Predicate<Transaction> excludeFilter() {
+    private Predicate<TransactionFilterFields> excludeFilter() {
         if (exclude.isEmpty()) {
             return t -> true;
         }
@@ -61,7 +63,7 @@ public class CommonParserProperties {
                 .reduce(a -> true, Predicate::and);
     }
 
-    private Predicate<Transaction> includeFilter() {
+    private Predicate<TransactionFilterFields> includeFilter() {
         if (include.isEmpty()) {
             return t -> true;
         }
@@ -80,19 +82,19 @@ public class CommonParserProperties {
         @NotNull
         private Collection<TransactionTypeEnum> transaction = new LinkedHashSet<>();
 
-        public Predicate<Transaction> getFilter() {
+        public Predicate<TransactionFilterFields> getFilter() {
             return t -> (matches(t) && matches(t.getEntity()));
         }
 
-        private boolean matches(Transaction t) {
+        private boolean matches(TransactionFilterFields t) {
             if (transaction.isEmpty()) {
                 return true;
             }
 
-            return transaction.contains(t.getTypeEnum());
+            return transaction.contains(t.getTransactionType());
         }
 
-        private boolean matches(Entities e) {
+        private boolean matches(EntityId e) {
             if (entity.isEmpty()) {
                 return true;
             }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,23 +20,16 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import javax.inject.Named;
-import lombok.AllArgsConstructor;
+import lombok.Value;
 
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
-
-@Named
-@AllArgsConstructor
-public class FileCreateTransactionHandler implements TransactionHandler {
-
-    @Override
-    public EntityId getEntityId(RecordItem recordItem) {
-        return EntityId.of(recordItem.getRecord().getReceipt().getFileID());
-    }
-
-    @Override
-    public boolean updatesEntity() {
-        return true;
-    }
+/**
+ * Collection of fields that can be used by Transaction Filter to filter on.
+ */
+@Value
+public class TransactionFilterFields {
+    /**
+     * Main entity associated with the transaction
+     */
+    EntityId entity;
+    TransactionTypeEnum transactionType;
 }
