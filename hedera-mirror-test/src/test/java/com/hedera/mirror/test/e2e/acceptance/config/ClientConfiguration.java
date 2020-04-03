@@ -74,7 +74,7 @@ public class ClientConfiguration {
         RetryTemplate retryTemplate = new RetryTemplate();
 
         FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(acceptanceTestProperties.getSubscribeRetryOffPeriod().toMillis());
+        fixedBackOffPolicy.setBackOffPeriod(acceptanceTestProperties.getSubscribeRetryBackoffPeriod().toMillis());
         retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
 
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();

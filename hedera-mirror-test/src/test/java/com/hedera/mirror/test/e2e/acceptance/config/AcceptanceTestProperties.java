@@ -55,5 +55,5 @@ public class AcceptanceTestProperties {
     private int subscribeRetries = 3;
 
     @NotNull
-    private Duration subscribeRetryOffPeriod = Duration.ofMillis(2000);
+    private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(2000);
 }
