@@ -20,6 +20,16 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class UnknownDataTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import java.util.Map;
 
+class UnknownDataTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new UnknownDataTransactionHandler();
+    }
+
+    @Override
+    protected Map<String, Integer> getEntityIdFields() {
+        return Map.of();
+    }
 }

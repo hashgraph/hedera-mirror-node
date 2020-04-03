@@ -20,6 +20,18 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class ConsensusDeleteTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import java.util.Map;
 
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
+class ConsensusDeleteTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new ConsensusDeleteTopicTransactionHandler();
+    }
+
+    @Override
+    protected Map<String, Integer> getEntityIdFields() {
+        return Map.of("body.consensusDeleteTopic.topicID", EntityTypeEnum.TOPIC.getId());
+    }
 }

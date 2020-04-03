@@ -20,6 +20,18 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import java.util.Map;
 
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
+class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new ContractCallTransactionHandler();
+    }
+
+    @Override
+    protected Map<String, Integer> getEntityIdFields() {
+        return Map.of("body.contractCall.contractID", EntityTypeEnum.CONTRACT.getId());
+    }
 }

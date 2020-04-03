@@ -20,6 +20,16 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class CryptoTransferTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import java.util.Map;
 
+class CryptoTransferTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new CryptoTransferTransactionHandler();
+    }
+
+    @Override
+    protected Map<String, Integer> getEntityIdFields() {
+        return Map.of();
+    }
 }

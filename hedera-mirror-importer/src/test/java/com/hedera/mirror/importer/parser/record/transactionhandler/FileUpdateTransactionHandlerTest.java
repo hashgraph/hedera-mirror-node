@@ -20,6 +20,18 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import java.util.Map;
 
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
+class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new FileUpdateTransactionHandler();
+    }
+
+    @Override
+    protected Map<String, Integer> getEntityIdFields() {
+        return Map.of("body.fileUpdate.fileID", EntityTypeEnum.FILE.getId());
+    }
 }

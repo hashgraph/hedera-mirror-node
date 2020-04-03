@@ -20,6 +20,19 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class SystemUndeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
+import java.util.Map;
+
+class SystemUndeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new SystemUndeleteTransactionHandler();
+    }
+
+    @Override
+    protected Map<String, Integer> getEntityIdFields() {
+        return Map.of("body.systemUndelete.contractID", EntityTypeEnum.CONTRACT.getId(),
+                "body.systemUndelete.fileID", EntityTypeEnum.FILE.getId());
+    }
 }

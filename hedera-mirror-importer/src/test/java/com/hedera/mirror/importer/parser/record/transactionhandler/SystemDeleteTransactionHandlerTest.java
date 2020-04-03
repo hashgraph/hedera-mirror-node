@@ -20,8 +20,19 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.Map;
+
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class SystemDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new SystemDeleteTransactionHandler();
+    }
 
+    @Override
+    protected Map<String, Integer> getEntityIdFields() {
+        return Map.of("body.systemDelete.contractID", EntityTypeEnum.CONTRACT.getId(),
+                "body.systemDelete.fileID", EntityTypeEnum.FILE.getId());
+    }
 }

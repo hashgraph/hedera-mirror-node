@@ -20,8 +20,18 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.Map;
+
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new CryptoUpdateTransactionHandler();
+    }
 
+    @Override
+    protected Map<String, Integer> getEntityIdFields() {
+        return Map.of("body.cryptoUpdateAccount.accountIDToUpdate", EntityTypeEnum.ACCOUNT.getId());
+    }
 }
