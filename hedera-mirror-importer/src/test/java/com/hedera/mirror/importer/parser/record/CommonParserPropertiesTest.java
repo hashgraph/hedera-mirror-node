@@ -25,10 +25,6 @@ import com.google.common.base.Splitter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.TransactionFilterFields;
-
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,8 +33,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.CommonParserProperties.TransactionFilter;
@@ -152,7 +148,7 @@ public class CommonParserPropertiesTest {
         }
 
         if (type != null) {
-            transactionFilter.setTransactionType(Arrays.asList(type));
+            transactionFilter.setTransaction(Arrays.asList(type));
         }
 
         return transactionFilter;

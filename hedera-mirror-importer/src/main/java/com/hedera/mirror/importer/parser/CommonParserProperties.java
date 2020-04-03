@@ -34,7 +34,6 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
 @Data
@@ -81,18 +80,18 @@ public class CommonParserProperties {
         private Collection<String> entity = new LinkedHashSet<>();
 
         @NotNull
-        private Collection<TransactionTypeEnum> transactionType = new LinkedHashSet<>();
+        private Collection<TransactionTypeEnum> transaction = new LinkedHashSet<>();
 
         public Predicate<TransactionFilterFields> getFilter() {
             return t -> (matches(t) && matches(t.getEntity()));
         }
 
         private boolean matches(TransactionFilterFields t) {
-            if (transactionType.isEmpty()) {
+            if (transaction.isEmpty()) {
                 return true;
             }
 
-            return transactionType.contains(t.getTransactionType());
+            return transaction.contains(t.getTransactionType());
         }
 
         private boolean matches(EntityId e) {

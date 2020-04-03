@@ -130,12 +130,14 @@ public class RecordItemParser implements RecordItemListener {
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
 
         int transactionType = getTransactionType(body);
+        long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entityId = transactionHandler.getEntityId(recordItem);
 
         TransactionFilterFields transactionFilterFields =
                 new TransactionFilterFields(entityId, TransactionTypeEnum.of(transactionType));
         if (!transactionFilter.test(transactionFilterFields)) {
-            log.debug("Ignoring recordItem {}", txRecord);
+            log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entityId={}",
+                    consensusNs, TransactionTypeEnum.of(transactionType), entityId);
             return;
         }
 
@@ -295,7 +297,6 @@ public class RecordItemParser implements RecordItemListener {
         long validDurationSeconds = body.hasTransactionValidDuration() ? body.getTransactionValidDuration()
                 .getSeconds() : null;
         long validStartNs = Utility.timeStampInNanos(transactionID.getTransactionValidStart());
-        long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
         AccountID payerAccountId = transactionID.getAccountID();
 
         com.hedera.mirror.importer.domain.Transaction tx = new com.hedera.mirror.importer.domain.Transaction();
@@ -645,8 +646,8 @@ public class RecordItemParser implements RecordItemListener {
     }
 
     /**
-     * @return entity looked up (using shard/realm/num of given entityId) from the repo. If no entity is found,
-     *         then a new entity is returned without being persisted to the repo.
+     * @return entity looked up (using shard/realm/num of given entityId) from the repo. If no entity is found, then a
+     * new entity is returned without being persisted to the repo.
      */
     private Entities getEntity(EntityId entityId) {
         if (entityId == null) {
