@@ -184,40 +184,4 @@ public class TopicClient {
     public Instant getInstantOfFirstPublishedMessage() {
         return recordPublishInstants.get(0L);
     }
-
-    public List<TransactionReceipt> batchPublishMessages(ConsensusTopicId topicId,
-                                                         Ed25519PrivateKey submitKey, String message, int numGroups,
-                                                         int messageCount,
-                                                         long milliSleep) throws InterruptedException,
-            HederaStatusException {
-        List<TransactionReceipt> receipts = new ArrayList<>();
-        for (int i = 0; i < numGroups; i++) {
-            Thread.sleep(milliSleep, 0);
-            receipts.addAll(publishMessagesToTopic(topicId, message, submitKey, messageCount, false));
-            log.trace("Emitted {} message(s) in batch {} of {} potential batches. Will sleep {} ms until " +
-                    "next batch", messageCount, i + 1, numGroups, milliSleep);
-        }
-
-        return receipts;
-    }
-
-    public Runnable getBackgroundMessagePublisher(ConsensusTopicId topicId,
-                                                  Ed25519PrivateKey submitKey, int numBatches, int numMessages,
-                                                  long millSleepBetweenBatches) {
-        Runnable publisher = () -> {
-            try {
-                log.debug("Emit {} batches of {} background messages each. With {} ms sleep between"
-                        , numBatches, numMessages,
-                        millSleepBetweenBatches);
-                batchPublishMessages(topicId, submitKey, "Background message", numBatches, numMessages,
-                        millSleepBetweenBatches);
-            } catch (InterruptedException e) {
-                log.trace("Background publisher interrupted with: {}", e.getMessage());
-            } catch (Exception e) {
-                log.debug("Background publisher failed with: {}", e.getMessage());
-            }
-        };
-
-        return publisher;
-    }
 }

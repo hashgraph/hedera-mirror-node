@@ -54,5 +54,6 @@ public class AcceptanceTestProperties {
     @Max(5)
     private int subscribeRetries = 3;
 
-    private long subscribeRetryOffPeriod = 2000l;
+    @NotNull
+    private Duration subscribeRetryOffPeriod = Duration.ofMillis(2000);
 }
