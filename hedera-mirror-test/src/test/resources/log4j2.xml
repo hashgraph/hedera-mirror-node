@@ -12,6 +12,12 @@
         <Logger name="com.hedera.mirror.test.e2e.acceptance" level="debug" additivity="false">
             <AppenderRef ref="console"/>
         </Logger>
+        <Logger name="org.springframework.retry.support" level="debug" additivity="false">
+            <AppenderRef ref="console"/>
+        </Logger>
+        <Logger name="org.springframework.retry.listener" level="debug" additivity="false">
+            <AppenderRef ref="console"/>
+        </Logger>
         <Root level="warn">
             <AppenderRef ref="console"/>
         </Root>

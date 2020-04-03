@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,6 +35,7 @@ import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicCreateTransaction;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicDeleteTransaction;
@@ -118,7 +119,7 @@ public class TopicClient {
                                                            Ed25519PrivateKey submitKey,
                                                            int numMessages, boolean verify) throws HederaStatusException
             , InterruptedException {
-        log.debug("Publishing {} messages to topicId : {}.", numMessages, topicId);
+        log.debug("Publishing {} message(s) to topicId : {}.", numMessages, topicId);
         Instant refInstant = Instant.now();
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
@@ -148,10 +149,14 @@ public class TopicClient {
         }
 
         TransactionId transactionId = transaction.execute(client);
+        TransactionRecord transactionRecord = transactionId.getRecord(client);
         // get only the 1st sequence number
         if (recordPublishInstants.size() == 0) {
-            recordPublishInstants.put(0L, transactionId.getRecord(client).consensusTimestamp);
+            recordPublishInstants.put(0L, transactionRecord.consensusTimestamp);
         }
+
+        log.trace("Published message : '{}' to topicId : {} with consensusTimestamp: {}", message, topicId,
+                transactionRecord.consensusTimestamp);
 
         return transactionId;
     }
@@ -162,7 +167,7 @@ public class TopicClient {
 
         TransactionReceipt transactionReceipt = transactionId.getReceipt(client);
 
-        log.trace("Published message : '{}' to topicId : {} with sequence number : {}", message, topicId,
+        log.trace("Verified message published : '{}' to topicId : {} with sequence number : {}", message, topicId,
                 transactionReceipt.getConsensusTopicSequenceNumber());
 
         // note time stamp

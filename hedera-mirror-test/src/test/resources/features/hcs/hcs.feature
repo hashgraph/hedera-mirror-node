@@ -10,7 +10,7 @@ Feature: HCS Base Coverage Feature
         Then the network should successfully observe these messages
         Examples:
             | numMessages |
-            | 100         |
+            | 10          |
 
     @OpenSubscribe @Acceptance
     Scenario Outline: Validate Topic message submission to an open submit topic
@@ -21,7 +21,7 @@ Feature: HCS Base Coverage Feature
         Then the network should successfully observe these messages
         Examples:
             | numMessages |
-            | 1           |
+            | 2           |
 
     @SubscribeOnly @Acceptance
     Scenario Outline: Validate topic message subscription only
@@ -30,8 +30,8 @@ Feature: HCS Base Coverage Feature
         When I subscribe with a filter to retrieve messages
         Then the network should successfully observe these messages
         Examples:
-            | topicId     | startTimestamp | numMessages |
-            | "200002151" | "0"            | 5           |
+            | topicId | startTimestamp | numMessages |
+            | ""      | "-86400"       | 5           |
 
     @PublishOnly
     Scenario Outline: Validate topic message subscription
@@ -40,8 +40,8 @@ Feature: HCS Base Coverage Feature
         And I subscribe with a filter to retrieve these published messages
         Then the network should successfully observe these messages
         Examples:
-            | topicId  | numBatches | numMessages | milliSleep |
-            | "171231" | 2          | 3           | 2000       |
+            | topicId | numBatches | numMessages | milliSleep |
+            | ""      | 2          | 3           | 2000       |
 
     @PublishAndVerify
     Scenario Outline: Validate topic message subscription
@@ -63,7 +63,7 @@ Feature: HCS Base Coverage Feature
         Given I successfully create a new topic id
         Then I successfully delete the topic
 
-    @Acceptance
+    @Acceptance @Latency
     Scenario Outline: Validate Topic message listener latency
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent
