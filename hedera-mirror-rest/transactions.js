@@ -209,7 +209,7 @@ const getTransactions = function(req) {
 
   let query = reqToSql(req);
 
-  logger.debug('getTransactions query: ' + query.query + JSON.stringify(query.params));
+  logger.trace('getTransactions query: ' + query.query + JSON.stringify(query.params));
 
   // Execute query
   return pool.query(query.query, query.params).then(results => {
@@ -295,36 +295,33 @@ const getOneTransaction = function(req, res) {
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
-  logger.debug('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  logger.trace('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
-  pool.query(pgSqlQuery, sqlParams, (error, results) => {
-    let ret = {
-      transactions: []
-    };
+  pool
+    .query(pgSqlQuery, sqlParams)
+    .then(results => {
+      let ret = {
+        transactions: []
+      };
 
-    if (error) {
-      logger.error('getOneTransaction error: ' + JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
-      return;
-    }
+      logger.debug('# rows returned: ' + results.rows.length);
+      const tl = createTransferLists(results.rows, ret);
+      ret = tl.ret;
 
-    logger.debug('# rows returned: ' + results.rows.length);
-    const tl = createTransferLists(results.rows, ret);
-    ret = tl.ret;
+      if (ret.transactions.length === 0) {
+        res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
+        return;
+      }
 
-    if (ret.transactions.length === 0) {
-      res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
-      return;
-    }
+      if (process.env.NODE_ENV === 'test') {
+        ret.sqlQuery = results.sqlQuery;
+      }
 
-    if (process.env.NODE_ENV === 'test') {
-      ret.sqlQuery = results.sqlQuery;
-    }
-
-    logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
-    res.json(ret);
-  });
+      logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
+      res.json(ret);
+    })
+    .catch(error => utils.errorHandler(error, req, res, null));
 };
 
 module.exports = {

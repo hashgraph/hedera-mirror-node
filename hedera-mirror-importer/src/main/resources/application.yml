@@ -16,24 +16,36 @@ logging:
     #org.hibernate.SQL: debug
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
   metrics:
     export:
       elastic:
         enabled: false
         index: mirror
         step: 30s
+      prometheus:
+        step: 30s
     tags:
-      app: ${spring.application.name}
+      application: ${spring.application.name}
 spring:
   application:
     name: hedera-mirror-importer
+  cloud:
+    kubernetes:
+      reload:
+        enabled: true
+      secrets:
+        paths: /usr/etc/${spring.application.name}
   datasource:
     name: ${hedera.mirror.db.name}
     password: ${hedera.mirror.db.password}
     url: jdbc:postgresql://${hedera.mirror.db.host}:${hedera.mirror.db.port}/${hedera.mirror.db.name}?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     username: ${hedera.mirror.db.username}
   flyway:
-    connectRetries: 10
+    connectRetries: 20
     baselineOnMigrate: true
     baselineVersion: 0
     ignoreMissingMigrations: true

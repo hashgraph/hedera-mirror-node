@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    {{- include "hedera-mirror-importer.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-importer.fullname" . }}
+  namespace: {{ include "hedera-mirror-importer.namespace" . }}
+spec:
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "hedera-mirror-importer.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.service.type }}

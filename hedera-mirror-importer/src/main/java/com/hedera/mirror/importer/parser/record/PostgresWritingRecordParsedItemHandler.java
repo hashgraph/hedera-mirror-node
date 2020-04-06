@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,6 +48,9 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 @Named
 @RequiredArgsConstructor
 public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemHandler, RecordStreamFileListener {
+    private final PostgresWriterProperties properties;
+    private final DataSource dataSource;
+    private final RecordFileRepository recordFileRepository;
     private long batch_count = 0;
     private PreparedStatement sqlInsertTransaction;
     private PreparedStatement sqlInsertTransferList;
@@ -56,9 +59,6 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
     private PreparedStatement sqlInsertContractResult;
     private PreparedStatement sqlInsertLiveHashes;
     private PreparedStatement sqlInsertTopicMessage;
-    private final PostgresWriterProperties properties;
-    private final DataSource dataSource;
-    private final RecordFileRepository recordFileRepository;
     private Connection connection;
 
     @Override
@@ -101,7 +101,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
         try {
             connection = dataSource.getConnection();
             connection.setAutoCommit(false); // do not auto-commit
-            connection.setClientInfo("ApplicationName", getClass().getCanonicalName());
+            connection.setClientInfo("ApplicationName", getClass().getSimpleName());
         } catch (SQLException e) {
             throw new ParserSQLException("Error setting up connection to database", e);
         }

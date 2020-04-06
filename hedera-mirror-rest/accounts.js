@@ -144,7 +144,7 @@ const getAccounts = function(req) {
 
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
-  logger.debug('getAccounts query: ' + pgEntityQuery + JSON.stringify(entityParams));
+  logger.trace('getAccounts query: ' + pgEntityQuery + JSON.stringify(entityParams));
 
   // Execute query
   return pool.query(pgEntityQuery, entityParams).then(results => {
@@ -223,7 +223,7 @@ const getOneAccount = function(req, res) {
   const entityParams = [acc.realm, acc.num, config.shard, acc.realm, acc.num];
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
-  logger.debug('getOneAccount entity query: ' + pgEntityQuery + JSON.stringify(entityParams));
+  logger.trace('getOneAccount entity query: ' + pgEntityQuery + JSON.stringify(entityParams));
   // Execute query & get a promise
   const entityPromise = pool.query(pgEntityQuery, entityParams);
 
@@ -252,7 +252,7 @@ const getOneAccount = function(req, res) {
 
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery, innerParams);
 
-  logger.debug('getOneAccount transactions query: ' + pgTransactionsQuery + JSON.stringify(innerParams));
+  logger.trace('getOneAccount transactions query: ' + pgTransactionsQuery + JSON.stringify(innerParams));
 
   // Execute query & get a promise
   const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);
@@ -306,12 +306,7 @@ const getOneAccount = function(req, res) {
       logger.debug('getOneAccount returning ' + ret.transactions.length + ' transactions entries');
       res.json(ret);
     })
-    .catch(err => {
-      logger.error('getOneAccount error: ' + JSON.stringify(err.stack));
-      res
-        .status(utils.httpStatusCodes.INTERNAL_ERROR)
-        .send(utils.createSingleErrorJsonResponse(utils.httpErrorMessages.INTERNAL_ERROR));
-    });
+    .catch(err => utils.errorHandler(err, req, res, null));
 };
 
 module.exports = {

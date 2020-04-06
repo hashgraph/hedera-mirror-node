@@ -18,19 +18,31 @@ logging:
     # org.hibernate.SQL: debug
     # org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
   metrics:
     export:
       elastic:
         enabled: false
         index: mirror
         step: 30s
+      prometheus:
+        step: 30s
     tags:
-      app: ${spring.application.name}
+      application: ${spring.application.name}
 server:
   port: 8081
 spring:
   application:
     name: hedera-mirror-grpc
+  cloud:
+    kubernetes:
+      reload:
+        enabled: true
+      secrets:
+        paths: /usr/etc/${spring.application.name}
   datasource:
     name: ${hedera.mirror.grpc.db.name}
     password: ${hedera.mirror.grpc.db.password}

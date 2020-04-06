@@ -58,8 +58,7 @@ if (port === undefined || isNaN(Number(port))) {
 log4js.configure({
   appenders: {
     everything: {
-      type: 'file',
-      filename: '../logs/hedera_mirrornode_api_' + port + '.log' // ensure port is a legit number above
+      type: 'stdout'
     }
   },
   categories: {
@@ -113,6 +112,7 @@ app.get(apiPrefix + '/balances', (req, res) => caches['balances'].getResponse(re
 app.get(apiPrefix + '/accounts', (req, res) => caches['accounts'].getResponse(req, res, accounts.getAccounts));
 app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
 app.get(apiPrefix + '/topic/message/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
+app.use(utils.errorHandler);
 
 // support singular and plural resource naming for single topic message via id and sequence
 app.get(apiPrefix + '/topic/:id/message/:seqnum', topicmessage.getMessageByTopicAndSequenceRequest);

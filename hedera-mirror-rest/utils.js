@@ -29,7 +29,8 @@ const httpStatusCodes = {
   OK: 200,
   BAD_REQUEST: 400,
   NOT_FOUND: 404,
-  INTERNAL_ERROR: 500
+  INTERNAL_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503
 };
 
 const httpErrorMessages = {
@@ -658,6 +659,18 @@ const createTransactionId = function(shard, realm, num, validStartTimestamp) {
   return shard + '.' + realm + '.' + num + '-' + nsToSecNsWithHyphen(validStartTimestamp);
 };
 
+const errorHandler = function(err, req, res, next) {
+  logger.error(`Error processing ${req.originalUrl}: `, err);
+
+  if (/ECONNREFUSED/.test(err.message)) {
+    res
+      .status(httpStatusCodes.SERVICE_UNAVAILABLE)
+      .json(createSingleErrorJsonResponse('Unable to connect to database. Please retry later'));
+  } else {
+    res.status(httpStatusCodes.INTERNAL_ERROR).json(createSingleErrorJsonResponse('Internal error'));
+  }
+};
+
 module.exports = {
   createSingleErrorJsonResponse: createSingleErrorJsonResponse,
   createTransactionId: createTransactionId,
@@ -688,5 +701,6 @@ module.exports = {
   successValidationResponse: successValidationResponse,
   toHexString: toHexString,
   TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
-  validateReq: validateReq
+  validateReq: validateReq,
+  errorHandler: errorHandler
 };

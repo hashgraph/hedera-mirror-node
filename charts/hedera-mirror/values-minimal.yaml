@@ -1,0 +1,17 @@
+grpc:
+  hpa:
+    enabled: false
+loki-stack:
+  enabled: false
+postgresql:
+  pgpool:
+    replicaCount: 1
+  postgresql:
+    replicaCount: 1
+prometheus-adapter:
+  enabled: false
+prometheus-operator:
+  enabled: false
+rest:
+  hpa:
+    enabled: false

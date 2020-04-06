@@ -130,7 +130,8 @@ const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
 const getMessageByConsensusTimestamp = function(req, res) {
   logger.debug('--------------------  getMessageByConsensusTimestamp --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByConsensusTimestampRequest(req.params, res);
+  return processGetMessageByConsensusTimestampRequest(req.params, res)
+          .catch(error => utils.errorHandler(error, req, res, null));
 };
 
 /**
@@ -141,7 +142,8 @@ const getMessageByConsensusTimestamp = function(req, res) {
 const getMessageByTopicAndSequenceRequest = function(req, res) {
   logger.debug('--------------------  getMessageByTopicAndSequenceRequest --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByTopicAndSequenceRequest(req.params, res);
+  return processGetMessageByTopicAndSequenceRequest(req.params, res)
+          .catch(error => utils.errorHandler(error, req, res, null));
 };
 
 module.exports = {

@@ -119,7 +119,7 @@ const getOneEvent = function(req, res) {
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
-  logger.debug('getOneEvent query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  logger.trace('getOneEvent query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
   pool.query(pgSqlQuery, sqlParams, (error, results) => {

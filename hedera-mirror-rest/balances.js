@@ -120,7 +120,7 @@ const getBalances = function(req, res) {
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
-  logger.debug('getBalance query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  logger.trace('getBalance query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
   return pool.query(pgSqlQuery, sqlParams).then(results => {
