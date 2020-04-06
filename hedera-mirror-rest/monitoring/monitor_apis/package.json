@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "REST API for Hedera mirror node",
   "main": "server.js",
+  "private": true,
   "scripts": {
     "test": "jest --watchAll",
     "dev": "nodemon app.js"
@@ -21,7 +22,7 @@
     "shelljs": "^0.8.3"
   },
   "devDependencies": {
-    "jest": "^25.2.4",
+    "jest": "^25.2.7",
     "nodemon": "^2.0.2",
     "supertest": "^4.0.2"
   }
