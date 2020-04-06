@@ -3,6 +3,7 @@
   "version": "0.8.0-rc1",
   "description": "Hedera Mirror Node REST API",
   "main": "server.js",
+  "private": true,
   "scripts": {
     "test": "jest --testPathPattern='__tests__/*'",
     "perftest": "__performancetests__/perfTest.js",
@@ -22,7 +23,7 @@
     "mathjs": "^6.6.2",
     "node-cache": "^5.1.0",
     "node-fetch": "^2.6.0",
-    "pg": "^7.11.0"
+    "pg": "~7.11.0"
   },
   "bundledDependencies": [
     "asn1js",
@@ -30,22 +31,25 @@
     "compression",
     "cors",
     "express",
+    "extend",
+    "js-yaml",
     "log4js",
     "mathjs",
     "node-cache",
+    "node-fetch",
     "pg"
   ],
   "devDependencies": {
     "codecov": "^3.6.5",
     "husky": "^4.2.3",
-    "jest": "^25.2.4",
+    "jest": "^25.2.7",
     "jest-junit": "^10.0.0",
     "node-flywaydb": "^2.1.3",
     "nodemon": "^2.0.2",
-    "prettier": "^2.0.2",
+    "prettier": "^2.0.4",
     "pretty-quick": "^2.0.1",
     "supertest": "^4.0.2",
-    "testcontainers": "^2.6.0"
+    "testcontainers": "^2.7.0"
   },
   "husky": {
     "hooks": {
