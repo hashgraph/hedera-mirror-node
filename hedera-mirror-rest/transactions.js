@@ -29,7 +29,7 @@ const config = require('./config.js');
  * @param {Array} arr REST API return array
  * @return {Array} arr Updated REST API return array
  */
-const createTransferLists = function(rows, arr) {
+const createTransferLists = function (rows, arr) {
   // If the transaction has a transferlist (i.e. list of individual trasnfers, it
   // will show up as separate rows. Combine those into a single transferlist for
   // a given consensus_ns (Note that there could be two records for the same
@@ -64,7 +64,7 @@ const createTransferLists = function(rows, arr) {
 
     transactions[row.consensus_ns].transfers.push({
       account: config.shard + '.' + row.account_realm + '.' + row.account_num,
-      amount: Number(row.amount)
+      amount: Number(row.amount),
     });
   }
 
@@ -74,7 +74,7 @@ const createTransferLists = function(rows, arr) {
 
   return {
     ret: arr,
-    anchorSecNs: anchorSecNs
+    anchorSecNs: anchorSecNs,
   };
 };
 
@@ -88,7 +88,7 @@ const createTransferLists = function(rows, arr) {
  * @param {String} order Sorting order
  * @return {String} outerQuery Fully formed SQL query
  */
-const getTransactionsOuterQuery = function(innerQuery, order) {
+const getTransactionsOuterQuery = function (innerQuery, order) {
   let outerQuery =
     'select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n' +
     '   , t.memo\n' +
@@ -136,7 +136,7 @@ const getTransactionsOuterQuery = function(innerQuery, order) {
  * @param {String} order Sorting order
  * @return {String} innerQuery SQL query that filters transactions based on various types of queries
  */
-const getTransactionsInnerQuery = function(accountQuery, tsQuery, resultTypeQuery, limitQuery, creditDebit, order) {
+const getTransactionsInnerQuery = function (accountQuery, tsQuery, resultTypeQuery, limitQuery, creditDebit, order) {
   let innerQuery =
     '      select distinct ctl.consensus_timestamp\n' +
     '       from t_cryptotransferlists ctl\n' +
@@ -147,7 +147,7 @@ const getTransactionsInnerQuery = function(accountQuery, tsQuery, resultTypeQuer
   } else {
     innerQuery += '1=1\n';
   }
-  innerQuery += 'and ' + [tsQuery, resultTypeQuery].map(q => (q === '' ? '1=1' : q)).join(' and ');
+  innerQuery += 'and ' + [tsQuery, resultTypeQuery].map((q) => (q === '' ? '1=1' : q)).join(' and ');
   if ('credit' === creditDebit) {
     innerQuery += ' and ctl.amount > 0 ';
   } else if ('debit' === creditDebit) {
@@ -157,7 +157,7 @@ const getTransactionsInnerQuery = function(accountQuery, tsQuery, resultTypeQuer
   return innerQuery;
 };
 
-const reqToSql = function(req) {
+const reqToSql = function (req) {
   // Parse the filter parameters for credit/debit, account-numbers,
   // timestamp, and pagination (limit)
   const creditDebit = utils.parseCreditDebitParams(req);
@@ -168,8 +168,8 @@ const reqToSql = function(req) {
     [
       {
         realm: 'realm_num',
-        num: 'entity_num'
-      }
+        num: 'entity_num',
+      },
     ],
     'entityId'
   );
@@ -189,7 +189,7 @@ const reqToSql = function(req) {
     limit: limit,
     query: utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams),
     order: order,
-    params: sqlParams
+    params: sqlParams,
   };
 };
 
@@ -198,7 +198,7 @@ const reqToSql = function(req) {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getTransactions = function(req) {
+const getTransactions = function (req) {
   // Validate query parameters first
   const valid = utils.validateReq(req);
   if (!valid.isValid) {
@@ -209,15 +209,15 @@ const getTransactions = function(req) {
 
   let query = reqToSql(req);
 
-  logger.debug('getTransactions query: ' + query.query + JSON.stringify(query.params));
+  logger.trace('getTransactions query: ' + query.query + JSON.stringify(query.params));
 
   // Execute query
-  return pool.query(query.query, query.params).then(results => {
+  return pool.query(query.query, query.params).then((results) => {
     let ret = {
       transactions: [],
       links: {
-        next: null
-      }
+        next: null,
+      },
     };
 
     const tl = createTransferLists(results.rows, ret);
@@ -225,7 +225,13 @@ const getTransactions = function(req) {
     let anchorSecNs = tl.anchorSecNs;
 
     ret.links = {
-      next: utils.getPaginationLink(req, ret.transactions.length !== query.limit, 'timestamp', anchorSecNs, query.order)
+      next: utils.getPaginationLink(
+        req,
+        ret.transactions.length !== query.limit,
+        'timestamp',
+        anchorSecNs,
+        query.order
+      ),
     };
 
     if (process.env.NODE_ENV === 'test') {
@@ -236,7 +242,7 @@ const getTransactions = function(req) {
 
     return {
       code: utils.httpStatusCodes.OK,
-      contents: ret
+      contents: ret,
     };
   });
 };
@@ -247,7 +253,7 @@ const getTransactions = function(req) {
  * @param {Response} res HTTP response object
  * @return {} None.
  */
-const getOneTransaction = function(req, res) {
+const getOneTransaction = function (req, res) {
   logger.debug('--------------------  getOneTransaction --------------------');
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
@@ -295,36 +301,33 @@ const getOneTransaction = function(req, res) {
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
-  logger.debug('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  logger.trace('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
-  pool.query(pgSqlQuery, sqlParams, (error, results) => {
-    let ret = {
-      transactions: []
-    };
+  pool
+    .query(pgSqlQuery, sqlParams)
+    .then((results) => {
+      let ret = {
+        transactions: [],
+      };
 
-    if (error) {
-      logger.error('getOneTransaction error: ' + JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
-      return;
-    }
+      logger.debug('# rows returned: ' + results.rows.length);
+      const tl = createTransferLists(results.rows, ret);
+      ret = tl.ret;
 
-    logger.debug('# rows returned: ' + results.rows.length);
-    const tl = createTransferLists(results.rows, ret);
-    ret = tl.ret;
+      if (ret.transactions.length === 0) {
+        res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
+        return;
+      }
 
-    if (ret.transactions.length === 0) {
-      res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
-      return;
-    }
+      if (process.env.NODE_ENV === 'test') {
+        ret.sqlQuery = results.sqlQuery;
+      }
 
-    if (process.env.NODE_ENV === 'test') {
-      ret.sqlQuery = results.sqlQuery;
-    }
-
-    logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
-    res.json(ret);
-  });
+      logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
+      res.json(ret);
+    })
+    .catch((error) => utils.errorHandler(error, req, res, null));
 };
 
 module.exports = {
@@ -333,5 +336,5 @@ module.exports = {
   createTransferLists: createTransferLists,
   reqToSql: reqToSql,
   getTransactionsInnerQuery: getTransactionsInnerQuery,
-  getTransactionsOuterQuery: getTransactionsOuterQuery
+  getTransactionsOuterQuery: getTransactionsOuterQuery,
 };

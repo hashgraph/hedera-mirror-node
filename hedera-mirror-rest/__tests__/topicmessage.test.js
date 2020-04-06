@@ -21,6 +21,7 @@
 
 const topicmessage = require('../topicmessage.js');
 const utils = require('../utils.js');
+const config = require('../config.js');
 
 beforeAll(async () => {
   jest.setTimeout(1000);
@@ -103,23 +104,23 @@ describe('topicmessage formatTopicMessageRow tests', () => {
     topic_num: 7,
     message: {
       type: 'Buffer',
-      data: [123, 34, 97, 34, 44, 34, 98, 34, 44, 34, 99, 34, 125]
+      data: [123, 34, 97, 34, 44, 34, 98, 34, 44, 34, 99, 34, 125],
     },
     running_hash: {
       type: 'Buffer',
-      data: [123, 34, 99, 34, 44, 34, 100, 34, 44, 34, 101, 34, 125]
+      data: [123, 34, 99, 34, 44, 34, 100, 34, 44, 34, 101, 34, 125],
     },
-    sequence_number: '3'
+    sequence_number: '3',
   };
 
   const formattedInput = topicmessage.formatTopicMessageRow(rowInput);
 
   const expectedFormat = {
     consensus_timestamp: '1234567890.000000003',
-    topic_id: '0.1.7',
+    topic_id: `${config.shard}.1.7`,
     message: 'eyJhIiwiYiIsImMifQ==',
     running_hash: 'eyJjIiwiZCIsImUifQ==',
-    sequence_number: 3
+    sequence_number: 3,
   };
 
   expect(formattedInput.consensus_timestamp).toStrictEqual(expectedFormat.consensus_timestamp);
@@ -132,7 +133,7 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
     {key: 'seqnum', operator: ' > ', value: '2'},
     {key: 'timestamp', operator: ' <= ', value: '1234567890.000000006'},
     {key: 'limit', operator: ' = ', value: '3'},
-    {key: 'order', operator: ' = ', value: 'desc'}
+    {key: 'order', operator: ' = ', value: 'desc'},
   ];
 
   let {query, params, order, limit} = topicmessage.extractSqlFromTopicMessagesRequest('7', filters);
@@ -145,25 +146,25 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
   expect(limit).toStrictEqual(3);
 });
 
-const verifyValidParamResponse = val => {
+const verifyValidParamResponse = (val) => {
   expect(val).toStrictEqual(utils.successValidationResponse);
 };
 
-const verifyInvalidConsensusTimestamp = val => {
+const verifyInvalidConsensusTimestamp = (val) => {
   expect(val).toStrictEqual(
     utils.makeValidationResponse([utils.getInvalidParameterMessageObject('consensusTimestamp')])
   );
 };
 
-const verifyInvalidTopicAndSequenceNum = val => {
+const verifyInvalidTopicAndSequenceNum = (val) => {
   expect(val).toStrictEqual(
     utils.makeValidationResponse([
       utils.getInvalidParameterMessageObject('topic_num'),
-      utils.getInvalidParameterMessageObject('sequence_number')
+      utils.getInvalidParameterMessageObject('sequence_number'),
     ])
   );
 };
 
-const verifyInvalidTopicMessages = val => {
+const verifyInvalidTopicMessages = (val) => {
   expect(val).toStrictEqual(utils.makeValidationResponse([utils.getInvalidParameterMessageObject('topic_num')]));
 };

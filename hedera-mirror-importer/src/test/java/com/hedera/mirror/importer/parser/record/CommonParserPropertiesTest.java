@@ -8,9 +8,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,8 +33,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.CommonParserProperties.TransactionFilter;
@@ -47,10 +47,8 @@ public class CommonParserPropertiesTest {
     @DisplayName("Filter empty")
     @Test
     void filterEmpty() {
-        Transaction transaction = new Transaction();
-        transaction.setEntity(entity("0.0.1"));
-        transaction.setType(TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
-        assertTrue(commonParserProperties.getFilter().test(transaction));
+        assertTrue(commonParserProperties.getFilter().test(
+                new TransactionFilterFields(entity("0.0.1"), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE)));
     }
 
     @DisplayName("Filter using include")
@@ -68,16 +66,13 @@ public class CommonParserPropertiesTest {
             ", UNKNOWN, false"
     })
     void filterInclude(String entityId, TransactionTypeEnum type, boolean result) {
-        Transaction transaction = new Transaction();
-        transaction.setEntity(entity(entityId));
-        transaction.setType(type.getProtoId());
-
         commonParserProperties.getInclude().add(filter("0.0.1", TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
         commonParserProperties.getInclude().add(filter("0.0.2", TransactionTypeEnum.CRYPTOCREATEACCOUNT));
         commonParserProperties.getInclude().add(filter("0.0.3", null));
         commonParserProperties.getInclude().add(filter(null, TransactionTypeEnum.FILECREATE));
 
-        assertEquals(result, commonParserProperties.getFilter().test(transaction));
+        assertEquals(result, commonParserProperties.getFilter().test(
+                new TransactionFilterFields(entity(entityId), type)));
     }
 
     @DisplayName("Filter using exclude")
@@ -95,16 +90,13 @@ public class CommonParserPropertiesTest {
             ", UNKNOWN, true"
     })
     void filterExclude(String entityId, TransactionTypeEnum type, boolean result) {
-        Transaction transaction = new Transaction();
-        transaction.setEntity(entity(entityId));
-        transaction.setType(type.getProtoId());
-
         commonParserProperties.getExclude().add(filter("0.0.1", TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
         commonParserProperties.getExclude().add(filter("0.0.2", TransactionTypeEnum.CRYPTOCREATEACCOUNT));
         commonParserProperties.getExclude().add(filter("0.0.3", null));
         commonParserProperties.getExclude().add(filter(null, TransactionTypeEnum.FILECREATE));
 
-        assertEquals(result, commonParserProperties.getFilter().test(transaction));
+        assertEquals(result, commonParserProperties.getFilter().test(
+                new TransactionFilterFields(entity(entityId), type)));
     }
 
     @DisplayName("Filter using include and exclude")
@@ -120,10 +112,6 @@ public class CommonParserPropertiesTest {
             "0.0.5, CONSENSUSSUBMITMESSAGE, false",
     })
     void filterBoth(String entityId, TransactionTypeEnum type, boolean result) {
-        Transaction transaction = new Transaction();
-        transaction.setEntity(entity(entityId));
-        transaction.setType(type.getProtoId());
-
         commonParserProperties.getInclude().add(filter("0.0.1", TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
         commonParserProperties.getInclude().add(filter("0.0.2", TransactionTypeEnum.CRYPTOCREATEACCOUNT));
         commonParserProperties.getInclude().add(filter("0.0.3", TransactionTypeEnum.FREEZE));
@@ -135,10 +123,11 @@ public class CommonParserPropertiesTest {
         commonParserProperties.getExclude().add(filter(null, TransactionTypeEnum.FILECREATE));
         commonParserProperties.getExclude().add(filter("0.0.5", TransactionTypeEnum.CONSENSUSCREATETOPIC));
 
-        assertEquals(result, commonParserProperties.getFilter().test(transaction));
+        assertEquals(result, commonParserProperties.getFilter().test(
+                new TransactionFilterFields(entity(entityId), type)));
     }
 
-    private Entities entity(String entityId) {
+    private EntityId entity(String entityId) {
         if (StringUtils.isBlank(entityId)) {
             return null;
         }
@@ -148,12 +137,7 @@ public class CommonParserPropertiesTest {
                 .stream()
                 .map(Long::valueOf)
                 .collect(Collectors.toList());
-
-        Entities entities = new Entities();
-        entities.setEntityShard(parts.get(0));
-        entities.setEntityRealm(parts.get(1));
-        entities.setEntityNum(parts.get(2));
-        return entities;
+        return new EntityId(null, parts.get(0), parts.get(1), parts.get(2), 1 /* account */);
     }
 
     private TransactionFilter filter(String entity, TransactionTypeEnum type) {

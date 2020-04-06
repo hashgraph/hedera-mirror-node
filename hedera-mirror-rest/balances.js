@@ -27,7 +27,7 @@ const utils = require('./utils.js');
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getBalances = function(req, res) {
+const getBalances = function (req, res) {
   const valid = utils.validateReq(req);
   if (!valid.isValid) {
     return new Promise((resolve, reject) => {
@@ -68,7 +68,7 @@ const getBalances = function(req, res) {
     'account.publickey',
     ['e.ed25519_public_key_hex'],
     'publickey',
-    s => {
+    (s) => {
       return s.toLowerCase();
     }
   );
@@ -106,30 +106,26 @@ const getBalances = function(req, res) {
     innerQuery +
     ')\n' +
     ' and\n' +
-    [accountQuery, pubKeyQuery, balanceQuery].map(q => (q === '' ? '1=1' : q)).join(' and ') +
+    [accountQuery, pubKeyQuery, balanceQuery].map((q) => (q === '' ? '1=1' : q)).join(' and ') +
     ' order by consensus_timestamp desc, ' +
-    ['account_realm_num', 'account_num'].map(q => q + ' ' + order).join(',') +
+    ['account_realm_num', 'account_num'].map((q) => q + ' ' + order).join(',') +
     ' ' +
     query;
 
-  let sqlParams = tsParams
-    .concat(accountParams)
-    .concat(pubKeyParams)
-    .concat(balanceParams)
-    .concat(params);
+  let sqlParams = tsParams.concat(accountParams).concat(pubKeyParams).concat(balanceParams).concat(params);
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
-  logger.debug('getBalance query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  logger.trace('getBalance query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
-  return pool.query(pgSqlQuery, sqlParams).then(results => {
+  return pool.query(pgSqlQuery, sqlParams).then((results) => {
     let ret = {
       timestamp: null,
       balances: [],
       links: {
-        next: null
-      }
+        next: null,
+      },
     };
 
     function accountIdFromRow(row) {
@@ -150,7 +146,7 @@ const getBalances = function(req, res) {
       }
       ret.balances.push({
         account: row.account,
-        balance: Number(row.balance)
+        balance: Number(row.balance),
       });
     }
 
@@ -158,7 +154,7 @@ const getBalances = function(req, res) {
 
     // Pagination links
     ret.links = {
-      next: utils.getPaginationLink(req, ret.balances.length !== limit, 'account.id', anchorAccountId, order)
+      next: utils.getPaginationLink(req, ret.balances.length !== limit, 'account.id', anchorAccountId, order),
     };
 
     if (process.env.NODE_ENV === 'test') {
@@ -169,11 +165,11 @@ const getBalances = function(req, res) {
 
     return {
       code: utils.httpStatusCodes.OK,
-      contents: ret
+      contents: ret,
     };
   });
 };
 
 module.exports = {
-  getBalances: getBalances
+  getBalances: getBalances,
 };

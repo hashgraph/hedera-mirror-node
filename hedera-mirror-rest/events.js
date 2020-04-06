@@ -26,7 +26,7 @@ const utils = require('./utils.js');
  * @param {Array} row One row of the SQL query result
  * @return {Array} row Processed row
  */
-const processRow = function(row) {
+const processRow = function (row) {
   row.consensus_timestamp = utils.nsToSecNs(row.consensus_timestamp_ns);
   row.created_timestamp = utils.nsToSecNs(row.created_timestamp_ns);
   delete row.consensus_timestamp_ns;
@@ -53,7 +53,7 @@ const processRow = function(row) {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getEvents = function(req) {
+const getEvents = function (req) {
   // Parse the filter parameters for timestamp, nodequery and pagination
   const [tsQuery, tsParams] = utils.parseParams(req, 'timestamp', ['tev.consensus_timestamp_ns'], 'timestamp_ns');
 
@@ -67,7 +67,7 @@ const getEvents = function(req) {
     'select  *\n' +
     ' from t_events tev\n' +
     ' where ' +
-    [tsQuery, nodeQuery].map(q => (q === '' ? '1=1' : q)).join(' and ') +
+    [tsQuery, nodeQuery].map((q) => (q === '' ? '1=1' : q)).join(' and ') +
     'order by tev.consensus_timestamp_ns ' +
     order +
     '\n' +
@@ -78,12 +78,12 @@ const getEvents = function(req) {
   logger.debug('getEvents query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
-  return pool.query(pgSqlQuery, sqlParams).then(results => {
+  return pool.query(pgSqlQuery, sqlParams).then((results) => {
     let ret = {
       events: [],
       links: {
-        next: null
-      }
+        next: null,
+      },
     };
 
     for (let row of results.rows) {
@@ -93,7 +93,7 @@ const getEvents = function(req) {
     const anchorSecNs = results.rows.length > 0 ? results.rows[results.rows.length - 1].consensus_timestamp : 0;
 
     ret.links = {
-      next: utils.getPaginationLink(req, ret.events.length !== limit, 'timestamp', anchorSecNs, order)
+      next: utils.getPaginationLink(req, ret.events.length !== limit, 'timestamp', anchorSecNs, order),
     };
 
     logger.debug('getEvents returning ' + ret.events.length + ' entries');
@@ -108,7 +108,7 @@ const getEvents = function(req) {
  * @param {Response} res HTTP response object
  * @return {} None.
  */
-const getOneEvent = function(req, res) {
+const getOneEvent = function (req, res) {
   logger.debug('--------------------  getEvents --------------------');
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
@@ -119,12 +119,12 @@ const getOneEvent = function(req, res) {
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
-  logger.debug('getOneEvent query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  logger.trace('getOneEvent query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
   pool.query(pgSqlQuery, sqlParams, (error, results) => {
     let ret = {
-      events: []
+      events: [],
     };
 
     if (error) {
@@ -149,5 +149,5 @@ const getOneEvent = function(req, res) {
 
 module.exports = {
   getEvents: getEvents,
-  getOneEvent: getOneEvent
+  getOneEvent: getOneEvent,
 };

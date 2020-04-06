@@ -38,9 +38,10 @@ hedera-mirror-*/application.yml
 /data/
 /db/
 *.log
+!/charts/**/*.tgz
 
 ### VisualStudioCode ###
-.vscode/*
+.vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json

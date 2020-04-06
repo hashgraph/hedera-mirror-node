@@ -116,7 +116,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.parser.balance.enabled`                      | true                    | Whether to enable balance file parsing                                                         |
 | `hedera.mirror.parser.balance.fileBufferSize`               | 200000                  | The size of the buffer to use when reading in the balance file                                 |
 | `hedera.mirror.parser.balance.keepFiles`                    | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |
-| `hedera.mirror.parser.event.enabled`                        | false                   | Whether to enable balance file parsing                                                         |
+| `hedera.mirror.parser.event.enabled`                        | false                   | Whether to enable event file parsing                                                           |
 | `hedera.mirror.parser.event.frequency`                      | 1m                      | The fixed period between invocations. Can accept duration units like `50ms`, `10s` etc.        |
 | `hedera.mirror.parser.event.keepFiles`                      | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |
 | `hedera.mirror.parser.record.enabled`                       | true                    | Whether to enable balance file parsing                                                         |

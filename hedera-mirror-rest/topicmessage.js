@@ -28,18 +28,18 @@ const topicMessageColumns = {
   REALM_NUM: 'realm_num',
   RUNNING_HASH: 'running_hash',
   SEQUENCE_NUMBER: 'sequence_number',
-  TOPIC_NUM: 'topic_num'
+  TOPIC_NUM: 'topic_num',
 };
 
 const columnMap = {
   seqnum: topicMessageColumns.SEQUENCE_NUMBER,
-  timestamp: topicMessageColumns.CONSENSUS_TIMESTAMP
+  timestamp: topicMessageColumns.CONSENSUS_TIMESTAMP,
 };
 
 /**
  * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
  */
-const validateConsensusTimestampParam = function(consensusTimestamp) {
+const validateConsensusTimestampParam = function (consensusTimestamp) {
   let badParams = [];
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
     badParams.push({message: `Invalid parameter: consensusTimestamp`});
@@ -50,7 +50,7 @@ const validateConsensusTimestampParam = function(consensusTimestamp) {
 /**
  * Verify topicId and seqNum meet entity_num format
  */
-const validateGetSequenceMessageParams = function(topicId, seqNum) {
+const validateGetSequenceMessageParams = function (topicId, seqNum) {
   let badParams = [];
   if (!utils.isValidEntityNum(topicId)) {
     badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.TOPIC_NUM));
@@ -66,7 +66,7 @@ const validateGetSequenceMessageParams = function(topicId, seqNum) {
 /**
  * Verify topicId and seqNum meet entity_num format
  */
-const validateGetTopicMessagesParams = function(topicId) {
+const validateGetTopicMessagesParams = function (topicId) {
   let badParams = [];
   if (!utils.isValidEntityNum(topicId)) {
     badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.TOPIC_NUM));
@@ -96,13 +96,13 @@ const validateGetTopicMessagesRequest = (topicId, filters, res) => {
 /**
  * Format row in postgres query's result to object which is directly returned to user as json.
  */
-const formatTopicMessageRow = function(row) {
+const formatTopicMessageRow = function (row) {
   return {
     consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
     topic_id: `${config.shard}.${row[topicMessageColumns.REALM_NUM]}.${row[topicMessageColumns.TOPIC_NUM]}`,
     message: utils.encodeBase64(row[topicMessageColumns.MESSAGE]),
     running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
-    sequence_number: parseInt(row[topicMessageColumns.SEQUENCE_NUMBER])
+    sequence_number: parseInt(row[topicMessageColumns.SEQUENCE_NUMBER]),
   };
 };
 
@@ -168,12 +168,12 @@ const processGetTopicMessages = (req, res) => {
   let topicMessagesResponse = {
     messages: [],
     links: {
-      next: null
-    }
+      next: null,
+    },
   };
 
   // get results and return formatted response
-  getMessages(query, params).then(messages => {
+  getMessages(query, params).then((messages) => {
     topicMessagesResponse.messages = messages;
 
     // populate next
@@ -235,10 +235,10 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
 /**
  * Retrieves topic message from
  */
-const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
+const getMessage = function (pgSqlQuery, pgSqlParams, httpResponse) {
   logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
 
-  return pool.query(pgSqlQuery, pgSqlParams).then(results => {
+  return pool.query(pgSqlQuery, pgSqlParams).then((results) => {
     // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
     if (results.rowCount === 1) {
       httpResponse.json(formatTopicMessageRow(results.rows[0]));
@@ -254,7 +254,7 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
   logger.debug(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   let messages = [];
 
-  return await pool.query(pgSqlQuery, pgSqlParams).then(results => {
+  return await pool.query(pgSqlQuery, pgSqlParams).then((results) => {
     for (let i = 0; i < results.rowCount; i++) {
       messages.push(formatTopicMessageRow(results.rows[i]));
     }
@@ -268,10 +268,12 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getMessageByConsensusTimestamp = function(req, res) {
+const getMessageByConsensusTimestamp = function (req, res) {
   logger.debug('--------------------  getMessageByConsensusTimestamp --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByConsensusTimestampRequest(req.params, res);
+  return processGetMessageByConsensusTimestampRequest(req.params, res).catch((error) =>
+    utils.errorHandler(error, req, res, null)
+  );
 };
 
 /**
@@ -279,10 +281,12 @@ const getMessageByConsensusTimestamp = function(req, res) {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getMessageByTopicAndSequenceRequest = function(req, res) {
+const getMessageByTopicAndSequenceRequest = function (req, res) {
   logger.debug('--------------------  getMessageByTopicAndSequenceRequest --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByTopicAndSequenceRequest(req.params, res);
+  return processGetMessageByTopicAndSequenceRequest(req.params, res).catch((error) =>
+    utils.errorHandler(error, req, res, null)
+  );
 };
 
 const getTopicMessages = (req, res) => {
@@ -299,5 +303,5 @@ module.exports = {
   getTopicMessages: getTopicMessages,
   validateConsensusTimestampParam: validateConsensusTimestampParam,
   validateGetSequenceMessageParams: validateGetSequenceMessageParams,
-  validateGetTopicMessagesParams: validateGetTopicMessagesParams
+  validateGetTopicMessagesParams: validateGetTopicMessagesParams,
 };

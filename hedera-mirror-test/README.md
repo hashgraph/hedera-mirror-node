@@ -8,12 +8,18 @@ In an effort to quickly confirm product capability during deployment windows, we
 HCS specifically is a key scenario where transactions are submitted to the main network, the mirror node parser ingests these to the DB and the mirror node GRCP endpoint is subscribed to to obtain messages verifying transactions.
 This E2E suite gives us the ability to execute scenarios as external users would and gain the required confidence during development cycles.
 
+To achieve this the tests utilize the Hedera Java SDK under the hood - https://github.com/hashgraph/hedera-sdk-java
+
 ## Cucumber
 
 A BDD approach was desired for our E2E test strategy as it would ensure we more closely tracked valid customer scenarios.
 Cucumber is one framework that provides tools to follow this methodology. One benefit being that tests can be written in human readable text. This allows developers, PM's and designers to formulate tests that have connected code to run valid customer scenarios.
 Cucumber uses the Gherkin plain language parser to describe tests.
 Further details may be explored at https://cucumber.io/. Additionally, cucumbers BDD approach is explained here https://cucumber.io/docs/bdd/
+
+### Requirements
+
+-   Java (JDK 11 and above recommended), can follow https://sdkman.io/install for instructions
 
 ### Test Execution
 
@@ -23,7 +29,7 @@ Tests can be compiled and run by running the following command from the root fol
 
 ### Test Configuration
 
--   Test run Config Properties: Configuration properties are set in the application.yml file located under /src/test/resources utilizing the spring boot application context for DI logic. Properties include
+-   Test run Config Properties: Configuration properties are set in the application-default.yml file located under /src/test/resources utilizing the spring boot application context for DI logic. Properties include
 
     -   messageTimeout - number of seconds to wait on messages representing transactions (default is 20)
     -   nodeId - main node id to submit transactions to in 'x.y.z' format (refer to https://docs.hedera.com/guides/testnet/nodes or https://docs.hedera.com/guides/mainnet/address-book)
@@ -31,22 +37,31 @@ Tests can be compiled and run by running the following command from the root fol
     -   mirrorNodeAddress - mirror node grpc server (refer to https://docs.hedera.com/guides/docs/mirror-node-api/hedera-consensus-service-api-1)
     -   operatorId - account id on network 'x.y.z' format
     -   operatorKey - account private key, to be used for signing transaction and client identification #Be careful with showing this, do not check this value in.
+    -   emitBackgroundMessages - Flag to set if background messages should be emitted. For OPS use in non production environments
+    -   existingTopicNum - a pre existing default topic number that can be used when no topicId is specified in a test. Used initially by @SubscribeOnly test
+    -   subscribeRetries - number of times client should retryable on supported failures
+    -   subscribeRetryOffPeriod - number of milliseconds client should wait before retrying on a retryable failure
 
-Options can be set through the command line as follows
+(Recommended) Options can be set by creating your own configuration file with the above properties. This allows for multiple files per env. The following command will help to point out which file to use
+`./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance" -Dspring.config.name=application-testnet`
+
+Options can also be set through the command line as follows
 
     `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dhedera.mirror.test.acceptance.nodeId=0.0.4 -Dhedera.mirror.test.acceptance.nodeAddress=1.testnet.hedera.com:50211`
 
 -   Tags : Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @Sanity tag are run. To run a different set of files different tags can be specified
-    -   All test cases
+    -   Acceptance test cases
 
-*                         `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance"`
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance"`
+    -   All cases
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
     -   Negative cases
-*                         `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
-    -   Negative cases
-*                         `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
     -   Edge cases
-*                         `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
+*                                   `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
     -   ... (search for @? tags within the .feature files for further tags)
+*                                     `./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests  -Dcucumber.filter.tags="@BalanceCheck"`
+    -   Account check case
 
 ### Test Layout
 

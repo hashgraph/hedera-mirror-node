@@ -20,10 +20,30 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
+
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
 @AllArgsConstructor
 public class SystemDeleteTransactionHandler implements TransactionHandler {
+
+    @Override
+    public EntityId getEntityId(RecordItem recordItem) {
+        SystemDeleteTransactionBody systemDelete = recordItem.getTransactionBody().getSystemDelete();
+        if (systemDelete.hasContractID()) {
+            return EntityId.of(systemDelete.getContractID());
+        } else if (systemDelete.hasFileID()) {
+            return EntityId.of(systemDelete.getFileID());
+        }
+        return null;
+    }
+
+    @Override
+    public boolean updatesEntity() {
+        return true;
+    }
 }

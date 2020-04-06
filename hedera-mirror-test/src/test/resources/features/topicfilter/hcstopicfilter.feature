@@ -1,7 +1,7 @@
 @TopicMessagesFilter @FullSuite
 Feature: HCS Message Filter Coverage Feature
 
-    @Sanity @Acceptance
+    @Sanity @Acceptance @Filter
     Scenario Outline: Validate topic filtering with past date and get X previous
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent

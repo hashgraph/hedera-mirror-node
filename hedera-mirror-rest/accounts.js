@@ -27,7 +27,7 @@ const transactions = require('./transactions.js');
  * @param {Object} row One row of the SQL query result
  * @return {Object} accRecord Processed account record
  */
-const processRow = function(row) {
+const processRow = function (row) {
   let accRecord = {};
   accRecord.balance = {};
   accRecord.account = row.entity_shard + '.' + row.entity_realm + '.' + row.entity_num;
@@ -41,7 +41,7 @@ const processRow = function(row) {
   return accRecord;
 };
 
-const getAccountQueryPrefix = function() {
+const getAccountQueryPrefix = function () {
   const prefix =
     'select ab.balance as account_balance\n' +
     '    , ab.consensus_timestamp as consensus_timestamp\n' +
@@ -74,7 +74,7 @@ const getAccountQueryPrefix = function() {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getAccounts = function(req) {
+const getAccounts = function (req) {
   // Validate query parameters first
   const valid = utils.validateReq(req);
   if (!valid.isValid) {
@@ -120,7 +120,7 @@ const getAccounts = function(req) {
     'account.publickey',
     ['e.ed25519_public_key_hex'],
     'publickey',
-    s => {
+    (s) => {
       return s.toLowerCase();
     }
   );
@@ -130,7 +130,7 @@ const getAccounts = function(req) {
   const entitySql =
     getAccountQueryPrefix() +
     '    and \n' +
-    [accountQuery, balanceQuery, pubKeyQuery].map(q => (q === '' ? '1=1' : q)).join(' and ') +
+    [accountQuery, balanceQuery, pubKeyQuery].map((q) => (q === '' ? '1=1' : q)).join(' and ') +
     ' order by coalesce(ab.account_num, e.entity_num) ' +
     order +
     '\n' +
@@ -144,15 +144,15 @@ const getAccounts = function(req) {
 
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
-  logger.debug('getAccounts query: ' + pgEntityQuery + JSON.stringify(entityParams));
+  logger.trace('getAccounts query: ' + pgEntityQuery + JSON.stringify(entityParams));
 
   // Execute query
-  return pool.query(pgEntityQuery, entityParams).then(results => {
+  return pool.query(pgEntityQuery, entityParams).then((results) => {
     let ret = {
       accounts: [],
       links: {
-        next: null
-      }
+        next: null,
+      },
     };
 
     for (let row of results.rows) {
@@ -165,7 +165,7 @@ const getAccounts = function(req) {
     }
 
     ret.links = {
-      next: utils.getPaginationLink(req, ret.accounts.length !== limit, 'account.id', anchorAcc, order)
+      next: utils.getPaginationLink(req, ret.accounts.length !== limit, 'account.id', anchorAcc, order),
     };
 
     if (process.env.NODE_ENV === 'test') {
@@ -176,7 +176,7 @@ const getAccounts = function(req) {
 
     return {
       code: utils.httpStatusCodes.OK,
-      contents: ret
+      contents: ret,
     };
   });
 };
@@ -187,7 +187,7 @@ const getAccounts = function(req) {
  * @param {Response} res HTTP response object
  * @return {} None.
  */
-const getOneAccount = function(req, res) {
+const getOneAccount = function (req, res) {
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
   // Parse the filter parameters for account-numbers, balance, and pagination
@@ -205,7 +205,7 @@ const getOneAccount = function(req, res) {
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
   let ret = {
-    transactions: []
+    transactions: [],
   };
 
   // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we
@@ -223,7 +223,7 @@ const getOneAccount = function(req, res) {
   const entityParams = [acc.realm, acc.num, config.shard, acc.realm, acc.num];
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
-  logger.debug('getOneAccount entity query: ' + pgEntityQuery + JSON.stringify(entityParams));
+  logger.trace('getOneAccount entity query: ' + pgEntityQuery + JSON.stringify(entityParams));
   // Execute query & get a promise
   const entityPromise = pool.query(pgEntityQuery, entityParams);
 
@@ -252,14 +252,14 @@ const getOneAccount = function(req, res) {
 
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery, innerParams);
 
-  logger.debug('getOneAccount transactions query: ' + pgTransactionsQuery + JSON.stringify(innerParams));
+  logger.trace('getOneAccount transactions query: ' + pgTransactionsQuery + JSON.stringify(innerParams));
 
   // Execute query & get a promise
   const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);
 
   // After all promises (for all of the above queries) have been resolved...
   Promise.all([entityPromise, transactionsPromise])
-    .then(function(values) {
+    .then(function (values) {
       const entityResults = values[0];
       const transactionsResults = values[1];
 
@@ -300,21 +300,16 @@ const getOneAccount = function(req, res) {
 
       // Pagination links
       ret.links = {
-        next: utils.getPaginationLink(req, ret.transactions.length !== limit, 'timestamp', anchorSecNs, order)
+        next: utils.getPaginationLink(req, ret.transactions.length !== limit, 'timestamp', anchorSecNs, order),
       };
 
       logger.debug('getOneAccount returning ' + ret.transactions.length + ' transactions entries');
       res.json(ret);
     })
-    .catch(err => {
-      logger.error('getOneAccount error: ' + JSON.stringify(err.stack));
-      res
-        .status(utils.httpStatusCodes.INTERNAL_ERROR)
-        .send(utils.createSingleErrorJsonResponse(utils.httpErrorMessages.INTERNAL_ERROR));
-    });
+    .catch((err) => utils.errorHandler(err, req, res, null));
 };
 
 module.exports = {
   getAccounts: getAccounts,
-  getOneAccount: getOneAccount
+  getOneAccount: getOneAccount,
 };
