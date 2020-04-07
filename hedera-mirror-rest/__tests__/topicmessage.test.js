@@ -22,6 +22,7 @@
 const topicmessage = require('../topicmessage.js');
 const utils = require('../utils.js');
 const config = require('../config.js');
+const {ErrorHandler, httpStatusCodes} = require('../helpers/error');
 
 beforeAll(async () => {
   jest.setTimeout(1000);
@@ -31,11 +32,11 @@ afterAll(() => {});
 
 describe('topicmessage validateConsensusTimestampParam tests', () => {
   test('Verify validateConsensusTimestampParam returns correct result for -1234567890.000000001', () => {
-    verifyInvalidConsensusTimestamp(topicmessage.validateConsensusTimestampParam(-1234567890.000000001));
+    verifyInvalidConsensusTimestamp(-1234567890.000000001);
   });
 
   test('Verify validateConsensusTimestampParam returns correct result for abc', () => {
-    verifyInvalidConsensusTimestamp(topicmessage.validateConsensusTimestampParam('abc'));
+    verifyInvalidConsensusTimestamp('abc');
   });
 
   test('Verify validateConsensusTimestampParam returns correct result for 1234567890', () => {
@@ -49,15 +50,15 @@ describe('topicmessage validateConsensusTimestampParam tests', () => {
 
 describe('topicmessage validateGetSequenceMessageParams tests', () => {
   test('Verify validateGetSequenceMessageParams returns correct result for -123', () => {
-    verifyInvalidTopicAndSequenceNum(topicmessage.validateGetSequenceMessageParams(-123, -123));
+    verifyInvalidTopicAndSequenceNum(-123, -123);
   });
 
   test('Verify validateGetSequenceMessageParams returns correct result for abc', () => {
-    verifyInvalidTopicAndSequenceNum(topicmessage.validateGetSequenceMessageParams('abc', 'abc'));
+    verifyInvalidTopicAndSequenceNum('abc', 'abc');
   });
 
   test('Verify validateGetSequenceMessageParams returns correct result for 123.0001', () => {
-    verifyInvalidTopicAndSequenceNum(topicmessage.validateGetSequenceMessageParams(123.0001, 123.0001));
+    verifyInvalidTopicAndSequenceNum(123.0001, 123.0001);
   });
 
   test('Verify validateGetSequenceMessageParams returns correct result for 0', () => {
@@ -74,15 +75,15 @@ describe('topicmessage validateGetSequenceMessageParams tests', () => {
 
 describe('topicmessage validateGetTopicMessagesParams tests', () => {
   test('Verify validateGetTopicMessagesParams returns correct result for -123', () => {
-    verifyInvalidTopicMessages(topicmessage.validateGetTopicMessagesParams(-123));
+    verifyInvalidTopicMessages(-123);
   });
 
   test('Verify validateGetTopicMessagesParams returns correct result for abc', () => {
-    verifyInvalidTopicMessages(topicmessage.validateGetTopicMessagesParams('abc'));
+    verifyInvalidTopicMessages('abc');
   });
 
   test('Verify validateGetTopicMessagesParams returns correct result for 123.0001', () => {
-    verifyInvalidTopicMessages(topicmessage.validateGetTopicMessagesParams(123.0001));
+    verifyInvalidTopicMessages(123.0001);
   });
 
   test('Verify validateGetTopicMessagesParams returns correct result for 0', () => {
@@ -147,24 +148,23 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
 });
 
 const verifyValidParamResponse = (val) => {
-  expect(val).toStrictEqual(utils.successValidationResponse);
+  expect(val).toBe(true);
 };
 
-const verifyInvalidConsensusTimestamp = (val) => {
-  expect(val).toStrictEqual(
-    utils.makeValidationResponse([utils.getInvalidParameterMessageObject('consensusTimestamp')])
-  );
+const verifyInvalidConsensusTimestamp = (timestamp) => {
+  expect(() => {
+    topicmessage.validateConsensusTimestampParam(timestamp);
+  }).toThrowErrorMatchingSnapshot();
 };
 
-const verifyInvalidTopicAndSequenceNum = (val) => {
-  expect(val).toStrictEqual(
-    utils.makeValidationResponse([
-      utils.getInvalidParameterMessageObject('topic_num'),
-      utils.getInvalidParameterMessageObject('sequence_number'),
-    ])
-  );
+const verifyInvalidTopicAndSequenceNum = (topicid, seqnum) => {
+  expect(() => {
+    topicmessage.validateGetSequenceMessageParams(topicid, seqnum);
+  }).toThrowErrorMatchingSnapshot();
 };
 
-const verifyInvalidTopicMessages = (val) => {
-  expect(val).toStrictEqual(utils.makeValidationResponse([utils.getInvalidParameterMessageObject('topic_num')]));
+const verifyInvalidTopicMessages = (topicid) => {
+  expect(() => {
+    topicmessage.validateGetTopicMessagesParams(topicid);
+  }).toThrowErrorMatchingSnapshot();
 };

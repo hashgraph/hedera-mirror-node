@@ -20,6 +20,7 @@
 'use strict';
 const utils = require('./utils.js');
 const config = require('./config.js');
+const {httpStatusCodes, ErrorHandler} = require('./helpers/error');
 
 /**
  * Create transferlists from the output of SQL queries. The SQL table has different
@@ -198,21 +199,16 @@ const reqToSql = function (req) {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getTransactions = function (req) {
+const getTransactions = async (req, res) => {
   // Validate query parameters first
-  const valid = utils.validateReq(req);
-  if (!valid.isValid) {
-    return new Promise((resolve, reject) => {
-      resolve(valid);
-    });
-  }
+  utils.validateReq(req);
 
   let query = reqToSql(req);
 
   logger.trace('getTransactions query: ' + query.query + JSON.stringify(query.params));
 
   // Execute query
-  return pool.query(query.query, query.params).then((results) => {
+  return await pool.query(query.query, query.params).then((results) => {
     let ret = {
       transactions: [],
       links: {
@@ -240,10 +236,7 @@ const getTransactions = function (req) {
 
     logger.debug('getTransactions returning ' + ret.transactions.length + ' entries');
 
-    return {
-      code: utils.httpStatusCodes.OK,
-      contents: ret,
-    };
+    res.json(ret);
   });
 };
 
@@ -253,7 +246,7 @@ const getTransactions = function (req) {
  * @param {Response} res HTTP response object
  * @return {} None.
  */
-const getOneTransaction = function (req, res) {
+const getOneTransaction = async (req, res) => {
   logger.debug('--------------------  getOneTransaction --------------------');
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
@@ -265,8 +258,8 @@ const getOneTransaction = function (req, res) {
     let message =
       'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" ' +
       'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
-    res.status(utils.httpStatusCodes.BAD_REQUEST).send(utils.createSingleErrorJsonResponse(message));
-    return;
+
+    throw new ErrorHandler(httpStatusCodes.BAD_REQUEST, message);
   }
   const sqlParams = [txIdMatches[1], txIdMatches[2], txIdMatches[3], txIdMatches[4] + '' + txIdMatches[5]];
 
@@ -304,30 +297,26 @@ const getOneTransaction = function (req, res) {
   logger.trace('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
-  pool
-    .query(pgSqlQuery, sqlParams)
-    .then((results) => {
-      let ret = {
-        transactions: [],
-      };
+  return await pool.query(pgSqlQuery, sqlParams).then((results) => {
+    let ret = {
+      transactions: [],
+    };
 
-      logger.debug('# rows returned: ' + results.rows.length);
-      const tl = createTransferLists(results.rows, ret);
-      ret = tl.ret;
+    logger.debug('# rows returned: ' + results.rows.length);
+    const tl = createTransferLists(results.rows, ret);
+    ret = tl.ret;
 
-      if (ret.transactions.length === 0) {
-        res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
-        return;
-      }
+    if (ret.transactions.length === 0) {
+      throw new ErrorHandler(httpStatusCodes.NOT_FOUND, 'Not found');
+    }
 
-      if (process.env.NODE_ENV === 'test') {
-        ret.sqlQuery = results.sqlQuery;
-      }
+    if (process.env.NODE_ENV === 'test') {
+      ret.sqlQuery = results.sqlQuery;
+    }
 
-      logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
-      res.json(ret);
-    })
-    .catch((error) => utils.errorHandler(error, req, res, null));
+    logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
+    res.json(ret);
+  });
 };
 
 module.exports = {

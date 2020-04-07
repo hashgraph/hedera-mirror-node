@@ -20,6 +20,7 @@
 'uses strict';
 
 const express = require('express');
+const {addAsync} = require('@awaitjs/express');
 const bodyParser = require('body-parser');
 let Pool;
 if (process.env.NODE_ENV !== 'test') {
@@ -27,7 +28,7 @@ if (process.env.NODE_ENV !== 'test') {
 } else {
   Pool = require('./__tests__/mockpool.js'); // Use a mocked up DB for jest unit tests
 }
-const app = express();
+const app = addAsync(express());
 const cors = require('cors');
 const log4js = require('log4js');
 const logger = log4js.getLogger();
@@ -40,7 +41,7 @@ const accounts = require('./accounts.js');
 const topicmessage = require('./topicmessage.js');
 const eventAnalytics = require('./eventAnalytics.js');
 const utils = require('./utils.js');
-const Cacher = require('./cacher.js');
+const {handleError} = require('./helpers/error');
 
 var compression = require('compression');
 
@@ -91,35 +92,25 @@ app.use(bodyParser.json());
 app.use(compression());
 app.use(cors());
 
-let caches = {};
-for (const api of [
-  {name: 'transactions', ttl: config.api.ttl.transactions},
-  {name: 'balances', ttl: config.api.ttl.balances},
-  {name: 'accounts', ttl: config.api.ttl.accounts},
-  {name: 'events', ttl: config.api.ttl.events},
-]) {
-  caches[api.name] = new Cacher(api.ttl);
-}
-
 let apiPrefix = '/api/v1';
 
 // routes
-app.get(apiPrefix + '/transactions', (req, res) =>
-  caches['transactions'].getResponse(req, res, transactions.getTransactions)
-);
-app.get(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
-app.get(apiPrefix + '/balances', (req, res) => caches['balances'].getResponse(req, res, balances.getBalances));
-app.get(apiPrefix + '/accounts', (req, res) => caches['accounts'].getResponse(req, res, accounts.getAccounts));
-app.get(apiPrefix + '/accounts/:id', accounts.getOneAccount);
-app.get(apiPrefix + '/topic/message/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
-app.use(utils.errorHandler);
+app.getAsync(apiPrefix + '/transactions', transactions.getTransactions);
+app.getAsync(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
+app.getAsync(apiPrefix + '/balances', balances.getBalances);
+app.getAsync(apiPrefix + '/accounts', accounts.getAccounts);
+app.getAsync(apiPrefix + '/accounts/:id', accounts.getOneAccount);
+app.getAsync(apiPrefix + '/topic/message/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
 
 // support singular and plural resource naming for single topic message via id and sequence
-app.get(apiPrefix + '/topic/:id/message/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
-app.get(apiPrefix + '/topics/:id/messages/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
+app.getAsync(apiPrefix + '/topic/:id/message/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
+app.getAsync(apiPrefix + '/topics/:id/messages/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
 
-app.get(apiPrefix + '/topics/:id', topicmessage.getTopicMessages);
-app.get(apiPrefix + '/topic/:id', topicmessage.getTopicMessages);
+app.getAsync(apiPrefix + '/topics/:id', topicmessage.getTopicMessages);
+app.getAsync(apiPrefix + '/topic/:id', topicmessage.getTopicMessages);
+
+// app.use(utils.errorHandler);
+app.use(handleError);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {

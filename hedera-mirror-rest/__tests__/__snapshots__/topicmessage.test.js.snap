@@ -1,0 +1,74 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`topicmessage validateConsensusTimestampParam tests Verify validateConsensusTimestampParam returns correct result for -1234567890.000000001 1`] = `
+Array [
+  Object {
+    "message": "Invalid parameter: consensus_timestamp",
+  },
+]
+`;
+
+exports[`topicmessage validateConsensusTimestampParam tests Verify validateConsensusTimestampParam returns correct result for abc 1`] = `
+Array [
+  Object {
+    "message": "Invalid parameter: consensus_timestamp",
+  },
+]
+`;
+
+exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams returns correct result for -123 1`] = `
+Array [
+  Object {
+    "message": "Invalid parameter: topic_num",
+  },
+  Object {
+    "message": "Invalid parameter: sequence_number",
+  },
+]
+`;
+
+exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams returns correct result for 123.0001 1`] = `
+Array [
+  Object {
+    "message": "Invalid parameter: topic_num",
+  },
+  Object {
+    "message": "Invalid parameter: sequence_number",
+  },
+]
+`;
+
+exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams returns correct result for abc 1`] = `
+Array [
+  Object {
+    "message": "Invalid parameter: topic_num",
+  },
+  Object {
+    "message": "Invalid parameter: sequence_number",
+  },
+]
+`;
+
+exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams returns correct result for -123 1`] = `
+Array [
+  Object {
+    "message": "Invalid parameter: topic_num",
+  },
+]
+`;
+
+exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams returns correct result for 123.0001 1`] = `
+Array [
+  Object {
+    "message": "Invalid parameter: topic_num",
+  },
+]
+`;
+
+exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams returns correct result for abc 1`] = `
+Array [
+  Object {
+    "message": "Invalid parameter: topic_num",
+  },
+]
+`;

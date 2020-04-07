@@ -50,17 +50,13 @@ class Cacher {
     // TODO: Enable intellgent caching later by detecting if the content is
     // cacheable by checking if the response to the query will not change.
     // For now, we disable caching.
-    func(req, res)
-      .then((data) => {
-        if (data.code != utils.httpStatusCodes.OK) {
-          res.status(data.code).send(data.contents);
-        } else {
-          res.json(data.contents);
-        }
-      })
-      .catch((err) => {
-        utils.errorHandler(err, req, res, null);
-      });
+    func(req, res).then((data) => {
+      if (data.code != utils.httpStatusCodes.OK) {
+        res.status(data.code).send(data.contents);
+      } else {
+        res.json(data.contents);
+      }
+    });
 
     /*
                 // TODO: Enable this code for caching later

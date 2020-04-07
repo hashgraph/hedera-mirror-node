@@ -18,7 +18,6 @@
  * ‍
  */
 'use strict';
-const math = require('mathjs');
 const config = require('./config.js');
 const utils = require('./utils.js');
 
@@ -27,13 +26,8 @@ const utils = require('./utils.js');
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getBalances = function (req, res) {
-  const valid = utils.validateReq(req);
-  if (!valid.isValid) {
-    return new Promise((resolve, reject) => {
-      resolve(valid);
-    });
-  }
+const getBalances = async (req, res) => {
+  utils.validateReq(req);
 
   // Parse the filter parameters for credit/debit, account-numbers,
   // timestamp and pagination
@@ -119,7 +113,7 @@ const getBalances = function (req, res) {
   logger.trace('getBalance query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
-  return pool.query(pgSqlQuery, sqlParams).then((results) => {
+  return await pool.query(pgSqlQuery, sqlParams).then((results) => {
     let ret = {
       timestamp: null,
       balances: [],
@@ -163,10 +157,7 @@ const getBalances = function (req, res) {
 
     logger.debug('getBalances returning ' + ret.balances.length + ' entries');
 
-    return {
-      code: utils.httpStatusCodes.OK,
-      contents: ret,
-    };
+    res.json(ret);
   });
 };
 

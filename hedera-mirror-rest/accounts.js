@@ -21,6 +21,7 @@
 const config = require('./config.js');
 const utils = require('./utils.js');
 const transactions = require('./transactions.js');
+const {httpStatusCodes, httpErrorMessages, ErrorHandler} = require('./helpers/error');
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -74,14 +75,9 @@ const getAccountQueryPrefix = function () {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getAccounts = function (req) {
+const getAccounts = async (req, res) => {
   // Validate query parameters first
-  const valid = utils.validateReq(req);
-  if (!valid.isValid) {
-    return new Promise((resolve, reject) => {
-      resolve(valid);
-    });
-  }
+  utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
 
@@ -147,7 +143,7 @@ const getAccounts = function (req) {
   logger.trace('getAccounts query: ' + pgEntityQuery + JSON.stringify(entityParams));
 
   // Execute query
-  return pool.query(pgEntityQuery, entityParams).then((results) => {
+  return await pool.query(pgEntityQuery, entityParams).then((results) => {
     let ret = {
       accounts: [],
       links: {
@@ -174,10 +170,7 @@ const getAccounts = function (req) {
 
     logger.debug('getAccounts returning ' + ret.accounts.length + ' entries');
 
-    return {
-      code: utils.httpStatusCodes.OK,
-      contents: ret,
-    };
+    res.json(ret);
   });
 };
 
@@ -187,7 +180,7 @@ const getAccounts = function (req) {
  * @param {Response} res HTTP response object
  * @return {} None.
  */
-const getOneAccount = function (req, res) {
+const getOneAccount = async (req, res) => {
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
   // Parse the filter parameters for account-numbers, balance, and pagination
@@ -195,8 +188,7 @@ const getOneAccount = function (req, res) {
   const acc = utils.parseEntityId(req.params.id);
 
   if (acc.num === 0) {
-    res.status(400).send(utils.createSingleErrorJsonResponse(utils.getInvalidParameterMessage('account.id')));
-    return;
+    throw new ErrorHandler(httpStatusCodes.BAD_REQUEST, utils.getInvalidParameterMessage('account.id'));
   }
 
   const [tsQuery, tsParams] = utils.parseParams(req, 'timestamp', ['t.consensus_ns'], 'timestamp_ns');
@@ -258,55 +250,47 @@ const getOneAccount = function (req, res) {
   const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);
 
   // After all promises (for all of the above queries) have been resolved...
-  Promise.all([entityPromise, transactionsPromise])
-    .then(function (values) {
-      const entityResults = values[0];
-      const transactionsResults = values[1];
+  return await Promise.all([entityPromise, transactionsPromise]).then(function (values) {
+    const entityResults = values[0];
+    const transactionsResults = values[1];
 
-      // Process the results of entities query
-      if (entityResults.rows.length === 0) {
-        res
-          .status(utils.httpStatusCodes.NOT_FOUND)
-          .send(utils.createSingleErrorJsonResponse(utils.httpErrorMessages.NOT_FOUND));
-        return;
+    // Process the results of entities query
+    if (entityResults.rows.length === 0) {
+      throw new ErrorHandler(httpStatusCodes.NOT_FOUND, httpErrorMessages.NOT_FOUND);
+    }
+
+    if (entityResults.rows.length !== 1) {
+      throw new ErrorHandler(httpStatusCodes.NOT_FOUND, 'Error: Could not get entity information');
+    }
+
+    for (let row of entityResults.rows) {
+      const r = processRow(row);
+      for (let key in r) {
+        ret[key] = r[key];
       }
+    }
 
-      if (entityResults.rows.length !== 1) {
-        res
-          .status(utils.httpStatusCodes.NOT_FOUND)
-          .send(utils.createSingleErrorJsonResponse('Error: Could not get entity information'));
-        return;
-      }
+    if (process.env.NODE_ENV === 'test') {
+      ret.entitySqlQuery = entityResults.sqlQuery;
+    }
 
-      for (let row of entityResults.rows) {
-        const r = processRow(row);
-        for (let key in r) {
-          ret[key] = r[key];
-        }
-      }
+    // Process the results of t_transactions query
+    const tl = transactions.createTransferLists(transactionsResults.rows, ret);
+    ret = tl.ret;
+    let anchorSecNs = tl.anchorSecNs;
 
-      if (process.env.NODE_ENV === 'test') {
-        ret.entitySqlQuery = entityResults.sqlQuery;
-      }
+    if (process.env.NODE_ENV === 'test') {
+      ret.transactionsSqlQuery = transactionsResults.sqlQuery;
+    }
 
-      // Process the results of t_transactions query
-      const tl = transactions.createTransferLists(transactionsResults.rows, ret);
-      ret = tl.ret;
-      let anchorSecNs = tl.anchorSecNs;
+    // Pagination links
+    ret.links = {
+      next: utils.getPaginationLink(req, ret.transactions.length !== limit, 'timestamp', anchorSecNs, order),
+    };
 
-      if (process.env.NODE_ENV === 'test') {
-        ret.transactionsSqlQuery = transactionsResults.sqlQuery;
-      }
-
-      // Pagination links
-      ret.links = {
-        next: utils.getPaginationLink(req, ret.transactions.length !== limit, 'timestamp', anchorSecNs, order),
-      };
-
-      logger.debug('getOneAccount returning ' + ret.transactions.length + ' transactions entries');
-      res.json(ret);
-    })
-    .catch((err) => utils.errorHandler(err, req, res, null));
+    logger.debug('getOneAccount returning ' + ret.transactions.length + ' transactions entries');
+    res.json(ret);
+  });
 };
 
 module.exports = {

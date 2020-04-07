@@ -165,12 +165,7 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '<=:2'),
     ];
 
-    let validationResponse = utils.validateAndParseFilters(filters);
-
-    verifyInvalidFilters(validationResponse, [
-      constants.filterKeys.SEQUENCE_NUMBER,
-      constants.filterKeys.SEQUENCE_NUMBER,
-    ]);
+    verifyInvalidFilters(filters);
   });
 
   test('Verify validateAndParseFilters for erroneous data', () => {
@@ -186,19 +181,7 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '-1'),
     ];
 
-    let validationResponse = utils.validateAndParseFilters(filters);
-
-    verifyInvalidFilters(validationResponse, [
-      constants.filterKeys.ACCOUNT_ID,
-      constants.filterKeys.TIMESTAMP,
-      constants.filterKeys.ORDER,
-      constants.filterKeys.LIMIT,
-      constants.filterKeys.SEQUENCE_NUMBER,
-      constants.filterKeys.ACCOUNT_PUBLICKEY,
-      constants.filterKeys.RESULT,
-      constants.filterKeys.TYPE,
-      constants.filterKeys.ACCOUNT_BALANCE,
-    ]);
+    verifyInvalidFilters(filters);
   });
 
   test('Verify validateAndParseFilters for invalid format', () => {
@@ -211,16 +194,7 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '23456789012345678901234'),
     ];
 
-    let validationResponse = utils.validateAndParseFilters(filters);
-
-    verifyInvalidFilters(validationResponse, [
-      constants.filterKeys.ACCOUNT_ID,
-      constants.filterKeys.TIMESTAMP,
-      constants.filterKeys.LIMIT,
-      constants.filterKeys.SEQUENCE_NUMBER,
-      constants.filterKeys.ACCOUNT_PUBLICKEY,
-      constants.filterKeys.ACCOUNT_BALANCE,
-    ]);
+    verifyInvalidFilters(filters);
   });
 
   test('Verify validateAndParseFilters for valid filters', () => {
@@ -241,21 +215,12 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '45000'),
     ];
 
-    let validationResponse = utils.validateAndParseFilters(filters);
-
-    verifyValidFilters(validationResponse);
+    expect(utils.validateAndParseFilters(filters)).toBe(true);
   });
 });
 
-const verifyValidFilters = (val) => {
-  expect(val).toStrictEqual(utils.successValidationResponse);
-};
-
-const verifyInvalidFilters = (val, columns) => {
-  let invalidObjects = [];
-  for (let col of columns) {
-    invalidObjects.push(utils.getInvalidParameterMessageObject(col));
-  }
-
-  expect(val).toStrictEqual(utils.makeValidationResponse(invalidObjects));
+const verifyInvalidFilters = (filters) => {
+  expect(() => {
+    utils.validateAndParseFilters(filters);
+  }).toThrowErrorMatchingSnapshot();
 };
