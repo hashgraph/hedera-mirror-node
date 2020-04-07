@@ -12,5 +12,5 @@ roleRef:
   name: {{ include "hedera-mirror-importer.fullname" . }}
 subjects:
 - kind: ServiceAccount
-  name: {{ include "hedera-mirror-importer.fullname" . }}
+  name: {{ include "hedera-mirror-importer.serviceAccountName" . }}
 {{- end -}}

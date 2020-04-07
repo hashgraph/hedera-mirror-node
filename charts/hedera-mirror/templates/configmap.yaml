@@ -1,4 +1,5 @@
 # This file is temporarily a ConfigMap until I can make changes with the upstream chart
+{{- if .Values.postgresql.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -22,3 +23,4 @@ data:
     grant select on all tables in schema public to viewer;
     alter default privileges for role {{ $username }} in schema public grant select on tables to viewer;
     create user {{ $grpcUsername }} password '{{ $grpcPassword }}' in role viewer;
+{{- end -}}

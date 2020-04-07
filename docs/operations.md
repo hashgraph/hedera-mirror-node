@@ -107,9 +107,8 @@ bash # reload shell
 nvm install stable #pin the current versions node: v12.10.0, npm: 6.10.3
 npm install -g pm2
 sudo mkdir -p /opt/restapi
+sudo chown restapi: /opt/restapi
 cd /opt/restapi
-git clone https://github.com/hashgraph/hedera-mirror-node.git
-cd hedera-mirror-node/hedera-mirror-rest
 cat > application.yml <<EOF
 hedera:
   mirror:
@@ -117,23 +116,26 @@ hedera:
       apiPassword: mirror_api_pass
       host: dbhost
 EOF
+wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/v0.8.1/hedera-mirror-rest-v0.8.1.tgz"
+tar --strip-components=1 -xvf hedera-mirror-rest-v*.tgz
+pm2 start pm2.json
 ```
 
 ### File Layout
 
--   `/opt/restapi/logs` - Logs
--   `/opt/restapi/hedera-mirror-rest` - Binaries
--   `/opt/restapi/hedera-mirror-rest/application.yml` - Configuration
+-   `/opt/restapi` - Binaries
+-   `/opt/restapi/application.yml` - Configuration
 
 ### Upgrading
 
+Replace the version below with the appropriate version:
+
 ```shell script
 sudo su - restapi
-cd /opt/restapi/hedera-mirror-rest
+cd /opt/restapi
 pm2 stop all
-git fetch --all --tags --prune
-git checkout tags/${version}
-npm install
+wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/v0.8.1/hedera-mirror-rest-v0.8.1.tgz"
+tar --strip-components=1 -xvf hedera-mirror-rest-v*
 pm2 start pm2.json
 ```
 
@@ -142,7 +144,7 @@ pm2 start pm2.json
 To start all 10 ports (6551-6560):
 
 ```shell script
-pm2 start /opt/restapi/hedera-mirror-rest/pm2.json
+pm2 start /opt/restapi/pm2.json
 ```
 
 To manually start on a specific port:
@@ -162,7 +164,7 @@ pm2 stop all
 ```shell script
 pm2 monit
 pm2 status
-tail -f /opt/restapi/logs/hedera_mirrornode_api_6551.log
+pm2 logs <port>
 ```
 
 Verify individual APIs manually:

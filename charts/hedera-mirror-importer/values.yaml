@@ -107,5 +107,6 @@ terminationGracePeriodSeconds: 30
 
 tolerations: []
 
+# Will have more than one replica in production, so need a rolling update to ensure at least one pod is ready
 updateStrategy:
   type: RollingUpdate
