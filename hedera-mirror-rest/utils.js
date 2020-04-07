@@ -57,7 +57,7 @@ const filterKeys = {
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
-  SEQUENCE_NUMBER: 'seqnum',
+  SEQUENCE_NUMBER: 'sequencenumber',
   TIMESTAMP: 'timestamp',
   TYPE: 'type',
 };
@@ -81,7 +81,11 @@ const isValidEntityNum = (entity_num) => {
 };
 
 const isValidLimitNum = (limit) => {
-  return /^\d{1,4}$/.test(limit);
+  return /^\d{1,4}$/.test(limit) && limit > 0 && limit <= config.api.maxLimit;
+};
+
+const isValidNum = (num) => {
+  return /^\d{1,16}$/.test(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER;
 };
 
 /**
@@ -160,8 +164,8 @@ const filterValidityChecks = function (param, op, val) {
       ret = ['success', 'fail'].includes(val);
       break;
     case filterKeys.SEQUENCE_NUMBER:
-      // Acceptable words: bigint
-      ret = isValidEntityNum(val);
+      // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
+      ret = isValidNum(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -825,6 +829,7 @@ module.exports = {
   httpStatusCodes: httpStatusCodes,
   isValidEntityNum: isValidEntityNum,
   isValidLimitNum: isValidLimitNum,
+  isValidNum: isValidNum,
   isValidTimestampParam: isValidTimestampParam,
   parseCreditDebitParams: parseCreditDebitParams,
   parseEntityId: parseEntityId,

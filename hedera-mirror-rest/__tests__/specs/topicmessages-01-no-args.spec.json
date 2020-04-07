@@ -1,5 +1,5 @@
 {
-  "description": "Get single message by valid consensus timestamp",
+  "description": "Get topic messages with no arguments",
   "setup": {
     "accounts": [],
     "balances": [],

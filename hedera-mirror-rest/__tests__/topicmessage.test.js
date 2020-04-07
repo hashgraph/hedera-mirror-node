@@ -61,7 +61,7 @@ describe('topicmessage validateGetSequenceMessageParams tests', () => {
   });
 
   test('Verify validateGetSequenceMessageParams returns correct result for 0', () => {
-    verifyValidParamResponse(topicmessage.validateGetSequenceMessageParams(0, 0));
+    verifyValidParamResponse(topicmessage.validateGetSequenceMessageParams(0, 1));
   });
 
   test('Verify validateGetSequenceMessageParams returns correct result for 1234567890', () => {
@@ -130,7 +130,7 @@ describe('topicmessage formatTopicMessageRow tests', () => {
 
 describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
   const filters = [
-    {key: 'seqnum', operator: ' > ', value: '2'},
+    {key: 'sequencenumber', operator: ' > ', value: '2'},
     {key: 'timestamp', operator: ' <= ', value: '1234567890.000000006'},
     {key: 'limit', operator: ' = ', value: '3'},
     {key: 'order', operator: ' = ', value: 'desc'},

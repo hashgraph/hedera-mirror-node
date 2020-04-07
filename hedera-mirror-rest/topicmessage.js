@@ -32,7 +32,7 @@ const topicMessageColumns = {
 };
 
 const columnMap = {
-  seqnum: topicMessageColumns.SEQUENCE_NUMBER,
+  sequencenumber: topicMessageColumns.SEQUENCE_NUMBER,
   timestamp: topicMessageColumns.CONSENSUS_TIMESTAMP,
 };
 
@@ -48,7 +48,7 @@ const validateConsensusTimestampParam = function (consensusTimestamp) {
 };
 
 /**
- * Verify topicId and seqNum meet entity_num format
+ * Verify topicId and sequencenumber meet entity_num format
  */
 const validateGetSequenceMessageParams = function (topicId, seqNum) {
   let badParams = [];
@@ -56,7 +56,7 @@ const validateGetSequenceMessageParams = function (topicId, seqNum) {
     badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.TOPIC_NUM));
   }
 
-  if (!utils.isValidEntityNum(seqNum)) {
+  if (!utils.isValidNum(seqNum)) {
     badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.SEQUENCE_NUMBER));
   }
 
@@ -64,7 +64,7 @@ const validateGetSequenceMessageParams = function (topicId, seqNum) {
 };
 
 /**
- * Verify topicId and seqNum meet entity_num format
+ * Verify topicId and sequencenumber meet entity_num and limit format
  */
 const validateGetTopicMessagesParams = function (topicId) {
   let badParams = [];
@@ -132,7 +132,7 @@ const processGetMessageByConsensusTimestampRequest = (params, httpResponse) => {
  */
 const processGetMessageByTopicAndSequenceRequest = (params, httpResponse) => {
   const topicId = params.id;
-  const seqNum = params.seqnum;
+  const seqNum = params.sequencenumber;
   const validationResult = validateGetSequenceMessageParams(topicId, seqNum);
   if (!validationResult.isValid) {
     return new Promise((resolve, reject) => {
@@ -173,21 +173,20 @@ const processGetTopicMessages = (req, res) => {
   };
 
   // get results and return formatted response
-  getMessages(query, params).then((messages) => {
+  return getMessages(query, params).then((messages) => {
     topicMessagesResponse.messages = messages;
 
     // populate next
-    if (limit) {
-      let lastTimeStamp =
-        messages.length > 0 ? messages[messages.length - 1][topicMessageColumns.CONSENSUS_TIMESTAMP] : null;
-      topicMessagesResponse.links.next = utils.getPaginationLink(
-        req,
-        topicMessagesResponse.messages.length !== limit,
-        constants.filterKeys.TIMESTAMP,
-        lastTimeStamp,
-        order
-      );
-    }
+    let lastTimeStamp =
+      messages.length > 0 ? messages[messages.length - 1][topicMessageColumns.CONSENSUS_TIMESTAMP] : null;
+
+    topicMessagesResponse.links.next = utils.getPaginationLink(
+      req,
+      topicMessagesResponse.messages.length !== limit,
+      constants.filterKeys.TIMESTAMP,
+      lastTimeStamp,
+      order
+    );
 
     res.json(topicMessagesResponse);
   });
@@ -224,7 +223,8 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
 
   // add limit
   pgSqlQuery += ` limit $${nextParamCount++}`;
-  pgSqlParams.push(limit === undefined ? config.api.maxLimit : limit);
+  limit = limit === undefined ? config.api.maxLimit : limit;
+  pgSqlParams.push(limit);
 
   // close query
   pgSqlQuery += ';';
@@ -259,6 +259,8 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
       messages.push(formatTopicMessageRow(results.rows[i]));
     }
 
+    logger.debug('getMessages returning ' + messages.length + ' entries');
+
     return messages;
   });
 };
@@ -277,7 +279,7 @@ const getMessageByConsensusTimestamp = function (req, res) {
 };
 
 /**
- * Handler function for /:id/message/:seqnum API.
+ * Handler function for /:id/message/:sequencenumber API.
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
@@ -292,7 +294,7 @@ const getMessageByTopicAndSequenceRequest = function (req, res) {
 const getTopicMessages = (req, res) => {
   logger.debug('--------------------  getTopicMessages --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetTopicMessages(req, res);
+  return processGetTopicMessages(req, res).catch((error) => utils.errorHandler(error, req, res, null));
 };
 
 module.exports = {

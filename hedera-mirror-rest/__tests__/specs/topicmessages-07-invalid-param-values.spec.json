@@ -23,13 +23,13 @@
       }
     ]
   },
-  "url": "/api/v1/topic/7?seqnum=2_2&timestamp=18:34&limit=12345",
+  "url": "/api/v1/topic/7?sequencenumber=2_2&timestamp=18:34&limit=12345",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Invalid parameter: seqnum"
+          "message": "Invalid parameter: sequencenumber"
         },
         {
           "message": "Invalid parameter: timestamp"
