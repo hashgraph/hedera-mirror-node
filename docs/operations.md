@@ -135,7 +135,7 @@ sudo su - restapi
 cd /opt/restapi
 pm2 stop all
 wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/v0.8.1/hedera-mirror-rest-v0.8.1.tgz"
-tar --strip-components=1 -xvf hedera-mirror-rest-v*
+tar --strip-components=1 -xvf hedera-mirror-rest-v*.tgz
 pm2 start pm2.json
 ```
 
