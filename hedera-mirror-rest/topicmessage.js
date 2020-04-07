@@ -241,6 +241,7 @@ const getMessage = function (pgSqlQuery, pgSqlParams, httpResponse) {
   return pool.query(pgSqlQuery, pgSqlParams).then((results) => {
     // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
     if (results.rowCount === 1) {
+      logger.trace('getMessage returning single entry');
       httpResponse.json(formatTopicMessageRow(results.rows[0]));
     } else {
       httpResponse
@@ -259,7 +260,7 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
       messages.push(formatTopicMessageRow(results.rows[i]));
     }
 
-    logger.debug('getMessages returning ' + messages.length + ' entries');
+    logger.trace('getMessages returning ' + messages.length + ' entries');
 
     return messages;
   });
@@ -271,8 +272,8 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getMessageByConsensusTimestamp = function (req, res) {
-  logger.debug('--------------------  getMessageByConsensusTimestamp --------------------');
-  logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
+  logger.trace('--------------------  getMessageByConsensusTimestamp --------------------');
+  logger.trace(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
   return processGetMessageByConsensusTimestampRequest(req.params, res).catch((error) =>
     utils.errorHandler(error, req, res, null)
   );
@@ -284,16 +285,16 @@ const getMessageByConsensusTimestamp = function (req, res) {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getMessageByTopicAndSequenceRequest = function (req, res) {
-  logger.debug('--------------------  getMessageByTopicAndSequenceRequest --------------------');
-  logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
+  logger.trace('--------------------  getMessageByTopicAndSequenceRequest --------------------');
+  logger.trace(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
   return processGetMessageByTopicAndSequenceRequest(req.params, res).catch((error) =>
     utils.errorHandler(error, req, res, null)
   );
 };
 
 const getTopicMessages = (req, res) => {
-  logger.debug('--------------------  getTopicMessages --------------------');
-  logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
+  logger.trace('--------------------  getTopicMessages --------------------');
+  logger.trace(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
   return processGetTopicMessages(req, res).catch((error) => utils.errorHandler(error, req, res, null));
 };
 
