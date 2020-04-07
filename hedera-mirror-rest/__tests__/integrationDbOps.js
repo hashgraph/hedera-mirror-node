@@ -52,9 +52,9 @@ const SERVICE_FEE = 4;
 
 let accountEntityIds = {};
 
-const isDockerInstalled = function() {
-  return new Promise(resolve => {
-    exec('docker --version', err => {
+const isDockerInstalled = function () {
+  return new Promise((resolve) => {
+    exec('docker --version', (err) => {
       resolve(!err);
     });
   });
@@ -64,7 +64,7 @@ const isDockerInstalled = function() {
  * Instantiate sqlConnection by either pointing at a DB specified by environment variables or instantiating a
  * testContainers/dockerized postgresql instance.
  */
-const instantiateDatabase = async function() {
+const instantiateDatabase = async function () {
   if (!process.env.TEST_DB_HOST) {
     if (!(await isDockerInstalled())) {
       dbPort = dbHost = dbName = null;
@@ -94,7 +94,7 @@ const instantiateDatabase = async function() {
     host: dbHost,
     database: dbName,
     password: dbPassword,
-    port: dbPort
+    port: dbPort,
   });
   // Until "server", "pool" and everything else is made non-static...
   oldPool = global.pool;
@@ -109,7 +109,7 @@ const instantiateDatabase = async function() {
  * Run the sql (non-java) based migrations stored in the importer project against the target database.
  * @returns {Promise}
  */
-const flywayMigrate = function() {
+const flywayMigrate = function () {
   console.log('Using flyway CLI to construct schema');
   let exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   let configPath = path.join('config', '.node-flywaydb.integration.conf');
@@ -125,14 +125,14 @@ const flywayMigrate = function() {
         'FLYWAY_PLACEHOLDERS_api-user': 'mirror_api',
         'FLYWAY_PLACEHOLDERS_api-password': 'mirror_api_pass',
         FLYWAY_LOCATIONS:
-          'filesystem:' + path.join('..', 'hedera-mirror-importer', 'src', 'main', 'resources', 'db', 'migration')
+          'filesystem:' + path.join('..', 'hedera-mirror-importer', 'src', 'main', 'resources', 'db', 'migration'),
       },
       process.env
-    )
+    ),
   };
   return new Promise((resolve, reject) => {
     let args = ['node', exePath, '-c', configPath, 'clean'];
-    exec(args.join(' '), flywayEnv, err => {
+    exec(args.join(' '), flywayEnv, (err) => {
       if (err) {
         reject(err);
       }
@@ -149,14 +149,14 @@ const flywayMigrate = function() {
   });
 };
 
-const closeConnection = function() {
+const closeConnection = function () {
   if (sqlConnection) {
     sqlConnection.end();
     sqlConnection = null;
   }
   if (dockerDb) {
     dockerDb.stop({
-      removeVolumes: false
+      removeVolumes: false,
     });
     dockerDb = null;
   }
@@ -173,7 +173,7 @@ const closeConnection = function() {
   }
 };
 
-const cleanUp = async function() {
+const cleanUp = async function () {
   if (sqlConnection) {
     await sqlConnection.query(cleanupSql);
   }
@@ -195,7 +195,7 @@ const cleanupSql = fs.readFileSync(
   'utf8'
 );
 
-const runSqlQuery = async function(query, params) {
+const runSqlQuery = async function (query, params) {
   return await sqlConnection.query(query, params);
 };
 
@@ -203,5 +203,5 @@ module.exports = {
   cleanUp: cleanUp,
   closeConnection: closeConnection,
   instantiateDatabase: instantiateDatabase,
-  runSqlQuery: runSqlQuery
+  runSqlQuery: runSqlQuery,
 };

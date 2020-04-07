@@ -61,7 +61,7 @@ describe('topicmessage validateGetSequenceMessageParams tests', () => {
   });
 
   test('Verify validateGetSequenceMessageParams returns correct result for 0', () => {
-    verifyValidParamResponse(topicmessage.validateGetSequenceMessageParams(0, 0));
+    verifyValidParamResponse(topicmessage.validateGetSequenceMessageParams(0, 1));
   });
 
   test('Verify validateGetSequenceMessageParams returns correct result for 1234567890', () => {
@@ -72,6 +72,31 @@ describe('topicmessage validateGetSequenceMessageParams tests', () => {
   });
 });
 
+describe('topicmessage validateGetTopicMessagesParams tests', () => {
+  test('Verify validateGetTopicMessagesParams returns correct result for -123', () => {
+    verifyInvalidTopicMessages(topicmessage.validateGetTopicMessagesParams(-123));
+  });
+
+  test('Verify validateGetTopicMessagesParams returns correct result for abc', () => {
+    verifyInvalidTopicMessages(topicmessage.validateGetTopicMessagesParams('abc'));
+  });
+
+  test('Verify validateGetTopicMessagesParams returns correct result for 123.0001', () => {
+    verifyInvalidTopicMessages(topicmessage.validateGetTopicMessagesParams(123.0001));
+  });
+
+  test('Verify validateGetTopicMessagesParams returns correct result for 0', () => {
+    verifyValidParamResponse(topicmessage.validateGetTopicMessagesParams(0));
+  });
+
+  test('Verify validateGetTopicMessagesParams returns correct result for 1234567890', () => {
+    verifyValidParamResponse(topicmessage.validateGetTopicMessagesParams(1234567890));
+  });
+  test('Verify validateGetTopicMessagesParams returns correct result for 2', () => {
+    verifyValidParamResponse(topicmessage.validateGetTopicMessagesParams(2));
+  });
+});
+
 describe('topicmessage formatTopicMessageRow tests', () => {
   const rowInput = {
     consensus_timestamp: '1234567890000000003',
@@ -79,13 +104,13 @@ describe('topicmessage formatTopicMessageRow tests', () => {
     topic_num: 7,
     message: {
       type: 'Buffer',
-      data: [123, 34, 97, 34, 44, 34, 98, 34, 44, 34, 99, 34, 125]
+      data: [123, 34, 97, 34, 44, 34, 98, 34, 44, 34, 99, 34, 125],
     },
     running_hash: {
       type: 'Buffer',
-      data: [123, 34, 99, 34, 44, 34, 100, 34, 44, 34, 101, 34, 125]
+      data: [123, 34, 99, 34, 44, 34, 100, 34, 44, 34, 101, 34, 125],
     },
-    sequence_number: '3'
+    sequence_number: '3',
   };
 
   const formattedInput = topicmessage.formatTopicMessageRow(rowInput);
@@ -95,7 +120,7 @@ describe('topicmessage formatTopicMessageRow tests', () => {
     topic_id: `${config.shard}.1.7`,
     message: 'eyJhIiwiYiIsImMifQ==',
     running_hash: 'eyJjIiwiZCIsImUifQ==',
-    sequence_number: 3
+    sequence_number: 3,
   };
 
   expect(formattedInput.consensus_timestamp).toStrictEqual(expectedFormat.consensus_timestamp);
@@ -103,21 +128,43 @@ describe('topicmessage formatTopicMessageRow tests', () => {
   expect(formattedInput.sequence_number).toStrictEqual(expectedFormat.sequence_number);
 });
 
-const verifyValidParamResponse = val => {
+describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
+  const filters = [
+    {key: 'sequencenumber', operator: ' > ', value: '2'},
+    {key: 'timestamp', operator: ' <= ', value: '1234567890.000000006'},
+    {key: 'limit', operator: ' = ', value: '3'},
+    {key: 'order', operator: ' = ', value: 'desc'},
+  ];
+
+  let {query, params, order, limit} = topicmessage.extractSqlFromTopicMessagesRequest('7', filters);
+
+  expect(query).toStrictEqual(
+    'select consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number from topic_message where realm_num = $1 and topic_num = $2 and sequence_number > $3 and consensus_timestamp <= $4 order by consensus_timestamp desc limit $5;'
+  );
+  expect(params).toStrictEqual([0, '7', '2', '1234567890.000000006', '3']);
+  expect(order).toStrictEqual('desc');
+  expect(limit).toStrictEqual(3);
+});
+
+const verifyValidParamResponse = (val) => {
   expect(val).toStrictEqual(utils.successValidationResponse);
 };
 
-const verifyInvalidConsensusTimestamp = val => {
+const verifyInvalidConsensusTimestamp = (val) => {
   expect(val).toStrictEqual(
     utils.makeValidationResponse([utils.getInvalidParameterMessageObject('consensusTimestamp')])
   );
 };
 
-const verifyInvalidTopicAndSequenceNum = val => {
+const verifyInvalidTopicAndSequenceNum = (val) => {
   expect(val).toStrictEqual(
     utils.makeValidationResponse([
       utils.getInvalidParameterMessageObject('topic_num'),
-      utils.getInvalidParameterMessageObject('sequence_number')
+      utils.getInvalidParameterMessageObject('sequence_number'),
     ])
   );
+};
+
+const verifyInvalidTopicMessages = (val) => {
+  expect(val).toStrictEqual(utils.makeValidationResponse([utils.getInvalidParameterMessageObject('topic_num')]));
 };

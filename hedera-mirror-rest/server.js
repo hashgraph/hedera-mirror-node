@@ -58,15 +58,15 @@ if (port === undefined || isNaN(Number(port))) {
 log4js.configure({
   appenders: {
     everything: {
-      type: 'stdout'
-    }
+      type: 'stdout',
+    },
   },
   categories: {
     default: {
       appenders: ['everything'],
-      level: config.api.log.level
-    }
-  }
+      level: config.api.log.level,
+    },
+  },
 });
 global.logger = log4js.getLogger();
 
@@ -76,7 +76,7 @@ const pool = new Pool({
   host: config.db.host,
   database: config.db.name,
   password: config.db.apiPassword,
-  port: config.db.port
+  port: config.db.port,
 });
 global.pool = pool;
 
@@ -84,7 +84,7 @@ app.set('trust proxy', true);
 app.set('port', port);
 app.use(
   bodyParser.urlencoded({
-    extended: false
+    extended: false,
   })
 );
 app.use(bodyParser.json());
@@ -96,7 +96,7 @@ for (const api of [
   {name: 'transactions', ttl: config.api.ttl.transactions},
   {name: 'balances', ttl: config.api.ttl.balances},
   {name: 'accounts', ttl: config.api.ttl.accounts},
-  {name: 'events', ttl: config.api.ttl.events}
+  {name: 'events', ttl: config.api.ttl.events},
 ]) {
   caches[api.name] = new Cacher(api.ttl);
 }
@@ -115,8 +115,11 @@ app.get(apiPrefix + '/topic/message/:consensusTimestamp', topicmessage.getMessag
 app.use(utils.errorHandler);
 
 // support singular and plural resource naming for single topic message via id and sequence
-app.get(apiPrefix + '/topic/:id/message/:seqnum', topicmessage.getMessageByTopicAndSequenceRequest);
-app.get(apiPrefix + '/topics/:id/messages/:seqnum', topicmessage.getMessageByTopicAndSequenceRequest);
+app.get(apiPrefix + '/topic/:id/message/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
+app.get(apiPrefix + '/topics/:id/messages/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
+
+app.get(apiPrefix + '/topics/:id', topicmessage.getTopicMessages);
+app.get(apiPrefix + '/topic/:id', topicmessage.getTopicMessages);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {

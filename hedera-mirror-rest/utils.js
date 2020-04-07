@@ -21,6 +21,7 @@
 const math = require('mathjs');
 const config = require('./config.js');
 const ed25519 = require('./ed25519.js');
+const constants = require('./constants.js');
 
 const ENTITY_TYPE_FILE = 3;
 const TRANSACTION_RESULT_SUCCESS = 22;
@@ -30,15 +31,36 @@ const httpStatusCodes = {
   BAD_REQUEST: 400,
   NOT_FOUND: 404,
   INTERNAL_ERROR: 500,
-  SERVICE_UNAVAILABLE: 503
+  SERVICE_UNAVAILABLE: 503,
 };
 
 const httpErrorMessages = {
   NOT_FOUND: 'Not found',
-  INTERNAL_ERROR: 'Internal error'
+  INTERNAL_ERROR: 'Internal error',
 };
 
 const successValidationResponse = {isValid: true, code: 200, contents: 'OK'};
+
+const opsMap = {
+  lt: ' < ',
+  lte: ' <= ',
+  gt: ' > ',
+  gte: ' >= ',
+  eq: ' = ',
+  ne: ' != ',
+};
+
+const filterKeys = {
+  ACCOUNT_ID: 'account.id',
+  ACCOUNT_BALANCE: 'account.balance',
+  ACCOUNT_PUBLICKEY: 'account.publickey',
+  LIMIT: 'limit',
+  ORDER: 'order',
+  RESULT: 'result',
+  SEQUENCE_NUMBER: 'sequencenumber',
+  TIMESTAMP: 'timestamp',
+  TYPE: 'type',
+};
 
 /**
  * Check if the given number is numeric
@@ -49,13 +71,21 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-const isValidTimestampParam = function(timestamp) {
+const isValidTimestampParam = function (timestamp) {
   // Accepted forms: seconds or seconds.upto 9 digits
   return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
 };
 
-const isValidEntityNum = entity_num => {
+const isValidEntityNum = (entity_num) => {
   return /^\d{1,10}\.\d{1,10}\.\d{1,10}$/.test(entity_num) || /^\d{1,10}$/.test(entity_num);
+};
+
+const isValidLimitNum = (limit) => {
+  return /^\d{1,4}$/.test(limit) && limit > 0 && limit <= config.api.maxLimit;
+};
+
+const isValidNum = (num) => {
+  return /^\d{1,16}$/.test(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER;
 };
 
 /**
@@ -64,7 +94,7 @@ const isValidEntityNum = entity_num => {
  * @param {String} opAndVal operator:value to be validated
  * @return {Boolean} true if the parameter is valid. false otherwise
  */
-const paramValidityChecks = function(param, opAndVal) {
+const paramValidityChecks = function (param, opAndVal) {
   let ret = false;
   let val = null;
   let op = null;
@@ -85,6 +115,16 @@ const paramValidityChecks = function(param, opAndVal) {
     return ret;
   }
 
+  return filterValidityChecks(param, op, val);
+};
+
+const filterValidityChecks = function (param, op, val) {
+  let ret = false;
+
+  if (op === undefined || val === undefined) {
+    return ret;
+  }
+
   // Validate operator
   if (!/^(gte?|lte?|eq|ne)$/.test(op)) {
     return ret;
@@ -92,36 +132,40 @@ const paramValidityChecks = function(param, opAndVal) {
 
   // Validate the value
   switch (param) {
-    case 'account.id':
+    case filterKeys.ACCOUNT_ID:
       // Accepted forms: shard.realm.num or num
       ret = isValidEntityNum(val);
       break;
-    case 'timestamp':
+    case filterKeys.TIMESTAMP:
       ret = isValidTimestampParam(val);
       break;
-    case 'account.balance':
+    case filterKeys.ACCOUNT_BALANCE:
       // Accepted forms: Upto 50 billion
       ret = /^\d{1,19}$/.test(val);
       break;
-    case 'account.publickey':
+    case filterKeys.ACCOUNT_PUBLICKEY:
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = /^[0-9a-fA-F]{64}$/.test(val) || /^[0-9a-fA-F]{88}$/.test(val);
       break;
-    case 'limit':
+    case filterKeys.LIMIT:
       // Acceptable forms: upto 4 digits
-      ret = /^\d{1,4}$/.test(val);
+      ret = isValidLimitNum(val);
       break;
-    case 'order':
+    case filterKeys.ORDER:
       // Acceptable words: asc or desc
       ret = ['asc', 'desc'].includes(val);
       break;
-    case 'type':
+    case filterKeys.TYPE:
       // Acceptable words: credit or debig
       ret = ['credit', 'debit'].includes(val);
       break;
-    case 'result':
+    case filterKeys.RESULT:
       // Acceptable words: success or fail
       ret = ['success', 'fail'].includes(val);
+      break;
+    case filterKeys.SEQUENCE_NUMBER:
+      // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
+      ret = isValidNum(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -131,11 +175,11 @@ const paramValidityChecks = function(param, opAndVal) {
   return ret;
 };
 
-const getInvalidParameterMessage = message => {
+const getInvalidParameterMessage = (message) => {
   return `Invalid parameter: ${message}`;
 };
 
-const getInvalidParameterMessageObject = message => {
+const getInvalidParameterMessageObject = (message) => {
   return {message: getInvalidParameterMessage(message)};
 };
 
@@ -144,7 +188,7 @@ const getInvalidParameterMessageObject = message => {
  * @param {HTTPRequest} req HTTP request object
  * @return {Object} result of validity check, and return http code/contents
  */
-const validateReq = function(req) {
+const validateReq = function (req) {
   let badParams = [];
   // Check the validity of every query parameter
   for (const key in req.query) {
@@ -163,27 +207,27 @@ const validateReq = function(req) {
   return makeValidationResponse(badParams);
 };
 
-const makeValidationResponse = function(badParams) {
+const makeValidationResponse = function (badParams) {
   if (badParams && badParams.length !== 0) {
     return {
       isValid: false,
       code: httpStatusCodes.BAD_REQUEST,
-      contents: errorMessageFormat(badParams)
+      contents: errorMessageFormat(badParams),
     };
   } else {
     return successValidationResponse;
   }
 };
 
-const errorMessageFormat = messages => {
+const errorMessageFormat = (messages) => {
   return {
     _status: {
-      messages: messages
-    }
+      messages: messages,
+    },
   };
 };
 
-const createSingleErrorJsonResponse = message => {
+const createSingleErrorJsonResponse = (message) => {
   return errorMessageFormat([{message: message}]);
 };
 
@@ -192,11 +236,11 @@ const createSingleErrorJsonResponse = message => {
  * @param {String} acc Either 0.0.1234 or just 1234
  * @return {Object} {accShard, accRealm, accNum} Parsed account number
  */
-const parseEntityId = function(acc) {
+const parseEntityId = function (acc) {
   let ret = {
     shard: 0,
     realm: 0,
-    num: 0
+    num: 0,
   };
 
   const aSplit = acc.split('.');
@@ -214,7 +258,7 @@ const parseEntityId = function(acc) {
   return ret;
 };
 
-const parseTimestampParam = function(timestampParam) {
+const parseTimestampParam = function (timestampParam) {
   // Expect timestamp input as (a) just seconds,
   // (b) seconds.mmm (3-digit milliseconds),
   // or (c) seconds.nnnnnnnnn (9-digit nanoseconds)
@@ -244,18 +288,9 @@ const parseTimestampParam = function(timestampParam) {
  *          this happens to the value _after_ operators removed and doesn't affect the operator
  * @return {Object} {queryString, queryVals} Constructed SQL query string and values.
  */
-const parseComparatorSymbol = function(fields, valArr, type = null, valueTranslate = null) {
+const parseComparatorSymbol = function (fields, valArr, type = null, valueTranslate = null) {
   let queryStr = '';
   let vals = [];
-
-  const opsMap = {
-    lt: ' < ',
-    lte: ' <= ',
-    gt: ' > ',
-    gte: ' >= ',
-    eq: ' = ',
-    ne: ' != '
-  };
 
   for (let item of valArr) {
     // Split the gt:number into operation and value and create a SQL query string
@@ -327,7 +362,7 @@ const parseComparatorSymbol = function(fields, valArr, type = null, valueTransla
 
   return {
     queryStr: '(' + queryStr + ')',
-    queryVals: vals
+    queryVals: vals,
   };
 };
 
@@ -337,7 +372,7 @@ const parseComparatorSymbol = function(fields, valArr, type = null, valueTransla
  * @param {Integer} limit Optional- max value
  * @return {String} Param value
  */
-const getIntegerParam = function(param, limit = undefined) {
+const getIntegerParam = function (param, limit = undefined) {
   if (param !== undefined && !isNaN(Number(param))) {
     if (limit !== undefined && param > limit) {
       param = limit;
@@ -358,7 +393,7 @@ const getIntegerParam = function(param, limit = undefined) {
  *          this happens to the value _after_ operators removed and doesn't affect the operator
  * @return {Array} [query, params] Constructed SQL query fragment and corresponding values
  */
-const parseParams = function(req, queryField, fields, type = null, valueTranslate = null) {
+const parseParams = function (req, queryField, fields, type = null, valueTranslate = null) {
   // Parse the timestamp filter parameters
   let query = '';
   let params = [];
@@ -383,7 +418,7 @@ const parseParams = function(req, queryField, fields, type = null, valueTranslat
  * @param {Request} req HTTP query request object
  * @return {String} Value of the credit/debit parameter
  */
-const parseCreditDebitParams = function(req) {
+const parseCreditDebitParams = function (req) {
   // Get the transaction type (credit, debit, or both)
   // By default, query for both credit and debit transactions
   let creditDebit = req.query.type;
@@ -398,7 +433,7 @@ const parseCreditDebitParams = function(req) {
  * @param {HTTPRequest} req HTTP query request object
  * @return {String} Value of the resultType parameter
  */
-const parseResultParams = function(req) {
+const parseResultParams = function (req) {
   let resultType = req.query.result;
   let query = '';
 
@@ -416,7 +451,7 @@ const parseResultParams = function(req) {
  * @param {String} defaultOrder Order of sorting (defaults to descending)
  * @return {Object} {query, params, order} SQL query, values and order
  */
-const parseLimitAndOrderParams = function(req, defaultOrder = 'desc') {
+const parseLimitAndOrderParams = function (req, defaultOrder = 'desc') {
   // Parse the limit parameter
   let limitQuery = '';
   let limitParams = [];
@@ -431,11 +466,15 @@ const parseLimitAndOrderParams = function(req, defaultOrder = 'desc') {
     order = req.query['order'];
   }
 
+  return buildPgSqlObject(limitQuery, limitParams, order, limitValue);
+};
+
+const buildPgSqlObject = (query, params, order, limit) => {
   return {
-    limitQuery: limitQuery,
-    limitParams: limitParams,
+    query: query,
+    params: params,
     order: order,
-    limit: Number(limitValue)
+    limit: Number(limit),
   };
 };
 
@@ -446,9 +485,9 @@ const parseLimitAndOrderParams = function(req, defaultOrder = 'desc') {
  * @param {Array of values} sqlParams Values of positional parameters
  * @return {String} SQL query with Postgres style positional parameters
  */
-const convertMySqlStyleQueryToPostgres = function(sqlQuery, sqlParams) {
+const convertMySqlStyleQueryToPostgres = function (sqlQuery, sqlParams) {
   let paramsCount = 0;
-  let sqlQueryNonInject = sqlQuery.replace(/\?/g, function() {
+  let sqlQueryNonInject = sqlQuery.replace(/\?/g, function () {
     return '$' + ++paramsCount;
   });
 
@@ -464,7 +503,7 @@ const convertMySqlStyleQueryToPostgres = function(sqlQuery, sqlParams) {
  * @param {String} order Order of sorting the results
  * @return {String} next Fully formed link to the next page
  */
-const getPaginationLink = function(req, isEnd, field, lastValue, order) {
+const getPaginationLink = function (req, isEnd, field, lastValue, order) {
   let urlPrefix;
   if (config.api.port != undefined && config.api.includeHostInLink == 1) {
     urlPrefix = req.protocol + '://' + req.hostname + ':' + config.api.port;
@@ -485,7 +524,7 @@ const getPaginationLink = function(req, isEnd, field, lastValue, order) {
       if (Array.isArray(v)) {
         for (let vv of v) {
           if (q === field && pattern.test(vv)) {
-            req.query[q] = req.query[q].filter(function(value, index, arr) {
+            req.query[q] = req.query[q].filter(function (value, index, arr) {
               return value != vv;
             });
           }
@@ -508,7 +547,7 @@ const getPaginationLink = function(req, isEnd, field, lastValue, order) {
     // Reconstruct the query string
     for (const [q, v] of Object.entries(req.query)) {
       if (Array.isArray(v)) {
-        v.map(vv => (next += (next === '' ? '?' : '&') + q + '=' + vv));
+        v.map((vv) => (next += (next === '' ? '?' : '&') + q + '=' + vv));
       } else {
         next += (next === '' ? '?' : '&') + q + '=' + v;
       }
@@ -531,7 +570,7 @@ const getPaginationLink = function(req, isEnd, field, lastValue, order) {
  *          the call that started pagination
  * @return {Request} req Updated HTTP request object with inserted pageanchor parameter
  */
-const getTimeQueryForPagination = function(req, order, anchorSecNs) {
+const getTimeQueryForPagination = function (req, order, anchorSecNs) {
   //  if descending
   //      if query has anchorSecNs:
   //          then just use that
@@ -551,11 +590,8 @@ const getTimeQueryForPagination = function(req, order, anchorSecNs) {
  * @param {String} ns Nanoseconds since epoch
  * @return {String} Seconds since epoch (seconds.nnnnnnnnn format)
  */
-const nsToSecNs = function(ns) {
-  return math
-    .divide(math.bignumber(ns), math.bignumber(1e9))
-    .toFixed(9)
-    .toString();
+const nsToSecNs = function (ns) {
+  return math.divide(math.bignumber(ns), math.bignumber(1e9)).toFixed(9).toString();
 };
 
 /**
@@ -563,7 +599,7 @@ const nsToSecNs = function(ns) {
  * @param {String} ns Nanoseconds since epoch
  * @return {String} Seconds since epoch (seconds-nnnnnnnnn format)
  */
-const nsToSecNsWithHyphen = function(ns) {
+const nsToSecNsWithHyphen = function (ns) {
   return nsToSecNs(ns).replace('.', '-');
 };
 
@@ -572,11 +608,11 @@ const nsToSecNsWithHyphen = function(ns) {
  * @param {String} Seconds since epoch (seconds.nnnnnnnnn format)
  * @return {String} ns Nanoseconds since epoch
  */
-const secNsToNs = function(secNs) {
+const secNsToNs = function (secNs) {
   return math.multiply(math.bignumber(secNs), math.bignumber(1e9)).toString();
 };
 
-const secNsToSeconds = function(secNs) {
+const secNsToSeconds = function (secNs) {
   return math.floor(Number(secNs));
 };
 
@@ -585,7 +621,7 @@ const secNsToSeconds = function(secNs) {
  * @param {String} type of API (e.g. transactions, balances, etc.). Currently unused.
  * @return {Number} limit Max # entries to be returned.
  */
-const returnEntriesLimit = function(type) {
+const returnEntriesLimit = function (type) {
   return config.api.maxLimit;
 };
 
@@ -594,7 +630,7 @@ const returnEntriesLimit = function(type) {
  * @param {ByteArray} byteArray Array of bytes to be converted to hex string
  * @return {hexString} Converted hex string
  */
-const toHexString = function(byteArray) {
+const toHexString = function (byteArray) {
   return byteArray === null
     ? null
     : byteArray.reduce((output, elem) => output + ('0' + elem.toString(16)).slice(-2), '');
@@ -605,7 +641,7 @@ const toHexString = function(byteArray) {
  * @param {Array} key Byte array representing the key
  * @return {Object} Key object - with type decoration for ED25519, if detected
  */
-const encodeKey = function(key) {
+const encodeKey = function (key) {
   let ret;
 
   if (key === null) {
@@ -618,12 +654,12 @@ const encodeKey = function(key) {
   if (pattern.test(hs)) {
     ret = {
       _type: 'ED25519',
-      key: hs.replace(pattern, replacement)
+      key: hs.replace(pattern, replacement),
     };
   } else {
     ret = {
       _type: 'ProtobufEncoded',
-      key: hs
+      key: hs,
     };
   }
   return ret;
@@ -634,7 +670,7 @@ const encodeKey = function(key) {
  * @param {Array} key Byte array to be encoded
  * @return {String} base64 encoded string
  */
-const encodeBase64 = function(buffer) {
+const encodeBase64 = function (buffer) {
   return null === buffer ? null : buffer.toString('base64');
 };
 
@@ -643,7 +679,7 @@ const encodeBase64 = function(buffer) {
  * @param {String} num Nullable number
  * @returns {Any} representation of math.bignumber value of parameter or null if null
  */
-const getNullableNumber = function(num) {
+const getNullableNumber = function (num) {
   return num == null ? null : math.bignumber(num).toString();
 };
 
@@ -655,11 +691,112 @@ const getNullableNumber = function(num) {
  * @param {String} validStartTimestamp valid start time
  * @returns {String} transactionId of format format: shard.realm.num-sssssssssss-nnnnnnnnn
  */
-const createTransactionId = function(shard, realm, num, validStartTimestamp) {
+const createTransactionId = function (shard, realm, num, validStartTimestamp) {
   return shard + '.' + realm + '.' + num + '-' + nsToSecNsWithHyphen(validStartTimestamp);
 };
 
-const errorHandler = function(err, req, res, next) {
+/**
+ * Given the req.query object build the filters object
+ * @param filters
+ */
+const buildFilterObject = (filters) => {
+  let filterObject = [];
+  if (filters === null) {
+    return null;
+  }
+
+  for (const [key, values] of Object.entries(filters)) {
+    // for repeated params val will be an array
+    if (Array.isArray(values)) {
+      for (const val of values) {
+        filterObject.push(buildComparatorFilter(key, val));
+      }
+    } else {
+      filterObject.push(buildComparatorFilter(key, values));
+    }
+  }
+
+  return filterObject;
+};
+
+const buildComparatorFilter = (name, filter) => {
+  let splitVal = filter.split(':');
+  let opVal = splitVal.length === 1 ? ['eq', filter] : splitVal;
+
+  return {
+    key: name,
+    operator: opVal[0],
+    value: opVal[1],
+  };
+};
+
+/**
+ * Verify filters meet expected formats
+ */
+const validateFilters = (filters) => {
+  let badParams = [];
+
+  for (const filter of filters) {
+    if (!filterValidityChecks(filter.key, filter.operator, filter.value)) {
+      badParams.push(getInvalidParameterMessageObject(filter.key));
+    }
+  }
+
+  return makeValidationResponse(badParams);
+};
+
+/**
+ * Verify param and filters meet expected format
+ * Additionally update format to be persistence query compatible
+ * @param filters
+ * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
+ */
+const validateAndParseFilters = (filters) => {
+  let badParams = [];
+
+  for (const filter of filters) {
+    if (!filterValidityChecks(filter.key, filter.operator, filter.value)) {
+      badParams.push(getInvalidParameterMessageObject(filter.key));
+    } else {
+      formatComparator(filter);
+    }
+  }
+
+  return makeValidationResponse(badParams);
+};
+
+const formatComparator = (comparator) => {
+  if (comparator.operator in opsMap) {
+    // update operator
+    comparator.operator = opsMap[comparator.operator];
+
+    // format value
+    switch (comparator.key) {
+      case filterKeys.ACCOUNT_ID:
+        // Accepted forms: shard.realm.num or num
+        comparator.value = parseEntityId(comparator.value);
+        break;
+      case filterKeys.TIMESTAMP:
+        comparator.value = parseTimestampParam(comparator.value);
+        break;
+      case filterKeys.ACCOUNT_PUBLICKEY:
+        // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
+        comparator.value = ed25519.derToEd25519(comparator.value);
+        break;
+      // case 'type':
+      //   // Acceptable words: credit or debit
+      //   comparator.value = ;
+      //   break;
+      // case 'result':
+      //   // Acceptable words: success or fail
+      //   comparator.value = ;
+      //   break;
+      default:
+    }
+  }
+};
+
+const errorHandler = function (err, req, res, next) {
   logger.error(`Error processing ${req.originalUrl}: `, err);
 
   if (/ECONNREFUSED/.test(err.message)) {
@@ -672,12 +809,18 @@ const errorHandler = function(err, req, res, next) {
 };
 
 module.exports = {
+  buildFilterObject: buildFilterObject,
+  buildComparatorFilter: buildComparatorFilter,
+  buildPgSqlObject: buildPgSqlObject,
   createSingleErrorJsonResponse: createSingleErrorJsonResponse,
   createTransactionId: createTransactionId,
   convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,
   encodeBase64: encodeBase64,
   encodeKey: encodeKey,
+  errorHandler: errorHandler,
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
+  filterValidityChecks: filterValidityChecks,
+  formatComparator: formatComparator,
   getInvalidParameterMessage: getInvalidParameterMessage,
   getInvalidParameterMessageObject: getInvalidParameterMessageObject,
   getNullableNumber: getNullableNumber,
@@ -685,6 +828,8 @@ module.exports = {
   httpErrorMessages: httpErrorMessages,
   httpStatusCodes: httpStatusCodes,
   isValidEntityNum: isValidEntityNum,
+  isValidLimitNum: isValidLimitNum,
+  isValidNum: isValidNum,
   isValidTimestampParam: isValidTimestampParam,
   parseCreditDebitParams: parseCreditDebitParams,
   parseEntityId: parseEntityId,
@@ -701,6 +846,7 @@ module.exports = {
   successValidationResponse: successValidationResponse,
   toHexString: toHexString,
   TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
+  validateAndParseFilters: validateAndParseFilters,
+  validateFilters: validateFilters,
   validateReq: validateReq,
-  errorHandler: errorHandler
 };

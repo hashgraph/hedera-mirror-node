@@ -1,0 +1,34 @@
+{
+  "description": "Get messages with no matching params",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "topicmessages": [
+      {
+        "timestamp": "1234567890000000001",
+        "topic_num": 7,
+        "seq_num": 1
+      },
+      {
+        "timestamp": "1234567890000000002",
+        "topic_num": 7,
+        "seq_num": 2
+      },
+      {
+        "timestamp": "1234567890000000003",
+        "topic_num": 7,
+        "seq_num": 3
+      }
+    ]
+  },
+  "url": "/api/v1/topic/7?sequencenumber=2&sequencenumber=gte:3&timestamp=lt:1234567890.000000004",
+  "responseStatus": 200,
+  "responseJson": {
+    "messages": [],
+    "links": {
+      "next": null
+    }
+  }
+}

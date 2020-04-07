@@ -19,12 +19,27 @@
  */
 'use strict';
 const config = require('./config.js');
+const constants = require('./constants.js');
 const utils = require('./utils.js');
+
+const topicMessageColumns = {
+  CONSENSUS_TIMESTAMP: 'consensus_timestamp',
+  MESSAGE: 'message',
+  REALM_NUM: 'realm_num',
+  RUNNING_HASH: 'running_hash',
+  SEQUENCE_NUMBER: 'sequence_number',
+  TOPIC_NUM: 'topic_num',
+};
+
+const columnMap = {
+  sequencenumber: topicMessageColumns.SEQUENCE_NUMBER,
+  timestamp: topicMessageColumns.CONSENSUS_TIMESTAMP,
+};
 
 /**
  * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
  */
-const validateConsensusTimestampParam = function(consensusTimestamp) {
+const validateConsensusTimestampParam = function (consensusTimestamp) {
   let badParams = [];
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
     badParams.push({message: `Invalid parameter: consensusTimestamp`});
@@ -33,31 +48,61 @@ const validateConsensusTimestampParam = function(consensusTimestamp) {
 };
 
 /**
- * Verify topicId and seqNum meet entity_num format
+ * Verify topicId and sequencenumber meet entity_num format
  */
-const validateGetSequenceMessageParams = function(topicId, seqNum) {
+const validateGetSequenceMessageParams = function (topicId, seqNum) {
   let badParams = [];
   if (!utils.isValidEntityNum(topicId)) {
-    badParams.push(utils.getInvalidParameterMessageObject('topic_num'));
+    badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.TOPIC_NUM));
   }
 
-  if (!utils.isValidEntityNum(seqNum)) {
-    badParams.push(utils.getInvalidParameterMessageObject('sequence_number'));
+  if (!utils.isValidNum(seqNum)) {
+    badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.SEQUENCE_NUMBER));
   }
 
   return utils.makeValidationResponse(badParams);
 };
 
 /**
+ * Verify topicId and sequencenumber meet entity_num and limit format
+ */
+const validateGetTopicMessagesParams = function (topicId) {
+  let badParams = [];
+  if (!utils.isValidEntityNum(topicId)) {
+    badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.TOPIC_NUM));
+  }
+
+  return utils.makeValidationResponse(badParams);
+};
+
+const validateGetTopicMessagesRequest = (topicId, filters, res) => {
+  let valid = true;
+  const paramValidationResult = validateGetTopicMessagesParams(topicId);
+  if (!paramValidationResult.isValid) {
+    res.status(paramValidationResult.code).json(paramValidationResult.contents);
+    valid = false;
+  }
+
+  // validate filters
+  const filterValidationResult = utils.validateAndParseFilters(filters);
+  if (!filterValidationResult.isValid) {
+    res.status(filterValidationResult.code).json(filterValidationResult.contents);
+    valid = false;
+  }
+
+  return valid;
+};
+
+/**
  * Format row in postgres query's result to object which is directly returned to user as json.
  */
-const formatTopicMessageRow = function(row) {
+const formatTopicMessageRow = function (row) {
   return {
-    consensus_timestamp: utils.nsToSecNs(row['consensus_timestamp']),
-    topic_id: `${config.shard}.${row['realm_num']}.${row['topic_num']}`,
-    message: utils.encodeBase64(row['message']),
-    running_hash: utils.encodeBase64(row['running_hash']),
-    sequence_number: parseInt(row['sequence_number'])
+    consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
+    topic_id: `${config.shard}.${row[topicMessageColumns.REALM_NUM]}.${row[topicMessageColumns.TOPIC_NUM]}`,
+    message: utils.encodeBase64(row[topicMessageColumns.MESSAGE]),
+    running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
+    sequence_number: parseInt(row[topicMessageColumns.SEQUENCE_NUMBER]),
   };
 };
 
@@ -87,7 +132,7 @@ const processGetMessageByConsensusTimestampRequest = (params, httpResponse) => {
  */
 const processGetMessageByTopicAndSequenceRequest = (params, httpResponse) => {
   const topicId = params.id;
-  const seqNum = params.seqnum;
+  const seqNum = params.sequencenumber;
   const validationResult = validateGetSequenceMessageParams(topicId, seqNum);
   if (!validationResult.isValid) {
     return new Promise((resolve, reject) => {
@@ -106,13 +151,97 @@ const processGetMessageByTopicAndSequenceRequest = (params, httpResponse) => {
   return getMessage(pgSqlQuery, pgSqlParams, httpResponse);
 };
 
+const processGetTopicMessages = (req, res) => {
+  // retrieve param and filters from request
+  const topicId = req.params.id;
+  const filters = utils.buildFilterObject(req.query);
+
+  // validate params
+  const validQuery = validateGetTopicMessagesRequest(topicId, filters, res);
+  if (!validQuery) {
+    return Promise.resolve;
+  }
+
+  // build sql query validated param and filters
+  let {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
+
+  let topicMessagesResponse = {
+    messages: [],
+    links: {
+      next: null,
+    },
+  };
+
+  // get results and return formatted response
+  return getMessages(query, params).then((messages) => {
+    topicMessagesResponse.messages = messages;
+
+    // populate next
+    let lastTimeStamp =
+      messages.length > 0 ? messages[messages.length - 1][topicMessageColumns.CONSENSUS_TIMESTAMP] : null;
+
+    topicMessagesResponse.links.next = utils.getPaginationLink(
+      req,
+      topicMessagesResponse.messages.length !== limit,
+      constants.filterKeys.TIMESTAMP,
+      lastTimeStamp,
+      order
+    );
+
+    res.json(topicMessagesResponse);
+  });
+};
+
+const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
+  const entity = utils.parseEntityId(topicId);
+  let pgSqlQuery =
+    'select consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number' +
+    ' from topic_message where realm_num = $1 and topic_num = $2';
+  let nextParamCount = 3;
+  let pgSqlParams = [entity.realm, entity.num];
+
+  // add filters
+  let limit;
+  let order = 'asc';
+  for (let filter of filters) {
+    if (filter.key === constants.filterKeys.LIMIT) {
+      limit = filter.value;
+      continue;
+    }
+
+    if (filter.key === constants.filterKeys.ORDER) {
+      order = filter.value;
+      continue;
+    }
+
+    pgSqlQuery += ` and ${columnMap[filter.key]}${filter.operator}$${nextParamCount++}`;
+    pgSqlParams.push(filter.value);
+  }
+
+  // add order
+  pgSqlQuery += ` order by ${topicMessageColumns.CONSENSUS_TIMESTAMP} ${order}`;
+
+  // add limit
+  pgSqlQuery += ` limit $${nextParamCount++}`;
+  limit = limit === undefined ? config.api.maxLimit : limit;
+  pgSqlParams.push(limit);
+
+  // close query
+  pgSqlQuery += ';';
+
+  return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
+};
+
 /**
  * Retrieves topic message from
  */
-const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
-  return pool.query(pgSqlQuery, pgSqlParams).then(results => {
+const getMessage = function (pgSqlQuery, pgSqlParams, httpResponse) {
+  logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+
+  return pool.query(pgSqlQuery, pgSqlParams).then((results) => {
     // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
     if (results.rowCount === 1) {
+      logger.debug('getMessage returning single entry');
       httpResponse.json(formatTopicMessageRow(results.rows[0]));
     } else {
       httpResponse
@@ -122,34 +251,60 @@ const getMessage = function(pgSqlQuery, pgSqlParams, httpResponse) {
   });
 };
 
+const getMessages = async (pgSqlQuery, pgSqlParams) => {
+  logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  let messages = [];
+
+  return await pool.query(pgSqlQuery, pgSqlParams).then((results) => {
+    for (let i = 0; i < results.rowCount; i++) {
+      messages.push(formatTopicMessageRow(results.rows[i]));
+    }
+
+    logger.debug('getMessages returning ' + messages.length + ' entries');
+
+    return messages;
+  });
+};
+
 /**
  * Handler function for /message/:consensusTimestamp API.
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getMessageByConsensusTimestamp = function(req, res) {
+const getMessageByConsensusTimestamp = function (req, res) {
   logger.debug('--------------------  getMessageByConsensusTimestamp --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByConsensusTimestampRequest(req.params, res)
-          .catch(error => utils.errorHandler(error, req, res, null));
+  return processGetMessageByConsensusTimestampRequest(req.params, res).catch((error) =>
+    utils.errorHandler(error, req, res, null)
+  );
 };
 
 /**
- * Handler function for /:id/message/:seqnum API.
+ * Handler function for /:id/message/:sequencenumber API.
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getMessageByTopicAndSequenceRequest = function(req, res) {
+const getMessageByTopicAndSequenceRequest = function (req, res) {
   logger.debug('--------------------  getMessageByTopicAndSequenceRequest --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByTopicAndSequenceRequest(req.params, res)
-          .catch(error => utils.errorHandler(error, req, res, null));
+  return processGetMessageByTopicAndSequenceRequest(req.params, res).catch((error) =>
+    utils.errorHandler(error, req, res, null)
+  );
+};
+
+const getTopicMessages = (req, res) => {
+  logger.debug('--------------------  getTopicMessages --------------------');
+  logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
+  return processGetTopicMessages(req, res).catch((error) => utils.errorHandler(error, req, res, null));
 };
 
 module.exports = {
+  extractSqlFromTopicMessagesRequest: extractSqlFromTopicMessagesRequest,
   formatTopicMessageRow: formatTopicMessageRow,
   getMessageByConsensusTimestamp: getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest: getMessageByTopicAndSequenceRequest,
+  getTopicMessages: getTopicMessages,
   validateConsensusTimestampParam: validateConsensusTimestampParam,
-  validateGetSequenceMessageParams: validateGetSequenceMessageParams
+  validateGetSequenceMessageParams: validateGetSequenceMessageParams,
+  validateGetTopicMessagesParams: validateGetTopicMessagesParams,
 };

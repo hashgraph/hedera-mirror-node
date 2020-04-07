@@ -21,6 +21,8 @@
 
 const request = require('supertest');
 const utils = require('../utils.js');
+const constants = require('../constants.js');
+const config = require('../config.js');
 
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
@@ -138,7 +140,7 @@ describe('Utils makeValidationResponse tests', () => {
     expect(val).toStrictEqual({
       isValid: false,
       code: utils.httpStatusCodes.BAD_REQUEST,
-      contents: {_status: {messages: message}}
+      contents: {_status: {messages: message}},
     });
   });
 });
@@ -191,5 +193,65 @@ describe('Utils isValidEntityNum tests', () => {
   });
   test('Verify valid for full entity 2', () => {
     expect(utils.isValidEntityNum('0.2.3')).toBe(true);
+  });
+});
+
+describe('Utils isValidLimitNum tests', () => {
+  test('Verify invalid for null', () => {
+    expect(utils.isValidLimitNum(null)).toBe(false);
+  });
+  test('Verify invalid for empty input', () => {
+    expect(utils.isValidLimitNum('')).toBe(false);
+  });
+  test('Verify invalid for invalid input', () => {
+    expect(utils.isValidLimitNum('1234567890.000000001')).toBe(false);
+  });
+  test('Verify invalid for entity format shard', () => {
+    expect(utils.isValidLimitNum('1.0.1')).toBe(false);
+  });
+  test('Verify invalid for negative num', () => {
+    expect(utils.isValidLimitNum('-1')).toBe(false);
+  });
+  test('Verify invalid above max limit', () => {
+    expect(utils.isValidLimitNum(config.api.maxLimit + 1)).toBe(false);
+  });
+  test('Verify invalid for 0', () => {
+    expect(utils.isValidLimitNum(0)).toBe(false);
+  });
+  test('Verify valid for valid number', () => {
+    expect(utils.isValidLimitNum(123)).toBe(true);
+  });
+  test(`Verify valid for max limit or ${config.api.maxLimit}`, () => {
+    expect(utils.isValidLimitNum(config.api.maxLimit)).toBe(true);
+  });
+});
+
+describe('Utils isValidNum tests', () => {
+  test('Verify invalid for null', () => {
+    expect(utils.isValidNum(null)).toBe(false);
+  });
+  test('Verify invalid for empty input', () => {
+    expect(utils.isValidNum('')).toBe(false);
+  });
+  test('Verify invalid for invalid input', () => {
+    expect(utils.isValidNum('1234567890.000000001')).toBe(false);
+  });
+  test('Verify invalid for entity format shard', () => {
+    expect(utils.isValidNum('1.0.1')).toBe(false);
+  });
+  test('Verify invalid for negative num', () => {
+    expect(utils.isValidNum(-1)).toBe(false);
+  });
+  test('Verify invalid for 0', () => {
+    expect(utils.isValidNum(0)).toBe(false);
+  });
+  test('Verify valid for valid number', () => {
+    expect(utils.isValidNum(123)).toBe(true);
+  });
+  test('Verify valid above max limit', () => {
+    expect(utils.isValidNum(12345678901)).toBe(true);
+  });
+  test(`Verify valid for Number.MAX_SAFE_INTEGER: ${Number.MAX_SAFE_INTEGER}`, () => {
+    expect(utils.isValidNum(Number.MAX_SAFE_INTEGER)).toBe(true);
   });
 });
