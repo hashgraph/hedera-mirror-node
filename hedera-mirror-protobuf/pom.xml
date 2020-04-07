@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <artifactId>hedera-mirror-protobuf</artifactId>
-    <description>Protobuf definitions for the Hedera Hashgraph Mirror Node API (MAPI)</description>
+    <description>Protobuf definitions for the Hedera Mirror Node API (MAPI)</description>
     <modelVersion>4.0.0</modelVersion>
     <name>Hedera Mirror Node Protobuf</name>
     <packaging>jar</packaging>

@@ -3,8 +3,8 @@
 Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the three mirror node components:
 
 - [Hedera Mirror Importer](hedera-mirror-importer)
-- [Hedera Mirror GRPC API](hedera-mirror-importer)
-- [Hedera Mirror REST API](hedera-mirror-importer)
+- [Hedera Mirror GRPC API](hedera-mirror-grpc)
+- [Hedera Mirror REST API](hedera-mirror-rest)
 
 ## Requirements
 
@@ -17,6 +17,12 @@ To install the wrapper chart with a release name of `mirror`:
 
 ```shell script
 $ helm upgrade --install mirror charts/hedera-mirror
+```
+
+Note that dependent charts are already downloaded and checked in, allowing for a quicker and repeatable installation without any external dependencies. If you make changes to a sub chart or want to update other dependent charts, please run:
+
+```shell script
+$ helm dependency update charts/hedera-mirror
 ```
 
 ## Uninstall
@@ -53,9 +59,7 @@ $ kubectl create configmap hedera-mirror-grpc --from-file=application.properties
 Dashboard and metrics can be viewed via [Grafana](https://grafana.com). To access, get the external IP and open it in a browser:
 
 ```shell script
-$ kubectl get service grafana
-NAME      TYPE           CLUSTER-IP       EXTERNAL-IP      PORT(S)        AGE
-grafana   LoadBalancer   10.102.234.103   10.102.234.103   80:30125/TCP   38m
+$ open "http://$(kubectl get service grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 ```
 
 To connect to the database and run queries:

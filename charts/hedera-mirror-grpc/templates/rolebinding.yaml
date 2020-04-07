@@ -12,5 +12,5 @@ roleRef:
   name: {{ include "hedera-mirror-grpc.fullname" . }}
 subjects:
 - kind: ServiceAccount
-  name: {{ include "hedera-mirror-grpc.fullname" . }}
+  name: {{ include "hedera-mirror-grpc.serviceAccountName" . }}
 {{- end -}}
