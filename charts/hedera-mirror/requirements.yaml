@@ -12,23 +12,23 @@ dependencies:
   - alias: loki-stack
     condition: loki-stack.enabled
     name: loki-stack
-    version: ~0.32.1
+    version: ~0.34.0
     repository: https://grafana.github.io/loki/charts
   - alias: postgresql
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: ~2.0.0
+    version: ~2.1.0
   - alias: prometheus-adapter
     condition: prometheus-adapter.enabled
     name: prometheus-adapter
-    version: ~2.1.3
+    version: ~2.2.0
     repository: https://kubernetes-charts.storage.googleapis.com/
   - alias: prometheus-operator
     condition: prometheus-operator.enabled
     name: prometheus-operator
     repository: https://kubernetes-charts.storage.googleapis.com
-    version: ~8.12.3
+    version: ~8.12.7
   - alias: rest
     condition: rest.enabled
     name: hedera-mirror-rest

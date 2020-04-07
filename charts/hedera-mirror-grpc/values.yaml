@@ -26,7 +26,7 @@ hpa:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-grpc
-  tag: 0.8.1
+  tag: 0.9.0-rc1
 
 imagePullSecrets: []
 

@@ -13,6 +13,7 @@ grpc:
             password: mirror_grpc_pass
             username: mirror_grpc
   enabled: true
+  priorityClassName: medium
 
 importer:
   config:
@@ -24,6 +25,7 @@ importer:
           password: mirror_node_pass
           username: mirror_node
   enabled: true
+  priorityClassName: high
 
 labels: {}
 
@@ -94,6 +96,7 @@ postgresql:
         pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "mirror_api" "mirror_api_pass"
     pdb:
       create: true
+    priorityClassName: critical
     replicaCount: 2
     resources:
       limits:
@@ -105,6 +108,7 @@ postgresql:
   postgresql:
     initdbScriptsCM: postgresql-init
     password: password
+    priorityClassName: critical
     repmgrPassword: password
     resources:
       limits:
@@ -117,6 +121,7 @@ postgresql:
 prometheus-adapter:
   enabled: true
   fullnameOverride: prometheus-adapter
+  priorityClassName: low
   prometheus:
     url: http://prometheus-prometheus
   resources:
@@ -158,6 +163,7 @@ prometheus-adapter:
 prometheus-operator:
   alertmanager:
     alertmanagerSpec:
+      priorityClassName: low
       resources:
         limits:
           cpu: 50m
@@ -209,6 +215,7 @@ prometheus-operator:
         memory: 10Mi
   prometheus:
     prometheusSpec:
+      priorityClassName: low
       resources:
         limits:
           cpu: 400m
@@ -240,3 +247,4 @@ rest:
       mirror:
         db:
           host: postgresql-pgpool
+  priorityClassName: medium

@@ -7,18 +7,18 @@ dependencies:
   version: 0.1.0
 - name: loki-stack
   repository: https://grafana.github.io/loki/charts
-  version: ~0.32.1
+  version: ~0.34.0
 - name: postgresql-ha
   repository: https://charts.bitnami.com/bitnami
-  version: 2.0.4
+  version: 2.1.1
 - name: prometheus-adapter
   repository: https://kubernetes-charts.storage.googleapis.com/
-  version: 2.1.3
+  version: 2.2.0
 - name: prometheus-operator
   repository: https://kubernetes-charts.storage.googleapis.com
-  version: 8.12.6
+  version: 8.12.10
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
   version: 0.1.0
-digest: sha256:cb46a5bc82dc430883b8f99e78082027f3eb21070280a9d4e3aca6debc82fce0
-generated: "2020-04-02T10:53:39.470069-05:00"
+digest: sha256:de6708406b6b9747fa50bab7e969b32a2ce0fbd0b4fe766e4bbd3d60207d03f3
+generated: "2020-04-07T10:19:43.01515-05:00"

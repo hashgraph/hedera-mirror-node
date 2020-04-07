@@ -23,7 +23,7 @@ global:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-importer
-  tag: 0.8.1
+  tag: 0.9.0-rc1
 
 imagePullSecrets: []
 
@@ -107,5 +107,6 @@ terminationGracePeriodSeconds: 30
 
 tolerations: []
 
+# Will have more than one replica in production, so need a rolling update to ensure at least one pod is ready
 updateStrategy:
   type: RollingUpdate
