@@ -296,7 +296,6 @@ public class RecordFileParser implements FileParser {
 
                 // add directory prefix to get full path
                 List<String> fullPaths = Arrays.asList(files).stream()
-                        .filter(f -> f.endsWith(".rcd"))
                         .map(s -> file + "/" + s)
                         .collect(Collectors.toList());
 
