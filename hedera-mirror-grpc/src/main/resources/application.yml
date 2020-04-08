@@ -46,7 +46,7 @@ spring:
   datasource:
     name: ${hedera.mirror.grpc.db.name}
     password: ${hedera.mirror.grpc.db.password}
-    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}
     username: ${hedera.mirror.grpc.db.username}
     hikari:
       connection-timeout: 3000
