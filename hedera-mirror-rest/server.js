@@ -93,8 +93,7 @@ let caches = {};
 for (const api of [
   {name: 'transactions', ttl: config.api.ttl.transactions},
   {name: 'balances', ttl: config.api.ttl.balances},
-  {name: 'accounts', ttl: config.api.ttl.accounts},
-  {name: 'events', ttl: config.api.ttl.events}
+  {name: 'accounts', ttl: config.api.ttl.accounts}
 ]) {
   caches[api.name] = new Cacher(api.ttl);
 }
