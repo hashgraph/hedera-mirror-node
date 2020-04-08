@@ -1,66 +1,66 @@
 hedera:
-  mirror:
-    grpc:
-      db:
-        host: 127.0.0.1
-        name: mirror_node
-        password: mirror_grpc_pass
-        port: 5432
-        username: mirror_grpc
-      port: 5600
+    mirror:
+        grpc:
+            db:
+                host: 127.0.0.1
+                name: mirror_node
+                password: mirror_grpc_pass
+                port: 5432
+                username: mirror_grpc
+            port: 5600
 grpc:
-  server:
-    port: ${hedera.mirror.grpc.port}
+    server:
+        port: ${hedera.mirror.grpc.port}
 logging:
-  level:
-    root: warn
-    com.hedera.mirror.grpc: info
-    # org.hibernate.SQL: debug
-    # org.hibernate.type.descriptor.sql.BasicBinder: trace
+    level:
+        root: warn
+        com.hedera.mirror.grpc: info
+        # org.hibernate.SQL: debug
+        # org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
-  endpoints:
-    web:
-      exposure:
-        include: health, info, prometheus
-  metrics:
-    export:
-      elastic:
-        enabled: false
-        index: mirror
-        step: 30s
-      prometheus:
-        step: 30s
-    tags:
-      application: ${spring.application.name}
+    endpoints:
+        web:
+            exposure:
+                include: health, info, prometheus
+    metrics:
+        export:
+            elastic:
+                enabled: false
+                index: mirror
+                step: 30s
+            prometheus:
+                step: 30s
+        tags:
+            application: ${spring.application.name}
 server:
-  port: 8081
+    port: 8081
 spring:
-  application:
-    name: hedera-mirror-grpc
-  cloud:
-    kubernetes:
-      reload:
-        enabled: true
-      secrets:
-        paths: /usr/etc/${spring.application.name}
-  datasource:
-    name: ${hedera.mirror.grpc.db.name}
-    password: ${hedera.mirror.grpc.db.password}
-    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-    username: ${hedera.mirror.grpc.db.username}
-    hikari:
-      connection-timeout: 3000
-      data-source-properties:
-        idle_in_transaction_session_timeout: "30000"
-        lock_timeout: "10000"
-        statement_timeout: "60000"
-      maximum-pool-size: 50
-      minimum-idle: 4
-      validation-timeout: 3000
-  jpa:
-    database: postgresql
-    properties:
-      hibernate.generate_statistics: true
-  test:
-    database:
-      replace: NONE
+    application:
+        name: hedera-mirror-grpc
+    cloud:
+        kubernetes:
+            reload:
+                enabled: true
+            secrets:
+                paths: /usr/etc/${spring.application.name}
+    datasource:
+        name: ${hedera.mirror.grpc.db.name}
+        password: ${hedera.mirror.grpc.db.password}
+        url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}
+        username: ${hedera.mirror.grpc.db.username}
+        hikari:
+            connection-timeout: 3000
+            data-source-properties:
+                idle_in_transaction_session_timeout: "30000"
+                lock_timeout: "10000"
+                statement_timeout: "60000"
+            maximum-pool-size: 50
+            minimum-idle: 4
+            validation-timeout: 3000
+    jpa:
+        database: postgresql
+        properties:
+            hibernate.generate_statistics: true
+    test:
+        database:
+            replace: NONE
