@@ -169,9 +169,7 @@ public class RecordItemParser implements RecordItemListener {
         } else if (body.hasContractCreateInstance()) {
             if (txRecord.getReceipt().hasContractID()) { // implies SUCCESS
                 ContractCreateTransactionBody txMessage = body.getContractCreateInstance();
-                if (txMessage.hasProxyAccountID()) {
-                    entity.setProxyAccountId(lookupOrCreateId(EntityId.of(txMessage.getProxyAccountID())));
-                }
+                setProxyAccountID(txMessage.getProxyAccountID(), entity);
                 if (txMessage.hasAutoRenewPeriod()) {
                     entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
                 }
@@ -195,9 +193,7 @@ public class RecordItemParser implements RecordItemListener {
         } else if (body.hasContractUpdateInstance()) {
             ContractUpdateTransactionBody txMessage = body.getContractUpdateInstance();
             if (doUpdateEntity) {
-                if (txMessage.hasProxyAccountID()) {
-                    entity.setProxyAccountId(lookupOrCreateId(EntityId.of(txMessage.getProxyAccountID())));
-                }
+                setProxyAccountID(txMessage.getProxyAccountID(), entity);
                 if (txMessage.hasExpirationTime()) {
                     entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
                 }
@@ -215,9 +211,7 @@ public class RecordItemParser implements RecordItemListener {
         } else if (body.hasCryptoCreateAccount()) {
             if (txRecord.getReceipt().hasAccountID()) { // Implies SUCCESS
                 CryptoCreateTransactionBody txMessage = body.getCryptoCreateAccount();
-                if (txMessage.hasProxyAccountID()) {
-                    entity.setProxyAccountId(lookupOrCreateId(EntityId.of(txMessage.getProxyAccountID())));
-                }
+                setProxyAccountID(txMessage.getProxyAccountID(), entity);
                 if (txMessage.hasAutoRenewPeriod()) {
                     entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
                 }
@@ -236,9 +230,7 @@ public class RecordItemParser implements RecordItemListener {
         } else if (body.hasCryptoUpdateAccount()) {
             CryptoUpdateTransactionBody txMessage = body.getCryptoUpdateAccount();
             if (doUpdateEntity) {
-                if (txMessage.hasProxyAccountID()) {
-                    entity.setProxyAccountId(lookupOrCreateId(EntityId.of(txMessage.getProxyAccountID())));
-                }
+                setProxyAccountID(txMessage.getProxyAccountID(), entity);
                 if (txMessage.hasExpirationTime()) {
                     entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
                 }
@@ -356,6 +348,16 @@ public class RecordItemParser implements RecordItemListener {
 
         recordParsedItemHandler.onTransaction(tx);
         log.debug("Storing transaction: {}", tx);
+    }
+
+    private void setProxyAccountID(AccountID proxyAccountID, Entities entity) {
+        // Stream contains transactions with proxyAccountID explicitly set to '0.0.0' i.e. hasProxyAccountID returns
+        // true. 0.0.0 is not a valid entity and maybe consensus nodes just ignore that value. Either ways, no need to
+        // persist 0.0.0 in database on mirror node side.
+        EntityId proxyAccountEntityId = EntityId.of(proxyAccountID);
+        if (proxyAccountEntityId != null) {
+            entity.setProxyAccountId(lookupOrCreateId(proxyAccountEntityId));
+        }
     }
 
     /**
