@@ -450,6 +450,23 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
         parseRecordItemAndCommit(new RecordItem(transaction, record));
     }
 
+    // Transactions in production have proxyAccountID explicitly set to '0.0.0'. Test is to prevent code regression
+    // in handling this weird case.
+    @Test
+    void proxyAccountIdSetTo0() throws Exception {
+        // given
+        Transaction transaction = cryptoUpdateTransaction();
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        var bodyBuilder = transactionBody.toBuilder();
+        bodyBuilder.getCryptoUpdateAccountBuilder().setProxyAccountID(AccountID.getDefaultInstance());
+        transactionBody = bodyBuilder.build();
+        transaction = Transaction.newBuilder().setBodyBytes(transactionBody.toByteString()).build();
+        TransactionRecord record = transactionRecordSuccess(transactionBody);
+
+        // then: process the transaction without throwing NPE
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
+    }
+
     @DisplayName("update account such that expiration timestamp overflows nanos_timestamp")
     @ParameterizedTest(name = "with seconds {0} and expectedNanosTimestamp {1}")
     @CsvSource({
