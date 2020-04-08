@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
-
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -43,16 +42,11 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.time.format.DateTimeParseException;
-import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 
 import com.hedera.mirror.importer.parser.ParserProperties;
 
@@ -61,16 +55,6 @@ public class Utility {
 
     private static final Long SCALAR = 1_000_000_000L;
     private static final String EMPTY_HASH = Hex.encodeHexString(new byte[48]);
-
-    /**
-     * Verify if a file's hash is equal to the hash contained in sig file
-     *
-     * @return
-     */
-    public static boolean hashMatch(byte[] hash, File rcdFile) {
-        byte[] fileHash = Utility.getFileHash(rcdFile.getPath());
-        return Arrays.equals(fileHash, hash);
-    }
 
     /**
      * 1. Extract the Hash of the content of corresponding RecordStream file. This Hash is the signed Content of this
@@ -119,110 +103,18 @@ public class Utility {
     }
 
     /**
-     * Calculate SHA384 hash of a binary file
+     * Calculate SHA384 hash of a balance file
      *
      * @param fileName file name
      * @return byte array of hash value of null if calculating has failed
      */
-    public static byte[] getFileHash(String fileName) {
-        MessageDigest md;
-        if (getFileExtension(fileName).contentEquals("rcd")) {
-            return getRecordFileHash(fileName);
-        } else if (getFileExtension(fileName).contentEquals("evt")) {
-            return getEventFileHash(fileName);
-        } else {
-            try {
-                md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
-
-                byte[] array = Files.readAllBytes(Paths.get(fileName));
-                return md.digest(array);
-            } catch (NoSuchAlgorithmException | IOException e) {
-                log.error("Exception {}", e);
-                return null;
-            }
-        }
-    }
-
-    /**
-     * Calculate SHA384 hash of an event file
-     *
-     * @param filename file name
-     * @return byte array of hash value of null if calculating has failed
-     */
-    private static byte[] getEventFileHash(String filename) {
-        var file = new File(filename);
-        // for >= version3, we need to calculate hash for content;
-        boolean calculateContentHash = false;
-
-        // MessageDigest for getting the file Hash
-        // suppose file[i] = p[i] || h[i] || c[i];
-        // p[i] denotes the bytes before previousFileHash;
-        // h[i] denotes the hash of file i - 1, i.e., previousFileHash;
-        // c[i] denotes the bytes after previousFileHash;
-        // '||' means concatenation
-        // for Version2, h[i + 1] = hash(p[i] || h[i] || c[i]);
-        // for Version3, h[i + 1] = hash(p[i] || h[i] || hash(c[i]))
-
-        // is only used in Version3, for getting the Hash for content after prevFileHash in current file, i.e., hash
-        // (c[i])
-
-        try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
-            MessageDigest md;
-            MessageDigest mdForContent = null;
-
-            md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
-
-            int eventStreamFileVersion = dis.readInt();
-            md.update(Utility.integerToBytes(eventStreamFileVersion));
-
-            log.debug("Loading event file {} with version {}", filename, eventStreamFileVersion);
-            if (eventStreamFileVersion < FileDelimiter.EVENT_STREAM_FILE_VERSION_LEGACY) {
-                log.error("EventStream file format version {} doesn't match. File is: {}", eventStreamFileVersion,
-                        filename);
-                return null;
-            } else if (eventStreamFileVersion >= FileDelimiter.EVENT_STREAM_FILE_VERSION_CURRENT) {
-                mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
-                calculateContentHash = true;
-            }
-
-            while (dis.available() != 0) {
-                byte typeDelimiter = dis.readByte();
-                switch (typeDelimiter) {
-                    case FileDelimiter.EVENT_TYPE_PREV_HASH:
-                        md.update(typeDelimiter);
-                        byte[] readPrevFileHashBytes = new byte[48];
-                        dis.readFully(readPrevFileHashBytes);
-                        md.update(readPrevFileHashBytes);
-                        break;
-
-                    case FileDelimiter.EVENT_STREAM_START_NO_TRANS_WITH_VERSION:
-                        if (calculateContentHash) {
-                            mdForContent.update(typeDelimiter);
-                        } else {
-                            md.update(typeDelimiter);
-                        }
-                        break;
-                    case FileDelimiter.EVENT_STREAM_START_WITH_VERSION:
-                        if (calculateContentHash) {
-                            mdForContent.update(typeDelimiter);
-                        } else {
-                            md.update(typeDelimiter);
-                        }
-                        break;
-                    default:
-                        log.error("Unknown event file delimiter {} for file {}", typeDelimiter, file);
-                        return null;
-                }
-            }
-            log.trace("Successfully calculated hash for {}", filename);
-            if (calculateContentHash) {
-                byte[] contentHash = mdForContent.digest();
-                md.update(contentHash);
-            }
-
-            return md.digest();
-        } catch (Exception e) {
-            log.error("Error parsing event file {}", filename, e);
+    public static byte[] getBalanceFileHash(String fileName) {
+        try {
+            MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+            byte[] array = Files.readAllBytes(Paths.get(fileName));
+            return md.digest(array);
+        } catch (NoSuchAlgorithmException | IOException e) {
+            log.error(e);
             return null;
         }
     }
@@ -233,7 +125,7 @@ public class Utility {
      * @param filename file name
      * @return byte array of hash value of null if calculating has failed
      */
-    private static byte[] getRecordFileHash(String filename) {
+    public static byte[] getRecordFileHash(String filename) {
         byte[] readFileHash = new byte[48];
 
         try (DataInputStream dis = new DataInputStream(new FileInputStream(filename))) {
@@ -349,20 +241,14 @@ public class Utility {
     }
 
     /**
-     * return a Timestamp from an instant
-     *
-     * @param instant
-     * @return
+     * @return Timestamp from an instant
      */
     public static Timestamp instantToTimestamp(Instant instant) {
         return Timestamp.newBuilder().setSeconds(instant.getEpochSecond()).setNanos(instant.getNano()).build();
     }
 
     /**
-     * return a string which represents an AccountID
-     *
-     * @param accountID
-     * @return
+     * @return string which represents an AccountID
      */
     public static String accountIDToString(AccountID accountID) {
         return String.format("%d.%d.%d", accountID.getShardNum(),
@@ -396,137 +282,12 @@ public class Utility {
         return Hex.encodeHexString(bytes);
     }
 
-    /**
-     * parse a timestamp string in file name to Instant
-     *
-     * @param str
-     * @return
-     */
-    public static Instant parseToInstant(String str) {
-        if (str == null || str.isEmpty()) {
-            return null;
-        }
-        Instant result;
-        try {
-            result = Instant.parse(str);
-        } catch (DateTimeParseException ex) {
-            result = Instant.parse(str.replace("_", ":"));
-        }
-        return result;
-    }
-
-    /**
-     * Parse a s3ObjectSummaryKey to three parts: (1) node AccountID string (2) Instant string (3) file type string For
-     * example, for "record0.0.101/2019-06-05T20_29_32.856974Z.rcd_sig", the result would be Triple.of("0.0.101",
-     * "2019-06-05T20_29_32.856974Z", "rcd_sig"); for "balance0.0.3/2019-06-21T14_56_00.049967001Z_Balances.csv_sig",
-     * the result would be Triple.of("0.0.3", "2019-06-21T14_56_00.049967001Z", "Balances.csv_sig");
-     *
-     * @param s3ObjectSummaryKey
-     * @return
-     */
-    public static Triple<String, String, String> parseS3SummaryKey(String s3ObjectSummaryKey) {
-        String regex;
-        if (isRecordSigFile(s3ObjectSummaryKey) || isRecordFile(s3ObjectSummaryKey)) {
-            regex = "record([\\d]+[.][\\d]+[.][\\d]+)/(.*Z).(.+)";
-        } else if (isBalanceSigFile(s3ObjectSummaryKey) || isBalanceFile(s3ObjectSummaryKey)) {
-            regex = "balance([\\d]+[.][\\d]+[.][\\d]+)/(.*Z)_(.+)";
-        } else if (isEventStreamFile(s3ObjectSummaryKey) || isEventStreamSigFile(s3ObjectSummaryKey)) {
-            regex = "events_([\\d]+[.][\\d]+[.][\\d]+)/(.*Z).(.+)";
-        } else {
-            return Triple.of(null, null, null);
-        }
-
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(s3ObjectSummaryKey);
-        String inst = null;
-        String nodeAccountID = null;
-        String file_type = null;
-        while (matcher.find()) {
-            nodeAccountID = matcher.group(1);
-            inst = matcher.group(2);
-            file_type = matcher.group(3);
-        }
-        return Triple.of(nodeAccountID,
-                inst,
-                file_type);
-    }
-
-    public static Instant getInstantFromFileName(String name) {
-        if (isRecordFile(name) || isRecordSigFile(name) || isEventStreamFile(name) || isEventStreamSigFile(name)) {
-            return parseToInstant(name.substring(0, name.lastIndexOf(".")));
-        } else {
-            return parseToInstant(name.substring(0, name.lastIndexOf("_Balances")));
-        }
-    }
-
-    public static String getAccountIDStringFromFilePath(File file) {
-        String regex;
-        String path = file.getPath();
-        if (isRecordFile(path) || isRecordSigFile(path)) {
-            regex = "record([\\d]+[.][\\d]+[.][\\d]+)";
-        } else if (isEventStreamFile(path) || isEventStreamSigFile(path)) {
-            regex = "events_([\\d]+[.][\\d]+[.][\\d]+)";
-        } else {
-            //account balance
-            regex = "([\\d]+[.][\\d]+[.][\\d]+)/(.+)Z";
-        }
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(path);
-
-        String match = null;
-        while (matcher.find()) {
-            match = matcher.group(1);
-        }
-        return match;
-    }
-
-    public static String getFileExtension(String path) {
-        int lastIndexOf = path.lastIndexOf(".");
-        if (lastIndexOf == -1) {
-            return ""; // empty extension
-        }
-        return path.substring(lastIndexOf + 1);
-    }
-
     public static String getFileName(String path) {
         int lastIndexOf = path.lastIndexOf("/");
         if (lastIndexOf == -1) {
             return ""; // empty extension
         }
         return path.substring(lastIndexOf + 1);
-    }
-
-    public static boolean isBalanceFile(String filename) {
-        return filename.endsWith("Balances.csv");
-    }
-
-    public static boolean isBalanceSigFile(String filename) {
-        return filename.endsWith("Balances.csv_sig");
-    }
-
-    public static boolean isRecordFile(String filename) {
-        return filename.endsWith(".rcd");
-    }
-
-    public static boolean isEventStreamFile(String filename) {
-        return filename.endsWith(".evts");
-    }
-
-    public static boolean isEventStreamSigFile(String filename) {
-        return filename.endsWith(".evts_sig");
-    }
-
-    public static boolean isRecordSigFile(String filename) {
-        return filename.endsWith(".rcd_sig");
-    }
-
-    public static String getFileNameFromS3SummaryKey(String s3SummaryKey) {
-        Triple<String, String, String> triple = parseS3SummaryKey(s3SummaryKey);
-        if (isRecordFile(s3SummaryKey) || isRecordSigFile(s3SummaryKey)) {
-            return triple.getMiddle() + "." + triple.getRight();
-        } else {
-            return triple.getMiddle() + "_" + triple.getRight();
-        }
     }
 
     /**
