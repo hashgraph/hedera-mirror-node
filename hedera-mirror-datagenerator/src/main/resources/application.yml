@@ -1,61 +1,61 @@
 hedera:
-    mirror:
-        datagenerator:
-            totalDuration: 1d
-            transactionsPerSecond: # 3-8 txns per second
-                rangeMin: 3
-                rangeMax: 8
-            transaction:
-                crypto:
-                    frequency: 490
-                    createsFrequency: 10
-                    transfersFrequency: 988
-                    updatesFrequency: 1
-                    deletesFrequency: 1
-                    numSeedAccounts: 10000
-                    numTransferLists:
-                        rangeMin: 1
-                        rangeMax: 10
-                file:
-                    frequency: 10
-                    createsFrequency: 800
-                    appendsFrequency: 100
-                    updatesFrequency: 80
-                    deletesFrequency: 20
-                    numSeedFiles: 1000
-                    fileDataSize:
-                        rangeMin: 0
-                        rangeMax: 5000
-                topic:
-                    frequency: 500
-                    createsFrequency: 1
-                    updatesFrequency: 1
-                    deletesFrequency: 1
-                    submitMessageFrequency: 997
-                    numSeedTopics: 10
-                    messageSize:
-                        rangeMin: 0
-                        rangeMax: 3000
+  mirror:
+    datagenerator:
+      totalDuration: 1d
+      transactionsPerSecond: # 3-8 txns per second
+        rangeMin: 3
+        rangeMax: 8
+      transaction:
+        crypto:
+          frequency: 490
+          createsFrequency: 10
+          transfersFrequency: 988
+          updatesFrequency: 1
+          deletesFrequency: 1
+          numSeedAccounts: 10000
+          numTransferLists:
+            rangeMin: 1
+            rangeMax: 10
+        file:
+          frequency: 10
+          createsFrequency: 800
+          appendsFrequency: 100
+          updatesFrequency: 80
+          deletesFrequency: 20
+          numSeedFiles: 1000
+          fileDataSize:
+            rangeMin: 0
+            rangeMax: 5000
+        topic:
+          frequency: 500
+          createsFrequency: 1
+          updatesFrequency: 1
+          deletesFrequency: 1
+          submitMessageFrequency: 997
+          numSeedTopics: 10
+          messageSize:
+            rangeMin: 0
+            rangeMax: 3000
 
 logging:
-    level:
-        root: warn
-        com.hedera.datagenerator: info
-        org.flywaydb.core.internal.command.DbMigrate: info
+  level:
+    root: warn
+    com.hedera.datagenerator: info
+    org.flywaydb.core.internal.command.DbMigrate: info
 
 spring:
-    datasource:
-        name: ${hedera.mirror.db.name}
-        password: ${hedera.mirror.db.password}
-        url: jdbc:postgresql://${hedera.mirror.db.host}:${hedera.mirror.db.port}/${hedera.mirror.db.name}
-        username: ${hedera.mirror.db.username}
-    flyway:
-        connectRetries: 10
-        baselineOnMigrate: true
-        baselineVersion: 0
-        ignoreMissingMigrations: true
-        placeholders:
-            api-password: ${hedera.mirror.db.apiPassword}
-            api-user: ${hedera.mirror.db.apiUsername}
-            db-name: ${hedera.mirror.db.name}
-            db-user: ${hedera.mirror.db.username}
+  datasource:
+    name: ${hedera.mirror.db.name}
+    password: ${hedera.mirror.db.password}
+    url: jdbc:postgresql://${hedera.mirror.db.host}:${hedera.mirror.db.port}/${hedera.mirror.db.name}
+    username: ${hedera.mirror.db.username}
+  flyway:
+    connectRetries: 10
+    baselineOnMigrate: true
+    baselineVersion: 0
+    ignoreMissingMigrations: true
+    placeholders:
+      api-password: ${hedera.mirror.db.apiPassword}
+      api-user: ${hedera.mirror.db.apiUsername}
+      db-name: ${hedera.mirror.db.name}
+      db-user: ${hedera.mirror.db.username}
