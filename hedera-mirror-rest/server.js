@@ -35,10 +35,8 @@ const logger = log4js.getLogger();
 const config = require('./config.js');
 const transactions = require('./transactions.js');
 const balances = require('./balances.js');
-const events = require('./events.js');
 const accounts = require('./accounts.js');
 const topicmessage = require('./topicmessage.js');
-const eventAnalytics = require('./eventAnalytics.js');
 const utils = require('./utils.js');
 const Cacher = require('./cacher.js');
 
@@ -58,15 +56,15 @@ if (port === undefined || isNaN(Number(port))) {
 log4js.configure({
   appenders: {
     everything: {
-      type: 'stdout',
-    },
+      type: 'stdout'
+    }
   },
   categories: {
     default: {
       appenders: ['everything'],
-      level: config.api.log.level,
-    },
-  },
+      level: config.api.log.level
+    }
+  }
 });
 global.logger = log4js.getLogger();
 
@@ -76,7 +74,7 @@ const pool = new Pool({
   host: config.db.host,
   database: config.db.name,
   password: config.db.apiPassword,
-  port: config.db.port,
+  port: config.db.port
 });
 global.pool = pool;
 
@@ -84,7 +82,7 @@ app.set('trust proxy', true);
 app.set('port', port);
 app.use(
   bodyParser.urlencoded({
-    extended: false,
+    extended: false
   })
 );
 app.use(bodyParser.json());
@@ -96,7 +94,7 @@ for (const api of [
   {name: 'transactions', ttl: config.api.ttl.transactions},
   {name: 'balances', ttl: config.api.ttl.balances},
   {name: 'accounts', ttl: config.api.ttl.accounts},
-  {name: 'events', ttl: config.api.ttl.events},
+  {name: 'events', ttl: config.api.ttl.events}
 ]) {
   caches[api.name] = new Cacher(api.ttl);
 }

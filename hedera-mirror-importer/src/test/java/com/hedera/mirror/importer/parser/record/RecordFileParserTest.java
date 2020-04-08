@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,7 +57,6 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
-import com.hedera.mirror.importer.parser.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
@@ -231,8 +230,8 @@ public class RecordFileParserTest extends IntegrationTest {
         // when: load same file again
         // then: throws exception
         Assertions.assertThrows(DuplicateFileException.class, () -> {
-                    recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
-                });
+            recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
+        });
         verify(recordItemListener, times(NUM_TXNS_FILE_1)).onItem(any());
         verify(recordStreamFileListener, times(2)).onStart(any());
         verify(recordStreamFileListener, times(1)).onEnd(any());

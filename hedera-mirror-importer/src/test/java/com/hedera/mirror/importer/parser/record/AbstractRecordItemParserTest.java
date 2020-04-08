@@ -24,10 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -49,9 +45,10 @@ import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.parser.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
