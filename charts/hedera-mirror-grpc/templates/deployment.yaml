@@ -29,6 +29,8 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           env:
+            - name: SPRING_CLOUD_KUBERNETES_ENABLED
+              value: "true"
             - name: SPRING_CONFIG_ADDITIONAL_LOCATION
               value: "file:/usr/etc/hedera-mirror-grpc/"
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
