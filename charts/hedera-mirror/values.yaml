@@ -88,12 +88,18 @@ postgresql:
     size: 750Gi
   pgpool:
     adminPassword: password
-    initdbScripts:
-      init.sh: |-
-        #!/bin/bash
-        pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "mirror_node" "mirror_node_pass"
-        pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "mirror_grpc" "mirror_grpc_pass"
-        pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "mirror_api" "mirror_api_pass"
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/component: pgpool
+    initdbScriptsSecret: pgpool-init
+    podLabels:
+      role: db
     pdb:
       create: true
     priorityClassName: critical
@@ -106,7 +112,18 @@ postgresql:
         cpu: 100m
         memory: 128Mi
   postgresql:
-    initdbScriptsCM: postgresql-init
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: postgresql
+    initdbScriptsSecret: postgresql-init
+    podLabels:
+      role: db
     password: password
     priorityClassName: critical
     repmgrPassword: password
@@ -246,5 +263,7 @@ rest:
     hedera:
       mirror:
         db:
+          apiPassword: mirror_api_pass
+          apiUsername: mirror_api
           host: postgresql-pgpool
   priorityClassName: medium
