@@ -185,7 +185,7 @@ const validateReq = function (req) {
   }
 
   if (badParams.length > 0) {
-    throw new InvalidArgumentError(badParams);
+    throw InvalidArgumentError.forParams(badParams);
   }
 };
 
@@ -706,7 +706,7 @@ const validateAndParseFilters = (filters) => {
   }
 
   if (badParams.length > 0) {
-    throw new InvalidArgumentError(badParams);
+    throw InvalidArgumentError.forParams(badParams);
   }
 };
 

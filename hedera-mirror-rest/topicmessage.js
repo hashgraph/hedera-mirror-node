@@ -21,9 +21,9 @@
 const config = require('./config.js');
 const constants = require('./constants.js');
 const utils = require('./utils.js');
-const { DbError } = require('./errors/dbError');
-const { NotFoundError } = require('./errors/notFoundError');
-const { InvalidArgumentError } = require('./errors/invalidArgumentError');
+const {DbError} = require('./errors/dbError');
+const {NotFoundError} = require('./errors/notFoundError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const topicMessageColumns = {
   CONSENSUS_TIMESTAMP: 'consensus_timestamp',
@@ -44,7 +44,7 @@ const columnMap = {
  */
 const validateConsensusTimestampParam = function (consensusTimestamp) {
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
-    throw new InvalidArgumentError(topicMessageColumns.CONSENSUS_TIMESTAMP);
+    throw InvalidArgumentError.forParams(topicMessageColumns.CONSENSUS_TIMESTAMP);
   }
 };
 
@@ -62,7 +62,7 @@ const validateGetSequenceMessageParams = function (topicId, seqNum) {
   }
 
   if (badParams.length > 0) {
-    throw new InvalidArgumentError(badParams);
+    throw InvalidArgumentError.forParams(badParams);
   }
 };
 
@@ -71,7 +71,7 @@ const validateGetSequenceMessageParams = function (topicId, seqNum) {
  */
 const validateGetTopicMessagesParams = function (topicId) {
   if (!utils.isValidEntityNum(topicId)) {
-    throw new InvalidArgumentError(topicMessageColumns.TOPIC_NUM);
+    throw InvalidArgumentError.forParams(topicMessageColumns.TOPIC_NUM);
   }
 };
 
@@ -98,7 +98,7 @@ const formatTopicMessageRow = function (row) {
 /**
  * Extracts and validates timestamp input, creates db query logic in preparation for db call to get message
  */
-const processGetMessageByConsensusTimestampRequest = (req) => {
+const processGetMessageByConsensusTimestampRequest = (req, res) => {
   const consensusTimestampParam = req.params.consensusTimestamp;
   validateConsensusTimestampParam(consensusTimestampParam);
 
@@ -108,14 +108,14 @@ const processGetMessageByConsensusTimestampRequest = (req) => {
   const pgSqlParams = [consensusTimestamp];
 
   return getMessage(pgSqlQuery, pgSqlParams).then((message) => {
-    req[constants.responseDataLabel] = message;
+    res.locals[constants.responseDataLabel] = message;
   });
 };
 
 /**
  * Extracts and validates topic and sequence params and creates db query statement in preparation for db call to get message
  */
-const processGetMessageByTopicAndSequenceRequest = (req) => {
+const processGetMessageByTopicAndSequenceRequest = (req, res) => {
   const topicId = req.params.id;
   const seqNum = req.params.sequencenumber;
   validateGetSequenceMessageParams(topicId, seqNum);
@@ -128,11 +128,11 @@ const processGetMessageByTopicAndSequenceRequest = (req) => {
   const pgSqlParams = [entity.realm, entity.num, seqNum];
 
   return getMessage(pgSqlQuery, pgSqlParams).then((message) => {
-    req[constants.responseDataLabel] = message;
+    res.locals[constants.responseDataLabel] = message;
   });
 };
 
-const processGetTopicMessages = (req) => {
+const processGetTopicMessages = (req, res) => {
   // retrieve param and filters from request
   const topicId = req.params.id;
   const filters = utils.buildFilterObject(req.query);
@@ -141,7 +141,7 @@ const processGetTopicMessages = (req) => {
   validateGetTopicMessagesRequest(topicId, filters);
 
   // build sql query validated param and filters
-  let { query, params, order, limit } = extractSqlFromTopicMessagesRequest(topicId, filters);
+  let {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
 
   let topicMessagesResponse = {
     messages: [],
@@ -166,7 +166,7 @@ const processGetTopicMessages = (req) => {
       order
     );
 
-    req[constants.responseDataLabel] = topicMessagesResponse;
+    res.locals[constants.responseDataLabel] = topicMessagesResponse;
   });
 };
 
@@ -257,10 +257,10 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getMessageByConsensusTimestamp = async (req) => {
+const getMessageByConsensusTimestamp = async (req, res) => {
   logger.debug('--------------------  getMessageByConsensusTimestamp --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByConsensusTimestampRequest(req);
+  return processGetMessageByConsensusTimestampRequest(req, res);
 };
 
 /**
@@ -268,10 +268,10 @@ const getMessageByConsensusTimestamp = async (req) => {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getMessageByTopicAndSequenceRequest = async (req) => {
+const getMessageByTopicAndSequenceRequest = async (req, res) => {
   logger.debug('--------------------  getMessageByTopicAndSequenceRequest --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByTopicAndSequenceRequest(req);
+  return processGetMessageByTopicAndSequenceRequest(req, res);
 };
 
 /**
@@ -283,7 +283,7 @@ const getMessageByTopicAndSequenceRequest = async (req) => {
 const getTopicMessages = async (req, res) => {
   logger.debug('--------------------  getTopicMessages --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetTopicMessages(req);
+  return processGetTopicMessages(req, res);
 };
 
 module.exports = {

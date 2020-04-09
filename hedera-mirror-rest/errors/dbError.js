@@ -18,13 +18,12 @@
  * ‍
  */
 'use strict';
-const {FormattedError} = require('./formattedError');
-
 const DbErrorMessage = 'Unable to connect to database. Please retry later';
 
-class DbError extends FormattedError {
+class DbError extends Error {
   constructor(errorMessage) {
-    super(DbErrorMessage);
+    super();
+    this.message = DbErrorMessage;
     this.dbErrorMessage = errorMessage;
     this.isConnectionError = this.isDbConnectionError(errorMessage);
   }
@@ -35,15 +34,11 @@ class DbError extends FormattedError {
    * @returns {boolean}
    */
   isDbConnectionError(errorMessage) {
-    if (
+    return (
       /ECONNREFUSED/.test(errorMessage) ||
       /Connection terminated unexpectedly/.test(errorMessage) ||
       /unable to read data from DB/.test(errorMessage)
-    ) {
-      return true;
-    }
-
-    return false;
+    );
   }
 }
 

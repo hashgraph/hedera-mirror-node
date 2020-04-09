@@ -18,13 +18,12 @@
  * ‍
  */
 'use strict';
-const {FormattedError} = require('./formattedError');
-
 const NotFoundErrorMessage = 'Not found';
 
-class NotFoundError extends FormattedError {
+class NotFoundError extends Error {
   constructor(errorMessage) {
-    super(errorMessage === undefined ? NotFoundErrorMessage : errorMessage);
+    super();
+    this.message = errorMessage === undefined ? NotFoundErrorMessage : errorMessage;
   }
 }
 

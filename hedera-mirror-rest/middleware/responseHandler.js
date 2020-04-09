@@ -25,7 +25,7 @@ const constants = require('../constants.js');
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const responseHandler = (req, res, next) => {
   // set response json
-  res.json(req[constants.responseDataLabel]);
+  res.json(res.locals[constants.responseDataLabel]);
 };
 
 module.exports = {

@@ -21,8 +21,8 @@
 const utils = require('./utils.js');
 const config = require('./config.js');
 const constants = require('./constants.js');
-const {BadRequestError} = require('./errors/badRequestError');
 const {DbError} = require('./errors/dbError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 /**
@@ -202,7 +202,7 @@ const reqToSql = function (req) {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getTransactions = async (req) => {
+const getTransactions = async (req, res) => {
   // Validate query parameters first
   utils.validateReq(req);
 
@@ -244,7 +244,7 @@ const getTransactions = async (req) => {
 
       logger.debug('getTransactions returning ' + ret.transactions.length + ' entries');
 
-      req[constants.responseDataLabel] = ret;
+      res.locals[constants.responseDataLabel] = ret;
     });
 };
 
@@ -253,7 +253,7 @@ const getTransactions = async (req) => {
  * @param {Request} req HTTP request object
  * @return {} None.
  */
-const getOneTransaction = async (req) => {
+const getOneTransaction = async (req, res) => {
   logger.debug('--------------------  getOneTransaction --------------------');
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
@@ -266,7 +266,7 @@ const getOneTransaction = async (req) => {
       'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" ' +
       'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
 
-    throw new BadRequestError(message);
+    throw new InvalidArgumentError(message);
   }
   const sqlParams = [txIdMatches[1], txIdMatches[2], txIdMatches[3], txIdMatches[4] + '' + txIdMatches[5]];
 
@@ -323,7 +323,7 @@ const getOneTransaction = async (req) => {
       }
 
       logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
-      req[constants.responseDataLabel] = ret;
+      res.locals[constants.responseDataLabel] = ret;
     });
 };
 

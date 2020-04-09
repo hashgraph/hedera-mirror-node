@@ -19,9 +19,7 @@
  */
 'use strict';
 
-const {BadRequestError} = require('../errors/badRequestError');
 const {DbError} = require('../errors/dbError');
-const {FormattedError} = require('../errors/formattedError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
@@ -44,26 +42,21 @@ const handleError = (err, req, res, next) => {
   // get application error message format
   const errorMessage = errorMessageFormat(err.message);
 
-  if (err instanceof FormattedError) {
-    // map errors to desired http status codes
-    switch (err.constructor) {
-      case BadRequestError:
-        res.status(httpStatusCodes.BAD_REQUEST).json(errorMessage);
-        return;
-      case DbError:
-        logger.debug(`DB error: ${err.dbErrorMessage}`);
-        res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
-        return;
-      case InvalidArgumentError:
-        res.status(httpStatusCodes.BAD_REQUEST).json(errorMessage);
-        return;
-      case NotFoundError:
-        res.status(httpStatusCodes.NOT_FOUND).json(errorMessage);
-        return;
-    }
-  } else {
-    logger.trace(`Unhandled error encountered`);
-    res.status(httpStatusCodes.INTERNAL_ERROR).json(err.message);
+  // map errors to desired http status codes
+  switch (err.constructor) {
+    case DbError:
+      logger.debug(`DB error: ${err.dbErrorMessage}`);
+      res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
+      return;
+    case InvalidArgumentError:
+      res.status(httpStatusCodes.BAD_REQUEST).json(errorMessage);
+      return;
+    case NotFoundError:
+      res.status(httpStatusCodes.NOT_FOUND).json(errorMessage);
+      return;
+    default:
+      logger.trace(`Unhandled error encountered`);
+      res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessage);
   }
 };
 
@@ -73,6 +66,10 @@ const handleError = (err, req, res, next) => {
  * @returns {{_status: {messages: *}}}
  */
 const errorMessageFormat = (errorMessages) => {
+  if (!Array.isArray(errorMessages)) {
+    errorMessages = [errorMessages];
+  }
+
   return {
     _status: {
       messages: errorMessages.map((m) => {

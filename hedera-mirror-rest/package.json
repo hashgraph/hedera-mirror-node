@@ -82,6 +82,7 @@
     "outputDirectory": "target/jest-junit"
   },
   "prettier": {
+    "bracketSpacing": false,
     "trailingComma": "es5",
     "tabWidth": 2,
     "semi": true,
