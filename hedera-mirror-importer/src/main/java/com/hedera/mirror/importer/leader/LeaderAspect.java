@@ -40,6 +40,10 @@ public class LeaderAspect {
 
     private volatile boolean leader = false;
 
+    public LeaderAspect() {
+        log.info("Starting as follower");
+    }
+
     @Around("execution(@com.hedera.mirror.importer.leader.Leader * *(..)) && @annotation(leaderAnnotation)")
     public Object leader(ProceedingJoinPoint joinPoint, Leader leaderAnnotation) throws Throwable {
         String targetClass = joinPoint.getTarget().getClass().getSimpleName();
