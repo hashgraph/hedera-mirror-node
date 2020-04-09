@@ -22,7 +22,6 @@
 const topicmessage = require('../topicmessage.js');
 const utils = require('../utils.js');
 const config = require('../config.js');
-const {ErrorHandler, httpStatusCodes} = require('../helpers/error');
 
 beforeAll(async () => {
   jest.setTimeout(1000);

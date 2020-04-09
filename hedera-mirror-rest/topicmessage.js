@@ -21,7 +21,8 @@
 const config = require('./config.js');
 const constants = require('./constants.js');
 const utils = require('./utils.js');
-const {ErrorHandler, httpStatusCodes, httpErrorMessages} = require('./helpers/error');
+const {NotFoundError} = require('./errors/notFoundError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const topicMessageColumns = {
   CONSENSUS_TIMESTAMP: 'consensus_timestamp',
@@ -42,9 +43,7 @@ const columnMap = {
  */
 const validateConsensusTimestampParam = function (consensusTimestamp) {
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
-    throw new ErrorHandler(httpStatusCodes.BAD_REQUEST, [
-      utils.getInvalidParameterMessageObject(topicMessageColumns.CONSENSUS_TIMESTAMP),
-    ]);
+    throw new InvalidArgumentError(topicMessageColumns.CONSENSUS_TIMESTAMP);
   }
 
   return true;
@@ -56,15 +55,15 @@ const validateConsensusTimestampParam = function (consensusTimestamp) {
 const validateGetSequenceMessageParams = function (topicId, seqNum) {
   let badParams = [];
   if (!utils.isValidEntityNum(topicId)) {
-    badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.TOPIC_NUM));
+    badParams.push(topicMessageColumns.TOPIC_NUM);
   }
 
   if (!utils.isValidNum(seqNum)) {
-    badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.SEQUENCE_NUMBER));
+    badParams.push(topicMessageColumns.SEQUENCE_NUMBER);
   }
 
   if (badParams.length > 0) {
-    throw new ErrorHandler(httpStatusCodes.BAD_REQUEST, badParams);
+    throw new InvalidArgumentError(badParams);
   }
 
   return true;
@@ -75,9 +74,7 @@ const validateGetSequenceMessageParams = function (topicId, seqNum) {
  */
 const validateGetTopicMessagesParams = function (topicId) {
   if (!utils.isValidEntityNum(topicId)) {
-    throw new ErrorHandler(httpStatusCodes.BAD_REQUEST, [
-      utils.getInvalidParameterMessageObject(topicMessageColumns.TOPIC_NUM),
-    ]);
+    throw new InvalidArgumentError(topicMessageColumns.TOPIC_NUM);
   }
 
   return true;
@@ -222,13 +219,13 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
 const getMessage = async (pgSqlQuery, pgSqlParams, httpResponse) => {
   logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
 
-  return await pool.query(pgSqlQuery, pgSqlParams).then((results) => {
+  return pool.query(pgSqlQuery, pgSqlParams).then((results) => {
     // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
     if (results.rowCount === 1) {
       logger.debug('getMessage returning single entry');
       httpResponse.json(formatTopicMessageRow(results.rows[0]));
     } else {
-      throw new ErrorHandler(httpStatusCodes.NOT_FOUND, httpErrorMessages.NOT_FOUND);
+      throw new NotFoundError();
     }
   });
 };
@@ -237,7 +234,7 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
   logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   let messages = [];
 
-  return await pool.query(pgSqlQuery, pgSqlParams).then((results) => {
+  return pool.query(pgSqlQuery, pgSqlParams).then((results) => {
     for (let i = 0; i < results.rowCount; i++) {
       messages.push(formatTopicMessageRow(results.rows[i]));
     }
@@ -272,8 +269,8 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
 
 /**
  * Handler function for /topics/:id API.
- * @param req
- * @param res
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
  * @returns Promise for PostgreSQL query
  */
 const getTopicMessages = async (req, res) => {

@@ -21,7 +21,6 @@
 
 const utils = require('../utils.js');
 const config = require('../config.js');
-const {httpStatusCodes} = require('../helpers/error');
 
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {

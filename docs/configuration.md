@@ -41,10 +41,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.api.includeHostInLink`                       | false                   | Whether to include the hostname and port in the next link in the response                      |
 | `hedera.mirror.api.maxLimit`                                | 1000                    | The maximum size the limit parameter can be that controls the REST API response size           |
 | `hedera.mirror.api.log.level`                               | debug                   | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
-| `hedera.mirror.api.ttl.accounts`                            | 60                      | The time to live in seconds that accounts should stay in cache                                 |
-| `hedera.mirror.api.ttl.balances`                            | 60                      | The time to live in seconds that balances should stay in cache                                 |
-| `hedera.mirror.api.ttl.events`                              | 10                      | The time to live in seconds that events should stay in cache                                   |
-| `hedera.mirror.api.ttl.transactions`                        | 10                      | The time to live in seconds that transactions should stay in cache                             |
 | `hedera.mirror.api.port`                                    | 5551                    | The REST API port                                                                              |
 | `hedera.mirror.api.includeHostInLink`                       | false                   | Whether to include the host:port in the next links returned by the REST API                    |
 | `hedera.mirror.dataPath`                                    | ./data                  | The data directory used to store downloaded files and other application state                  |

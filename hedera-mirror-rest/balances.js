@@ -113,7 +113,7 @@ const getBalances = async (req, res) => {
   logger.trace('getBalance query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
-  return await pool.query(pgSqlQuery, sqlParams).then((results) => {
+  return pool.query(pgSqlQuery, sqlParams).then((results) => {
     let ret = {
       timestamp: null,
       balances: [],

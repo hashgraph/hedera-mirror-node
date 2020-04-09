@@ -20,7 +20,8 @@
 'use strict';
 const utils = require('./utils.js');
 const config = require('./config.js');
-const {httpStatusCodes, ErrorHandler} = require('./helpers/error');
+const {BadRequestError} = require('./errors/badRequestError');
+const {NotFoundError} = require('./errors/notFoundError');
 
 /**
  * Create transferlists from the output of SQL queries. The SQL table has different
@@ -208,7 +209,7 @@ const getTransactions = async (req, res) => {
   logger.trace('getTransactions query: ' + query.query + JSON.stringify(query.params));
 
   // Execute query
-  return await pool.query(query.query, query.params).then((results) => {
+  return pool.query(query.query, query.params).then((results) => {
     let ret = {
       transactions: [],
       links: {
@@ -259,7 +260,7 @@ const getOneTransaction = async (req, res) => {
       'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" ' +
       'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
 
-    throw new ErrorHandler(httpStatusCodes.BAD_REQUEST, message);
+    throw new BadRequestError(message);
   }
   const sqlParams = [txIdMatches[1], txIdMatches[2], txIdMatches[3], txIdMatches[4] + '' + txIdMatches[5]];
 
@@ -297,7 +298,7 @@ const getOneTransaction = async (req, res) => {
   logger.trace('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
-  return await pool.query(pgSqlQuery, sqlParams).then((results) => {
+  return pool.query(pgSqlQuery, sqlParams).then((results) => {
     let ret = {
       transactions: [],
     };
@@ -307,11 +308,7 @@ const getOneTransaction = async (req, res) => {
     ret = tl.ret;
 
     if (ret.transactions.length === 0) {
-      throw new ErrorHandler(httpStatusCodes.NOT_FOUND, 'Not found');
-    }
-
-    if (process.env.NODE_ENV === 'test') {
-      ret.sqlQuery = results.sqlQuery;
+      throw new NotFoundError('Not found');
     }
 
     logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');

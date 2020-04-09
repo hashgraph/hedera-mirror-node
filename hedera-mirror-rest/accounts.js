@@ -21,7 +21,8 @@
 const config = require('./config.js');
 const utils = require('./utils.js');
 const transactions = require('./transactions.js');
-const {httpStatusCodes, httpErrorMessages, ErrorHandler} = require('./helpers/error');
+const {NotFoundError} = require('./errors/notFoundError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -143,7 +144,7 @@ const getAccounts = async (req, res) => {
   logger.trace('getAccounts query: ' + pgEntityQuery + JSON.stringify(entityParams));
 
   // Execute query
-  return await pool.query(pgEntityQuery, entityParams).then((results) => {
+  return pool.query(pgEntityQuery, entityParams).then((results) => {
     let ret = {
       accounts: [],
       links: {
@@ -188,7 +189,7 @@ const getOneAccount = async (req, res) => {
   const acc = utils.parseEntityId(req.params.id);
 
   if (acc.num === 0) {
-    throw new ErrorHandler(httpStatusCodes.BAD_REQUEST, utils.getInvalidParameterMessage('account.id'));
+    throw new InvalidArgumentError('account.id');
   }
 
   const [tsQuery, tsParams] = utils.parseParams(req, 'timestamp', ['t.consensus_ns'], 'timestamp_ns');
@@ -250,17 +251,17 @@ const getOneAccount = async (req, res) => {
   const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);
 
   // After all promises (for all of the above queries) have been resolved...
-  return await Promise.all([entityPromise, transactionsPromise]).then(function (values) {
+  return Promise.all([entityPromise, transactionsPromise]).then(function (values) {
     const entityResults = values[0];
     const transactionsResults = values[1];
 
     // Process the results of entities query
     if (entityResults.rows.length === 0) {
-      throw new ErrorHandler(httpStatusCodes.NOT_FOUND, httpErrorMessages.NOT_FOUND);
+      throw new NotFoundError();
     }
 
     if (entityResults.rows.length !== 1) {
-      throw new ErrorHandler(httpStatusCodes.NOT_FOUND, 'Error: Could not get entity information');
+      throw new NotFoundError('Error: Could not get entity information');
     }
 
     for (let row of entityResults.rows) {

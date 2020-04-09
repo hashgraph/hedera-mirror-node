@@ -1,67 +1,79 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for erroneous data 1`] = `
-Array [
-  Object {
-    "message": "Invalid parameter: account.id",
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for erroneous data throws exception 1`] = `
+Object {
+  "_status": Object {
+    "messages": Array [
+      Object {
+        "message": "Invalid parameter: account.id",
+      },
+      Object {
+        "message": "Invalid parameter: timestamp",
+      },
+      Object {
+        "message": "Invalid parameter: order",
+      },
+      Object {
+        "message": "Invalid parameter: limit",
+      },
+      Object {
+        "message": "Invalid parameter: sequencenumber",
+      },
+      Object {
+        "message": "Invalid parameter: account.publickey",
+      },
+      Object {
+        "message": "Invalid parameter: result",
+      },
+      Object {
+        "message": "Invalid parameter: type",
+      },
+      Object {
+        "message": "Invalid parameter: account.balance",
+      },
+    ],
   },
-  Object {
-    "message": "Invalid parameter: timestamp",
-  },
-  Object {
-    "message": "Invalid parameter: order",
-  },
-  Object {
-    "message": "Invalid parameter: limit",
-  },
-  Object {
-    "message": "Invalid parameter: sequencenumber",
-  },
-  Object {
-    "message": "Invalid parameter: account.publickey",
-  },
-  Object {
-    "message": "Invalid parameter: result",
-  },
-  Object {
-    "message": "Invalid parameter: type",
-  },
-  Object {
-    "message": "Invalid parameter: account.balance",
-  },
-]
+}
 `;
 
-exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for invalid format 1`] = `
-Array [
-  Object {
-    "message": "Invalid parameter: account.id",
+exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for invalid format throws exception 1`] = `
+Object {
+  "_status": Object {
+    "messages": Array [
+      Object {
+        "message": "Invalid parameter: account.id",
+      },
+      Object {
+        "message": "Invalid parameter: timestamp",
+      },
+      Object {
+        "message": "Invalid parameter: limit",
+      },
+      Object {
+        "message": "Invalid parameter: sequencenumber",
+      },
+      Object {
+        "message": "Invalid parameter: account.publickey",
+      },
+      Object {
+        "message": "Invalid parameter: account.balance",
+      },
+    ],
   },
-  Object {
-    "message": "Invalid parameter: timestamp",
-  },
-  Object {
-    "message": "Invalid parameter: limit",
-  },
-  Object {
-    "message": "Invalid parameter: sequencenumber",
-  },
-  Object {
-    "message": "Invalid parameter: account.publickey",
-  },
-  Object {
-    "message": "Invalid parameter: account.balance",
-  },
-]
+}
 `;
 
 exports[`utils validateAndParseFilters tests Verify validateAndParseFilters for sequencenumber=2 1`] = `
-Array [
-  Object {
-    "message": "Invalid parameter: sequencenumber",
+Object {
+  "_status": Object {
+    "messages": Array [
+      Object {
+        "message": "Invalid parameter: sequencenumber",
+      },
+      Object {
+        "message": "Invalid parameter: sequencenumber",
+      },
+    ],
   },
-  Object {
-    "message": "Invalid parameter: sequencenumber",
-  },
-]
+}
 `;

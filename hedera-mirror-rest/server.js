@@ -36,12 +36,9 @@ const logger = log4js.getLogger();
 const config = require('./config.js');
 const transactions = require('./transactions.js');
 const balances = require('./balances.js');
-const events = require('./events.js');
 const accounts = require('./accounts.js');
 const topicmessage = require('./topicmessage.js');
-const eventAnalytics = require('./eventAnalytics.js');
-const utils = require('./utils.js');
-const {handleError} = require('./helpers/error');
+const {handleError} = require('./errors/httpErrorHandler');
 
 var compression = require('compression');
 
@@ -109,7 +106,6 @@ app.getAsync(apiPrefix + '/topics/:id/messages/:sequencenumber', topicmessage.ge
 app.getAsync(apiPrefix + '/topics/:id', topicmessage.getTopicMessages);
 app.getAsync(apiPrefix + '/topic/:id', topicmessage.getTopicMessages);
 
-// app.use(utils.errorHandler);
 app.use(handleError);
 
 if (process.env.NODE_ENV !== 'test') {

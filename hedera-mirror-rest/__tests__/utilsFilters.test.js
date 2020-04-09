@@ -168,7 +168,7 @@ describe('utils validateAndParseFilters tests', () => {
     verifyInvalidFilters(filters);
   });
 
-  test('Verify validateAndParseFilters for erroneous data', () => {
+  test('Verify validateAndParseFilters for erroneous data throws exception', () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:-1'),
       utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:today'),
@@ -184,7 +184,7 @@ describe('utils validateAndParseFilters tests', () => {
     verifyInvalidFilters(filters);
   });
 
-  test('Verify validateAndParseFilters for invalid format', () => {
+  test('Verify validateAndParseFilters for invalid format throws exception', () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:0.1.23456789012345'),
       utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:23456789012345678901234'),
@@ -197,7 +197,7 @@ describe('utils validateAndParseFilters tests', () => {
     verifyInvalidFilters(filters);
   });
 
-  test('Verify validateAndParseFilters for valid filters', () => {
+  test('Verify validateAndParseFilters for valid filters does not throw exception', () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:2'),
       utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:1234567890.000000003'),
@@ -215,7 +215,9 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '45000'),
     ];
 
-    expect(utils.validateAndParseFilters(filters)).toBe(true);
+    expect(() => {
+      utils.validateAndParseFilters(filters);
+    }).not.toThrow();
   });
 });
 

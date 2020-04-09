@@ -21,7 +21,7 @@
 const math = require('mathjs');
 const config = require('./config.js');
 const ed25519 = require('./ed25519.js');
-const {ErrorHandler, httpStatusCodes, httpErrorMessages} = require('./helpers/error');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const ENTITY_TYPE_FILE = 3;
 const TRANSACTION_RESULT_SUCCESS = 22;
@@ -162,14 +162,6 @@ const filterValidityChecks = function (param, op, val) {
   return ret;
 };
 
-const getInvalidParameterMessage = (message) => {
-  return `Invalid parameter: ${message}`;
-};
-
-const getInvalidParameterMessageObject = (message) => {
-  return {message: getInvalidParameterMessage(message)};
-};
-
 /**
  * Validate input http request object
  * @param {HTTPRequest} req HTTP request object
@@ -182,18 +174,18 @@ const validateReq = function (req) {
     if (Array.isArray(req.query[key])) {
       for (const val of req.query[key]) {
         if (!paramValidityChecks(key, val)) {
-          badParams.push(getInvalidParameterMessageObject(key));
+          badParams.push(key);
         }
       }
     } else {
       if (!paramValidityChecks(key, req.query[key])) {
-        badParams.push(getInvalidParameterMessageObject(key));
+        badParams.push(key);
       }
     }
   }
 
   if (badParams.length > 0) {
-    throw new ErrorHandler(httpStatusCodes.BAD_REQUEST, badParams);
+    throw new InvalidArgumentError(badParams);
   }
 };
 
@@ -707,17 +699,15 @@ const validateAndParseFilters = (filters) => {
 
   for (const filter of filters) {
     if (!filterValidityChecks(filter.key, filter.operator, filter.value)) {
-      badParams.push(getInvalidParameterMessageObject(filter.key));
+      badParams.push(filter.key);
     } else {
       formatComparator(filter);
     }
   }
 
   if (badParams.length > 0) {
-    throw new ErrorHandler(httpStatusCodes.BAD_REQUEST, badParams);
+    throw new InvalidArgumentError(badParams);
   }
-
-  return true;
 };
 
 const formatComparator = (comparator) => {
@@ -762,8 +752,6 @@ module.exports = {
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
   filterValidityChecks: filterValidityChecks,
   formatComparator: formatComparator,
-  getInvalidParameterMessage: getInvalidParameterMessage,
-  getInvalidParameterMessageObject: getInvalidParameterMessageObject,
   getNullableNumber: getNullableNumber,
   getPaginationLink: getPaginationLink,
   isValidEntityNum: isValidEntityNum,
