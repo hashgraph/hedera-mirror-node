@@ -21,8 +21,8 @@
 const {FormattedError} = require('./formattedError');
 
 class HttpError extends FormattedError {
-  constructor(statusCode, message) {
-    super(message);
+  constructor(statusCode, errorMessage) {
+    super(errorMessage);
     this.statusCode = statusCode;
   }
 }

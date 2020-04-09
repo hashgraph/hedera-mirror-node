@@ -19,7 +19,7 @@
  */
 'use strict';
 
-const constants = require('./constants.js');
+const constants = require('../constants.js');
 
 const responseHandler = (req, res, next) => {
   // set response json

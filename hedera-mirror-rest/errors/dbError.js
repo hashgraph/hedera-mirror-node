@@ -23,8 +23,8 @@ const {FormattedError} = require('./formattedError');
 const DbErrorMessage = 'Unable to connect to database. Please retry later';
 
 class DbError extends FormattedError {
-  constructor(message) {
-    super(message === undefined ? DbErrorMessage : message);
+  constructor(errorMessage) {
+    super(errorMessage === undefined ? DbErrorMessage : errorMessage);
   }
 
   /**

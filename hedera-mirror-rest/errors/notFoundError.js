@@ -21,8 +21,8 @@
 const {HttpError, httpStatusCodes, httpErrorMessages} = require('./httpError');
 
 class NotFoundError extends HttpError {
-  constructor(message) {
-    super(httpStatusCodes.NOT_FOUND, message === undefined ? httpErrorMessages.NOT_FOUND : message);
+  constructor(errorMessage) {
+    super(httpStatusCodes.NOT_FOUND, errorMessage === undefined ? httpErrorMessages.NOT_FOUND : errorMessage);
   }
 }
 

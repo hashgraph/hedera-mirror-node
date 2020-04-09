@@ -20,10 +20,13 @@
 'use strict';
 
 class FormattedError extends Error {
-  constructor(message) {
+  constructor(errorMessages) {
     super();
 
-    this.message = this.createSingleErrorJsonResponse(message);
+    if (!Array.isArray(errorMessages)) {
+      errorMessages = [errorMessages];
+    }
+    this.message = this.errorMessageFormat(errorMessages);
   }
 
   /**
@@ -31,30 +34,14 @@ class FormattedError extends Error {
    * @param array of messages
    * @returns {{_status: {messages: *}}}
    */
-  errorMessageFormat(messages) {
+  errorMessageFormat(errorMessages) {
     return {
       _status: {
-        messages: messages,
+        messages: errorMessages.map((m) => {
+          return {message: m};
+        }),
       },
     };
-  }
-
-  /**
-   * Create single message as part of error response messages
-   * @param message
-   * @returns {{message: *}}
-   */
-  errorMessage(message) {
-    return {message: message};
-  }
-
-  /**
-   * Create error message response from single string message
-   * @param message
-   * @returns {{_status: {messages: *}}}
-   */
-  createSingleErrorJsonResponse(message) {
-    return this.errorMessageFormat([this.errorMessage(message)]);
   }
 }
 

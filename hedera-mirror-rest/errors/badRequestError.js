@@ -21,8 +21,8 @@
 const {HttpError, httpStatusCodes, httpErrorMessages} = require('./httpError');
 
 class BadRequestError extends HttpError {
-  constructor(message) {
-    super(httpStatusCodes.BAD_REQUEST, message === undefined ? httpErrorMessages.BAD_REQUEST : message);
+  constructor(errorMessage) {
+    super(httpStatusCodes.BAD_REQUEST, errorMessage === undefined ? httpErrorMessages.BAD_REQUEST : errorMessage);
   }
 }
 

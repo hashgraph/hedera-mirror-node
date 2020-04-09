@@ -21,28 +21,15 @@
 const {HttpError, httpErrorMessages, httpStatusCodes} = require('./httpError');
 
 class InvalidArgumentError extends HttpError {
-  constructor(messages) {
-    super(httpStatusCodes.BAD_REQUEST, undefined);
-    this.message = this.errorMessageFormat(this.invalidMessages(messages));
-  }
-
-  invalidMessage(message) {
-    return this.errorMessage(`${httpErrorMessages.INVALID_ARGUMENT}${message}`);
-  }
-
-  invalidMessages(messages) {
-    let invalidMessages = [];
-
-    // support single error message or array of messages
-    if (Array.isArray(messages)) {
-      for (let message of messages) {
-        invalidMessages.push(this.invalidMessage(message));
-      }
-    } else {
-      invalidMessages.push(this.invalidMessage(messages));
+  constructor(badParams) {
+    if (!Array.isArray(badParams)) {
+      badParams = [badParams];
     }
 
-    return invalidMessages;
+    super(
+      httpStatusCodes.BAD_REQUEST,
+      badParams.map((p) => `${httpErrorMessages.INVALID_ARGUMENT}${p}`)
+    );
   }
 }
 
