@@ -21,14 +21,14 @@
 const config = require('./config.js');
 const constants = require('./constants.js');
 const utils = require('./utils.js');
-const {DbError} = require('./errors/dbError');
+const { DbError } = require('./errors/dbError');
 
 /**
  * Handler function for /balances API.
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getBalances = async (req, res) => {
+const getBalances = async (req) => {
   utils.validateReq(req);
 
   // Parse the filter parameters for credit/debit, account-numbers,
@@ -36,7 +36,7 @@ const getBalances = async (req, res) => {
   let [accountQuery, accountParams] = utils.parseParams(
     req,
     'account.id',
-    [{shard: '0', realm: 'ab.account_realm_num', num: 'ab.account_num'}],
+    [{ shard: '0', realm: 'ab.account_realm_num', num: 'ab.account_num' }],
     'entityId'
   );
 
@@ -70,7 +70,7 @@ const getBalances = async (req, res) => {
   );
   let joinEntities = '' !== pubKeyQuery; // Only need to join t_entites if we're selecting on publickey.
 
-  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'desc');
+  const { query, params, order, limit } = utils.parseLimitAndOrderParams(req, 'desc');
 
   // Use the inner query to find the latest snapshot timestamp from the balance history table
   let innerQuery =

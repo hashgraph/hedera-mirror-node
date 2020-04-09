@@ -22,9 +22,9 @@ const config = require('./config.js');
 const constants = require('./constants.js');
 const utils = require('./utils.js');
 const transactions = require('./transactions.js');
-const {NotFoundError} = require('./errors/notFoundError');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
-const {DbError} = require('./errors/dbError');
+const { NotFoundError } = require('./errors/notFoundError');
+const { InvalidArgumentError } = require('./errors/invalidArgumentError');
+const { DbError } = require('./errors/dbError');
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -78,7 +78,7 @@ const getAccountQueryPrefix = function () {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getAccounts = async (req, res) => {
+const getAccounts = async (req) => {
   // Validate query parameters first
   utils.validateReq(req);
 
@@ -89,13 +89,13 @@ const getAccounts = async (req, res) => {
   const [accountQueryForAccountBalances, accountParamsForAccountBalances] = utils.parseParams(
     req,
     'account.id',
-    [{shard: config.shard, realm: 'ab.account_realm_num', num: 'ab.account_num'}],
+    [{ shard: config.shard, realm: 'ab.account_realm_num', num: 'ab.account_num' }],
     'entityId'
   );
   const [accountQueryForEntity, accountParamsForEntity] = utils.parseParams(
     req,
     'account.id',
-    [{shard: config.shard, realm: 'e.entity_realm', num: ' e.entity_num'}],
+    [{ shard: config.shard, realm: 'e.entity_realm', num: ' e.entity_num' }],
     'entityId'
   );
   const accountQuery =
@@ -124,7 +124,7 @@ const getAccounts = async (req, res) => {
     }
   );
 
-  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'asc');
+  const { query, params, order, limit } = utils.parseLimitAndOrderParams(req, 'asc');
 
   const entitySql =
     getAccountQueryPrefix() +
@@ -187,7 +187,7 @@ const getAccounts = async (req, res) => {
  * @param {Response} res HTTP response object
  * @return {} None.
  */
-const getOneAccount = async (req, res, next) => {
+const getOneAccount = async (req) => {
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
   // Parse the filter parameters for account-numbers, balance, and pagination
@@ -201,7 +201,7 @@ const getOneAccount = async (req, res, next) => {
   const [tsQuery, tsParams] = utils.parseParams(req, 'timestamp', ['t.consensus_ns'], 'timestamp_ns');
 
   const resultTypeQuery = utils.parseResultParams(req);
-  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
+  const { query, params, order, limit } = utils.parseLimitAndOrderParams(req);
 
   let ret = {
     transactions: [],

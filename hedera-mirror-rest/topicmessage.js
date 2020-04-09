@@ -21,9 +21,9 @@
 const config = require('./config.js');
 const constants = require('./constants.js');
 const utils = require('./utils.js');
-const {DbError} = require('./errors/dbError');
-const {NotFoundError} = require('./errors/notFoundError');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const { DbError } = require('./errors/dbError');
+const { NotFoundError } = require('./errors/notFoundError');
+const { InvalidArgumentError } = require('./errors/invalidArgumentError');
 
 const topicMessageColumns = {
   CONSENSUS_TIMESTAMP: 'consensus_timestamp',
@@ -141,7 +141,7 @@ const processGetTopicMessages = (req) => {
   validateGetTopicMessagesRequest(topicId, filters);
 
   // build sql query validated param and filters
-  let {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
+  let { query, params, order, limit } = extractSqlFromTopicMessagesRequest(topicId, filters);
 
   let topicMessagesResponse = {
     messages: [],
@@ -257,7 +257,7 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getMessageByConsensusTimestamp = async (req, res) => {
+const getMessageByConsensusTimestamp = async (req) => {
   logger.debug('--------------------  getMessageByConsensusTimestamp --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
   return processGetMessageByConsensusTimestampRequest(req);
@@ -268,7 +268,7 @@ const getMessageByConsensusTimestamp = async (req, res) => {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getMessageByTopicAndSequenceRequest = async (req, res) => {
+const getMessageByTopicAndSequenceRequest = async (req) => {
   logger.debug('--------------------  getMessageByTopicAndSequenceRequest --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
   return processGetMessageByTopicAndSequenceRequest(req);
