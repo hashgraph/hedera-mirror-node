@@ -144,7 +144,9 @@ const getAccounts = function (req) {
 
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
-  logger.trace('getAccounts query: ' + pgEntityQuery + JSON.stringify(entityParams));
+  if (logger.isTraceEnabled()) {
+    logger.trace('getAccounts query: ' + pgEntityQuery + JSON.stringify(entityParams));
+  }
 
   // Execute query
   return pool.query(pgEntityQuery, entityParams).then((results) => {
@@ -193,7 +195,6 @@ const getOneAccount = function (req, res) {
   // Parse the filter parameters for account-numbers, balance, and pagination
 
   const acc = utils.parseEntityId(req.params.id);
-
   if (acc.num === 0) {
     res.status(400).send(utils.createSingleErrorJsonResponse(utils.getInvalidParameterMessage('account.id')));
     return;
@@ -223,7 +224,10 @@ const getOneAccount = function (req, res) {
   const entityParams = [acc.realm, acc.num, config.shard, acc.realm, acc.num];
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql, entityParams);
 
-  logger.trace('getOneAccount entity query: ' + pgEntityQuery + JSON.stringify(entityParams));
+  if (logger.isTraceEnabled()) {
+    logger.trace('getOneAccount entity query: ' + pgEntityQuery + JSON.stringify(entityParams));
+  }
+
   // Execute query & get a promise
   const entityPromise = pool.query(pgEntityQuery, entityParams);
 
@@ -252,7 +256,9 @@ const getOneAccount = function (req, res) {
 
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery, innerParams);
 
-  logger.trace('getOneAccount transactions query: ' + pgTransactionsQuery + JSON.stringify(innerParams));
+  if (logger.isTraceEnabled()) {
+    logger.trace('getOneAccount transactions query: ' + pgTransactionsQuery + JSON.stringify(innerParams));
+  }
 
   // Execute query & get a promise
   const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);

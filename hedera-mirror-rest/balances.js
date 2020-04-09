@@ -116,7 +116,9 @@ const getBalances = function (req, res) {
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
 
-  logger.trace('getBalance query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  if (logger.isTraceEnabled()) {
+    logger.trace('getBalance query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  }
 
   // Execute query
   return pool.query(pgSqlQuery, sqlParams).then((results) => {

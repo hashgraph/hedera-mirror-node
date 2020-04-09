@@ -236,7 +236,9 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
  * Retrieves topic message from
  */
 const getMessage = function (pgSqlQuery, pgSqlParams, httpResponse) {
-  logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  }
 
   return pool.query(pgSqlQuery, pgSqlParams).then((results) => {
     // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
@@ -252,7 +254,10 @@ const getMessage = function (pgSqlQuery, pgSqlParams, httpResponse) {
 };
 
 const getMessages = async (pgSqlQuery, pgSqlParams) => {
-  logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  }
+
   let messages = [];
 
   return await pool.query(pgSqlQuery, pgSqlParams).then((results) => {
