@@ -18,14 +18,17 @@
  * ‍
  */
 'use strict';
-const {HttpError, httpStatusCodes, httpErrorMessages} = require('./httpError');
+const {FormattedError} = require('./formattedError');
 
-class BadRequestError extends HttpError {
+const BadRequestErrorMessage = 'Bad request';
+
+class BadRequestError extends FormattedError {
   constructor(errorMessage) {
-    super(httpStatusCodes.BAD_REQUEST, errorMessage === undefined ? httpErrorMessages.BAD_REQUEST : errorMessage);
+    super(errorMessage === undefined ? BadRequestErrorMessage : errorMessage);
   }
 }
 
 module.exports = {
   BadRequestError,
+  BadRequestErrorMessage,
 };

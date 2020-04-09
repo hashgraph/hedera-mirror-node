@@ -24,7 +24,9 @@ const DbErrorMessage = 'Unable to connect to database. Please retry later';
 
 class DbError extends FormattedError {
   constructor(errorMessage) {
-    super(errorMessage === undefined ? DbErrorMessage : errorMessage);
+    super(DbErrorMessage);
+    this.dbErrorMessage = errorMessage;
+    this.isConnectionError = this.isDbConnectionError(errorMessage);
   }
 
   /**
@@ -32,7 +34,7 @@ class DbError extends FormattedError {
    * @param errorMessage
    * @returns {boolean}
    */
-  static isDbConnectionError(errorMessage) {
+  isDbConnectionError(errorMessage) {
     if (
       /ECONNREFUSED/.test(errorMessage) ||
       /Connection terminated unexpectedly/.test(errorMessage) ||
@@ -47,4 +49,5 @@ class DbError extends FormattedError {
 
 module.exports = {
   DbError,
+  DbErrorMessage,
 };

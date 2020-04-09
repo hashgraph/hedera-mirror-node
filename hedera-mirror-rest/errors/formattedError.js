@@ -23,25 +23,11 @@ class FormattedError extends Error {
   constructor(errorMessages) {
     super();
 
+    // ensure messages are of array type
     if (!Array.isArray(errorMessages)) {
       errorMessages = [errorMessages];
     }
-    this.message = this.errorMessageFormat(errorMessages);
-  }
-
-  /**
-   * Application error message format
-   * @param array of messages
-   * @returns {{_status: {messages: *}}}
-   */
-  errorMessageFormat(errorMessages) {
-    return {
-      _status: {
-        messages: errorMessages.map((m) => {
-          return {message: m};
-        }),
-      },
-    };
+    this.message = errorMessages;
   }
 }
 

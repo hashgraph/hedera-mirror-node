@@ -18,21 +18,21 @@
  * ‍
  */
 'use strict';
-const {HttpError, httpErrorMessages, httpStatusCodes} = require('./httpError');
+const {FormattedError} = require('./formattedError');
 
-class InvalidArgumentError extends HttpError {
+const InvalidArgumentErrorMessageFormat = 'Invalid parameter: ';
+
+class InvalidArgumentError extends FormattedError {
   constructor(badParams) {
     if (!Array.isArray(badParams)) {
       badParams = [badParams];
     }
 
-    super(
-      httpStatusCodes.BAD_REQUEST,
-      badParams.map((p) => `${httpErrorMessages.INVALID_ARGUMENT}${p}`)
-    );
+    super(badParams.map((p) => `${InvalidArgumentErrorMessageFormat}${p}`));
   }
 }
 
 module.exports = {
   InvalidArgumentError,
+  InvalidArgumentErrorMessageFormat,
 };

@@ -18,14 +18,17 @@
  * ‍
  */
 'use strict';
-const {HttpError, httpStatusCodes, httpErrorMessages} = require('./httpError');
+const {FormattedError} = require('./formattedError');
 
-class NotFoundError extends HttpError {
+const NotFoundErrorMessage = 'Not found';
+
+class NotFoundError extends FormattedError {
   constructor(errorMessage) {
-    super(httpStatusCodes.NOT_FOUND, errorMessage === undefined ? httpErrorMessages.NOT_FOUND : errorMessage);
+    super(errorMessage === undefined ? NotFoundErrorMessage : errorMessage);
   }
 }
 
 module.exports = {
   NotFoundError,
+  NotFoundErrorMessage,
 };

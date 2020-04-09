@@ -21,6 +21,8 @@
 
 const constants = require('../constants.js');
 
+// response middleware that pull response data passed through request and sets in json response
+// next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const responseHandler = (req, res, next) => {
   // set response json
   res.json(req[constants.responseDataLabel]);

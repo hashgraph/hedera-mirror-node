@@ -22,6 +22,7 @@ const utils = require('./utils.js');
 const config = require('./config.js');
 const constants = require('./constants.js');
 const {BadRequestError} = require('./errors/badRequestError');
+const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 /**
@@ -210,36 +211,41 @@ const getTransactions = async (req) => {
   logger.trace('getTransactions query: ' + query.query + JSON.stringify(query.params));
 
   // Execute query
-  return pool.query(query.query, query.params).then((results) => {
-    let ret = {
-      transactions: [],
-      links: {
-        next: null,
-      },
-    };
+  return pool
+    .query(query.query, query.params)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      let ret = {
+        transactions: [],
+        links: {
+          next: null,
+        },
+      };
 
-    const tl = createTransferLists(results.rows, ret);
-    ret = tl.ret;
-    let anchorSecNs = tl.anchorSecNs;
+      const tl = createTransferLists(results.rows, ret);
+      ret = tl.ret;
+      let anchorSecNs = tl.anchorSecNs;
 
-    ret.links = {
-      next: utils.getPaginationLink(
-        req,
-        ret.transactions.length !== query.limit,
-        'timestamp',
-        anchorSecNs,
-        query.order
-      ),
-    };
+      ret.links = {
+        next: utils.getPaginationLink(
+          req,
+          ret.transactions.length !== query.limit,
+          'timestamp',
+          anchorSecNs,
+          query.order
+        ),
+      };
 
-    if (process.env.NODE_ENV === 'test') {
-      ret.sqlQuery = results.sqlQuery;
-    }
+      if (process.env.NODE_ENV === 'test') {
+        ret.sqlQuery = results.sqlQuery;
+      }
 
-    logger.debug('getTransactions returning ' + ret.transactions.length + ' entries');
+      logger.debug('getTransactions returning ' + ret.transactions.length + ' entries');
 
-    req[constants.responseDataLabel] = ret;
-  });
+      req[constants.responseDataLabel] = ret;
+    });
 };
 
 /**
@@ -298,22 +304,27 @@ const getOneTransaction = async (req) => {
   logger.trace('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
 
   // Execute query
-  return pool.query(pgSqlQuery, sqlParams).then((results) => {
-    let ret = {
-      transactions: [],
-    };
+  return pool
+    .query(pgSqlQuery, sqlParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      let ret = {
+        transactions: [],
+      };
 
-    logger.debug('# rows returned: ' + results.rows.length);
-    const tl = createTransferLists(results.rows, ret);
-    ret = tl.ret;
+      logger.debug('# rows returned: ' + results.rows.length);
+      const tl = createTransferLists(results.rows, ret);
+      ret = tl.ret;
 
-    if (ret.transactions.length === 0) {
-      throw new NotFoundError('Not found');
-    }
+      if (ret.transactions.length === 0) {
+        throw new NotFoundError('Not found');
+      }
 
-    logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
-    req[constants.responseDataLabel] = ret;
-  });
+      logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
+      req[constants.responseDataLabel] = ret;
+    });
 };
 
 module.exports = {

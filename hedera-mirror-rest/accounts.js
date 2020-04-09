@@ -24,6 +24,7 @@ const utils = require('./utils.js');
 const transactions = require('./transactions.js');
 const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const {DbError} = require('./errors/dbError');
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -145,34 +146,39 @@ const getAccounts = async (req, res) => {
   logger.trace('getAccounts query: ' + pgEntityQuery + JSON.stringify(entityParams));
 
   // Execute query
-  return pool.query(pgEntityQuery, entityParams).then((results) => {
-    let ret = {
-      accounts: [],
-      links: {
-        next: null,
-      },
-    };
+  return pool
+    .query(pgEntityQuery, entityParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      let ret = {
+        accounts: [],
+        links: {
+          next: null,
+        },
+      };
 
-    for (let row of results.rows) {
-      ret.accounts.push(processRow(row));
-    }
+      for (let row of results.rows) {
+        ret.accounts.push(processRow(row));
+      }
 
-    let anchorAcc = '0.0.0';
-    if (ret.accounts.length > 0) {
-      anchorAcc = ret.accounts[ret.accounts.length - 1].account;
-    }
+      let anchorAcc = '0.0.0';
+      if (ret.accounts.length > 0) {
+        anchorAcc = ret.accounts[ret.accounts.length - 1].account;
+      }
 
-    ret.links = {
-      next: utils.getPaginationLink(req, ret.accounts.length !== limit, 'account.id', anchorAcc, order),
-    };
+      ret.links = {
+        next: utils.getPaginationLink(req, ret.accounts.length !== limit, 'account.id', anchorAcc, order),
+      };
 
-    if (process.env.NODE_ENV === 'test') {
-      ret.sqlQuery = results.sqlQuery;
-    }
+      if (process.env.NODE_ENV === 'test') {
+        ret.sqlQuery = results.sqlQuery;
+      }
 
-    logger.debug('getAccounts returning ' + ret.accounts.length + ' entries');
-    req[constants.responseDataLabel] = ret;
-  });
+      logger.debug('getAccounts returning ' + ret.accounts.length + ' entries');
+      req[constants.responseDataLabel] = ret;
+    });
 };
 
 /**
@@ -251,47 +257,51 @@ const getOneAccount = async (req, res, next) => {
   const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);
 
   // After all promises (for all of the above queries) have been resolved...
-  return Promise.all([entityPromise, transactionsPromise]).then(function (values) {
-    const entityResults = values[0];
-    const transactionsResults = values[1];
+  return Promise.all([entityPromise, transactionsPromise])
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then(function (values) {
+      const entityResults = values[0];
+      const transactionsResults = values[1];
 
-    // Process the results of entities query
-    if (entityResults.rows.length === 0) {
-      throw new NotFoundError();
-    }
-
-    if (entityResults.rows.length !== 1) {
-      throw new NotFoundError('Error: Could not get entity information');
-    }
-
-    for (let row of entityResults.rows) {
-      const r = processRow(row);
-      for (let key in r) {
-        ret[key] = r[key];
+      // Process the results of entities query
+      if (entityResults.rows.length === 0) {
+        throw new NotFoundError();
       }
-    }
 
-    if (process.env.NODE_ENV === 'test') {
-      ret.entitySqlQuery = entityResults.sqlQuery;
-    }
+      if (entityResults.rows.length !== 1) {
+        throw new NotFoundError('Error: Could not get entity information');
+      }
 
-    // Process the results of t_transactions query
-    const tl = transactions.createTransferLists(transactionsResults.rows, ret);
-    ret = tl.ret;
-    let anchorSecNs = tl.anchorSecNs;
+      for (let row of entityResults.rows) {
+        const r = processRow(row);
+        for (let key in r) {
+          ret[key] = r[key];
+        }
+      }
 
-    if (process.env.NODE_ENV === 'test') {
-      ret.transactionsSqlQuery = transactionsResults.sqlQuery;
-    }
+      if (process.env.NODE_ENV === 'test') {
+        ret.entitySqlQuery = entityResults.sqlQuery;
+      }
 
-    // Pagination links
-    ret.links = {
-      next: utils.getPaginationLink(req, ret.transactions.length !== limit, 'timestamp', anchorSecNs, order),
-    };
+      // Process the results of t_transactions query
+      const tl = transactions.createTransferLists(transactionsResults.rows, ret);
+      ret = tl.ret;
+      let anchorSecNs = tl.anchorSecNs;
 
-    logger.debug('getOneAccount returning ' + ret.transactions.length + ' transactions entries');
-    req[constants.responseDataLabel] = ret;
-  });
+      if (process.env.NODE_ENV === 'test') {
+        ret.transactionsSqlQuery = transactionsResults.sqlQuery;
+      }
+
+      // Pagination links
+      ret.links = {
+        next: utils.getPaginationLink(req, ret.transactions.length !== limit, 'timestamp', anchorSecNs, order),
+      };
+
+      logger.debug('getOneAccount returning ' + ret.transactions.length + ' transactions entries');
+      req[constants.responseDataLabel] = ret;
+    });
 };
 
 module.exports = {

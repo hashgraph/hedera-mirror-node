@@ -19,37 +19,70 @@
  */
 'use strict';
 
+const {BadRequestError} = require('../errors/badRequestError');
 const {DbError} = require('../errors/dbError');
 const {FormattedError} = require('../errors/formattedError');
-const {httpStatusCodes, HttpError} = require('../errors/httpError');
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const {NotFoundError} = require('../errors/notFoundError');
 
+const httpStatusCodes = {
+  OK: 200,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  INTERNAL_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503,
+};
+
+// Error middleware which formats thrown errors and maps them to appropriate http status codes
+// next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const handleError = (err, req, res, next) => {
   // only logs in non test environment
   if (process.env.NODE_ENV !== 'test') {
     logger.error(`Error processing ${req.originalUrl}: `, err);
   }
 
-  const {statusCode, message} = err;
-  // catch DB errors
-  if (DbError.isDbConnectionError(message)) {
-    const dbError = new DbError();
-    res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(dbError.message);
-    return;
-  }
+  // get application error message format
+  const errorMessage = errorMessageFormat(err.message);
 
-  if (err instanceof HttpError) {
-    if (statusCode === undefined || statusCode == httpStatusCodes.INTERNAL_ERROR) {
-      logger.trace('HttpError error with undefined status code');
-      res.status(httpStatusCodes.INTERNAL_ERROR).json(err.message);
-    } else {
-      res.status(statusCode).json(message);
+  if (err instanceof FormattedError) {
+    // map errors to desired http status codes
+    switch (err.constructor) {
+      case BadRequestError:
+        res.status(httpStatusCodes.BAD_REQUEST).json(errorMessage);
+        return;
+      case DbError:
+        logger.debug(`DB error: ${err.dbErrorMessage}`);
+        res.status(httpStatusCodes.SERVICE_UNAVAILABLE).json(errorMessage);
+        return;
+      case InvalidArgumentError:
+        res.status(httpStatusCodes.BAD_REQUEST).json(errorMessage);
+        return;
+      case NotFoundError:
+        res.status(httpStatusCodes.NOT_FOUND).json(errorMessage);
+        return;
     }
   } else {
-    const unknownError = new FormattedError(err.message);
-    res.status(httpStatusCodes.INTERNAL_ERROR).json(unknownError.message);
+    logger.trace(`Unhandled error encountered`);
+    res.status(httpStatusCodes.INTERNAL_ERROR).json(err.message);
   }
+};
+
+/**
+ * Application error message format
+ * @param array of messages
+ * @returns {{_status: {messages: *}}}
+ */
+const errorMessageFormat = (errorMessages) => {
+  return {
+    _status: {
+      messages: errorMessages.map((m) => {
+        return {message: m};
+      }),
+    },
+  };
 };
 
 module.exports = {
   handleError,
+  httpStatusCodes,
 };

@@ -21,6 +21,7 @@
 const config = require('./config.js');
 const constants = require('./constants.js');
 const utils = require('./utils.js');
+const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
@@ -215,30 +216,40 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
 const getMessage = async (pgSqlQuery, pgSqlParams) => {
   logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
 
-  return pool.query(pgSqlQuery, pgSqlParams).then((results) => {
-    // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
-    if (results.rowCount === 1) {
-      logger.debug('getMessage returning single entry');
-      return formatTopicMessageRow(results.rows[0]);
-    } else {
-      throw new NotFoundError();
-    }
-  });
+  return pool
+    .query(pgSqlQuery, pgSqlParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
+      if (results.rowCount === 1) {
+        logger.debug('getMessage returning single entry');
+        return formatTopicMessageRow(results.rows[0]);
+      } else {
+        throw new NotFoundError();
+      }
+    });
 };
 
 const getMessages = async (pgSqlQuery, pgSqlParams) => {
   logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   let messages = [];
 
-  return pool.query(pgSqlQuery, pgSqlParams).then((results) => {
-    for (let i = 0; i < results.rowCount; i++) {
-      messages.push(formatTopicMessageRow(results.rows[i]));
-    }
+  return pool
+    .query(pgSqlQuery, pgSqlParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      for (let i = 0; i < results.rowCount; i++) {
+        messages.push(formatTopicMessageRow(results.rows[i]));
+      }
 
-    logger.debug('getMessages returning ' + messages.length + ' entries');
+      logger.debug('getMessages returning ' + messages.length + ' entries');
 
-    return messages;
-  });
+      return messages;
+    });
 };
 
 /**
