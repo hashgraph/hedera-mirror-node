@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -80,7 +80,7 @@ const realm = 15;
  * Setup test data in the postgres instance.
  */
 
-const setupData = async function () {
+const setupData = async function() {
   const testDataPath = path.join(__dirname, 'integration_test_data.json');
   const testData = fs.readFileSync(testDataPath);
   const testDataJson = JSON.parse(testData);
@@ -98,17 +98,17 @@ const setupData = async function () {
  * @param amount
  * @returns {Promise<void>}
  */
-const addCryptoTransferTransaction = async function (
-        consensusTimestamp,
-        payerAccountId,
-        recipientAccountId,
-        amount,
-        validDurationSeconds,
-        maxFee,
-        result = 22,
-        type = 14,
-        nodeAccountId = '0.15.3',
-        treasuryAccountId = '0.15.98'
+const addCryptoTransferTransaction = async function(
+  consensusTimestamp,
+  payerAccountId,
+  recipientAccountId,
+  amount,
+  validDurationSeconds,
+  maxFee,
+  result = 22,
+  type = 14,
+  nodeAccountId = '0.15.3',
+  treasuryAccountId = '0.15.98'
 ) {
   await integrationDomainOps.addCryptoTransaction({
     consensus_timestamp: consensusTimestamp,
@@ -144,19 +144,19 @@ const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
  * @returns {*}
  */
 function mapTransactionResults(rows) {
-  return rows.map(function (v) {
+  return rows.map(function(v) {
     return '@' + v['consensus_ns'] + ': account ' + v['account_num'] + ' \u0127' + v['amount'];
   });
 }
 
 function extractDurationAndMaxFeeFromTransactionResults(rows) {
-  return rows.map(function (v) {
+  return rows.map(function(v) {
     return '@' + v['valid_duration_seconds'] + ',' + v['max_fee'];
   });
 }
 
 function extractNameAndResultFromTransactionResults(rows) {
-  return rows.map(function (v) {
+  return rows.map(function(v) {
     return '@' + v['name'] + ',' + v['result'];
   });
 }
@@ -260,7 +260,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 });
 
 let specPath = path.join(__dirname, 'specs');
-fs.readdirSync(specPath).forEach(function (file) {
+fs.readdirSync(specPath).forEach(function(file) {
   let p = path.join(specPath, file);
   let specText = fs.readFileSync(p, 'utf8');
   var spec = JSON.parse(specText);
@@ -274,7 +274,7 @@ fs.readdirSync(specPath).forEach(function (file) {
   });
 });
 
-const specSetupSteps = async function (spec) {
+const specSetupSteps = async function(spec) {
   await integrationDbOps.cleanUp();
   await integrationDomainOps.setUp(spec, sqlConnection);
 };
