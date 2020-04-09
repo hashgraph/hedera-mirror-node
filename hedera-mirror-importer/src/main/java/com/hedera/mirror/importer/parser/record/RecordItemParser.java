@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.io.IOException;
-import java.util.Set;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -97,31 +96,6 @@ public class RecordItemParser implements RecordItemListener {
         return (fileId.getFileNum() == 102) && (fileId.getShardNum() == 0) && (fileId.getRealmNum() == 0);
     }
 
-    /**
-     * Because body.getDataCase() can return null for unknown transaction types, we instead get oneof generically
-     *
-     * @param body
-     * @return The protobuf ID that represents the transaction type
-     */
-    private static int getTransactionType(TransactionBody body) {
-        TransactionBody.DataCase dataCase = body.getDataCase();
-
-        if (dataCase == null || dataCase == TransactionBody.DataCase.DATA_NOT_SET) {
-            Set<Integer> unknownFields = body.getUnknownFields().asMap().keySet();
-
-            if (unknownFields.size() != 1) {
-                throw new IllegalStateException("Unable to guess correct transaction type since there's not exactly " +
-                        "one: " + unknownFields);
-            }
-
-            int transactionType = unknownFields.iterator().next();
-            log.warn("Encountered unknown transaction type: {}", transactionType);
-            return transactionType;
-        }
-
-        return dataCase.getNumber();
-    }
-
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
         TransactionRecord txRecord = recordItem.getRecord();
@@ -129,7 +103,7 @@ public class RecordItemParser implements RecordItemListener {
         TransactionHandler transactionHandler = transactionHandlerFactory.create(body);
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
 
-        int transactionType = getTransactionType(body);
+        int transactionType = recordItem.getTransactionType();
         long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entityId = transactionHandler.getEntityId(recordItem);
 
