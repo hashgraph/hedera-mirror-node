@@ -81,5 +81,4 @@ const errorMessageFormat = (errorMessages) => {
 
 module.exports = {
   handleError,
-  httpStatusCodes,
 };

@@ -292,7 +292,6 @@ module.exports = {
   getMessageByConsensusTimestamp: getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest: getMessageByTopicAndSequenceRequest,
   getTopicMessages: getTopicMessages,
-  topicMessageColumns: topicMessageColumns,
   validateConsensusTimestampParam: validateConsensusTimestampParam,
   validateGetSequenceMessageParams: validateGetSequenceMessageParams,
   validateGetTopicMessagesParams: validateGetTopicMessagesParams,
