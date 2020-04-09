@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.parser.domain;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import org.apache.commons.codec.binary.Hex;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -56,6 +59,7 @@ class RecordItemTest {
     private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder()
             .setTransactionFee(10L)
             .setMemo("memo")
+            .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
             .build();
 
     private static final TransactionRecord TRANSACTION_RECORD = TransactionRecord.newBuilder()
@@ -91,6 +95,23 @@ class RecordItemTest {
         Transaction transaction = TRANSACTION.toBuilder().setBodyBytes(TRANSACTION_BODY.toByteString()).build();
         RecordItem recordItem = new RecordItem(transaction.toByteArray(), TRANSACTION_RECORD.toByteArray());
         assertRecordItem(transaction, recordItem);
+    }
+
+    /**
+     * This test writes a TransactionBody that contains a unknown field with a protobuf ID of 9999 to test that the
+     * unknown transaction is still inserted into the database.
+     */
+    @Test
+    void unknownTransactionType() throws Exception {
+        int unknownType = 9999;
+        byte[] transactionBodyBytes = Hex.decodeHex(
+                "0a120a0c08eb88d6ee0510e8eff7ab01120218021202180318c280de1922020878321043727970746f2074657374206d656d6ffaf004050a03666f6f");
+        Transaction transaction = TRANSACTION.toBuilder()
+                .setBodyBytes(ByteString.copyFrom(transactionBodyBytes))
+                .build();
+        RecordItem recordItem = new RecordItem(transaction, TRANSACTION_RECORD);
+
+        assertThat(recordItem.getTransactionType()).isEqualTo(unknownType);
     }
 
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {

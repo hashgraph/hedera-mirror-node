@@ -44,7 +44,6 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
-import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -914,34 +913,6 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
                 .hasSize(1)
                 .extracting(com.hedera.mirror.importer.domain.Transaction::getResult)
                 .containsOnly(unknownResult);
-    }
-
-    /**
-     * This test writes a TransactionBody that contains a unknown field with a protobuf ID of 9999 to test that the
-     * unknown transaction is still inserted into the database.
-     *
-     * @throws Exception
-     */
-    @Test
-    void unknownTransactionType() throws Exception {
-        int unknownType = 9999;
-        byte[] transactionBodyBytes = Hex
-                .decodeHex(
-                        "0a120a0c08eb88d6ee0510e8eff7ab01120218021202180318c280de1922020878321043727970746f2074657374206d656d6ffaf004050a03666f6f");
-        TransactionBody transactionBody = TransactionBody.parseFrom(transactionBodyBytes);
-        Transaction transaction = Transaction.newBuilder()
-                .setBodyBytes(transactionBody.toByteString())
-                .setSigMap(getSigMap())
-                .build();
-
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
-
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
-
-        org.assertj.core.api.Assertions.assertThat(transactionRepository.findAll())
-                .hasSize(1)
-                .extracting(com.hedera.mirror.importer.domain.Transaction::getType)
-                .containsOnly(unknownType);
     }
 
     private TransactionRecord transactionRecordSuccess(TransactionBody transactionBody) {
