@@ -19,6 +19,7 @@
  */
 'use strict';
 const config = require('./config.js');
+const constants = require('./constants.js');
 const utils = require('./utils.js');
 const transactions = require('./transactions.js');
 const {NotFoundError} = require('./errors/notFoundError');
@@ -170,8 +171,7 @@ const getAccounts = async (req, res) => {
     }
 
     logger.debug('getAccounts returning ' + ret.accounts.length + ' entries');
-
-    res.json(ret);
+    req[constants.responseDataLabel] = ret;
   });
 };
 
@@ -181,7 +181,7 @@ const getAccounts = async (req, res) => {
  * @param {Response} res HTTP response object
  * @return {} None.
  */
-const getOneAccount = async (req, res) => {
+const getOneAccount = async (req, res, next) => {
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
   // Parse the filter parameters for account-numbers, balance, and pagination
@@ -290,7 +290,7 @@ const getOneAccount = async (req, res) => {
     };
 
     logger.debug('getOneAccount returning ' + ret.transactions.length + ' transactions entries');
-    res.json(ret);
+    req[constants.responseDataLabel] = ret;
   });
 };
 

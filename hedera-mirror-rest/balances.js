@@ -19,6 +19,7 @@
  */
 'use strict';
 const config = require('./config.js');
+const constants = require('./constants.js');
 const utils = require('./utils.js');
 
 /**
@@ -157,7 +158,7 @@ const getBalances = async (req, res) => {
 
     logger.debug('getBalances returning ' + ret.balances.length + ' entries');
 
-    res.json(ret);
+    req[constants.responseDataLabel] = ret;
   });
 };
 

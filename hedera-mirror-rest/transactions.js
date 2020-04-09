@@ -20,6 +20,7 @@
 'use strict';
 const utils = require('./utils.js');
 const config = require('./config.js');
+const constants = require('./constants.js');
 const {BadRequestError} = require('./errors/badRequestError');
 const {NotFoundError} = require('./errors/notFoundError');
 
@@ -200,7 +201,7 @@ const reqToSql = function (req) {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getTransactions = async (req, res) => {
+const getTransactions = async (req) => {
   // Validate query parameters first
   utils.validateReq(req);
 
@@ -237,17 +238,16 @@ const getTransactions = async (req, res) => {
 
     logger.debug('getTransactions returning ' + ret.transactions.length + ' entries');
 
-    res.json(ret);
+    req[constants.responseDataLabel] = ret;
   });
 };
 
 /**
  * Handler function for /transactions/:transaction_id API.
  * @param {Request} req HTTP request object
- * @param {Response} res HTTP response object
  * @return {} None.
  */
-const getOneTransaction = async (req, res) => {
+const getOneTransaction = async (req) => {
   logger.debug('--------------------  getOneTransaction --------------------');
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
@@ -312,7 +312,7 @@ const getOneTransaction = async (req, res) => {
     }
 
     logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
-    res.json(ret);
+    req[constants.responseDataLabel] = ret;
   });
 };
 

@@ -38,7 +38,8 @@ const transactions = require('./transactions.js');
 const balances = require('./balances.js');
 const accounts = require('./accounts.js');
 const topicmessage = require('./topicmessage.js');
-const {handleError} = require('./errors/httpErrorHandler');
+const {handleError} = require('./middleware/httpErrorHandler');
+const {responseHandler} = require('./middleware/responseHandler');
 
 var compression = require('compression');
 
@@ -106,6 +107,10 @@ app.getAsync(apiPrefix + '/topics/:id/messages/:sequencenumber', topicmessage.ge
 app.getAsync(apiPrefix + '/topics/:id', topicmessage.getTopicMessages);
 app.getAsync(apiPrefix + '/topic/:id', topicmessage.getTopicMessages);
 
+// response data handling middleware
+app.use(responseHandler);
+
+// response error handling middleware
 app.use(handleError);
 
 if (process.env.NODE_ENV !== 'test') {

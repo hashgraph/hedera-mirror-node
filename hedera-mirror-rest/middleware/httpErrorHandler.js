@@ -19,9 +19,9 @@
  */
 'use strict';
 
-const {DbError} = require('./dbError');
-const {FormattedError} = require('./formattedError');
-const {httpStatusCodes, HttpError} = require('./httpError');
+const {DbError} = require('../errors/dbError');
+const {FormattedError} = require('../errors/formattedError');
+const {httpStatusCodes, HttpError} = require('../errors/httpError');
 
 const handleError = (err, req, res, next) => {
   // only logs in non test environment
