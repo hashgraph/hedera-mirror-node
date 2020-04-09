@@ -22,6 +22,9 @@ package com.hedera.mirror.importer.downloader.balance;
 
 import java.io.File;
 import javax.inject.Named;
+
+import com.hedera.mirror.importer.util.Utility;
+
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -72,5 +75,10 @@ public class AccountBalancesDownloader extends Downloader {
     @Override
     protected String getPrevFileHash(String filePath) {
         return null;
+    }
+
+    @Override
+    protected byte[] getDataFileHash(String fileName) {
+        return Utility.getBalanceFileHash(fileName);
     }
 }

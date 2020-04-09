@@ -21,9 +21,7 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import com.google.common.base.Stopwatch;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -50,7 +48,6 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.FileParser;
-import com.hedera.mirror.importer.parser.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -190,7 +187,7 @@ public class RecordFileParser implements FileParser {
                         byteLength = dis.readInt();
                         byte[] recordRawBytes = new byte[byteLength];
                         dis.readFully(recordRawBytes);
-                        RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);;
+                        RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);
 
                         try {
                             if (log.isTraceEnabled()) {
@@ -228,7 +225,7 @@ public class RecordFileParser implements FileParser {
                                 "Unknown record file delimiter %s for file %s", typeDelimiter, fileName));
                 }
             }
-            String thisFileHash = Hex.encodeHexString(Utility.getFileHash(fileName));
+            String thisFileHash = Hex.encodeHexString(Utility.getRecordFileHash(fileName));
             log.trace("Calculated file hash for the current file {}", thisFileHash);
             recordStreamFileListener.onEnd(new RecordFile(null, fileName, loadStart, Instant.now().getEpochSecond(),
                     thisFileHash, expectedPrevFileHash));
@@ -299,7 +296,6 @@ public class RecordFileParser implements FileParser {
 
                 // add directory prefix to get full path
                 List<String> fullPaths = Arrays.asList(files).stream()
-                        .filter(f -> Utility.isRecordFile(f))
                         .map(s -> file + "/" + s)
                         .collect(Collectors.toList());
 

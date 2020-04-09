@@ -47,7 +47,7 @@ spring:
   datasource:
     name: ${hedera.mirror.db.name}
     password: ${hedera.mirror.db.password}
-    url: jdbc:postgresql://${hedera.mirror.db.host}:${hedera.mirror.db.port}/${hedera.mirror.db.name}?&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+    url: jdbc:postgresql://${hedera.mirror.db.host}:${hedera.mirror.db.port}/${hedera.mirror.db.name}
     username: ${hedera.mirror.db.username}
   flyway:
     connectRetries: 10

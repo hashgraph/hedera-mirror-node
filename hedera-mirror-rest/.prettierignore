@@ -1,3 +1,6 @@
 charts/**
 *.md
+hedera-mirror-importer/**
+hedera-mirror-grpc/**
+hedera-mirror-datagenerator/**
 

@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -182,7 +183,7 @@ public abstract class Downloader {
                                 File sigFile = pd.getFile();
                                 FileStreamSignature fileStreamSignature = new FileStreamSignature();
                                 fileStreamSignature.setFile(sigFile);
-                                fileStreamSignature.setNode(Utility.getAccountIDStringFromFilePath(sigFile));
+                                fileStreamSignature.setNode(nodeAccountId);
                                 sigFilesMap.put(sigFile.getName(), fileStreamSignature);
                             }
                         } catch (InterruptedException ex) {
@@ -298,8 +299,9 @@ public abstract class Downloader {
                 }
 
                 try {
-                    File signedDataFile = downloadSignedDataFile(signature.getFile());
-                    if (signedDataFile != null && Utility.hashMatch(signature.getHash(), signedDataFile)) {
+                    File signedDataFile = downloadSignedDataFile(signature.getFile(), signature.getNode());
+                    if (signedDataFile != null
+                            && Arrays.equals(signature.getHash(), getDataFileHash(signedDataFile.getPath()))) {
                         log.debug("Downloaded data file {} corresponding to verified hash", signedDataFile.getName());
                         // Check that file is newer than last valid downloaded file. Additionally, if the file type
                         // uses prevFileHash based linking, verify that new file is next in the sequence.
@@ -359,11 +361,10 @@ public abstract class Downloader {
         return false;
     }
 
-    private File downloadSignedDataFile(File sigFile) {
+    private File downloadSignedDataFile(File sigFile, String nodeAccountId) {
         String fileName = sigFile.getName().replace("_sig", "");
         String s3Prefix = downloaderProperties.getPrefix();
 
-        String nodeAccountId = Utility.getAccountIDStringFromFilePath(sigFile);
         String s3ObjectKey = s3Prefix + nodeAccountId + "/" + fileName;
 
         Path localFile = downloaderProperties.getTempPath().resolve(fileName);
@@ -388,6 +389,11 @@ public abstract class Downloader {
     protected abstract ApplicationStatusCode getBypassHashKey();
 
     protected abstract String getPrevFileHash(String filePath);
+
+    /**
+     * Returns SHA384 of given data (not signature) file
+     */
+    protected abstract byte[] getDataFileHash(String fileName);
 
     public abstract void download();
 }

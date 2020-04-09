@@ -59,11 +59,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.downloader.balance.threads`                  | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.downloader.bucketName`                       | "hedera-demo-streams"   | The cloud storage bucket name to download streamed files                                       |
 | `hedera.mirror.downloader.cloudProvider`                    | S3                      | The cloud provider to download files from. Either `S3`, `GCP` or `LOCAL`                       |
-| `hedera.mirror.downloader.event.batchSize`                  | 15                      | The number of signature files to download per node before downloading the signed files         |
-| `hedera.mirror.downloader.event.enabled`                    | false                   | Whether to enable event file downloads                                                         |
-| `hedera.mirror.downloader.event.frequency`                  | 1m                      | The fixed period between invocations. Can accept duration units like `50ms`, `10s` etc.        |
-| `hedera.mirror.downloader.event.prefix`                     | eventsStreams/events\_  | The prefix to search cloud storage for event files                                             |
-| `hedera.mirror.downloader.event.threads`                    | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.downloader.maxConcurrency`                   | 1000                    | The maximum number of allowed open HTTP connections. Used by AWS SDK directly.                 |
 | `hedera.mirror.downloader.record.batchSize`                 | 40                      | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.downloader.record.enabled`                   | true                    | Whether to enable record file downloads                                                        |
@@ -112,9 +107,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.parser.balance.enabled`                      | true                    | Whether to enable balance file parsing                                                         |
 | `hedera.mirror.parser.balance.fileBufferSize`               | 200000                  | The size of the buffer to use when reading in the balance file                                 |
 | `hedera.mirror.parser.balance.keepFiles`                    | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |
-| `hedera.mirror.parser.event.enabled`                        | false                   | Whether to enable event file parsing                                                           |
-| `hedera.mirror.parser.event.frequency`                      | 1m                      | The fixed period between invocations. Can accept duration units like `50ms`, `10s` etc.        |
-| `hedera.mirror.parser.event.keepFiles`                      | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |
 | `hedera.mirror.parser.record.enabled`                       | true                    | Whether to enable balance file parsing                                                         |
 | `hedera.mirror.parser.record.frequency`                     | 500ms                   | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
 | `hedera.mirror.parser.record.keepFiles`                     | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |

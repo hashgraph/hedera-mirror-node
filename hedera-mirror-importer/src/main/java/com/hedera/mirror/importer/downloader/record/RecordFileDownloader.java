@@ -21,6 +21,9 @@ package com.hedera.mirror.importer.downloader.record;
  */
 
 import javax.inject.Named;
+
+import com.hedera.mirror.importer.util.Utility;
+
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -67,5 +70,10 @@ public class RecordFileDownloader extends Downloader {
     @Override
     protected String getPrevFileHash(String filePath) {
         return RecordFileParser.readPrevFileHash(filePath);
+    }
+
+    @Override
+    protected byte[] getDataFileHash(String fileName) {
+        return Utility.getRecordFileHash(fileName);
     }
 }
