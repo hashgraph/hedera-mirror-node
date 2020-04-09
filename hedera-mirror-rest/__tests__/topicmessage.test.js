@@ -30,70 +30,70 @@ beforeAll(async () => {
 afterAll(() => {});
 
 describe('topicmessage validateConsensusTimestampParam tests', () => {
-  test('Verify validateConsensusTimestampParam returns correct result for -1234567890.000000001', () => {
+  test('Verify validateConsensusTimestampParam throws error for -1234567890.000000001', () => {
     verifyInvalidConsensusTimestamp(-1234567890.000000001);
   });
 
-  test('Verify validateConsensusTimestampParam returns correct result for abc', () => {
+  test('Verify validateConsensusTimestampParam throws error for abc', () => {
     verifyInvalidConsensusTimestamp('abc');
   });
 
-  test('Verify validateConsensusTimestampParam returns correct result for 1234567890', () => {
-    verifyValidParamResponse(topicmessage.validateConsensusTimestampParam(1234567890));
+  test('Verify validateConsensusTimestampParam does not throw error for 1234567890', () => {
+    verifyValidConsensusTimestamp(1234567890);
   });
 
-  test('Verify validateConsensusTimestampParam returns correct result for 123.0001', () => {
-    verifyValidParamResponse(topicmessage.validateConsensusTimestampParam(123.0001));
+  test('Verify validateConsensusTimestampParam does not throw error for 123.0001', () => {
+    verifyValidConsensusTimestamp(123.0001);
   });
 });
 
 describe('topicmessage validateGetSequenceMessageParams tests', () => {
-  test('Verify validateGetSequenceMessageParams returns correct result for -123', () => {
+  test('Verify validateGetSequenceMessageParams throws error for -123', () => {
     verifyInvalidTopicAndSequenceNum(-123, -123);
   });
 
-  test('Verify validateGetSequenceMessageParams returns correct result for abc', () => {
+  test('Verify validateGetSequenceMessageParams throws error for abc', () => {
     verifyInvalidTopicAndSequenceNum('abc', 'abc');
   });
 
-  test('Verify validateGetSequenceMessageParams returns correct result for 123.0001', () => {
+  test('Verify validateGetSequenceMessageParams throws error for 123.0001', () => {
     verifyInvalidTopicAndSequenceNum(123.0001, 123.0001);
   });
 
-  test('Verify validateGetSequenceMessageParams returns correct result for 0', () => {
-    verifyValidParamResponse(topicmessage.validateGetSequenceMessageParams(0, 1));
+  test('Verify validateGetSequenceMessageParams does not throw error for 0', () => {
+    verifyValidTopicAndSequenceNum(0, 1);
   });
 
-  test('Verify validateGetSequenceMessageParams returns correct result for 1234567890', () => {
-    verifyValidParamResponse(topicmessage.validateGetSequenceMessageParams(1234567890, 1234567890));
+  test('Verify validateGetSequenceMessageParams does not throw error for 1234567890', () => {
+    verifyValidTopicAndSequenceNum(1234567890, 1234567890);
   });
-  test('Verify validateGetSequenceMessageParams returns correct result for 2', () => {
-    verifyValidParamResponse(topicmessage.validateGetSequenceMessageParams(2, 1234567890));
+  test('Verify validateGetSequenceMessageParams does not throw error for 2', () => {
+    verifyValidTopicAndSequenceNum(2, 1234567890);
   });
 });
 
 describe('topicmessage validateGetTopicMessagesParams tests', () => {
-  test('Verify validateGetTopicMessagesParams returns correct result for -123', () => {
+  test('Verify validateGetTopicMessagesParams throws error for -123', () => {
     verifyInvalidTopicMessages(-123);
   });
 
-  test('Verify validateGetTopicMessagesParams returns correct result for abc', () => {
+  test('Verify validateGetTopicMessagesParams throws error for abc', () => {
     verifyInvalidTopicMessages('abc');
   });
 
-  test('Verify validateGetTopicMessagesParams returns correct result for 123.0001', () => {
+  test('Verify validateGetTopicMessagesParams throws error for 123.0001', () => {
     verifyInvalidTopicMessages(123.0001);
   });
 
-  test('Verify validateGetTopicMessagesParams returns correct result for 0', () => {
-    verifyValidParamResponse(topicmessage.validateGetTopicMessagesParams(0));
+  test('Verify validateGetTopicMessagesParams does not throw error for 0', () => {
+    verifyValidTopicMessages(0);
   });
 
-  test('Verify validateGetTopicMessagesParams returns correct result for 1234567890', () => {
-    verifyValidParamResponse(topicmessage.validateGetTopicMessagesParams(1234567890));
+  test('Verify validateGetTopicMessagesParams does not throw error for 1234567890', () => {
+    verifyValidTopicMessages(1234567890);
   });
-  test('Verify validateGetTopicMessagesParams returns correct result for 2', () => {
-    verifyValidParamResponse(topicmessage.validateGetTopicMessagesParams(2));
+  test('Verify validateGetTopicMessagesParams does not throw error for 2', () => {
+    verifyValidTopicMessages(2);
   });
 });
 
@@ -146,8 +146,22 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
   expect(limit).toStrictEqual(3);
 });
 
-const verifyValidParamResponse = (val) => {
-  expect(val).toBe(true);
+const verifyValidConsensusTimestamp = (timestamp) => {
+  expect(() => {
+    topicmessage.validateConsensusTimestampParam(timestamp);
+  }).not.toThrow();
+};
+
+const verifyValidTopicAndSequenceNum = (topicid, seqnum) => {
+  expect(() => {
+    topicmessage.validateGetSequenceMessageParams(topicid, seqnum);
+  }).not.toThrow();
+};
+
+const verifyValidTopicMessages = (topicid) => {
+  expect(() => {
+    topicmessage.validateGetTopicMessagesParams(topicid);
+  }).not.toThrow();
 };
 
 const verifyInvalidConsensusTimestamp = (timestamp) => {

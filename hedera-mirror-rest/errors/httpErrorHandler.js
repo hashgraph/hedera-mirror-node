@@ -24,6 +24,7 @@ const {FormattedError} = require('./formattedError');
 const {httpStatusCodes, HttpError} = require('./httpError');
 
 const handleError = (err, req, res, next) => {
+  // only logs in non test environment
   if (process.env.NODE_ENV !== 'test') {
     logger.error(`Error processing ${req.originalUrl}: `, err);
   }

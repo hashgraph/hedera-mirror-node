@@ -45,8 +45,6 @@ const validateConsensusTimestampParam = function (consensusTimestamp) {
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
     throw new InvalidArgumentError(topicMessageColumns.CONSENSUS_TIMESTAMP);
   }
-
-  return true;
 };
 
 /**
@@ -65,8 +63,6 @@ const validateGetSequenceMessageParams = function (topicId, seqNum) {
   if (badParams.length > 0) {
     throw new InvalidArgumentError(badParams);
   }
-
-  return true;
 };
 
 /**
@@ -76,8 +72,6 @@ const validateGetTopicMessagesParams = function (topicId) {
   if (!utils.isValidEntityNum(topicId)) {
     throw new InvalidArgumentError(topicMessageColumns.TOPIC_NUM);
   }
-
-  return true;
 };
 
 const validateGetTopicMessagesRequest = (topicId, filters, res) => {
@@ -85,8 +79,6 @@ const validateGetTopicMessagesRequest = (topicId, filters, res) => {
 
   // validate filters
   utils.validateAndParseFilters(filters);
-
-  return true;
 };
 
 /**

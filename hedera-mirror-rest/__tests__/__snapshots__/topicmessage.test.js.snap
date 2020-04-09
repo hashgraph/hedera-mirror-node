@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`topicmessage validateConsensusTimestampParam tests Verify validateConsensusTimestampParam returns correct result for -1234567890.000000001 1`] = `
+exports[`topicmessage validateConsensusTimestampParam tests Verify validateConsensusTimestampParam throws error for -1234567890.000000001 1`] = `
 Object {
   "_status": Object {
     "messages": Array [
@@ -12,7 +12,7 @@ Object {
 }
 `;
 
-exports[`topicmessage validateConsensusTimestampParam tests Verify validateConsensusTimestampParam returns correct result for abc 1`] = `
+exports[`topicmessage validateConsensusTimestampParam tests Verify validateConsensusTimestampParam throws error for abc 1`] = `
 Object {
   "_status": Object {
     "messages": Array [
@@ -24,7 +24,7 @@ Object {
 }
 `;
 
-exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams returns correct result for -123 1`] = `
+exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams throws error for -123 1`] = `
 Object {
   "_status": Object {
     "messages": Array [
@@ -39,7 +39,7 @@ Object {
 }
 `;
 
-exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams returns correct result for 123.0001 1`] = `
+exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams throws error for 123.0001 1`] = `
 Object {
   "_status": Object {
     "messages": Array [
@@ -54,7 +54,7 @@ Object {
 }
 `;
 
-exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams returns correct result for abc 1`] = `
+exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams throws error for abc 1`] = `
 Object {
   "_status": Object {
     "messages": Array [
@@ -69,7 +69,7 @@ Object {
 }
 `;
 
-exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams returns correct result for -123 1`] = `
+exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams throws error for -123 1`] = `
 Object {
   "_status": Object {
     "messages": Array [
@@ -81,7 +81,7 @@ Object {
 }
 `;
 
-exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams returns correct result for 123.0001 1`] = `
+exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams throws error for 123.0001 1`] = `
 Object {
   "_status": Object {
     "messages": Array [
@@ -93,7 +93,7 @@ Object {
 }
 `;
 
-exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams returns correct result for abc 1`] = `
+exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams throws error for abc 1`] = `
 Object {
   "_status": Object {
     "messages": Array [
