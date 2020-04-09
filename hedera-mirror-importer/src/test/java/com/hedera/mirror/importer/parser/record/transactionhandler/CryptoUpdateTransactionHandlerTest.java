@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.Map;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
@@ -31,7 +33,14 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Override
-    protected Map<String, Integer> getEntityIdFields() {
-        return Map.of("body.cryptoUpdateAccount.accountIDToUpdate", EntityTypeEnum.ACCOUNT.getId());
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                        .setAccountIDToUpdate(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build()));
+    }
+
+    @Override
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return EntityTypeEnum.ACCOUNT;
     }
 }

@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.Map;
+import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
@@ -31,7 +33,14 @@ class FileDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Override
-    protected Map<String, Integer> getEntityIdFields() {
-        return Map.of("body.fileDelete.fileID", EntityTypeEnum.FILE.getId());
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setFileDelete(FileDeleteTransactionBody.newBuilder()
+                        .setFileID(FileID.newBuilder().setFileNum(DEFAULT_ENTITY_NUM).build()));
+    }
+
+    @Override
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return EntityTypeEnum.FILE;
     }
 }

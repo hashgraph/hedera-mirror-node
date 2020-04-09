@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.Map;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class UnknownDataTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
@@ -29,7 +29,7 @@ class UnknownDataTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Override
-    protected Map<String, Integer> getEntityIdFields() {
-        return Map.of();
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return null;
     }
 }

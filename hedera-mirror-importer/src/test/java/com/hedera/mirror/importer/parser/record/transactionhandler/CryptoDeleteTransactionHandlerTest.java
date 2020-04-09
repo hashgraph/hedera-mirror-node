@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.Map;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
@@ -31,7 +33,14 @@ class CryptoDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Override
-    protected Map<String, Integer> getEntityIdFields() {
-        return Map.of("body.cryptoDelete.deleteAccountID", EntityTypeEnum.ACCOUNT.getId());
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
+                        .setDeleteAccountID(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build()));
+    }
+
+    @Override
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return EntityTypeEnum.ACCOUNT;
     }
 }
