@@ -1,5 +1,11 @@
+# We upload two separate reports: js and java
+codecov:
+    notify:
+        after_n_builds: 2
+comment:
+    after_n_builds: 2
 coverage:
-  status:
-    project:
-      default:
-        threshold: 1.0
+    status:
+        project:
+            default:
+                threshold: 1.0
