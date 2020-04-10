@@ -20,12 +20,12 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.EntityId;
-
 import java.util.Collection;
+
+import com.hedera.mirror.importer.domain.EntityId;
 
 public interface EntityRepositoryCustom {
     Collection<EntityId> findAllEntityIds(int limit);
-    <S extends Entities> EntityId saveAndCacheEntityId(S entity);
+
+    long lookupOrCreateId(EntityId entityId);
 }

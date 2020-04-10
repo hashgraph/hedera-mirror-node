@@ -135,22 +135,21 @@ public class RecordItemParserContractTest extends AbstractRecordItemParserTest {
         Transaction transaction = contractCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         ContractCreateTransactionBody contractCreateTransactionBody = transactionBody.getContractCreateInstance();
-        TransactionRecord record = createOrUpdateRecord(transactionBody,
-                ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
+        // Clear receipt.contractID since transaction is failure.
+        TransactionRecord.Builder recordBuilder = createOrUpdateRecord(
+                transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE).toBuilder();
+        recordBuilder.getReceiptBuilder().clearContractID();
+        TransactionRecord record = recordBuilder.build();
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
-        com.hedera.mirror.importer.domain.Entities dbContractEntity = entityRepository
-                .findById(dbTransaction.getEntityId()).get();
-        com.hedera.mirror.importer.domain.Entities dbProxyAccountId = entityRepository
-                .findById(dbContractEntity.getProxyAccountId()).get();
 
         assertAll(
                 // row counts
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
+                , () -> assertEquals(4, entityRepository.count())
                 , () -> assertEquals(1, contractResultRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -158,24 +157,14 @@ public class RecordItemParserContractTest extends AbstractRecordItemParserTest {
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
+                , () -> assertNull(dbTransaction.getEntityId())
 
                 // record inputs
                 , () -> assertRecord(record)
 
-                // receipt
-                , () -> assertContract(record.getReceipt().getContractID(), dbContractEntity)
-
                 // transaction body inputs
-                , () -> assertEquals(contractCreateTransactionBody.getAutoRenewPeriod().getSeconds(), dbContractEntity
-                        .getAutoRenewPeriod())
-                , () -> assertArrayEquals(contractCreateTransactionBody.getAdminKey().toByteArray(), dbContractEntity
-                        .getKey())
-                , () -> assertAccount(contractCreateTransactionBody.getProxyAccountID(), dbProxyAccountId)
-                , () -> assertEquals(contractCreateTransactionBody.getInitialBalance(), dbTransaction
-                        .getInitialBalance())
-
-                // Additional entity checks
-                , () -> assertFalse(dbContractEntity.isDeleted())
+                , () -> assertEquals(contractCreateTransactionBody.getInitialBalance(),
+                        dbTransaction.getInitialBalance())
         );
     }
 

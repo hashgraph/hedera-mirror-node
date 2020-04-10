@@ -204,22 +204,21 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        TransactionRecord record = transactionRecord(transactionBody,
-                ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+        // Clear receipt.accountID since transaction is failure.
+        TransactionRecord.Builder recordBuilder = transactionRecord(
+                transactionBody, ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE).toBuilder();
+        recordBuilder.getReceiptBuilder().clearAccountID();
+        TransactionRecord record = recordBuilder.build();
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
-                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
-        com.hedera.mirror.importer.domain.Entities dbNewAccountEntity = entityRepository
-                .findById(dbTransaction.getEntityId()).get();
-        com.hedera.mirror.importer.domain.Entities dbProxyAccountId = entityRepository
-                .findById(dbNewAccountEntity.getProxyAccountId()).get();
+        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository.findById(
+                Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
 
         assertAll(
                 // row counts
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(6, entityRepository.count())
+                , () -> assertEquals(4, entityRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
@@ -227,24 +226,12 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
                 // transaction
                 , () -> assertTransaction(transactionBody, dbTransaction)
+                , () -> assertNull(dbTransaction.getEntityId())
                 // record inputs
                 , () -> assertRecord(record)
-                // receipt
-                , () -> assertAccount(record.getReceipt().getAccountID(), dbNewAccountEntity)
 
                 // transaction body inputs
-                , () -> assertEquals(cryptoCreateTransactionBody.getAutoRenewPeriod().getSeconds(), dbNewAccountEntity
-                        .getAutoRenewPeriod())
                 , () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance())
-                , () -> assertEquals(Utility.protobufKeyToHexIfEd25519OrNull(cryptoCreateTransactionBody.getKey()
-                        .toByteArray()), dbNewAccountEntity.getEd25519PublicKeyHex())
-                , () -> assertAccount(cryptoCreateTransactionBody.getProxyAccountID(), dbProxyAccountId)
-                , () -> assertArrayEquals(cryptoCreateTransactionBody.getKey().toByteArray(), dbNewAccountEntity
-                        .getKey())
-
-                // Additional entity checks
-                , () -> assertFalse(dbNewAccountEntity.isDeleted())
-                , () -> assertNull(dbNewAccountEntity.getExpiryTimeNs())
         );
 
         // Crypto transfer list

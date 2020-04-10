@@ -20,15 +20,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.Timestamp;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @AllArgsConstructor
 public class ConsensusUpdateTopicTransactionHandler implements TransactionHandler {
+    private final EntityRepository entityRepository;
 
     @Override
     public EntityId getEntityId(RecordItem recordItem) {
@@ -38,5 +43,31 @@ public class ConsensusUpdateTopicTransactionHandler implements TransactionHandle
     @Override
     public boolean updatesEntity() {
         return true;
+    }
+
+    @Override
+    public void updateEntity(Entities entity, RecordItem recordItem) {
+        var updateTopic = recordItem.getTransactionBody().getConsensusUpdateTopic();
+        if (updateTopic.hasExpirationTime()) {
+            Timestamp expirationTime = updateTopic.getExpirationTime();
+            entity.setExpiryTimeNs(Utility.timestampInNanosMax(expirationTime));
+        }
+        if (updateTopic.hasAutoRenewAccount()) {
+            // Looks up (in the big cache) or creates new id.
+            entity.setAutoRenewAccountId(
+                    entityRepository.lookupOrCreateId(EntityId.of(updateTopic.getAutoRenewAccount())));
+        }
+        if (updateTopic.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(updateTopic.getAutoRenewPeriod().getSeconds());
+        }
+        if (updateTopic.hasAdminKey()) {
+            entity.setKey(updateTopic.getAdminKey().toByteArray());
+        }
+        if (updateTopic.hasSubmitKey()) {
+            entity.setSubmitKey(updateTopic.getSubmitKey().toByteArray());
+        }
+        if (updateTopic.hasMemo()) {
+            entity.setMemo(updateTopic.getMemo().getValue());
+        }
     }
 }

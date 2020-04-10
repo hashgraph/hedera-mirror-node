@@ -20,15 +20,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @AllArgsConstructor
 public class CryptoUpdateTransactionHandler implements TransactionHandler {
+    private final EntityRepository entityRepository;
 
     @Override
     public EntityId getEntityId(RecordItem recordItem) {
@@ -38,5 +43,25 @@ public class CryptoUpdateTransactionHandler implements TransactionHandler {
     @Override
     public boolean updatesEntity() {
         return true;
+    }
+
+    @Override
+    public void updateEntity(Entities entity, RecordItem recordItem) {
+        CryptoUpdateTransactionBody txMessage = recordItem.getTransactionBody().getCryptoUpdateAccount();
+        if (txMessage.hasExpirationTime()) {
+            entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
+        }
+        if (txMessage.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
+        }
+        if (txMessage.hasKey()) {
+            entity.setKey(txMessage.getKey().toByteArray());
+        }
+        // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
+        // so no need to persist it to repo.
+        EntityId proxyAccountEntityId = EntityId.of(txMessage.getProxyAccountID());
+        if (proxyAccountEntityId != null) {
+            entity.setProxyAccountId(entityRepository.lookupOrCreateId(proxyAccountEntityId));
+        }
     }
 }

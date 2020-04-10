@@ -247,6 +247,6 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
             return null;
         }
         EntityId entityId = new EntityId(null, 0L, 0L, accountNum, EntityTypeEnum.ACCOUNT.getId());
-        return entityRepository.saveAndCacheEntityId(entityId.toEntity()).getId();
+        return entityRepository.save(entityId.toEntity()).getId();
     }
 }

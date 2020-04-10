@@ -28,14 +28,19 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.mockito.Mock;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.repository.EntityRepository;
 
 public abstract class AbstractTransactionHandlerTest {
     protected static final Long DEFAULT_ENTITY_NUM = 100L;
-
+    @Mock
+    protected EntityRepository entityRepository;
+    protected TransactionBody transactionBody;
+    protected TransactionRecord transactionRecord;
     private TransactionHandler transactionHandler;
 
     protected abstract TransactionHandler getTransactionHandler();
@@ -49,9 +54,6 @@ public abstract class AbstractTransactionHandlerTest {
 
     // For testGetEntityId
     protected abstract EntityTypeEnum getExpectedEntityIdType();
-
-    protected TransactionBody transactionBody;
-    protected TransactionRecord transactionRecord;
 
     @BeforeEach
     void beforeEach(TestInfo testInfo) {

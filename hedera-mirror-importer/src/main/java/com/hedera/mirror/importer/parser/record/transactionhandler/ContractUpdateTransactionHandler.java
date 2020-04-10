@@ -20,15 +20,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @AllArgsConstructor
 public class ContractUpdateTransactionHandler implements TransactionHandler {
+    private final EntityRepository entityRepository;
 
     @Override
     public EntityId getEntityId(RecordItem recordItem) {
@@ -38,5 +43,29 @@ public class ContractUpdateTransactionHandler implements TransactionHandler {
     @Override
     public boolean updatesEntity() {
         return true;
+    }
+
+    @Override
+    public void updateEntity(Entities entity, RecordItem recordItem) {
+        ContractUpdateTransactionBody txMessage = recordItem.getTransactionBody().getContractUpdateInstance();
+        if (txMessage.hasExpirationTime()) {
+            entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
+        }
+        if (txMessage.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
+        }
+        if (txMessage.hasAdminKey()) {
+            entity.setKey(txMessage.getAdminKey().toByteArray());
+        }
+        // Can't clear memo on contracts. 0 length indicates no change
+        if (txMessage.getMemo() != null && txMessage.getMemo().length() > 0) {
+            entity.setMemo(txMessage.getMemo());
+        }
+        // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
+        // so no need to persist it to repo.
+        EntityId proxyAccountEntityId = EntityId.of(txMessage.getProxyAccountID());
+        if (proxyAccountEntityId != null) {
+            entity.setProxyAccountId(entityRepository.lookupOrCreateId(proxyAccountEntityId));
+        }
     }
 }
