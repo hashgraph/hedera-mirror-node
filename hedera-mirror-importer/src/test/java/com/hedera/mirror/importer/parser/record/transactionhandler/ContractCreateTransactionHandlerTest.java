@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
@@ -30,6 +32,12 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new ContractCreateTransactionHandler();
+    }
+
+    @Override
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance());
     }
 
     @Override

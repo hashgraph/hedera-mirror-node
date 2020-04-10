@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
@@ -30,6 +32,12 @@ class ConsensusCreateTopicTransactionHandlerTest extends AbstractTransactionHand
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new ConsensusCreateTopicTransactionHandler();
+    }
+
+    @Override
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.getDefaultInstance());
     }
 
     @Override

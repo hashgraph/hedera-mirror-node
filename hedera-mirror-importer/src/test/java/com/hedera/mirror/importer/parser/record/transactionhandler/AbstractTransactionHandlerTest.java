@@ -40,9 +40,8 @@ public abstract class AbstractTransactionHandlerTest {
 
     protected abstract TransactionHandler getTransactionHandler();
 
-    protected TransactionBody.Builder getDefaultTransactionBody() {
-        return TransactionBody.newBuilder();
-    }
+    // All sub-classes need to implement this function and return a TransactionBody.Builder with valid 'oneof data' set.
+    protected abstract TransactionBody.Builder getDefaultTransactionBody();
 
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
         return TransactionRecord.newBuilder();
