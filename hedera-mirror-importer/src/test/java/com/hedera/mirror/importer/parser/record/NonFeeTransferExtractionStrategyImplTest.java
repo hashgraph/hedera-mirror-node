@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.TransactionID;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -55,8 +57,7 @@ public class NonFeeTransferExtractionStrategyImplTest {
     @Test
     void extractNonFeeTransfersCryptoTransfer() {
         var transactionBody = getCryptoTransferTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(payerAccountId, transactionBody,
-                getSimpleTransactionRecord());
+        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getSimpleTransactionRecord());
         assertAll(
                 () -> assertEquals(3, StreamSupport.stream(result.spliterator(), false).count())
                 , () -> assertResult(transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList(), result)
@@ -66,8 +67,7 @@ public class NonFeeTransferExtractionStrategyImplTest {
     @Test
     void extractNonFeeTransfersCryptoCreate() {
         var transactionBody = getCryptoCreateTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(payerAccountId, transactionBody,
-                getNewAccountTransactionRecord());
+        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewAccountTransactionRecord());
         assertAll(
                 () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count())
                 , () -> assertResult(createAccountAmounts( payerAccountNum, 0 - initialBalance,
@@ -78,8 +78,7 @@ public class NonFeeTransferExtractionStrategyImplTest {
     @Test
     void extractNonFeeTransfersFailedCryptoCreate() {
         var transactionBody = getCryptoCreateTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(payerAccountId, transactionBody,
-                getFailedTransactionRecord());
+        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getFailedTransactionRecord());
         assertAll(
                 () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count())
                 , () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance), result)
@@ -89,8 +88,7 @@ public class NonFeeTransferExtractionStrategyImplTest {
     @Test
     void extractNonFeeTransfersContractCreate() {
         var transactionBody = getContractCreateTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(payerAccountId, transactionBody,
-                getNewContractTransactionRecord());
+        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewContractTransactionRecord());
         assertAll(
                 () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count())
                 , () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance,
@@ -101,8 +99,7 @@ public class NonFeeTransferExtractionStrategyImplTest {
     @Test
     void extractNonFeeTransfersFailedContractCreate() {
         var transactionBody = getContractCreateTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(payerAccountId, transactionBody,
-                getFailedTransactionRecord());
+        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getFailedTransactionRecord());
         assertAll(
                 () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count())
                 , () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance), result)
@@ -114,8 +111,7 @@ public class NonFeeTransferExtractionStrategyImplTest {
         var amount = 123456L;
         var contractNum = 8888L;
         var transactionBody = getContractCallTransactionBody(contractNum, amount);
-        var result = extractionStrategy.extractNonFeeTransfers(payerAccountId, transactionBody,
-                getSimpleTransactionRecord());
+        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getSimpleTransactionRecord());
         assertAll(
                 () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count())
                 , () -> assertResult(createAccountAmounts(contractNum, amount,
@@ -126,8 +122,7 @@ public class NonFeeTransferExtractionStrategyImplTest {
     @Test
     void extractNonFeeTransfersFileCreateNone() {
         var transactionBody = getFileCreateTransactionBody();
-        var result = extractionStrategy.extractNonFeeTransfers(payerAccountId, transactionBody,
-                getNewFileTransactionRecord());
+        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewFileTransactionRecord());
         assertAll(
                 () -> assertEquals(0, StreamSupport.stream(result.spliterator(), false).count())
         );
@@ -155,6 +150,11 @@ public class NonFeeTransferExtractionStrategyImplTest {
                 .toArray());
     }
 
+    private TransactionBody.Builder transactionBodyBuilder() {
+        return TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(payerAccountId).build());
+    }
+
     private TransactionBody getCryptoTransferTransactionBody() {
         var transferList = TransferList.newBuilder()
                 .addAccountAmounts(newAccountAmount(payerAccountId, -3000L))
@@ -162,30 +162,31 @@ public class NonFeeTransferExtractionStrategyImplTest {
                 .addAccountAmounts(newAccountAmount(testAccount2, 1000L))
                 .build();
 
-        var innerBody = CryptoTransferTransactionBody.newBuilder().setTransfers(transferList).build();
-        return TransactionBody.newBuilder().setCryptoTransfer(innerBody).build();
+        var innerBody = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(transferList).build();
+        return transactionBodyBuilder().setCryptoTransfer(innerBody).build();
     }
 
     private TransactionBody getCryptoCreateTransactionBody() {
         var innerBody = CryptoCreateTransactionBody.newBuilder().setInitialBalance(initialBalance).build();
-        return TransactionBody.newBuilder().setCryptoCreateAccount(innerBody).build();
+        return transactionBodyBuilder().setCryptoCreateAccount(innerBody).build();
     }
 
     private TransactionBody getContractCreateTransactionBody() {
         var innerBody = ContractCreateTransactionBody.newBuilder().setInitialBalance(initialBalance).build();
-        return TransactionBody.newBuilder().setContractCreateInstance(innerBody).build();
+        return transactionBodyBuilder().setContractCreateInstance(innerBody).build();
     }
 
     private TransactionBody getContractCallTransactionBody(long contractNum, long amount) {
         var innerBody = ContractCallTransactionBody.newBuilder()
                 .setContractID(ContractID.newBuilder().setContractNum(contractNum).build())
                 .setAmount(amount).build();
-        return TransactionBody.newBuilder().setContractCall(innerBody).build();
+        return transactionBodyBuilder().setContractCall(innerBody).build();
     }
 
     private TransactionBody getFileCreateTransactionBody() {
         var innerBody = FileCreateTransactionBody.newBuilder().build();
-        return TransactionBody.newBuilder().setFileCreate(innerBody).build();
+        return transactionBodyBuilder().setFileCreate(innerBody).build();
     }
 
     private TransactionRecord getSimpleTransactionRecord() {
