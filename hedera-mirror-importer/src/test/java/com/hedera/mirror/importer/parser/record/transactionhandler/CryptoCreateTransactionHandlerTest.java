@@ -21,22 +21,30 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoDeleteClaimTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-class CryptoDeleteClaimTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoDeleteClaimTransactionHandler();
+        return new CryptoCreateTransactionHandler();
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setCryptoDeleteClaim(CryptoDeleteClaimTransactionBody.newBuilder()
-                        .setAccountIDToDeleteFrom(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build()));
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance());
+    }
+
+    @Override
+    protected TransactionRecord.Builder getDefaultTransactionRecord() {
+        return TransactionRecord.newBuilder()
+                .setReceipt(TransactionReceipt.newBuilder()
+                        .setAccountID(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build()));
     }
 
     @Override

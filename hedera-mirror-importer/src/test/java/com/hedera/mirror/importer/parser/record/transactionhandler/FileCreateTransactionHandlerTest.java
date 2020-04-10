@@ -20,6 +20,35 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class FileCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
+class FileCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new FileCreateTransactionHandler();
+    }
+
+    @Override
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setFileCreate(FileCreateTransactionBody.getDefaultInstance());
+    }
+
+    @Override
+    protected TransactionRecord.Builder getDefaultTransactionRecord() {
+        return TransactionRecord.newBuilder()
+                .setReceipt(TransactionReceipt.newBuilder()
+                        .setFileID(FileID.newBuilder().setFileNum(DEFAULT_ENTITY_NUM).build()));
+    }
+
+    @Override
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return EntityTypeEnum.FILE;
+    }
 }

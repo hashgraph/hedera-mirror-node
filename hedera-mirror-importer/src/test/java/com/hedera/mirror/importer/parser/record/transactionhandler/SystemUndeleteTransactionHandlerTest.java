@@ -20,6 +20,43 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class SystemUndeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
+class SystemUndeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new SystemUndeleteTransactionHandler();
+    }
+
+    @Override
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder()
+                        .setFileID(FileID.newBuilder().setFileNum(DEFAULT_ENTITY_NUM).build()));
+    }
+
+    @Override
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return EntityTypeEnum.FILE;
+    }
+
+    // SystemUndelete for file is tested by common test case in AbstractTransactionHandlerTest.
+    // Test SystemUndelete for contract here.
+    @Test
+    void testSystemUndeleteForContract() {
+        TransactionBody transactionBody = TransactionBody.newBuilder()
+                .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder()
+                        .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build()))
+                .build();
+
+        testGetEntityIdHelper(transactionBody, transactionRecord,
+                new EntityId(null, 0L, 0L, DEFAULT_ENTITY_NUM, EntityTypeEnum.CONTRACT.getId()));
+    }
 }

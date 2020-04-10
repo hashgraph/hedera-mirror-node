@@ -20,6 +20,27 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class ContractDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
+class ContractDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new ContractDeleteTransactionHandler();
+    }
+
+    @Override
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setContractDeleteInstance(ContractDeleteTransactionBody.newBuilder()
+                        .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build()));
+    }
+
+    @Override
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return EntityTypeEnum.CONTRACT;
+    }
 }

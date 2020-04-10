@@ -20,6 +20,27 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
+class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new FileUpdateTransactionHandler();
+    }
+
+    @Override
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setFileUpdate(FileUpdateTransactionBody.newBuilder()
+                        .setFileID(FileID.newBuilder().setFileNum(DEFAULT_ENTITY_NUM).build()));
+    }
+
+    @Override
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return EntityTypeEnum.FILE;
+    }
 }

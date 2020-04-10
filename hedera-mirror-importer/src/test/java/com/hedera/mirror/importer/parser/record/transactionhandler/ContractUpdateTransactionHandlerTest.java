@@ -20,8 +20,27 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new ContractUpdateTransactionHandler();
+    }
 
+    @Override
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setContractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build()));
+    }
+
+    @Override
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return EntityTypeEnum.CONTRACT;
+    }
 }

@@ -20,6 +20,35 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class ConsensusCreateTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
+class ConsensusCreateTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new ConsensusCreateTopicTransactionHandler();
+    }
+
+    @Override
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.getDefaultInstance());
+    }
+
+    @Override
+    protected TransactionRecord.Builder getDefaultTransactionRecord() {
+        return TransactionRecord.newBuilder()
+                .setReceipt(TransactionReceipt.newBuilder()
+                        .setTopicID(TopicID.newBuilder().setTopicNum(DEFAULT_ENTITY_NUM).build()));
+    }
+
+    @Override
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return EntityTypeEnum.TOPIC;
+    }
 }

@@ -20,6 +20,29 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-class CryptoAddClaimTransactionHandlerTest extends AbstractTransactionHandlerTest {
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Claim;
+import com.hederahashgraph.api.proto.java.CryptoAddClaimTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
+class CryptoAddClaimTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Override
+    protected TransactionHandler getTransactionHandler() {
+        return new CryptoAddClaimTransactionHandler();
+    }
+
+    @Override
+    protected TransactionBody.Builder getDefaultTransactionBody() {
+        return TransactionBody.newBuilder()
+                .setCryptoAddClaim(CryptoAddClaimTransactionBody.newBuilder()
+                        .setClaim(Claim.newBuilder()
+                                .setAccountID(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build())));
+    }
+
+    @Override
+    protected EntityTypeEnum getExpectedEntityIdType() {
+        return EntityTypeEnum.ACCOUNT;
+    }
 }
