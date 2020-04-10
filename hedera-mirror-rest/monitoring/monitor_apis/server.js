@@ -21,7 +21,7 @@
 'use strict';
 
 require('dotenv').config({
-  path: './.env'
+  path: './.env',
 });
 
 const express = require('express');
@@ -44,7 +44,7 @@ app.set('trust proxy', true);
 app.set('port', port);
 app.use(
   bodyParser.urlencoded({
-    extended: false
+    extended: false,
   })
 );
 app.use(bodyParser.json());

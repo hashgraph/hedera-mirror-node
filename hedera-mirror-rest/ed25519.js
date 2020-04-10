@@ -21,7 +21,7 @@
 
 const asn1js = require('asn1js');
 
-const derToEd25519 = function(der) {
+const derToEd25519 = function (der) {
   const ID_Ed25519 = '1.3.101.112'; //per RFC 8410 https://tools.ietf.org/html/rfc8410#section-9
   try {
     let buf = new Uint8Array(Buffer.from(der, 'hex')).buffer;
@@ -48,5 +48,5 @@ const derToEd25519 = function(der) {
 };
 
 module.exports = {
-  derToEd25519: derToEd25519
+  derToEd25519: derToEd25519,
 };

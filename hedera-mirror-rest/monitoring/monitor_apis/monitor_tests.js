@@ -32,7 +32,7 @@ const balanceTests = require('./balance_tests');
  * @param {Object} server API host endpoint
  * @return {Object} results object capturing tests for given endpoint
  */
-const runTests = server => {
+const runTests = (server) => {
   if (undefined === server) {
     console.log(`server is undefined, skipping ....`);
     return;
@@ -55,5 +55,5 @@ const runTests = server => {
 };
 
 module.exports = {
-  runTests: runTests
+  runTests: runTests,
 };

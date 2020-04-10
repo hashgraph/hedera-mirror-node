@@ -21,6 +21,9 @@
 const config = require('./config.js');
 const constants = require('./constants.js');
 const utils = require('./utils.js');
+const {DbError} = require('./errors/dbError');
+const {NotFoundError} = require('./errors/notFoundError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const topicMessageColumns = {
   CONSENSUS_TIMESTAMP: 'consensus_timestamp',
@@ -40,11 +43,9 @@ const columnMap = {
  * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
  */
 const validateConsensusTimestampParam = function (consensusTimestamp) {
-  let badParams = [];
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
-    badParams.push({message: `Invalid parameter: consensusTimestamp`});
+    throw InvalidArgumentError.forParams(topicMessageColumns.CONSENSUS_TIMESTAMP);
   }
-  return utils.makeValidationResponse(badParams);
 };
 
 /**
@@ -53,44 +54,32 @@ const validateConsensusTimestampParam = function (consensusTimestamp) {
 const validateGetSequenceMessageParams = function (topicId, seqNum) {
   let badParams = [];
   if (!utils.isValidEntityNum(topicId)) {
-    badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.TOPIC_NUM));
+    badParams.push(topicMessageColumns.TOPIC_NUM);
   }
 
   if (!utils.isValidNum(seqNum)) {
-    badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.SEQUENCE_NUMBER));
+    badParams.push(topicMessageColumns.SEQUENCE_NUMBER);
   }
 
-  return utils.makeValidationResponse(badParams);
+  if (badParams.length > 0) {
+    throw InvalidArgumentError.forParams(badParams);
+  }
 };
 
 /**
  * Verify topicId and sequencenumber meet entity_num and limit format
  */
 const validateGetTopicMessagesParams = function (topicId) {
-  let badParams = [];
   if (!utils.isValidEntityNum(topicId)) {
-    badParams.push(utils.getInvalidParameterMessageObject(topicMessageColumns.TOPIC_NUM));
+    throw InvalidArgumentError.forParams(topicMessageColumns.TOPIC_NUM);
   }
-
-  return utils.makeValidationResponse(badParams);
 };
 
-const validateGetTopicMessagesRequest = (topicId, filters, res) => {
-  let valid = true;
-  const paramValidationResult = validateGetTopicMessagesParams(topicId);
-  if (!paramValidationResult.isValid) {
-    res.status(paramValidationResult.code).json(paramValidationResult.contents);
-    valid = false;
-  }
+const validateGetTopicMessagesRequest = (topicId, filters) => {
+  validateGetTopicMessagesParams(topicId);
 
   // validate filters
-  const filterValidationResult = utils.validateAndParseFilters(filters);
-  if (!filterValidationResult.isValid) {
-    res.status(filterValidationResult.code).json(filterValidationResult.contents);
-    valid = false;
-  }
-
-  return valid;
+  utils.validateAndParseFilters(filters);
 };
 
 /**
@@ -109,37 +98,27 @@ const formatTopicMessageRow = function (row) {
 /**
  * Extracts and validates timestamp input, creates db query logic in preparation for db call to get message
  */
-const processGetMessageByConsensusTimestampRequest = (params, httpResponse) => {
-  const consensusTimestampParam = params.consensusTimestamp;
-  const validationResult = validateConsensusTimestampParam(consensusTimestampParam);
-  if (!validationResult.isValid) {
-    return new Promise((resolve, reject) => {
-      httpResponse.status(validationResult.code).json(validationResult.contents);
-      resolve();
-    });
-  }
+const processGetMessageByConsensusTimestampRequest = (req, res) => {
+  const consensusTimestampParam = req.params.consensusTimestamp;
+  validateConsensusTimestampParam(consensusTimestampParam);
 
   let consensusTimestamp = utils.parseTimestampParam(consensusTimestampParam);
 
   const pgSqlQuery = `SELECT * FROM topic_message WHERE consensus_timestamp = $1`;
   const pgSqlParams = [consensusTimestamp];
 
-  return getMessage(pgSqlQuery, pgSqlParams, httpResponse);
+  return getMessage(pgSqlQuery, pgSqlParams).then((message) => {
+    res.locals[constants.responseDataLabel] = message;
+  });
 };
 
 /**
  * Extracts and validates topic and sequence params and creates db query statement in preparation for db call to get message
  */
-const processGetMessageByTopicAndSequenceRequest = (params, httpResponse) => {
-  const topicId = params.id;
-  const seqNum = params.sequencenumber;
-  const validationResult = validateGetSequenceMessageParams(topicId, seqNum);
-  if (!validationResult.isValid) {
-    return new Promise((resolve, reject) => {
-      httpResponse.status(validationResult.code).json(validationResult.contents);
-      resolve();
-    });
-  }
+const processGetMessageByTopicAndSequenceRequest = (req, res) => {
+  const topicId = req.params.id;
+  const seqNum = req.params.sequencenumber;
+  validateGetSequenceMessageParams(topicId, seqNum);
 
   // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7. Defaults realm to 0 if not stated
   const entity = utils.parseEntityId(topicId);
@@ -148,7 +127,9 @@ const processGetMessageByTopicAndSequenceRequest = (params, httpResponse) => {
     ' from topic_message where realm_num = $1 and topic_num = $2 and sequence_number = $3 limit 1';
   const pgSqlParams = [entity.realm, entity.num, seqNum];
 
-  return getMessage(pgSqlQuery, pgSqlParams, httpResponse);
+  return getMessage(pgSqlQuery, pgSqlParams).then((message) => {
+    res.locals[constants.responseDataLabel] = message;
+  });
 };
 
 const processGetTopicMessages = (req, res) => {
@@ -157,10 +138,7 @@ const processGetTopicMessages = (req, res) => {
   const filters = utils.buildFilterObject(req.query);
 
   // validate params
-  const validQuery = validateGetTopicMessagesRequest(topicId, filters, res);
-  if (!validQuery) {
-    return Promise.resolve;
-  }
+  validateGetTopicMessagesRequest(topicId, filters);
 
   // build sql query validated param and filters
   let {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
@@ -188,7 +166,7 @@ const processGetTopicMessages = (req, res) => {
       order
     );
 
-    res.json(topicMessagesResponse);
+    res.locals[constants.responseDataLabel] = topicMessagesResponse;
   });
 };
 
@@ -235,22 +213,25 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
 /**
  * Retrieves topic message from
  */
-const getMessage = function (pgSqlQuery, pgSqlParams, httpResponse) {
+const getMessage = async (pgSqlQuery, pgSqlParams) => {
   if (logger.isTraceEnabled()) {
     logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  return pool.query(pgSqlQuery, pgSqlParams).then((results) => {
-    // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
-    if (results.rowCount === 1) {
-      logger.debug('getMessage returning single entry');
-      httpResponse.json(formatTopicMessageRow(results.rows[0]));
-    } else {
-      httpResponse
-        .status(utils.httpStatusCodes.NOT_FOUND)
-        .json(utils.createSingleErrorJsonResponse(utils.httpErrorMessages.NOT_FOUND));
-    }
-  });
+  return pool
+    .query(pgSqlQuery, pgSqlParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
+      if (results.rowCount === 1) {
+        logger.debug('getMessage returning single entry');
+        return formatTopicMessageRow(results.rows[0]);
+      } else {
+        throw new NotFoundError();
+      }
+    });
 };
 
 const getMessages = async (pgSqlQuery, pgSqlParams) => {
@@ -260,15 +241,20 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
 
   let messages = [];
 
-  return await pool.query(pgSqlQuery, pgSqlParams).then((results) => {
-    for (let i = 0; i < results.rowCount; i++) {
-      messages.push(formatTopicMessageRow(results.rows[i]));
-    }
+  return pool
+    .query(pgSqlQuery, pgSqlParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      for (let i = 0; i < results.rowCount; i++) {
+        messages.push(formatTopicMessageRow(results.rows[i]));
+      }
 
-    logger.debug('getMessages returning ' + messages.length + ' entries');
+      logger.debug('getMessages returning ' + messages.length + ' entries');
 
-    return messages;
-  });
+      return messages;
+    });
 };
 
 /**
@@ -276,12 +262,10 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getMessageByConsensusTimestamp = function (req, res) {
+const getMessageByConsensusTimestamp = async (req, res) => {
   logger.debug('--------------------  getMessageByConsensusTimestamp --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByConsensusTimestampRequest(req.params, res).catch((error) =>
-    utils.errorHandler(error, req, res, null)
-  );
+  return processGetMessageByConsensusTimestampRequest(req, res);
 };
 
 /**
@@ -289,18 +273,22 @@ const getMessageByConsensusTimestamp = function (req, res) {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getMessageByTopicAndSequenceRequest = function (req, res) {
+const getMessageByTopicAndSequenceRequest = async (req, res) => {
   logger.debug('--------------------  getMessageByTopicAndSequenceRequest --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByTopicAndSequenceRequest(req.params, res).catch((error) =>
-    utils.errorHandler(error, req, res, null)
-  );
+  return processGetMessageByTopicAndSequenceRequest(req, res);
 };
 
-const getTopicMessages = (req, res) => {
+/**
+ * Handler function for /topics/:id API.
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns Promise for PostgreSQL query
+ */
+const getTopicMessages = async (req, res) => {
   logger.debug('--------------------  getTopicMessages --------------------');
   logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetTopicMessages(req, res).catch((error) => utils.errorHandler(error, req, res, null));
+  return processGetTopicMessages(req, res);
 };
 
 module.exports = {

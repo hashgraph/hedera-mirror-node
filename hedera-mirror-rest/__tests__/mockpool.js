@@ -97,14 +97,14 @@ class Pool {
 
     let rows = this.createMockData(callerFile, parsedparams);
 
-    let promise = new Promise(function(resolve, reject) {
+    let promise = new Promise(function (resolve, reject) {
       resolve({
         rows: rows,
         sqlQuery: {
           query: sqlquery,
           params: sqlparams,
-          parsedparams: parsedparams
-        }
+          parsedparams: parsedparams,
+        },
       });
     });
 
@@ -137,15 +137,15 @@ class Pool {
   createMockTransactions(parsedparams) {
     let accountNum = {
       low: 1,
-      high: this.TEST_DATA_MAX_ACCOUNTS
+      high: this.TEST_DATA_MAX_ACCOUNTS,
     };
     let timestamp = {
       low: this.toNs(this.timeNow - this.TEST_DATA_MAX_HISTORY),
-      high: this.toNs(this.timeNow)
+      high: this.toNs(this.timeNow),
     };
     let limit = {
       low: maxLimit,
-      high: maxLimit
+      high: maxLimit,
     };
     let order = 'desc';
 
@@ -168,7 +168,7 @@ class Pool {
     }
 
     // Sanity check on the numbers
-    [accountNum, timestamp, limit].forEach(pVar => {
+    [accountNum, timestamp, limit].forEach((pVar) => {
       pVar = this.sanityCheck(pVar);
     });
 
@@ -211,19 +211,19 @@ class Pool {
   createMockBalances(parsedparams) {
     let accountNum = {
       low: 1,
-      high: this.TEST_DATA_MAX_ACCOUNTS
+      high: this.TEST_DATA_MAX_ACCOUNTS,
     };
     let timestamp = {
       low: this.timeNow - this.TEST_DATA_MAX_HISTORY,
-      high: this.timeNow
+      high: this.timeNow,
     };
     let balance = {
       low: 0,
-      high: this.TEST_DATA_MAX_BALANCE
+      high: this.TEST_DATA_MAX_BALANCE,
     };
     let limit = {
       low: maxLimit,
-      high: maxLimit
+      high: maxLimit,
     };
     let order = 'desc';
 
@@ -253,7 +253,7 @@ class Pool {
     }
 
     // Sanity check on the numbers
-    [accountNum, timestamp, balance, limit].forEach(pVar => {
+    [accountNum, timestamp, balance, limit].forEach((pVar) => {
       pVar = this.sanityCheck(pVar);
     });
 
@@ -285,15 +285,15 @@ class Pool {
   createMockAccounts(parsedparams) {
     let accountNum = {
       low: 1,
-      high: this.TEST_DATA_MAX_ACCOUNTS
+      high: this.TEST_DATA_MAX_ACCOUNTS,
     };
     let balance = {
       low: 0,
-      high: this.TEST_DATA_MAX_BALANCE
+      high: this.TEST_DATA_MAX_BALANCE,
     };
     let limit = {
       low: maxLimit,
-      high: maxLimit
+      high: maxLimit,
     };
     let order = 'desc';
 
@@ -316,7 +316,7 @@ class Pool {
     }
 
     // Sanity check on the numbers
-    [accountNum, balance, limit].forEach(pVar => {
+    [accountNum, balance, limit].forEach((pVar) => {
       pVar = this.sanityCheck(pVar);
     });
 

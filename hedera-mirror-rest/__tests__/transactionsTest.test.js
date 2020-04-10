@@ -22,11 +22,7 @@
 const transactions = require('../transactions.js');
 
 function normalizeSql(str) {
-  return str
-    .replace(/\s+/g, ' ')
-    .replace(/,\s*/g, ',')
-    .replace(/\s*,/g, ',')
-    .replace(/\s+$/, '');
+  return str.replace(/\s+/g, ' ').replace(/,\s*/g, ',').replace(/\s*,/g, ',').replace(/\s+$/, '');
 }
 
 const boilerplatePrefix = `select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num , t.memo , t.consensus_ns , valid_start_ns ,

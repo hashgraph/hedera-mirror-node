@@ -18,30 +18,24 @@
  * ‍
  */
 'use strict';
+const InvalidArgumentErrorMessageFormat = 'Invalid parameter: ';
 
-const filterKeys = {
-  ACCOUNT_ID: 'account.id',
-  ACCOUNT_BALANCE: 'account.balance',
-  ACCOUNT_PUBLICKEY: 'account.publickey',
-  LIMIT: 'limit',
-  ORDER: 'order',
-  RESULT: 'result',
-  SEQUENCE_NUMBER: 'sequencenumber',
-  TIMESTAMP: 'timestamp',
-  TYPE: 'type',
-};
+class InvalidArgumentError extends Error {
+  constructor(errorMessage) {
+    super();
 
-const entityColumns = {
-  ENTITY_NUM: 'entity_num',
-  ENTITY_REALM: 'entity_realm',
-  ENTITY_SHARD: 'entity_shard',
-  PUBLIC_KEY: 'ed25519_public_key_hex',
-};
+    this.message = errorMessage;
+  }
 
-const responseDataLabel = 'mirrorRestData';
+  // factory method to help common case
+  static forParams(badParams) {
+    if (!Array.isArray(badParams)) {
+      badParams = [badParams];
+    }
+    return new InvalidArgumentError(badParams.map((message) => `${InvalidArgumentErrorMessageFormat}${message}`));
+  }
+}
 
 module.exports = {
-  entityColumns: entityColumns,
-  filterKeys: filterKeys,
-  responseDataLabel,
+  InvalidArgumentError,
 };

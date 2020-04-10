@@ -40,7 +40,7 @@ const timeOneHourAgo = timeNow - 60 * 60;
  * @param {Number} len Expected length
  * @return {Boolean}  Result of the check
  */
-const validateLen = function(transactions, len) {
+const validateLen = function (transactions, len) {
   return transactions.length === len;
 };
 
@@ -51,7 +51,7 @@ const validateLen = function(transactions, len) {
  * @param {Number} high Expected high limit of the timestamps
  * @return {Boolean}  Result of the check
  */
-const validateTsRange = function(transactions, low, high) {
+const validateTsRange = function (transactions, low, high) {
   let ret = true;
   let offender = null;
   for (const tx of transactions) {
@@ -74,7 +74,7 @@ const validateTsRange = function(transactions, low, high) {
  * @param {Number} high Expected high limit of the account ids
  * @return {Boolean}  Result of the check
  */
-const validateAccNumRange = function(transactions, low, high) {
+const validateAccNumRange = function (transactions, low, high) {
   let ret = false;
   let offender = null;
   for (const tx of transactions) {
@@ -108,7 +108,7 @@ const validateAccNumRange = function(transactions, low, high) {
  * @param {Array} transactions Array of transactions returned by the rest api
  * @return {Boolean}  Result of the check
  */
-const validateFields = function(transactions) {
+const validateFields = function (transactions) {
   let ret = true;
 
   // Assert that all mandatory fields are present in the response
@@ -123,8 +123,8 @@ const validateFields = function(transactions) {
     'node',
     'transfers',
     'valid_duration_seconds',
-    'max_fee'
-  ].forEach(field => {
+    'max_fee',
+  ].forEach((field) => {
     ret = ret && transactions[0].hasOwnProperty(field);
   });
 
@@ -133,7 +133,7 @@ const validateFields = function(transactions) {
 
   // Assert that the transfers array has the mandatory fields
   if (ret) {
-    ['account', 'amount'].forEach(field => {
+    ['account', 'amount'].forEach((field) => {
       ret = ret && transactions[0].transfers[0].hasOwnProperty(field);
     });
   }
@@ -149,7 +149,7 @@ const validateFields = function(transactions) {
  * @param {String} order Expected order ('asc' or 'desc')
  * @return {Boolean}  Result of the check
  */
-const validateOrder = function(transactions, order) {
+const validateOrder = function (transactions, order) {
   let ret = true;
   let offenderTx = null;
   let offenderVal = null;
@@ -187,64 +187,64 @@ const singletests = {
     checks: [{field: 'consensus_ns', operator: '>=', value: timeOneHourAgo + '000000000'}],
     checkFunctions: [
       {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   timestamp_higherlimit: {
     urlparam: `timestamp=lt:${timeNow}`,
     checks: [{field: 'consensus_ns', operator: '<', value: timeNow + '000000000'}],
     checkFunctions: [
       {func: validateTsRange, args: [0, timeNow]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   accountid_lowerlimit: {
     urlparam: 'account.id=gte:0.0.1111',
     checks: [{field: 'entity_num', operator: '>=', value: 1111}],
     checkFunctions: [
       {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   accountid_higherlimit: {
     urlparam: 'account.id=lt:0.0.2222',
     checks: [{field: 'entity_num', operator: '<', value: 2222}],
     checkFunctions: [
       {func: validateAccNumRange, args: [0, 2222]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
     checks: [{field: 'entity_num', operator: '=', value: 3333}],
-    checkFunctions: [{func: validateAccNumRange, args: [3333, 3333]}]
+    checkFunctions: [{func: validateAccNumRange, args: [3333, 3333]}],
   },
   limit: {
     urlparam: 'limit=99',
     checks: [{field: 'limit', operator: '=', value: 99}],
     checkFunctions: [
       {func: validateLen, args: [99]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   order_asc: {
     urlparam: 'order=asc',
     checks: [{field: 'order', operator: '=', value: 'asc'}],
-    checkFunctions: [{func: validateOrder, args: ['asc']}]
+    checkFunctions: [{func: validateOrder, args: ['asc']}],
   },
   order_desc: {
     urlparam: 'order=desc',
     checks: [{field: 'order', operator: '=', value: 'desc'}],
-    checkFunctions: [{func: validateOrder, args: ['desc']}]
+    checkFunctions: [{func: validateOrder, args: ['desc']}],
   },
   result_fail: {
     urlparam: 'result=fail',
-    checks: [{field: 'result', operator: '!=', value: utils.TRANSACTION_RESULT_SUCCESS}]
+    checks: [{field: 'result', operator: '!=', value: utils.TRANSACTION_RESULT_SUCCESS}],
   },
   result_success: {
     urlparam: 'result=success',
-    checks: [{field: 'result', operator: '=', value: utils.TRANSACTION_RESULT_SUCCESS}]
-  }
+    checks: [{field: 'result', operator: '=', value: utils.TRANSACTION_RESULT_SUCCESS}],
+  },
 };
 
 /**
@@ -261,7 +261,7 @@ const combinedtests = [
   ['timestamp_lowerlimit', 'timestamp_higherlimit', 'accountid-lowerlimit', 'accountid_higherlimit'],
   ['timestamp_lowerlimit', 'accountid_higherlimit', 'limit'],
   ['timestamp_higherlimit', 'accountid_lowerlimit', 'result_fail'],
-  ['limit', 'result_success', 'order_asc']
+  ['limit', 'result_success', 'order_asc'],
 ];
 
 // Start of tests

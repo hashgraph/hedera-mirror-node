@@ -19,29 +19,15 @@
  */
 'use strict';
 
-const filterKeys = {
-  ACCOUNT_ID: 'account.id',
-  ACCOUNT_BALANCE: 'account.balance',
-  ACCOUNT_PUBLICKEY: 'account.publickey',
-  LIMIT: 'limit',
-  ORDER: 'order',
-  RESULT: 'result',
-  SEQUENCE_NUMBER: 'sequencenumber',
-  TIMESTAMP: 'timestamp',
-  TYPE: 'type',
-};
+const constants = require('../constants.js');
 
-const entityColumns = {
-  ENTITY_NUM: 'entity_num',
-  ENTITY_REALM: 'entity_realm',
-  ENTITY_SHARD: 'entity_shard',
-  PUBLIC_KEY: 'ed25519_public_key_hex',
+// response middleware that pull response data passed through request and sets in json response
+// next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
+const responseHandler = (req, res, next) => {
+  // set response json
+  res.json(res.locals[constants.responseDataLabel]);
 };
-
-const responseDataLabel = 'mirrorRestData';
 
 module.exports = {
-  entityColumns: entityColumns,
-  filterKeys: filterKeys,
-  responseDataLabel,
+  responseHandler,
 };

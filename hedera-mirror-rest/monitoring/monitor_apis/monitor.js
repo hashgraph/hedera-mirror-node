@@ -30,7 +30,7 @@ const retryCountMax = 3; // # of times a single process can retry
  * @param {} None
  * @return {} None
  */
-const runEverything = async servers => {
+const runEverything = async (servers) => {
   try {
     const restservers = undefined === servers ? common.getServerList().servers : servers;
 
@@ -43,7 +43,7 @@ const runEverything = async servers => {
 
       if (processObj == undefined) {
         // execute test and store name
-        monitorTests.runTests(`http://${server.ip}:${server.port}`).then(outJson => {
+        monitorTests.runTests(`http://${server.ip}:${server.port}`).then((outJson) => {
           let results = {};
           if (outJson.hasOwnProperty('testResults')) {
             results = outJson;
@@ -96,5 +96,5 @@ const runEverything = async servers => {
 };
 
 module.exports = {
-  runEverything: runEverything
+  runEverything: runEverything,
 };

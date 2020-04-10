@@ -35,10 +35,10 @@ const balanceFileUpdateRefreshTime = 900;
 const getBalances = (pathandquery, currentTestResult) => {
   return acctestutils
     .getAPIResponse(pathandquery)
-    .then(json => {
+    .then((json) => {
       return json.balances;
     })
-    .catch(error => {
+    .catch((error) => {
       currentTestResult.failureMessages.push(error);
     });
 };
@@ -47,9 +47,9 @@ const getBalances = (pathandquery, currentTestResult) => {
  * Check the required fields exist in the response object
  * @param {Object} entry Balance JSON object
  */
-const checkMandatoryParams = entry => {
+const checkMandatoryParams = (entry) => {
   let check = true;
-  ['account', 'balance'].forEach(field => {
+  ['account', 'balance'].forEach((field) => {
     check = check && entry.hasOwnProperty(field);
   });
 
@@ -284,5 +284,5 @@ const runBalanceTests = async (server, classResults) => {
 };
 
 module.exports = {
-  runBalanceTests: runBalanceTests
+  runBalanceTests: runBalanceTests,
 };

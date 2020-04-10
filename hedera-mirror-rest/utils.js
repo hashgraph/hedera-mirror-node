@@ -21,23 +21,10 @@
 const math = require('mathjs');
 const config = require('./config.js');
 const ed25519 = require('./ed25519.js');
-const constants = require('./constants.js');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const ENTITY_TYPE_FILE = 3;
 const TRANSACTION_RESULT_SUCCESS = 22;
-
-const httpStatusCodes = {
-  OK: 200,
-  BAD_REQUEST: 400,
-  NOT_FOUND: 404,
-  INTERNAL_ERROR: 500,
-  SERVICE_UNAVAILABLE: 503,
-};
-
-const httpErrorMessages = {
-  NOT_FOUND: 'Not found',
-  INTERNAL_ERROR: 'Internal error',
-};
 
 const successValidationResponse = {isValid: true, code: 200, contents: 'OK'};
 
@@ -175,14 +162,6 @@ const filterValidityChecks = function (param, op, val) {
   return ret;
 };
 
-const getInvalidParameterMessage = (message) => {
-  return `Invalid parameter: ${message}`;
-};
-
-const getInvalidParameterMessageObject = (message) => {
-  return {message: getInvalidParameterMessage(message)};
-};
-
 /**
  * Validate input http request object
  * @param {HTTPRequest} req HTTP request object
@@ -195,40 +174,19 @@ const validateReq = function (req) {
     if (Array.isArray(req.query[key])) {
       for (const val of req.query[key]) {
         if (!paramValidityChecks(key, val)) {
-          badParams.push(getInvalidParameterMessageObject(key));
+          badParams.push(key);
         }
       }
     } else {
       if (!paramValidityChecks(key, req.query[key])) {
-        badParams.push(getInvalidParameterMessageObject(key));
+        badParams.push(key);
       }
     }
   }
-  return makeValidationResponse(badParams);
-};
 
-const makeValidationResponse = function (badParams) {
-  if (badParams && badParams.length !== 0) {
-    return {
-      isValid: false,
-      code: httpStatusCodes.BAD_REQUEST,
-      contents: errorMessageFormat(badParams),
-    };
-  } else {
-    return successValidationResponse;
+  if (badParams.length > 0) {
+    throw InvalidArgumentError.forParams(badParams);
   }
-};
-
-const errorMessageFormat = (messages) => {
-  return {
-    _status: {
-      messages: messages,
-    },
-  };
-};
-
-const createSingleErrorJsonResponse = (message) => {
-  return errorMessageFormat([{message: message}]);
 };
 
 /**
@@ -731,21 +689,6 @@ const buildComparatorFilter = (name, filter) => {
 };
 
 /**
- * Verify filters meet expected formats
- */
-const validateFilters = (filters) => {
-  let badParams = [];
-
-  for (const filter of filters) {
-    if (!filterValidityChecks(filter.key, filter.operator, filter.value)) {
-      badParams.push(getInvalidParameterMessageObject(filter.key));
-    }
-  }
-
-  return makeValidationResponse(badParams);
-};
-
-/**
  * Verify param and filters meet expected format
  * Additionally update format to be persistence query compatible
  * @param filters
@@ -756,13 +699,15 @@ const validateAndParseFilters = (filters) => {
 
   for (const filter of filters) {
     if (!filterValidityChecks(filter.key, filter.operator, filter.value)) {
-      badParams.push(getInvalidParameterMessageObject(filter.key));
+      badParams.push(filter.key);
     } else {
       formatComparator(filter);
     }
   }
 
-  return makeValidationResponse(badParams);
+  if (badParams.length > 0) {
+    throw InvalidArgumentError.forParams(badParams);
+  }
 };
 
 const formatComparator = (comparator) => {
@@ -796,37 +741,19 @@ const formatComparator = (comparator) => {
   }
 };
 
-const errorHandler = function (err, req, res, next) {
-  logger.error(`Error processing ${req.originalUrl}: `, err);
-
-  if (/ECONNREFUSED/.test(err.message)) {
-    res
-      .status(httpStatusCodes.SERVICE_UNAVAILABLE)
-      .json(createSingleErrorJsonResponse('Unable to connect to database. Please retry later'));
-  } else {
-    res.status(httpStatusCodes.INTERNAL_ERROR).json(createSingleErrorJsonResponse('Internal error'));
-  }
-};
-
 module.exports = {
   buildFilterObject: buildFilterObject,
   buildComparatorFilter: buildComparatorFilter,
   buildPgSqlObject: buildPgSqlObject,
-  createSingleErrorJsonResponse: createSingleErrorJsonResponse,
   createTransactionId: createTransactionId,
   convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,
   encodeBase64: encodeBase64,
   encodeKey: encodeKey,
-  errorHandler: errorHandler,
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
   filterValidityChecks: filterValidityChecks,
   formatComparator: formatComparator,
-  getInvalidParameterMessage: getInvalidParameterMessage,
-  getInvalidParameterMessageObject: getInvalidParameterMessageObject,
   getNullableNumber: getNullableNumber,
   getPaginationLink: getPaginationLink,
-  httpErrorMessages: httpErrorMessages,
-  httpStatusCodes: httpStatusCodes,
   isValidEntityNum: isValidEntityNum,
   isValidLimitNum: isValidLimitNum,
   isValidNum: isValidNum,
@@ -837,16 +764,13 @@ module.exports = {
   parseParams: parseParams,
   parseResultParams: parseResultParams,
   parseTimestampParam: parseTimestampParam,
-  makeValidationResponse: makeValidationResponse,
   nsToSecNs: nsToSecNs,
   nsToSecNsWithHyphen: nsToSecNsWithHyphen,
   returnEntriesLimit: returnEntriesLimit,
   secNsToNs: secNsToNs,
   secNsToSeconds: secNsToSeconds,
-  successValidationResponse: successValidationResponse,
   toHexString: toHexString,
   TRANSACTION_RESULT_SUCCESS: TRANSACTION_RESULT_SUCCESS,
   validateAndParseFilters: validateAndParseFilters,
-  validateFilters: validateFilters,
   validateReq: validateReq,
 };

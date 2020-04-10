@@ -80,7 +80,7 @@ const realm = 15;
  * Setup test data in the postgres instance.
  */
 
-const setupData = async function() {
+const setupData = async function () {
   const testDataPath = path.join(__dirname, 'integration_test_data.json');
   const testData = fs.readFileSync(testDataPath);
   const testDataJson = JSON.parse(testData);
@@ -98,7 +98,7 @@ const setupData = async function() {
  * @param amount
  * @returns {Promise<void>}
  */
-const addCryptoTransferTransaction = async function(
+const addCryptoTransferTransaction = async function (
   consensusTimestamp,
   payerAccountId,
   recipientAccountId,
@@ -120,21 +120,21 @@ const addCryptoTransferTransaction = async function(
     result: result,
     type: type,
     nodeAccountId: nodeAccountId,
-    treasuryAccountId: treasuryAccountId
+    treasuryAccountId: treasuryAccountId,
   });
 };
 
 const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
   await integrationDomainOps.addAccount({
     entity_num: id,
-    entity_realm: realm
+    entity_realm: realm,
   });
 
   await integrationDomainOps.setAccountBalance({
     timestamp: ts,
     id: id,
     realm_num: realm,
-    balance: bal
+    balance: bal,
   });
 };
 
@@ -144,19 +144,19 @@ const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
  * @returns {*}
  */
 function mapTransactionResults(rows) {
-  return rows.map(function(v) {
+  return rows.map(function (v) {
     return '@' + v['consensus_ns'] + ': account ' + v['account_num'] + ' \u0127' + v['amount'];
   });
 }
 
 function extractDurationAndMaxFeeFromTransactionResults(rows) {
-  return rows.map(function(v) {
+  return rows.map(function (v) {
     return '@' + v['valid_duration_seconds'] + ',' + v['max_fee'];
   });
 }
 
 function extractNameAndResultFromTransactionResults(rows) {
-  return rows.map(function(v) {
+  return rows.map(function (v) {
     return '@' + v['name'] + ',' + v['result'];
   });
 }
@@ -178,7 +178,7 @@ test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xf
     '@1051: account 98 \u01271',
     '@1052: account 8 \u0127-31',
     '@1052: account 9 \u012730',
-    '@1052: account 98 \u01271'
+    '@1052: account 98 \u01271',
   ]);
 });
 
@@ -189,7 +189,7 @@ test('DB integration test - transactions.reqToSql - single valid account - 1 txn
   expect(mapTransactionResults(res.rows).sort()).toEqual([
     '@1052: account 8 \u0127-31',
     '@1052: account 9 \u012730',
-    '@1052: account 98 \u01271'
+    '@1052: account 98 \u01271',
   ]);
 });
 
@@ -216,7 +216,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
     '@null,777',
     '@null,null',
     '@null,null',
-    '@null,null'
+    '@null,null',
   ]);
 });
 
@@ -229,7 +229,7 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
   expect(extractNameAndResultFromTransactionResults(res.rows).sort()).toEqual([
     '@UNKNOWN,UNKNOWN',
     '@UNKNOWN,UNKNOWN',
-    '@UNKNOWN,UNKNOWN'
+    '@UNKNOWN,UNKNOWN',
   ]);
 });
 
@@ -255,12 +255,12 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
     '@2063: account 98 \u01271',
     '@2064: account 63 \u012720',
     '@2064: account 82 \u0127-21',
-    '@2064: account 98 \u01271'
+    '@2064: account 98 \u01271',
   ]);
 });
 
 let specPath = path.join(__dirname, 'specs');
-fs.readdirSync(specPath).forEach(function(file) {
+fs.readdirSync(specPath).forEach(function (file) {
   let p = path.join(specPath, file);
   let specText = fs.readFileSync(p, 'utf8');
   var spec = JSON.parse(specText);
@@ -274,7 +274,7 @@ fs.readdirSync(specPath).forEach(function(file) {
   });
 });
 
-const specSetupSteps = async function(spec) {
+const specSetupSteps = async function (spec) {
   await integrationDbOps.cleanUp();
   await integrationDomainOps.setUp(spec, sqlConnection);
 };

@@ -20,6 +20,10 @@
 'use strict';
 const utils = require('./utils.js');
 const config = require('./config.js');
+const constants = require('./constants.js');
+const {DbError} = require('./errors/dbError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const {NotFoundError} = require('./errors/notFoundError');
 
 /**
  * Create transferlists from the output of SQL queries. The SQL table has different
@@ -198,14 +202,9 @@ const reqToSql = function (req) {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getTransactions = function (req) {
+const getTransactions = async (req, res) => {
   // Validate query parameters first
-  const valid = utils.validateReq(req);
-  if (!valid.isValid) {
-    return new Promise((resolve, reject) => {
-      resolve(valid);
-    });
-  }
+  utils.validateReq(req);
 
   let query = reqToSql(req);
   if (logger.isTraceEnabled()) {
@@ -213,48 +212,49 @@ const getTransactions = function (req) {
   }
 
   // Execute query
-  return pool.query(query.query, query.params).then((results) => {
-    let ret = {
-      transactions: [],
-      links: {
-        next: null,
-      },
-    };
+  return pool
+    .query(query.query, query.params)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      let ret = {
+        transactions: [],
+        links: {
+          next: null,
+        },
+      };
 
-    const tl = createTransferLists(results.rows, ret);
-    ret = tl.ret;
-    let anchorSecNs = tl.anchorSecNs;
+      const tl = createTransferLists(results.rows, ret);
+      ret = tl.ret;
+      let anchorSecNs = tl.anchorSecNs;
 
-    ret.links = {
-      next: utils.getPaginationLink(
-        req,
-        ret.transactions.length !== query.limit,
-        'timestamp',
-        anchorSecNs,
-        query.order
-      ),
-    };
+      ret.links = {
+        next: utils.getPaginationLink(
+          req,
+          ret.transactions.length !== query.limit,
+          'timestamp',
+          anchorSecNs,
+          query.order
+        ),
+      };
 
-    if (process.env.NODE_ENV === 'test') {
-      ret.sqlQuery = results.sqlQuery;
-    }
+      if (process.env.NODE_ENV === 'test') {
+        ret.sqlQuery = results.sqlQuery;
+      }
 
-    logger.debug('getTransactions returning ' + ret.transactions.length + ' entries');
+      logger.debug('getTransactions returning ' + ret.transactions.length + ' entries');
 
-    return {
-      code: utils.httpStatusCodes.OK,
-      contents: ret,
-    };
-  });
+      res.locals[constants.responseDataLabel] = ret;
+    });
 };
 
 /**
  * Handler function for /transactions/:transaction_id API.
  * @param {Request} req HTTP request object
- * @param {Response} res HTTP response object
  * @return {} None.
  */
-const getOneTransaction = function (req, res) {
+const getOneTransaction = async (req, res) => {
   logger.debug('--------------------  getOneTransaction --------------------');
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
@@ -266,8 +266,8 @@ const getOneTransaction = function (req, res) {
     let message =
       'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" ' +
       'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
-    res.status(utils.httpStatusCodes.BAD_REQUEST).send(utils.createSingleErrorJsonResponse(message));
-    return;
+
+    throw new InvalidArgumentError(message);
   }
   const sqlParams = [txIdMatches[1], txIdMatches[2], txIdMatches[3], txIdMatches[4] + '' + txIdMatches[5]];
 
@@ -306,8 +306,11 @@ const getOneTransaction = function (req, res) {
   }
 
   // Execute query
-  pool
+  return pool
     .query(pgSqlQuery, sqlParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
     .then((results) => {
       let ret = {
         transactions: [],
@@ -318,18 +321,12 @@ const getOneTransaction = function (req, res) {
       ret = tl.ret;
 
       if (ret.transactions.length === 0) {
-        res.status(utils.httpStatusCodes.NOT_FOUND).send(utils.createSingleErrorJsonResponse('Not found'));
-        return;
-      }
-
-      if (process.env.NODE_ENV === 'test') {
-        ret.sqlQuery = results.sqlQuery;
+        throw new NotFoundError('Not found');
       }
 
       logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
-      res.json(ret);
-    })
-    .catch((error) => utils.errorHandler(error, req, res, null));
+      res.locals[constants.responseDataLabel] = ret;
+    });
 };
 
 module.exports = {

@@ -18,30 +18,30 @@
  * ‍
  */
 'use strict';
+const DbErrorMessage = 'Unable to connect to database. Please retry later';
 
-const filterKeys = {
-  ACCOUNT_ID: 'account.id',
-  ACCOUNT_BALANCE: 'account.balance',
-  ACCOUNT_PUBLICKEY: 'account.publickey',
-  LIMIT: 'limit',
-  ORDER: 'order',
-  RESULT: 'result',
-  SEQUENCE_NUMBER: 'sequencenumber',
-  TIMESTAMP: 'timestamp',
-  TYPE: 'type',
-};
+class DbError extends Error {
+  constructor(errorMessage) {
+    super();
+    this.message = DbErrorMessage;
+    this.dbErrorMessage = errorMessage;
+    this.isConnectionError = this.isDbConnectionError(errorMessage);
+  }
 
-const entityColumns = {
-  ENTITY_NUM: 'entity_num',
-  ENTITY_REALM: 'entity_realm',
-  ENTITY_SHARD: 'entity_shard',
-  PUBLIC_KEY: 'ed25519_public_key_hex',
-};
-
-const responseDataLabel = 'mirrorRestData';
+  /**
+   * Match known db error connection messages
+   * @param errorMessage
+   * @returns {boolean}
+   */
+  isDbConnectionError(errorMessage) {
+    return (
+      /ECONNREFUSED/.test(errorMessage) ||
+      /Connection terminated unexpectedly/.test(errorMessage) ||
+      /unable to read data from DB/.test(errorMessage)
+    );
+  }
+}
 
 module.exports = {
-  entityColumns: entityColumns,
-  filterKeys: filterKeys,
-  responseDataLabel,
+  DbError,
 };

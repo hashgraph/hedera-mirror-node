@@ -7,11 +7,6 @@ hedera:
       log:
         level: debug
       port: 5551
-      ttl:
-        accounts: 60
-        balances: 60
-        events: 10
-        transactions: 10
     db:
       apiPassword: mirror_api_pass
       apiUsername: mirror_api

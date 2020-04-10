@@ -1,21 +1,21 @@
 {
-  "description": "Invalid consensus timestamp",
-  "setup": {
-    "accounts": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
-    "topicmessages": []
-  },
-  "url": "/api/v1/topic/message/123abc",
-  "responseStatus": 400,
-  "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Invalid parameter: consensusTimestamp"
+    "description": "Invalid consensus timestamp",
+    "setup": {
+        "accounts": [],
+        "balances": [],
+        "transactions": [],
+        "cryptotransfers": [],
+        "topicmessages": []
+    },
+    "url": "/api/v1/topic/message/123abc",
+    "responseStatus": 400,
+    "responseJson": {
+        "_status": {
+            "messages": [
+                {
+                    "message": "Invalid parameter: consensus_timestamp"
+                }
+            ]
         }
-      ]
     }
-  }
 }

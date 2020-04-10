@@ -35,10 +35,10 @@ const recordsFileUpdateRefreshTime = 5;
 const getTransactions = (pathandquery, currentTestResult) => {
   return acctestutils
     .getAPIResponse(pathandquery)
-    .then(json => {
+    .then((json) => {
       return json.transactions;
     })
-    .catch(error => {
+    .catch((error) => {
       currentTestResult.failureMessages.push(error);
     });
 };
@@ -47,7 +47,7 @@ const getTransactions = (pathandquery, currentTestResult) => {
  * Check the required fields exist in the response object
  * @param {Object} entry Transaction JSON object
  */
-const checkMandatoryParams = entry => {
+const checkMandatoryParams = (entry) => {
   let check = true;
   [
     'consensus_timestamp',
@@ -58,8 +58,8 @@ const checkMandatoryParams = entry => {
     'result',
     'name',
     'node',
-    'transfers'
-  ].forEach(field => {
+    'transfers',
+  ].forEach((field) => {
     check = check && entry.hasOwnProperty(field);
   });
   return check;
@@ -417,5 +417,5 @@ const runTransactionTests = async (server, classResults) => {
 };
 
 module.exports = {
-  runTransactionTests: runTransactionTests
+  runTransactionTests: runTransactionTests,
 };

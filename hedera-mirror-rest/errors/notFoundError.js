@@ -18,30 +18,15 @@
  * ‍
  */
 'use strict';
+const NotFoundErrorMessage = 'Not found';
 
-const filterKeys = {
-  ACCOUNT_ID: 'account.id',
-  ACCOUNT_BALANCE: 'account.balance',
-  ACCOUNT_PUBLICKEY: 'account.publickey',
-  LIMIT: 'limit',
-  ORDER: 'order',
-  RESULT: 'result',
-  SEQUENCE_NUMBER: 'sequencenumber',
-  TIMESTAMP: 'timestamp',
-  TYPE: 'type',
-};
-
-const entityColumns = {
-  ENTITY_NUM: 'entity_num',
-  ENTITY_REALM: 'entity_realm',
-  ENTITY_SHARD: 'entity_shard',
-  PUBLIC_KEY: 'ed25519_public_key_hex',
-};
-
-const responseDataLabel = 'mirrorRestData';
+class NotFoundError extends Error {
+  constructor(errorMessage) {
+    super();
+    this.message = errorMessage === undefined ? NotFoundErrorMessage : errorMessage;
+  }
+}
 
 module.exports = {
-  entityColumns: entityColumns,
-  filterKeys: filterKeys,
-  responseDataLabel,
+  NotFoundError,
 };

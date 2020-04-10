@@ -165,15 +165,10 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.SEQUENCE_NUMBER, '<=:2'),
     ];
 
-    let validationResponse = utils.validateAndParseFilters(filters);
-
-    verifyInvalidFilters(validationResponse, [
-      constants.filterKeys.SEQUENCE_NUMBER,
-      constants.filterKeys.SEQUENCE_NUMBER,
-    ]);
+    verifyInvalidFilters(filters);
   });
 
-  test('Verify validateAndParseFilters for erroneous data', () => {
+  test('Verify validateAndParseFilters for erroneous data throws exception', () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:-1'),
       utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:today'),
@@ -186,22 +181,10 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '-1'),
     ];
 
-    let validationResponse = utils.validateAndParseFilters(filters);
-
-    verifyInvalidFilters(validationResponse, [
-      constants.filterKeys.ACCOUNT_ID,
-      constants.filterKeys.TIMESTAMP,
-      constants.filterKeys.ORDER,
-      constants.filterKeys.LIMIT,
-      constants.filterKeys.SEQUENCE_NUMBER,
-      constants.filterKeys.ACCOUNT_PUBLICKEY,
-      constants.filterKeys.RESULT,
-      constants.filterKeys.TYPE,
-      constants.filterKeys.ACCOUNT_BALANCE,
-    ]);
+    verifyInvalidFilters(filters);
   });
 
-  test('Verify validateAndParseFilters for invalid format', () => {
+  test('Verify validateAndParseFilters for invalid format throws exception', () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:0.1.23456789012345'),
       utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:23456789012345678901234'),
@@ -211,19 +194,10 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '23456789012345678901234'),
     ];
 
-    let validationResponse = utils.validateAndParseFilters(filters);
-
-    verifyInvalidFilters(validationResponse, [
-      constants.filterKeys.ACCOUNT_ID,
-      constants.filterKeys.TIMESTAMP,
-      constants.filterKeys.LIMIT,
-      constants.filterKeys.SEQUENCE_NUMBER,
-      constants.filterKeys.ACCOUNT_PUBLICKEY,
-      constants.filterKeys.ACCOUNT_BALANCE,
-    ]);
+    verifyInvalidFilters(filters);
   });
 
-  test('Verify validateAndParseFilters for valid filters', () => {
+  test('Verify validateAndParseFilters for valid filters does not throw exception', () => {
     const filters = [
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'lt:2'),
       utils.buildComparatorFilter(constants.filterKeys.TIMESTAMP, 'lte:1234567890.000000003'),
@@ -241,21 +215,14 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '45000'),
     ];
 
-    let validationResponse = utils.validateAndParseFilters(filters);
-
-    verifyValidFilters(validationResponse);
+    expect(() => {
+      utils.validateAndParseFilters(filters);
+    }).not.toThrow();
   });
 });
 
-const verifyValidFilters = (val) => {
-  expect(val).toStrictEqual(utils.successValidationResponse);
-};
-
-const verifyInvalidFilters = (val, columns) => {
-  let invalidObjects = [];
-  for (let col of columns) {
-    invalidObjects.push(utils.getInvalidParameterMessageObject(col));
-  }
-
-  expect(val).toStrictEqual(utils.makeValidationResponse(invalidObjects));
+const verifyInvalidFilters = (filters) => {
+  expect(() => {
+    utils.validateAndParseFilters(filters);
+  }).toThrowErrorMatchingSnapshot();
 };

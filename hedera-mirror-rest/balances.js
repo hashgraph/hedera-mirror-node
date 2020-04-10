@@ -18,22 +18,18 @@
  * ‍
  */
 'use strict';
-const math = require('mathjs');
 const config = require('./config.js');
+const constants = require('./constants.js');
 const utils = require('./utils.js');
+const {DbError} = require('./errors/dbError');
 
 /**
  * Handler function for /balances API.
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getBalances = function (req, res) {
-  const valid = utils.validateReq(req);
-  if (!valid.isValid) {
-    return new Promise((resolve, reject) => {
-      resolve(valid);
-    });
-  }
+const getBalances = async (req, res) => {
+  utils.validateReq(req);
 
   // Parse the filter parameters for credit/debit, account-numbers,
   // timestamp and pagination
@@ -121,55 +117,57 @@ const getBalances = function (req, res) {
   }
 
   // Execute query
-  return pool.query(pgSqlQuery, sqlParams).then((results) => {
-    let ret = {
-      timestamp: null,
-      balances: [],
-      links: {
-        next: null,
-      },
-    };
+  return pool
+    .query(pgSqlQuery, sqlParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      let ret = {
+        timestamp: null,
+        balances: [],
+        links: {
+          next: null,
+        },
+      };
 
-    function accountIdFromRow(row) {
-      return `${config.shard}.${row.realm_num}.${row.entity_num}`;
-    }
-
-    // Go through all results, and collect them by seconds.
-    // These need to be returned as an array (and not an object) because
-    // per ECMA ES2015, the order of keys parsable as integers are implicitly
-    // sorted (i.e. insert order is not maintained)
-    // let retObj = {}
-    for (let row of results.rows) {
-      let ns = utils.nsToSecNs(row.consensus_timestamp);
-      row.account = accountIdFromRow(row);
-
-      if (ret.timestamp === null) {
-        ret.timestamp = ns;
+      function accountIdFromRow(row) {
+        return `${config.shard}.${row.realm_num}.${row.entity_num}`;
       }
-      ret.balances.push({
-        account: row.account,
-        balance: Number(row.balance),
-      });
-    }
 
-    const anchorAccountId = results.rows.length > 0 ? results.rows[results.rows.length - 1].account : 0;
+      // Go through all results, and collect them by seconds.
+      // These need to be returned as an array (and not an object) because
+      // per ECMA ES2015, the order of keys parsable as integers are implicitly
+      // sorted (i.e. insert order is not maintained)
+      // let retObj = {}
+      for (let row of results.rows) {
+        let ns = utils.nsToSecNs(row.consensus_timestamp);
+        row.account = accountIdFromRow(row);
 
-    // Pagination links
-    ret.links = {
-      next: utils.getPaginationLink(req, ret.balances.length !== limit, 'account.id', anchorAccountId, order),
-    };
+        if (ret.timestamp === null) {
+          ret.timestamp = ns;
+        }
+        ret.balances.push({
+          account: row.account,
+          balance: Number(row.balance),
+        });
+      }
 
-    if (process.env.NODE_ENV === 'test') {
-      ret.sqlQuery = results.sqlQuery;
-    }
+      const anchorAccountId = results.rows.length > 0 ? results.rows[results.rows.length - 1].account : 0;
 
-    logger.debug('getBalances returning ' + ret.balances.length + ' entries');
+      // Pagination links
+      ret.links = {
+        next: utils.getPaginationLink(req, ret.balances.length !== limit, 'account.id', anchorAccountId, order),
+      };
 
-    return {
-      code: utils.httpStatusCodes.OK,
-      contents: ret,
-    };
-  });
+      if (process.env.NODE_ENV === 'test') {
+        ret.sqlQuery = results.sqlQuery;
+      }
+
+      logger.debug('getBalances returning ' + ret.balances.length + ' entries');
+
+      res.locals[constants.responseDataLabel] = ret;
+    });
 };
 
 module.exports = {

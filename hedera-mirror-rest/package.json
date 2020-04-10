@@ -1,83 +1,91 @@
 {
-    "name": "hedera-mirror-rest",
-    "version": "0.9.0-rc1",
-    "description": "Hedera Mirror Node REST API",
-    "main": "server.js",
-    "private": true,
-    "scripts": {
-        "test": "jest --testPathPattern='__tests__/*'",
-        "perftest": "__performancetests__/perfTest.js",
-        "dev": "nodemon app.js"
-    },
-    "author": "Atul Mahamuni",
-    "license": "Apache-2.0",
-    "dependencies": {
-        "asn1js": "^2.0.26",
-        "body-parser": "^1.19.0",
-        "compression": "^1.7.4",
-        "cors": "^2.8.5",
-        "express": "^4.17.1",
-        "extend": "^3.0.2",
-        "js-yaml": "^3.13.1",
-        "log4js": "^4.3.1",
-        "mathjs": "^6.6.2",
-        "node-cache": "^5.1.0",
-        "node-fetch": "^2.6.0",
-        "pg": "~7.11.0"
-    },
-    "bundledDependencies": [
-        "asn1js",
-        "body-parser",
-        "compression",
-        "cors",
-        "express",
-        "extend",
-        "js-yaml",
-        "log4js",
-        "mathjs",
-        "node-cache",
-        "node-fetch",
-        "pg"
-    ],
-    "devDependencies": {
-        "codecov": "^3.6.5",
-        "husky": "^4.2.3",
-        "jest": "^25.2.7",
-        "jest-junit": "^10.0.0",
-        "node-flywaydb": "^2.1.3",
-        "nodemon": "^2.0.2",
-        "prettier": "^2.0.4",
-        "pretty-quick": "^2.0.1",
-        "supertest": "^4.0.2",
-        "testcontainers": "^2.7.0"
-    },
-    "husky": {
-        "hooks": {
-            "pre-commit": "pretty-quick --staged"
-        }
-    },
-    "jest": {
-        "collectCoverage": true,
-        "coverageDirectory": "./coverage/",
-        "coveragePathIgnorePatterns": [
-            "<rootDir>/__tests__/integrationDbOps.js",
-            "<rootDir>/__tests__/integrationDomainOps.js",
-            "<rootDir>/__tests__/mockpool.js",
-            "<rootDir>/__tests__/testutils.js"
-        ],
-        "reporters": [
-            "default",
-            "jest-junit"
-        ],
-        "testPathIgnorePatterns": [
-            "__tests__/testutils.js",
-            "__tests__/mockpool.js",
-            "__tests__/integrationDbOps.js",
-            "__tests__/integrationDomainOps.js"
-        ],
-        "verbose": true
-    },
-    "jest-junit": {
-        "outputDirectory": "target/jest-junit"
+  "name": "hedera-mirror-rest",
+  "version": "0.9.0-rc1",
+  "description": "Hedera Mirror Node REST API",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "test": "jest --testPathPattern='__tests__/*'",
+    "perftest": "__performancetests__/perfTest.js",
+    "dev": "nodemon app.js"
+  },
+  "author": "Atul Mahamuni",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@awaitjs/express": "^0.5.1",
+    "asn1js": "^2.0.26",
+    "body-parser": "^1.19.0",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "extend": "^3.0.2",
+    "js-yaml": "^3.13.1",
+    "log4js": "^4.3.1",
+    "mathjs": "^6.6.2",
+    "node-cache": "^5.1.0",
+    "node-fetch": "^2.6.0",
+    "pg": "~7.11.0"
+  },
+  "bundledDependencies": [
+    "asn1js",
+    "body-parser",
+    "compression",
+    "cors",
+    "express",
+    "extend",
+    "js-yaml",
+    "log4js",
+    "mathjs",
+    "node-cache",
+    "node-fetch",
+    "pg"
+  ],
+  "devDependencies": {
+    "codecov": "^3.6.5",
+    "husky": "^4.2.3",
+    "jest": "^25.2.7",
+    "jest-junit": "^10.0.0",
+    "node-flywaydb": "^2.1.3",
+    "nodemon": "^2.0.2",
+    "prettier": "^2.0.4",
+    "pretty-quick": "^2.0.1",
+    "supertest": "^4.0.2",
+    "testcontainers": "^2.7.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
     }
+  },
+  "jest": {
+    "collectCoverage": true,
+    "coverageDirectory": "./coverage/",
+    "coveragePathIgnorePatterns": [
+      "<rootDir>/__tests__/integrationDbOps.js",
+      "<rootDir>/__tests__/integrationDomainOps.js",
+      "<rootDir>/__tests__/mockpool.js",
+      "<rootDir>/__tests__/testutils.js"
+    ],
+    "reporters": [
+      "default",
+      "jest-junit"
+    ],
+    "testPathIgnorePatterns": [
+      "__tests__/testutils.js",
+      "__tests__/mockpool.js",
+      "__tests__/integrationDbOps.js",
+      "__tests__/integrationDomainOps.js"
+    ],
+    "verbose": true
+  },
+  "jest-junit": {
+    "outputDirectory": "target/jest-junit"
+  },
+  "prettier": {
+    "bracketSpacing": false,
+    "trailingComma": "es5",
+    "tabWidth": 2,
+    "semi": true,
+    "singleQuote": true
+  }
 }

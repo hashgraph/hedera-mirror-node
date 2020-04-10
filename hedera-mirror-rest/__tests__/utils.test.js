@@ -19,9 +19,7 @@
  */
 'use strict';
 
-const request = require('supertest');
 const utils = require('../utils.js');
-const constants = require('../constants.js');
 const config = require('../config.js');
 
 describe('Utils getNullableNumber tests', () => {
@@ -122,26 +120,6 @@ describe('Utils isValidTimestampParam tests', () => {
   });
   test('Verify valid for seconds and nanoseconds', () => {
     expect(utils.isValidTimestampParam('1234567890.000000001')).toBe(true);
-  });
-});
-
-describe('Utils makeValidationResponse tests', () => {
-  test('Verify success response for null', () => {
-    const val = utils.makeValidationResponse(null);
-    expect(val).toStrictEqual({isValid: true, code: utils.httpStatusCodes.OK, contents: 'OK'});
-  });
-  test('Verify success response for empty array', () => {
-    const val = utils.makeValidationResponse([]);
-    expect(val).toStrictEqual({isValid: true, code: utils.httpStatusCodes.OK, contents: 'OK'});
-  });
-  test('Verify failure response for null', () => {
-    const message = {message: 'Invalid parameter: consensusTimestamp'};
-    const val = utils.makeValidationResponse(message);
-    expect(val).toStrictEqual({
-      isValid: false,
-      code: utils.httpStatusCodes.BAD_REQUEST,
-      contents: {_status: {messages: message}},
-    });
   });
 });
 

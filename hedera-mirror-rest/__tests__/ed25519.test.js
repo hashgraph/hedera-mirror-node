@@ -52,7 +52,7 @@ describe('Ed25519 tests', () => {
       '',
       0,
       {},
-      {key: 1234}
+      {key: 1234},
     ];
 
     for (const invalidDer of invalidDers) {

@@ -19,8 +19,12 @@
  */
 'use strict';
 const config = require('./config.js');
+const constants = require('./constants.js');
 const utils = require('./utils.js');
 const transactions = require('./transactions.js');
+const {NotFoundError} = require('./errors/notFoundError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const {DbError} = require('./errors/dbError');
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -74,14 +78,9 @@ const getAccountQueryPrefix = function () {
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
-const getAccounts = function (req) {
+const getAccounts = async (req, res) => {
   // Validate query parameters first
-  const valid = utils.validateReq(req);
-  if (!valid.isValid) {
-    return new Promise((resolve, reject) => {
-      resolve(valid);
-    });
-  }
+  utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
 
@@ -149,38 +148,39 @@ const getAccounts = function (req) {
   }
 
   // Execute query
-  return pool.query(pgEntityQuery, entityParams).then((results) => {
-    let ret = {
-      accounts: [],
-      links: {
-        next: null,
-      },
-    };
+  return pool
+    .query(pgEntityQuery, entityParams)
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then((results) => {
+      let ret = {
+        accounts: [],
+        links: {
+          next: null,
+        },
+      };
 
-    for (let row of results.rows) {
-      ret.accounts.push(processRow(row));
-    }
+      for (let row of results.rows) {
+        ret.accounts.push(processRow(row));
+      }
 
-    let anchorAcc = '0.0.0';
-    if (ret.accounts.length > 0) {
-      anchorAcc = ret.accounts[ret.accounts.length - 1].account;
-    }
+      let anchorAcc = '0.0.0';
+      if (ret.accounts.length > 0) {
+        anchorAcc = ret.accounts[ret.accounts.length - 1].account;
+      }
 
-    ret.links = {
-      next: utils.getPaginationLink(req, ret.accounts.length !== limit, 'account.id', anchorAcc, order),
-    };
+      ret.links = {
+        next: utils.getPaginationLink(req, ret.accounts.length !== limit, 'account.id', anchorAcc, order),
+      };
 
-    if (process.env.NODE_ENV === 'test') {
-      ret.sqlQuery = results.sqlQuery;
-    }
+      if (process.env.NODE_ENV === 'test') {
+        ret.sqlQuery = results.sqlQuery;
+      }
 
-    logger.debug('getAccounts returning ' + ret.accounts.length + ' entries');
-
-    return {
-      code: utils.httpStatusCodes.OK,
-      contents: ret,
-    };
-  });
+      logger.debug('getAccounts returning ' + ret.accounts.length + ' entries');
+      res.locals[constants.responseDataLabel] = ret;
+    });
 };
 
 /**
@@ -189,15 +189,14 @@ const getAccounts = function (req) {
  * @param {Response} res HTTP response object
  * @return {} None.
  */
-const getOneAccount = function (req, res) {
+const getOneAccount = async (req, res) => {
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
   // Parse the filter parameters for account-numbers, balance, and pagination
 
   const acc = utils.parseEntityId(req.params.id);
   if (acc.num === 0) {
-    res.status(400).send(utils.createSingleErrorJsonResponse(utils.getInvalidParameterMessage('account.id')));
-    return;
+    throw InvalidArgumentError.forParams('account.id');
   }
 
   const [tsQuery, tsParams] = utils.parseParams(req, 'timestamp', ['t.consensus_ns'], 'timestamp_ns');
@@ -264,24 +263,21 @@ const getOneAccount = function (req, res) {
   const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);
 
   // After all promises (for all of the above queries) have been resolved...
-  Promise.all([entityPromise, transactionsPromise])
+  return Promise.all([entityPromise, transactionsPromise])
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
     .then(function (values) {
       const entityResults = values[0];
       const transactionsResults = values[1];
 
       // Process the results of entities query
       if (entityResults.rows.length === 0) {
-        res
-          .status(utils.httpStatusCodes.NOT_FOUND)
-          .send(utils.createSingleErrorJsonResponse(utils.httpErrorMessages.NOT_FOUND));
-        return;
+        throw new NotFoundError();
       }
 
       if (entityResults.rows.length !== 1) {
-        res
-          .status(utils.httpStatusCodes.NOT_FOUND)
-          .send(utils.createSingleErrorJsonResponse('Error: Could not get entity information'));
-        return;
+        throw new NotFoundError('Error: Could not get entity information');
       }
 
       for (let row of entityResults.rows) {
@@ -310,9 +306,8 @@ const getOneAccount = function (req, res) {
       };
 
       logger.debug('getOneAccount returning ' + ret.transactions.length + ' transactions entries');
-      res.json(ret);
-    })
-    .catch((err) => utils.errorHandler(err, req, res, null));
+      res.locals[constants.responseDataLabel] = ret;
+    });
 };
 
 module.exports = {

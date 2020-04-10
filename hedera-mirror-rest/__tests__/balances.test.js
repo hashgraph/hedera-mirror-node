@@ -40,7 +40,7 @@ const timeOneHourAgo = timeNow - 60 * 60;
  * @param {Number} len Expected length
  * @return {Boolean}  Result of the check
  */
-const validateLen = function(balances, len) {
+const validateLen = function (balances, len) {
   return balances.balances.length === len;
 };
 
@@ -51,7 +51,7 @@ const validateLen = function(balances, len) {
  * @param {Number} high Expected high limit of the timestamps
  * @return {Boolean}  Result of the check
  */
-const validateTsRange = function(balances, low, high) {
+const validateTsRange = function (balances, low, high) {
   let ret = balances.timestamp >= low && balances.timestamp <= high;
 
   if (!ret) {
@@ -67,7 +67,7 @@ const validateTsRange = function(balances, low, high) {
  * @param {Number} high Expected high limit of the account ids
  * @return {Boolean}  Result of the check
  */
-const validateAccNumRange = function(balances, low, high) {
+const validateAccNumRange = function (balances, low, high) {
   let ret = true;
   let offender = null;
   for (const bal of balances.balances) {
@@ -90,7 +90,7 @@ const validateAccNumRange = function(balances, low, high) {
  * @param {Number} high Expected high limit of the balances
  * @return {Boolean}  Result of the check
  */
-const validateBalanceRange = function(balances, low, high) {
+const validateBalanceRange = function (balances, low, high) {
   let ret = true;
   let offender = null;
   for (const bal of balances.balances) {
@@ -110,20 +110,20 @@ const validateBalanceRange = function(balances, low, high) {
  * @param {Array} balances Array of balances returned by the rest api
  * @return {Boolean}  Result of the check
  */
-const validateFields = function(balances) {
+const validateFields = function (balances) {
   let ret = true;
 
   // Assert that the balances is an array
   ret = ret && Array.isArray(balances.balances);
 
   // Assert that all mandatory fields are present in the response
-  ['timestamp', 'balances'].forEach(field => {
+  ['timestamp', 'balances'].forEach((field) => {
     ret = ret && balances.hasOwnProperty(field);
   });
 
   // Assert that the balances array has the mandatory fields
   if (ret) {
-    ['account', 'balance'].forEach(field => {
+    ['account', 'balance'].forEach((field) => {
       ret = ret && balances.balances[0].hasOwnProperty(field);
     });
   }
@@ -140,12 +140,12 @@ const validateFields = function(balances) {
  * @param {String} order Expected order ('asc' or 'desc')
  * @return {Boolean}  Result of the check
  */
-const validateOrder = function(balances, order) {
+const validateOrder = function (balances, order) {
   let ret = true;
   let offenderAcc = null;
   let offenderVal = null;
   let direction = order === 'desc' ? -1 : 1;
-  const toAccNum = acc => acc.split('.')[2];
+  const toAccNum = (acc) => acc.split('.')[2];
   let val = toAccNum(balances.balances[0].account) - direction;
   for (const bal of balances.balances) {
     if (val * direction > toAccNum(bal.account) * direction) {
@@ -177,64 +177,64 @@ const singletests = {
     checks: [{field: 'consensus_timestamp', operator: '>=', value: timeOneHourAgo + '000000000'}],
     checkFunctions: [
       {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   timestamp_higherlimit: {
     urlparam: `timestamp=lt:${timeNow}`,
     checks: [{field: 'consensus_timestamp', operator: '<', value: timeNow + '000000000'}],
     checkFunctions: [
       {func: validateTsRange, args: [0, timeNow]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   timestamp_equal: {
     urlparam: `timestamp=${timeOneHourAgo}`,
     checks: [{field: 'consensus_timestamp', operator: '<=', value: timeOneHourAgo + '000000000'}],
     checkFunctions: [
       {func: validateTsRange, args: [timeOneHourAgo - config.api.maxLimit, timeOneHourAgo]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   accountid_lowerlimit: {
     urlparam: 'account.id=gte:0.0.1111',
     checks: [{field: 'account_num', operator: '>=', value: 1111}],
     checkFunctions: [
       {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   accountid_higherlimit: {
     urlparam: 'account.id=lt:0.0.2222',
     checks: [{field: 'account_num', operator: '<', value: 2222}],
     checkFunctions: [
       {func: validateAccNumRange, args: [0, 2222]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
     checks: [{field: 'account_num', operator: '=', value: 3333}],
     checkFunctions: [
       {func: validateAccNumRange, args: [3333, 3333]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   accountbalance_lowerlimit: {
     urlparam: 'account.balance=gte:54321',
     checks: [{field: 'balance', operator: '>=', value: 54321}],
     checkFunctions: [
       {func: validateBalanceRange, args: [54321, Number.MAX_SAFE_INTEGER]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   accountbalance_higherlimit: {
     urlparam: 'account.balance=lt:5432100',
     checks: [{field: 'balance', operator: '<', value: 5432100}],
     checkFunctions: [
       {func: validateBalanceRange, args: [0, 5432100]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   accountpublickey_equal: {
     urlparam: 'account.publickey=6bd7b31fd59fc1b51314ac90253dfdbffa18eec48c00051e92635fe964a08c9b',
@@ -242,28 +242,28 @@ const singletests = {
       {
         field: 'ed25519_public_key_hex',
         operator: '=',
-        value: '6bd7b31fd59fc1b51314ac90253dfdbffa18eec48c00051e92635fe964a08c9b'
-      }
-    ]
+        value: '6bd7b31fd59fc1b51314ac90253dfdbffa18eec48c00051e92635fe964a08c9b',
+      },
+    ],
   },
   limit: {
     urlparam: 'limit=99',
     checks: [{field: 'limit', operator: '=', value: 99}],
     checkFunctions: [
       {func: validateLen, args: [99]},
-      {func: validateFields, args: []}
-    ]
+      {func: validateFields, args: []},
+    ],
   },
   order_asc: {
     urlparam: 'order=asc',
     checks: [{field: 'order', operator: '=', value: 'asc'}],
-    checkFunctions: [{func: validateOrder, args: ['asc']}]
+    checkFunctions: [{func: validateOrder, args: ['asc']}],
   },
   order_desc: {
     urlparam: 'order=desc',
     checks: [{field: 'order', operator: '=', value: 'desc'}],
-    checkFunctions: [{func: validateOrder, args: ['desc']}]
-  }
+    checkFunctions: [{func: validateOrder, args: ['desc']}],
+  },
 };
 
 /**
@@ -280,7 +280,7 @@ const combinedtests = [
   ['timestamp_lowerlimit', 'timestamp_higherlimit', 'accountid_lowerlimit', 'accountbalance_higherlimit'],
   ['timestamp_lowerlimit', 'accountid_equal', 'accountbalance_lowerlimit', 'limit'],
   ['timestamp_higherlimit', 'accountid_lowerlimit'],
-  ['limit', 'order_asc']
+  ['limit', 'order_asc'],
 ];
 
 // Start of tests
