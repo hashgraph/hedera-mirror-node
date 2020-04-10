@@ -49,7 +49,7 @@ public class MirrorNodeClient {
         acceptanceProps = acceptanceTestProperties;
     }
 
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "NOT_FOUND")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('NOT_FOUND')}")
     public SubscriptionResponse subscribeToTopic(MirrorConsensusTopicQuery mirrorConsensusTopicQuery) throws Throwable {
         log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
@@ -66,7 +66,7 @@ public class MirrorNodeClient {
         return subscriptionResponse;
     }
 
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "NOT_FOUND")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('NOT_FOUND')}")
     public SubscriptionResponse subscribeToTopicAndRetrieveMessages(MirrorConsensusTopicQuery mirrorConsensusTopicQuery,
                                                                     int numMessages,
                                                                     long latency) throws Throwable {

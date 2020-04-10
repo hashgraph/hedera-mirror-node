@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,7 +32,7 @@ const classResults = {
   success: true,
   message: '',
   startTime: 0,
-  endTime: 0
+  endTime: 0,
 };
 
 // monitoring single test result template
@@ -41,7 +41,7 @@ const testResult = {
   result: 'failed', // result of test
   url: '', // last rest-api endpoint call made in test
   message: '', // test message
-  failureMessages: [] // failure messages
+  failureMessages: [], // failure messages
 };
 
 /**
@@ -49,7 +49,7 @@ const testResult = {
  * @param {String} secNs Seconds.Nanoseconds
  * @return {Number} Seconds
  */
-const secNsToSeconds = secNs => {
+const secNsToSeconds = (secNs) => {
   return math.floor(Number(secNs));
 };
 
@@ -58,20 +58,20 @@ const secNsToSeconds = secNs => {
  * @param {String} shard.realm.accountNumber
  * @return {Number} accountNumber
  */
-const toAccNum = accId => Number(accId.split('.')[2]);
+const toAccNum = (accId) => Number(accId.split('.')[2]);
 
 /**
  * Converts accountNumber to shard.realm.accountNumber string
  * @param {Number} accountNumber
  * @return {String} shard.realm.accountNumber
  */
-const fromAccNum = accNum => `${config.shard}.0.${accNum}`;
+const fromAccNum = (accNum) => `${config.shard}.0.${accNum}`;
 
 /**
  * Return a deep clone of a json object
  * @param {Object} obj
  */
-const cloneObject = obj => {
+const cloneObject = (obj) => {
   return JSON.parse(JSON.stringify(obj));
 };
 
@@ -97,7 +97,7 @@ const getUrl = (server, pathandquery) => {
  * @param {*} url rest-api endpoint
  * @return {Object} JSON object representing api response
  */
-const getAPIResponse = url => {
+const getAPIResponse = (url) => {
   if (url.indexOf('/') === 0) {
     // if url is path get full url including host
     url = getUrl(url);
@@ -112,7 +112,7 @@ const getAPIResponse = url => {
   );
 
   return fetch(url, {signal: controller.signal})
-    .then(response => {
+    .then((response) => {
       if (!response.ok) {
         console.log(`Non success response for call to '${url}'`);
         throw Error(response.statusText);
@@ -120,7 +120,7 @@ const getAPIResponse = url => {
 
       return response.json();
     })
-    .catch(error => {
+    .catch((error) => {
       var message = `Fetch error, url : ${url}, error : ${error}`;
       console.log(message);
       throw message;
@@ -188,10 +188,10 @@ const createFailedResultJson = (title, msg) => {
           fullName: `${title}: ${msg}`,
           location: null,
           status: 'failed',
-          title: msg
-        }
-      ]
-    }
+          title: msg,
+        },
+      ],
+    },
   ];
 
   return failedResultJson;
@@ -207,5 +207,5 @@ module.exports = {
   getMonitorClassResult: getMonitorClassResult,
   getMonitorTestResult: getMonitorTestResult,
   addTestResult: addTestResult,
-  createFailedResultJson: createFailedResultJson
+  createFailedResultJson: createFailedResultJson,
 };

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -99,16 +99,16 @@ const setupData = async function () {
  * @returns {Promise<void>}
  */
 const addCryptoTransferTransaction = async function (
-        consensusTimestamp,
-        payerAccountId,
-        recipientAccountId,
-        amount,
-        validDurationSeconds,
-        maxFee,
-        result = 22,
-        type = 14,
-        nodeAccountId = '0.15.3',
-        treasuryAccountId = '0.15.98'
+  consensusTimestamp,
+  payerAccountId,
+  recipientAccountId,
+  amount,
+  validDurationSeconds,
+  maxFee,
+  result = 22,
+  type = 14,
+  nodeAccountId = '0.15.3',
+  treasuryAccountId = '0.15.98'
 ) {
   await integrationDomainOps.addCryptoTransaction({
     consensus_timestamp: consensusTimestamp,
@@ -120,21 +120,21 @@ const addCryptoTransferTransaction = async function (
     result: result,
     type: type,
     nodeAccountId: nodeAccountId,
-    treasuryAccountId: treasuryAccountId
+    treasuryAccountId: treasuryAccountId,
   });
 };
 
 const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
   await integrationDomainOps.addAccount({
     entity_num: id,
-    entity_realm: realm
+    entity_realm: realm,
   });
 
   await integrationDomainOps.setAccountBalance({
     timestamp: ts,
     id: id,
     realm_num: realm,
-    balance: bal
+    balance: bal,
   });
 };
 
@@ -178,7 +178,7 @@ test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xf
     '@1051: account 98 \u01271',
     '@1052: account 8 \u0127-31',
     '@1052: account 9 \u012730',
-    '@1052: account 98 \u01271'
+    '@1052: account 98 \u01271',
   ]);
 });
 
@@ -189,7 +189,7 @@ test('DB integration test - transactions.reqToSql - single valid account - 1 txn
   expect(mapTransactionResults(res.rows).sort()).toEqual([
     '@1052: account 8 \u0127-31',
     '@1052: account 9 \u012730',
-    '@1052: account 98 \u01271'
+    '@1052: account 98 \u01271',
   ]);
 });
 
@@ -216,7 +216,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
     '@null,777',
     '@null,null',
     '@null,null',
-    '@null,null'
+    '@null,null',
   ]);
 });
 
@@ -229,7 +229,7 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
   expect(extractNameAndResultFromTransactionResults(res.rows).sort()).toEqual([
     '@UNKNOWN,UNKNOWN',
     '@UNKNOWN,UNKNOWN',
-    '@UNKNOWN,UNKNOWN'
+    '@UNKNOWN,UNKNOWN',
   ]);
 });
 
@@ -255,7 +255,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
     '@2063: account 98 \u01271',
     '@2064: account 63 \u012720',
     '@2064: account 82 \u0127-21',
-    '@2064: account 98 \u01271'
+    '@2064: account 98 \u01271',
   ]);
 });
 

@@ -207,8 +207,9 @@ const getTransactions = async (req, res) => {
   utils.validateReq(req);
 
   let query = reqToSql(req);
-
-  logger.trace('getTransactions query: ' + query.query + JSON.stringify(query.params));
+  if (logger.isTraceEnabled()) {
+    logger.trace('getTransactions query: ' + query.query + JSON.stringify(query.params));
+  }
 
   // Execute query
   return pool
@@ -300,8 +301,9 @@ const getOneTransaction = async (req, res) => {
     ' order by consensus_ns asc, account_num asc, amount asc'; // In case of duplicate transactions, only the first succeeds
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
-
-  logger.trace('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  if (logger.isTraceEnabled()) {
+    logger.trace('getOneTransaction query: ' + pgSqlQuery + JSON.stringify(sqlParams));
+  }
 
   // Execute query
   return pool

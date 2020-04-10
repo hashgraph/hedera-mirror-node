@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,7 +37,7 @@ const initResults = () => {
       ip: server.ip,
       name: server.name,
       port: server.port,
-      results: []
+      results: [],
     };
   }
 };
@@ -54,7 +54,7 @@ const saveResults = (server, results) => {
       ip: server.ip,
       name: server.name,
       port: server.port,
-      results: results
+      results: results,
     };
   }
 };
@@ -65,12 +65,12 @@ const saveResults = (server, results) => {
  * @return {Object} Snapshot of results from the latest completed round of tests
  */
 const getStatus = () => {
-  let results = Object.keys(currentResults).map(net => {
+  let results = Object.keys(currentResults).map((net) => {
     return currentResults[net];
   });
   return {
     results: results,
-    httpCode: 200
+    httpCode: 200,
   };
 };
 
@@ -81,14 +81,14 @@ const getStatus = () => {
  * @return {Object} Snapshot of results from the latest completed round of tests for
  *      the specified server
  */
-const getStatusWithId = net => {
+const getStatusWithId = (net) => {
   let ret = {
     numPassedTests: 0,
     numFailedTests: 0,
     success: false,
     testResults: [],
     message: 'Failed',
-    httpCode: 400
+    httpCode: 400,
   };
 
   // Return 404 (Not found) for illegal name of the serer
@@ -137,7 +137,7 @@ const getServerList = () => {
  * @param {Object} server the server for which the pid is requested
  * @return {Number} PID of the test process running for the given server
  */
-const getProcess = server => {
+const getProcess = (server) => {
   const key = `${server.ip}_${server.port}`;
   return pids[key];
 };
@@ -151,7 +151,7 @@ const saveProcess = (server, count) => {
   const key = `${server.ip}_${server.port}`;
   const processObject = {
     id: server.name,
-    encountered: count
+    encountered: count,
   };
 
   pids[key] = processObject;
@@ -162,7 +162,7 @@ const saveProcess = (server, count) => {
  * @param {Object} server the server for which the pid needs to be deleted
  * @return {} None
  */
-const deleteProcess = server => {
+const deleteProcess = (server) => {
   const key = `${server.ip}_${server.port}`;
   delete pids[key];
 };
@@ -175,5 +175,5 @@ module.exports = {
   getServerList: getServerList,
   getProcess: getProcess,
   saveProcess: saveProcess,
-  deleteProcess: deleteProcess
+  deleteProcess: deleteProcess,
 };

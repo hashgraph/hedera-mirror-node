@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,14 +42,14 @@ const init = () => {
 
 const loadConfig = async () => {
   return fetch('/config.json', {mode: 'no-cors'})
-    .then(response => response.json())
-    .then(config => {
+    .then((response) => response.json())
+    .then((config) => {
       if (!!config.monitorAddress) {
         console.log('Loaded config.json');
         monitorAddress = config.monitorAddress;
       }
     })
-    .catch(error => console.log('Unable to load config.json. Using default config.'));
+    .catch((error) => console.log('Unable to load config.json. Using default config.'));
 };
 
 /**
@@ -71,7 +71,7 @@ const makeTable = (data, server) => {
                 <th>At</th>
                 <th>Message & Url</th>
         </tr>`;
-  data.results.testResults.forEach(result => {
+  data.results.testResults.forEach((result) => {
     // Skip the 'Skipped tests' that are marked as pending in jest json output
     if (result.result === 'pending') {
       return;
@@ -176,10 +176,10 @@ const fetchAndDisplay = async () => {
   console.log(`Fetching ${monitorAddress}`);
 
   fetch(`http://${monitorAddress}/api/v1/status`)
-    .then(function(response) {
+    .then(function (response) {
       return response.json();
     })
-    .then(function(data) {
+    .then(function (data) {
       console.log(data);
       let html;
       if (data.length === 0) {
@@ -192,13 +192,13 @@ const fetchAndDisplay = async () => {
         html = `
                 <h2 style="text-align:center">Hedera mirror node status</h2>
                 ${Object.keys(data)
-                  .map(server => `<div class="card-deck">${makeCard(data, server)}</div>`)
+                  .map((server) => `<div class="card-deck">${makeCard(data, server)}</div>`)
                   .join('')}
             `;
 
         html = `
                 <h2 style="text-align:center">Hedera mirror node status</h2>
-                ${data.map(result => `<div class="card-deck">${makeCard(result, result.name)}</div>`).join('')}
+                ${data.map((result) => `<div class="card-deck">${makeCard(result, result.name)}</div>`).join('')}
             `;
       }
       container.innerHTML = html;

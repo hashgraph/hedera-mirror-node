@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,7 @@
 
 const asn1js = require('asn1js');
 
-const derToEd25519 = function(der) {
+const derToEd25519 = function (der) {
   const ID_Ed25519 = '1.3.101.112'; //per RFC 8410 https://tools.ietf.org/html/rfc8410#section-9
   try {
     let buf = new Uint8Array(Buffer.from(der, 'hex')).buffer;
@@ -48,5 +48,5 @@ const derToEd25519 = function(der) {
 };
 
 module.exports = {
-  derToEd25519: derToEd25519
+  derToEd25519: derToEd25519,
 };

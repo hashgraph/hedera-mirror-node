@@ -18,7 +18,7 @@
     <properties>
         <jmeter.test>E2E_Subscribe_Only.jmx</jmeter.test>
         <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
-        <cucumber.version>5.2.0</cucumber.version>
+        <cucumber.version>5.6.0</cucumber.version>
         <skipTests>true</skipTests>
     </properties>
 
@@ -26,7 +26,7 @@
         <dependency>
             <groupId>com.hedera.hashgraph</groupId>
             <artifactId>sdk</artifactId>
-            <version>1.1.0</version>
+            <version>1.1.4</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>

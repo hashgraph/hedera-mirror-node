@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,7 @@ const math = require('mathjs');
 const server = require('../server');
 const utils = require('../utils.js');
 
-const checkSql = function(parsedparams, condition) {
+const checkSql = function (parsedparams, condition) {
   for (const p of parsedparams) {
     if (p.field == condition.field && p.operator == condition.operator && p.value == condition.value) {
       return true;
@@ -45,7 +45,7 @@ const checkSql = function(parsedparams, condition) {
  * @return {Array} parsedparams An array with extracted filter
  *                          with parsed query parameters.
  */
-const parseSqlQueryAndParams = function(sqlquery, sqlparams, orderprefix = '') {
+const parseSqlQueryAndParams = function (sqlquery, sqlparams, orderprefix = '') {
   try {
     // The SQL query is of general form: "select p1, p2 ... pn from table_x limit l"
     // Extract the parameters (p1, p2, ..., pn) and the limit values
@@ -65,9 +65,9 @@ const parseSqlQueryAndParams = function(sqlquery, sqlparams, orderprefix = '') {
     // trim the whitespaces
     let params = retparams[1].split(',');
     params = params
-      .map(p => p.replace(/.*\bas\b/, ''))
-      .map(p => p.replace(/.*\./, ''))
-      .map(p => p.trim());
+      .map((p) => p.replace(/.*\bas\b/, ''))
+      .map((p) => p.replace(/.*\./, ''))
+      .map((p) => p.trim());
 
     // Extract all positional parameters - that are in the
     // "field operator $number" format such as "timestamp <= $2"
@@ -83,14 +83,14 @@ const parseSqlQueryAndParams = function(sqlquery, sqlparams, orderprefix = '') {
 
     let parsedparams = [];
     // Now, parse each of them and separate out the field, operator and the value
-    positionalparams.forEach(p => {
+    positionalparams.forEach((p) => {
       const matches = p.match(/(\w+?)\s*([<|=|>]=*)\s*\$(\d+?)/);
       if (matches.length === 4) {
         // original, field, operator, value
         parsedparams.push({
           field: matches[1],
           operator: matches[2],
-          value: sqlparams[parseInt(matches[3]) - 1]
+          value: sqlparams[parseInt(matches[3]) - 1],
         });
       }
     });
@@ -104,7 +104,7 @@ const parseSqlQueryAndParams = function(sqlquery, sqlparams, orderprefix = '') {
       parsedparams.push({
         field: 'order',
         operator: '=',
-        value: orderparam[orderparam.length - 1]
+        value: orderparam[orderparam.length - 1],
       });
     }
     // Result parameter
@@ -113,7 +113,7 @@ const parseSqlQueryAndParams = function(sqlquery, sqlparams, orderprefix = '') {
       parsedparams.push({
         field: 'result',
         operator: resultparam[1],
-        value: resultparam[2]
+        value: resultparam[2],
       });
     }
 
@@ -123,7 +123,7 @@ const parseSqlQueryAndParams = function(sqlquery, sqlparams, orderprefix = '') {
   }
 };
 
-const testBadParams = function(request, server, url, param, badValues) {
+const testBadParams = function (request, server, url, param, badValues) {
   const opList = ['', 'eq:', 'lt:', 'gt:', 'lte:', 'gte:', 'ne:'];
   let opListIndex = 0;
   for (const opt of badValues) {
@@ -148,7 +148,7 @@ const testBadParams = function(request, server, url, param, badValues) {
   }
 };
 
-const badParamsList = function() {
+const badParamsList = function () {
   return [
     '',
     '"',
@@ -161,7 +161,7 @@ const badParamsList = function() {
     '0-0-3',
     '1eq:2',
     ':eq:',
-    ':'
+    ':',
   ];
 };
 
@@ -169,5 +169,5 @@ module.exports = {
   checkSql: checkSql,
   parseSqlQueryAndParams: parseSqlQueryAndParams,
   testBadParams: testBadParams,
-  badParamsList: badParamsList
+  badParamsList: badParamsList,
 };

@@ -214,7 +214,9 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
  * Retrieves topic message from
  */
 const getMessage = async (pgSqlQuery, pgSqlParams) => {
-  logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  }
 
   return pool
     .query(pgSqlQuery, pgSqlParams)
@@ -233,7 +235,10 @@ const getMessage = async (pgSqlQuery, pgSqlParams) => {
 };
 
 const getMessages = async (pgSqlQuery, pgSqlParams) => {
-  logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+  }
+
   let messages = [];
 
   return pool

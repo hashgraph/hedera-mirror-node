@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,7 @@
  * @param {Response} res HTTP response object
  * @return {} None.
  */
-const getAnalytics = function(req, res) {
+const getAnalytics = function (req, res) {
   logger.debug('--------------------  getAnalytics --------------------');
   logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
 
@@ -47,12 +47,12 @@ const getAnalytics = function(req, res) {
     if (error) {
       logger.error('getAnalytics error: ' + JSON.stringify(error, Object.getOwnPropertyNames(error)));
       res.json({
-        analytics: []
+        analytics: [],
       });
       return;
     }
 
-    results.rows.forEach(function(item) {
+    results.rows.forEach(function (item) {
       let seconds = new Date(item.tx_time_hour).getTime() / 1000;
       if (!(seconds in nodeData)) {
         nodeData[seconds] = [];
@@ -62,7 +62,7 @@ const getAnalytics = function(req, res) {
         hour: item.tx_time_hour,
         seconds: seconds,
         node_account: item.node_account,
-        numTransactions: item.numTransactions
+        numTransactions: item.numTransactions,
       });
     });
 
@@ -77,12 +77,12 @@ const getAnalytics = function(req, res) {
       if (error) {
         logger.error('getAnalytics error: ' + JSON.stringify(error, Object.getOwnPropertyNames(error)));
         res.json({
-          analytics: []
+          analytics: [],
         });
         return;
       }
 
-      results.rows.forEach(function(item) {
+      results.rows.forEach(function (item) {
         // This assumes that the timezone on this machine is UTC
         let seconds = new Date(item.hour).getTime() / 1000;
         item['seconds'] = seconds;
@@ -93,12 +93,12 @@ const getAnalytics = function(req, res) {
       logger.debug('getAnalytics returning ' + analytics.length + ' entries');
 
       res.json({
-        analytics: analytics
+        analytics: analytics,
       });
     });
   });
 };
 
 module.exports = {
-  getAnalytics: getAnalytics
+  getAnalytics: getAnalytics,
 };

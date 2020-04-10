@@ -72,7 +72,8 @@ public class TopicFeature {
     }
 
     @Given("I successfully create a new topic id")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{status == Status.UNAVAILABLE}")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
+            "message.contains('RESOURCE_EXHAUSTED')}")
     public void createNewTopic() throws HederaStatusException {
         testInstantReference = Instant.now();
 
@@ -95,7 +96,8 @@ public class TopicFeature {
     }
 
     @Given("I successfully create a new open topic")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{status == Status.UNAVAILABLE}")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
+            "message.contains('RESOURCE_EXHAUSTED')}")
     public void createNewOpenTopic() throws HederaStatusException {
         testInstantReference = Instant.now();
 
@@ -238,13 +240,15 @@ public class TopicFeature {
         messageSubscribeCount = numGroups * messageCount;
     }
 
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{status == Status.UNAVAILABLE}")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
+            "message.contains('RESOURCE_EXHAUSTED')}")
     public void publishTopicMessages(int messageCount) throws InterruptedException, HederaStatusException {
         topicClient.publishMessagesToTopic(consensusTopicId, "New message", submitKey, messageCount, false);
     }
 
     @When("I publish and verify {int} messages sent")
-    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{status == Status.UNAVAILABLE}")
+    @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
+            "message.contains('RESOURCE_EXHAUSTED')}")
     public void publishAndVerifyTopicMessages(int messageCount) throws InterruptedException, HederaStatusException {
         messageSubscribeCount = messageCount;
         publishedTransactionReceipts = topicClient
