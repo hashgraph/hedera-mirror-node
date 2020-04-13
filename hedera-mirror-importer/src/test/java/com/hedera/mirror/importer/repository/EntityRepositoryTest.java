@@ -29,9 +29,6 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 public class EntityRepositoryTest extends AbstractRepositoryTest {
-    private static final EntityId ENTITY_ID = new EntityId(null, 1L, 2L, 3L, EntityTypeEnum.ACCOUNT.getId());
-    private static final Entities ENTITY = ENTITY_ID.toEntity();
-
     @Test
     void findByPrimaryKey() {
         int entityTypeId = entityTypeRepository.findByName("account").get().getId();
@@ -81,26 +78,34 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void findEntityIdByNativeIds() {
-        var expected = entityRepository.save(ENTITY);
+        EntityId entityId = getDefaultEntityId();
+        Entities entity = entityId.toEntity();
+        var expected = entityRepository.save(entity);
 
-        var dbId = entityRepository.findEntityIdByNativeIds(ENTITY.getEntityShard(), ENTITY.getEntityRealm(),
-                ENTITY.getEntityNum()).get();
+        var dbId = entityRepository.findEntityIdByNativeIds(entity.getEntityShard(), entity.getEntityRealm(),
+                entity.getEntityNum()).get();
 
         assertThat(dbId).isEqualTo(expected.getId());
     }
 
     @Test
     void lookupExistingId() {
-        var expected = entityRepository.save(ENTITY);
+        EntityId entityId = getDefaultEntityId();
+        var expected = entityRepository.save(entityId.toEntity());
 
-        assertThat(entityRepository.lookupOrCreateId(ENTITY_ID)).isEqualTo(expected.getId());
+        assertThat(entityRepository.lookupOrCreateId(entityId)).isEqualTo(expected.getId());
     }
 
     @Test
     void lookupOrCreateIdIsIdempotent() {
-        var createdId = entityRepository.lookupOrCreateId(ENTITY_ID);
-        var lookupId = entityRepository.lookupOrCreateId(ENTITY_ID);
+        EntityId entityId = getDefaultEntityId();
+        var createdId = entityRepository.lookupOrCreateId(entityId);
+        var lookupId = entityRepository.lookupOrCreateId(entityId);
 
         assertThat(lookupId).isEqualTo(createdId);
+    }
+
+    private EntityId getDefaultEntityId() {
+        return new EntityId(null, 1L, 2L, 3L, EntityTypeEnum.ACCOUNT.getId());
     }
 }

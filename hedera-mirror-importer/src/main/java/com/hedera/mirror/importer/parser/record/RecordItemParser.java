@@ -96,42 +96,23 @@ public class RecordItemParser implements RecordItemListener {
         TransactionRecord txRecord = recordItem.getRecord();
         TransactionBody body = recordItem.getTransactionBody();
         TransactionHandler transactionHandler = transactionHandlerFactory.create(body);
-        log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
+        log.trace("Processing transaction : {}", () -> Utility.printProtoMessage(body));
 
-        int transactionType = recordItem.getTransactionType();
         long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entityId = transactionHandler.getEntityId(recordItem);
+        TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(recordItem.getTransactionType());
 
-        TransactionFilterFields transactionFilterFields =
-                new TransactionFilterFields(entityId, TransactionTypeEnum.of(transactionType));
+        TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionTypeEnum);
         if (!transactionFilter.test(transactionFilterFields)) {
             log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entityId={}",
-                    consensusNs, TransactionTypeEnum.of(transactionType), entityId);
+                    consensusNs, transactionTypeEnum, entityId);
             return;
         }
 
         boolean isSuccessful = isSuccessful(txRecord);
         Transaction tx = buildTransaction(consensusNs, recordItem);
         transactionHandler.updateTransaction(tx, recordItem);
-
-        // Irrespective of transaction failure/success, if entityId is not null, it will be inserted into repo since:
-        //   (1) it is guaranteed to be valid entity on network (validated to exist in pre-consensus checks)
-        //   (2) fk_cud_entity_id is foreign key in t_transactions
-        //
-        // Additionally, if transaction is successful:
-        // - Fields of 'entity' will be updated.
-        // - proxyAccountId/autoRenewAccountId: If present, the account's id are looked up (from big cache) or created
-        //   immediately in TransactionHandler.updateEntity(..).
-        if (transactionHandler.updatesEntity() && isSuccessful && entityId != null) {
-            Entities entity = getEntity(entityId);
-            transactionHandler.updateEntity(entity, recordItem);
-            tx.setEntity(entity);
-            entityRepository.save(entity);
-        } else if (entityId != null) {
-            Entities entity = entityId.toEntity();
-            entity.setId(entityRepository.lookupOrCreateId(entityId)); // look up in big cache
-            tx.setEntity(entity);
-        } // else leave tx.entity null
+        tx.setEntity(getEntity(recordItem, transactionHandler, entityId, isSuccessful));
 
         if ((txRecord.hasTransferList()) && parserProperties.getPersist().isCryptoTransferAmounts()) {
             processNonFeeTransfers(consensusNs, body, txRecord);
@@ -356,12 +337,30 @@ public class RecordItemParser implements RecordItemListener {
     }
 
     /**
-     * @return entity looked up (using shard/realm/num of given entityId) from the repo. If no entity is found, then a
-     * new entity is returned without being persisted to the repo.
+     * @return entity associated with the transaction. Entity is guaranteed to be persisted in repo.
      */
-    private Entities getEntity(EntityId entityId) {
-        return entityRepository.findByPrimaryKey(
-                entityId.getEntityShard(), entityId.getEntityRealm(), entityId.getEntityNum())
-                .orElseGet(entityId::toEntity);
+    private Entities getEntity(
+            RecordItem recordItem, TransactionHandler transactionHandler, EntityId entityId, boolean isSuccessful) {
+        // Irrespective of transaction failure/success, if entityId is not null, it will be inserted into repo since:
+        //   (1) it is guaranteed to be valid entity on network (validated to exist in pre-consensus checks)
+        //   (2) fk_cud_entity_id is foreign key in t_transactions
+        //
+        // Additionally, if transaction is successful:
+        // - Fields of 'entity' will be updated.
+        // - proxyAccountId/autoRenewAccountId: If present, the account's id are looked up (from big cache) or created
+        //   immediately in TransactionHandler.updateEntity(..).
+        if (transactionHandler.updatesEntity() && isSuccessful && entityId != null) {
+            Entities entity = entityRepository.findByPrimaryKey(
+                    entityId.getEntityShard(), entityId.getEntityRealm(), entityId.getEntityNum())
+                    .orElseGet(entityId::toEntity);
+            transactionHandler.updateEntity(entity, recordItem);
+            return entityRepository.save(entity);
+        } else if (entityId != null) {
+            Entities entity = entityId.toEntity();
+            entity.setId(entityRepository.lookupOrCreateId(entityId)); // look up in big cache
+            return entity;
+        }
+        // else leave tx.entity null
+        return null;
     }
 }

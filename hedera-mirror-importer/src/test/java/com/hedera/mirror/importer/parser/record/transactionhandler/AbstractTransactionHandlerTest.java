@@ -39,8 +39,6 @@ public abstract class AbstractTransactionHandlerTest {
     protected static final Long DEFAULT_ENTITY_NUM = 100L;
     @Mock
     protected EntityRepository entityRepository;
-    protected TransactionBody transactionBody;
-    protected TransactionRecord transactionRecord;
     private TransactionHandler transactionHandler;
 
     protected abstract TransactionHandler getTransactionHandler();
@@ -59,9 +57,6 @@ public abstract class AbstractTransactionHandlerTest {
     void beforeEach(TestInfo testInfo) {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
         transactionHandler = getTransactionHandler();
-
-        transactionBody = getDefaultTransactionBody().build();
-        transactionRecord = getDefaultTransactionRecord().build();
     }
 
     @Test
@@ -71,7 +66,8 @@ public abstract class AbstractTransactionHandlerTest {
         if (entityType != null) {
             expectedEntityId = new EntityId(null, 0L, 0L, DEFAULT_ENTITY_NUM, entityType.getId());
         }
-        testGetEntityIdHelper(transactionBody, transactionRecord, expectedEntityId);
+        testGetEntityIdHelper(getDefaultTransactionBody().build(), getDefaultTransactionRecord().build(),
+                expectedEntityId);
     }
 
     protected void testGetEntityIdHelper(
