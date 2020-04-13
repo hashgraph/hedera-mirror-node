@@ -79,8 +79,8 @@ workflows:
             tags:
               only: /.*/
       - cleanup_images:
-          requires:
-            - publish_images
+          #          requires:
+          #            - publish_images
           filters:
             branches:
               only:
@@ -211,7 +211,7 @@ jobs:
             mkdir -p /tmp/workspace/artifacts
             mv hedera-mirror-rest*.tgz /tmp/workspace/artifacts/${NAME}.tgz
       - *persist_artifacts
-            
+
   release_artifacts:
     docker:
       - image: adoptopenjdk:11-jdk-hotspot
@@ -252,7 +252,7 @@ jobs:
           command: |
             DOCKERPUSHTAG=
             if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "image-deploy-cleanup" ]; then
-                DOCKERPUSHTAG=${$CIRCLE_BRANCH-$CIRCLE_SHA1}
+                DOCKERPUSHTAG=${CIRCLE_BRANCH}-${CIRCLE_SHA1}
             fi
             echo ${DOCKERPUSHTAG}
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests -Dcircle.docker.tag=${DOCKERPUSHTAG}
