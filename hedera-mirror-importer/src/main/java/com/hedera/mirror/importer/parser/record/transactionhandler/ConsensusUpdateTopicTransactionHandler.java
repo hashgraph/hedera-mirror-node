@@ -52,10 +52,10 @@ public class ConsensusUpdateTopicTransactionHandler implements TransactionHandle
             Timestamp expirationTime = updateTopic.getExpirationTime();
             entity.setExpiryTimeNs(Utility.timestampInNanosMax(expirationTime));
         }
-        if (updateTopic.hasAutoRenewAccount()) {
-            // Looks up (in the big cache) or creates new id.
-            entity.setAutoRenewAccountId(
-                    entityRepository.lookupOrCreateId(EntityId.of(updateTopic.getAutoRenewAccount())));
+        // Looks up (in the big cache) or creates new id.
+        Long autoRenewAccountId = entityRepository.lookupOrCreateId(EntityId.of(updateTopic.getAutoRenewAccount()));
+        if (autoRenewAccountId != null) {
+            entity.setAutoRenewAccountId(autoRenewAccountId);
         }
         if (updateTopic.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(updateTopic.getAutoRenewPeriod().getSeconds());

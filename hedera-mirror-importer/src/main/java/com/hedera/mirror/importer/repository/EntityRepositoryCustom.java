@@ -27,5 +27,5 @@ import com.hedera.mirror.importer.domain.EntityId;
 public interface EntityRepositoryCustom {
     Collection<EntityId> findAllEntityIds(int limit);
 
-    long lookupOrCreateId(EntityId entityId);
+    Long lookupOrCreateId(EntityId entityId);
 }

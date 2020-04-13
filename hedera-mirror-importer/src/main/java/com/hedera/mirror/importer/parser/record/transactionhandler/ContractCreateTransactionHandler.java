@@ -65,9 +65,9 @@ public class ContractCreateTransactionHandler implements TransactionHandler {
         }
         // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
         // so no need to persist it to repo.
-        EntityId proxyAccountEntityId = EntityId.of(txMessage.getProxyAccountID());
-        if (proxyAccountEntityId != null) {
-            entity.setProxyAccountId(entityRepository.lookupOrCreateId(proxyAccountEntityId));
+        Long proxyAccountId = entityRepository.lookupOrCreateId(EntityId.of(txMessage.getProxyAccountID()));
+        if (proxyAccountId != null) {
+            entity.setProxyAccountId(proxyAccountId);
         }
     }
 }

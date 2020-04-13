@@ -46,10 +46,10 @@ public class ConsensusCreateTopicTransactionHandler implements TransactionHandle
     @Override
     public void updateEntity(Entities entity, RecordItem recordItem) {
         var createTopic = recordItem.getTransactionBody().getConsensusCreateTopic();
-        if (createTopic.hasAutoRenewAccount()) {
-            // Looks up (in the big cache) or creates new id.
-            entity.setAutoRenewAccountId(
-                    entityRepository.lookupOrCreateId(EntityId.of(createTopic.getAutoRenewAccount())));
+        // Looks up (in the big cache) or creates new id.
+        Long autoRenewAccountId = entityRepository.lookupOrCreateId(EntityId.of(createTopic.getAutoRenewAccount()));
+        if (autoRenewAccountId != null) {
+            entity.setAutoRenewAccountId(autoRenewAccountId);
         }
         if (createTopic.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(createTopic.getAutoRenewPeriod().getSeconds());

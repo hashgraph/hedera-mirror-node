@@ -54,9 +54,13 @@ public class EntityRepositoryCustomImpl implements EntityRepositoryCustom {
      *                 inserted into the repo and the newly minted id is returned.
      * @return looked up/newly minted id of the given entityId.
      */
-    public long lookupOrCreateId(EntityId entityId) {
-        if (entityId.getId() != null && entityId.getId() != 0) {
-            return entityId.getId();
+    public Long lookupOrCreateId(EntityId entityId) {
+        if (entityId == null) {
+            return null;
+        }
+        Long id = entityId.getId();
+        if (id != null && id != 0) {
+            return id;
         }
         return entityRepository.findEntityIdByNativeIds(
                 entityId.getEntityShard(), entityId.getEntityRealm(), entityId.getEntityNum())

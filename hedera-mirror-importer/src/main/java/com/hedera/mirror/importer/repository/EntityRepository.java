@@ -43,12 +43,12 @@ public interface EntityRepository extends PagingAndSortingRepository<Entities, L
     <S extends Entities> S save(S entity);
 
     @Cacheable(key = "{#p0, #p1, #p2}", sync = true, cacheNames = "entity_ids",
-            cacheManager = CacheConfiguration.BIG_LRU_CACHE)
+            cacheManager = CacheConfiguration.BIG_LRU_CACHE, unless = "#result == null")
     @Query("select id from Entities where entityShard = ?1 and entityRealm = ?2 and entityNum = ?3")
     Optional<Long> findEntityIdByNativeIds(long entityShard, long entityRealm, long entityNum);
 
     @CachePut(key = "{#p0.entityShard, #p0.entityRealm, #p0.entityNum}", cacheNames = "entity_ids",
-            cacheManager = CacheConfiguration.BIG_LRU_CACHE)
+            cacheManager = CacheConfiguration.BIG_LRU_CACHE, unless = "#result == null")
     default <S extends EntityId> Long cache(S entity) {
         return entity.getId();
     }
