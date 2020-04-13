@@ -255,7 +255,7 @@ jobs:
                           DOCKERPUSHTAG=${$CIRCLE_BRANCH-$CIRCLE_SHA1}
                       fi
                       echo ${DOCKERPUSHTAG}
-                      ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests -Ddocker.push.tag=${DOCKERPUSHTAG}
+                      ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests -Dcircle.docker.tag=${DOCKERPUSHTAG}
             - *save_maven_cache
     cleanup_images:
         machine: true
