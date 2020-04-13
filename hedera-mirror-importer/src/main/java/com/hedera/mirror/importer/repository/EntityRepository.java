@@ -42,7 +42,7 @@ public interface EntityRepository extends PagingAndSortingRepository<Entities, L
     @Override
     <S extends Entities> S save(S entity);
 
-    @Cacheable(key = "{#p0, #p1, #p2}", sync = true, cacheNames = "entity_ids",
+    @Cacheable(key = "{#p0, #p1, #p2}", cacheNames = "entity_ids",
             cacheManager = CacheConfiguration.BIG_LRU_CACHE, unless = "#result == null")
     @Query("select id from Entities where entityShard = ?1 and entityRealm = ?2 and entityNum = ?3")
     Optional<Long> findEntityIdByNativeIds(long entityShard, long entityRealm, long entityNum);
