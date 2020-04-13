@@ -455,9 +455,10 @@ public class RecordItemParser implements RecordItemListener {
                 entity.setExpiryTimeNs(Utility.timestampInNanosMax(expirationTime));
             }
 
-            if (transactionBody.hasAutoRenewAccount()) {
-                // Looks up (in the big cache) or creates new id.
-                entity.setAutoRenewAccountId(lookupOrCreateId(EntityId.of(transactionBody.getAutoRenewAccount())));
+            // Stream can contain transactions with autoRenewAccountId explicitly set to '0.0.0'
+            Long autoRenewAccountId = lookupOrCreateId(EntityId.of(transactionBody.getAutoRenewAccount()));
+            if (autoRenewAccountId != null) {
+                entity.setAutoRenewAccountId(autoRenewAccountId);
             }
 
             if (transactionBody.hasAutoRenewPeriod()) {
@@ -665,7 +666,11 @@ public class RecordItemParser implements RecordItemListener {
      *                 inserted into the repo and the newly minted id is returned.
      * @return looked up/newly minted id of the given entityId.
      */
-    public long lookupOrCreateId(EntityId entityId) {
+    public Long lookupOrCreateId(EntityId entityId) {
+        if (entityId == null) {
+            return null;
+        }
+
         log.debug("lookupOrCreateId for {}", entityId);
         if (entityId.getId() != null && entityId.getId() != 0) {
             return entityId.getId();

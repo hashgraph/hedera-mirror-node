@@ -1,6 +1,6 @@
 {
     "name": "backend",
-    "version": "0.9.0-rc2",
+    "version": "0.9.0-rc3",
     "description": "REST API for Hedera mirror node",
     "main": "server.js",
     "private": true,

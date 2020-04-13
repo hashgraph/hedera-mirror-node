@@ -12,8 +12,8 @@ dependencies:
   - alias: loki-stack
     condition: loki-stack.enabled
     name: loki-stack
-    version: ~0.34.0
     repository: https://grafana.github.io/loki/charts
+    version: 0.34.2
   - alias: postgresql
     condition: postgresql.enabled
     name: postgresql-ha
