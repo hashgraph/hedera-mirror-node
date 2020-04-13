@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
@@ -29,6 +28,5 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
  * Extract non_fee_transfers requested by a transaction into an iterable list of transfers.
  */
 public interface NonFeeTransferExtractionStrategy {
-    Iterable<AccountAmount> extractNonFeeTransfers(AccountID payerAccountId, TransactionBody body,
-                                                   TransactionRecord transactionRecord);
+    Iterable<AccountAmount> extractNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord);
 }

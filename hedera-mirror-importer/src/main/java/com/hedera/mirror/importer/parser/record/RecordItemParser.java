@@ -191,30 +191,16 @@ public class RecordItemParser implements RecordItemListener {
     }
 
     /**
-     * Should the given transaction/record generate non_fee_transfers based on what type the transaction is, it's
-     * status, and run-time configuration concerning which situations warrant storing.
-     */
-    private boolean shouldStoreNonFeeTransfers(TransactionBody body) {
-        if (!body.hasCryptoCreateAccount() && !body.hasContractCreateInstance() && !body.hasCryptoTransfer() && !body
-                .hasContractCall()) {
-            return false;
-        }
-        return parserProperties.getPersist().isNonFeeTransfers();
-    }
-
-    /**
      * Additionally store rows in the non_fee_transactions table if applicable. This will allow the rest-api to create
      * an itemized set of transfers that reflects non-fees (explicit transfers), threshold records, node fee, and
      * network+service fee (paid to treasury).
      */
     private void processNonFeeTransfers(
             long consensusTimestamp, TransactionBody body, TransactionRecord transactionRecord) {
-        if (!shouldStoreNonFeeTransfers(body)) {
+        if (!parserProperties.getPersist().isNonFeeTransfers()) {
             return;
         }
-
-        AccountID payerAccountId = body.getTransactionID().getAccountID();
-        for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(payerAccountId, body, transactionRecord)) {
+        for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
                 recordParsedItemHandler.onNonFeeTransfer(
                         new NonFeeTransfer(consensusTimestamp, aa.getAccountID().getRealmNum(),

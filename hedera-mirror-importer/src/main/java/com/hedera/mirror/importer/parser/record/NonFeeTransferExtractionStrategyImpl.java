@@ -26,49 +26,51 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import org.springframework.stereotype.Component;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import org.springframework.stereotype.Component;
 
 /**
- * Extract non_fee_transfers requested by a transaction into an iterable list of transfers.
+ * Non-fee transfers are explicitly requested transfers. This implementation extracts non_fee_transfers requested by a
+ * transaction into an iterable of transfers.
  */
 @Component
 public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtractionStrategy {
     /**
-     * Return a list of non-fee transfer amounts for certain transaction types. These are explicitly requested
-     * transfers.
-     * @param payerAccountId
-     * @param body
-     * @param transactionRecord
-     * @return
+     * @return iterable of transfers. If transaction has no non-fee transfers, then iterable will have no elements.
      */
     @Override
-    public Iterable<AccountAmount> extractNonFeeTransfers(AccountID payerAccountId, TransactionBody body,
-                                                          TransactionRecord transactionRecord) {
-        LinkedList<AccountAmount> result = new LinkedList<>();
+    public Iterable<AccountAmount> extractNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord) {
+        // Only these types of transactions have non-fee transfers.
+        if (!body.hasCryptoCreateAccount() && !body.hasContractCreateInstance() && !body.hasCryptoTransfer()
+                && !body.hasContractCall()) {
+            return new ArrayList<>();
+        }
+        AccountID payerAccountId = body.getTransactionID().getAccountID();
         if (body.hasCryptoTransfer()) {
-            for (var accountAmount : body.getCryptoTransfer().getTransfers().getAccountAmountsList()) {
-                result.add(accountAmount);
-            }
+            return body.getCryptoTransfer().getTransfers().getAccountAmountsList();
         } else if (body.hasCryptoCreateAccount()) {
-            var amount = body.getCryptoCreateAccount().getInitialBalance();
-            result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(0 - amount).build());
-            if (ResponseCodeEnum.SUCCESS == transactionRecord.getReceipt().getStatus()) {
-                var newAccountId = transactionRecord.getReceipt().getAccountID();
-                result.add(AccountAmount.newBuilder().setAccountID(newAccountId).setAmount(amount).build());
-            }
+            return extractForCreateEntity(body.getCryptoCreateAccount().getInitialBalance(), payerAccountId,
+                    transactionRecord.getReceipt().getAccountID(), transactionRecord);
         } else if (body.hasContractCreateInstance()) {
-            var amount = body.getContractCreateInstance().getInitialBalance();
-            result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(0 - amount).build());
-            if (ResponseCodeEnum.SUCCESS == transactionRecord.getReceipt().getStatus()) {
-                var contractAccountId = contractIdToAccountId(transactionRecord.getReceipt().getContractID());
-                result.add(AccountAmount.newBuilder().setAccountID(contractAccountId).setAmount(amount).build());
-            }
-        } else if (body.hasContractCall()) {
+            return extractForCreateEntity(body.getContractCreateInstance().getInitialBalance(), payerAccountId,
+                    contractIdToAccountId(transactionRecord.getReceipt().getContractID()), transactionRecord);
+        } else { // contractCall
+            LinkedList<AccountAmount> result = new LinkedList<>();
             var amount = body.getContractCall().getAmount();
             var contractAccountId = contractIdToAccountId(body.getContractCall().getContractID());
             result.add(AccountAmount.newBuilder().setAccountID(contractAccountId).setAmount(amount).build());
             result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(0 - amount).build());
+            return result;
+        }
+    }
+
+    private Iterable<AccountAmount> extractForCreateEntity(
+            long initialBalance, AccountID payerAccountId, AccountID createdEntity, TransactionRecord txRecord) {
+        LinkedList<AccountAmount> result = new LinkedList<>();
+        result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(0 - initialBalance).build());
+        if (ResponseCodeEnum.SUCCESS == txRecord.getReceipt().getStatus()) {
+            result.add(AccountAmount.newBuilder().setAccountID(createdEntity).setAmount(initialBalance).build());
         }
         return result;
     }
