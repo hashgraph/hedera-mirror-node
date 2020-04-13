@@ -7,7 +7,7 @@ dependencies:
   version: 0.1.0
 - name: loki-stack
   repository: https://grafana.github.io/loki/charts
-  version: ~0.34.0
+  version: 0.34.2
 - name: postgresql-ha
   repository: https://charts.bitnami.com/bitnami
   version: 2.1.1
@@ -20,5 +20,5 @@ dependencies:
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
   version: 0.1.0
-digest: sha256:ff356256b6037c757ec92a6bf9fa550a5405c19d4cd4d7085917299730ba1d51
-generated: "2020-04-09T12:33:07.830566-05:00"
+digest: sha256:34a39ed62215243763a62dabb99d5f6b1b86e0e300535e0609235d50ba21a128
+generated: "2020-04-13T11:47:22.107716-05:00"
