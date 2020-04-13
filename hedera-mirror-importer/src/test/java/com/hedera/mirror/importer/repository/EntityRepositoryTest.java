@@ -21,14 +21,14 @@ package com.hedera.mirror.importer.repository;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 public class EntityRepositoryTest extends AbstractRepositoryTest {
-
     @Test
     void findByPrimaryKey() {
         int entityTypeId = entityTypeRepository.findByName("account").get().getId();
@@ -78,22 +78,34 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void findEntityIdByNativeIds() {
-        var entityTypeId = entityTypeRepository.findByName("account").get().getId();
-
-        var entity = new Entities();
-        entity.setEntityTypeId(entityTypeId);
-        entity.setEntityShard(1L);
-        entity.setEntityRealm(2L);
-        entity.setEntityNum(3L);
+        EntityId entityId = getDefaultEntityId();
+        Entities entity = entityId.toEntity();
         var expected = entityRepository.save(entity);
 
-        var entityId = entityRepository.findEntityIdByNativeIds(entity.getEntityShard(), entity.getEntityRealm(),
+        var dbId = entityRepository.findEntityIdByNativeIds(entity.getEntityShard(), entity.getEntityRealm(),
                 entity.getEntityNum()).get();
 
-        assertAll(() -> assertEquals(expected.getId(), entityId.getId())
-                , () -> assertEquals(expected.getEntityShard(), entityId.getEntityShard())
-                , () -> assertEquals(expected.getEntityRealm(), entityId.getEntityRealm())
-                , () -> assertEquals(expected.getEntityNum(), entityId.getEntityNum())
-        );
+        assertThat(dbId).isEqualTo(expected.getId());
+    }
+
+    @Test
+    void lookupExistingId() {
+        EntityId entityId = getDefaultEntityId();
+        var expected = entityRepository.save(entityId.toEntity());
+
+        assertThat(entityRepository.lookupOrCreateId(entityId)).isEqualTo(expected.getId());
+    }
+
+    @Test
+    void lookupOrCreateIdIsIdempotent() {
+        EntityId entityId = getDefaultEntityId();
+        var createdId = entityRepository.lookupOrCreateId(entityId);
+        var lookupId = entityRepository.lookupOrCreateId(entityId);
+
+        assertThat(lookupId).isEqualTo(createdId);
+    }
+
+    private EntityId getDefaultEntityId() {
+        return new EntityId(null, 1L, 2L, 3L, EntityTypeEnum.ACCOUNT.getId());
     }
 }

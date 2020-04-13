@@ -23,12 +23,15 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.repository.EntityRepository;
 
 @Named
 @AllArgsConstructor
 public class ConsensusCreateTopicTransactionHandler implements TransactionHandler {
+    private final EntityRepository entityRepository;
 
     @Override
     public EntityId getEntityId(RecordItem recordItem) {
@@ -38,5 +41,25 @@ public class ConsensusCreateTopicTransactionHandler implements TransactionHandle
     @Override
     public boolean updatesEntity() {
         return true;
+    }
+
+    @Override
+    public void updateEntity(Entities entity, RecordItem recordItem) {
+        var createTopic = recordItem.getTransactionBody().getConsensusCreateTopic();
+        // Looks up (in the big cache) or creates new id.
+        Long autoRenewAccountId = entityRepository.lookupOrCreateId(EntityId.of(createTopic.getAutoRenewAccount()));
+        if (autoRenewAccountId != null) {
+            entity.setAutoRenewAccountId(autoRenewAccountId);
+        }
+        if (createTopic.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(createTopic.getAutoRenewPeriod().getSeconds());
+        }
+        // If either key is empty, they should end up as empty bytea in the DB to indicate that there is
+        // explicitly no value, as opposed to null which has been used to indicate the value is unknown.
+        var adminKey = createTopic.hasAdminKey() ? createTopic.getAdminKey().toByteArray() : new byte[0];
+        var submitKey = createTopic.hasSubmitKey() ? createTopic.getSubmitKey().toByteArray() : new byte[0];
+        entity.setMemo(createTopic.getMemo());
+        entity.setKey(adminKey);
+        entity.setSubmitKey(submitKey);
     }
 }

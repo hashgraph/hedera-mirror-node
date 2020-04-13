@@ -49,8 +49,25 @@ public class EntityRepositoryCustomImpl implements EntityRepositoryCustom {
         return results;
     }
 
-    public <S extends Entities> EntityId saveAndCacheEntityId(S entity) {
-        var saved = entityRepository.save(entity);
-        return entityRepository.cache(saved.toEntityId());
+    /**
+     * @param entityId for which the id needs to be looked up (from cache/repo). If no id is found, the the entity is
+     *                 inserted into the repo and the newly minted id is returned.
+     * @return looked up/newly minted id of the given entityId.
+     */
+    public Long lookupOrCreateId(EntityId entityId) {
+        if (entityId == null) {
+            return null;
+        }
+        Long id = entityId.getId();
+        if (id != null && id != 0) {
+            return id;
+        }
+        return entityRepository.findEntityIdByNativeIds(
+                entityId.getEntityShard(), entityId.getEntityRealm(), entityId.getEntityNum())
+                .orElseGet(() -> {
+                    var entity = entityRepository.save(entityId.toEntity());
+                    entityRepository.cache(entity.toEntityId()); // save to big cache
+                    return entity.getId();
+                });
     }
 }

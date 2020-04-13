@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 /**
@@ -37,10 +39,25 @@ public interface TransactionHandler {
     EntityId getEntityId(RecordItem recordItem);
 
     /**
-     * Override to return true if an implementation wants to be able to update the entity returned by
+     * Override to return true if an implementation wants to update the entity returned by
      * {@link #getEntityId(RecordItem)}.
      */
     default boolean updatesEntity() {
         return false;
+    }
+
+    /**
+     * Override to update fields of the entity.
+     * If {@link #updatesEntity()} returns true, and {@link #getEntityId(RecordItem)} returns a non-null id, and the
+     * transaction is successful, then this function will be called.
+     * @param entity latest state of entity (fetched from the repo)
+     */
+    default void updateEntity(Entities entity, RecordItem recordItem) {
+    }
+
+    /**
+     * Override to update fields of the Transaction's (domain) fields.
+     */
+    default void updateTransaction(Transaction transaction, RecordItem recordItem) {
     }
 }

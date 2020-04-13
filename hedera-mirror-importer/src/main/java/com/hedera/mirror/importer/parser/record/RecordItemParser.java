@@ -24,18 +24,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddClaimTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
-import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.io.IOException;
@@ -52,6 +46,7 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -101,199 +96,28 @@ public class RecordItemParser implements RecordItemListener {
         TransactionRecord txRecord = recordItem.getRecord();
         TransactionBody body = recordItem.getTransactionBody();
         TransactionHandler transactionHandler = transactionHandlerFactory.create(body);
-        log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
+        log.trace("Processing transaction : {}", () -> Utility.printProtoMessage(body));
 
-        int transactionType = recordItem.getTransactionType();
         long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entityId = transactionHandler.getEntityId(recordItem);
+        TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(recordItem.getTransactionType());
 
-        TransactionFilterFields transactionFilterFields =
-                new TransactionFilterFields(entityId, TransactionTypeEnum.of(transactionType));
+        TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionTypeEnum);
         if (!transactionFilter.test(transactionFilterFields)) {
             log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entityId={}",
-                    consensusNs, TransactionTypeEnum.of(transactionType), entityId);
+                    consensusNs, transactionTypeEnum, entityId);
             return;
         }
 
-        // TODO: updatesEntity() is true for all and only the transaction types which are in body.has*() if-else
-        //   conditions below. This is temporary to keep scope of changes in single PR limited and will be fixed in
-        //   followup PR quickly. All if-else conditions will be replaced by:
-        //     transactionHandler.updateEntity(entity, recordItem).
-        Entities entity = null; // Entity used when t_entities row must be updated.
-        if (transactionHandler.updatesEntity()) {
-            entity = getEntity(entityId);
-        }
-
-        // Only when transaction is successful:
-        // - Fields of 'entity' will be updated. Fields are not updated for failed transactions since 'entity' may be an
-        //   instance from cache and reused in future.
-        // - proxyAccountId/autoRenewAccountId: If present, the account's id will be looked up (from big cache)
-        //   or created immediately.
-
-        // For all transactions:
-        // - 'entity' (may have been updated or not) is always inserted into repo since
-        //   (1) it is guaranteed to be valid entity on network (validated to exist in pre-consensus checks)
-        //   (2) fk_cud_entity_id is foreign key in t_transactions
-        boolean doUpdateEntity = isSuccessful(txRecord);
-        long initialBalance = 0;
-
-        if (entity == null) {
-            // Do nothing. This can be true if transaction is of type that doesn't update the entity. Or, if the
-            // transaction doesn't contain non-zero entity id (i.e. with entityNum != 0).
-        } else if (body.hasContractCreateInstance()) {
-            if (txRecord.getReceipt().hasContractID()) { // implies SUCCESS
-                ContractCreateTransactionBody txMessage = body.getContractCreateInstance();
-                setProxyAccountID(txMessage.getProxyAccountID(), entity);
-                if (txMessage.hasAutoRenewPeriod()) {
-                    entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
-                }
-                // Can't clear memo on contracts. 0 length indicates no change
-                if (txMessage.getMemo() != null && txMessage.getMemo().length() > 0) {
-                    entity.setMemo(txMessage.getMemo());
-                }
-
-                if (txMessage.hasAdminKey()) {
-                    entity.setKey(txMessage.getAdminKey().toByteArray());
-                }
-            }
-
-            initialBalance = body.getContractCreateInstance().getInitialBalance();
-        } else if (body.hasContractDeleteInstance()) {
-            if (body.getContractDeleteInstance().hasContractID()) {
-                if (doUpdateEntity) {
-                    entity.setDeleted(true);
-                }
-            }
-        } else if (body.hasContractUpdateInstance()) {
-            ContractUpdateTransactionBody txMessage = body.getContractUpdateInstance();
-            if (doUpdateEntity) {
-                setProxyAccountID(txMessage.getProxyAccountID(), entity);
-                if (txMessage.hasExpirationTime()) {
-                    entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
-                }
-                if (txMessage.hasAutoRenewPeriod()) {
-                    entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
-                }
-                if (txMessage.hasAdminKey()) {
-                    entity.setKey(txMessage.getAdminKey().toByteArray());
-                }
-                // Can't clear memo on contracts. 0 length indicates no change
-                if (txMessage.getMemo() != null && txMessage.getMemo().length() > 0) {
-                    entity.setMemo(txMessage.getMemo());
-                }
-            }
-        } else if (body.hasCryptoCreateAccount()) {
-            if (txRecord.getReceipt().hasAccountID()) { // Implies SUCCESS
-                CryptoCreateTransactionBody txMessage = body.getCryptoCreateAccount();
-                setProxyAccountID(txMessage.getProxyAccountID(), entity);
-                if (txMessage.hasAutoRenewPeriod()) {
-                    entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
-                }
-                if (txMessage.hasKey()) {
-                    entity.setKey(txMessage.getKey().toByteArray());
-                }
-            }
-
-            initialBalance = body.getCryptoCreateAccount().getInitialBalance();
-        } else if (body.hasCryptoDelete()) {
-            if (body.getCryptoDelete().hasDeleteAccountID()) {
-                if (doUpdateEntity) {
-                    entity.setDeleted(true);
-                }
-            }
-        } else if (body.hasCryptoUpdateAccount()) {
-            CryptoUpdateTransactionBody txMessage = body.getCryptoUpdateAccount();
-            if (doUpdateEntity) {
-                setProxyAccountID(txMessage.getProxyAccountID(), entity);
-                if (txMessage.hasExpirationTime()) {
-                    entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
-                }
-                if (txMessage.hasAutoRenewPeriod()) {
-                    entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
-                }
-                if (txMessage.hasKey()) {
-                    entity.setKey(txMessage.getKey().toByteArray());
-                }
-            }
-        } else if (body.hasFileCreate()) {
-            if (txRecord.getReceipt().hasFileID()) { // Implies SUCCESS
-                FileCreateTransactionBody txMessage = body.getFileCreate();
-                if (txMessage.hasExpirationTime()) {
-                    entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
-                }
-
-                if (txMessage.hasKeys()) {
-                    entity.setKey(txMessage.getKeys().toByteArray());
-                }
-            }
-        } else if (body.hasFileDelete()) {
-            if (body.getFileDelete().hasFileID()) {
-                if (doUpdateEntity) {
-                    entity.setDeleted(true);
-                }
-            }
-        } else if (body.hasFileUpdate()) {
-            FileUpdateTransactionBody txMessage = body.getFileUpdate();
-            if (doUpdateEntity) {
-                if (txMessage.hasExpirationTime()) {
-                    entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
-                }
-
-                if (txMessage.hasKeys()) {
-                    entity.setKey(txMessage.getKeys().toByteArray());
-                }
-            }
-        } else if (body.hasSystemDelete()) {
-            if (doUpdateEntity) {
-                entity.setDeleted(true);
-            }
-        } else if (body.hasSystemUndelete()) {
-            if (doUpdateEntity) {
-                entity.setDeleted(false);
-            }
-        } else if (body.hasConsensusCreateTopic()) {
-            consensusCreateTopicUpdateEntity(entity, body, txRecord);
-        } else if (body.hasConsensusUpdateTopic()) {
-            consensusUpdateTopicUpdateEntity(entity, body, txRecord);
-        } else if (body.hasConsensusDeleteTopic()) {
-            consensusDeleteTopicUpdateEntity(entity, body, txRecord);
-        }
-
-        TransactionID transactionID = body.getTransactionID();
-        long validDurationSeconds = body.hasTransactionValidDuration() ? body.getTransactionValidDuration()
-                .getSeconds() : null;
-        long validStartNs = Utility.timeStampInNanos(transactionID.getTransactionValidStart());
-        AccountID payerAccountId = transactionID.getAccountID();
-
-        com.hedera.mirror.importer.domain.Transaction tx = new com.hedera.mirror.importer.domain.Transaction();
-        tx.setChargedTxFee(txRecord.getTransactionFee());
-        tx.setConsensusNs(consensusNs);
-        tx.setInitialBalance(initialBalance);
-        tx.setMemo(body.getMemo().getBytes());
-        tx.setMaxFee(body.getTransactionFee());
-        tx.setResult(txRecord.getReceipt().getStatusValue());
-        tx.setType(transactionType);
-        tx.setTransactionBytes(parserProperties.getPersist().isTransactionBytes() ?
-                recordItem.getTransactionBytes() : null);
-        tx.setTransactionHash(txRecord.getTransactionHash().toByteArray());
-        tx.setValidDurationSeconds(validDurationSeconds);
-        tx.setValidStartNs(validStartNs);
-        if (entity != null) {
-            tx.setEntity(entity);
-            entityRepository.save(entity);
-        } else if (entityId != null) {
-            Entities tempEntity = entityId.toEntity();
-            tempEntity.setId(lookupOrCreateId(entityId)); // look up in big cache
-            tx.setEntity(tempEntity);
-        }  // else leave tx.entity null
-        tx.setNodeAccountId(lookupOrCreateId(EntityId.of(body.getNodeAccountID())));
-        tx.setPayerAccountId(lookupOrCreateId(EntityId.of(payerAccountId)));
+        boolean isSuccessful = isSuccessful(txRecord);
+        Transaction tx = buildTransaction(consensusNs, recordItem);
+        transactionHandler.updateTransaction(tx, recordItem);
+        tx.setEntity(getEntity(recordItem, transactionHandler, entityId, isSuccessful));
 
         if ((txRecord.hasTransferList()) && parserProperties.getPersist().isCryptoTransferAmounts()) {
             processNonFeeTransfers(consensusNs, body, txRecord);
             if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
-                insertCryptoCreateTransferList(consensusNs, txRecord, body, txRecord.getReceipt()
-                        .getAccountID(), payerAccountId);
+                insertCryptoCreateTransferList(consensusNs, txRecord, body);
             } else {
                 insertTransferList(consensusNs, txRecord.getTransferList());
             }
@@ -305,7 +129,7 @@ public class RecordItemParser implements RecordItemListener {
         } else if (body.hasContractCreateInstance()) {
             insertContractCreateInstance(consensusNs, body.getContractCreateInstance(), txRecord);
         }
-        if (doUpdateEntity) {
+        if (isSuccessful) {
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
             } else if (body.hasCryptoAddClaim()) {
@@ -324,14 +148,27 @@ public class RecordItemParser implements RecordItemListener {
         log.debug("Storing transaction: {}", tx);
     }
 
-    private void setProxyAccountID(AccountID proxyAccountID, Entities entity) {
-        // Stream contains transactions with proxyAccountID explicitly set to '0.0.0' i.e. hasProxyAccountID returns
-        // true. 0.0.0 is not a valid entity and maybe consensus nodes just ignore that value. Either ways, no need to
-        // persist 0.0.0 in database on mirror node side.
-        EntityId proxyAccountEntityId = EntityId.of(proxyAccountID);
-        if (proxyAccountEntityId != null) {
-            entity.setProxyAccountId(lookupOrCreateId(proxyAccountEntityId));
-        }
+    private Transaction buildTransaction(long consensusTimestamp, RecordItem recordItem) {
+        Transaction tx = new Transaction();
+        TransactionBody body = recordItem.getTransactionBody();
+        TransactionRecord txRecord = recordItem.getRecord();
+        tx.setChargedTxFee(txRecord.getTransactionFee());
+        tx.setConsensusNs(consensusTimestamp);
+        tx.setMemo(body.getMemo().getBytes());
+        tx.setMaxFee(body.getTransactionFee());
+        tx.setResult(txRecord.getReceipt().getStatusValue());
+        tx.setType(recordItem.getTransactionType());
+        tx.setTransactionBytes(parserProperties.getPersist().isTransactionBytes() ?
+                recordItem.getTransactionBytes() : null);
+        tx.setTransactionHash(txRecord.getTransactionHash().toByteArray());
+        Long validDurationSeconds = body.hasTransactionValidDuration() ?
+                body.getTransactionValidDuration().getSeconds() : null;
+        tx.setValidDurationSeconds(validDurationSeconds);
+        tx.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
+        tx.setNodeAccountId(entityRepository.lookupOrCreateId(EntityId.of(body.getNodeAccountID())));
+        tx.setPayerAccountId(entityRepository.lookupOrCreateId(EntityId.of(body.getTransactionID().getAccountID())));
+        tx.setInitialBalance(0L);
+        return tx;
     }
 
     /**
@@ -344,117 +181,12 @@ public class RecordItemParser implements RecordItemListener {
         if (!parserProperties.getPersist().isNonFeeTransfers()) {
             return;
         }
-
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
                 recordParsedItemHandler.onNonFeeTransfer(
                         new NonFeeTransfer(consensusTimestamp, aa.getAccountID().getRealmNum(),
                                 aa.getAccountID().getAccountNum(), aa.getAmount()));
             }
-        }
-    }
-
-    /**
-     * Store ConsensusCreateTopic transaction in the database.
-     *
-     * @throws IllegalArgumentException
-     */
-    private void consensusCreateTopicUpdateEntity(
-            Entities entity, TransactionBody body, TransactionRecord transactionRecord) {
-        if (!body.hasConsensusCreateTopic()) {
-            throw new IllegalArgumentException("transaction is not a ConsensusCreateTopic");
-        }
-
-        if (!transactionRecord.getReceipt().hasTopicID()) { // tx not successful. Equivalent to doUpdateEntity check.
-            return;
-        }
-
-        var transactionBody = body.getConsensusCreateTopic();
-
-        if (transactionBody.hasAutoRenewAccount()) {
-            // Looks up (in the big cache) or creates new id.
-            entity.setAutoRenewAccountId(lookupOrCreateId(EntityId.of(transactionBody.getAutoRenewAccount())));
-        }
-
-        if (transactionBody.hasAutoRenewPeriod()) {
-            entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
-        }
-
-        // If either key is empty, they should end up as empty bytea in the DB to indicate that there is
-        // explicitly no value, as opposed to null which has been used to indicate the value is unknown.
-        var adminKey = transactionBody.hasAdminKey() ? transactionBody.getAdminKey().toByteArray() : new byte[0];
-        var submitKey = transactionBody.hasSubmitKey() ? transactionBody.getSubmitKey().toByteArray() : new byte[0];
-
-        entity.setMemo(transactionBody.getMemo());
-        entity.setKey(adminKey);
-        entity.setSubmitKey(submitKey);
-    }
-
-    /**
-     * Store ConsensusUpdateTopic transaction in the database.
-     *
-     * @throws IllegalArgumentException
-     */
-    private void consensusUpdateTopicUpdateEntity(
-            Entities entity, TransactionBody body, TransactionRecord transactionRecord) {
-        if (!body.hasConsensusUpdateTopic()) {
-            throw new IllegalArgumentException("transaction is not a ConsensusUpdateTopic");
-        }
-
-        var transactionBody = body.getConsensusUpdateTopic();
-        if (!transactionBody.hasTopicID()) {
-            log.warn("Encountered a ConsensusUpdateTopic transaction without topic ID: {}", body);
-            return;
-        }
-
-        if (isSuccessful(transactionRecord)) {
-            if (transactionBody.hasExpirationTime()) {
-                Timestamp expirationTime = transactionBody.getExpirationTime();
-                entity.setExpiryTimeNs(Utility.timestampInNanosMax(expirationTime));
-            }
-
-            if (transactionBody.hasAutoRenewAccount()) {
-                // Looks up (in the big cache) or creates new id.
-                entity.setAutoRenewAccountId(lookupOrCreateId(EntityId.of(transactionBody.getAutoRenewAccount())));
-            }
-
-            if (transactionBody.hasAutoRenewPeriod()) {
-                entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
-            }
-
-            if (transactionBody.hasAdminKey()) {
-                entity.setKey(transactionBody.getAdminKey().toByteArray());
-            }
-
-            if (transactionBody.hasSubmitKey()) {
-                entity.setSubmitKey(transactionBody.getSubmitKey().toByteArray());
-            }
-
-            if (transactionBody.hasMemo()) {
-                entity.setMemo(transactionBody.getMemo().getValue());
-            }
-        }
-    }
-
-    /**
-     * Store ConsensusDeleteTopic transaction in the database.
-     *
-     * @throws IllegalArgumentException
-     */
-    private void consensusDeleteTopicUpdateEntity(
-            Entities entity, TransactionBody body, TransactionRecord transactionRecord) {
-        if (!body.hasConsensusDeleteTopic()) {
-            throw new IllegalArgumentException("transaction is not a ConsensusDeleteTopic");
-        }
-
-        var transactionBody = body.getConsensusDeleteTopic();
-        if (!transactionBody.hasTopicID()) {
-            log.warn("Encountered a ConsensusDeleteTopic transaction without topic ID: {}", body);
-            return;
-        }
-
-        if (isSuccessful(transactionRecord)) {
-            entity.setDeleted(true);
         }
     }
 
@@ -534,17 +266,14 @@ public class RecordItemParser implements RecordItemListener {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var accountId = aa.getAccountID();
-            lookupOrCreateId(EntityId.of(aa.getAccountID())); // ensures existence of entity in db
+            entityRepository.lookupOrCreateId(EntityId.of(aa.getAccountID())); // ensures existence of entity in db
             addCryptoTransferList(consensusTimestamp, accountId.getRealmNum(), accountId.getAccountNum(), aa
                     .getAmount());
         }
     }
 
-    private void insertCryptoCreateTransferList(long consensusTimestamp,
-                                                TransactionRecord txRecord,
-                                                TransactionBody body,
-                                                AccountID createdAccountId,
-                                                AccountID payerAccountId) {
+    private void insertCryptoCreateTransferList(
+            long consensusTimestamp, TransactionRecord txRecord, TransactionBody body) {
 
         long initialBalance = 0;
         long createdAccountNum = 0;
@@ -562,7 +291,7 @@ public class RecordItemParser implements RecordItemListener {
             var aa = transferList.getAccountAmounts(i);
             var accountId = aa.getAccountID();
             long accountNum = accountId.getAccountNum();
-            lookupOrCreateId(EntityId.of(accountId)); // ensures existence of entity in db
+            entityRepository.lookupOrCreateId(EntityId.of(accountId)); // ensures existence of entity in db
             addCryptoTransferList(consensusTimestamp, accountId.getRealmNum(), accountNum, aa.getAmount());
 
             if (addInitialBalance && (initialBalance == aa.getAmount()) && (accountNum == createdAccountNum)) {
@@ -571,10 +300,12 @@ public class RecordItemParser implements RecordItemListener {
         }
 
         if (addInitialBalance) {
-            lookupOrCreateId(EntityId.of(payerAccountId)); // ensures existence of entity in db
+            AccountID payerAccountId = body.getTransactionID().getAccountID();
+            AccountID createdAccountId = txRecord.getReceipt().getAccountID();
+            entityRepository.lookupOrCreateId(EntityId.of(payerAccountId)); // ensures existence of entity in db
             addCryptoTransferList(consensusTimestamp, payerAccountId.getRealmNum(), payerAccountId
                     .getAccountNum(), -initialBalance);
-            lookupOrCreateId(EntityId.of(createdAccountId)); // ensures existence of entity in db
+            entityRepository.lookupOrCreateId(EntityId.of(createdAccountId)); // ensures existence of entity in db
             addCryptoTransferList(consensusTimestamp, createdAccountId
                     .getRealmNum(), createdAccountNum, initialBalance);
         }
@@ -606,31 +337,30 @@ public class RecordItemParser implements RecordItemListener {
     }
 
     /**
-     * @return entity looked up (using shard/realm/num of given entityId) from the repo. If no entity is found, then a
-     * new entity is returned without being persisted to the repo.
+     * @return entity associated with the transaction. Entity is guaranteed to be persisted in repo.
      */
-    private Entities getEntity(EntityId entityId) {
-        if (entityId == null) {
-            return null;
+    private Entities getEntity(
+            RecordItem recordItem, TransactionHandler transactionHandler, EntityId entityId, boolean isSuccessful) {
+        // Irrespective of transaction failure/success, if entityId is not null, it will be inserted into repo since:
+        //   (1) it is guaranteed to be valid entity on network (validated to exist in pre-consensus checks)
+        //   (2) fk_cud_entity_id is foreign key in t_transactions
+        //
+        // Additionally, if transaction is successful:
+        // - Fields of 'entity' will be updated.
+        // - proxyAccountId/autoRenewAccountId: If present, the account's id are looked up (from big cache) or created
+        //   immediately in TransactionHandler.updateEntity(..).
+        if (transactionHandler.updatesEntity() && isSuccessful && entityId != null) {
+            Entities entity = entityRepository.findByPrimaryKey(
+                    entityId.getEntityShard(), entityId.getEntityRealm(), entityId.getEntityNum())
+                    .orElseGet(entityId::toEntity);
+            transactionHandler.updateEntity(entity, recordItem);
+            return entityRepository.save(entity);
+        } else if (entityId != null) {
+            Entities entity = entityId.toEntity();
+            entity.setId(entityRepository.lookupOrCreateId(entityId)); // look up in big cache
+            return entity;
         }
-        return entityRepository.findByPrimaryKey(
-                entityId.getEntityShard(), entityId.getEntityRealm(), entityId.getEntityNum())
-                .orElseGet(entityId::toEntity);
-    }
-
-    /**
-     * @param entityId for which the id needs to be looked up (from cache/repo). If no id is found, the the entity is
-     *                 inserted into the repo and the newly minted id is returned.
-     * @return looked up/newly minted id of the given entityId.
-     */
-    public long lookupOrCreateId(EntityId entityId) {
-        log.debug("lookupOrCreateId for {}", entityId);
-        if (entityId.getId() != null && entityId.getId() != 0) {
-            return entityId.getId();
-        }
-        return entityRepository.findEntityIdByNativeIds(
-                entityId.getEntityShard(), entityId.getEntityRealm(), entityId.getEntityNum())
-                .orElseGet(() -> entityRepository.saveAndCacheEntityId(entityId.toEntity()))
-                .getId();
+        // else leave tx.entity null
+        return null;
     }
 }

@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractCreateTransactionHandler();
+        return new ContractCreateTransactionHandler(entityRepository);
     }
 
     @Override

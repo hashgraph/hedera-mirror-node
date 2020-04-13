@@ -28,14 +28,17 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.mockito.Mock;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.repository.EntityRepository;
 
 public abstract class AbstractTransactionHandlerTest {
     protected static final Long DEFAULT_ENTITY_NUM = 100L;
-
+    @Mock
+    protected EntityRepository entityRepository;
     private TransactionHandler transactionHandler;
 
     protected abstract TransactionHandler getTransactionHandler();
@@ -50,16 +53,10 @@ public abstract class AbstractTransactionHandlerTest {
     // For testGetEntityId
     protected abstract EntityTypeEnum getExpectedEntityIdType();
 
-    protected TransactionBody transactionBody;
-    protected TransactionRecord transactionRecord;
-
     @BeforeEach
     void beforeEach(TestInfo testInfo) {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
         transactionHandler = getTransactionHandler();
-
-        transactionBody = getDefaultTransactionBody().build();
-        transactionRecord = getDefaultTransactionRecord().build();
     }
 
     @Test
@@ -69,7 +66,8 @@ public abstract class AbstractTransactionHandlerTest {
         if (entityType != null) {
             expectedEntityId = new EntityId(null, 0L, 0L, DEFAULT_ENTITY_NUM, entityType.getId());
         }
-        testGetEntityIdHelper(transactionBody, transactionRecord, expectedEntityId);
+        testGetEntityIdHelper(getDefaultTransactionBody().build(), getDefaultTransactionRecord().build(),
+                expectedEntityId);
     }
 
     protected void testGetEntityIdHelper(

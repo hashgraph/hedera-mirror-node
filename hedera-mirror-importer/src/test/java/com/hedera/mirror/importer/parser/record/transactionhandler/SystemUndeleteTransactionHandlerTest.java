@@ -56,7 +56,7 @@ class SystemUndeleteTransactionHandlerTest extends AbstractTransactionHandlerTes
                         .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build()))
                 .build();
 
-        testGetEntityIdHelper(transactionBody, transactionRecord,
+        testGetEntityIdHelper(transactionBody, getDefaultTransactionRecord().build(),
                 new EntityId(null, 0L, 0L, DEFAULT_ENTITY_NUM, EntityTypeEnum.CONTRACT.getId()));
     }
 }
