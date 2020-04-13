@@ -48,7 +48,7 @@ public interface EntityRepository extends PagingAndSortingRepository<Entities, L
     Optional<Long> findEntityIdByNativeIds(long entityShard, long entityRealm, long entityNum);
 
     @CachePut(key = "{#p0.entityShard, #p0.entityRealm, #p0.entityNum}", cacheNames = "entity_ids",
-            cacheManager = CacheConfiguration.BIG_LRU_CACHE, unless = "#result == null")
+            cacheManager = CacheConfiguration.BIG_LRU_CACHE)
     default <S extends EntityId> Long cache(S entity) {
         return entity.getId();
     }
