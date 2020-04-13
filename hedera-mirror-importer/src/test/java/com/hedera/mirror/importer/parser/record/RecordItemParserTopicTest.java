@@ -516,6 +516,8 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var innerBody = ConsensusCreateTopicTransactionBody.newBuilder();
         if (autoRenewAccount != null) {
             innerBody.setAutoRenewAccount(AccountID.newBuilder().setAccountNum(autoRenewAccount).build());
+        } else {
+            innerBody.setAutoRenewAccount(AccountID.newBuilder().build());
         }
         if (autoRenewPeriod != null) {
             innerBody.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod).build());
@@ -623,6 +625,8 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         if (autoRenewAccount != null) {
             innerBody.setAutoRenewAccount(AccountID.newBuilder().setShardNum(topicId.getShardNum())
                     .setRealmNum(topicId.getRealmNum()).setAccountNum(autoRenewAccount).build());
+        } else {
+            innerBody.setAutoRenewAccount(AccountID.newBuilder().build());
         }
         if (autoRenewPeriod != null) {
             innerBody.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod).build());
