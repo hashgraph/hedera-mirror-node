@@ -290,7 +290,7 @@ public class RecordItemParser implements RecordItemListener {
         tx.setPayerAccountId(lookupOrCreateId(EntityId.of(payerAccountId)));
 
         if ((txRecord.hasTransferList()) && parserProperties.getPersist().isCryptoTransferAmounts()) {
-            processNonFeeTransfers(consensusNs, payerAccountId, body, txRecord);
+            processNonFeeTransfers(consensusNs, body, txRecord);
             if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
                 insertCryptoCreateTransferList(consensusNs, txRecord, body, txRecord.getReceipt()
                         .getAccountID(), payerAccountId);
@@ -335,38 +335,22 @@ public class RecordItemParser implements RecordItemListener {
     }
 
     /**
-     * Should the given transaction/record generate non_fee_transfers based on what type the transaction is, it's
-     * status, and run-time configuration concerning which situations warrant storing.
-     */
-    private boolean shouldStoreNonFeeTransfers(TransactionBody body) {
-        if (!body.hasCryptoCreateAccount() && !body.hasContractCreateInstance() && !body.hasCryptoTransfer() && !body
-                .hasContractCall()) {
-            return false;
-        }
-        return parserProperties.getPersist().isNonFeeTransfers();
-    }
-
-    /**
      * Additionally store rows in the non_fee_transactions table if applicable. This will allow the rest-api to create
      * an itemized set of transfers that reflects non-fees (explicit transfers), threshold records, node fee, and
      * network+service fee (paid to treasury).
      */
-    private void processNonFeeTransfers(long consensusTimestamp, AccountID payerAccountId,
-                                        TransactionBody body, TransactionRecord transactionRecord) {
-        if (!shouldStoreNonFeeTransfers(body)) {
+    private void processNonFeeTransfers(
+            long consensusTimestamp, TransactionBody body, TransactionRecord transactionRecord) {
+        if (!parserProperties.getPersist().isNonFeeTransfers()) {
             return;
         }
 
-        for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(payerAccountId, body, transactionRecord)) {
-            addNonFeeTransferInserts(consensusTimestamp, aa.getAccountID().getRealmNum(),
-                    aa.getAccountID().getAccountNum(), aa.getAmount());
-        }
-    }
-
-    private void addNonFeeTransferInserts(long consensusTimestamp, long realm, long accountNum, long amount) {
-        if (0 != amount) {
-            recordParsedItemHandler.onNonFeeTransfer(
-                    new NonFeeTransfer(consensusTimestamp, realm, accountNum, amount));
+        for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
+            if (aa.getAmount() != 0) {
+                recordParsedItemHandler.onNonFeeTransfer(
+                        new NonFeeTransfer(consensusTimestamp, aa.getAccountID().getRealmNum(),
+                                aa.getAccountID().getAccountNum(), aa.getAmount()));
+            }
         }
     }
 
