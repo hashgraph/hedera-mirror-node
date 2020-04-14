@@ -299,8 +299,7 @@ jobs:
               --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format='get(digest)'); do \
               (
-                echo delete image: ${GRPC_IMAGE_PATH}@${digest} &&
-                gcloud container images delete -q --force-delete-tags "${GRPC_IMAGE_PATH}@${digest}"
+                echo delete image: ${GRPC_IMAGE_PATH}@${digest}
               )
             done
             IMPORTER_IMAGE_PATH=${IMAGE_PATH_BASE}importer
@@ -311,8 +310,7 @@ jobs:
               --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format='get(digest)'); do \
               (
-                echo delete image: ${IMPORTER_IMAGE_PATH}@${digest} &&
-                gcloud container images delete -q --force-delete-tags "${IMPORTER_IMAGE_PATH}@${digest}"
+                echo delete image: ${IMPORTER_IMAGE_PATH}@${digest}
               )
             done
             REST_IMAGE_PATH=${IMAGE_PATH_BASE}rest
@@ -323,8 +321,7 @@ jobs:
               --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format='get(digest)'); do \
               (
-                echo delete image: ${REST_IMAGE_PATH}@${digest} &&
-                gcloud container images delete -q --force-delete-tags "${REST_IMAGE_PATH}@${digest}"
+                echo delete image: ${REST_IMAGE_PATH}@${digest}
               )
             done
       #            echo GRPC_IMAGES: ${gcloud container images list-tags gcr.io/mirrornode/hedera-mirror-grpc --limit=1000 --sort-by=TIMESTAMP --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)'}
