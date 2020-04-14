@@ -61,8 +61,7 @@ commands:
       - run:
           description: "Cleans up image under given path"
           command: |
-            echo $(gcloud config list)
-            DELETE_BEFORE=$(date -d "-14 hours" '+%d-%m-%Y')
+            DELETE_BEFORE=$(date -d "-14 hours" '+%d-%m-%Y %H:%M')
             echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             echo IMAGE_PATH: ${IMAGE_PATH}
@@ -301,25 +300,14 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Delete old master images
+          name: Delete old untagged master images
           command: |
-            echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
-            gcloud --quiet config set project mirrornode
-            echo $(gcloud config list)
-            DELETE_BEFORE=$(date -d "-4 hours" '+%d-%m-%Y %H:%M')
-            echo DELETE_BEFORE: ${DELETE_BEFORE}
-            IMAGE_PATH_BASE=gcr.io/mirrornode/hedera-mirror-
-            GRPC_IMAGE_PATH=${IMAGE_PATH_BASE}grpc
-            echo GRPC_IMAGE_PATH: ${GRPC_IMAGE_PATH}
-            GRPC_OLD_IMAGES=$(gcloud container images list-tags ${GRPC_IMAGE_PATH} --limit=1000 --sort-by=TIMESTAMP --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)')
-            echo GRPC_OLD_IMAGES: ${GRPC_OLD_IMAGES}
-            for digest in ${GRPC_OLD_IMAGES}; do  echo PathToDelete: "${GRPC_IMAGE_PATH}@${digest}"; done
-      #      - <<: *gcloud_image_clean
-      #        imagepath: grpc
-      #      - <<: *gcloud_image_clean
-      #        imagepath: importer
-      #      - <<: *gcloud_image_clean
-      #        imagepath: rest
+            echo "Remove old untagged grpc master image"
+            gcloud container images delete -q --force-delete-tags "gcr.io/mirrornode/hedera-mirror-grpc@sha256:81dfd0bee03dd29f862dbf9cb825cf9af3fdc2d39408a7e7aeba348ad487c1f0"
+            echo "Remove old untagged importer master image"
+            gcloud container images delete -q --force-delete-tags "gcr.io/mirrornode/hedera-mirror-importer@sha256:8936be7ca988150625dcef3e9a8b094043f7059fa140cba8409c9ce0a31baa20"
+            echo "Remove old untagged rest master image"
+            gcloud container images delete -q --force-delete-tags "gcr.io/mirrornode/hedera-mirror-rest@sha256:3a5d7b9f414cabc10036430f6827e7b5264acec0ca06a6ff579e550e10448f40"
       - gcloud_image_clean:
           imagepath: "grpc"
       - gcloud_image_clean:
