@@ -302,6 +302,8 @@ jobs:
       - run:
           name: Delete old untagged master images
           command: |
+            echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
+            gcloud --quiet config set project mirrornode
             echo "Remove old untagged grpc master image"
             gcloud container images delete -q --force-delete-tags "gcr.io/mirrornode/hedera-mirror-grpc@sha256:81dfd0bee03dd29f862dbf9cb825cf9af3fdc2d39408a7e7aeba348ad487c1f0"
             echo "Remove old untagged importer master image"
