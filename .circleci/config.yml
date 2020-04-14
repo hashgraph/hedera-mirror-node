@@ -59,15 +59,16 @@ commands:
         default: "importer"
     steps:
       - run:
+          description: "Cleans up image under given path"
           command: |
             DELETE_BEFORE=$(date -d "-14 hours" '+%d-%m-%Y')
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             echo IMAGE_PATH: ${IMAGE_PATH}
-            OLD_IMAGES= gcloud container images list-tags ${IMAGE_PATH} \
+            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
               --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
-              --format='get(digest)'
+              --format='get(digest)')
             echo OLD_IMAGES: ${OLD_IMAGES}
             for digest in $(OLD_IMAGES); do  echo PathToDelete: "${IMAGE_PATH}@${digest}"; done
 
@@ -75,48 +76,48 @@ workflows:
   version: 2.1
   main:
     jobs:
-      - build_maven:
-          filters: # required since `release_artifacts` has tag filters AND requires `this`
-            branches:
-              only: /.*/
-            tags:
-              only: /.*/
-      - build_rest:
-          filters: # required since `release_artifacts` has tag filters AND requires `this`
-            branches:
-              only: /.*/
-            tags:
-              only: /.*/
-      - release_artifacts:
-          requires:
-            - build_maven
-            - build_rest
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
-      - publish_images:
-          requires:
-            - build_maven
-            - build_rest
-          filters:
-            branches:
-              only:
-                - master
-                # image-deploy-cleanup branch present for testing to be removed
-                - image-deploy-cleanup
-            tags:
-              only: /^.*/
-      - perf_maven:
-          filters:
-            branches:
-              only: /.*/
-            tags:
-              only: /.*/
+      #      - build_maven:
+      #          filters: # required since `release_artifacts` has tag filters AND requires `this`
+      #            branches:
+      #              only: /.*/
+      #            tags:
+      #              only: /.*/
+      #      - build_rest:
+      #          filters: # required since `release_artifacts` has tag filters AND requires `this`
+      #            branches:
+      #              only: /.*/
+      #            tags:
+      #              only: /.*/
+      #      - release_artifacts:
+      #          requires:
+      #            - build_maven
+      #            - build_rest
+      #          filters:
+      #            branches:
+      #              ignore: /.*/
+      #            tags:
+      #              only: /^v.*/
+      #      - publish_images:
+      #          requires:
+      #            - build_maven
+      #            - build_rest
+      #          filters:
+      #            branches:
+      #              only:
+      #                - master
+      #                # image-deploy-cleanup branch present for testing to be removed
+      #                - image-deploy-cleanup
+      #            tags:
+      #              only: /^.*/
+      #      - perf_maven:
+      #          filters:
+      #            branches:
+      #              only: /.*/
+      #            tags:
+      #              only: /.*/
       - cleanup_images:
-          requires:
-            - publish_images
+          #          requires:
+          #            - publish_images
           filters:
             branches:
               only:
@@ -307,7 +308,7 @@ jobs:
             IMAGE_PATH_BASE=gcr.io/mirrornode/hedera-mirror-
             GRPC_IMAGE_PATH=${IMAGE_PATH_BASE}grpc
             echo GRPC_IMAGE_PATH: ${GRPC_IMAGE_PATH}
-            GRPC_OLD_IMAGES= gcloud container images list-tags ${GRPC_IMAGE_PATH} --limit=1000 --sort-by=TIMESTAMP --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)'
+            GRPC_OLD_IMAGES=$(gcloud container images list-tags ${GRPC_IMAGE_PATH} --limit=1000 --sort-by=TIMESTAMP --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)')
             echo GRPC_OLD_IMAGES: ${GRPC_OLD_IMAGES}
             for digest in $(GRPC_OLD_IMAGES); do  echo PathToDelete: "${GRPC_IMAGE_PATH}@${digest}"; done
       #      - <<: *gcloud_image_clean
