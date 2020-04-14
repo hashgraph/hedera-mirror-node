@@ -70,7 +70,7 @@ commands:
               --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format='get(digest)')
             echo OLD_IMAGES: ${OLD_IMAGES}
-            for digest in $(OLD_IMAGES); do  echo PathToDelete: "${IMAGE_PATH}@${digest}"; done
+            for digest in ${OLD_IMAGES}; do  echo PathToDelete: "${IMAGE_PATH}@${digest}"; done
 
 workflows:
   version: 2.1
@@ -310,7 +310,7 @@ jobs:
             echo GRPC_IMAGE_PATH: ${GRPC_IMAGE_PATH}
             GRPC_OLD_IMAGES=$(gcloud container images list-tags ${GRPC_IMAGE_PATH} --limit=1000 --sort-by=TIMESTAMP --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)')
             echo GRPC_OLD_IMAGES: ${GRPC_OLD_IMAGES}
-            for digest in $(GRPC_OLD_IMAGES); do  echo PathToDelete: "${GRPC_IMAGE_PATH}@${digest}"; done
+            for digest in ${GRPC_OLD_IMAGES}; do  echo PathToDelete: "${GRPC_IMAGE_PATH}@${digest}"; done
       #      - <<: *gcloud_image_clean
       #        imagepath: grpc
       #      - <<: *gcloud_image_clean
