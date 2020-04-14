@@ -79,8 +79,8 @@ workflows:
             tags:
               only: /.*/
       - cleanup_images:
-          #          requires:
-          #            - publish_images
+          requires:
+            - publish_images
           filters:
             branches:
               only:
@@ -266,8 +266,10 @@ jobs:
           command: |
             echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
             gcloud --quiet config set project mirrornode
-            DELETE_BEFORE=$(date '+%d-%m-%Y')
+            DELETE_BEFORE=$(date -d "-1 hours" '+%d-%m-%Y')
             echo ${DELETE_BEFORE}
-
-#            gcloud container images delete -q --force-delete-tags $(gcloud container images list-tags gcr.io/mirrornode/hedera-mirror-grpc --limit=1000 --sort-by=TIMESTAMP --filter="tags:master-* AND timestamp.datetime<=2018-01-15" --format='get(digest)')
+            gcloud container images list-tags gcr.io/mirrornode/hedera-mirror-grpc --limit=1000 --sort-by=TIMESTAMP --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)'
+            gcloud container images list-tags gcr.io/mirrornode/hedera-mirror-importer --limit=1000 --sort-by=TIMESTAMP --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)'
+            gcloud container images list-tags gcr.io/mirrornode/hedera-mirror-rest --limit=1000 --sort-by=TIMESTAMP --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)'
+#                        gcloud container images delete -q --force-delete-tags $(gcloud container images list-tags gcr.io/mirrornode/hedera-mirror-grpc --limit=1000 --sort-by=TIMESTAMP --filter="tags:image-deploy* AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)')
 

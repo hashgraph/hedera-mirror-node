@@ -40,8 +40,8 @@
                             <build>
                                 <contextDir>${project.basedir}</contextDir>
                                 <tags>
-                                    <tag>latest</tag>
-                                    <tag>${docker.push.tag}</tag>
+                                    <tag>${docker.push.latest.tag}</tag>
+                                    <tag>${docker.push.version.tag}</tag>
                                 </tags>
                             </build>
                             <name>${docker.push.repository}/${project.artifactId}</name>
