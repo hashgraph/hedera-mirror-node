@@ -288,7 +288,7 @@ jobs:
           command: |
             echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
             gcloud --quiet config set project mirrornode
-            DELETE_BEFORE=$(date -d "-2 hours" '+%d-%m-%Y %H:%M')
+            DELETE_BEFORE=$(date -d "-4 hours" '+%d-%m-%Y %H:%M')
             echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH_BASE=gcr.io/mirrornode/hedera-mirror-
             GRPC_IMAGE_PATH=${IMAGE_PATH_BASE}grpc
@@ -298,9 +298,7 @@ jobs:
               --sort-by=TIMESTAMP \
               --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format='get(digest)'); do \
-              (
-                echo delete image: ${GRPC_IMAGE_PATH}@${digest}
-              )
+              ( gcloud container images delete -q --force-delete-tags "${GRPC_IMAGE_PATH}@${digest}" )
             done
             IMPORTER_IMAGE_PATH=${IMAGE_PATH_BASE}importer
             echo IMPORTER_IMAGE_PATH: ${IMPORTER_IMAGE_PATH}
@@ -309,9 +307,7 @@ jobs:
               --sort-by=TIMESTAMP \
               --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format='get(digest)'); do \
-              (
-                echo delete image: ${IMPORTER_IMAGE_PATH}@${digest}
-              )
+              ( gcloud container images delete -q --force-delete-tags "${IMPORTER_IMAGE_PATH}@${digest}" )
             done
             REST_IMAGE_PATH=${IMAGE_PATH_BASE}rest
             echo REST_IMAGE_PATH: ${REST_IMAGE_PATH}
@@ -320,9 +316,7 @@ jobs:
               --sort-by=TIMESTAMP \
               --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format='get(digest)'); do \
-              (
-                echo delete image: ${REST_IMAGE_PATH}@${digest}
-              )
+              ( gcloud container images delete -q --force-delete-tags "${REST_IMAGE_PATH}@${digest}" )
             done
       #            echo GRPC_IMAGES: ${gcloud container images list-tags gcr.io/mirrornode/hedera-mirror-grpc --limit=1000 --sort-by=TIMESTAMP --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)'}
       #            echo IMPORTER_IMAGES: ${gcloud container images list-tags gcr.io/mirrornode/hedera-mirror-importer --limit=1000 --sort-by=TIMESTAMP --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)'}
