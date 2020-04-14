@@ -34,21 +34,6 @@ references:
           POSTGRES_DB: mirror_node_test
           POSTGRES_PASSWORD: mirror_node_pass
           POSTGRES_USER: mirror_node
-#  gcloud_image_clean: &gcloud_image_clean
-#    - imagepath: importer
-#    - run:
-#        name: "Cleans up image under given path"
-#        command: |
-#          DELETE_BEFORE=$(date -d "-14 hours" '+%d-%m-%Y')
-#          IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< imagepath >>
-#          echo IMAGE_PATH: ${IMAGE_PATH}
-#          OLD_IMAGES= gcloud container images list-tags ${IMAGE_PATH} \
-#            --limit=1000 \
-#            --sort-by=TIMESTAMP \
-#            --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
-#            --format='get(digest)'
-#          echo OLD_IMAGES: ${OLD_IMAGES}
-#          for digest in $(OLD_IMAGES); do  echo PathToDelete: "${IMAGE_PATH}@${digest}"; done
 
 commands:
   gcloud_image_clean:
@@ -61,7 +46,7 @@ commands:
       - run:
           name: "Cleans up old master images"
           command: |
-            DELETE_BEFORE=$(date --utc -d "-19 hours" '+%FT%TZ')
+            DELETE_BEFORE=$(date --utc -d "-7 hours" '+%FT%TZ')
             echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             echo IMAGE_PATH: ${IMAGE_PATH}
@@ -73,7 +58,7 @@ commands:
             for digest in ${OLD_IMAGES}; do
             (
               echo Delete image: "${IMAGE_PATH}@${digest}"
-              gcloud container images delete -q --force-delete-tags "${IMAGE_PATH}@${digest}"
+              echo Command: gcloud container images delete -q --force-delete-tags "${IMAGE_PATH}@${digest}"
             )
             done
 
@@ -81,48 +66,48 @@ workflows:
   version: 2.1
   main:
     jobs:
-      #      - build_maven:
-      #          filters: # required since `release_artifacts` has tag filters AND requires `this`
-      #            branches:
-      #              only: /.*/
-      #            tags:
-      #              only: /.*/
-      #      - build_rest:
-      #          filters: # required since `release_artifacts` has tag filters AND requires `this`
-      #            branches:
-      #              only: /.*/
-      #            tags:
-      #              only: /.*/
-      #      - release_artifacts:
-      #          requires:
-      #            - build_maven
-      #            - build_rest
-      #          filters:
-      #            branches:
-      #              ignore: /.*/
-      #            tags:
-      #              only: /^v.*/
-      #      - publish_images:
-      #          requires:
-      #            - build_maven
-      #            - build_rest
-      #          filters:
-      #            branches:
-      #              only:
-      #                - master
-      #                # image-deploy-cleanup branch present for testing to be removed
-      #                - image-deploy-cleanup
-      #            tags:
-      #              only: /^.*/
-      #      - perf_maven:
-      #          filters:
-      #            branches:
-      #              only: /.*/
-      #            tags:
-      #              only: /.*/
+      - build_maven:
+          filters: # required since `release_artifacts` has tag filters AND requires `this`
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
+      - build_rest:
+          filters: # required since `release_artifacts` has tag filters AND requires `this`
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
+      - release_artifacts:
+          requires:
+            - build_maven
+            - build_rest
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
+      - publish_images:
+          requires:
+            - build_maven
+            - build_rest
+          filters:
+            branches:
+              only:
+                - master
+                # image-deploy-cleanup branch present for testing to be removed
+                - image-deploy-cleanup
+            tags:
+              only: /^.*/
+      - perf_maven:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
       - cleanup_images:
-          #          requires:
-          #            - publish_images
+          requires:
+            - publish_images
           filters:
             branches:
               only:
