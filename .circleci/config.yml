@@ -1,4 +1,4 @@
-version: 2.1
+version: 2
 
 references:
   workspace_root: &workspace_root /tmp/workspace
@@ -34,29 +34,45 @@ references:
           POSTGRES_DB: mirror_node_test
           POSTGRES_PASSWORD: mirror_node_pass
           POSTGRES_USER: mirror_node
+#  gcloud_image_clean: &gcloud_image_clean
+#    - imagepath: importer
+#    - run:
+#        name: "Cleans up image under given path"
+#        command: |
+#          DELETE_BEFORE=$(date -d "-14 hours" '+%d-%m-%Y')
+#          IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< imagepath >>
+#          echo IMAGE_PATH: ${IMAGE_PATH}
+#          OLD_IMAGES= gcloud container images list-tags ${IMAGE_PATH} \
+#            --limit=1000 \
+#            --sort-by=TIMESTAMP \
+#            --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
+#            --format='get(digest)'
+#          echo OLD_IMAGES: ${OLD_IMAGES}
+#          for digest in $(OLD_IMAGES); do  echo PathToDelete: "${IMAGE_PATH}@${digest}"; done
 
-commands:
-  gcloud_image_clean:
-    description: "Cleans up image under given path"
-    parameters:
-      imagepath:
-        type: string
-        default: "importer"
-    steps:
-      - run:
-          command: |
-            DELETE_BEFORE=$(date -d "-14 hours" '+%d-%m-%Y')
-            IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
-            echo IMAGE_PATH: ${IMAGE_PATH}
-            OLD_IMAGES= gcloud container images list-tags ${IMAGE_PATH} \
-              --limit=1000 \
-              --sort-by=TIMESTAMP \
-              --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
-              --format='get(digest)'
-            echo OLD_IMAGES: ${OLD_IMAGES}
-            for digest in $(OLD_IMAGES); do  echo PathToDelete: "${IMAGE_PATH}@${digest}"; done
+#commands:
+#  gcloud_image_clean:
+#    description: "Cleans up image under given path"
+#    parameters:
+#      imagepath:
+#        type: string
+#        default: "importer"
+#    steps:
+#      - run:
+#          command: |
+#            DELETE_BEFORE=$(date -d "-14 hours" '+%d-%m-%Y')
+#            IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
+#            echo IMAGE_PATH: ${IMAGE_PATH}
+#            OLD_IMAGES= gcloud container images list-tags ${IMAGE_PATH} \
+#              --limit=1000 \
+#              --sort-by=TIMESTAMP \
+#              --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
+#              --format='get(digest)'
+#            echo OLD_IMAGES: ${OLD_IMAGES}
+#            for digest in $(OLD_IMAGES); do  echo PathToDelete: "${IMAGE_PATH}@${digest}"; done
 
 workflows:
+  version: 2
   main:
     jobs:
       - build_maven:
@@ -188,7 +204,7 @@ jobs:
           POSTGRES_USER: mirror_node
           POSTGRES_PASSWORD: mirror_node_pass
     steps:
-      - checkout:
+      - checkout
       - restore_cache:
           keys:
             - npm-v1-{{ .Branch }}-{{ checksum "hedera-mirror-rest/package-lock.json" }}
@@ -291,16 +307,22 @@ jobs:
             IMAGE_PATH_BASE=gcr.io/mirrornode/hedera-mirror-
             GRPC_IMAGE_PATH=${IMAGE_PATH_BASE}grpc
             echo GRPC_IMAGE_PATH: ${GRPC_IMAGE_PATH}
-            for digest in $(gcloud container images list-tags ${GRPC_IMAGE_PATH} \
+            GRPC_OLD_IMAGES= gcloud container images list-tags ${GRPC_IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
               --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
-              --format='get(digest)'); do \
-              ( echo PathToDelete: "${GRPC_IMAGE_PATH}@${digest}" ); \
-            done
-      - gcloud_image_clean:
-          imagepath: "grpc"
-      - gcloud_image_clean:
-          imagepath: "importer"
-      - gcloud_image_clean:
-          imagepath: "rest"
+              --format='get(digest)'
+            echo GRPC_OLD_IMAGES: ${GRPC_OLD_IMAGES}
+            for digest in $(GRPC_OLD_IMAGES); do  echo PathToDelete: "${GRPC_IMAGE_PATH}@${digest}"; done
+#      - <<: *gcloud_image_clean
+#        imagepath: grpc
+#      - <<: *gcloud_image_clean
+#        imagepath: importer
+#      - <<: *gcloud_image_clean
+#        imagepath: rest
+#      - gcloud_image_clean:
+#          imagepath: "grpc"
+#      - gcloud_image_clean:
+#          imagepath: "importer"
+#      - gcloud_image_clean:
+#          imagepath: "rest"
