@@ -297,10 +297,9 @@ jobs:
               ${GRPC_IMAGE_PATH} --limit=1000 \
               --sort-by=TIMESTAMP \
               --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" \
-              --format='get(digest)'); do
+              --format='get(digest)'); do \
               (
-                set -x
-                echo delete image: ${GRPC_IMAGE_PATH}@${digest}
+                echo delete image: ${GRPC_IMAGE_PATH}@${digest} &&
                 gcloud container images delete -q --force-delete-tags "${GRPC_IMAGE_PATH}@${digest}"
               )
             done
@@ -310,10 +309,9 @@ jobs:
               ${IMPORTER_IMAGE_PATH} --limit=1000 \
               --sort-by=TIMESTAMP \
               --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" \
-              --format='get(digest)'); do
+              --format='get(digest)'); do \
               (
-                set -x
-                echo delete image: ${IMPORTER_IMAGE_PATH}@${digest}
+                echo delete image: ${IMPORTER_IMAGE_PATH}@${digest} &&
                 gcloud container images delete -q --force-delete-tags "${IMPORTER_IMAGE_PATH}@${digest}"
               )
             done
@@ -323,10 +321,9 @@ jobs:
               ${REST_IMAGE_PATH} --limit=1000 \
               --sort-by=TIMESTAMP \
               --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
-              --format='get(digest)'); do
+              --format='get(digest)'); do \
               (
-                set -x
-                echo delete image: ${REST_IMAGE_PATH}@${digest}
+                echo delete image: ${REST_IMAGE_PATH}@${digest} &&
                 gcloud container images delete -q --force-delete-tags "${REST_IMAGE_PATH}@${digest}"
               )
             done
