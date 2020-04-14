@@ -288,7 +288,7 @@ jobs:
           command: |
             echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
             gcloud --quiet config set project mirrornode
-            DELETE_BEFORE=$(date -d "-2 hours" '+%d-%m-%Y')
+            DELETE_BEFORE=$(date -d "-2 hours" '+%d-%m-%Y %H:%M')
             echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH_BASE=gcr.io/mirrornode/hedera-mirror-
             GRPC_IMAGE_PATH=${IMAGE_PATH_BASE}grpc
@@ -300,6 +300,7 @@ jobs:
               --format='get(digest)'); do
               (
                 set -x
+                echo delete image: ${GRPC_IMAGE_PATH}@${digest}
                 gcloud container images delete -q --force-delete-tags "${GRPC_IMAGE_PATH}@${digest}"
               )
             done
@@ -312,6 +313,7 @@ jobs:
               --format='get(digest)'); do
               (
                 set -x
+                echo delete image: ${IMPORTER_IMAGE_PATH}@${digest}
                 gcloud container images delete -q --force-delete-tags "${IMPORTER_IMAGE_PATH}@${digest}"
               )
             done
@@ -320,10 +322,11 @@ jobs:
             for digest in $(gcloud container images list-tags \
               ${REST_IMAGE_PATH} --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" \
+              --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format='get(digest)'); do
               (
                 set -x
+                echo delete image: ${REST_IMAGE_PATH}@${digest}
                 gcloud container images delete -q --force-delete-tags "${REST_IMAGE_PATH}@${digest}"
               )
             done
