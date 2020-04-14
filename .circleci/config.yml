@@ -68,11 +68,6 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --format='get(digest)')
-            echo OLD_IMAGES No Filter: ${OLD_IMAGES}
-            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
-              --limit=1000 \
-              --sort-by=TIMESTAMP \
               --filter="tags:image*" \
               --format='get(digest)')
             echo OLD_IMAGES Branch Filter: ${OLD_IMAGES}
@@ -81,7 +76,12 @@ commands:
               --sort-by=TIMESTAMP \
               --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format='get(digest)')
-            echo OLD_IMAGES Branch and Tiem Filter: ${OLD_IMAGES}
+            echo OLD_IMAGES Branch and Time Filter: ${OLD_IMAGES}
+            echo Command: gcloud container images list-tags ${IMAGE_PATH} \
+              --limit=1000 \
+              --sort-by=TIMESTAMP \
+              --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
+              --format='get(digest)'
             for digest in ${OLD_IMAGES}; do  echo PathToDelete: "${IMAGE_PATH}@${digest}"; done
 
 workflows:
@@ -311,7 +311,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Delete old untagged master images
+          name: GCloud Setup
           command: |
             echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
             gcloud --quiet config set project mirrornode
