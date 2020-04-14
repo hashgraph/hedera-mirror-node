@@ -254,7 +254,7 @@ jobs:
             if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "image-deploy-cleanup" ]; then
                 DOCKERPUSHTAG=${CIRCLE_BRANCH}-${CIRCLE_SHA1}
             fi
-            echo ${DOCKERPUSHTAG}
+            echo DOCKERPUSHTAG: ${DOCKERPUSHTAG}
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests -Dcircle.docker.tag=${DOCKERPUSHTAG}
       - *save_maven_cache
   cleanup_images:
@@ -268,6 +268,13 @@ jobs:
             gcloud --quiet config set project mirrornode
             DELETE_BEFORE=$(date -d "-30 minutes" '+%d-%m-%Y')
             echo DELETE_BEFORE: ${DELETE_BEFORE}
+            for digest in $(gcloud container images list-tags \
+              gcr.io/mirrornode/hedera-mirror-grpc --limit=1000 \
+              --sort-by=TIMESTAMP \
+              --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" \
+              --format='get(digest)'; do
+                gcloud container images delete -q --force-delete-tags "gcr.io/mirrornode@${digest}"
+            done
             echo GRPC_IMAGES: ${gcloud container images list-tags gcr.io/mirrornode/hedera-mirror-grpc --limit=1000 --sort-by=TIMESTAMP --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)'}
             echo IMPORTER_IMAGES: ${gcloud container images list-tags gcr.io/mirrornode/hedera-mirror-importer --limit=1000 --sort-by=TIMESTAMP --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)'}
             echo REST_IMAGES: ${gcloud container images list-tags gcr.io/mirrornode/hedera-mirror-rest --limit=1000 --sort-by=TIMESTAMP --filter="tags:image*  AND timestamp.datetime < '${DELETE_BEFORE}'" --format='get(digest)'}
