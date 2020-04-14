@@ -65,18 +65,23 @@ commands:
             echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             echo IMAGE_PATH: ${IMAGE_PATH}
-            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
-              --limit=1000 \
-              --sort-by=TIMESTAMP \
-              --filter="'tags:image* AND timestamp.datetime < ${DELETE_BEFORE}'" \
-              --format="'get(digest)'")
-            echo OLD_IMAGES: ${OLD_IMAGES}
-            echo Command: gcloud container images list-tags ${IMAGE_PATH} \
+            echo List tags command: gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
               --filter="'tags:image* AND timestamp.datetime < ${DELETE_BEFORE}'" \
               --format="'get(digest)'"
-            for digest in ${OLD_IMAGES}; do  echo PathToDelete: "${IMAGE_PATH}@${digest}"; done
+            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
+              --limit=1000 \
+              --sort-by=TIMESTAMP \
+              --filter="tags:image* AND timestamp.datetime < ${DELETE_BEFORE}" \
+              --format="get(digest)")
+            echo OLD_IMAGES: ${OLD_IMAGES}
+            for digest in ${OLD_IMAGES}; do
+            (
+              echo Delete image: "${IMAGE_PATH}@${digest}"
+              echo Command: gcloud container images delete -q --force-delete-tags "${IMAGE_PATH}@${digest}"
+            )
+            done
 
 workflows:
   version: 2.1
