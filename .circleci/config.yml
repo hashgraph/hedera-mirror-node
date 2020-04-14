@@ -61,7 +61,9 @@ commands:
       - run:
           description: "Cleans up image under given path"
           command: |
+            echo $(gcloud config list)
             DELETE_BEFORE=$(date -d "-14 hours" '+%d-%m-%Y')
+            echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             echo IMAGE_PATH: ${IMAGE_PATH}
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
@@ -303,6 +305,7 @@ jobs:
           command: |
             echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
             gcloud --quiet config set project mirrornode
+            echo $(gcloud config list)
             DELETE_BEFORE=$(date -d "-4 hours" '+%d-%m-%Y %H:%M')
             echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH_BASE=gcr.io/mirrornode/hedera-mirror-
