@@ -59,29 +59,23 @@ commands:
         default: "importer"
     steps:
       - run:
-          description: "Cleans up image under given path"
+          name: "Cleans up image under given path"
           command: |
-            DELETE_BEFORE=$(date -d "-14 hours" '+%d-%m-%Y %H:%M')
+            DELETE_BEFORE=$(date --utc -d "-14 hours" '+%FT%TZ')
             echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             echo IMAGE_PATH: ${IMAGE_PATH}
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:image*" \
-              --format='get(digest)')
-            echo OLD_IMAGES Branch Filter: ${OLD_IMAGES}
-            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
-              --limit=1000 \
-              --sort-by=TIMESTAMP \
-              --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
-              --format='get(digest)')
-            echo OLD_IMAGES Branch and Time Filter: ${OLD_IMAGES}
+              --filter="'tags:image* AND timestamp.datetime < ${DELETE_BEFORE}'" \
+              --format="'get(digest)'")
+            echo OLD_IMAGES: ${OLD_IMAGES}
             echo Command: gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
-              --format='get(digest)'
+              --filter="'tags:image* AND timestamp.datetime < ${DELETE_BEFORE}'" \
+              --format="'get(digest)'"
             for digest in ${OLD_IMAGES}; do  echo PathToDelete: "${IMAGE_PATH}@${digest}"; done
 
 workflows:
