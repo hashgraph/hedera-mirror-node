@@ -16,9 +16,9 @@ dependencies:
   version: 2.2.0
 - name: prometheus-operator
   repository: https://kubernetes-charts.storage.googleapis.com
-  version: 8.12.12
+  version: 8.12.13
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
   version: 0.1.0
-digest: sha256:34a39ed62215243763a62dabb99d5f6b1b86e0e300535e0609235d50ba21a128
-generated: "2020-04-13T11:47:22.107716-05:00"
+digest: sha256:2a7ab5ccfb5743c5ecdc7bb1c40fc81e19ef0a594010725b26343a075869452d
+generated: "2020-04-14T14:35:05.606076-05:00"
