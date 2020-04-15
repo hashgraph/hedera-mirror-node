@@ -53,13 +53,11 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
-              --format="get(digest)")
+              --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'")
             echo OLD_IMAGES: ${OLD_IMAGES}
             for digest in ${OLD_IMAGES[*]}; do
             (
-              echo Delete image: "${IMAGE_PATH}@${digest}"
-              echo Command: gcloud container images delete -q --force-delete-tags "${IMAGE_PATH}@${digest}"
+              echo image: "${digest}"
             )
             done
 
