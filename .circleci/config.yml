@@ -46,6 +46,7 @@ commands:
       - run:
           name: "Clean up old master images"
           command: |
+            echo $0
             DELETE_BEFORE=$(date -d "-14 hours" '+%FT%T')
             echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
