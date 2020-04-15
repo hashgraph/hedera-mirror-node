@@ -47,7 +47,7 @@ commands:
           name: "Clean up old master images"
           command: |
             echo $0
-            DELETE_BEFORE=$(date -d "-14 hours" '+%FT%T')
+            DELETE_BEFORE=$(date -d "-7 days" '+%FT%T')
             echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             echo IMAGE_PATH: ${IMAGE_PATH}
@@ -56,25 +56,7 @@ commands:
               --sort-by=TIMESTAMP \
               --filter="tags:image-* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format="csv[no-heading](digest,timestamp)")
-            echo OLD_IMAGES 1: ${OLD_IMAGES}
-            OLD_IMAGES_2=$(gcloud container images list-tags ${IMAGE_PATH} \
-              --limit=1000 \
-              --sort-by=TIMESTAMP \
-              --filter="tags:image-* AND timestamp < '${DELETE_BEFORE}'" \
-              --format="csv[no-heading](digest,timestamp)")
-            echo OLD_IMAGES 2: ${OLD_IMAGES_2}
-            OLD_IMAGES_3=$(gcloud container images list-tags ${IMAGE_PATH} \
-              --limit=1000 \
-              --sort-by=TIMESTAMP \
-              --filter="tags:image-* AND timestamp < {DELETE_BEFORE}" \
-              --format="csv[no-heading](digest,timestamp)")
-            echo OLD_IMAGES 3: ${OLD_IMAGES_3}
-            OLD_IMAGES_4=$(gcloud container images list-tags ${IMAGE_PATH} \
-              --limit=1000 \
-              --sort-by=TIMESTAMP \
-              --filter="tags:image-* AND timestamp < {DELETE_BEFORE}" \
-              --format="csv[no-heading](digest,timestamp.datetime)")
-            echo OLD_IMAGES 4: ${OLD_IMAGES_4}
+            echo OLD_IMAGES: ${OLD_IMAGES}
             for image in ${OLD_IMAGES[*]}; do
             (
               IFS=, read digest timestamp \<<< ${image}
