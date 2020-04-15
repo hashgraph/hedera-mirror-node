@@ -24,7 +24,8 @@
     "mathjs": "^6.6.2",
     "node-cache": "^5.1.0",
     "node-fetch": "^2.6.0",
-    "pg": "~7.11.0"
+    "pg": "~7.11.0",
+    "swagger-stats": "^0.95.17"
   },
   "bundledDependencies": [
     "asn1js",
