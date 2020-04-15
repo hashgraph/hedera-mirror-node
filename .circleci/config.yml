@@ -47,14 +47,14 @@ commands:
           name: "Clean up old master images"
           command: |
             echo $0
-            DELETE_BEFORE=$(date -d "-2 days" '+%FT%T')
+            DELETE_BEFORE=$(date -d "-7 days" '+%FT%T')
             echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             echo IMAGE_PATH: ${IMAGE_PATH}
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:image-* AND timestamp.datetime < '${DELETE_BEFORE}'" \
+              --filter="tags:master-* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format="csv[no-heading](digest,timestamp)")
             echo OLD_IMAGES: ${OLD_IMAGES}
             for image in ${OLD_IMAGES[*]}; do
@@ -98,8 +98,6 @@ workflows:
             branches:
               only:
                 - master
-                # image-deploy-cleanup branch present for testing to be removed
-                - image-deploy-cleanup
             tags:
               only: /^.*/
       - perf_maven:
@@ -115,8 +113,6 @@ workflows:
             branches:
               only:
                 - master
-                # image-deploy-cleanup branch present for testing to be removed
-                - image-deploy-cleanup
             tags:
               only: /^.*/
 
@@ -281,7 +277,7 @@ jobs:
           name: Running maven deploy
           command: |
             DOCKERPUSHTAG=
-            if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "image-deploy-cleanup" ]; then
+            if [ "$CIRCLE_BRANCH" = "master" ]; then
                 DOCKERPUSHTAG=${CIRCLE_BRANCH}-${CIRCLE_SHA1}
             fi
             echo DOCKERPUSHTAG: ${DOCKERPUSHTAG}
