@@ -54,7 +54,7 @@ commands:
               --limit=1000 \
               --sort-by=TIMESTAMP \
               --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
-              --format="[csv[no-heading](digest,timestamp)]")
+              --format="csv[no-heading](digest,timestamp)")
             echo OLD_IMAGES: ${OLD_IMAGES}
             for image in ${OLD_IMAGES[*]}; do
             (
