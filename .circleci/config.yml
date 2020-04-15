@@ -56,7 +56,19 @@ commands:
               --sort-by=TIMESTAMP \
               --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format="csv[no-heading](digest,timestamp)")
-            echo OLD_IMAGES: ${OLD_IMAGES}
+            echo OLD_IMAGES 1: ${OLD_IMAGES}
+            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
+              --limit=1000 \
+              --sort-by=TIMESTAMP \
+              --filter="tags:image* AND timestamp < '${DELETE_BEFORE}'" \
+              --format="csv[no-heading](digest,timestamp)")
+            echo OLD_IMAGES 2: ${OLD_IMAGES}
+            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
+              --limit=1000 \
+              --sort-by=TIMESTAMP \
+              --filter="tags:image* AND timestamp < {DELETE_BEFORE}" \
+              --format="csv[no-heading](digest,timestamp)")
+            echo OLD_IMAGES 3: ${OLD_IMAGES}
             for image in ${OLD_IMAGES[*]}; do
             (
               IFS=, read digest timestamp \<<< ${image}
