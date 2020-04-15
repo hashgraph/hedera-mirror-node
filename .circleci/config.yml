@@ -46,7 +46,7 @@ commands:
       - run:
           name: "Cleans up old master images"
           command: |
-            DELETE_BEFORE=$(date --utc -d "-2 hours" '+%FT%TZ')
+            DELETE_BEFORE=$(date --utc -d "-4 hours" '+%FT%TZ')
             echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             echo IMAGE_PATH: ${IMAGE_PATH}
@@ -58,7 +58,7 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:image* AND timestamp.datetime < ${DELETE_BEFORE}" \
+              --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format="get(digest)")
             for digest in ${OLD_IMAGES[*]}; do
             (
