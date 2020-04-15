@@ -54,21 +54,27 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:image* AND timestamp.datetime < '${DELETE_BEFORE}'" \
+              --filter="tags:image-* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format="csv[no-heading](digest,timestamp)")
             echo OLD_IMAGES 1: ${OLD_IMAGES}
-            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
+            OLD_IMAGES_2=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:image* AND timestamp < '${DELETE_BEFORE}'" \
+              --filter="tags:image-* AND timestamp < '${DELETE_BEFORE}'" \
               --format="csv[no-heading](digest,timestamp)")
-            echo OLD_IMAGES 2: ${OLD_IMAGES}
-            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
+            echo OLD_IMAGES 2: ${OLD_IMAGES_2}
+            OLD_IMAGES_3=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:image* AND timestamp < {DELETE_BEFORE}" \
+              --filter="tags:image-* AND timestamp < {DELETE_BEFORE}" \
               --format="csv[no-heading](digest,timestamp)")
-            echo OLD_IMAGES 3: ${OLD_IMAGES}
+            echo OLD_IMAGES 3: ${OLD_IMAGES_3}
+            OLD_IMAGES_4=$(gcloud container images list-tags ${IMAGE_PATH} \
+              --limit=1000 \
+              --sort-by=TIMESTAMP \
+              --filter="tags:image-* AND timestamp < {DELETE_BEFORE}" \
+              --format="csv[no-heading](digest,timestamp.datetime)")
+            echo OLD_IMAGES 4: ${OLD_IMAGES_4}
             for image in ${OLD_IMAGES[*]}; do
             (
               IFS=, read digest timestamp \<<< ${image}
