@@ -47,7 +47,7 @@ commands:
           name: "Untags old master images"
           command: |
             set -x
-            UNTAG_BEFORE=$(date -d "-24 hours" '+%FT%T')
+            UNTAG_BEFORE=$(date -d "-3 hours" '+%FT%T')
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
@@ -71,7 +71,7 @@ commands:
           name: "Deletes old untagged images"
           command: |
             set -x
-            DELETE_BEFORE=$(date -d "-24 hours" '+%FT%T')
+            DELETE_BEFORE=$(date -d "-3 hours" '+%FT%T')
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
