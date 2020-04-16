@@ -46,13 +46,13 @@ commands:
       - run:
           name: "Untags old master images"
           command: |
-            set -x
-            UNTAG_BEFORE=$(date -d "-3 hours" '+%FT%T')
+            set -ex
+            UNTAG_BEFORE=$(date -d "-7 days" '+%FT%T')
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:image-* AND timestamp.datetime < '${UNTAG_BEFORE}'" \
+              --filter="tags:master-* AND timestamp.datetime < '${UNTAG_BEFORE}'" \
               --format="csv[no-heading](digest,tags,timestamp)")
             for image in ${OLD_IMAGES[*]}; do
             (
@@ -70,8 +70,8 @@ commands:
       - run:
           name: "Deletes old untagged images"
           command: |
-            set -x
-            DELETE_BEFORE=$(date -d "-3 hours" '+%FT%T')
+            set -ex
+            DELETE_BEFORE=$(date -d "-7 days" '+%FT%T')
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
@@ -117,8 +117,6 @@ workflows:
             branches:
               only:
                 - master
-                # image-deploy-cleanup branch present for testing to be removed
-                - image-deploy-cleanup
             tags:
               only: /^.*/
       - perf_maven:
@@ -134,8 +132,6 @@ workflows:
             branches:
               only:
                 - master
-                # image-deploy-cleanup branch present for testing to be removed
-                - image-deploy-cleanup
             tags:
               only: /^.*/
 
@@ -299,7 +295,7 @@ jobs:
       - run:
           name: Running maven deploy
           command: |
-            if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "image-deploy-cleanup" ]; then
+            if [ "$CIRCLE_BRANCH" = "master" ]; then
                 DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
             fi
             echo DOCKER_TAG_OVERRIDE: ${DOCKER_TAG_OVERRIDE}
