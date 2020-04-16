@@ -46,17 +46,14 @@ commands:
       - run:
           name: "Clean up old master images"
           command: |
-            echo $0
+            set -x
             DELETE_BEFORE=$(date -d "-7 days" '+%FT%T')
-            echo DELETE_BEFORE: ${DELETE_BEFORE}
             IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
-            echo IMAGE_PATH: ${IMAGE_PATH}
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
               --filter="tags:master-* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format="csv[no-heading](digest,timestamp)")
-            echo OLD_IMAGES: ${OLD_IMAGES}
             for image in ${OLD_IMAGES[*]}; do
             (
               IFS=, read digest timestamp \<<< ${image}
@@ -66,7 +63,7 @@ commands:
             done
 
 workflows:
-  version: 2.1
+  version: 2
   main:
     jobs:
       - build_maven:
@@ -98,6 +95,8 @@ workflows:
             branches:
               only:
                 - master
+                # image-deploy-cleanup branch present for testing to be removed
+                - image-deploy-cleanup
             tags:
               only: /^.*/
       - perf_maven:
@@ -276,12 +275,11 @@ jobs:
       - run:
           name: Running maven deploy
           command: |
-            DOCKERPUSHTAG=
-            if [ "$CIRCLE_BRANCH" = "master" ]; then
-                DOCKERPUSHTAG=${CIRCLE_BRANCH}-${CIRCLE_SHA1}
+            if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "image-deploy-cleanup" ]; then
+                DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
             fi
-            echo DOCKERPUSHTAG: ${DOCKERPUSHTAG}
-            ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests -Dcircle.docker.tag=${DOCKERPUSHTAG}
+            echo DOCKER_TAG_OVERRIDE: ${DOCKER_TAG_OVERRIDE}
+            ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
       - *save_maven_cache
   cleanup_images:
     machine: true
