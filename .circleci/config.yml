@@ -36,15 +36,40 @@ references:
           POSTGRES_USER: mirror_node
 
 commands:
-  gcloud_image_clean:
-    description: "Cleans up old master images"
+  gcloud_image_untag:
+    description: "Untags old master images"
     parameters:
       imagepath:
         type: string
         default: "importer"
     steps:
       - run:
-          name: "Clean up old master images"
+          name: "Untags old master images"
+          command: |
+            set -x
+            UNTAG_BEFORE=$(date -d "-7 days" '+%FT%T')
+            IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
+            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
+              --limit=1000 \
+              --sort-by=TIMESTAMP \
+              --filter="tags:master-* AND timestamp.datetime < '${UNTAG_BEFORE}'" \
+              --format="csv[no-heading](digest,tags,timestamp)")
+            for image in ${OLD_IMAGES[*]}; do
+            (
+              IFS=, read digest tag timestamp \<<< ${image}
+              echo Untag image: "${IMAGE_PATH}:${tag} created on ${timestamp} with digest ${digest}"
+              echo Command: gcloud container images untag "${IMAGE_PATH}:${tag}"
+            )
+            done
+  gcloud_image_delete:
+    description: "Deletes old untagged images"
+    parameters:
+      imagepath:
+        type: string
+        default: "importer"
+    steps:
+      - run:
+          name: "Deletes old untagged images"
           command: |
             set -x
             DELETE_BEFORE=$(date -d "-7 days" '+%FT%T')
@@ -52,13 +77,13 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:master-* AND timestamp.datetime < '${DELETE_BEFORE}'" \
+              --filter="-tags:* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format="csv[no-heading](digest,timestamp)")
             for image in ${OLD_IMAGES[*]}; do
             (
               IFS=, read digest timestamp \<<< ${image}
               echo Delete image: "${IMAGE_PATH}@${digest} created on ${timestamp}"
-              echo Command: gcloud container images delete -q --force-delete-tags "${IMAGE_PATH}@${digest}"
+              echo Command: gcloud container images delete -q "${IMAGE_PATH}@${digest}"
             )
             done
 
@@ -95,6 +120,8 @@ workflows:
             branches:
               only:
                 - master
+                # image-deploy-cleanup branch present for testing to be removed
+                - image-deploy-cleanup
             tags:
               only: /^.*/
       - perf_maven:
@@ -110,6 +137,8 @@ workflows:
             branches:
               only:
                 - master
+                # image-deploy-cleanup branch present for testing to be removed
+                - image-deploy-cleanup
             tags:
               only: /^.*/
 
@@ -273,7 +302,7 @@ jobs:
       - run:
           name: Running maven deploy
           command: |
-            if [ "$CIRCLE_BRANCH" = "master" ]; then
+            if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "image-deploy-cleanup" ]; then
                 DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
             fi
             echo DOCKER_TAG_OVERRIDE: ${DOCKER_TAG_OVERRIDE}
@@ -288,9 +317,15 @@ jobs:
           command: |
             echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
             gcloud --quiet config set project mirrornode
-      - gcloud_image_clean:
+      - gcloud_image_untag:
           imagepath: "grpc"
-      - gcloud_image_clean:
+      - gcloud_image_untag:
           imagepath: "importer"
-      - gcloud_image_clean:
+      - gcloud_image_untag:
+          imagepath: "rest"
+      - gcloud_image_delete:
+          imagepath: "grpc"
+      - gcloud_image_delete:
+          imagepath: "importer"
+      - gcloud_image_delete:
           imagepath: "rest"
