@@ -95,8 +95,6 @@ workflows:
             branches:
               only:
                 - master
-                # image-deploy-cleanup branch present for testing to be removed
-                - image-deploy-cleanup
             tags:
               only: /^.*/
       - perf_maven:
@@ -275,7 +273,7 @@ jobs:
       - run:
           name: Running maven deploy
           command: |
-            if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "image-deploy-cleanup" ]; then
+            if [ "$CIRCLE_BRANCH" = "master" ]; then
                 DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
             fi
             echo DOCKER_TAG_OVERRIDE: ${DOCKER_TAG_OVERRIDE}
