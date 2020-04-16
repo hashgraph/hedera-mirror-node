@@ -57,7 +57,7 @@ commands:
             for image in ${OLD_IMAGES[*]}; do
             (
               IFS=, read digest tag timestamp \<<< ${image}
-              gcloud container images untag "${IMAGE_PATH}:${tag}"
+              gcloud container images untag -q "${IMAGE_PATH}:${tag}"
             )
             done
   gcloud_image_delete:
