@@ -77,10 +77,9 @@ commands:
               --limit=1000 \
               --sort-by=TIMESTAMP \
               --filter="-tags:* AND timestamp.datetime < '${DELETE_BEFORE}'" \
-              --format="csv[no-heading](digest,timestamp)")
-            for image in ${OLD_IMAGES[*]}; do
+              --format="get(digest)")
+            for digest in ${OLD_IMAGES[*]}; do
             (
-              IFS=, read digest timestamp \<<< ${image}
               gcloud container images delete -q "${IMAGE_PATH}@${digest}"
             )
             done
