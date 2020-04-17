@@ -167,7 +167,11 @@ const processGetTopicMessages = (req, res) => {
 
     // populate next
     let lastTimeStamp =
-      messages.length > 0 ? messages[messages.length - 1][topicMessageColumns.CONSENSUS_TIMESTAMP] : null;
+      topicMessagesResponse.messages.length > 0
+        ? topicMessagesResponse.messages[topicMessagesResponse.messages.length - 1][
+            topicMessageColumns.CONSENSUS_TIMESTAMP
+          ]
+        : null;
 
     topicMessagesResponse.links.next = utils.getPaginationLink(
       req,

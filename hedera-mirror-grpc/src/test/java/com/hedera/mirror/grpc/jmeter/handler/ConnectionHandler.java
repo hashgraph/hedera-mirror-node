@@ -52,7 +52,6 @@ public class ConnectionHandler {
         dataSource.setPassword(dbPassword);
         dataSource.setUser(dbUser);
         jdbcTemplate = new JdbcTemplate(dataSource);
-
         MESSAGE_BYTES = "hedera".getBytes("UTF-8");
     }
 
