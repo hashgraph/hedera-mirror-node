@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc.jmeter.handler;
  * ‍
  */
 
+import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -38,12 +39,12 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 public class ConnectionHandler {
 
     private static final int BATCH_SIZE = 100;
-    private static final byte[] BYTES = new byte[] {'a', 'b', 'c'};
-
+    private static final byte[] HASH_BYTES = new byte[] {(byte) 255, 10, 20, 30};
+    private static byte[] MESSAGE_BYTES;
     private final InstantToLongConverter converter = new InstantToLongConverter();
     private final JdbcTemplate jdbcTemplate;
 
-    public ConnectionHandler(String host, int port, String dbName, String dbUser, String dbPassword) {
+    public ConnectionHandler(String host, int port, String dbName, String dbUser, String dbPassword) throws UnsupportedEncodingException {
         PGSimpleDataSource dataSource = new PGSimpleDataSource();
         dataSource.setPortNumbers(new int[] {port});
         dataSource.setServerNames(new String[] {host});
@@ -51,6 +52,8 @@ public class ConnectionHandler {
         dataSource.setPassword(dbPassword);
         dataSource.setUser(dbUser);
         jdbcTemplate = new JdbcTemplate(dataSource);
+
+        MESSAGE_BYTES = "hedera".getBytes("UTF-8");
     }
 
     public void createTopic(long topicNum) {
@@ -70,22 +73,23 @@ public class ConnectionHandler {
         createTopic(topicNum);
 
         long nextSequenceNum = seqStart == -1 ? getNextAvailableSequenceNumber(topicNum) : seqStart;
-        log.info("Inserting {} topic messages starting from sequence number {} and time {}", newTopicsMessageCount,
-                nextSequenceNum, startTime);
+        log.info("Inserting {} topic messages into topic {} starting from sequence number {} and time {}",
+                newTopicsMessageCount, topicNum, nextSequenceNum, startTime);
 
         List<SqlParameterSource> parameterSources = new ArrayList<>();
         SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate.getDataSource())
                 .withTableName("topic_message");
 
-        for (int i = 1; i <= newTopicsMessageCount; i++) {
+        for (int i = 0; i < newTopicsMessageCount; i++) {
             long sequenceNum = nextSequenceNum + i;
             Instant temp = startTime.plus(sequenceNum, ChronoUnit.NANOS);
             Long consensusTimestamp = converter.convert(temp);
             TopicMessage topicMessage = new TopicMessage();
+            topicMessage.setTopicNum((int) topicNum);
             topicMessage.setConsensusTimestamp(consensusTimestamp);
             topicMessage.setSequenceNumber(sequenceNum);
-            topicMessage.setMessage(BYTES);
-            topicMessage.setRunningHash(BYTES);
+            topicMessage.setMessage(MESSAGE_BYTES);
+            topicMessage.setRunningHash(HASH_BYTES);
             topicMessage.setRealmNum(0);
             parameterSources.add(new BeanPropertySqlParameterSource(topicMessage));
 
@@ -105,8 +109,7 @@ public class ConnectionHandler {
     public long getNextAvailableSequenceNumber(long topicId) {
         String sql = "SELECT MAX(sequence_number) FROM topic_message WHERE topic_num = ?";
         Long maxSequenceNumber = jdbcTemplate.queryForObject(sql, new Object[] {topicId}, Long.class);
-        long nextSeqNum = maxSequenceNumber != null ? maxSequenceNumber + 1 : 0;
-        log.trace("Next available topic ID sequence number is {}", nextSeqNum);
+        long nextSeqNum = maxSequenceNumber != null ? maxSequenceNumber + 1 : 1;
         return nextSeqNum;
     }
 

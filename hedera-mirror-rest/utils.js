@@ -18,6 +18,7 @@
  * ‍
  */
 'use strict';
+const constants = require('./constants.js');
 const math = require('mathjs');
 const config = require('./config.js');
 const ed25519 = require('./ed25519.js');
@@ -26,8 +27,6 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const ENTITY_TYPE_FILE = 3;
 const TRANSACTION_RESULT_SUCCESS = 22;
 
-const successValidationResponse = {isValid: true, code: 200, contents: 'OK'};
-
 const opsMap = {
   lt: ' < ',
   lte: ' <= ',
@@ -35,18 +34,6 @@ const opsMap = {
   gte: ' >= ',
   eq: ' = ',
   ne: ' != ',
-};
-
-const filterKeys = {
-  ACCOUNT_ID: 'account.id',
-  ACCOUNT_BALANCE: 'account.balance',
-  ACCOUNT_PUBLICKEY: 'account.publickey',
-  LIMIT: 'limit',
-  ORDER: 'order',
-  RESULT: 'result',
-  SEQUENCE_NUMBER: 'sequencenumber',
-  TIMESTAMP: 'timestamp',
-  TYPE: 'type',
 };
 
 /**
@@ -73,6 +60,10 @@ const isValidLimitNum = (limit) => {
 
 const isValidNum = (num) => {
   return /^\d{1,16}$/.test(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER;
+};
+
+const isValidMessageQuery = (query) => {
+  return /^[0-9a-zA-Z,;'\"\\s]{1,64}[.?!]?$/.test(query);
 };
 
 /**
@@ -119,40 +110,48 @@ const filterValidityChecks = function (param, op, val) {
 
   // Validate the value
   switch (param) {
-    case filterKeys.ACCOUNT_ID:
+    case constants.filterKeys.ACCOUNT_ID:
       // Accepted forms: shard.realm.num or num
       ret = isValidEntityNum(val);
       break;
-    case filterKeys.TIMESTAMP:
+    case constants.filterKeys.TIMESTAMP:
       ret = isValidTimestampParam(val);
       break;
-    case filterKeys.ACCOUNT_BALANCE:
+    case constants.filterKeys.ACCOUNT_BALANCE:
       // Accepted forms: Upto 50 billion
       ret = /^\d{1,19}$/.test(val);
       break;
-    case filterKeys.ACCOUNT_PUBLICKEY:
+    case constants.filterKeys.ACCOUNT_PUBLICKEY:
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = /^[0-9a-fA-F]{64}$/.test(val) || /^[0-9a-fA-F]{88}$/.test(val);
       break;
-    case filterKeys.LIMIT:
+    case constants.filterKeys.LIMIT:
       // Acceptable forms: upto 4 digits
       ret = isValidLimitNum(val);
       break;
-    case filterKeys.ORDER:
+    case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
       ret = ['asc', 'desc'].includes(val);
       break;
-    case filterKeys.TYPE:
-      // Acceptable words: credit or debig
+    case constants.filterKeys.TYPE:
+      // Acceptable words: credit or debit
       ret = ['credit', 'debit'].includes(val);
       break;
-    case filterKeys.RESULT:
+    case constants.filterKeys.RESULT:
       // Acceptable words: success or fail
       ret = ['success', 'fail'].includes(val);
       break;
-    case filterKeys.SEQUENCE_NUMBER:
+    case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
       ret = isValidNum(val);
+      break;
+    case constants.filterKeys.FORMAT:
+      // Acceptable words: binary or text
+      ret = Object.values(constants.topicMessagesFilterValues).includes(val);
+      break;
+    case constants.filterKeys.MESSAGE:
+      // Acceptable words:
+      ret = isValidMessageQuery(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -633,6 +632,17 @@ const encodeBase64 = function (buffer) {
 };
 
 /**
+ * Base64 encoding of a byte array for returning in JSON output
+ * @param {Array} key Byte array to be encoded
+ * @return {String} utf-8 encoded string
+ */
+const encodeUtf8 = function (buffer) {
+  const encoded = null === buffer ? null : unescape(encodeURIComponent(buffer));
+  // const decoded = decodeURIComponent(escape(encoded));
+  return encoded;
+};
+
+/**
  *
  * @param {String} num Nullable number
  * @returns {Any} representation of math.bignumber value of parameter or null if null
@@ -657,7 +667,7 @@ const createTransactionId = function (shard, realm, num, validStartTimestamp) {
  * Given the req.query object build the filters object
  * @param filters
  */
-const buildFilterObject = (filters) => {
+const buildFilterObject = (filters, keysToIgnore) => {
   let filterObject = [];
   if (filters === null) {
     return null;
@@ -717,15 +727,13 @@ const formatComparator = (comparator) => {
 
     // format value
     switch (comparator.key) {
-      case filterKeys.ACCOUNT_ID:
-        // Accepted forms: shard.realm.num or num
+      case constants.filterKeys.ACCOUNT_ID:
         comparator.value = parseEntityId(comparator.value);
         break;
-      case filterKeys.TIMESTAMP:
+      case constants.filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
         break;
-      case filterKeys.ACCOUNT_PUBLICKEY:
-        // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
+      case constants.filterKeys.ACCOUNT_PUBLICKEY:
         comparator.value = ed25519.derToEd25519(comparator.value);
         break;
       // case 'type':
@@ -741,6 +749,16 @@ const formatComparator = (comparator) => {
   }
 };
 
+const getFilterValue = (key, filters, defaultVal) => {
+  for (const filter of filters) {
+    if (key == filter.key) {
+      return filter.value;
+    }
+  }
+
+  return defaultVal;
+};
+
 module.exports = {
   buildFilterObject: buildFilterObject,
   buildComparatorFilter: buildComparatorFilter,
@@ -749,9 +767,11 @@ module.exports = {
   convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,
   encodeBase64: encodeBase64,
   encodeKey: encodeKey,
+  encodeUtf8: encodeUtf8,
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
   filterValidityChecks: filterValidityChecks,
   formatComparator: formatComparator,
+  getFilterValue: getFilterValue,
   getNullableNumber: getNullableNumber,
   getPaginationLink: getPaginationLink,
   isValidEntityNum: isValidEntityNum,

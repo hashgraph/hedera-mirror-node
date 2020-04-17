@@ -24,6 +24,8 @@ const filterKeys = {
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
   LIMIT: 'limit',
+  FORMAT: 'format',
+  MESSAGE: 'message',
   ORDER: 'order',
   RESULT: 'result',
   SEQUENCE_NUMBER: 'sequencenumber',
@@ -40,8 +42,25 @@ const entityColumns = {
 
 const responseDataLabel = 'mirrorRestData';
 
+// topic messages filter options
+const topicMessagesFormatFilterValues = {
+  BINARY: 'binary',
+  TEXT: 'text',
+};
+
+const transactionsResultFilterValues = {
+  SUCCESS: 'success',
+  FAIL: 'fail',
+};
+
+const transactionsTypeFilterValues = {
+  SUCCESS: 'success',
+  FAIL: 'fail',
+};
+
 module.exports = {
   entityColumns: entityColumns,
   filterKeys: filterKeys,
   responseDataLabel,
+  topicMessagesFilterValues: topicMessagesFormatFilterValues,
 };

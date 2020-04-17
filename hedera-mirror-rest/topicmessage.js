@@ -37,6 +37,7 @@ const topicMessageColumns = {
 const columnMap = {
   sequencenumber: topicMessageColumns.SEQUENCE_NUMBER,
   timestamp: topicMessageColumns.CONSENSUS_TIMESTAMP,
+  message: topicMessageColumns.MESSAGE,
 };
 
 /**
@@ -85,14 +86,19 @@ const validateGetTopicMessagesRequest = (topicId, filters) => {
 /**
  * Format row in postgres query's result to object which is directly returned to user as json.
  */
-const formatTopicMessageRow = function (row) {
+const formatTopicMessageRow = function (row, binaryMessageFormat) {
   return {
     consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
     topic_id: `${config.shard}.${row[topicMessageColumns.REALM_NUM]}.${row[topicMessageColumns.TOPIC_NUM]}`,
-    message: utils.encodeBase64(row[topicMessageColumns.MESSAGE]),
+    message: formatTopicMessage(binaryMessageFormat, row[topicMessageColumns.MESSAGE]),
     running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
     sequence_number: parseInt(row[topicMessageColumns.SEQUENCE_NUMBER]),
   };
+};
+
+const formatTopicMessage = function (format, message) {
+  // default to base64 encoding
+  return format === constants.topicMessagesFilterValues.TEXT ? utils.encodeUtf8(message) : utils.encodeBase64(message);
 };
 
 /**
@@ -143,6 +149,8 @@ const processGetTopicMessages = (req, res) => {
   // build sql query validated param and filters
   let {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
 
+  const binaryMessageFormat = utils.getFilterValue(constants.filterKeys.FORMAT, filters);
+
   let topicMessagesResponse = {
     messages: [],
     links: {
@@ -152,7 +160,10 @@ const processGetTopicMessages = (req, res) => {
 
   // get results and return formatted response
   return getMessages(query, params).then((messages) => {
-    topicMessagesResponse.messages = messages;
+    // format messages
+    for (let i = 0; i < messages.length; i++) {
+      topicMessagesResponse.messages.push(formatTopicMessageRow(messages[i], binaryMessageFormat));
+    }
 
     // populate next
     let lastTimeStamp =
@@ -182,6 +193,7 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
   let limit;
   let order = 'asc';
   for (let filter of filters) {
+    // handled keys that do not require formatting first
     if (filter.key === constants.filterKeys.LIMIT) {
       limit = filter.value;
       continue;
@@ -192,15 +204,26 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
       continue;
     }
 
-    pgSqlQuery += ` and ${columnMap[filter.key]}${filter.operator}$${nextParamCount++}`;
-    pgSqlParams.push(filter.value);
+    const columnKey = columnMap[filter.key];
+    if (columnKey === undefined) {
+      continue;
+    }
+
+    if (filter.key == constants.filterKeys.MESSAGE) {
+      pgSqlQuery += getDbLikeClause(columnKey, nextParamCount++);
+      pgSqlParams.push('%' + filter.value + '%');
+      // continue;
+    } else {
+      pgSqlQuery += getDbWhereClause(columnKey, filter.operator, nextParamCount++);
+      pgSqlParams.push(filter.value);
+    }
   }
 
   // add order
-  pgSqlQuery += ` order by ${topicMessageColumns.CONSENSUS_TIMESTAMP} ${order}`;
+  pgSqlQuery += getDbOrderClause(topicMessageColumns.CONSENSUS_TIMESTAMP, order);
 
   // add limit
-  pgSqlQuery += ` limit $${nextParamCount++}`;
+  pgSqlQuery += getDbLimitClause(nextParamCount++);
   limit = limit === undefined ? config.api.maxLimit : limit;
   pgSqlParams.push(limit);
 
@@ -208,6 +231,22 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
   pgSqlQuery += ';';
 
   return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
+};
+
+const getDbWhereClause = (column, operator, placeholderCount) => {
+  return ` and ${column}${operator}$${placeholderCount}`;
+};
+
+const getDbLikeClause = (column, placeholderCount) => {
+  return ` and ${column} like $${placeholderCount}`;
+};
+
+const getDbLimitClause = (limit) => {
+  return ` limit $${limit}`;
+};
+
+const getDbOrderClause = (column, value) => {
+  return ` order by ${column} ${value}`;
 };
 
 /**
@@ -227,7 +266,7 @@ const getMessage = async (pgSqlQuery, pgSqlParams) => {
       // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
       if (results.rowCount === 1) {
         logger.debug('getMessage returning single entry');
-        return formatTopicMessageRow(results.rows[0]);
+        return formatTopicMessageRow(results.rows[0], true);
       } else {
         throw new NotFoundError();
       }
@@ -240,7 +279,6 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
   }
 
   let messages = [];
-
   return pool
     .query(pgSqlQuery, pgSqlParams)
     .catch((err) => {
@@ -248,9 +286,8 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
     })
     .then((results) => {
       for (let i = 0; i < results.rowCount; i++) {
-        messages.push(formatTopicMessageRow(results.rows[i]));
+        messages.push(results.rows[i]);
       }
-
       logger.debug('getMessages returning ' + messages.length + ' entries');
 
       return messages;

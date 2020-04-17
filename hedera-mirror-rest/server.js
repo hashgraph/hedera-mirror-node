@@ -19,20 +19,16 @@
  */
 'uses strict';
 
+// external libraries
 const express = require('express');
 const {addAsync} = require('@awaitjs/express');
 const bodyParser = require('body-parser');
-let Pool;
-if (process.env.NODE_ENV !== 'test') {
-  Pool = require('pg').Pool;
-} else {
-  Pool = require('./__tests__/mockpool.js'); // Use a mocked up DB for jest unit tests
-}
-const app = addAsync(express());
 const cors = require('cors');
 const log4js = require('log4js');
-const logger = log4js.getLogger();
+var helmet = require('helmet');
+var compression = require('compression');
 
+// local files
 const config = require('./config.js');
 const transactions = require('./transactions.js');
 const balances = require('./balances.js');
@@ -42,19 +38,8 @@ const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
 
-var compression = require('compression');
-
-let port = config.api.port;
-if (process.env.NODE_ENV == 'test') {
-  port = 3000; // Use a dummy port for jest unit tests
-}
-if (port === undefined || isNaN(Number(port))) {
-  logger.error('Server started with unknown port');
-  console.log('Please specify the port');
-  process.exit(1);
-}
-
 // Logger
+const logger = log4js.getLogger();
 log4js.configure({
   appenders: {
     everything: {
@@ -70,7 +55,24 @@ log4js.configure({
 });
 global.logger = log4js.getLogger();
 
+let port = config.api.port;
+if (process.env.NODE_ENV == 'test') {
+  port = 3000; // Use a dummy port for jest unit tests
+}
+if (port === undefined || isNaN(Number(port))) {
+  logger.error('Server started with unknown port');
+  console.log('Please specify the port');
+  process.exit(1);
+}
+
 // Postgres pool
+let Pool;
+if (process.env.NODE_ENV !== 'test') {
+  Pool = require('pg').Pool;
+} else {
+  Pool = require('./__tests__/mockpool.js'); // Use a mocked up DB for jest unit tests
+}
+
 const pool = new Pool({
   user: config.db.apiUsername,
   host: config.db.host,
@@ -80,6 +82,8 @@ const pool = new Pool({
 });
 global.pool = pool;
 
+// Express configuration
+const app = addAsync(express());
 app.set('trust proxy', true);
 app.set('port', port);
 app.use(
@@ -89,7 +93,10 @@ app.use(
 );
 app.use(bodyParser.json());
 app.use(compression());
+// provides safe Cross-origin resource sharing
 app.use(cors());
+// sets HTTP headers to appropriately combat some web vulnerabilities
+app.use(helmet());
 
 // metrics middleware
 if (config.api.metrics.enabled) {
@@ -110,8 +117,8 @@ app.getAsync(apiPrefix + '/topic/message/:consensusTimestamp', topicmessage.getM
 app.getAsync(apiPrefix + '/topic/:id/message/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
 app.getAsync(apiPrefix + '/topics/:id/messages/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
 
-app.getAsync(apiPrefix + '/topics/:id', topicmessage.getTopicMessages);
-app.getAsync(apiPrefix + '/topic/:id', topicmessage.getTopicMessages);
+app.getAsync(apiPrefix + '/topics/:id/messages', topicmessage.getTopicMessages);
+app.getAsync(apiPrefix + '/topic/:id/messages', topicmessage.getTopicMessages);
 
 // response data handling middleware
 app.use(responseHandler);
