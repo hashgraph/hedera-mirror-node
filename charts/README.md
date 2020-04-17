@@ -16,13 +16,35 @@ Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the 
 To install the wrapper chart with a release name of `mirror`:
 
 ```shell script
-$ helm upgrade --install --render-subchart-notes mirror charts/hedera-mirror
+$ helm upgrade --install mirror charts/hedera-mirror
 ```
 
 Note that dependent charts are already downloaded and checked in, allowing for a quicker and repeatable installation without any external dependencies. If you make changes to a sub chart or want to update other dependent charts, please run:
 
 ```shell script
 $ helm dependency update charts/hedera-mirror
+```
+
+## Using
+
+All of the APIs and dashboards can be accessed via a single IP. To get the load balancer IP:
+```shell script
+  export SERVICE_IP=$(kubectl get service traefik -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
+```
+
+To access the GRPC API (using [grpcurl](https://github.com/fullstorydev/grpcurl)):
+```shell script
+  grpcurl -plaintext ${SERVICE_IP}:80 list
+```
+
+To access the REST API:
+```shell script
+  curl -s "http://${SERVICE_IP}:80/api/v1/transactions?limit=1"
+```
+
+To view the Grafana dashboard:
+```shell script
+  open "http://${SERVICE_IP}:80/grafana"
 ```
 
 ## Uninstall
