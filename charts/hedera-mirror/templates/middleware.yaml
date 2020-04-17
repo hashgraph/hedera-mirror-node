@@ -1,0 +1,81 @@
+{{- if .Values.traefik.enabled -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: global-chain
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  chain:
+    middlewares:
+    - name: ip-whitelist
+    - name: connection-limit
+    - name: rate-limit
+    - name: circuit-breaker
+    - name: strip-prefix-grafana
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: ip-whitelist
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  ipWhiteList:
+    sourceRange:
+      {{- toYaml .Values.traefik.middleware.ipWhitelist | nindent 6 }}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: connection-limit
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  inFlightReq:
+    amount: {{ .Values.traefik.middleware.connectionLimit }}
+    sourceCriterion:
+      ipStrategy:
+        depth: 1
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: circuit-breaker
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  circuitBreaker:
+    expression: {{ .Values.traefik.middleware.circuitBreaker }}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: rate-limit
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  rateLimit:
+    {{- toYaml .Values.traefik.middleware.rateLimit | nindent 4 }}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: strip-prefix-grafana
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  stripPrefix:
+    prefixes: ["/grafana"]
+{{- end -}}

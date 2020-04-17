@@ -30,6 +30,16 @@ image:
 
 imagePullSecrets: []
 
+ingress:
+  annotations: {}
+  enabled: true
+  hosts:
+    - host: ""
+      paths: ["/api/v1"]
+  tls:
+    enabled: false
+    secretName: ""
+
 labels:
   role: app
   tier: api
@@ -77,8 +87,9 @@ securityContext:
   runAsUser: 1000
 
 service:
+  annotations: {}
   port: 80
-  type: LoadBalancer
+  type: ClusterIP
 
 serviceAccount:
   create: true

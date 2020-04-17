@@ -120,7 +120,7 @@ postgresql:
               topologyKey: kubernetes.io/hostname
               labelSelector:
                 matchLabels:
-                  app.kubernetes.io/name: postgresql
+                  app.kubernetes.io/component: postgresql
     initdbScriptsSecret: postgresql-init
     podLabels:
       role: db
@@ -202,15 +202,22 @@ prometheus-operator:
     adminPassword: password
     defaultDashboardsEnabled: true
     fullnameOverride: grafana
+    grafana.ini:
+      server:
+        root_url: "%(protocol)s://%(domain)s/grafana/"
+    ingress:
+      enabled: true
+      hosts: [""]
+      path: "/grafana"
     resources:
       limits:
-        cpu: 100m
+        cpu: 150m
         memory: 100Mi
       requests:
-        cpu: 50m
+        cpu: 75m
         memory: 30Mi
     service:
-      type: LoadBalancer
+      type: ClusterIP
   kube-state-metrics:
     fullnameOverride: prometheus-kube-state-metrics
     resources:
@@ -225,10 +232,10 @@ prometheus-operator:
     hostNetwork: false
     resources:
       limits:
-        cpu: 20m
+        cpu: 50m
         memory: 30Mi
       requests:
-        cpu: 10m
+        cpu: 20m
         memory: 10Mi
   prometheus:
     prometheusSpec:
@@ -267,3 +274,45 @@ rest:
           apiUsername: mirror_api
           host: postgresql-pgpool
   priorityClassName: medium
+
+traefik:
+  deployment:
+    replicas: 2
+  enabled: true
+  fullnameOverride: traefik
+  globalArguments: []
+  middleware:
+    circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+    connectionLimit: 1000
+    ipWhitelist:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+    rateLimit:
+      average: 1000
+      burst: 2000
+  ports:
+    grpc:
+      port: 5600
+      expose: true
+    web:
+      port: 80
+    websecure:
+      port: 443
+  resources:
+    requests:
+      cpu: 100m
+      memory: 50Mi
+    limits:
+      cpu: 300m
+      memory: 150Mi
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+  service:
+    spec:
+      externalTrafficPolicy: Local
+  volumes:
+    - name: traefik
+      mountPath: /etc/traefik/
+      type: configMap

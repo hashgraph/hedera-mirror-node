@@ -70,7 +70,7 @@ readinessProbe:
   initialDelaySeconds: 60
   timeoutSeconds: 2
 
-replicas: 1
+replicas: 2
 
 resources:
   limits:
@@ -91,6 +91,7 @@ securityContext:
   runAsUser: 1000
 
 service:
+  annotations: {}
   port: 8080
   type: ClusterIP
 

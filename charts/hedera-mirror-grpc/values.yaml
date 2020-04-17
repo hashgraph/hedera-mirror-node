@@ -30,6 +30,18 @@ image:
 
 imagePullSecrets: []
 
+ingress:
+  annotations: {}
+  enabled: true
+  hosts:
+    - host: ""
+      paths:
+        - "/com.hedera.mirror.api.proto.ConsensusService"
+        - "/grpc.reflection.v1alpha.ServerReflection"
+  tls:
+    enabled: false
+    secretName: ""
+
 labels:
   role: app
   tier: api
@@ -81,8 +93,10 @@ securityContext:
   runAsUser: 1000
 
 service:
+  annotations:
+    traefik.ingress.kubernetes.io/service.serversscheme: h2c
   port: 5600
-  type: LoadBalancer
+  type: ClusterIP
 
 serviceAccount:
   create: true
