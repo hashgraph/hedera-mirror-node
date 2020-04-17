@@ -132,8 +132,6 @@ workflows:
             branches:
               only:
                 - master
-            tags:
-              only: /^.*/
 
 jobs:
   build_maven:
