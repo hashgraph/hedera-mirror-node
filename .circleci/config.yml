@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 
 references:
   workspace_root: &workspace_root /tmp/workspace
@@ -35,6 +35,55 @@ references:
           POSTGRES_PASSWORD: mirror_node_pass
           POSTGRES_USER: mirror_node
 
+commands:
+  gcloud_image_untag:
+    description: "Untags old master images"
+    parameters:
+      imagepath:
+        type: string
+        default: "importer"
+    steps:
+      - run:
+          name: "Untags old master images"
+          command: |
+            set -ex
+            UNTAG_BEFORE=$(date -d "-7 days" '+%FT%T')
+            IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
+            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
+              --limit=1000 \
+              --sort-by=TIMESTAMP \
+              --filter="tags:master-* AND timestamp.datetime < '${UNTAG_BEFORE}'" \
+              --format="csv[no-heading](digest,tags,timestamp)")
+            for image in ${OLD_IMAGES[*]}; do
+            (
+              IFS=, read digest tag timestamp \<<< ${image}
+              gcloud container images untag -q "${IMAGE_PATH}:${tag}"
+            )
+            done
+  gcloud_image_delete:
+    description: "Deletes old untagged images"
+    parameters:
+      imagepath:
+        type: string
+        default: "importer"
+    steps:
+      - run:
+          name: "Deletes old untagged images"
+          command: |
+            set -ex
+            DELETE_BEFORE=$(date -d "-7 days" '+%FT%T')
+            IMAGE_PATH=gcr.io/mirrornode/hedera-mirror-<< parameters.imagepath >>
+            OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
+              --limit=1000 \
+              --sort-by=TIMESTAMP \
+              --filter="-tags:* AND timestamp.datetime < '${DELETE_BEFORE}'" \
+              --format="get(digest)")
+            for digest in ${OLD_IMAGES[*]}; do
+            (
+              gcloud container images delete -q "${IMAGE_PATH}@${digest}"
+            )
+            done
+
 workflows:
   version: 2
   main:
@@ -66,7 +115,8 @@ workflows:
             - build_rest
           filters:
             branches:
-              ignore: /.*/
+              only:
+                - master
             tags:
               only: /^.*/
       - perf_maven:
@@ -75,6 +125,13 @@ workflows:
               only: /.*/
             tags:
               only: /.*/
+      - cleanup_images:
+          requires:
+            - publish_images
+          filters:
+            branches:
+              only:
+                - master
 
 jobs:
   build_maven:
@@ -154,7 +211,7 @@ jobs:
           POSTGRES_USER: mirror_node
           POSTGRES_PASSWORD: mirror_node_pass
     steps:
-      - checkout:
+      - checkout
       - restore_cache:
           keys:
             - npm-v1-{{ .Branch }}-{{ checksum "hedera-mirror-rest/package-lock.json" }}
@@ -235,5 +292,31 @@ jobs:
       - *restore_maven_cache
       - run:
           name: Running maven deploy
-          command: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests
+          command: |
+            if [ "$CIRCLE_BRANCH" = "master" ]; then
+                DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
+            fi
+            echo DOCKER_TAG_OVERRIDE: ${DOCKER_TAG_OVERRIDE}
+            ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
       - *save_maven_cache
+  cleanup_images:
+    machine: true
+    steps:
+      - checkout
+      - run:
+          name: GCloud Setup
+          command: |
+            echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
+            gcloud --quiet config set project mirrornode
+      - gcloud_image_untag:
+          imagepath: "grpc"
+      - gcloud_image_untag:
+          imagepath: "importer"
+      - gcloud_image_untag:
+          imagepath: "rest"
+      - gcloud_image_delete:
+          imagepath: "grpc"
+      - gcloud_image_delete:
+          imagepath: "importer"
+      - gcloud_image_delete:
+          imagepath: "rest"
