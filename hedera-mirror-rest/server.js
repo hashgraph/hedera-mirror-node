@@ -40,6 +40,7 @@ const accounts = require('./accounts.js');
 const topicmessage = require('./topicmessage.js');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
+const {metricsHandler} = require('./middleware/metricsHandler');
 
 var compression = require('compression');
 
@@ -89,6 +90,11 @@ app.use(
 app.use(bodyParser.json());
 app.use(compression());
 app.use(cors());
+
+// metrics middleware
+if (config.api.metrics.enabled) {
+  app.use(metricsHandler());
+}
 
 let apiPrefix = '/api/v1';
 
