@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.addressbook;
 
 import com.google.common.collect.ImmutableList;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
-
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -31,27 +31,46 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import javax.inject.Named;
-
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.HederaNetwork;
 import com.hedera.mirror.importer.domain.NodeAddress;
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
 public class NetworkAddressBook {
 
-    private MirrorProperties mirrorProperties;
+    private final MirrorProperties mirrorProperties;
     private byte[] addressBookBytes = new byte[0];
 
     public NetworkAddressBook(MirrorProperties mirrorProperties) {
         this.mirrorProperties = mirrorProperties;
         init();
+    }
+
+    public static boolean isAddressBook(EntityId entityId) {
+        return entityId != null && entityId.getEntityTypeId() == EntityTypeEnum.FILE.getId()
+                && entityId.getEntityNum() == 102 && entityId.getEntityShard() == 0 && entityId.getEntityRealm() == 0;
+    }
+
+    public void updateFrom(TransactionBody transactionBody) {
+        try {
+            if (transactionBody.hasFileAppend()) {
+                append(transactionBody.getFileAppend().getContents().toByteArray());
+            } else if (transactionBody.hasFileUpdate()) {
+                update(transactionBody.getFileUpdate().getContents().toByteArray());
+            }
+        } catch (IOException e) {
+            throw new ParserException("Error appending to network address book", e);
+        }
     }
 
     private void init() {
@@ -71,12 +90,12 @@ public class NetworkAddressBook {
         }
     }
 
-    public void update(byte[] newContents) throws IOException {
+    private void update(byte[] newContents) throws IOException {
         addressBookBytes = newContents;
         saveToDisk();
     }
 
-    public void append(byte[] extraContents) throws IOException {
+    private void append(byte[] extraContents) throws IOException {
         byte[] newAddressBook = Arrays.copyOf(addressBookBytes, addressBookBytes.length + extraContents.length);
         System.arraycopy(extraContents, 0, newAddressBook, addressBookBytes.length, extraContents.length);
         addressBookBytes = newAddressBook;

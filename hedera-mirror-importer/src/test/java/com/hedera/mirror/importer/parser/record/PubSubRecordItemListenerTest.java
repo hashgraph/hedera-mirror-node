@@ -169,26 +169,25 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        verify(networkAddressBook).append(fileContents);
+        verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()));
     }
 
     @Test
     void testNetworkAddressBookUpdate() throws Exception {
         // given
         byte[] fileContents = new byte[] {0b0, 0b1, 0b10};
-        Transaction transaction = buildTransaction(builder -> {
-            builder.setFileUpdate(FileUpdateTransactionBody.newBuilder()
-                    .setFileID(ADDRESS_BOOK_FILE_ID)
-                    .setContents(ByteString.copyFrom(fileContents))
-                    .build());
-        });
+        var fileUpdate = FileUpdateTransactionBody.newBuilder()
+                .setFileID(ADDRESS_BOOK_FILE_ID)
+                .setContents(ByteString.copyFrom(fileContents))
+                .build();
+        Transaction transaction = buildTransaction(builder -> builder.setFileUpdate(fileUpdate));
 
         // when
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntityId(any());
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        verify(networkAddressBook).update(fileContents);
+        verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()));
     }
 
     private void assertPubSubMessage(EntityId expectedEntity, Transaction expectedTransaction,

@@ -143,9 +143,12 @@ public class RecordItemParser implements RecordItemListener {
                 insertFileUpdate(consensusNs, body.getFileUpdate());
             }
         }
-
         recordParsedItemHandler.onTransaction(tx);
         log.debug("Storing transaction: {}", tx);
+
+        if (NetworkAddressBook.isAddressBook(entityId)) {
+            networkAddressBook.updateFrom(body);
+        }
     }
 
     private Transaction buildTransaction(long consensusTimestamp, RecordItem recordItem) {
@@ -212,14 +215,6 @@ public class RecordItemParser implements RecordItemListener {
     private void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody) {
         byte[] contents = transactionBody.getContents().toByteArray();
         insertFileData(consensusTimestamp, contents, transactionBody.getFileID());
-        // we have an address book update, refresh the local file
-        if (isFileAddressBook(transactionBody.getFileID())) {
-            try {
-                networkAddressBook.append(contents);
-            } catch (IOException e) {
-                throw new ParserException("Error appending to network address book", e);
-            }
-        }
     }
 
     private void insertCryptoAddClaim(long consensusTimestamp,
@@ -320,14 +315,6 @@ public class RecordItemParser implements RecordItemListener {
         FileID fileId = transactionBody.getFileID();
         byte[] contents = transactionBody.getContents().toByteArray();
         insertFileData(consensusTimestamp, contents, fileId);
-        // we have an address book update, refresh the local file
-        if (isFileAddressBook(fileId)) {
-            try {
-                networkAddressBook.update(contents);
-            } catch (IOException e) {
-                throw new ParserException("Error appending to network address book", e);
-            }
-        }
     }
 
     private void insertContractResults(

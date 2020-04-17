@@ -46,6 +46,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Arrays;
 import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +56,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -80,9 +80,6 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
 
     @Resource
     private MirrorProperties mirrorProperties;
-
-    @Resource
-    private NetworkAddressBook networkAddressBook;
 
     @BeforeEach
     void before() throws Exception {
@@ -565,9 +562,6 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
 
     @Test
     void fileAppendToAddressBook() throws Exception {
-
-        networkAddressBook.update(new byte[0]);
-
         parserProperties.getPersist().setFiles(true);
         parserProperties.getPersist().setSystemFiles(true);
 
@@ -585,6 +579,10 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
         com.hedera.mirror.importer.domain.Entities dbFileEntity = entityRepository
                 .findById(dbTransaction.getEntityId()).get();
         FileData dbfileData = fileDataRepository.findById(dbTransaction.getConsensusNs()).get();
+        byte[] expectedContents = fileAppendTransactionBody.getContents().toByteArray();
+        byte[] diskFileData = FileUtils.readFileToByteArray(mirrorProperties.getAddressBookPath().toFile());
+        byte[] diskFileAppendedData = Arrays.copyOfRange(diskFileData,
+                diskFileData.length - expectedContents.length, diskFileData.length);
 
         assertAll(
                 // row counts
@@ -605,12 +603,8 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
                 , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
 
                 // file data
-                , () -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData
-                        .getFileData())
-
-                , () -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(),
-                        FileUtils.readFileToByteArray(mirrorProperties.getAddressBookPath().toFile())
-                )
+                , () -> assertArrayEquals(expectedContents, dbfileData.getFileData())
+                , () -> assertArrayEquals(expectedContents, diskFileAppendedData)
 
                 // Additional entity checks
                 , () -> assertNull(dbFileEntity.getExpiryTimeNs())
