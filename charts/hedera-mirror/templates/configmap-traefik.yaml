@@ -1,12 +1,11 @@
 {{- if .Values.traefik.enabled -}}
-{{ $namespace := include "hedera-mirror.namespace" . }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
   name: traefik
-  namespace: {{ $namespace }}
+  namespace: {{ include "hedera-mirror.namespace" . }}
 data:
   traefik.yaml: |-
     accessLog: {}
@@ -14,21 +13,13 @@ data:
     entryPoints:
       grpc:
         address: ":5600"
-        http:
-          middlewares:
-            - {{ $namespace }}-global-chain@kubernetescrd
       traefik:
         address: ":9000"
       web:
         address: ":80"
-        http:
-          middlewares:
-            - {{ $namespace }}-global-chain@kubernetescrd
       websecure:
         address: ":443"
         http:
-          middlewares:
-            - {{ $namespace }}-global-chain@kubernetescrd
           tls: {}
     metrics:
       prometheus: {}

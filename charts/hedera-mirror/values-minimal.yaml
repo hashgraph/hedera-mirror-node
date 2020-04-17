@@ -1,7 +1,9 @@
 grpc:
   hpa:
     enabled: false
-loki-stack:
+importer:
+  replicas: 1
+loki:
   enabled: false
 postgresql:
   pgpool:
@@ -10,8 +12,10 @@ postgresql:
     replicaCount: 1
 prometheus-adapter:
   enabled: false
-prometheus-operator:
+prometheus:
   enabled: false
 rest:
   hpa:
     enabled: false
+traefik:
+  replicas: 1

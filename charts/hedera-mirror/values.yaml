@@ -13,6 +13,9 @@ grpc:
             password: mirror_grpc_pass
             username: mirror_grpc
   enabled: true
+  ingress:
+    middleware:
+      enabled: true
   priorityClassName: medium
 
 importer:
@@ -29,7 +32,7 @@ importer:
 
 labels: {}
 
-loki-stack:
+loki:
   enabled: true
   loki:
     config:
@@ -177,7 +180,7 @@ prometheus-adapter:
         containerLabel: container
       window: 3m
 
-prometheus-operator:
+prometheus:
   alertmanager:
     alertmanagerSpec:
       priorityClassName: low
@@ -206,8 +209,20 @@ prometheus-operator:
       server:
         root_url: "%(protocol)s://%(domain)s/grafana/"
     ingress:
+      annotations:
+        # TODO: Open ticket with Traefik to not require namespace and/or fix grafana chart to template annotations
+        traefik.ingress.kubernetes.io/router.middlewares: "default-grafana@kubernetescrd"
       enabled: true
       hosts: [""]
+      middleware:
+        circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+        connectionsPerIP: 10
+        enabled: true
+        ipWhitelist:
+          - 0.0.0.0/0
+        rateLimit:
+          average: 50
+          burst: 100
       path: "/grafana"
     resources:
       limits:
@@ -273,6 +288,9 @@ rest:
           apiPassword: mirror_api_pass
           apiUsername: mirror_api
           host: postgresql-pgpool
+  ingress:
+    middleware:
+      enabled: true
   priorityClassName: medium
 
 traefik:
@@ -281,16 +299,6 @@ traefik:
   enabled: true
   fullnameOverride: traefik
   globalArguments: []
-  middleware:
-    circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
-    connectionLimit: 1000
-    ipWhitelist:
-      - 10.0.0.0/8
-      - 172.16.0.0/12
-      - 192.168.0.0/16
-    rateLimit:
-      average: 1000
-      burst: 2000
   ports:
     grpc:
       port: 5600

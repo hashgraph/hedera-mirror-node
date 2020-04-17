@@ -1,19 +1,23 @@
-{{- if .Values.traefik.enabled -}}
+{{ $ingress := .Values.prometheus.grafana.ingress }}
+{{ $name := .Values.prometheus.grafana.fullnameOverride }}
+{{ $namespace := include "hedera-mirror.namespace" . }}
+
+{{- if $ingress.middleware.enabled -}}
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
-  name: global-chain
-  namespace: {{ include "hedera-mirror.namespace" . }}
+  name: {{ $name }}
+  namespace: {{ $namespace }}
 spec:
   chain:
     middlewares:
-    - name: ip-whitelist
-    - name: connection-limit
-    - name: rate-limit
-    - name: circuit-breaker
-    - name: strip-prefix-grafana
+    - name: {{ $name }}-ip-whitelist
+    - name: {{ $name }}-connection-limit
+    - name: {{ $name }}-rate-limit
+    - name: {{ $name }}-circuit-breaker
+    - name: {{ $name }}-strip-prefix
 
 ---
 apiVersion: traefik.containo.us/v1alpha1
@@ -21,12 +25,12 @@ kind: Middleware
 metadata:
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
-  name: ip-whitelist
-  namespace: {{ include "hedera-mirror.namespace" . }}
+  name: {{ $name }}-ip-whitelist
+  namespace: {{ $namespace }}
 spec:
   ipWhiteList:
     sourceRange:
-      {{- toYaml .Values.traefik.middleware.ipWhitelist | nindent 6 }}
+      {{- toYaml $ingress.middleware.ipWhitelist | nindent 6 }}
 
 ---
 apiVersion: traefik.containo.us/v1alpha1
@@ -34,11 +38,11 @@ kind: Middleware
 metadata:
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
-  name: connection-limit
-  namespace: {{ include "hedera-mirror.namespace" . }}
+  name: {{ $name }}-connection-limit
+  namespace: {{ $namespace }}
 spec:
   inFlightReq:
-    amount: {{ .Values.traefik.middleware.connectionLimit }}
+    amount: {{ $ingress.middleware.connectionsPerIP }}
     sourceCriterion:
       ipStrategy:
         depth: 1
@@ -49,11 +53,11 @@ kind: Middleware
 metadata:
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
-  name: circuit-breaker
-  namespace: {{ include "hedera-mirror.namespace" . }}
+  name: {{ $name }}-circuit-breaker
+  namespace: {{ $namespace }}
 spec:
   circuitBreaker:
-    expression: {{ .Values.traefik.middleware.circuitBreaker }}
+    expression: {{ $ingress.middleware.circuitBreaker }}
 
 ---
 apiVersion: traefik.containo.us/v1alpha1
@@ -61,11 +65,11 @@ kind: Middleware
 metadata:
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
-  name: rate-limit
-  namespace: {{ include "hedera-mirror.namespace" . }}
+  name: {{ $name }}-rate-limit
+  namespace: {{ $namespace }}
 spec:
   rateLimit:
-    {{- toYaml .Values.traefik.middleware.rateLimit | nindent 4 }}
+    {{- toYaml $ingress.middleware.rateLimit | nindent 4 }}
 
 ---
 apiVersion: traefik.containo.us/v1alpha1
@@ -73,8 +77,8 @@ kind: Middleware
 metadata:
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
-  name: strip-prefix-grafana
-  namespace: {{ include "hedera-mirror.namespace" . }}
+  name: {{ $name }}-strip-prefix
+  namespace: {{ $namespace }}
 spec:
   stripPrefix:
     prefixes: ["/grafana"]

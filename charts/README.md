@@ -16,7 +16,7 @@ Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the 
 To install the wrapper chart with a release name of `mirror`:
 
 ```shell script
-$ helm upgrade --install mirror charts/hedera-mirror
+$ helm upgrade --install --render-subchart-notes mirror charts/hedera-mirror
 ```
 
 Note that dependent charts are already downloaded and checked in, allowing for a quicker and repeatable installation without any external dependencies. If you make changes to a sub chart or want to update other dependent charts, please run:
