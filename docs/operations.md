@@ -182,3 +182,11 @@ for port in {6551..6560}; do curl -s "http://127.0.0.1:${port}/api/v1/transactio
 ```
 
 To setup live monitoring, see [monitoring](../hedera-mirror-rest/monitoring/README.md) documentation.
+
+### Metrics
+The REST API has metrics as provided by [Swagger Stats](https://swaggerstats.io).
+Using this 3 endpoints are made available
+- `http://<ip>:<port>/<metricsPath>` - Metrics dashboard
+- `http://<ip>:<port>/<metricsPath>/stats` - Aggregated statistics
+- `http://<ip>:<port>/<metricsPath>/metrics` - Prometheus formatted metrics
+Where `<metricsPath>` is defined by hedera.mirror.api.metrics.config.uriPath, current default is 'swagger'

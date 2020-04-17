@@ -7,6 +7,13 @@ hedera:
       log:
         level: debug
       port: 5551
+      metrics:
+        enabled: true
+        config:
+          authentication: true
+          username: mirror_api_metrics
+          password: mirror_api_metrics_pass
+          uriPath: '/swagger'
     db:
       apiPassword: mirror_api_pass
       apiUsername: mirror_api
@@ -14,6 +21,3 @@ hedera:
       name: mirror_node
       port: 5432
     shard: 0
-    swagger:
-      swaggerPassword: swagger_metrics_pass
-      swaggerUsername: swagger_metrics

@@ -20,24 +20,25 @@
 'use strict';
 
 const config = require('../config');
+const extend = require('extend');
 const swStats = require('swagger-stats');
 
-// Load your swagger specification
-// const apiSpec = require('./swagger.json');
-
 const metricsHandler = () => {
-  return swStats.getMiddleware({
+  let defaultMetricsConfig = {
     name: process.env.npm_package_name,
     version: process.env.npm_package_version,
-    authentication: true,
     onAuthenticate: onMetricsAuthenticate,
-    uriPath: '/swagger',
-  });
+  };
+
+  // combine defaultMetricsConfig with file defined configs
+  extend(true, defaultMetricsConfig, config.api.metrics.config);
+
+  return swStats.getMiddleware(defaultMetricsConfig);
 };
 
 const onMetricsAuthenticate = async (req, username, password) => {
   return new Promise(function (resolve, reject) {
-    const match = username === config.swagger.swaggerUsername && password === config.swagger.swaggerPassword;
+    const match = username === config.api.metrics.config.username && password === config.api.metrics.config.password;
     resolve(match);
   }).catch((err) => {
     logger.debug(`Auth error: ${err}`);
@@ -47,5 +48,4 @@ const onMetricsAuthenticate = async (req, username, password) => {
 
 module.exports = {
   metricsHandler,
-  onMetricsAuthenticate,
 };
