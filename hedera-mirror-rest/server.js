@@ -92,7 +92,9 @@ app.use(compression());
 app.use(cors());
 
 // metrics middleware
-app.use(metricsHandler());
+if (config.api.metrics.enabled) {
+  app.use(metricsHandler());
+}
 
 let apiPrefix = '/api/v1';
 
