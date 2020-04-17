@@ -34,6 +34,7 @@ public class PubSubProperties {
     @NotNull
     private boolean enabled = false;
 
+    // Field here only for namesake. Override in yml config file, setting value here will not take effect.
     private String projectId;
 
     private String topicName;

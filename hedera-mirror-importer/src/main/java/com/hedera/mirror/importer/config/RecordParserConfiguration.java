@@ -28,6 +28,8 @@ import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
 import org.springframework.cloud.gcp.pubsub.integration.outbound.PubSubMessageHandler;
 import org.springframework.cloud.gcp.pubsub.support.DefaultPublisherFactory;
 import org.springframework.cloud.gcp.pubsub.support.DefaultSubscriberFactory;
+import org.springframework.cloud.gcp.pubsub.support.PublisherFactory;
+import org.springframework.cloud.gcp.pubsub.support.SubscriberFactory;
 import org.springframework.cloud.gcp.pubsub.support.converter.JacksonPubSubMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -95,14 +97,15 @@ public class RecordParserConfiguration {
 
         @Bean
         @ServiceActivator(inputChannel = "pubsubOutputChannel")
-        MessageHandler pubSubMessageSender(PubSubProperties pubSubProperties) {
-            PubSubTemplate pubSubTemplate = new PubSubTemplate(
-                    new DefaultPublisherFactory(pubSubProperties::getProjectId),
-                    new DefaultSubscriberFactory(pubSubProperties::getProjectId));
+        MessageHandler pubSubMessageSender(SubscriberFactory subscriberFactory, PublisherFactory publisherFactory,
+                                           PubSubProperties pubSubProperties) {
+            PubSubTemplate pubSubTemplate = new PubSubTemplate(publisherFactory, subscriberFactory);
             pubSubTemplate.setMessageConverter(new JacksonPubSubMessageConverter(new ObjectMapper()));
             PubSubMessageHandler pubSubMessageHandler =
                     new PubSubMessageHandler(pubSubTemplate, pubSubProperties.getTopicName());
-            pubSubMessageHandler.setSync(true);  // can be optimized to use async to support higher TPS in future
+            // Optimize in future to use async to support higher TPS. Can do ~20-30/sec right now which is sufficient
+            // to setup BQ dataset for mainnet. Exposing pubsub for testnet will have to wait.
+            pubSubMessageHandler.setSync(true);
             return pubSubMessageHandler;
         }
     }

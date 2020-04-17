@@ -44,12 +44,11 @@ spring:
     name: hedera-mirror-importer
   cloud:
     gcp:
-      core: # Initializes credentials, which may be not set if pubsub is disabled.
-        enabled: ${hedera.mirror.parser.record.pubsub.enabled}
       pubsub:
         enabled: ${hedera.mirror.parser.record.pubsub.enabled}
-      credentials:
-        location: ${hedera.mirror.parser.record.pubsub.credentialsLocation}
+        project-id: ${hedera.mirror.parser.record.pubsub.projectId}
+        credentials:
+          location: ${hedera.mirror.parser.record.pubsub.credentialsLocation}
     kubernetes:
       reload:
         enabled: true
