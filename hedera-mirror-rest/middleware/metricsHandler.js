@@ -32,17 +32,16 @@ const metricsHandler = () => {
     authentication: true,
     onAuthenticate: onMetricsAuthenticate,
     uriPath: '/swagger',
-    // swaggerSpec: apiSpec,
-    // metricsPrefix: 'mirror-rest-'
   });
 };
 
 const onMetricsAuthenticate = async (req, username, password) => {
   return new Promise(function (resolve, reject) {
-    const match = username === config.db.apiUsername && password === config.db.apiPassword;
+    const match = username === config.swagger.swaggerUsername && password === config.swagger.swaggerPassword;
     resolve(match);
   }).catch((err) => {
     logger.debug(`Auth error: ${err}`);
+    throw err;
   });
 };
 

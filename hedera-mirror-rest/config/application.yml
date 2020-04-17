@@ -14,3 +14,6 @@ hedera:
       name: mirror_node
       port: 5432
     shard: 0
+    swagger:
+      swaggerPassword: swagger_metrics_pass
+      swaggerUsername: swagger_metrics
