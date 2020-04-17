@@ -47,7 +47,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.api.metrics.config.authentication`           | true                    | Whether access to metrics for the REST API is authenticated                                    |
 | `hedera.mirror.api.metrics.config.username`                 | mirror_api_metrics      | The REST API metrics username to access the dashboard                                          |
 | `hedera.mirror.api.metrics.config.password`                 | mirror_api_metrics_pass | The REST API metrics password to access the dashboard                                          |
-| `hedera.mirror.api.metrics.config.uriPath`                  | './swagger'             | The REST API metrics uri path                                                                  |
+| `hedera.mirror.api.metrics.config.uriPath`                  | '/swagger'             | The REST API metrics uri path                                                                  |
 | `hedera.mirror.dataPath`                                    | ./data                  | The data directory used to store downloaded files and other application state                  |
 | `hedera.mirror.db.apiPassword`                              | mirror_api_pass         | The database password the API uses to connect. **Should be changed from default**              |
 | `hedera.mirror.db.apiUsername`                              | mirror_api              | The username the API uses to connect to the database                                           |
