@@ -98,7 +98,9 @@ const formatTopicMessageRow = function (row, binaryMessageFormat) {
 
 const formatTopicMessage = function (format, message) {
   // default to base64 encoding
-  return format === constants.topicMessagesFilterValues.TEXT ? utils.encodeUtf8(message) : utils.encodeBase64(message);
+  return format === constants.topicMessagesFormatFilterValues.TEXT
+    ? utils.encodeUtf8(message)
+    : utils.encodeBase64(message);
 };
 
 /**
@@ -270,7 +272,7 @@ const getMessage = async (pgSqlQuery, pgSqlParams) => {
       // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
       if (results.rowCount === 1) {
         logger.debug('getMessage returning single entry');
-        return formatTopicMessageRow(results.rows[0], true);
+        return formatTopicMessageRow(results.rows[0]);
       } else {
         throw new NotFoundError();
       }

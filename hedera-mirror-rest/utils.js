@@ -66,6 +66,18 @@ const isValidMessageQuery = (query) => {
   return /^[0-9a-zA-Z,;'\"\\s]{1,64}[.?!]?$/.test(query);
 };
 
+const isValidOperatorQuery = (query) => {
+  return /^(gte?|lte?|eq|ne)$/.test(query);
+};
+
+const isValidAccountBalanceQuery = (query) => {
+  return /^\d{1,19}$/.test(query);
+};
+
+const isValidPublicKeyQuery = (query) => {
+  return /^[0-9a-fA-F]{64}$/.test(query) || /^[0-9a-fA-F]{88}$/.test(query);
+};
+
 /**
  * Validate input parameters for the rest apis
  * @param {String} param Parameter to be validated
@@ -104,7 +116,7 @@ const filterValidityChecks = function (param, op, val) {
   }
 
   // Validate operator
-  if (!/^(gte?|lte?|eq|ne)$/.test(op)) {
+  if (!isValidOperatorQuery(op)) {
     return ret;
   }
 
@@ -119,11 +131,11 @@ const filterValidityChecks = function (param, op, val) {
       break;
     case constants.filterKeys.ACCOUNT_BALANCE:
       // Accepted forms: Upto 50 billion
-      ret = /^\d{1,19}$/.test(val);
+      ret = isValidAccountBalanceQuery(val);
       break;
     case constants.filterKeys.ACCOUNT_PUBLICKEY:
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
-      ret = /^[0-9a-fA-F]{64}$/.test(val) || /^[0-9a-fA-F]{88}$/.test(val);
+      ret = isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.LIMIT:
       // Acceptable forms: upto 4 digits
@@ -131,15 +143,15 @@ const filterValidityChecks = function (param, op, val) {
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
-      ret = ['asc', 'desc'].includes(val);
+      ret = Object.values(constants.orderFilterValues).includes(val);
       break;
     case constants.filterKeys.TYPE:
       // Acceptable words: credit or debit
-      ret = ['credit', 'debit'].includes(val);
+      ret = Object.values(constants.transactionsTypeFilterValues).includes(val);
       break;
     case constants.filterKeys.RESULT:
       // Acceptable words: success or fail
-      ret = ['success', 'fail'].includes(val);
+      ret = Object.values(constants.transactionsResultFilterValues).includes(val);
       break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
@@ -147,7 +159,7 @@ const filterValidityChecks = function (param, op, val) {
       break;
     case constants.filterKeys.FORMAT:
       // Acceptable words: binary or text
-      ret = Object.values(constants.topicMessagesFilterValues).includes(val);
+      ret = Object.values(constants.topicMessagesFormatFilterValues).includes(val);
       break;
     case constants.filterKeys.MESSAGE:
       // Acceptable words:
