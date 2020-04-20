@@ -1,0 +1,20 @@
+{
+    "apps": [
+        {
+            "cwd": "./monitor_apis/",
+            "env": {
+                "PORT": 3000,
+                "NODE_ENV": "production"
+            },
+            "exec_mode": "fork_mode",
+            "name": "monitor-api",
+            "script": "./server.js"
+        },
+        {
+            "cwd": "./monitor_dashboard/",
+            "exec_mode": "fork_mode",
+            "name": "monitor-dashboard",
+            "script": "serve"
+        }
+    ]
+}

@@ -23,7 +23,7 @@ global:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-importer
-  tag: 0.9.0
+  tag: 0.9.1
 
 imagePullSecrets: []
 
