@@ -40,8 +40,32 @@ const entityColumns = {
 
 const responseDataLabel = 'mirrorRestData';
 
+const orderFilterValues = {
+  ASC: 'asc',
+  DESC: 'desc',
+};
+
+// topic messages filter options
+const topicMessagesFormatFilterValues = {
+  BINARY: 'binary',
+  TEXT: 'text',
+};
+
+const transactionsResultFilterValues = {
+  SUCCESS: 'success',
+  FAIL: 'fail',
+};
+
+const transactionsTypeFilterValues = {
+  CREDIT: 'credit',
+  DEBIT: 'debit',
+};
+
 module.exports = {
   entityColumns: entityColumns,
   filterKeys: filterKeys,
+  orderFilterValues,
   responseDataLabel,
+  transactionsResultFilterValues,
+  transactionsTypeFilterValues,
 };

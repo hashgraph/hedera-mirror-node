@@ -31,6 +31,10 @@ const httpStatusCodes = {
   SERVICE_UNAVAILABLE: 503,
 };
 
+const httpErrorMessages = {
+  INTERNAL_ERROR: 'Internal error',
+};
+
 // Error middleware which formats thrown errors and maps them to appropriate http status codes
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const handleError = (err, req, res, next) => {
@@ -55,8 +59,8 @@ const handleError = (err, req, res, next) => {
       res.status(httpStatusCodes.NOT_FOUND).json(errorMessage);
       return;
     default:
-      logger.trace(`Unhandled error encountered`);
-      res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessage);
+      logger.trace(`Unhandled error encountered: ${err.message}`);
+      res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessageFormat(httpErrorMessages.INTERNAL_ERROR));
   }
 };
 

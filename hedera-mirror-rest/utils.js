@@ -18,6 +18,7 @@
  * ‍
  */
 'use strict';
+const constants = require('./constants.js');
 const math = require('mathjs');
 const config = require('./config.js');
 const ed25519 = require('./ed25519.js');
@@ -35,18 +36,6 @@ const opsMap = {
   gte: ' >= ',
   eq: ' = ',
   ne: ' != ',
-};
-
-const filterKeys = {
-  ACCOUNT_ID: 'account.id',
-  ACCOUNT_BALANCE: 'account.balance',
-  ACCOUNT_PUBLICKEY: 'account.publickey',
-  LIMIT: 'limit',
-  ORDER: 'order',
-  RESULT: 'result',
-  SEQUENCE_NUMBER: 'sequencenumber',
-  TIMESTAMP: 'timestamp',
-  TYPE: 'type',
 };
 
 /**
@@ -73,6 +62,22 @@ const isValidLimitNum = (limit) => {
 
 const isValidNum = (num) => {
   return /^\d{1,16}$/.test(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER;
+};
+
+const isValidMessageQuery = (query) => {
+  return /^[0-9a-zA-Z,;'\"\\s]{1,64}[.?!]?$/.test(query);
+};
+
+const isValidOperatorQuery = (query) => {
+  return /^(gte?|lte?|eq|ne)$/.test(query);
+};
+
+const isValidAccountBalanceQuery = (query) => {
+  return /^\d{1,19}$/.test(query);
+};
+
+const isValidPublicKeyQuery = (query) => {
+  return /^[0-9a-fA-F]{64}$/.test(query) || /^[0-9a-fA-F]{88}$/.test(query);
 };
 
 /**
@@ -113,44 +118,44 @@ const filterValidityChecks = function (param, op, val) {
   }
 
   // Validate operator
-  if (!/^(gte?|lte?|eq|ne)$/.test(op)) {
+  if (!isValidOperatorQuery(op)) {
     return ret;
   }
 
   // Validate the value
   switch (param) {
-    case filterKeys.ACCOUNT_ID:
+    case constants.filterKeys.ACCOUNT_ID:
       // Accepted forms: shard.realm.num or num
       ret = isValidEntityNum(val);
       break;
-    case filterKeys.TIMESTAMP:
+    case constants.filterKeys.TIMESTAMP:
       ret = isValidTimestampParam(val);
       break;
-    case filterKeys.ACCOUNT_BALANCE:
+    case constants.filterKeys.ACCOUNT_BALANCE:
       // Accepted forms: Upto 50 billion
-      ret = /^\d{1,19}$/.test(val);
+      ret = isValidAccountBalanceQuery(val);
       break;
-    case filterKeys.ACCOUNT_PUBLICKEY:
+    case constants.filterKeys.ACCOUNT_PUBLICKEY:
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
-      ret = /^[0-9a-fA-F]{64}$/.test(val) || /^[0-9a-fA-F]{88}$/.test(val);
+      ret = isValidPublicKeyQuery(val);
       break;
-    case filterKeys.LIMIT:
+    case constants.filterKeys.LIMIT:
       // Acceptable forms: upto 4 digits
       ret = isValidLimitNum(val);
       break;
-    case filterKeys.ORDER:
+    case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
-      ret = ['asc', 'desc'].includes(val);
+      ret = Object.values(constants.orderFilterValues).includes(val);
       break;
-    case filterKeys.TYPE:
+    case constants.filterKeys.TYPE:
       // Acceptable words: credit or debig
-      ret = ['credit', 'debit'].includes(val);
+      ret = Object.values(constants.transactionsTypeFilterValues).includes(val);
       break;
-    case filterKeys.RESULT:
+    case constants.filterKeys.RESULT:
       // Acceptable words: success or fail
-      ret = ['success', 'fail'].includes(val);
+      ret = Object.values(constants.transactionsResultFilterValues).includes(val);
       break;
-    case filterKeys.SEQUENCE_NUMBER:
+    case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
       ret = isValidNum(val);
       break;
@@ -717,14 +722,14 @@ const formatComparator = (comparator) => {
 
     // format value
     switch (comparator.key) {
-      case filterKeys.ACCOUNT_ID:
+      case constants.filterKeys.ACCOUNT_ID:
         // Accepted forms: shard.realm.num or num
         comparator.value = parseEntityId(comparator.value);
         break;
-      case filterKeys.TIMESTAMP:
+      case constants.filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
         break;
-      case filterKeys.ACCOUNT_PUBLICKEY:
+      case constants.filterKeys.ACCOUNT_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = ed25519.derToEd25519(comparator.value);
         break;
