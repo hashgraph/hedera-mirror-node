@@ -45,6 +45,12 @@ const orderFilterValues = {
   DESC: 'desc',
 };
 
+// topic messages filter options
+const topicMessagesFormatFilterValues = {
+  BINARY: 'binary',
+  TEXT: 'text',
+};
+
 const transactionResultFilter = {
   SUCCESS: 'success',
   FAIL: 'fail',
