@@ -117,7 +117,7 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
     '   join t_entities enode on enode.id = t.fk_node_acc_id\n' +
     '   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n' +
     '   left outer join t_transaction_types ttt on ttt.proto_id = t.type\n' +
-    '   left outer join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl.consensus_timestamp\n' +
+    '   join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl.consensus_timestamp\n' +
     '   order by t.consensus_ns ' +
     order +
     ', account_num asc, amount asc ' +
