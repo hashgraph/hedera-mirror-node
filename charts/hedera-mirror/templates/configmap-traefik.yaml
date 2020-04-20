@@ -1,0 +1,30 @@
+{{- if .Values.traefik.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: traefik
+  namespace: {{ include "hedera-mirror.namespace" . }}
+data:
+  traefik.yaml: |-
+    accessLog: {}
+    api: {}
+    entryPoints:
+      grpc:
+        address: ":5600"
+      traefik:
+        address: ":9000"
+      web:
+        address: ":80"
+      websecure:
+        address: ":443"
+        http:
+          tls: {}
+    metrics:
+      prometheus: {}
+    ping: {}
+    providers:
+      kubernetesCRD: {}
+      kubernetesIngress: {}
+{{- end -}}

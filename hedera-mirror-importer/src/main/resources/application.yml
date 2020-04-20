@@ -23,6 +23,7 @@ management:
   metrics:
     export:
       elastic:
+        autoCreateIndex: false
         enabled: false
         index: mirror
         step: 30s

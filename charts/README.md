@@ -25,6 +25,28 @@ Note that dependent charts are already downloaded and checked in, allowing for a
 $ helm dependency update charts/hedera-mirror
 ```
 
+## Using
+
+All of the APIs and dashboards can be accessed via a single IP. To get the load balancer IP:
+```shell script
+  export SERVICE_IP=$(kubectl get service traefik -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
+```
+
+To access the GRPC API (using [grpcurl](https://github.com/fullstorydev/grpcurl)):
+```shell script
+  grpcurl -plaintext ${SERVICE_IP}:80 list
+```
+
+To access the REST API:
+```shell script
+  curl -s "http://${SERVICE_IP}:80/api/v1/transactions?limit=1"
+```
+
+To view the Grafana dashboard:
+```shell script
+  open "http://${SERVICE_IP}:80/grafana"
+```
+
 ## Uninstall
 
 To remove all the Kubernetes components associated with the chart and delete the release:
