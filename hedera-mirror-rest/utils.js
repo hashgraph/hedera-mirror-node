@@ -615,7 +615,11 @@ const encodeBase64 = function (buffer) {
  * @return {String} utf-8 encoded string
  */
 const encodeUtf8 = function (buffer) {
-  return null === buffer ? null : unescape(encodeURIComponent(buffer));
+  return null === buffer ? null : buffer.toString('utf8');
+};
+
+const isUtf8Encoded = function (buffer) {
+  return null === buffer ? false : Buffer.compare(new Buffer.from(buffer.toString(), 'utf8'), buffer) === 0;
 };
 
 /**
@@ -752,6 +756,7 @@ module.exports = {
   getFilterValue,
   getNullableNumber: getNullableNumber,
   getPaginationLink: getPaginationLink,
+  isUtf8Encoded,
   isValidEntityNum: isValidEntityNum,
   isValidLimitNum: isValidLimitNum,
   isValidNum: isValidNum,
