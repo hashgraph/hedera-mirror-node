@@ -69,19 +69,6 @@ public class NetworkAddressBookTest {
     }
 
     @Test
-    void startupWithUnreadable() throws Exception {
-        assertThat(addressBookPath.toFile().setReadable(false)).isTrue();
-        NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties);
-
-        assertThat(networkAddressBook.getAddresses())
-                .describedAs("Loads default address book from classpath")
-                .hasSize(4);
-        assertThat(addressBookPath.resolveSibling(addressBookPath + ".unreadable")).exists();
-        assertThat(addressBookPath).exists();
-        assertThat(tempPath).doesNotExist();
-    }
-
-    @Test
     void startupWithExisting() throws Exception {
         mirrorProperties.setNetwork(HederaNetwork.MAINNET);
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties);
