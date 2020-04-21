@@ -63,8 +63,8 @@ const transactionsTypeFilterValues = {
 };
 
 module.exports = {
-  entityColumns: entityColumns,
-  filterKeys: filterKeys,
+  entityColumns,
+  filterKeys,
   orderFilterValues,
   responseDataLabel,
   topicMessagesFormatFilterValues,

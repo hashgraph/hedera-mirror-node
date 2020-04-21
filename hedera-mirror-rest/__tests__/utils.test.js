@@ -233,3 +233,38 @@ describe('Utils isValidNum tests', () => {
     expect(utils.isValidNum(Number.MAX_SAFE_INTEGER)).toBe(true);
   });
 });
+
+describe('Utils isUtf8Encoded tests', () => {
+  test('Verify isUtf8Encoded returns correct result for valid inputs', () => {
+    expect(() => {
+      utils.isUtf8Encoded(Buffer.from(null));
+    }).toThrow();
+  });
+
+  test('Verify isUtf8Encoded returns correct result for valid inputs', () => {
+    var val = utils.isUtf8Encoded(null);
+    expect(val).toBe(false);
+  });
+
+  test('Verify isUtf8Encoded returns correct result for valid inputs', () => {
+    var val = utils.isUtf8Encoded(Buffer.from('tést', 'latin1'));
+    expect(val).toBe(false);
+  });
+
+  test('Verify isUtf8Encoded returns correct result for valid inputs', () => {
+    var val = utils.isUtf8Encoded(Buffer.from([-5]));
+    expect(val).toBe(false);
+  });
+
+  test('Verify isUtf8Encoded returns correct result for valid inputs', () => {
+    var val = utils.isUtf8Encoded(
+      Buffer.from([104, 101, 100, 101, 114, 97, 32, 104, 97, 115, 104, 103, 114, 97, 112, 104])
+    );
+    expect(val).toBe(true);
+  });
+
+  test('Verify isUtf8Encoded returns correct result for valid inputs', () => {
+    var val = utils.isUtf8Encoded(Buffer.from(''));
+    expect(val).toBe(true);
+  });
+});
