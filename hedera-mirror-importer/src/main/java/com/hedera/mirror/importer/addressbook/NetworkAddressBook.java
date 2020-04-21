@@ -59,10 +59,9 @@ public class NetworkAddressBook {
         Path path = mirrorProperties.getAddressBookPath();
         try {
             File addressBookFile = path.toFile();
-            byte[] addressBookBytes = null;
 
-            if (!addressBookFile.exists() || !addressBookFile.canRead()) {
-                if (addressBookFile.exists() && !addressBookFile.canRead()) {
+            if (!addressBookFile.canRead()) {
+                if (addressBookFile.exists()) {
                     log.warn("Backing up unreadable address book: {}", path);
                     Files.move(path, path.resolveSibling(path + ".unreadable"));
                 }
@@ -73,13 +72,11 @@ public class NetworkAddressBook {
                 Utility.ensureDirectory(path.getParent());
 
                 log.info("Loading default address book {}", resource);
-                addressBookBytes = IOUtils.toByteArray(resource.getInputStream());
+                update(IOUtils.toByteArray(resource.getInputStream()));
             } else {
                 log.info("Restoring existing address book {}", path);
-                addressBookBytes = Files.readAllBytes(path);
+                update(Files.readAllBytes(path));
             }
-
-            update(addressBookBytes);
         } catch (Exception e) {
             log.error("Unable to copy address book from {} to {}", mirrorProperties.getNetwork(), path, e);
         }
@@ -113,10 +110,11 @@ public class NetworkAddressBook {
             if (!nodeAddresses.isEmpty()) {
                 Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING);
                 this.nodeAddresses = nodeAddresses;
-                log.info("New address book successfully parsed and saved to {}", path);
+                log.info("New address book with {} addresses successfully parsed and saved to {}",
+                        nodeAddresses.size(), path);
             }
         } catch (Exception e) {
-            // Ignore partial update errors
+            log.warn("Unable to parse address book: {}", e.getMessage());
         }
     }
 
