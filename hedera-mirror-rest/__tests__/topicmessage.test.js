@@ -20,7 +20,7 @@
 'use strict';
 
 const topicmessage = require('../topicmessage.js');
-const utils = require('../utils.js');
+const constants = require('../constants.js');
 const config = require('../config.js');
 
 beforeAll(async () => {
@@ -98,42 +98,39 @@ describe('topicmessage validateGetTopicMessagesParams tests', () => {
 });
 
 describe('topicmessage formatTopicMessageRow tests', () => {
+  const inputMessage = Buffer.from([104, 101, 100, 101, 114, 97, 32, 104, 97, 115, 104, 103, 114, 97, 112, 104]);
   const rowInput = {
     consensus_timestamp: '1234567890000000003',
     realm_num: 1,
     topic_num: 7,
-    message: {
-      type: 'Buffer',
-      data: [123, 34, 97, 34, 44, 34, 98, 34, 44, 34, 99, 34, 125],
-    },
-    running_hash: {
-      type: 'Buffer',
-      data: [123, 34, 99, 34, 44, 34, 100, 34, 44, 34, 101, 34, 125],
-    },
+    message: inputMessage,
+    running_hash: inputMessage,
     sequence_number: '3',
   };
 
-  const formattedInput = topicmessage.formatTopicMessageRow(rowInput);
+  let formattedInput = topicmessage.formatTopicMessageRow(rowInput);
 
-  const expectedFormat = {
+  let expectedFormat = {
     consensus_timestamp: '1234567890.000000003',
     topic_id: `${config.shard}.1.7`,
-    message: 'eyJhIiwiYiIsImMifQ==',
-    running_hash: 'eyJjIiwiZCIsImUifQ==',
+    message: 'aGVkZXJhIGhhc2hncmFwaA==',
+    running_hash: 'aGVkZXJhIGhhc2hncmFwaA==',
     sequence_number: 3,
   };
 
   expect(formattedInput.consensus_timestamp).toStrictEqual(expectedFormat.consensus_timestamp);
   expect(formattedInput.topic_id).toStrictEqual(expectedFormat.topic_id);
   expect(formattedInput.sequence_number).toStrictEqual(expectedFormat.sequence_number);
+  expect(JSON.stringify(formattedInput.message)).toStrictEqual(JSON.stringify(expectedFormat.message));
+  expect(JSON.stringify(formattedInput.running_hash)).toStrictEqual(JSON.stringify(expectedFormat.running_hash));
 });
 
 describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
   const filters = [
-    {key: 'sequencenumber', operator: ' > ', value: '2'},
-    {key: 'timestamp', operator: ' <= ', value: '1234567890.000000006'},
-    {key: 'limit', operator: ' = ', value: '3'},
-    {key: 'order', operator: ' = ', value: 'desc'},
+    {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '2'},
+    {key: constants.filterKeys.TIMESTAMP, operator: ' <= ', value: '1234567890.000000006'},
+    {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
+    {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
   ];
 
   let {query, params, order, limit} = topicmessage.extractSqlFromTopicMessagesRequest('7', filters);
@@ -142,8 +139,22 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
     'select consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number from topic_message where realm_num = $1 and topic_num = $2 and sequence_number > $3 and consensus_timestamp <= $4 order by consensus_timestamp desc limit $5;'
   );
   expect(params).toStrictEqual([0, '7', '2', '1234567890.000000006', '3']);
-  expect(order).toStrictEqual('desc');
+  expect(order).toStrictEqual(constants.orderFilterValues.DESC);
   expect(limit).toStrictEqual(3);
+});
+
+describe('topicmessage formatTopicMessage tests', () => {
+  const inputMessage = Buffer.from([104, 101, 100, 101, 114, 97, 32, 104, 97, 115, 104, 103, 114, 97, 112, 104]);
+  const base64Message = 'aGVkZXJhIGhhc2hncmFwaA==';
+  const utf8Message = 'hedera hashgraph';
+
+  // binary test
+  let result = topicmessage.formatTopicMessage(inputMessage, constants.topicMessagesFormatFilterValues.BINARY);
+  expect(result).toStrictEqual(base64Message);
+
+  // text test
+  result = topicmessage.formatTopicMessage(inputMessage, constants.topicMessagesFormatFilterValues.TEXT);
+  expect(result).toStrictEqual(utf8Message);
 });
 
 const verifyValidConsensusTimestamp = (timestamp) => {

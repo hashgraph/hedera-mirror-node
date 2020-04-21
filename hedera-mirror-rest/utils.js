@@ -647,7 +647,7 @@ const encodeBase64 = function (buffer) {
  * @return {String} utf-8 encoded string
  */
 const encodeUtf8 = function (buffer) {
-  return null === buffer ? null : unescape(encodeURIComponent(buffer));
+  return null === buffer ? null : buffer.toString('utf8');
 };
 
 /**
