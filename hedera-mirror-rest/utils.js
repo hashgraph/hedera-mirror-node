@@ -64,10 +64,6 @@ const isValidNum = (num) => {
   return /^\d{1,16}$/.test(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER;
 };
 
-const isValidMessageQuery = (query) => {
-  return /^[0-9a-zA-Z,;'\"\\s]{1,64}[.?!]?$/.test(query);
-};
-
 const isValidOperatorQuery = (query) => {
   return /^(gte?|lte?|eq|ne)$/.test(query);
 };
@@ -148,12 +144,12 @@ const filterValidityChecks = function (param, op, val) {
       ret = Object.values(constants.orderFilterValues).includes(val);
       break;
     case constants.filterKeys.TYPE:
-      // Acceptable words: credit or debig
-      ret = Object.values(constants.transactionsTypeFilterValues).includes(val);
+      // Acceptable words: credit or debit
+      ret = Object.values(constants.cryptoTransferType).includes(val);
       break;
     case constants.filterKeys.RESULT:
       // Acceptable words: success or fail
-      ret = Object.values(constants.transactionsResultFilterValues).includes(val);
+      ret = Object.values(constants.transactionResultFilter).includes(val);
       break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
@@ -385,7 +381,7 @@ const parseCreditDebitParams = function (req) {
   // Get the transaction type (credit, debit, or both)
   // By default, query for both credit and debit transactions
   let creditDebit = req.query.type;
-  if (!['credit', 'debit'].includes(creditDebit)) {
+  if (!Object.values(constants.cryptoTransferType).includes(creditDebit)) {
     creditDebit = 'creditAndDebit';
   }
   return creditDebit;
@@ -400,9 +396,9 @@ const parseResultParams = function (req) {
   let resultType = req.query.result;
   let query = '';
 
-  if (resultType === 'success') {
+  if (resultType === constants.transactionResultFilter.SUCCESS) {
     query = '     result=' + TRANSACTION_RESULT_SUCCESS;
-  } else if (resultType === 'fail') {
+  } else if (resultType === constants.transactionResultFilter.FAIL) {
     query = '     result != ' + TRANSACTION_RESULT_SUCCESS;
   }
   return query;
@@ -414,19 +410,19 @@ const parseResultParams = function (req) {
  * @param {String} defaultOrder Order of sorting (defaults to descending)
  * @return {Object} {query, params, order} SQL query, values and order
  */
-const parseLimitAndOrderParams = function (req, defaultOrder = 'desc') {
+const parseLimitAndOrderParams = function (req, defaultOrder = constants.orderFilterValues.DESC) {
   // Parse the limit parameter
   let limitQuery = '';
   let limitParams = [];
-  let lVal = getIntegerParam(req.query['limit'], config.api.maxLimit);
+  let lVal = getIntegerParam(req.query[constants.filterKeys.LIMIT], config.api.maxLimit);
   let limitValue = lVal === '' ? config.api.maxLimit : lVal;
-  limitQuery = 'limit ? ';
+  limitQuery = `${constants.filterKeys.LIMIT} ? `;
   limitParams.push(limitValue);
 
   // Parse the order parameters (default: descending)
   let order = defaultOrder;
-  if (['asc', 'desc'].includes(req.query['order'])) {
-    order = req.query['order'];
+  if (Object.values(constants.orderFilterValues).includes(req.query[constants.filterKeys.ORDER])) {
+    order = req.query[constants.filterKeys.ORDER];
   }
 
   return buildPgSqlObject(limitQuery, limitParams, order, limitValue);
@@ -477,8 +473,8 @@ const getPaginationLink = function (req, isEnd, field, lastValue, order) {
   var next = '';
 
   if (!isEnd) {
-    const pattern = order === 'asc' ? /gt[e]?:/ : /lt[e]?:/;
-    const insertedPattern = order === 'asc' ? 'gt' : 'lt';
+    const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
+    const insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
 
     // Go through the query parameters, and if there is a 'field=gt:xxxx' (asc order)
     // or 'field=lt:xxxx' (desc order) fields, then remove that, to be replaced by the
@@ -518,34 +514,6 @@ const getPaginationLink = function (req, isEnd, field, lastValue, order) {
     next = urlPrefix + req.path + next;
   }
   return next === '' ? null : next;
-};
-
-/**
- * Create an additional timestamp based query to ensure the integrity of
- * paginated links results. The challege is that between consecutive paginated
- * calls, the database could have received more recent entries, and a subsequent
- * call could receive inconsistent data as a result.
- * This is handled by anchoring the queries on the page anchor (consensus seconds)
- * parameter.
- * @param {Request} req HTTP query request object
- * @param {String} order Order ('asc' or 'desc')
- * @return {Integer} anchorSecNs consensus seconds of the query result of
- *          the call that started pagination
- * @return {Request} req Updated HTTP request object with inserted pageanchor parameter
- */
-const getTimeQueryForPagination = function (req, order, anchorSecNs) {
-  //  if descending
-  //      if query has anchorSecNs:
-  //          then just use that
-  //      else:
-  //          add anchorSecNs = anchorSecNs
-  //
-  if (order === 'desc') {
-    if (anchorSecNs !== undefined && !req.query.pageanchor) {
-      req.query.pageanchor = anchorSecNs;
-    }
-  }
-  return req;
 };
 
 /**

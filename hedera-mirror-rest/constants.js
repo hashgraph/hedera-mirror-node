@@ -45,27 +45,21 @@ const orderFilterValues = {
   DESC: 'desc',
 };
 
-// topic messages filter options
-const topicMessagesFormatFilterValues = {
-  BINARY: 'binary',
-  TEXT: 'text',
-};
-
-const transactionsResultFilterValues = {
+const transactionResultFilter = {
   SUCCESS: 'success',
   FAIL: 'fail',
 };
 
-const transactionsTypeFilterValues = {
+const cryptoTransferType = {
   CREDIT: 'credit',
   DEBIT: 'debit',
 };
 
 module.exports = {
-  entityColumns: entityColumns,
-  filterKeys: filterKeys,
+  entityColumns,
+  filterKeys,
   orderFilterValues,
   responseDataLabel,
-  transactionsResultFilterValues,
-  transactionsTypeFilterValues,
+  transactionResultFilter,
+  cryptoTransferType,
 };
