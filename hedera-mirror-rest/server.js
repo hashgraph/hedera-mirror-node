@@ -25,7 +25,7 @@ const {addAsync} = require('@awaitjs/express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const log4js = require('log4js');
-var compression = require('compression');
+const compression = require('compression');
 
 // local files
 const config = require('./config.js');
