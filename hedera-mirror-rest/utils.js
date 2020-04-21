@@ -155,6 +155,10 @@ const filterValidityChecks = function (param, op, val) {
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
       ret = isValidNum(val);
       break;
+    case constants.filterKeys.FORMAT:
+      // Acceptable words: binary or text
+      ret = Object.values(constants.topicMessagesFormatFilterValues).includes(val);
+      break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
       ret = false;
@@ -606,6 +610,15 @@ const encodeBase64 = function (buffer) {
 };
 
 /**
+ * Base64 encoding of a byte array for returning in JSON output
+ * @param {Array} key Byte array to be encoded
+ * @return {String} utf-8 encoded string
+ */
+const encodeUtf8 = function (buffer) {
+  return null === buffer ? null : unescape(encodeURIComponent(buffer));
+};
+
+/**
  *
  * @param {String} num Nullable number
  * @returns {Any} representation of math.bignumber value of parameter or null if null
@@ -714,6 +727,16 @@ const formatComparator = (comparator) => {
   }
 };
 
+const getFilterValue = (key, filters, defaultVal) => {
+  for (const filter of filters) {
+    if (key == filter.key) {
+      return filter.value;
+    }
+  }
+
+  return defaultVal;
+};
+
 module.exports = {
   buildFilterObject: buildFilterObject,
   buildComparatorFilter: buildComparatorFilter,
@@ -721,10 +744,12 @@ module.exports = {
   createTransactionId: createTransactionId,
   convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,
   encodeBase64: encodeBase64,
+  encodeUtf8,
   encodeKey: encodeKey,
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
   filterValidityChecks: filterValidityChecks,
   formatComparator: formatComparator,
+  getFilterValue,
   getNullableNumber: getNullableNumber,
   getPaginationLink: getPaginationLink,
   isValidEntityNum: isValidEntityNum,
