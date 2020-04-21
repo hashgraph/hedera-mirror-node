@@ -70,7 +70,7 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
     @DisplayName("Download and verify V1 files")
     void downloadV1() throws Exception {
         Path addressBook = ResourceUtils.getFile("classpath:addressbook/test-v1").toPath();
-        mirrorProperties.setAddressBookPath(addressBook);
+        networkAddressBook.update(Files.readAllBytes(addressBook));
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
@@ -122,7 +122,7 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
         byte[] addressBook = Files.readAllBytes(mirrorProperties.getAddressBookPath());
         int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
         addressBook = Arrays.copyOfRange(addressBook, 0, index);
-        Files.write(mirrorProperties.getAddressBookPath(), addressBook);
+        networkAddressBook.update(addressBook);
 
         fileCopier.filterDirectories("*0.0.3").copy();
         downloader.download();

@@ -22,16 +22,16 @@ package com.hedera.mirror.importer.addressbook;
 
 import com.google.common.collect.ImmutableList;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
-
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
+import java.util.Collections;
 import javax.inject.Named;
-
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.ClassPathResource;
@@ -46,11 +46,12 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 public class NetworkAddressBook {
 
-    private MirrorProperties mirrorProperties;
-    private byte[] addressBookBytes = new byte[0];
+    private final MirrorProperties mirrorProperties;
+    private volatile Collection<NodeAddress> nodeAddresses;
 
     public NetworkAddressBook(MirrorProperties mirrorProperties) {
         this.mirrorProperties = mirrorProperties;
+        this.nodeAddresses = Collections.emptyList();
         init();
     }
 
@@ -58,59 +59,87 @@ public class NetworkAddressBook {
         Path path = mirrorProperties.getAddressBookPath();
         try {
             File addressBookFile = path.toFile();
+            byte[] addressBookBytes = null;
+
             if (!addressBookFile.exists() || !addressBookFile.canRead()) {
+                if (addressBookFile.exists() && !addressBookFile.canRead()) {
+                    log.warn("Backing up unreadable address book: {}", path);
+                    Files.move(path, path.resolveSibling(path + ".unreadable"));
+                }
+
                 HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
                 String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
                 Resource resource = new ClassPathResource(resourcePath, getClass());
                 Utility.ensureDirectory(path.getParent());
-                IOUtils.copy(resource.getInputStream(), new FileOutputStream(addressBookFile));
-                log.info("Copied default address book {} to {}", resource, path);
+
+                log.info("Loading default address book {}", resource);
+                addressBookBytes = IOUtils.toByteArray(resource.getInputStream());
+            } else {
+                log.info("Restoring existing address book {}", path);
+                addressBookBytes = Files.readAllBytes(path);
             }
+
+            update(addressBookBytes);
         } catch (Exception e) {
             log.error("Unable to copy address book from {} to {}", mirrorProperties.getNetwork(), path, e);
+        }
+
+        if (getAddresses().isEmpty()) {
+            throw new IllegalStateException("Unable to load a valid address book");
         }
     }
 
     public void update(byte[] newContents) throws IOException {
-        addressBookBytes = newContents;
-        saveToDisk();
+        saveToDisk(newContents, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
     public void append(byte[] extraContents) throws IOException {
-        byte[] newAddressBook = Arrays.copyOf(addressBookBytes, addressBookBytes.length + extraContents.length);
-        System.arraycopy(extraContents, 0, newAddressBook, addressBookBytes.length, extraContents.length);
-        addressBookBytes = newAddressBook;
-        saveToDisk();
+        saveToDisk(extraContents, StandardOpenOption.APPEND);
     }
 
-    private void saveToDisk() throws IOException {
-        Path path = mirrorProperties.getAddressBookPath();
-        Files.write(path, addressBookBytes);
-        log.info("New address book successfully saved to {}", path);
-    }
+    private void saveToDisk(byte[] contents, OpenOption openOption) throws IOException {
+        if (contents == null || contents.length == 0) {
+            log.warn("Ignored empty byte array");
+            return;
+        }
 
-    public Collection<NodeAddress> load() {
-        ImmutableList.Builder<NodeAddress> builder = ImmutableList.builder();
         Path path = mirrorProperties.getAddressBookPath();
+        Path tempPath = path.resolveSibling(path.getFileName() + ".tmp");
+        Files.write(tempPath, contents, StandardOpenOption.CREATE, StandardOpenOption.WRITE, openOption);
+        log.info("Saved {}B partial address book update to {}", contents.length, tempPath);
 
         try {
-            byte[] addressBookBytes = Files.readAllBytes(path);
-            NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
-
-            for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
-                    .getNodeAddressList()) {
-                NodeAddress nodeAddress = NodeAddress.builder()
-                        .id(nodeAddressProto.getMemo().toStringUtf8())
-                        .ip(nodeAddressProto.getIpAddress().toStringUtf8())
-                        .port(nodeAddressProto.getPortno())
-                        .publicKey(nodeAddressProto.getRSAPubKey())
-                        .build();
-                builder.add(nodeAddress);
+            Collection<NodeAddress> nodeAddresses = parse(tempPath);
+            if (!nodeAddresses.isEmpty()) {
+                Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING);
+                this.nodeAddresses = nodeAddresses;
+                log.info("New address book successfully parsed and saved to {}", path);
             }
-        } catch (Exception ex) {
-            log.error("Failed to parse NodeAddressBook from {}", path, ex);
+        } catch (Exception e) {
+            // Ignore partial update errors
+        }
+    }
+
+    private Collection<NodeAddress> parse(Path path) throws Exception {
+        byte[] addressBookBytes = Files.readAllBytes(path);
+        NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
+        ImmutableList.Builder<NodeAddress> builder = ImmutableList.builder();
+
+        for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
+                .getNodeAddressList()) {
+            NodeAddress nodeAddress = NodeAddress.builder()
+                    .id(nodeAddressProto.getMemo().toStringUtf8())
+                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
+                    .port(nodeAddressProto.getPortno())
+                    .publicKey(nodeAddressProto.getRSAPubKey())
+                    .build();
+            builder.add(nodeAddress);
         }
 
         return builder.build();
+    }
+
+    public Collection<NodeAddress> getAddresses() {
+        return nodeAddresses;
     }
 }
