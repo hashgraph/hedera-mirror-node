@@ -23,6 +23,7 @@ const filterKeys = {
   ACCOUNT_ID: 'account.id',
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
+  FORMAT: 'format',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
@@ -66,6 +67,7 @@ module.exports = {
   filterKeys: filterKeys,
   orderFilterValues,
   responseDataLabel,
+  topicMessagesFormatFilterValues,
   transactionsResultFilterValues,
   transactionsTypeFilterValues,
 };
