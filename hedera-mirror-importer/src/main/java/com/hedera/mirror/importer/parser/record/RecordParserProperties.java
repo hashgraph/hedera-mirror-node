@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -77,12 +78,5 @@ public class RecordParserProperties implements ParserProperties {
          * If configured the mirror node will store the raw transaction bytes on the t_transaction table
          */
         private boolean transactionBytes = false;
-
-        private Destination to = Destination.DATABASE;
-    }
-
-    public enum Destination {
-        DATABASE,
-        PUBSUB
     }
 }

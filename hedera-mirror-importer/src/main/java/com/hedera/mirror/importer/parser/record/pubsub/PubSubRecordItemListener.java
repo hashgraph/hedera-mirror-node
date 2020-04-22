@@ -20,14 +20,14 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
-import com.google.common.collect.Lists;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
 
@@ -46,6 +46,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Log4j2
 @Named
 @RequiredArgsConstructor
+@Conditional(PubSubEnabledCondition.class)
 public class PubSubRecordItemListener implements RecordItemListener {
 
     private final MessageChannel pubsubOutputChannel;
@@ -77,27 +78,23 @@ public class PubSubRecordItemListener implements RecordItemListener {
     }
 
     private PubSubMessage buildPubSubMessage(long consensusTimestamp, EntityId entity, RecordItem recordItem) {
-        PubSubMessage pubSubMessage = new PubSubMessage();
-        pubSubMessage.setConsensusTimestamp(consensusTimestamp);
-        pubSubMessage.setEntity(entity);
-        pubSubMessage.setTransaction(recordItem.getTransaction().toBuilder()
+        Transaction transaction = recordItem.getTransaction().toBuilder()
                 .clearBodyBytes()
                 .setBody(recordItem.getTransactionBody()) // setting deprecated field makes json conversion easier
-                .build());
-        pubSubMessage.setTransactionRecord(recordItem.getRecord());
-        pubSubMessage.setNonFeeTransfers(addNonFeeTransfers(recordItem.getTransactionBody(), recordItem.getRecord()));
-        return pubSubMessage;
+                .build();
+        var nonFeeTransfers = addNonFeeTransfers(recordItem.getTransactionBody(), recordItem.getRecord());
+        return new PubSubMessage(consensusTimestamp, entity, transaction, recordItem.getRecord(), nonFeeTransfers);
     }
 
     /**
      * Set of explicit transfers in the transaction.
      */
-    private List<AccountAmount> addNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord) {
-        var nonFeeTransfers = nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord).iterator();
-        if (!nonFeeTransfers.hasNext()) { // return null if empty
+    private Iterable<AccountAmount> addNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord) {
+        var nonFeeTransfers = nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord);
+        if (!nonFeeTransfers.iterator().hasNext()) { // return null if empty
             return null;
         }
-        return Lists.newArrayList(nonFeeTransfers);
+        return nonFeeTransfers;
     }
 }
 

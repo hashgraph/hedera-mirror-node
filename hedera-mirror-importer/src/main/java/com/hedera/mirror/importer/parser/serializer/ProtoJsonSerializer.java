@@ -30,6 +30,6 @@ import java.io.IOException;
 public class ProtoJsonSerializer extends JsonSerializer<Message> {
     @Override
     public void serialize(Message message, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        gen.writeRawValue(JsonFormat.printer().print(message));
+        gen.writeRawValue(JsonFormat.printer().includingDefaultValueFields().print(message));
     }
 }

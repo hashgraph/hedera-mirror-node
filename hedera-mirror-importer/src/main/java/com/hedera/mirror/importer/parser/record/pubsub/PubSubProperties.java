@@ -23,23 +23,16 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.validation.annotation.Validated;
 
+// Exporting to PubSub can be configured using properties in spring.cloud.gcp.pubsub.* and here. See configuration
+// docs for more details.
 @Data
 @Validated
+@Conditional(PubSubEnabledCondition.class)
 @ConfigurationProperties("hedera.mirror.parser.record.pubsub")
 public class PubSubProperties {
-
-    // Field here only for namesake. Override in yml config file, setting value here will not take effect.
     @NotNull
-    private boolean enabled = false;
-
-    // Field here only for namesake. Override in yml config file, setting value here will not take effect.
-    private String projectId;
-
     private String topicName;
-
-    // Used to set 'spring.cloud.gcp.credentials.location'.
-    // Field here only for namesake. Override in yml config file, setting value here will not take effect.
-    private String credentialsLocation;
 }

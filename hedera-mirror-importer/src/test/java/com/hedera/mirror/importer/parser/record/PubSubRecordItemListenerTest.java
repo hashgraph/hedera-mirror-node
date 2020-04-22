@@ -75,14 +75,15 @@ class PubSubRecordItemListenerTest {
             .build();
     private static final byte[] DEFAULT_RECORD_BYTES = DEFAULT_RECORD.toByteArray();
     private static final FileID ADDRESS_BOOK_FILE_ID = FileID.newBuilder().setFileNum(102).build();
+    private static final NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy =
+            new NonFeeTransferExtractionStrategyImpl();
 
     @Mock
-    MessageChannel messageChannel;
+    private MessageChannel messageChannel;
     @Mock
-    protected NetworkAddressBook networkAddressBook;
+    private NetworkAddressBook networkAddressBook;
     @Mock
-    TransactionHandler transactionHandler;
-    NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy = new NonFeeTransferExtractionStrategyImpl();
+    private TransactionHandler transactionHandler;
     private PubSubRecordItemListener pubSubRecordItemListener;
 
     @BeforeEach

@@ -27,6 +27,7 @@ import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.annotation.Conditional;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
@@ -41,11 +42,13 @@ import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.entity.EntityEnabledCondition;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Log4j2
 @Named
 @RequiredArgsConstructor
+@Conditional(EntityEnabledCondition.class)
 public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemHandler, RecordStreamFileListener {
     private final PostgresWriterProperties properties;
     private final DataSource dataSource;

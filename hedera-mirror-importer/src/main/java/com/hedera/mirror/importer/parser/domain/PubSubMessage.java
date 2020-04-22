@@ -26,30 +26,24 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
-import lombok.Data;
+import lombok.Value;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.serializer.ProtoJsonSerializer;
 
-@Data
+@Value
 public class PubSubMessage {
-    Long consensusTimestamp;
-    EntityId entity;
+    private final Long consensusTimestamp;
+
+    private final EntityId entity;
+
     @JsonSerialize(using = ProtoJsonSerializer.class)
-    Transaction transaction;
+    private final Transaction transaction;
+
     @JsonSerialize(using = ProtoJsonSerializer.class)
-    TransactionRecord transactionRecord;
-    /*
-    Transaction transaction;
-    // Transaction.body is deprecated, and using Transaction.bodyBytes would require de-serializing again. Hence,
-    // making TransactionBody a field here despite it being part of Transaction itself.
-    TransactionBody transactionBody;
-    TransactionRecord transactionRecord;
-    */
-    // TODO: it might be better to change other places to List<> too? Returning an object with type way up the hierarchy
-    //   limits the way it can used. While returning very specific types are also not good, List<> is good generic
-    //   return type and is most commonly used. What do you guys say?
+    private final TransactionRecord transactionRecord;
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonSerialize(contentUsing = ProtoJsonSerializer.class)
-    List<AccountAmount> nonFeeTransfers;
+    private final Iterable<AccountAmount> nonFeeTransfers; // TODO: try iterable here
 }
