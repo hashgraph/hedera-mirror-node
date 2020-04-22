@@ -47,7 +47,7 @@ public class NodeSignatureVerifier {
 
     public NodeSignatureVerifier(NetworkAddressBook networkAddressBook) {
         nodeIDPubKeyMap = networkAddressBook
-                .load()
+                .getAddresses()
                 .stream()
                 .collect(Collectors.toMap(NodeAddress::getId, NodeAddress::getPublicKeyAsObject));
     }

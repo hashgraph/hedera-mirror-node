@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
@@ -44,8 +45,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.io.File;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Arrays;
 import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +56,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
@@ -74,6 +78,7 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
     private static final String realmAdminKey =
             "112212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
     private static final String memo = "File test memo";
+    private static final byte[] FILE_CONTENTS = {'a', 'b', 'c'};
 
     @TempDir
     Path dataPath;
@@ -83,6 +88,12 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
 
     @Resource
     private NetworkAddressBook networkAddressBook;
+
+    @Value("classpath:addressbook/mainnet")
+    private File addressBookLarge;
+
+    @Value("classpath:addressbook/testnet")
+    private File addressBookSmall;
 
     @BeforeEach
     void before() throws Exception {
@@ -402,7 +413,7 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
     void fileAppendToSystemFile() throws Exception {
 
         Transaction transaction = fileAppendTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0)
-                .setFileNum(10).build());
+                .setFileNum(10).build(), FILE_CONTENTS);
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
@@ -566,57 +577,69 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
     @Test
     void fileAppendToAddressBook() throws Exception {
 
-        networkAddressBook.update(new byte[0]);
-
         parserProperties.getPersist().setFiles(true);
         parserProperties.getPersist().setSystemFiles(true);
+        byte[] addressBook = FileUtils.readFileToByteArray(addressBookLarge);
+        byte[] addressBookUpdate = Arrays.copyOf(addressBook, 6144);
+        byte[] addressBookAppend = Arrays.copyOfRange(addressBook, 6144, addressBook.length);
+        FileID fileID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build();
 
-        Transaction transaction = fileAppendTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0)
-                .setFileNum(102).build());
-        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        FileAppendTransactionBody fileAppendTransactionBody = transactionBody.getFileAppend();
-        TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
-                .setRealmNum(0).setFileNum(102).build());
+        // Initial address book update
+        Transaction transactionUpdate = fileUpdateAllTransaction(fileID, addressBookUpdate);
+        TransactionBody transactionBodyUpdate = TransactionBody.parseFrom(transactionUpdate.getBodyBytes());
+        FileUpdateTransactionBody fileUpdateTransactionBody = transactionBodyUpdate.getFileUpdate();
+        TransactionRecord recordUpdate = transactionRecord(transactionBodyUpdate, fileID);
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        // Address book append
+        Transaction transactionAppend = fileAppendTransaction(fileID, addressBookAppend);
+        TransactionBody transactionBodyAppend = TransactionBody.parseFrom(transactionAppend.getBodyBytes());
+        FileAppendTransactionBody fileAppendTransactionBody = transactionBodyAppend.getFileAppend();
+        TransactionRecord recordAppend = transactionRecord(transactionBodyAppend, fileID);
 
-        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
-                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+        parseRecordItemAndCommit(new RecordItem(transactionUpdate, recordUpdate));
+        parseRecordItemAndCommit(new RecordItem(transactionAppend, recordAppend));
+
+        assertThat(networkAddressBook.getAddresses())
+                .describedAs("Should overwite address book with complete update")
+                .hasSize(13);
+
+        com.hedera.mirror.importer.domain.Transaction dbTransactionUpdate = transactionRepository
+                .findById(Utility.timeStampInNanos(recordUpdate.getConsensusTimestamp())).get();
+        com.hedera.mirror.importer.domain.Transaction dbTransactionAppend = transactionRepository
+                .findById(Utility.timeStampInNanos(recordAppend.getConsensusTimestamp())).get();
         com.hedera.mirror.importer.domain.Entities dbFileEntity = entityRepository
-                .findById(dbTransaction.getEntityId()).get();
-        FileData dbfileData = fileDataRepository.findById(dbTransaction.getConsensusNs()).get();
+                .findById(dbTransactionAppend.getEntityId()).get();
+        FileData dbfileDataUpdate = fileDataRepository.findById(dbTransactionUpdate.getConsensusNs()).get();
+        FileData dbfileDataAppend = fileDataRepository.findById(dbTransactionAppend.getConsensusNs()).get();
 
         assertAll(
                 // row counts
-                () -> assertEquals(1, transactionRepository.count())
+                () -> assertEquals(2, transactionRepository.count())
                 , () -> assertEquals(5, entityRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(3, cryptoTransferRepository.count())
+                , () -> assertEquals(6, cryptoTransferRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(1, fileDataRepository.count())
+                , () -> assertEquals(2, fileDataRepository.count())
 
                 // transaction
-                , () -> assertTransaction(transactionBody, dbTransaction)
+                , () -> assertTransaction(transactionBodyUpdate, dbTransactionUpdate)
+                , () -> assertTransaction(transactionBodyAppend, dbTransactionAppend)
 
                 // record inputs
-                , () -> assertRecord(record)
+                , () -> assertRecord(recordAppend)
 
                 // receipt
-                , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
+                , () -> assertFile(recordAppend.getReceipt().getFileID(), dbFileEntity)
 
                 // file data
-                , () -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileData
+                , () -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(), dbfileDataUpdate
+                        .getFileData())
+                , () -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(), dbfileDataAppend
                         .getFileData())
 
-                , () -> assertArrayEquals(fileAppendTransactionBody.getContents().toByteArray(),
-                        FileUtils.readFileToByteArray(mirrorProperties.getAddressBookPath().toFile())
+                , () -> assertArrayEquals(addressBook, FileUtils
+                        .readFileToByteArray(mirrorProperties.getAddressBookPath().toFile())
                 )
-
-                // Additional entity checks
-                , () -> assertNull(dbFileEntity.getExpiryTimeNs())
-                , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
-                , () -> assertNull(dbFileEntity.getProxyAccountId())
-                , () -> assertFalse(dbFileEntity.isDeleted())
         );
     }
 
@@ -978,7 +1001,7 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
     void fileUpdateAllToNewSystem() throws Exception {
 
         Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0)
-                .setFileNum(10).build());
+                .setFileNum(10).build(), FILE_CONTENTS);
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
@@ -1031,10 +1054,13 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
     }
 
     @Test
-    void fileUpdateAddressBook() throws Exception {
-
+    void fileUpdateAddressBookPartial() throws Exception {
+        byte[] addressBookPrevious = FileUtils.readFileToByteArray(addressBookLarge);
+        networkAddressBook.update(addressBookPrevious);
+        byte[] addressBook = FileUtils.readFileToByteArray(addressBookSmall);
+        byte[] addressBookUpdate = Arrays.copyOf(addressBook, 6144);
         Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0)
-                .setFileNum(102).build());
+                .setFileNum(102).build(), addressBookUpdate);
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
@@ -1044,6 +1070,75 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
         parserProperties.getPersist().setSystemFiles(true);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
+
+        assertThat(networkAddressBook.getAddresses())
+                .describedAs("Should not overwite address book with partial update")
+                .hasSize(13);
+
+        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
+                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+        com.hedera.mirror.importer.domain.Entities dbFileEntity = entityRepository
+                .findById(dbTransaction.getEntityId()).get();
+        FileData dbfileData = fileDataRepository.findById(dbTransaction.getConsensusNs()).get();
+
+        assertAll(
+                // row counts
+                () -> assertEquals(1, transactionRepository.count())
+                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEquals(0, contractResultRepository.count())
+                , () -> assertEquals(3, cryptoTransferRepository.count())
+                , () -> assertEquals(0, liveHashRepository.count())
+                , () -> assertEquals(1, fileDataRepository.count())
+
+                // transaction
+                , () -> assertTransaction(transactionBody, dbTransaction)
+
+                // record inputs
+                , () -> assertRecord(record)
+
+                // receipt
+                , () -> assertFile(record.getReceipt().getFileID(), dbFileEntity)
+
+                // transaction body inputs
+                , () -> assertEquals(Utility
+                        .timeStampInNanos(fileUpdateTransactionBody.getExpirationTime()), dbFileEntity
+                        .getExpiryTimeNs())
+                , () -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
+
+                // file data
+                , () -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(), dbfileData
+                        .getFileData())
+
+                // address book file checks
+                , () -> assertArrayEquals(addressBookPrevious,
+                        FileUtils.readFileToByteArray(mirrorProperties.getAddressBookPath().toFile())
+                )
+                // Additional entity checks
+                , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
+                , () -> assertNull(dbFileEntity.getProxyAccountId())
+                , () -> assertFalse(dbFileEntity.isDeleted())
+        );
+    }
+
+    @Test
+    void fileUpdateAddressBookComplete() throws Exception {
+        byte[] addressBook = FileUtils.readFileToByteArray(addressBookSmall);
+        assertThat(addressBook).hasSizeLessThan(6144);
+        Transaction transaction = fileUpdateAllTransaction(FileID.newBuilder().setShardNum(0).setRealmNum(0)
+                .setFileNum(102).build(), addressBook);
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
+        TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
+                .setRealmNum(0).setFileNum(102).build());
+
+        parserProperties.getPersist().setFiles(true);
+        parserProperties.getPersist().setSystemFiles(true);
+
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
+
+        assertThat(networkAddressBook.getAddresses())
+                .describedAs("Should overwite address book with complete update")
+                .hasSize(4);
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
@@ -1460,18 +1555,15 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
     }
 
     private Transaction fileAppendTransaction() {
-        return fileAppendTransaction(fileId);
+        return fileAppendTransaction(fileId, FILE_CONTENTS);
     }
 
-    private Transaction fileAppendTransaction(FileID fileToAppendTo) {
+    private Transaction fileAppendTransaction(FileID fileToAppendTo, byte[] contents) {
         Transaction.Builder transaction = Transaction.newBuilder();
         FileAppendTransactionBody.Builder fileAppend = FileAppendTransactionBody.newBuilder();
 
-        // file append
-        String fileData = "Hedera hashgraph is even better!";
-
         // Build a transaction
-        fileAppend.setContents(ByteString.copyFromUtf8(fileData));
+        fileAppend.setContents(ByteString.copyFrom(contents));
         fileAppend.setFileID(fileToAppendTo);
 
         // Transaction body
@@ -1485,21 +1577,18 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
         return transaction.build();
     }
 
-    private Transaction fileUpdateAllTransaction() {
-        return fileUpdateAllTransaction(fileId);
+    private Transaction fileUpdateAllTransaction() throws Exception {
+        return fileUpdateAllTransaction(fileId, FILE_CONTENTS);
     }
 
-    private Transaction fileUpdateAllTransaction(FileID fileToUpdate) {
+    private Transaction fileUpdateAllTransaction(FileID fileToUpdate, byte[] contents) throws Exception {
 
         Transaction.Builder transaction = Transaction.newBuilder();
         FileUpdateTransactionBody.Builder fileUpdate = FileUpdateTransactionBody.newBuilder();
         String key = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
 
-        // file update
-        String fileData = "Hedera hashgraph is even better!";
-
         // Build a transaction
-        fileUpdate.setContents(ByteString.copyFromUtf8(fileData));
+        fileUpdate.setContents(ByteString.copyFrom(contents));
         fileUpdate.setFileID(fileToUpdate);
         fileUpdate.setExpirationTime(Utility.instantToTimestamp(Instant.now()));
 

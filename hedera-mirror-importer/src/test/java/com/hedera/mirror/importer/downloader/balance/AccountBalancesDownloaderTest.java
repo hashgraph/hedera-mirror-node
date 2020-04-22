@@ -89,7 +89,7 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         byte[] addressBook = Files.readAllBytes(mirrorProperties.getAddressBookPath());
         int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
         addressBook = Arrays.copyOfRange(addressBook, 0, index);
-        Files.write(mirrorProperties.getAddressBookPath(), addressBook);
+        networkAddressBook.update(addressBook);
 
         fileCopier.filterDirectories("*0.0.3").copy();
         downloader.download();
