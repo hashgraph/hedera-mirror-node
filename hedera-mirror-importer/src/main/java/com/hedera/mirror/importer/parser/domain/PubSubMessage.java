@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.List;
 import lombok.Value;
 
 import com.hedera.mirror.importer.domain.EntityId;
@@ -35,6 +34,7 @@ import com.hedera.mirror.importer.parser.serializer.ProtoJsonSerializer;
 public class PubSubMessage {
     private final Long consensusTimestamp;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private final EntityId entity;
 
     @JsonSerialize(using = ProtoJsonSerializer.class)

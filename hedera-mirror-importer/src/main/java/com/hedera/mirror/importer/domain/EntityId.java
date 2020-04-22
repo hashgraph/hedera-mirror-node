@@ -54,6 +54,7 @@ public class EntityId {
         return entity;
     }
 
+    @JsonIgnore
     public String getDisplayId() {
         return String.format("%d.%d.%d", entityShard, entityRealm, entityNum);
     }
