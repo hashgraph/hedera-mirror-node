@@ -576,7 +576,6 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
 
     @Test
     void fileAppendToAddressBook() throws Exception {
-
         parserProperties.getPersist().setFiles(true);
         parserProperties.getPersist().setSystemFiles(true);
         byte[] addressBook = FileUtils.readFileToByteArray(addressBookLarge);
@@ -1072,7 +1071,7 @@ public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         assertThat(networkAddressBook.getAddresses())
-                .describedAs("Should not overwite address book with partial update")
+                .describedAs("Should not overwrite address book with partial update")
                 .hasSize(13);
 
         com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository

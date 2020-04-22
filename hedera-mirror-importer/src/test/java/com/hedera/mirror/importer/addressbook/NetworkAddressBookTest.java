@@ -23,8 +23,12 @@ package com.hedera.mirror.importer.addressbook;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -91,7 +95,7 @@ public class NetworkAddressBookTest {
     void updateCompleteFile() throws Exception {
         byte[] addressBookBytes = UPDATED.toByteArray();
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties);
-        networkAddressBook.update(addressBookBytes);
+        update(networkAddressBook, addressBookBytes);
 
         assertThat(networkAddressBook.getAddresses()).hasSize(UPDATED.getNodeAddressCount());
         assertThat(tempPath).doesNotExist();
@@ -105,7 +109,7 @@ public class NetworkAddressBookTest {
         byte[] addressBookPartial = Arrays.copyOfRange(addressBookBytes, 0, index);
 
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties);
-        networkAddressBook.update(addressBookPartial);
+        update(networkAddressBook, addressBookPartial);
 
         assertThat(networkAddressBook.getAddresses()).hasSize(INITIAL.getNodeAddressCount());
         assertThat(addressBookPath).exists().hasBinaryContent(INITIAL.toByteArray());
@@ -120,8 +124,8 @@ public class NetworkAddressBookTest {
         byte[] addressBookBytes2 = Arrays.copyOfRange(addressBookBytes, index, addressBookBytes.length);
 
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties);
-        networkAddressBook.update(addressBookBytes1);
-        networkAddressBook.append(addressBookBytes2);
+        update(networkAddressBook, addressBookBytes1);
+        append(networkAddressBook, addressBookBytes2);
 
         assertThat(networkAddressBook.getAddresses()).hasSize(UPDATED.getNodeAddressCount());
         assertThat(addressBookPath).exists().hasBinaryContent(UPDATED.toByteArray());
@@ -131,8 +135,8 @@ public class NetworkAddressBookTest {
     @Test
     void ignoreEmptyByteArray() throws Exception {
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties);
-        networkAddressBook.update(null);
-        networkAddressBook.append(new byte[] {});
+        update(networkAddressBook, new byte[] {});
+        append(networkAddressBook, new byte[] {});
 
         assertThat(networkAddressBook.getAddresses()).hasSize(INITIAL.getNodeAddressCount());
         assertThat(addressBookPath).exists().hasBinaryContent(INITIAL.toByteArray());
@@ -145,5 +149,21 @@ public class NetworkAddressBookTest {
             builder.addNodeAddress(NodeAddress.newBuilder().setPortno(i).build());
         }
         return builder.build();
+    }
+
+    private static void update(NetworkAddressBook networkAddressBook, byte[] contents) {
+        networkAddressBook.updateFrom(TransactionBody.newBuilder()
+                .setFileUpdate(FileUpdateTransactionBody.newBuilder()
+                        .setContents(ByteString.copyFrom(contents))
+                        .build())
+                .build());
+    }
+
+    private static void append(NetworkAddressBook networkAddressBook, byte[] contents) {
+        networkAddressBook.updateFrom(TransactionBody.newBuilder()
+                .setFileAppend(FileAppendTransactionBody.newBuilder()
+                        .setContents(ByteString.copyFrom(contents))
+                        .build())
+                .build());
     }
 }

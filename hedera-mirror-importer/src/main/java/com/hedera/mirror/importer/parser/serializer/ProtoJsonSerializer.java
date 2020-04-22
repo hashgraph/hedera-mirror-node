@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.serializer;
 
 /*-
  * ‌
@@ -20,18 +20,16 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import javax.validation.constraints.Min;
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.validation.annotation.Validated;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.google.protobuf.Message;
+import com.google.protobuf.util.JsonFormat;
+import java.io.IOException;
 
-@Data
-@Validated
-@ConfigurationProperties("hedera.mirror.parser.record.postgresql")
-public class PostgresWriterProperties {
-    /**
-     * PreparedStatement.executeBatch() is called after every batchSize number of transactions from record stream file.
-     */
-    @Min(1)
-    private int batchSize = 100;
+public class ProtoJsonSerializer extends JsonSerializer<Message> {
+    @Override
+    public void serialize(Message message, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        gen.writeRawValue(JsonFormat.printer().includingDefaultValueFields().print(message));
+    }
 }
