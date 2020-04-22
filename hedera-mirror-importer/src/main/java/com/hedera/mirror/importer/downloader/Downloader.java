@@ -81,7 +81,7 @@ public abstract class Downloader {
         this.networkAddressBook = networkAddressBook;
         this.downloaderProperties = downloaderProperties;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
-        nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toSet());
+        nodeAccountIds = networkAddressBook.getAddresses().stream().map(NodeAddress::getId).collect(Collectors.toSet());
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
     }
 
@@ -119,7 +119,7 @@ public abstract class Downloader {
                 .synchronizedSortedSetMultimap(TreeMultimap.create());
 
         // refresh node account ids
-        nodeAccountIds = networkAddressBook.load().stream().map(NodeAddress::getId).collect(Collectors.toSet());
+        nodeAccountIds = networkAddressBook.getAddresses().stream().map(NodeAddress::getId).collect(Collectors.toSet());
         List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
         var totalDownloads = new AtomicInteger();
         /**

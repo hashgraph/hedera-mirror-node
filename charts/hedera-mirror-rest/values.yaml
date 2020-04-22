@@ -30,6 +30,26 @@ image:
 
 imagePullSecrets: []
 
+ingress:
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-rest.namespace" . }}-{{ include "hedera-mirror-rest.fullname" . }}@kubernetescrd'
+  enabled: true
+  hosts:
+    - host: ""
+      paths: ["/api/v1"]
+  middleware:
+    circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+    connectionsPerIP: 5
+    enabled: false
+    ipWhitelist:
+      - 0.0.0.0/0
+    rateLimit:
+      average: 1000
+      burst: 2000
+  tls:
+    enabled: false
+    secretName: ""
+
 labels:
   role: app
   tier: api
@@ -77,8 +97,9 @@ securityContext:
   runAsUser: 1000
 
 service:
+  annotations: {}
   port: 80
-  type: LoadBalancer
+  type: ClusterIP
 
 serviceAccount:
   create: true

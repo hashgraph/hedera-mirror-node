@@ -40,8 +40,26 @@ const entityColumns = {
 
 const responseDataLabel = 'mirrorRestData';
 
+const orderFilterValues = {
+  ASC: 'asc',
+  DESC: 'desc',
+};
+
+const transactionResultFilter = {
+  SUCCESS: 'success',
+  FAIL: 'fail',
+};
+
+const cryptoTransferType = {
+  CREDIT: 'credit',
+  DEBIT: 'debit',
+};
+
 module.exports = {
-  entityColumns: entityColumns,
-  filterKeys: filterKeys,
+  entityColumns,
+  filterKeys,
+  orderFilterValues,
   responseDataLabel,
+  transactionResultFilter,
+  cryptoTransferType,
 };

@@ -13,6 +13,9 @@ grpc:
             password: mirror_grpc_pass
             username: mirror_grpc
   enabled: true
+  ingress:
+    middleware:
+      enabled: true
   priorityClassName: medium
 
 importer:
@@ -29,7 +32,7 @@ importer:
 
 labels: {}
 
-loki-stack:
+loki:
   enabled: true
   loki:
     config:
@@ -120,7 +123,7 @@ postgresql:
               topologyKey: kubernetes.io/hostname
               labelSelector:
                 matchLabels:
-                  app.kubernetes.io/name: postgresql
+                  app.kubernetes.io/component: postgresql
     initdbScriptsSecret: postgresql-init
     podLabels:
       role: db
@@ -177,7 +180,7 @@ prometheus-adapter:
         containerLabel: container
       window: 3m
 
-prometheus-operator:
+prometheus:
   alertmanager:
     alertmanagerSpec:
       priorityClassName: low
@@ -202,15 +205,34 @@ prometheus-operator:
     adminPassword: password
     defaultDashboardsEnabled: true
     fullnameOverride: grafana
+    grafana.ini:
+      server:
+        root_url: "%(protocol)s://%(domain)s/grafana/"
+    ingress:
+      annotations:
+        # TODO: Open ticket with Traefik to not require namespace and/or fix grafana chart to template annotations
+        traefik.ingress.kubernetes.io/router.middlewares: "default-grafana@kubernetescrd"
+      enabled: true
+      hosts: [""]
+      middleware:
+        circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+        connectionsPerIP: 10
+        enabled: true
+        ipWhitelist:
+          - 0.0.0.0/0
+        rateLimit:
+          average: 50
+          burst: 100
+      path: "/grafana"
     resources:
       limits:
-        cpu: 100m
+        cpu: 150m
         memory: 100Mi
       requests:
-        cpu: 50m
+        cpu: 75m
         memory: 30Mi
     service:
-      type: LoadBalancer
+      type: ClusterIP
   kube-state-metrics:
     fullnameOverride: prometheus-kube-state-metrics
     resources:
@@ -225,10 +247,10 @@ prometheus-operator:
     hostNetwork: false
     resources:
       limits:
-        cpu: 20m
+        cpu: 50m
         memory: 30Mi
       requests:
-        cpu: 10m
+        cpu: 20m
         memory: 10Mi
   prometheus:
     prometheusSpec:
@@ -266,4 +288,48 @@ rest:
           apiPassword: mirror_api_pass
           apiUsername: mirror_api
           host: postgresql-pgpool
+  ingress:
+    middleware:
+      enabled: true
   priorityClassName: medium
+
+traefik:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: traefik
+  deployment:
+    replicas: 2
+  enabled: true
+  fullnameOverride: traefik
+  globalArguments: []
+  ports:
+    grpc:
+      port: 5600
+      expose: true
+    web:
+      port: 80
+    websecure:
+      port: 443
+  resources:
+    requests:
+      cpu: 100m
+      memory: 50Mi
+    limits:
+      cpu: 300m
+      memory: 150Mi
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+  service:
+    spec:
+      externalTrafficPolicy: Local
+  volumes:
+    - name: traefik
+      mountPath: /etc/traefik/
+      type: configMap
