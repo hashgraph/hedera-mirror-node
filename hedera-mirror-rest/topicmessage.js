@@ -97,9 +97,7 @@ const formatTopicMessageRow = function (row, binaryMessageFormat) {
 
 const formatTopicMessage = function (message, format) {
   // default to base64 encoding
-  return format === constants.topicMessagesFormatFilterValues.TEXT
-    ? utils.encodeUtf8(message)
-    : utils.encodeBase64(message);
+  return format === constants.topicMessagesFormats.TEXT ? utils.encodeUtf8(message) : utils.encodeBase64(message);
 };
 
 /**

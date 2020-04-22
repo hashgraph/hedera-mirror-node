@@ -47,7 +47,7 @@ const orderFilterValues = {
 };
 
 // topic messages filter options
-const topicMessagesFormatFilterValues = {
+const topicMessagesFormats = {
   BINARY: 'binary',
   TEXT: 'text',
 };
@@ -67,7 +67,7 @@ module.exports = {
   filterKeys,
   orderFilterValues,
   responseDataLabel,
-  topicMessagesFormatFilterValues,
+  topicMessagesFormats,
   transactionResultFilter,
   cryptoTransferType,
 };

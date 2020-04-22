@@ -157,7 +157,7 @@ const filterValidityChecks = function (param, op, val) {
       break;
     case constants.filterKeys.FORMAT:
       // Acceptable words: binary or text
-      ret = Object.values(constants.topicMessagesFormatFilterValues).includes(val);
+      ret = Object.values(constants.topicMessagesFormats).includes(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -618,10 +618,6 @@ const encodeUtf8 = function (buffer) {
   return null === buffer ? null : buffer.toString('utf8');
 };
 
-const isUtf8Encoded = function (buffer) {
-  return null === buffer ? false : Buffer.compare(new Buffer.from(buffer.toString(), 'utf8'), buffer) === 0;
-};
-
 /**
  *
  * @param {String} num Nullable number
@@ -756,7 +752,6 @@ module.exports = {
   getFilterValue,
   getNullableNumber: getNullableNumber,
   getPaginationLink: getPaginationLink,
-  isUtf8Encoded,
   isValidEntityNum: isValidEntityNum,
   isValidLimitNum: isValidLimitNum,
   isValidNum: isValidNum,

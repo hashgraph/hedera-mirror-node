@@ -149,11 +149,11 @@ describe('topicmessage formatTopicMessage tests', () => {
   const utf8Message = 'hedera hashgraph';
 
   // binary test
-  let result = topicmessage.formatTopicMessage(inputMessage, constants.topicMessagesFormatFilterValues.BINARY);
+  let result = topicmessage.formatTopicMessage(inputMessage, constants.topicMessagesFormats.BINARY);
   expect(result).toStrictEqual(base64Message);
 
   // text test
-  result = topicmessage.formatTopicMessage(inputMessage, constants.topicMessagesFormatFilterValues.TEXT);
+  result = topicmessage.formatTopicMessage(inputMessage, constants.topicMessagesFormats.TEXT);
   expect(result).toStrictEqual(utf8Message);
 });
 
