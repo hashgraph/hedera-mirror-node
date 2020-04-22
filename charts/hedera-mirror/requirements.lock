@@ -16,12 +16,12 @@ dependencies:
   version: 2.2.0
 - name: prometheus-operator
   repository: https://kubernetes-charts.storage.googleapis.com
-  version: 8.12.13
+  version: 8.12.15
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
   version: 0.1.0
 - name: traefik
   repository: https://containous.github.io/traefik-helm-chart
-  version: ^8.0.3
-digest: sha256:ce61d71b86366c45da9bc8edbe5d700f9be9fe08f6f3bbfcfd8399e12c5cb709
-generated: "2020-04-17T16:12:20.961231-05:00"
+  version: 8.0.3
+digest: sha256:d8c5f1d1b12d075fb55d39b37ba089f02c65b6d13502ad958bd3f3b3b7036d15
+generated: "2020-04-22T16:10:49.813263-05:00"
