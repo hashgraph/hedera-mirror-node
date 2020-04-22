@@ -24,13 +24,12 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Random;
 import javax.annotation.Resource;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
 
-@Transactional
 public abstract class AbstractRepositoryTest extends IntegrationTest {
 
     @Resource
@@ -54,7 +53,7 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     @Resource
     protected EntityTypeRepository entityTypeRepository;
 
-    private Entities insertEntity(EntityType entityType) {
+    private Entities insertEntity(EntityTypeEnum entityType) {
         Random rand = new Random();
 
         Entities entity = new Entities();
@@ -62,22 +61,22 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
         entity.setEntityRealm((long) rand.nextInt(10000));
         entity.setEntityNum((long) rand.nextInt(10000));
 
-        entity.setEntityTypeId(entityTypeRepository.findByName(entityType.name()).get().getId());
+        entity.setEntityTypeId(entityType.getId());
         entity = entityRepository.save(entity);
 
         return entity;
     }
 
     protected final Entities insertAccountEntity() {
-        return insertEntity(EntityType.account);
+        return insertEntity(EntityTypeEnum.ACCOUNT);
     }
 
     protected final Entities insertFileEntity() {
-        return insertEntity(EntityType.file);
+        return insertEntity(EntityTypeEnum.FILE);
     }
 
     protected final Entities insertContractEntity() {
-        return insertEntity(EntityType.contract);
+        return insertEntity(EntityTypeEnum.CONTRACT);
     }
 
     protected final Transaction insertTransaction(Entities entity, String type) {
@@ -100,9 +99,5 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
         transaction = transactionRepository.save(transaction);
 
         return transaction;
-    }
-
-    private enum EntityType {
-        account, file, contract
     }
 }

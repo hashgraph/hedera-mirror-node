@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.context.annotation.Conditional;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.ContractResult;
@@ -62,7 +61,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
-@Conditional(EntityEnabledCondition.class)
+@ConditionOnEntityRecordParser
 public class EntityRecordItemListener implements RecordItemListener {
     private final RecordParserProperties parserProperties;
     private final NetworkAddressBook networkAddressBook;

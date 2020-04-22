@@ -46,22 +46,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityTypeRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Disabled("This refreshes the ApplicationContext halfway through tests, causing multiple DataSource objects to be in " +
         "use due to the DatabaseUtilities hack. Can be re-enabled when DatabaseUtilities is deleted")
 @TestPropertySource(properties = "spring.flyway.target=1.11.5")
-@Transactional
 public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
 
     @TempDir

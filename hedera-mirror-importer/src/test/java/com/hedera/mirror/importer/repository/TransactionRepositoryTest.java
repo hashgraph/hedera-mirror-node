@@ -45,11 +45,7 @@ public class TransactionRepositoryTest extends AbstractRepositoryTest {
     private Transaction transaction() {
         Long nodeAccountId = insertAccountEntity().getId();
         Long payerAccountId = insertAccountEntity().getId();
-        Entities entity = new Entities();
-        entity.setEntityRealm(5L);
-        entity.setEntityShard(0L);
-        entity.setEntityNum(27L);
-        entity.setEntityTypeId(1);
+        Entities entity = insertAccountEntity();
 
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);

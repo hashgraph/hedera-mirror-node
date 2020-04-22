@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.pubsub;
+package com.hedera.mirror.importer;
 
 /*-
  * ‌
@@ -20,18 +20,15 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
-import javax.validation.constraints.NotBlank;
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestExecutionListeners;
 
-// Exporting to PubSub can be configured using properties in spring.cloud.gcp.pubsub.* and here. See configuration
-// docs for more details.
-@Data
-@Validated
-@ConditionalOnPubSubRecordParser
-@ConfigurationProperties("hedera.mirror.importer.parser.record.pubsub")
-public class PubSubProperties {
-    @NotBlank
-    private String topicName;
+@ContextConfiguration(
+        initializers = {DatabaseApplicationContextInitializer.class, TestPubSubConfiguration.ContextInitializer.class},
+        classes = TestPubSubConfiguration.class)
+@TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
+        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@SpringBootTest(properties = "spring.cloud.kubernetes.enabled=false")
+public class PubSubIntegrationTest {
 }

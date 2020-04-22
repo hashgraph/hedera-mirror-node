@@ -28,8 +28,6 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.Transaction;
 
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-// Class manually commits so have to manually cleanup tables
 public class FileDataRepositoryTest extends AbstractRepositoryTest {
 
     @Test

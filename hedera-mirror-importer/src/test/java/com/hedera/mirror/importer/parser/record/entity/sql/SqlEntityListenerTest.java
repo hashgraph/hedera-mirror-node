@@ -37,7 +37,6 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.shaded.org.bouncycastle.util.Strings;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -60,8 +59,6 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class SqlEntityListenerTest extends IntegrationTest {
 
     @Resource
