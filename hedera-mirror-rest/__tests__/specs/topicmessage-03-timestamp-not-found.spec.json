@@ -7,7 +7,7 @@
     "cryptotransfers": [],
     "topicmessages": []
   },
-  "url": "/api/v1/topic/message/123.123456789",
+  "url": "/api/v1/topics/messages/123.123456789",
   "responseStatus": 404,
   "responseJson": {
     "_status": {
