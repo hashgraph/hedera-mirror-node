@@ -235,6 +235,33 @@ describe('Utils isValidNum tests', () => {
   });
 });
 
+describe('Utils isValidEncoding tests', () => {
+  test('Verify invalid for null', () => {
+    expect(utils.isValidEncoding(null)).toBe(false);
+  });
+  test('Verify invalid for empty input', () => {
+    expect(utils.isValidEncoding('')).toBe(false);
+  });
+  test('Verify invalid for hex', () => {
+    expect(utils.isValidEncoding('1234567890.000000001')).toBe(false);
+  });
+  test('Verify invalid for hex', () => {
+    expect(utils.isValidEncoding('hex')).toBe(false);
+  });
+  test('Verify invalid for 0', () => {
+    expect(utils.isValidEncoding('0')).toBe(false);
+  });
+  test('Verify valid for valid base64', () => {
+    expect(utils.isValidEncoding('base64')).toBe(true);
+  });
+  test('Verify valid above utf8', () => {
+    expect(utils.isValidEncoding('utf8')).toBe(true);
+  });
+  test(`Verify valid for UTF-8: ${Number.MAX_SAFE_INTEGER}`, () => {
+    expect(utils.isValidEncoding('UTF-8')).toBe(true);
+  });
+});
+
 describe('utils encodeMessage tests', () => {
   const inputMessage = Buffer.from([104, 101, 100, 101, 114, 97, 32, 104, 97, 115, 104, 103, 114, 97, 112, 104]);
   const base64Message = 'aGVkZXJhIGhhc2hncmFwaA==';

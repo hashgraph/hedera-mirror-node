@@ -76,6 +76,14 @@ const isValidPublicKeyQuery = (query) => {
   return /^[0-9a-fA-F]{64}$/.test(query) || /^[0-9a-fA-F]{88}$/.test(query);
 };
 
+const isValidEncoding = (query) => {
+  if (undefined == query) {
+    return false;
+  }
+  query = query.toLowerCase();
+  return /^(base64|utf-?8)$/.test(query);
+};
+
 /**
  * Validate input parameters for the rest apis
  * @param {String} param Parameter to be validated
@@ -157,7 +165,7 @@ const filterValidityChecks = function (param, op, val) {
       break;
     case constants.filterKeys.ENCODING:
       // Acceptable words: binary or text
-      ret = Object.values(constants.topicMessageEncoding).includes(val.toLowerCase());
+      ret = isValidEncoding(val.toLowerCase());
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -763,6 +771,7 @@ module.exports = {
   getFilterValue,
   getNullableNumber: getNullableNumber,
   getPaginationLink: getPaginationLink,
+  isValidEncoding,
   isValidEntityNum: isValidEntityNum,
   isValidLimitNum: isValidLimitNum,
   isValidNum: isValidNum,
