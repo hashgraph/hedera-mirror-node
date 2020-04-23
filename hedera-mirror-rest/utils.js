@@ -614,7 +614,7 @@ const encodeKey = function (key) {
  * @return {String} base64 encoded string
  */
 const encodeBase64 = function (buffer) {
-  return encodeMessage(buffer, constants.topicMessageEncoding.BASE64);
+  return encodeBinary(buffer, constants.characterEncoding.BASE64);
 };
 
 /**
@@ -623,13 +623,13 @@ const encodeBase64 = function (buffer) {
  * @return {String} utf-8 encoded string
  */
 const encodeUtf8 = function (buffer) {
-  return encodeMessage(buffer, constants.topicMessageEncoding.UTF8);
+  return encodeBinary(buffer, constants.characterEncoding.UTF8);
 };
 
-const encodeMessage = function (buffer, encoding) {
+const encodeBinary = function (buffer, encoding) {
   // default to base64 encoding
-  let charEncoding = constants.topicMessageEncoding.BASE64;
-  if (encoding === constants.topicMessageEncoding.UTF8) {
+  let charEncoding = constants.characterEncoding.BASE64;
+  if (encoding === constants.characterEncoding.UTF8) {
     charEncoding = encoding;
   }
 
@@ -745,33 +745,21 @@ const formatComparator = (comparator) => {
   }
 };
 
-const getFilterValue = (key, filters, defaultVal) => {
-  for (const filter of filters) {
-    if (key == filter.key) {
-      return filter.value;
-    }
-  }
-
-  return defaultVal;
-};
-
 module.exports = {
   buildFilterObject: buildFilterObject,
   buildComparatorFilter: buildComparatorFilter,
   buildPgSqlObject: buildPgSqlObject,
   createTransactionId: createTransactionId,
   convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,
-  encodeMessage: encodeMessage,
   encodeBase64: encodeBase64,
+  encodeBinary,
   encodeUtf8,
   encodeKey: encodeKey,
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
   filterValidityChecks: filterValidityChecks,
   formatComparator: formatComparator,
-  getFilterValue,
   getNullableNumber: getNullableNumber,
   getPaginationLink: getPaginationLink,
-  isValidEncoding,
   isValidEntityNum: isValidEntityNum,
   isValidLimitNum: isValidLimitNum,
   isValidNum: isValidNum,

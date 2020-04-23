@@ -47,7 +47,7 @@ const orderFilterValues = {
 };
 
 // topic messages filter options
-const topicMessageEncoding = {
+const characterEncoding = {
   BASE64: 'base64',
   UTF8: 'utf-8',
 };
@@ -67,7 +67,7 @@ module.exports = {
   filterKeys,
   orderFilterValues,
   responseDataLabel,
-  topicMessageEncoding,
+  characterEncoding,
   transactionResultFilter,
   cryptoTransferType,
 };

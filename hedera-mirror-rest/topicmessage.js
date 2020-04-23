@@ -89,7 +89,7 @@ const formatTopicMessageRow = function (row, messageEncoding) {
   return {
     consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
     topic_id: `${config.shard}.${row[topicMessageColumns.REALM_NUM]}.${row[topicMessageColumns.TOPIC_NUM]}`,
-    message: utils.encodeMessage(row[topicMessageColumns.MESSAGE], messageEncoding),
+    message: utils.encodeBinary(row[topicMessageColumns.MESSAGE], messageEncoding),
     running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
     sequence_number: parseInt(row[topicMessageColumns.SEQUENCE_NUMBER]),
   };

@@ -179,6 +179,7 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.RESULT, 'good'),
       utils.buildComparatorFilter(constants.filterKeys.TYPE, 'all'),
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '-1'),
+      utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'encrypt'),
     ];
 
     verifyInvalidFilters(filters);
@@ -213,6 +214,7 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.TYPE, 'credit'),
       utils.buildComparatorFilter(constants.filterKeys.TYPE, 'debit'),
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '45000'),
+      utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'utf-8'),
     ];
 
     expect(() => {
