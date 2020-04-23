@@ -39,7 +39,7 @@ const boilerplateSufffix = ` join t_transactions t on tlist.consensus_timestamp 
     join t_entities enode on enode.id = t.fk_node_acc_id
     join t_entities etrans on etrans.id = t.fk_payer_acc_id
     left outer join t_transaction_types ttt on ttt.proto_id = t.type
-    left outer join t_cryptotransferlists ctl on tlist.consensus_timestamp = ctl.consensus_timestamp
+    join t_cryptotransferlists ctl on tlist.consensus_timestamp = ctl.consensus_timestamp
     order by t.consensus_ns desc,account_num asc,amount asc`;
 
 test('transactions by timestamp gte', () => {
