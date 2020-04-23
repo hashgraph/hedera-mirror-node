@@ -25,7 +25,7 @@
       }
     ]
   },
-  "url": "/api/v1/topic/7/messages?format=text",
+  "url": "/api/v1/topic/7/messages?encoding=utf-8",
   "responseStatus": 200,
   "responseJson": {
     "messages": [

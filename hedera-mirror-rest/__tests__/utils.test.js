@@ -21,6 +21,7 @@
 
 const utils = require('../utils.js');
 const config = require('../config.js');
+const constants = require('../constants.js');
 
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
@@ -232,4 +233,18 @@ describe('Utils isValidNum tests', () => {
   test(`Verify valid for Number.MAX_SAFE_INTEGER: ${Number.MAX_SAFE_INTEGER}`, () => {
     expect(utils.isValidNum(Number.MAX_SAFE_INTEGER)).toBe(true);
   });
+});
+
+describe('utils encodeMessage tests', () => {
+  const inputMessage = Buffer.from([104, 101, 100, 101, 114, 97, 32, 104, 97, 115, 104, 103, 114, 97, 112, 104]);
+  const base64Message = 'aGVkZXJhIGhhc2hncmFwaA==';
+  const utf8Message = 'hedera hashgraph';
+
+  // base64 test
+  let result = utils.encodeMessage(inputMessage, constants.topicMessageEncoding.BASE64);
+  expect(result).toStrictEqual(base64Message);
+
+  // utf-8 test
+  result = utils.encodeMessage(inputMessage, constants.topicMessageEncoding.UTF8);
+  expect(result).toStrictEqual(utf8Message);
 });

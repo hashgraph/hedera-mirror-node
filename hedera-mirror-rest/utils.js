@@ -141,23 +141,23 @@ const filterValidityChecks = function (param, op, val) {
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
-      ret = Object.values(constants.orderFilterValues).includes(val);
+      ret = Object.values(constants.orderFilterValues).includes(val.toLowerCase());
       break;
     case constants.filterKeys.TYPE:
       // Acceptable words: credit or debit
-      ret = Object.values(constants.cryptoTransferType).includes(val);
+      ret = Object.values(constants.cryptoTransferType).includes(val.toLowerCase());
       break;
     case constants.filterKeys.RESULT:
       // Acceptable words: success or fail
-      ret = Object.values(constants.transactionResultFilter).includes(val);
+      ret = Object.values(constants.transactionResultFilter).includes(val.toLowerCase());
       break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
       ret = isValidNum(val);
       break;
-    case constants.filterKeys.FORMAT:
+    case constants.filterKeys.ENCODING:
       // Acceptable words: binary or text
-      ret = Object.values(constants.topicMessagesFormats).includes(val);
+      ret = Object.values(constants.topicMessageEncoding).includes(val.toLowerCase());
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -606,7 +606,7 @@ const encodeKey = function (key) {
  * @return {String} base64 encoded string
  */
 const encodeBase64 = function (buffer) {
-  return encodeMessage(buffer, 'base64');
+  return encodeMessage(buffer, constants.topicMessageEncoding.BASE64);
 };
 
 /**
@@ -615,16 +615,17 @@ const encodeBase64 = function (buffer) {
  * @return {String} utf-8 encoded string
  */
 const encodeUtf8 = function (buffer) {
-  return encodeMessage(buffer, 'utf8');
+  return encodeMessage(buffer, constants.topicMessageEncoding.UTF8);
 };
 
 const encodeMessage = function (buffer, encoding) {
   // default to base64 encoding
-  if (undefined === encoding) {
-    encoding = 'base64';
+  let charEncoding = constants.topicMessageEncoding.BASE64;
+  if (encoding === constants.topicMessageEncoding.UTF8) {
+    charEncoding = encoding;
   }
 
-  return null === buffer ? null : buffer.toString(encoding);
+  return null === buffer ? null : buffer.toString(charEncoding);
 };
 
 /**
@@ -752,6 +753,7 @@ module.exports = {
   buildPgSqlObject: buildPgSqlObject,
   createTransactionId: createTransactionId,
   convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,
+  encodeMessage: encodeMessage,
   encodeBase64: encodeBase64,
   encodeUtf8,
   encodeKey: encodeKey,

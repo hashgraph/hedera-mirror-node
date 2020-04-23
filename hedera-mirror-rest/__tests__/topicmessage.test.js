@@ -143,20 +143,6 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
   expect(limit).toStrictEqual(3);
 });
 
-describe('topicmessage formatTopicMessage tests', () => {
-  const inputMessage = Buffer.from([104, 101, 100, 101, 114, 97, 32, 104, 97, 115, 104, 103, 114, 97, 112, 104]);
-  const base64Message = 'aGVkZXJhIGhhc2hncmFwaA==';
-  const utf8Message = 'hedera hashgraph';
-
-  // binary test
-  let result = topicmessage.formatTopicMessage(inputMessage, constants.topicMessagesFormats.BINARY);
-  expect(result).toStrictEqual(base64Message);
-
-  // text test
-  result = topicmessage.formatTopicMessage(inputMessage, constants.topicMessagesFormats.TEXT);
-  expect(result).toStrictEqual(utf8Message);
-});
-
 const verifyValidConsensusTimestamp = (timestamp) => {
   expect(() => {
     topicmessage.validateConsensusTimestampParam(timestamp);

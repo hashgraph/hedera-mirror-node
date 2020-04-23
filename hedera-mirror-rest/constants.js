@@ -23,7 +23,7 @@ const filterKeys = {
   ACCOUNT_ID: 'account.id',
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
-  FORMAT: 'format',
+  ENCODING: 'encoding',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
@@ -47,9 +47,9 @@ const orderFilterValues = {
 };
 
 // topic messages filter options
-const topicMessagesFormats = {
-  BINARY: 'binary',
-  TEXT: 'text',
+const topicMessageEncoding = {
+  BASE64: 'base64',
+  UTF8: 'utf-8',
 };
 
 const transactionResultFilter = {
@@ -67,7 +67,7 @@ module.exports = {
   filterKeys,
   orderFilterValues,
   responseDataLabel,
-  topicMessagesFormats,
+  topicMessageEncoding,
   transactionResultFilter,
   cryptoTransferType,
 };

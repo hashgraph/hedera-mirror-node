@@ -89,15 +89,10 @@ const formatTopicMessageRow = function (row, messageEncoding) {
   return {
     consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
     topic_id: `${config.shard}.${row[topicMessageColumns.REALM_NUM]}.${row[topicMessageColumns.TOPIC_NUM]}`,
-    message: formatTopicMessage(row[topicMessageColumns.MESSAGE], messageEncoding),
+    message: utils.encodeMessage(row[topicMessageColumns.MESSAGE], messageEncoding),
     running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
     sequence_number: parseInt(row[topicMessageColumns.SEQUENCE_NUMBER]),
   };
-};
-
-const formatTopicMessage = function (message, format) {
-  // default to base64 encoding
-  return format === constants.topicMessagesFormats.TEXT ? utils.encodeUtf8(message) : utils.encodeBase64(message);
 };
 
 /**
@@ -148,7 +143,7 @@ const processGetTopicMessages = (req, res) => {
   // build sql query validated param and filters
   let {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
 
-  const messageFormat = utils.getFilterValue(constants.filterKeys.FORMAT, filters);
+  const messageEncoding = req.query[constants.filterKeys.ENCODING];
 
   let topicMessagesResponse = {
     messages: [],
@@ -160,7 +155,7 @@ const processGetTopicMessages = (req, res) => {
   // get results and return formatted response
   return getMessages(query, params).then((messages) => {
     // format messages
-    topicMessagesResponse.messages = messages.map((m) => formatTopicMessageRow(m, messageFormat));
+    topicMessagesResponse.messages = messages.map((m) => formatTopicMessageRow(m, messageEncoding));
 
     // populate next
     let lastTimeStamp =
@@ -311,7 +306,6 @@ const getTopicMessages = async (req, res) => {
 
 module.exports = {
   extractSqlFromTopicMessagesRequest: extractSqlFromTopicMessagesRequest,
-  formatTopicMessage,
   formatTopicMessageRow: formatTopicMessageRow,
   getMessageByConsensusTimestamp: getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest: getMessageByTopicAndSequenceRequest,
