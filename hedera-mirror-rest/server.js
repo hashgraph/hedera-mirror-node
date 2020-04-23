@@ -113,8 +113,8 @@ app.getAsync(apiPrefix + '/transactions', transactions.getTransactions);
 app.getAsync(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
 
 // topics routes
-app.getAsync(apiPrefix + '/topics/:id/messages?', topicmessage.getTopicMessages);
-app.getAsync(apiPrefix + '/topics?/:id/messages?/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
+app.getAsync(apiPrefix + '/topics/:id/messages', topicmessage.getTopicMessages);
+app.getAsync(apiPrefix + '/topics/:id/messages/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
 app.getAsync(apiPrefix + '/topics?/messages?/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
 
 // response data handling middleware
