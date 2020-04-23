@@ -606,7 +606,7 @@ const encodeKey = function (key) {
  * @return {String} base64 encoded string
  */
 const encodeBase64 = function (buffer) {
-  return null === buffer ? null : buffer.toString('base64');
+  return encodeMessage(buffer, 'base64');
 };
 
 /**
@@ -615,7 +615,16 @@ const encodeBase64 = function (buffer) {
  * @return {String} utf-8 encoded string
  */
 const encodeUtf8 = function (buffer) {
-  return null === buffer ? null : buffer.toString('utf8');
+  return encodeMessage(buffer, 'utf8');
+};
+
+const encodeMessage = function (buffer, encoding) {
+  // default to base64 encoding
+  if (undefined === encoding) {
+    encoding = 'base64';
+  }
+
+  return null === buffer ? null : buffer.toString(encoding);
 };
 
 /**
