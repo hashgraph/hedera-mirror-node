@@ -101,20 +101,21 @@ if (config.api.metrics.enabled) {
 
 let apiPrefix = '/api/v1';
 
-// routes
-app.getAsync(apiPrefix + '/transactions', transactions.getTransactions);
-app.getAsync(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
-app.getAsync(apiPrefix + '/balances', balances.getBalances);
+// accounts routes
 app.getAsync(apiPrefix + '/accounts', accounts.getAccounts);
 app.getAsync(apiPrefix + '/accounts/:id', accounts.getOneAccount);
-app.getAsync(apiPrefix + '/topic/message/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
 
-// support singular and plural resource naming for single topic message via id and sequence
-app.getAsync(apiPrefix + '/topic/:id/message/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
-app.getAsync(apiPrefix + '/topics/:id/messages/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
+// balances routes
+app.getAsync(apiPrefix + '/balances', balances.getBalances);
 
-app.getAsync(apiPrefix + '/topics/:id/messages', topicmessage.getTopicMessages);
-app.getAsync(apiPrefix + '/topic/:id/messages', topicmessage.getTopicMessages);
+// transactions routes
+app.getAsync(apiPrefix + '/transactions', transactions.getTransactions);
+app.getAsync(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
+
+// topics routes
+app.getAsync(apiPrefix + '/topics/:id/messages?', topicmessage.getTopicMessages);
+app.getAsync(apiPrefix + '/topics?/:id/messages?/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
+app.getAsync(apiPrefix + '/topics?/messages?/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
 
 // response data handling middleware
 app.use(responseHandler);

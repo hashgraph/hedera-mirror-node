@@ -23,7 +23,7 @@
       }
     ]
   },
-  "url": "/api/v1/topic/7/messages?sequencenumber=2_2&timestamp=18:34&limit=12345",
+  "url": "/api/v1/topics/7/messages?sequencenumber=2_2&timestamp=18:34&limit=12345",
   "responseStatus": 400,
   "responseJson": {
     "_status": {

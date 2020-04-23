@@ -23,7 +23,7 @@
       }
     ]
   },
-  "url": "/api/v1/topic/-1/messages",
+  "url": "/api/v1/topics/-1/messages",
   "responseStatus": 400,
   "responseJson": {
     "_status": {

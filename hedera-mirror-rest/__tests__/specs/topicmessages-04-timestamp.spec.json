@@ -23,7 +23,7 @@
       }
     ]
   },
-  "url": "/api/v1/topic/7/messages?timestamp=1234567890.000000003",
+  "url": "/api/v1/topics/7/messages?timestamp=1234567890.000000003",
   "responseStatus": 200,
   "responseJson": {
     "messages": [
