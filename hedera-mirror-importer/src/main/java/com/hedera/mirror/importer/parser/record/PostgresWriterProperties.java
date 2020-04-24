@@ -20,14 +20,14 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import javax.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
-import javax.validation.constraints.Min;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.parser.record.postgresql")
+@ConfigurationProperties("hedera.mirror.importer.parser.record.postgresql")
 public class PostgresWriterProperties {
     /**
      * PreparedStatement.executeBatch() is called after every batchSize number of transactions from record stream file.

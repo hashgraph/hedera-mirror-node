@@ -31,8 +31,8 @@ services:
     image: gcr.io/mirrornode/hedera-mirror-importer
     restart: unless-stopped
     environment:
-      HEDERA_MIRROR_DATAPATH: /var/lib/hedera-mirror-importer
-      HEDERA_MIRROR_DB_HOST: db
+      HEDERA_MIRROR_IMPORTER_DATAPATH: /var/lib/hedera-mirror-importer
+      HEDERA_MIRROR_IMPORTER_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-importer/
     volumes:
       - ./data:/var/lib/hedera-mirror-importer
@@ -41,7 +41,7 @@ services:
   rest:
     image: gcr.io/mirrornode/hedera-mirror-rest
     environment:
-      HEDERA_MIRROR_DB_HOST: db
+      HEDERA_MIRROR_REST_DB_HOST: db
     restart: unless-stopped
     tty: true
     ports:

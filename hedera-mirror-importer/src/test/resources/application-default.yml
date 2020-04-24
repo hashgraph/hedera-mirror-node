@@ -1,18 +1,17 @@
 hedera:
   mirror:
-    db:
-      name: mirror_node_test
-    downloader:
-      bucketName: test
-      cloudProvider: LOCAL
     importer:
+      db:
+        name: mirror_node_test
+      downloader:
+        bucketName: test
+        cloudProvider: LOCAL
       parser:
+        balance:
+          enabled: false
         exclude:
           - entity: 0.0.999
-    network: TESTNET
-    parser:
-      balance:
-        enabled: false
+      network: TESTNET
 spring:
   task:
     scheduling:

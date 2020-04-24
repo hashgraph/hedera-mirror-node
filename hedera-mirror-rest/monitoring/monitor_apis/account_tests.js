@@ -24,7 +24,7 @@ const acctestutils = require('./monitortest_utils.js');
 const config = require('../../config.js');
 const math = require('mathjs');
 const accountsPath = '/accounts';
-const maxLimit = config.api.maxLimit;
+const maxLimit = config.maxLimit;
 
 /**
  * Makes a call to the rest-api and returns the accounts object from the response

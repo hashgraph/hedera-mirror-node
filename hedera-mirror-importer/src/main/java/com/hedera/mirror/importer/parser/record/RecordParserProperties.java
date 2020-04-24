@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.parser.ParserProperties;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.parser.record")
+@ConfigurationProperties("hedera.mirror.importer.parser.record")
 public class RecordParserProperties implements ParserProperties {
 
     private final MirrorProperties mirrorProperties;

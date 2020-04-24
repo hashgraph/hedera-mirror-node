@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror")
+@ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
 
     private static final String ADDRESS_BOOK_FILE = "addressbook.bin";

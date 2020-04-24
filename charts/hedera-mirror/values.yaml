@@ -19,11 +19,12 @@ importer:
   config:
     hedera:
       mirror:
-        db:
-          host: postgresql-pgpool
-          name: mirror_node
-          password: mirror_node_pass
-          username: mirror_node
+        importer:
+          db:
+            host: postgresql-pgpool
+            name: mirror_node
+            password: mirror_node_pass
+            username: mirror_node
   enabled: true
   priorityClassName: high
 
@@ -262,8 +263,9 @@ rest:
   config:
     hedera:
       mirror:
-        db:
-          apiPassword: mirror_api_pass
-          apiUsername: mirror_api
-          host: postgresql-pgpool
+        rest:
+          db:
+            host: postgresql-pgpool
+            password: mirror_api_pass
+            username: mirror_api
   priorityClassName: medium

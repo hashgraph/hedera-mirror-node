@@ -277,7 +277,7 @@ public class RecordFileParser implements FileParser {
     }
 
     @Override
-    @Scheduled(fixedRateString = "${hedera.mirror.parser.record.frequency:500}")
+    @Scheduled(fixedRateString = "${hedera.mirror.importer.parser.record.frequency:500}")
     public void parse() {
         if (!parserProperties.isEnabled()) {
             return;

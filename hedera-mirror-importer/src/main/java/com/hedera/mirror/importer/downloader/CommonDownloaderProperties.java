@@ -31,7 +31,7 @@ import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.downloader")
+@ConfigurationProperties("hedera.mirror.importer.downloader")
 public class CommonDownloaderProperties {
 
     private String accessKey;

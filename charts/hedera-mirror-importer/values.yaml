@@ -13,7 +13,8 @@ annotations: {}
 config:
   hedera:
     mirror:
-      dataPath: /var/lib/hedera-mirror-importer
+      importer:
+        dataPath: /var/lib/hedera-mirror-importer
 
 fullnameOverride: ""
 
