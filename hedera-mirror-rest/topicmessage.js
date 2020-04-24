@@ -271,7 +271,7 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
 };
 
 /**
- * Handler function for /message/:consensusTimestamp API.
+ * Handler function for /messages/:consensusTimestamp API.
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
@@ -282,7 +282,7 @@ const getMessageByConsensusTimestamp = async (req, res) => {
 };
 
 /**
- * Handler function for /:id/message/:sequencenumber API.
+ * Handler function for /:id/messages/:sequencenumber API.
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */

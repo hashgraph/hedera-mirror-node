@@ -165,15 +165,6 @@ public abstract class AbstractDownloaderTest {
         assertValidFiles(List.of(fileName1, fileName2));
     }
 
-    @Test
-    @DisplayName("Missing address book")
-    void testMissingAddressBook() throws Exception {
-        Files.delete(mirrorProperties.getAddressBookPath());
-        fileCopier.copy();
-        downloader.download();
-        assertNoFilesinValidPath();
-    }
-
     protected void testMaxDownloadItemsReached(String filename) throws Exception {
         fileCopier.copy();
         downloader.download();

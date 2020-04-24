@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.record.pubsub;
 
 /*-
  * ‌
@@ -20,18 +20,19 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.validation.annotation.Validated;
 
+// Exporting to PubSub can be configured using properties in spring.cloud.gcp.pubsub.* and here. See configuration
+// docs for more details.
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.parser.record.postgresql")
-public class PostgresWriterProperties {
-    /**
-     * PreparedStatement.executeBatch() is called after every batchSize number of transactions from record stream file.
-     */
-    @Min(1)
-    private int batchSize = 100;
+@Conditional(PubSubEnabledCondition.class)
+@ConfigurationProperties("hedera.mirror.parser.record.pubsub")
+public class PubSubProperties {
+    @NotNull
+    private String topicName;
 }

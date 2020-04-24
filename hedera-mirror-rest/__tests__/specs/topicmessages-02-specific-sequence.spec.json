@@ -23,7 +23,7 @@
       }
     ]
   },
-  "url": "/api/v1/topic/7/messages?sequencenumber=2",
+  "url": "/api/v1/topics/7/messages?sequencenumber=2",
   "responseStatus": 200,
   "responseJson": {
     "messages": [

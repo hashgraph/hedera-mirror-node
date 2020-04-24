@@ -32,10 +32,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.io.IOException;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.annotation.Conditional;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.ContractResult;
@@ -50,9 +50,9 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityEnabledCondition;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -60,6 +60,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
+@Conditional(EntityEnabledCondition.class)
 public class RecordItemParser implements RecordItemListener {
     private final RecordParserProperties parserProperties;
     private final NetworkAddressBook networkAddressBook;
@@ -143,9 +144,12 @@ public class RecordItemParser implements RecordItemListener {
                 insertFileUpdate(consensusNs, body.getFileUpdate());
             }
         }
-
         recordParsedItemHandler.onTransaction(tx);
         log.debug("Storing transaction: {}", tx);
+
+        if (NetworkAddressBook.isAddressBook(entityId)) {
+            networkAddressBook.updateFrom(body);
+        }
     }
 
     private Transaction buildTransaction(long consensusTimestamp, RecordItem recordItem) {
@@ -212,14 +216,6 @@ public class RecordItemParser implements RecordItemListener {
     private void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody) {
         byte[] contents = transactionBody.getContents().toByteArray();
         insertFileData(consensusTimestamp, contents, transactionBody.getFileID());
-        // we have an address book update, refresh the local file
-        if (isFileAddressBook(transactionBody.getFileID())) {
-            try {
-                networkAddressBook.append(contents);
-            } catch (IOException e) {
-                throw new ParserException("Error appending to network address book", e);
-            }
-        }
     }
 
     private void insertCryptoAddClaim(long consensusTimestamp,
@@ -320,14 +316,6 @@ public class RecordItemParser implements RecordItemListener {
         FileID fileId = transactionBody.getFileID();
         byte[] contents = transactionBody.getContents().toByteArray();
         insertFileData(consensusTimestamp, contents, fileId);
-        // we have an address book update, refresh the local file
-        if (isFileAddressBook(fileId)) {
-            try {
-                networkAddressBook.update(contents);
-            } catch (IOException e) {
-                throw new ParserException("Error appending to network address book", e);
-            }
-        }
     }
 
     private void insertContractResults(
