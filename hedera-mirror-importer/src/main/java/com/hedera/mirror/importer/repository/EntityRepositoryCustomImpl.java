@@ -22,8 +22,6 @@ package com.hedera.mirror.importer.repository;
 
 import java.util.Collection;
 
-import com.hedera.mirror.importer.domain.Entities;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 
@@ -63,7 +61,7 @@ public class EntityRepositoryCustomImpl implements EntityRepositoryCustom {
             return id;
         }
         return entityRepository.findEntityIdByNativeIds(
-                entityId.getEntityShard(), entityId.getEntityRealm(), entityId.getEntityNum())
+                entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum())
                 .orElseGet(() -> {
                     var entity = entityRepository.save(entityId.toEntity());
                     entityRepository.cache(entity.toEntityId()); // save to big cache

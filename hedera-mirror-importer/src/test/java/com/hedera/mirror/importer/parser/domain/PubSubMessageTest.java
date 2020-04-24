@@ -64,6 +64,7 @@ class PubSubMessageTest {
         PubSubMessage pubSubMessage = new PubSubMessage(
                 DEFAULT_TIMESTAMP_LONG,
                 EntityId.of(TOPIC_ID),
+                10,
                 getTransaction(),
                 getTransactionRecord(),
                 nonFeeTransfers);
@@ -72,11 +73,12 @@ class PubSubMessageTest {
         JsonNode expected = objectMapper.readTree("{" +
                 "  \"consensusTimestamp\" : 123456789," +
                 "  \"entity\" : {" +
-                "    \"entityShard\" : 0," +
-                "    \"entityRealm\" : 0," +
+                "    \"shardNum\" : 0," +
+                "    \"realmNum\" : 0," +
                 "    \"entityNum\" : 20," +
-                "    \"entityTypeId\" : 4" +
+                "    \"type\" : 4" +
                 "  }," +
+                "  \"transactionType\" : 10," +
                 getExpectedTransactionJson() + "," +
                 getExpectedTransactionRecord() + "," +
                 "  \"nonFeeTransfers\" : [ {" +
@@ -100,12 +102,13 @@ class PubSubMessageTest {
 
     @Test
     void testSerializationWithNullFields() throws Exception {
-        PubSubMessage pubSubMessage = new PubSubMessage(DEFAULT_TIMESTAMP_LONG, null, getTransaction(),
+        PubSubMessage pubSubMessage = new PubSubMessage(DEFAULT_TIMESTAMP_LONG, null, 10, getTransaction(),
                 getTransactionRecord(), null);
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode actual = objectMapper.readTree(objectMapper.writeValueAsString(pubSubMessage));
         JsonNode expected = objectMapper.readTree("{" +
                 "  \"consensusTimestamp\" : 123456789," +
+                "  \"transactionType\" : 10," +
                 getExpectedTransactionJson() + "," +
                 getExpectedTransactionRecord() +
                 "}");

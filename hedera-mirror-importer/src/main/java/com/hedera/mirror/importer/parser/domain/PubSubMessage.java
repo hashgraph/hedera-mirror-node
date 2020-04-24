@@ -37,6 +37,8 @@ public class PubSubMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final EntityId entity;
 
+    private final int transactionType;
+
     @JsonSerialize(using = ProtoJsonSerializer.class)
     private final Transaction transaction;
 
