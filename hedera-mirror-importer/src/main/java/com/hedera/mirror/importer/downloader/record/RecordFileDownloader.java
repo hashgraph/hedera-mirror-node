@@ -21,9 +21,6 @@ package com.hedera.mirror.importer.downloader.record;
  */
 
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.util.Utility;
-
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -34,6 +31,7 @@ import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named

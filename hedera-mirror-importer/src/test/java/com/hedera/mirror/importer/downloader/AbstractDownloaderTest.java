@@ -57,7 +57,7 @@ public abstract class AbstractDownloaderTest {
     protected Path s3Path;
     protected S3Mock s3;
     protected FileCopier fileCopier;
-    protected CommonDownloaderProperties commonDownloaderProperties;
+    protected StreamProperties streamProperties;
     protected MirrorProperties mirrorProperties;
     protected NetworkAddressBook networkAddressBook;
     protected S3AsyncClient s3AsyncClient;
@@ -96,13 +96,13 @@ public abstract class AbstractDownloaderTest {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
-        s3AsyncClient = new MirrorImporterConfiguration(commonDownloaderProperties).s3AsyncClient();
+        s3AsyncClient = new MirrorImporterConfiguration(streamProperties).s3CloudStorageClient();
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
         downloader = getDownloader();
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(getTestDataDir())
-                .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
+                .to(streamProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
 
         validPath = downloaderProperties.getValidPath();
 
@@ -120,11 +120,12 @@ public abstract class AbstractDownloaderTest {
         mirrorProperties.setDataPath(dataPath);
         mirrorProperties.setNetwork(HederaNetwork.TESTNET);
 
-        commonDownloaderProperties = new CommonDownloaderProperties();
-        commonDownloaderProperties.setBucketName("test");
-        commonDownloaderProperties.setCloudProvider(CommonDownloaderProperties.CloudProvider.LOCAL);
-        commonDownloaderProperties.setAccessKey("x"); // https://github.com/findify/s3mock/issues/147
-        commonDownloaderProperties.setSecretKey("x");
+        streamProperties = new StreamProperties();
+        streamProperties.setBucketName("test");
+        var s3Properties = streamProperties.getS3();
+        s3Properties.setEndpoint("http://127.0.0.1:8001");
+        s3Properties.setAccessKey("x"); // https://github.com/findify/s3mock/issues/147
+        s3Properties.setSecretKey("x");
 
         downloaderProperties = getDownloaderProperties();
     }

@@ -42,7 +42,7 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
-        DownloaderProperties properties = new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        DownloaderProperties properties = new BalanceDownloaderProperties(mirrorProperties, streamProperties);
         properties.init();
         return properties;
     }

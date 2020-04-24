@@ -148,7 +148,7 @@ public abstract class Downloader {
                     var listSize = (downloaderProperties.getBatchSize() * 2);
                     // Not using ListObjectsV2Request because it does not work with GCP.
                     ListObjectsRequest listRequest = ListObjectsRequest.builder()
-                            .bucket(downloaderProperties.getCommon().getBucketName())
+                            .bucket(downloaderProperties.getStreamProperties().getBucketName())
                             .prefix(s3Prefix)
                             .delimiter("/")
                             .marker(s3Prefix + lastValidSigFileName)
@@ -235,7 +235,8 @@ public abstract class Downloader {
             }
         }
         var future = s3Client.getObject(
-                GetObjectRequest.builder().bucket(downloaderProperties.getCommon().getBucketName()).key(s3ObjectKey)
+                GetObjectRequest.builder()
+                        .bucket(downloaderProperties.getStreamProperties().getBucketName()).key(s3ObjectKey)
                         .requestPayer(RequestPayer.REQUESTER)
                         .build(),
                 AsyncResponseTransformer.toFile(file));

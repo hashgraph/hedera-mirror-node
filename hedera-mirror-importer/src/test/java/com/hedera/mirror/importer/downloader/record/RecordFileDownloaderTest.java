@@ -50,7 +50,7 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
-        DownloaderProperties properties = new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        DownloaderProperties properties = new RecordDownloaderProperties(mirrorProperties, streamProperties);
         properties.init();
         return properties;
     }
@@ -73,7 +73,7 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
         networkAddressBook.update(Files.readAllBytes(addressBook));
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
-                .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
+                .to(streamProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
         fileCopier.copy();
 
         downloader.download();

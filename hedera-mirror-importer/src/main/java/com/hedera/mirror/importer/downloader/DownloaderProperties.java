@@ -30,7 +30,7 @@ public interface DownloaderProperties {
 
     int getBatchSize();
 
-    CommonDownloaderProperties getCommon();
+    StreamProperties getStreamProperties();
 
     /**
      * The number of current mainnet nodes used to download signatures in parallel. Should be adjusted when nodes
