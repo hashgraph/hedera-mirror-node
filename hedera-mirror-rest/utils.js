@@ -76,12 +76,20 @@ const isValidPublicKeyQuery = (query) => {
   return /^[0-9a-fA-F]{64}$/.test(query) || /^[0-9a-fA-F]{88}$/.test(query);
 };
 
+const isValidUtf8Encoding = (query) => {
+  if (undefined == query) {
+    return false;
+  }
+  query = query.toLowerCase();
+  return /^(utf-?8)$/.test(query);
+};
+
 const isValidEncoding = (query) => {
   if (undefined == query) {
     return false;
   }
   query = query.toLowerCase();
-  return /^(base64|utf-?8)$/.test(query);
+  return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
 };
 
 /**
@@ -629,8 +637,8 @@ const encodeUtf8 = function (buffer) {
 const encodeBinary = function (buffer, encoding) {
   // default to base64 encoding
   let charEncoding = constants.characterEncoding.BASE64;
-  if (encoding === constants.characterEncoding.UTF8) {
-    charEncoding = encoding;
+  if (isValidUtf8Encoding(encoding)) {
+    charEncoding = constants.characterEncoding.UTF8;
   }
 
   return null === buffer ? null : buffer.toString(charEncoding);

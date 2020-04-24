@@ -240,11 +240,30 @@ describe('utils encodeMessage tests', () => {
   const base64Message = 'aGVkZXJhIGhhc2hncmFwaA==';
   const utf8Message = 'hedera hashgraph';
 
+  test(`Verify encodeBinary on null character encoding`, () => {
+    expect(utils.encodeBinary(inputMessage, null)).toBe(base64Message);
+  });
+
+  test(`Verify encodeBinary on empty character encoding`, () => {
+    expect(utils.encodeBinary(inputMessage, '')).toBe(base64Message);
+  });
+
+  test(`Verify encodeBinary on hex character encoding`, () => {
+    expect(utils.encodeBinary(inputMessage, 'hex')).toBe(base64Message);
+  });
+
   // base64 test
-  let result = utils.encodeBinary(inputMessage, constants.characterEncoding.BASE64);
-  expect(result).toStrictEqual(base64Message);
+  test(`Verify encodeBinary on base64 character encoding`, () => {
+    expect(utils.encodeBinary(inputMessage, constants.characterEncoding.BASE64)).toBe(base64Message);
+  });
 
   // utf-8 test
-  result = utils.encodeBinary(inputMessage, constants.characterEncoding.UTF8);
-  expect(result).toStrictEqual(utf8Message);
+  test(`Verify encodeBinary on utf-8 character encoding`, () => {
+    expect(utils.encodeBinary(inputMessage, constants.characterEncoding.UTF8)).toBe(utf8Message);
+  });
+
+  // utf8 test
+  test(`Verify encodeBinary on utf8 character encoding`, () => {
+    expect(utils.encodeBinary(inputMessage, 'utf8')).toBe(utf8Message);
+  });
 });
