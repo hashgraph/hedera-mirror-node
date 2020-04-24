@@ -34,10 +34,10 @@ let config = utils.config;
 /**
  * Returns average and standard deviation of numerical values in the given array.
  */
-const getAvgAndStdDev = arr => {
+const getAvgAndStdDev = (arr) => {
   const n = arr.length;
   const average = arr.reduce((a, b) => a + b) / n;
-  const stddev = Math.sqrt(arr.map(x => Math.pow(x - average, 2)).reduce((a, b) => a + b) / n);
+  const stddev = Math.sqrt(arr.map((x) => Math.pow(x - average, 2)).reduce((a, b) => a + b) / n);
   return {average: parseInt(average), stddev: parseInt(stddev)};
 };
 
@@ -47,7 +47,7 @@ const getAvgAndStdDev = arr => {
  * 1. Executes queries (sequentially) by iterating over paramValues.
  * 2. Collects stats: time taken, response size
  */
-const executeQuerySet = async querySet => {
+const executeQuerySet = async (querySet) => {
   console.log(`Running query set: ${querySet.name}`);
   let url = config.apiServer + '/api/v1' + querySet.query;
   if (!url.startsWith('http://')) {
@@ -59,12 +59,12 @@ const executeQuerySet = async querySet => {
     let query = vsprintf(url, querySet.paramValues[i]);
     let hrstart = process.hrtime();
     let response = await fetch(query)
-            .then(response => {
-              return response.text();
-            })
-            .catch(error => {
-              console.log(`Error when querying ${query} : ${error}`);
-            });
+      .then((response) => {
+        return response.text();
+      })
+      .catch((error) => {
+        console.log(`Error when querying ${query} : ${error}`);
+      });
     let hrend = process.hrtime(hrstart);
     querySetResult.elapsedTimesMs.push(hrend[0] * 1000 + hrend[1] / 1000000);
     querySetResult.responseSizes.push(response.length);
@@ -74,7 +74,7 @@ const executeQuerySet = async querySet => {
     query: querySet.query,
     count: querySet.paramValues.length,
     timeTakeMs: getAvgAndStdDev(querySetResult.elapsedTimesMs),
-    responseSize: getAvgAndStdDev(querySetResult.responseSizes)
+    responseSize: getAvgAndStdDev(querySetResult.responseSizes),
   };
 };
 
@@ -99,12 +99,12 @@ const executeQueries = async () => {
 };
 
 /**
- * If hedera.mirror.resultsDir is set to a valid path, then output results to a file.
+ * If hedera.mirror.rest.resultsDir is set to a valid path, then output results to a file.
  */
-const writeResultToFile = results => {
+const writeResultToFile = (results) => {
   let resultsDir = config.resultsDir;
   if (resultsDir === undefined || resultsDir === '') {
-    console.log(`hedera.mirror.resultsDir not set or empty. Skipping writing results to file.`);
+    console.log(`hedera.mirror.rest.resultsDir not set or empty. Skipping writing results to file.`);
     return;
   }
   let dateTime = new Date().toJSON().substring(0, 19);
