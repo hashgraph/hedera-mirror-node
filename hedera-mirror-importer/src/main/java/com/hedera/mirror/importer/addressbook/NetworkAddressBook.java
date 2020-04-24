@@ -60,8 +60,8 @@ public class NetworkAddressBook {
     }
 
     public static boolean isAddressBook(EntityId entityId) {
-        return entityId != null && entityId.getEntityTypeId() == EntityTypeEnum.FILE.getId()
-                && entityId.getEntityNum() == 102 && entityId.getEntityShard() == 0 && entityId.getEntityRealm() == 0;
+        return entityId != null && entityId.getType() == EntityTypeEnum.FILE.getId()
+                && entityId.getEntityNum() == 102 && entityId.getShardNum() == 0 && entityId.getRealmNum() == 0;
     }
 
     public void updateFrom(TransactionBody transactionBody) {

@@ -339,7 +339,7 @@ public class RecordItemParser implements RecordItemListener {
         //   immediately in TransactionHandler.updateEntity(..).
         if (transactionHandler.updatesEntity() && isSuccessful && entityId != null) {
             Entities entity = entityRepository.findByPrimaryKey(
-                    entityId.getEntityShard(), entityId.getEntityRealm(), entityId.getEntityNum())
+                    entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum())
                     .orElseGet(entityId::toEntity);
             transactionHandler.updateEntity(entity, recordItem);
             return entityRepository.save(entity);

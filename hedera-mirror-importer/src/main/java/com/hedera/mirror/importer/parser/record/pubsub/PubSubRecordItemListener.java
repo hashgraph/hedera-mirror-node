@@ -83,7 +83,8 @@ public class PubSubRecordItemListener implements RecordItemListener {
                 .setBody(recordItem.getTransactionBody()) // setting deprecated field makes json conversion easier
                 .build();
         var nonFeeTransfers = addNonFeeTransfers(recordItem.getTransactionBody(), recordItem.getRecord());
-        return new PubSubMessage(consensusTimestamp, entity, transaction, recordItem.getRecord(), nonFeeTransfers);
+        return new PubSubMessage(consensusTimestamp, entity, recordItem.getTransactionType(), transaction,
+                recordItem.getRecord(), nonFeeTransfers);
     }
 
     /**
