@@ -18,6 +18,7 @@
  * ‍
  */
 'use strict';
+const constants = require('./constants.js');
 const math = require('mathjs');
 const config = require('./config.js');
 const ed25519 = require('./ed25519.js');
@@ -35,18 +36,6 @@ const opsMap = {
   gte: ' >= ',
   eq: ' = ',
   ne: ' != ',
-};
-
-const filterKeys = {
-  ACCOUNT_ID: 'account.id',
-  ACCOUNT_BALANCE: 'account.balance',
-  ACCOUNT_PUBLICKEY: 'account.publickey',
-  LIMIT: 'limit',
-  ORDER: 'order',
-  RESULT: 'result',
-  SEQUENCE_NUMBER: 'sequencenumber',
-  TIMESTAMP: 'timestamp',
-  TYPE: 'type',
 };
 
 /**
@@ -73,6 +62,34 @@ const isValidLimitNum = (limit) => {
 
 const isValidNum = (num) => {
   return /^\d{1,16}$/.test(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER;
+};
+
+const isValidOperatorQuery = (query) => {
+  return /^(gte?|lte?|eq|ne)$/.test(query);
+};
+
+const isValidAccountBalanceQuery = (query) => {
+  return /^\d{1,19}$/.test(query);
+};
+
+const isValidPublicKeyQuery = (query) => {
+  return /^[0-9a-fA-F]{64}$/.test(query) || /^[0-9a-fA-F]{88}$/.test(query);
+};
+
+const isValidUtf8Encoding = (query) => {
+  if (undefined == query) {
+    return false;
+  }
+  query = query.toLowerCase();
+  return /^(utf-?8)$/.test(query);
+};
+
+const isValidEncoding = (query) => {
+  if (undefined == query) {
+    return false;
+  }
+  query = query.toLowerCase();
+  return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
 };
 
 /**
@@ -113,46 +130,50 @@ const filterValidityChecks = function (param, op, val) {
   }
 
   // Validate operator
-  if (!/^(gte?|lte?|eq|ne)$/.test(op)) {
+  if (!isValidOperatorQuery(op)) {
     return ret;
   }
 
   // Validate the value
   switch (param) {
-    case filterKeys.ACCOUNT_ID:
+    case constants.filterKeys.ACCOUNT_ID:
       // Accepted forms: shard.realm.num or num
       ret = isValidEntityNum(val);
       break;
-    case filterKeys.TIMESTAMP:
+    case constants.filterKeys.TIMESTAMP:
       ret = isValidTimestampParam(val);
       break;
-    case filterKeys.ACCOUNT_BALANCE:
+    case constants.filterKeys.ACCOUNT_BALANCE:
       // Accepted forms: Upto 50 billion
-      ret = /^\d{1,19}$/.test(val);
+      ret = isValidAccountBalanceQuery(val);
       break;
-    case filterKeys.ACCOUNT_PUBLICKEY:
+    case constants.filterKeys.ACCOUNT_PUBLICKEY:
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
-      ret = /^[0-9a-fA-F]{64}$/.test(val) || /^[0-9a-fA-F]{88}$/.test(val);
+      ret = isValidPublicKeyQuery(val);
       break;
-    case filterKeys.LIMIT:
+    case constants.filterKeys.LIMIT:
       // Acceptable forms: upto 4 digits
       ret = isValidLimitNum(val);
       break;
-    case filterKeys.ORDER:
+    case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
-      ret = ['asc', 'desc'].includes(val);
+      ret = Object.values(constants.orderFilterValues).includes(val.toLowerCase());
       break;
-    case filterKeys.TYPE:
-      // Acceptable words: credit or debig
-      ret = ['credit', 'debit'].includes(val);
+    case constants.filterKeys.TYPE:
+      // Acceptable words: credit or debit
+      ret = Object.values(constants.cryptoTransferType).includes(val.toLowerCase());
       break;
-    case filterKeys.RESULT:
+    case constants.filterKeys.RESULT:
       // Acceptable words: success or fail
-      ret = ['success', 'fail'].includes(val);
+      ret = Object.values(constants.transactionResultFilter).includes(val.toLowerCase());
       break;
-    case filterKeys.SEQUENCE_NUMBER:
+    case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
       ret = isValidNum(val);
+      break;
+    case constants.filterKeys.ENCODING:
+      // Acceptable words: binary or text
+      ret = isValidEncoding(val.toLowerCase());
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -380,7 +401,7 @@ const parseCreditDebitParams = function (req) {
   // Get the transaction type (credit, debit, or both)
   // By default, query for both credit and debit transactions
   let creditDebit = req.query.type;
-  if (!['credit', 'debit'].includes(creditDebit)) {
+  if (!Object.values(constants.cryptoTransferType).includes(creditDebit)) {
     creditDebit = 'creditAndDebit';
   }
   return creditDebit;
@@ -395,9 +416,9 @@ const parseResultParams = function (req) {
   let resultType = req.query.result;
   let query = '';
 
-  if (resultType === 'success') {
+  if (resultType === constants.transactionResultFilter.SUCCESS) {
     query = '     result=' + TRANSACTION_RESULT_SUCCESS;
-  } else if (resultType === 'fail') {
+  } else if (resultType === constants.transactionResultFilter.FAIL) {
     query = '     result != ' + TRANSACTION_RESULT_SUCCESS;
   }
   return query;
@@ -409,19 +430,19 @@ const parseResultParams = function (req) {
  * @param {String} defaultOrder Order of sorting (defaults to descending)
  * @return {Object} {query, params, order} SQL query, values and order
  */
-const parseLimitAndOrderParams = function (req, defaultOrder = 'desc') {
+const parseLimitAndOrderParams = function (req, defaultOrder = constants.orderFilterValues.DESC) {
   // Parse the limit parameter
   let limitQuery = '';
   let limitParams = [];
-  let lVal = getIntegerParam(req.query['limit'], config.maxLimit);
+  let lVal = getIntegerParam(req.query[constants.filterKeys.LIMIT], config.maxLimit);
   let limitValue = lVal === '' ? config.maxLimit : lVal;
-  limitQuery = 'limit ? ';
+  limitQuery = `${constants.filterKeys.LIMIT} ? `;
   limitParams.push(limitValue);
 
   // Parse the order parameters (default: descending)
   let order = defaultOrder;
-  if (['asc', 'desc'].includes(req.query['order'])) {
-    order = req.query['order'];
+  if (Object.values(constants.orderFilterValues).includes(req.query[constants.filterKeys.ORDER])) {
+    order = req.query[constants.filterKeys.ORDER];
   }
 
   return buildPgSqlObject(limitQuery, limitParams, order, limitValue);
@@ -472,8 +493,8 @@ const getPaginationLink = function (req, isEnd, field, lastValue, order) {
   var next = '';
 
   if (!isEnd) {
-    const pattern = order === 'asc' ? /gt[e]?:/ : /lt[e]?:/;
-    const insertedPattern = order === 'asc' ? 'gt' : 'lt';
+    const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
+    const insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
 
     // Go through the query parameters, and if there is a 'field=gt:xxxx' (asc order)
     // or 'field=lt:xxxx' (desc order) fields, then remove that, to be replaced by the
@@ -513,34 +534,6 @@ const getPaginationLink = function (req, isEnd, field, lastValue, order) {
     next = urlPrefix + req.path + next;
   }
   return next === '' ? null : next;
-};
-
-/**
- * Create an additional timestamp based query to ensure the integrity of
- * paginated links results. The challege is that between consecutive paginated
- * calls, the database could have received more recent entries, and a subsequent
- * call could receive inconsistent data as a result.
- * This is handled by anchoring the queries on the page anchor (consensus seconds)
- * parameter.
- * @param {Request} req HTTP query request object
- * @param {String} order Order ('asc' or 'desc')
- * @return {Integer} anchorSecNs consensus seconds of the query result of
- *          the call that started pagination
- * @return {Request} req Updated HTTP request object with inserted pageanchor parameter
- */
-const getTimeQueryForPagination = function (req, order, anchorSecNs) {
-  //  if descending
-  //      if query has anchorSecNs:
-  //          then just use that
-  //      else:
-  //          add anchorSecNs = anchorSecNs
-  //
-  if (order === 'desc') {
-    if (anchorSecNs !== undefined && !req.query.pageanchor) {
-      req.query.pageanchor = anchorSecNs;
-    }
-  }
-  return req;
 };
 
 /**
@@ -629,7 +622,26 @@ const encodeKey = function (key) {
  * @return {String} base64 encoded string
  */
 const encodeBase64 = function (buffer) {
-  return null === buffer ? null : buffer.toString('base64');
+  return encodeBinary(buffer, constants.characterEncoding.BASE64);
+};
+
+/**
+ * Base64 encoding of a byte array for returning in JSON output
+ * @param {Array} key Byte array to be encoded
+ * @return {String} utf-8 encoded string
+ */
+const encodeUtf8 = function (buffer) {
+  return encodeBinary(buffer, constants.characterEncoding.UTF8);
+};
+
+const encodeBinary = function (buffer, encoding) {
+  // default to base64 encoding
+  let charEncoding = constants.characterEncoding.BASE64;
+  if (isValidUtf8Encoding(encoding)) {
+    charEncoding = constants.characterEncoding.UTF8;
+  }
+
+  return null === buffer ? null : buffer.toString(charEncoding);
 };
 
 /**
@@ -717,14 +729,14 @@ const formatComparator = (comparator) => {
 
     // format value
     switch (comparator.key) {
-      case filterKeys.ACCOUNT_ID:
+      case constants.filterKeys.ACCOUNT_ID:
         // Accepted forms: shard.realm.num or num
         comparator.value = parseEntityId(comparator.value);
         break;
-      case filterKeys.TIMESTAMP:
+      case constants.filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
         break;
-      case filterKeys.ACCOUNT_PUBLICKEY:
+      case constants.filterKeys.ACCOUNT_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = ed25519.derToEd25519(comparator.value);
         break;
@@ -748,6 +760,8 @@ module.exports = {
   createTransactionId: createTransactionId,
   convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,
   encodeBase64: encodeBase64,
+  encodeBinary,
+  encodeUtf8,
   encodeKey: encodeKey,
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
   filterValidityChecks: filterValidityChecks,

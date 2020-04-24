@@ -21,9 +21,15 @@ management:
     web:
       exposure:
         include: health, info, prometheus
+  health:
+    pubsub:
+      # Just importing pubsub deps enables its health checker and it requires auth credentials.
+      # Setting spring.cloud.gcp.pubsub.enabled=false is not enough to disable the pubsub health check.
+      enabled: ${spring.cloud.gcp.pubsub.enabled}
   metrics:
     export:
       elastic:
+        autoCreateIndex: false
         enabled: false
         index: mirror
         step: 30s
@@ -35,6 +41,9 @@ spring:
   application:
     name: hedera-mirror-importer
   cloud:
+    gcp:
+      pubsub:
+        enabled: false
     kubernetes:
       reload:
         enabled: true

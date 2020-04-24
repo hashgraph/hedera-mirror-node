@@ -24,7 +24,7 @@ global:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-importer
-  tag: 0.9.0-rc1
+  tag: 0.10.0-rc1
 
 imagePullSecrets: []
 
@@ -71,7 +71,7 @@ readinessProbe:
   initialDelaySeconds: 60
   timeoutSeconds: 2
 
-replicas: 1
+replicas: 2
 
 resources:
   limits:
@@ -92,6 +92,7 @@ securityContext:
   runAsUser: 1000
 
 service:
+  annotations: {}
   port: 8080
   type: ClusterIP
 

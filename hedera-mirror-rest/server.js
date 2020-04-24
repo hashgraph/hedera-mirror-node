@@ -19,20 +19,15 @@
  */
 'uses strict';
 
+// external libraries
 const express = require('express');
 const {addAsync} = require('@awaitjs/express');
 const bodyParser = require('body-parser');
-let Pool;
-if (process.env.NODE_ENV !== 'test') {
-  Pool = require('pg').Pool;
-} else {
-  Pool = require('./__tests__/mockpool.js'); // Use a mocked up DB for jest unit tests
-}
-const app = addAsync(express());
 const cors = require('cors');
 const log4js = require('log4js');
-const logger = log4js.getLogger();
+const compression = require('compression');
 
+// local files
 const config = require('./config.js');
 const transactions = require('./transactions.js');
 const balances = require('./balances.js');
@@ -42,19 +37,8 @@ const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
 
-var compression = require('compression');
-
-let port = config.port;
-if (process.env.NODE_ENV == 'test') {
-  port = 3000; // Use a dummy port for jest unit tests
-}
-if (port === undefined || isNaN(Number(port))) {
-  logger.error('Server started with unknown port');
-  console.log('Please specify the port');
-  process.exit(1);
-}
-
 // Logger
+const logger = log4js.getLogger();
 log4js.configure({
   appenders: {
     everything: {
@@ -70,7 +54,24 @@ log4js.configure({
 });
 global.logger = log4js.getLogger();
 
+let port = config.port;
+if (process.env.NODE_ENV == 'test') {
+  port = 3000; // Use a dummy port for jest unit tests
+}
+if (port === undefined || isNaN(Number(port))) {
+  logger.error('Server started with unknown port');
+  console.log('Please specify the port');
+  process.exit(1);
+}
+
 // Postgres pool
+let Pool;
+if (process.env.NODE_ENV !== 'test') {
+  Pool = require('pg').Pool;
+} else {
+  Pool = require('./__tests__/mockpool.js'); // Use a mocked up DB for jest unit tests
+}
+
 const pool = new Pool({
   user: config.db.username,
   host: config.db.host,
@@ -80,6 +81,8 @@ const pool = new Pool({
 });
 global.pool = pool;
 
+// Express configuration
+const app = addAsync(express());
 app.set('trust proxy', true);
 app.set('port', port);
 app.use(
@@ -98,20 +101,21 @@ if (config.metrics.enabled) {
 
 let apiPrefix = '/api/v1';
 
-// routes
-app.getAsync(apiPrefix + '/transactions', transactions.getTransactions);
-app.getAsync(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
-app.getAsync(apiPrefix + '/balances', balances.getBalances);
+// accounts routes
 app.getAsync(apiPrefix + '/accounts', accounts.getAccounts);
 app.getAsync(apiPrefix + '/accounts/:id', accounts.getOneAccount);
-app.getAsync(apiPrefix + '/topic/message/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
 
-// support singular and plural resource naming for single topic message via id and sequence
-app.getAsync(apiPrefix + '/topic/:id/message/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
+// balances routes
+app.getAsync(apiPrefix + '/balances', balances.getBalances);
+
+// transactions routes
+app.getAsync(apiPrefix + '/transactions', transactions.getTransactions);
+app.getAsync(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
+
+// topics routes
+app.getAsync(apiPrefix + '/topics/:id/messages', topicmessage.getTopicMessages);
 app.getAsync(apiPrefix + '/topics/:id/messages/:sequencenumber', topicmessage.getMessageByTopicAndSequenceRequest);
-
-app.getAsync(apiPrefix + '/topics/:id', topicmessage.getTopicMessages);
-app.getAsync(apiPrefix + '/topic/:id', topicmessage.getTopicMessages);
+app.getAsync(apiPrefix + '/topics?/messages?/:consensusTimestamp', topicmessage.getMessageByConsensusTimestamp);
 
 // response data handling middleware
 app.use(responseHandler);

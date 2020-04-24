@@ -77,7 +77,7 @@ const verifyFilter = (filter, key, op, val) => {
 };
 
 describe('utils buildFilterObject tests', () => {
-  test('Verify buildComparatorFilter for /api/v1/topic/7?sequencenumber=2', () => {
+  test('Verify buildComparatorFilter for /api/v1/topic/7/messages?sequencenumber=2', () => {
     const filters = {
       sequencenumber: '2',
     };
@@ -88,7 +88,7 @@ describe('utils buildFilterObject tests', () => {
     verifyFilter(formattedFilters[0], constants.filterKeys.SEQUENCE_NUMBER, 'eq', '2');
   });
 
-  test('Verify buildComparatorFilter for /api/v1/topic/7?timestamp=1234567890.000000004', () => {
+  test('Verify buildComparatorFilter for /api/v1/topic/7/messages?timestamp=1234567890.000000004', () => {
     const filters = {
       timestamp: '1234567890.000000004',
     };
@@ -99,7 +99,7 @@ describe('utils buildFilterObject tests', () => {
     verifyFilter(formattedFilters[0], constants.filterKeys.TIMESTAMP, 'eq', '1234567890.000000004');
   });
 
-  test('Verify buildComparatorFilter for /api/v1/topic/7?sequencenumber=lt:2&sequencenumber=gte:3&timestamp=1234567890.000000004&order=desc&limit=5', () => {
+  test('Verify buildComparatorFilter for /api/v1/topic/7/messages?sequencenumber=lt:2&sequencenumber=gte:3&timestamp=1234567890.000000004&order=desc&limit=5', () => {
     const filters = {
       sequencenumber: ['lt:2', 'gte:3'],
       timestamp: '1234567890.000000004',
@@ -179,6 +179,7 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.RESULT, 'good'),
       utils.buildComparatorFilter(constants.filterKeys.TYPE, 'all'),
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '-1'),
+      utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'encrypt'),
     ];
 
     verifyInvalidFilters(filters);
@@ -213,6 +214,7 @@ describe('utils validateAndParseFilters tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.TYPE, 'credit'),
       utils.buildComparatorFilter(constants.filterKeys.TYPE, 'debit'),
       utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_BALANCE, '45000'),
+      utils.buildComparatorFilter(constants.filterKeys.ENCODING, 'utf-8'),
     ];
 
     expect(() => {

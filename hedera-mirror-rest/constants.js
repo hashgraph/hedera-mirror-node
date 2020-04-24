@@ -23,6 +23,7 @@ const filterKeys = {
   ACCOUNT_ID: 'account.id',
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
+  ENCODING: 'encoding',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
@@ -40,8 +41,33 @@ const entityColumns = {
 
 const responseDataLabel = 'mirrorRestData';
 
+const orderFilterValues = {
+  ASC: 'asc',
+  DESC: 'desc',
+};
+
+// topic messages filter options
+const characterEncoding = {
+  BASE64: 'base64',
+  UTF8: 'utf-8',
+};
+
+const transactionResultFilter = {
+  SUCCESS: 'success',
+  FAIL: 'fail',
+};
+
+const cryptoTransferType = {
+  CREDIT: 'credit',
+  DEBIT: 'debit',
+};
+
 module.exports = {
-  entityColumns: entityColumns,
-  filterKeys: filterKeys,
+  entityColumns,
+  filterKeys,
+  orderFilterValues,
   responseDataLabel,
+  characterEncoding,
+  transactionResultFilter,
+  cryptoTransferType,
 };

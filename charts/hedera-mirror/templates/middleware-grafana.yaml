@@ -1,0 +1,85 @@
+{{ $ingress := .Values.prometheus.grafana.ingress }}
+{{ $name := .Values.prometheus.grafana.fullnameOverride }}
+{{ $namespace := include "hedera-mirror.namespace" . }}
+
+{{- if $ingress.middleware.enabled -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+spec:
+  chain:
+    middlewares:
+    - name: {{ $name }}-ip-whitelist
+    - name: {{ $name }}-connection-limit
+    - name: {{ $name }}-rate-limit
+    - name: {{ $name }}-circuit-breaker
+    - name: {{ $name }}-strip-prefix
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ $name }}-ip-whitelist
+  namespace: {{ $namespace }}
+spec:
+  ipWhiteList:
+    sourceRange:
+      {{- toYaml $ingress.middleware.ipWhitelist | nindent 6 }}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ $name }}-connection-limit
+  namespace: {{ $namespace }}
+spec:
+  inFlightReq:
+    amount: {{ $ingress.middleware.connectionsPerIP }}
+    sourceCriterion:
+      ipStrategy:
+        depth: 1
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ $name }}-circuit-breaker
+  namespace: {{ $namespace }}
+spec:
+  circuitBreaker:
+    expression: {{ $ingress.middleware.circuitBreaker }}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ $name }}-rate-limit
+  namespace: {{ $namespace }}
+spec:
+  rateLimit:
+    {{- toYaml $ingress.middleware.rateLimit | nindent 4 }}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels:
+    {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ $name }}-strip-prefix
+  namespace: {{ $namespace }}
+spec:
+  stripPrefix:
+    prefixes: ["/grafana"]
+{{- end -}}

@@ -13,7 +13,7 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.9.0-rc1</version>
+        <version>0.10.0-rc1</version>
     </parent>
 
     <properties>
@@ -150,6 +150,14 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-kubernetes-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-gcp-starter-pubsub</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.integration</groupId>
+            <artifactId>spring-integration-core</artifactId>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>

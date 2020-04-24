@@ -23,7 +23,7 @@
       }
     ]
   },
-  "url": "/api/v1/topic/message/1234567890.000000002",
+  "url": "/api/v1/topics/messages/1234567890.000000002",
   "responseStatus": 200,
   "responseJson": {
     "consensus_timestamp": "1234567890.000000002",

@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -35,24 +36,27 @@ import lombok.Value;
  */
 @Value
 public class EntityId {
+    // Ignored so not included in json serialization of PubSubMessage
+    @JsonIgnore
     private Long id;
-    private Long entityShard;
-    private Long entityRealm;
+    private Long shardNum;
+    private Long realmNum;
     private Long entityNum;
-    private Integer entityTypeId;
+    private Integer type;
 
     public Entities toEntity() {
         Entities entity = new Entities();
         entity.setId(id);
-        entity.setEntityShard(entityShard);
-        entity.setEntityRealm(entityRealm);
+        entity.setEntityShard(shardNum);
+        entity.setEntityRealm(realmNum);
         entity.setEntityNum(entityNum);
-        entity.setEntityTypeId(entityTypeId);
+        entity.setEntityTypeId(type);
         return entity;
     }
 
+    @JsonIgnore
     public String getDisplayId() {
-        return String.format("%d.%d.%d", entityShard, entityRealm, entityNum);
+        return String.format("%d.%d.%d", shardNum, realmNum, entityNum);
     }
 
     public static EntityId of(AccountID accountID) {

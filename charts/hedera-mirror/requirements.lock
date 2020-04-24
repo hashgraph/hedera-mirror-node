@@ -7,7 +7,7 @@ dependencies:
   version: 0.1.0
 - name: loki-stack
   repository: https://grafana.github.io/loki/charts
-  version: 0.34.2
+  version: 0.36.0
 - name: postgresql-ha
   repository: https://charts.bitnami.com/bitnami
   version: 2.3.1
@@ -20,5 +20,8 @@ dependencies:
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
   version: 0.1.0
-digest: sha256:7267d1635c31ae3a1ae47f25a687ba0b7bad2e220f30471c04890ce62bde1582
-generated: "2020-04-22T10:08:24.088403-05:00"
+- name: traefik
+  repository: https://containous.github.io/traefik-helm-chart
+  version: 8.0.3
+digest: sha256:d8c5f1d1b12d075fb55d39b37ba089f02c65b6d13502ad958bd3f3b3b7036d15
+generated: "2020-04-22T16:10:49.813263-05:00"

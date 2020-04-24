@@ -18,7 +18,7 @@
       }
     ]
   },
-  "url": "/api/v1/topic/7/message/2",
+  "url": "/api/v1/topics/7/messages/2",
   "responseStatus": 404,
   "responseJson": {
     "_status": {

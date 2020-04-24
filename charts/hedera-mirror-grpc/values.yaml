@@ -26,9 +26,31 @@ hpa:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-grpc
-  tag: 0.9.0-rc1
+  tag: 0.10.0-rc1
 
 imagePullSecrets: []
+
+ingress:
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-grpc.namespace" . }}-{{ include "hedera-mirror-grpc.fullname" . }}@kubernetescrd'
+  enabled: true
+  hosts:
+    - host: ""
+      paths:
+        - "/com.hedera.mirror.api.proto.ConsensusService"
+        - "/grpc.reflection.v1alpha.ServerReflection"
+  middleware:
+    circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+    connectionsPerIP: 5
+    enabled: false
+    ipWhitelist:
+      - 0.0.0.0/0
+    rateLimit:
+      average: 100
+      burst: 250
+  tls:
+    enabled: false
+    secretName: ""
 
 labels:
   role: app
@@ -81,8 +103,10 @@ securityContext:
   runAsUser: 1000
 
 service:
+  annotations:
+    traefik.ingress.kubernetes.io/service.serversscheme: h2c
   port: 5600
-  type: LoadBalancer
+  type: ClusterIP
 
 serviceAccount:
   create: true

@@ -11,6 +11,7 @@ Array [
   "Invalid parameter: result",
   "Invalid parameter: type",
   "Invalid parameter: account.balance",
+  "Invalid parameter: encoding",
 ]
 `;
 

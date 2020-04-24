@@ -4,7 +4,7 @@
 
     <groupId>com.hedera</groupId>
     <artifactId>hedera-mirror-node</artifactId>
-    <version>0.9.0-rc1</version>
+    <version>0.10.0-rc1</version>
     <description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
     <inceptionYear>2019</inceptionYear>
     <modelVersion>4.0.0</modelVersion>
@@ -80,6 +80,14 @@
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
                 <version>Hoxton.SR3</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-gcp-dependencies</artifactId>
+                <version>1.2.2.RELEASE</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

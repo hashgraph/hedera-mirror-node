@@ -85,11 +85,11 @@ const validateGetTopicMessagesRequest = (topicId, filters) => {
 /**
  * Format row in postgres query's result to object which is directly returned to user as json.
  */
-const formatTopicMessageRow = function (row) {
+const formatTopicMessageRow = function (row, messageEncoding) {
   return {
     consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
     topic_id: `${config.shard}.${row[topicMessageColumns.REALM_NUM]}.${row[topicMessageColumns.TOPIC_NUM]}`,
-    message: utils.encodeBase64(row[topicMessageColumns.MESSAGE]),
+    message: utils.encodeBinary(row[topicMessageColumns.MESSAGE], messageEncoding),
     running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
     sequence_number: parseInt(row[topicMessageColumns.SEQUENCE_NUMBER]),
   };
@@ -143,6 +143,8 @@ const processGetTopicMessages = (req, res) => {
   // build sql query validated param and filters
   let {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
 
+  const messageEncoding = req.query[constants.filterKeys.ENCODING];
+
   let topicMessagesResponse = {
     messages: [],
     links: {
@@ -152,11 +154,16 @@ const processGetTopicMessages = (req, res) => {
 
   // get results and return formatted response
   return getMessages(query, params).then((messages) => {
-    topicMessagesResponse.messages = messages;
+    // format messages
+    topicMessagesResponse.messages = messages.map((m) => formatTopicMessageRow(m, messageEncoding));
 
     // populate next
     let lastTimeStamp =
-      messages.length > 0 ? messages[messages.length - 1][topicMessageColumns.CONSENSUS_TIMESTAMP] : null;
+      topicMessagesResponse.messages.length > 0
+        ? topicMessagesResponse.messages[topicMessagesResponse.messages.length - 1][
+            topicMessageColumns.CONSENSUS_TIMESTAMP
+          ]
+        : null;
 
     topicMessagesResponse.links.next = utils.getPaginationLink(
       req,
@@ -187,8 +194,14 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
       continue;
     }
 
+    // handle keys that do not require formatting first
     if (filter.key === constants.filterKeys.ORDER) {
       order = filter.value;
+      continue;
+    }
+
+    const columnKey = columnMap[filter.key];
+    if (columnKey === undefined) {
       continue;
     }
 
@@ -248,7 +261,7 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
     })
     .then((results) => {
       for (let i = 0; i < results.rowCount; i++) {
-        messages.push(formatTopicMessageRow(results.rows[i]));
+        messages.push(results.rows[i]);
       }
 
       logger.debug('getMessages returning ' + messages.length + ' entries');
@@ -258,7 +271,7 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
 };
 
 /**
- * Handler function for /message/:consensusTimestamp API.
+ * Handler function for /messages/:consensusTimestamp API.
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
@@ -269,7 +282,7 @@ const getMessageByConsensusTimestamp = async (req, res) => {
 };
 
 /**
- * Handler function for /:id/message/:sequencenumber API.
+ * Handler function for /:id/messages/:sequencenumber API.
  * @param {Request} req HTTP request object
  * @return {Promise} Promise for PostgreSQL query
  */
