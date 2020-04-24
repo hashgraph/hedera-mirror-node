@@ -76,6 +76,22 @@ const isValidPublicKeyQuery = (query) => {
   return /^[0-9a-fA-F]{64}$/.test(query) || /^[0-9a-fA-F]{88}$/.test(query);
 };
 
+const isValidUtf8Encoding = (query) => {
+  if (undefined == query) {
+    return false;
+  }
+  query = query.toLowerCase();
+  return /^(utf-?8)$/.test(query);
+};
+
+const isValidEncoding = (query) => {
+  if (undefined == query) {
+    return false;
+  }
+  query = query.toLowerCase();
+  return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
+};
+
 /**
  * Validate input parameters for the rest apis
  * @param {String} param Parameter to be validated
@@ -141,19 +157,23 @@ const filterValidityChecks = function (param, op, val) {
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
-      ret = Object.values(constants.orderFilterValues).includes(val);
+      ret = Object.values(constants.orderFilterValues).includes(val.toLowerCase());
       break;
     case constants.filterKeys.TYPE:
       // Acceptable words: credit or debit
-      ret = Object.values(constants.cryptoTransferType).includes(val);
+      ret = Object.values(constants.cryptoTransferType).includes(val.toLowerCase());
       break;
     case constants.filterKeys.RESULT:
       // Acceptable words: success or fail
-      ret = Object.values(constants.transactionResultFilter).includes(val);
+      ret = Object.values(constants.transactionResultFilter).includes(val.toLowerCase());
       break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
       ret = isValidNum(val);
+      break;
+    case constants.filterKeys.ENCODING:
+      // Acceptable words: binary or text
+      ret = isValidEncoding(val.toLowerCase());
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -602,7 +622,26 @@ const encodeKey = function (key) {
  * @return {String} base64 encoded string
  */
 const encodeBase64 = function (buffer) {
-  return null === buffer ? null : buffer.toString('base64');
+  return encodeBinary(buffer, constants.characterEncoding.BASE64);
+};
+
+/**
+ * Base64 encoding of a byte array for returning in JSON output
+ * @param {Array} key Byte array to be encoded
+ * @return {String} utf-8 encoded string
+ */
+const encodeUtf8 = function (buffer) {
+  return encodeBinary(buffer, constants.characterEncoding.UTF8);
+};
+
+const encodeBinary = function (buffer, encoding) {
+  // default to base64 encoding
+  let charEncoding = constants.characterEncoding.BASE64;
+  if (isValidUtf8Encoding(encoding)) {
+    charEncoding = constants.characterEncoding.UTF8;
+  }
+
+  return null === buffer ? null : buffer.toString(charEncoding);
 };
 
 /**
@@ -721,6 +760,8 @@ module.exports = {
   createTransactionId: createTransactionId,
   convertMySqlStyleQueryToPostgres: convertMySqlStyleQueryToPostgres,
   encodeBase64: encodeBase64,
+  encodeBinary,
+  encodeUtf8,
   encodeKey: encodeKey,
   ENTITY_TYPE_FILE: ENTITY_TYPE_FILE,
   filterValidityChecks: filterValidityChecks,
