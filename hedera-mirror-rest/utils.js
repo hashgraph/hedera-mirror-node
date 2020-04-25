@@ -57,7 +57,7 @@ const isValidEntityNum = (entity_num) => {
 };
 
 const isValidLimitNum = (limit) => {
-  return /^\d{1,4}$/.test(limit) && limit > 0 && limit <= config.api.maxLimit;
+  return /^\d{1,4}$/.test(limit) && limit > 0 && limit <= config.maxLimit;
 };
 
 const isValidNum = (num) => {
@@ -434,8 +434,8 @@ const parseLimitAndOrderParams = function (req, defaultOrder = constants.orderFi
   // Parse the limit parameter
   let limitQuery = '';
   let limitParams = [];
-  let lVal = getIntegerParam(req.query[constants.filterKeys.LIMIT], config.api.maxLimit);
-  let limitValue = lVal === '' ? config.api.maxLimit : lVal;
+  let lVal = getIntegerParam(req.query[constants.filterKeys.LIMIT], config.maxLimit);
+  let limitValue = lVal === '' ? config.maxLimit : lVal;
   limitQuery = `${constants.filterKeys.LIMIT} ? `;
   limitParams.push(limitValue);
 
@@ -484,8 +484,8 @@ const convertMySqlStyleQueryToPostgres = function (sqlQuery, sqlParams) {
  */
 const getPaginationLink = function (req, isEnd, field, lastValue, order) {
   let urlPrefix;
-  if (config.api.port != undefined && config.api.includeHostInLink == 1) {
-    urlPrefix = req.protocol + '://' + req.hostname + ':' + config.api.port;
+  if (config.port != undefined && config.includeHostInLink == 1) {
+    urlPrefix = req.protocol + '://' + req.hostname + ':' + config.port;
   } else {
     urlPrefix = '';
   }
@@ -573,7 +573,7 @@ const secNsToSeconds = function (secNs) {
  * @return {Number} limit Max # entries to be returned.
  */
 const returnEntriesLimit = function (type) {
-  return config.api.maxLimit;
+  return config.maxLimit;
 };
 
 /**

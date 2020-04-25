@@ -71,9 +71,9 @@ public abstract class IntegrationTest {
                 postgresql.start();
 
                 TestPropertyValues
-                        .of("hedera.mirror.db.name=" + postgresql.getDatabaseName())
-                        .and("hedera.mirror.db.password=" + postgresql.getPassword())
-                        .and("hedera.mirror.db.username=" + postgresql.getUsername())
+                        .of("hedera.mirror.importer.db.name=" + postgresql.getDatabaseName())
+                        .and("hedera.mirror.importer.db.password=" + postgresql.getPassword())
+                        .and("hedera.mirror.importer.db.username=" + postgresql.getUsername())
                         .and("spring.datasource.url=" + postgresql.getJdbcUrl())
                         .applyTo(applicationContext);
             } catch (Throwable ex) {

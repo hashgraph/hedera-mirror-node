@@ -214,7 +214,7 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
 
   // add limit
   pgSqlQuery += ` limit $${nextParamCount++}`;
-  limit = limit === undefined ? config.api.maxLimit : limit;
+  limit = limit === undefined ? config.maxLimit : limit;
   pgSqlParams.push(limit);
 
   // close query

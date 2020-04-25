@@ -29,11 +29,11 @@ let config = utils.config;
 
 // Postgres pool
 const pool = new pg.Pool({
-  user: config.db.apiUsername,
+  user: config.db.username,
   host: config.db.host,
   database: config.db.name,
-  password: config.db.apiPassword,
-  port: config.db.port
+  password: config.db.password,
+  port: config.db.port,
 });
 
 const loadTests = () => {
@@ -42,15 +42,15 @@ const loadTests = () => {
   return utils.mustLoadYaml(fileName);
 };
 
-const getRowValueAsInt = row => {
+const getRowValueAsInt = (row) => {
   return parseInt(row.value);
 };
 
 /**
  * Gets 'n' randomly sampled entity_num from t_entities table.
  */
-const sampleEntityIds = n => {
-  return pool.query(`select entity_num as value from t_entities order by RANDOM() limit ${n};`, null).then(result => {
+const sampleEntityIds = (n) => {
+  return pool.query(`select entity_num as value from t_entities order by RANDOM() limit ${n};`, null).then((result) => {
     return result.rows.map(getRowValueAsInt);
   });
 };
@@ -58,29 +58,29 @@ const sampleEntityIds = n => {
 /**
  * Gets 'n' randomly sampled consensus timestamps from t_transactions table.
  */
-const sampleConsensusTimestamps = n => {
+const sampleConsensusTimestamps = (n) => {
   return pool
-          .query(`select consensus_ns as value from t_transactions order by RANDOM() limit ${n};`, null)
-          .then(result => {
-            return result.rows.map(getRowValueAsInt);
-          });
+    .query(`select consensus_ns as value from t_transactions order by RANDOM() limit ${n};`, null)
+    .then((result) => {
+      return result.rows.map(getRowValueAsInt);
+    });
 };
 
 /**
  * Gets 'n' randomly sampled balances from account_balances table.
  */
-const sampleBalanceValues = n => {
+const sampleBalanceValues = (n) => {
   return pool
-          .query(`select balance as value from account_balances order by RANDOM() limit ${n};`, null)
-          .then(result => {
-            return result.rows.map(getRowValueAsInt);
-          });
+    .query(`select balance as value from account_balances order by RANDOM() limit ${n};`, null)
+    .then((result) => {
+      return result.rows.map(getRowValueAsInt);
+    });
 };
 
 /**
  * Converts integer timestamp format accepted by query param. For eg. 1577904152141445600 -> '1577904152.141445600'
  */
-const timestampToParamValue = timestamp => {
+const timestampToParamValue = (timestamp) => {
   let timestampStr = '' + timestamp;
   return timestampStr.substr(0, 10) + '.' + timestampStr.substr(10);
 };
@@ -89,7 +89,7 @@ const populateParamValues = async (test, paramName, rangeFieldName, getSamples, 
   let paramValues = [];
   let isRangeQuery = rangeFieldName in test;
   let samples = await getSamples(test.count);
-  samples.forEach(sample => {
+  samples.forEach((sample) => {
     if (isRangeQuery) {
       paramValues.push([convertToParam(sample), convertToParam(sample + test[rangeFieldName])]);
     } else {
@@ -102,29 +102,29 @@ const populateParamValues = async (test, paramName, rangeFieldName, getSamples, 
 /**
  * Given a test, generates and returns query set which contains query, values for url params, etc.
  */
-const makeQuerySet = async test => {
+const makeQuerySet = async (test) => {
   let paramValues = [];
   let paramName;
   let isRangeQuery = false;
   if (test.filterAxis === 'BALANCE') {
     paramName = 'account.balance';
-    paramValues = await populateParamValues(test, paramName, 'rangeTinyHbars', sampleBalanceValues, sample => {
+    paramValues = await populateParamValues(test, paramName, 'rangeTinyHbars', sampleBalanceValues, (sample) => {
       return '' + sample;
     });
   } else if (test.filterAxis === 'CONSENSUS_TIMESTAMP') {
     paramName = 'timestamp';
     paramValues = await populateParamValues(
-            test,
-            paramName,
-            'rangeDurationNanos',
-            sampleConsensusTimestamps,
-            sample => {
-              return timestampToParamValue(sample);
-            }
+      test,
+      paramName,
+      'rangeDurationNanos',
+      sampleConsensusTimestamps,
+      (sample) => {
+        return timestampToParamValue(sample);
+      }
     );
   } else if (test.filterAxis === 'ACCOUNTID') {
     paramName = 'account.id';
-    paramValues = await populateParamValues(test, 'account.id', 'rangeNumAccounts', sampleEntityIds, sample => {
+    paramValues = await populateParamValues(test, 'account.id', 'rangeNumAccounts', sampleEntityIds, (sample) => {
       return '' + sample;
     });
   } else {
@@ -147,7 +147,7 @@ const makeQuerySet = async test => {
   return {
     name: test.name,
     query: query,
-    paramValues: paramValues
+    paramValues: paramValues,
   };
 };
 
@@ -156,10 +156,10 @@ const generateQuerySets = () => {
   let tests = loadTests();
   let querySets = {
     timeoutInSec: tests.timeoutInSec,
-    querySets: []
+    querySets: [],
   };
-  tests.tests.forEach(test => {
-    let promise = makeQuerySet(test).then(t => {
+  tests.tests.forEach((test) => {
+    let promise = makeQuerySet(test).then((t) => {
       querySets.querySets.push(t);
     });
     promises.push(promise);

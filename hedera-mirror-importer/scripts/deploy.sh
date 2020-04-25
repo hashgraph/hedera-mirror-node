@@ -24,18 +24,19 @@ if [[ ! -f "${usretc}/application.yml" ]]; then
     read -p "Hedera network: " network
     read -p "Database hostname: " dbHost
     read -p "Database password: " dbPassword
-    read -p "API user database password: " apiPassword
+    read -p "REST user database password: " restPassword
     cat > "${usretc}/application.yml" <<EOF
 hedera:
   mirror:
-    dataPath: ${varlib}
-    db:
-      apiPassword: ${apiPassword}
-      host: ${dbHost}
-      password: ${dbPassword}
-    downloader:
-      bucketName: ${bucketName}
-    network: ${network}
+    importer:
+      dataPath: ${varlib}
+      db:
+        restPassword: ${restPassword}
+        host: ${dbHost}
+        password: ${dbPassword}
+      downloader:
+        bucketName: ${bucketName}
+      network: ${network}
 EOF
 fi
 

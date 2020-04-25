@@ -68,15 +68,15 @@ Configurations will be of one of the following types:
 
 #### Database configurations
 
-| Name                           | Default          | Description                                                 |
-| ------------------------------ | ---------------- | ----------------------------------------------------------- |
-| `hedera.mirror.db.host`        | 127.0.0.1        | The IP or hostname used to connect to the database          |
-| `hedera.mirror.db.port`        | 5432             | The port used to connect to the database                    |
-| `hedera.mirror.db.name`        | mirror_node      | The name of the database                                    |
-| `hedera.mirror.db.username`    | mirror_node      | The username data generator uses to connect to the database |
-| `hedera.mirror.db.password`    | mirror_node_pass | The database password data generator uses to connect        |
-| `hedera.mirror.db.apiPassword` | mirror_api_pass  | The database password the API uses to connect               |
-| `hedera.mirror.db.apiUsername` | mirror_api       | The username the API uses to connect to the database        |
+| Name                                          | Default          | Description                                                 |
+| --------------------------------------------- | ---------------- | ----------------------------------------------------------- |
+| `hedera.mirror.datagenerator.db.host`         | 127.0.0.1        | The IP or hostname used to connect to the database          |
+| `hedera.mirror.datagenerator.db.port`         | 5432             | The port used to connect to the database                    |
+| `hedera.mirror.datagenerator.db.name`         | mirror_node      | The name of the database                                    |
+| `hedera.mirror.datagenerator.db.username`     | mirror_node      | The username data generator uses to connect to the database |
+| `hedera.mirror.datagenerator.db.password`     | mirror_node_pass | The database password data generator uses to connect        |
+| `hedera.mirror.datagenerator.db.restPassword` | mirror_api_pass  | The database password the API uses to connect               |
+| `hedera.mirror.datagenerator.db.restUsername` | mirror_api       | The username the API uses to connect to the database        |
 
 #### Data Generator configurations
 

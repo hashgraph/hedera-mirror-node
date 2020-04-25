@@ -1,13 +1,14 @@
 hedera:
   mirror:
-    db:
-      apiPassword: mirror_api_pass
-      apiUsername: mirror_api
-      host: 127.0.0.1
-      name: mirror_node
-      password: mirror_node_pass
-      port: 5432
-      username: mirror_node
+    importer:
+      db:
+        host: 127.0.0.1
+        name: mirror_node
+        password: mirror_node_pass
+        port: 5432
+        restPassword: mirror_api_pass
+        restUsername: mirror_api
+        username: mirror_node
 logging:
   level:
     root: warn
@@ -49,20 +50,20 @@ spring:
       secrets:
         paths: /usr/etc/${spring.application.name}
   datasource:
-    name: ${hedera.mirror.db.name}
-    password: ${hedera.mirror.db.password}
-    url: jdbc:postgresql://${hedera.mirror.db.host}:${hedera.mirror.db.port}/${hedera.mirror.db.name}
-    username: ${hedera.mirror.db.username}
+    name: ${hedera.mirror.importer.db.name}
+    password: ${hedera.mirror.importer.db.password}
+    url: jdbc:postgresql://${hedera.mirror.importer.db.host}:${hedera.mirror.importer.db.port}/${hedera.mirror.importer.db.name}
+    username: ${hedera.mirror.importer.db.username}
   flyway:
     connectRetries: 20
     baselineOnMigrate: true
     baselineVersion: 0
     ignoreMissingMigrations: true
     placeholders:
-      api-password: ${hedera.mirror.db.api-password}
-      api-user: ${hedera.mirror.db.api-username}
-      db-name: ${hedera.mirror.db.name}
-      db-user: ${hedera.mirror.db.username}
+      api-password: ${hedera.mirror.importer.db.restPassword}
+      api-user: ${hedera.mirror.importer.db.restUsername}
+      db-name: ${hedera.mirror.importer.db.name}
+      db-user: ${hedera.mirror.importer.db.username}
   jpa:
     properties:
       hibernate:

@@ -24,7 +24,7 @@ const acctestutils = require('./monitortest_utils.js');
 const config = require('../../config.js');
 const math = require('mathjs');
 const balancesPath = '/balances';
-const maxLimit = config.api.maxLimit;
+const maxLimit = config.maxLimit;
 const balanceFileUpdateRefreshTime = 900;
 
 /**

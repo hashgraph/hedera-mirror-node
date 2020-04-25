@@ -25,7 +25,6 @@ import java.time.Duration;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -37,7 +36,7 @@ import com.hedera.mirror.importer.downloader.DownloaderProperties;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.downloader.record")
+@ConfigurationProperties("hedera.mirror.importer.downloader.record")
 public class RecordDownloaderProperties implements DownloaderProperties {
 
     private final MirrorProperties mirrorProperties;

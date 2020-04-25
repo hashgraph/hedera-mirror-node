@@ -112,9 +112,10 @@ cd /opt/restapi
 cat > application.yml <<EOF
 hedera:
   mirror:
-    db:
-      apiPassword: mirror_api_pass
-      host: dbhost
+    rest:
+      db:
+        host: dbhost
+        password: mirror_api_pass
 EOF
 wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/v0.8.1/hedera-mirror-rest-v0.8.1.tgz"
 tar --strip-components=1 -xvf hedera-mirror-rest-v*.tgz
@@ -150,7 +151,7 @@ pm2 start /opt/restapi/pm2.json
 To manually start on a specific port:
 
 ```shell script
-HEDERA_MIRROR_API_PORT=8080 pm2 start server.js
+HEDERA_MIRROR_REST_PORT=8080 pm2 start server.js
 ```
 
 ### Stopping
@@ -189,4 +190,4 @@ Using this 3 endpoints are made available
 - `http://<ip>:<port>/<metricsPath>` - Metrics dashboard
 - `http://<ip>:<port>/<metricsPath>/stats` - Aggregated statistics
 - `http://<ip>:<port>/<metricsPath>/metrics` - Prometheus formatted metrics
-Where `<metricsPath>` is defined by hedera.mirror.api.metrics.config.uriPath, current default is 'swagger'
+Where `<metricsPath>` is defined by hedera.mirror.rest.metrics.config.uriPath, current default is 'swagger'

@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.parser.ParserProperties;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.parser.balance")
+@ConfigurationProperties("hedera.mirror.importer.parser.balance")
 public class BalanceParserProperties implements ParserProperties {
 
     private final MirrorProperties mirrorProperties;

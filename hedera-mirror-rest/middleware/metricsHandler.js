@@ -31,14 +31,14 @@ const metricsHandler = () => {
   };
 
   // combine defaultMetricsConfig with file defined configs
-  extend(true, defaultMetricsConfig, config.api.metrics.config);
+  extend(true, defaultMetricsConfig, config.metrics.config);
 
   return swStats.getMiddleware(defaultMetricsConfig);
 };
 
 const onMetricsAuthenticate = async (req, username, password) => {
   return new Promise(function (resolve, reject) {
-    const match = username === config.api.metrics.config.username && password === config.api.metrics.config.password;
+    const match = username === config.metrics.config.username && password === config.metrics.config.password;
     resolve(match);
   }).catch((err) => {
     logger.debug(`Auth error: ${err}`);

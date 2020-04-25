@@ -126,7 +126,7 @@ Following is list of error messages and how to begin handling issues when they a
 -   `File watching events may have been lost or discarded`
     Actions:
 
-    -   Monitor logs (and `${hedera.mirror.dataPath}/accountBalances/valid` directory) to ensure that all account balances
+    -   Monitor logs (and `${hedera.mirror.importer.dataPath}/accountBalances/valid` directory) to ensure that all account balances
         stream files get processed. If not, bring to team's attention in reasonable time.
 
 -   `Long overflow when converting time to nanos timestamp`

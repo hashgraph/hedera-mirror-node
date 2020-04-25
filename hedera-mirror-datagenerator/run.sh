@@ -13,8 +13,8 @@ PG_PORT=5432
 PG_USERNAME=mirror_node
 PG_PASSWORD=mirror_node_pass
 PG_DBNAME=mirror_node
-PG_API_USERNAME=mirror_api
-PG_API_PASSWORD=mirror_api_pass
+PG_REST_USERNAME=mirror_api
+PG_REST_PASSWORD=mirror_api_pass
 DATAGENERATOR_JAR=${BASE_DIR}/target/hedera-mirror-datagenerator-*.jar
 IMPORT_DIR=
 TMP_DIR=$(mktemp -d)
@@ -88,13 +88,13 @@ if [[ "${IMPORT_DIR}" == "" ]]; then
     echo "********************************************"
     CSV_DIR=${TMP_DIR}
     java -jar ${DATAGENERATOR_JAR} \
-        --hedera.mirror.db.host="${PG_HOST}" \
-        --hedera.mirror.db.name="${PG_DBNAME}" \
-        --hedera.mirror.db.username="${PG_USERNAME}" \
-        --hedera.mirror.db.password="${PG_PASSWORD}" \
-        --hedera.mirror.db.port="${PG_PORT}" \
-        --hedera.mirror.db.apiUsername="${PG_API_USERNAME}" \
-        --hedera.mirror.db.apiPassword="${PG_API_PASSWORD}" \
+        --hedera.mirror.datagenerator.db.host="${PG_HOST}" \
+        --hedera.mirror.datagenerator.db.name="${PG_DBNAME}" \
+        --hedera.mirror.datagenerator.db.username="${PG_USERNAME}" \
+        --hedera.mirror.datagenerator.db.password="${PG_PASSWORD}" \
+        --hedera.mirror.datagenerator.db.port="${PG_PORT}" \
+        --hedera.mirror.datagenerator.db.restUsername="${PG_REST_USERNAME}" \
+        --hedera.mirror.datagenerator.db.restPassword="${PG_REST_PASSWORD}" \
         --hedera.mirror.datagenerator.output.postgres.csv.outputDir="${CSV_DIR}"
 else
     echo "********************************"

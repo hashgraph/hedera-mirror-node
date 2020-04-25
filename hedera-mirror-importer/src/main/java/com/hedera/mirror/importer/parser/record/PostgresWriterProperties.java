@@ -27,7 +27,7 @@ import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.parser.record.postgresql")
+@ConfigurationProperties("hedera.mirror.importer.parser.record.postgresql")
 public class PostgresWriterProperties {
     /**
      * PreparedStatement.executeBatch() is called after every batchSize number of transactions from record stream file.

@@ -22,7 +22,7 @@
 const testutils = require('./testutils.js');
 const config = require('../config.js');
 const math = require('mathjs');
-const maxLimit = config.api.maxLimit;
+const maxLimit = config.maxLimit;
 
 /**
  * This is a mock database for unit testing.

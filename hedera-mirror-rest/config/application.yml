@@ -1,7 +1,13 @@
 # This file contains application defaults and shouldn't be modified. See docs/configuration.md for how to override.
 hedera:
   mirror:
-    api:
+    rest:
+      db:
+        host: 127.0.0.1
+        name: mirror_node
+        password: mirror_api_pass
+        port: 5432
+        username: mirror_api
       includeHostInLink: false
       maxLimit: 1000
       log:
@@ -14,10 +20,4 @@ hedera:
           username: mirror_api_metrics
           password: mirror_api_metrics_pass
           uriPath: '/swagger'
-    db:
-      apiPassword: mirror_api_pass
-      apiUsername: mirror_api
-      host: 127.0.0.1
-      name: mirror_node
-      port: 5432
-    shard: 0
+      shard: 0

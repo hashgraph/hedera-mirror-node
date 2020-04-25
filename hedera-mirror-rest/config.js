@@ -114,4 +114,4 @@ if (!loaded) {
   loaded = true;
 }
 
-module.exports = config.hedera ? config.hedera.mirror : config;
+module.exports = config.hedera && config.hedera.mirror ? config.hedera.mirror.rest : config;

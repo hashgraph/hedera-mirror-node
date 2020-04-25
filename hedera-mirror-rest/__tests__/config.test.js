@@ -28,12 +28,12 @@ let tempDir;
 const custom = {
   hedera: {
     mirror: {
-      api: {
-        maxLimit: 10
+      rest: {
+        maxLimit: 10,
+        shard: 1,
       },
-      shard: 1
-    }
-  }
+    },
+  },
 };
 
 beforeEach(() => {
@@ -52,75 +52,75 @@ describe('Load YAML configuration:', () => {
   test('./config/application.yml', () => {
     const config = require('../config');
     expect(config.shard).toBe(0);
-    expect(config.api.includeHostInLink).toBeFalsy();
-    expect(config.api.log.level).toBe('debug');
+    expect(config.includeHostInLink).toBeFalsy();
+    expect(config.log.level).toBe('debug');
   });
 
   test('./application.yml', () => {
     fs.writeFileSync(path.join('.', 'application.yml'), yaml.safeDump(custom));
     const config = require('../config');
 
-    expect(config.shard).toBe(custom.hedera.mirror.shard);
-    expect(config.api.maxLimit).toBe(custom.hedera.mirror.api.maxLimit);
-    expect(config.api.includeHostInLink).toBeFalsy();
-    expect(config.api.log.level).toBe('debug');
+    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
+    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
+    expect(config.includeHostInLink).toBeFalsy();
+    expect(config.log.level).toBe('debug');
   });
 
   test('${CONFIG_PATH}/application.yml', () => {
     fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.safeDump(custom));
     const config = require('../config');
 
-    expect(config.shard).toBe(custom.hedera.mirror.shard);
-    expect(config.api.maxLimit).toBe(custom.hedera.mirror.api.maxLimit);
-    expect(config.api.includeHostInLink).toBeFalsy();
-    expect(config.api.log.level).toBe('debug');
+    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
+    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
+    expect(config.includeHostInLink).toBeFalsy();
+    expect(config.log.level).toBe('debug');
   });
 
   test('${CONFIG_PATH}/application.yaml', () => {
     fs.writeFileSync(path.join(tempDir, 'application.yaml'), yaml.safeDump(custom));
     const config = require('../config');
 
-    expect(config.shard).toBe(custom.hedera.mirror.shard);
-    expect(config.api.maxLimit).toBe(custom.hedera.mirror.api.maxLimit);
-    expect(config.api.includeHostInLink).toBeFalsy();
-    expect(config.api.log.level).toBe('debug');
+    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
+    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
+    expect(config.includeHostInLink).toBeFalsy();
+    expect(config.log.level).toBe('debug');
   });
 });
 
 describe('Load environment configuration:', () => {
   test('Number', () => {
-    process.env = {HEDERA_MIRROR_SHARD: '2', HEDERA_MIRROR_API_PORT: '5552'};
+    process.env = {HEDERA_MIRROR_REST_SHARD: '2', HEDERA_MIRROR_REST_PORT: '5552'};
     const config = require('../config');
     expect(config.shard).toBe(2);
-    expect(config.api.port).toBe(5552);
+    expect(config.port).toBe(5552);
   });
 
   test('String', () => {
-    process.env = {HEDERA_MIRROR_API_LOG_LEVEL: 'info'};
+    process.env = {HEDERA_MIRROR_REST_LOG_LEVEL: 'info'};
     const config = require('../config');
-    expect(config.api.log.level).toBe('info');
+    expect(config.log.level).toBe('info');
   });
 
   test('Boolean', () => {
-    process.env = {HEDERA_MIRROR_API_INCLUDEHOSTINLINK: 'true'};
+    process.env = {HEDERA_MIRROR_REST_INCLUDEHOSTINLINK: 'true'};
     const config = require('../config');
-    expect(config.api.includeHostInLink).toBe(true);
+    expect(config.includeHostInLink).toBe(true);
   });
 
   test('Camel case', () => {
-    process.env = {HEDERA_MIRROR_API_MAXLIMIT: '10'};
+    process.env = {HEDERA_MIRROR_REST_MAXLIMIT: '10'};
     const config = require('../config');
-    expect(config.api.maxLimit).toBe(10);
+    expect(config.maxLimit).toBe(10);
   });
 
   test('Unknown property', () => {
-    process.env = {HEDERA_MIRROR_FOO: '3'};
+    process.env = {HEDERA_MIRROR_REST_FOO: '3'};
     const config = require('../config');
     expect(config.foo).toBeUndefined();
   });
 
   test('Invalid property path', () => {
-    process.env = {HEDERA_MIRROR_SHARD_FOO: '3'};
+    process.env = {HEDERA_MIRROR_REST_SHARD_FOO: '3'};
     const config = require('../config');
     expect(config.shard).toBe(0);
   });
@@ -132,9 +132,9 @@ describe('Custom CONFIG_NAME:', () => {
     process.env = {CONFIG_NAME: 'config', CONFIG_PATH: tempDir};
     const config = require('../config');
 
-    expect(config.shard).toBe(custom.hedera.mirror.shard);
-    expect(config.api.maxLimit).toBe(custom.hedera.mirror.api.maxLimit);
-    expect(config.api.log).toBeUndefined();
+    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
+    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
+    expect(config.log).toBeUndefined();
   });
 });
 

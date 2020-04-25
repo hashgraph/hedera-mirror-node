@@ -48,13 +48,13 @@ log4js.configure({
   categories: {
     default: {
       appenders: ['everything'],
-      level: config.api.log.level,
+      level: config.log.level,
     },
   },
 });
 global.logger = log4js.getLogger();
 
-let port = config.api.port;
+let port = config.port;
 if (process.env.NODE_ENV == 'test') {
   port = 3000; // Use a dummy port for jest unit tests
 }
@@ -73,10 +73,10 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 const pool = new Pool({
-  user: config.db.apiUsername,
+  user: config.db.username,
   host: config.db.host,
   database: config.db.name,
-  password: config.db.apiPassword,
+  password: config.db.password,
   port: config.db.port,
 });
 global.pool = pool;
@@ -95,7 +95,7 @@ app.use(compression());
 app.use(cors());
 
 // metrics middleware
-if (config.api.metrics.enabled) {
+if (config.metrics.enabled) {
   app.use(metricsHandler());
 }
 
