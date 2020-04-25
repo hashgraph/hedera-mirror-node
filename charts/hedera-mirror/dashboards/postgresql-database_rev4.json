@@ -96,7 +96,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "pg_static{release=\"$release\", instance=\"$instance\"}",
+          "expr": "pg_static{instance=\"$instance\"}",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -180,7 +180,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "process_start_time_seconds{release=\"$release\", instance=\"$instance\"} * 1000",
+          "expr": "process_start_time_seconds{instance=\"$instance\"} * 1000",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "",
@@ -346,7 +346,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "SUM(pg_stat_database_tup_inserted{release=\"$release\", datname=~\"$datname\", instance=~\"$instance\"})",
+          "expr": "sum(pg_stat_database_tup_inserted{datname=~\"$datname\", instance=~\"$instance\"})",
           "format": "time_series",
           "intervalFactor": 2,
           "refId": "A",
@@ -511,7 +511,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "pg_settings_max_connections{release=\"$release\", instance=\"$instance\"}",
+          "expr": "pg_settings_max_connections{instance=\"$instance\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -574,7 +574,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(rate(process_cpu_seconds_total{release=\"$release\", instance=\"$instance\"}[5m]) * 1000)",
+          "expr": "avg(rate(process_cpu_seconds_total{instance=\"$instance\"}[5m]) * 1000)",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "CPU Time",
@@ -666,14 +666,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(rate(process_resident_memory_bytes{release=\"$release\", instance=\"$instance\"}[5m]))",
+          "expr": "avg(rate(process_resident_memory_bytes{instance=\"$instance\"}[5m]))",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "Resident Mem",
           "refId": "A"
         },
         {
-          "expr": "avg(rate(process_virtual_memory_bytes{release=\"$release\", instance=\"$instance\"}[5m]))",
+          "expr": "avg(rate(process_virtual_memory_bytes{instance=\"$instance\"}[5m]))",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "Virtual Mem",
@@ -766,7 +766,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "process_open_fds{release=\"$release\", instance=\"$instance\"}",
+          "expr": "process_open_fds{instance=\"$instance\"}",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "Open FD",
@@ -3042,36 +3042,9 @@
         "multi": false,
         "name": "namespace",
         "options": [],
-        "query": "query_result(pg_exporter_last_scrape_duration_seconds)",
+        "query": "label_values(pg_exporter_last_scrape_duration_seconds, namespace)",
         "refresh": 2,
-        "regex": "/.*kubernetes_namespace=\"([^\"]+).*/",
-        "skipUrlSync": false,
-        "sort": 1,
-        "tagValuesQuery": "",
-        "tags": [],
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "allValue": null,
-        "current": {
-          "isNone": true,
-          "selected": false,
-          "text": "None",
-          "value": ""
-        },
-        "datasource": "Prometheus",
-        "definition": "",
-        "hide": 0,
-        "includeAll": false,
-        "label": "Release",
-        "multi": false,
-        "name": "release",
-        "options": [],
-        "query": "query_result(pg_exporter_last_scrape_duration_seconds{kubernetes_namespace=\"$namespace\"})",
-        "refresh": 2,
-        "regex": "/.*release=\"([^\"]+)/",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 1,
         "tagValuesQuery": "",
@@ -3094,9 +3067,9 @@
         "multi": false,
         "name": "instance",
         "options": [],
-        "query": "query_result(up{release=\"$release\"})",
+        "query": "label_values(pg_exporter_last_scrape_duration_seconds, instance)",
         "refresh": 1,
-        "regex": "/.*instance=\"([^\"]+).*/",
+        "regex": "",
         "skipUrlSync": false,
         "sort": 1,
         "tagValuesQuery": "",

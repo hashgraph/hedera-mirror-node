@@ -10,7 +10,14 @@ affinity:
 
 annotations: {}
 
-config: {}
+config:
+  hedera:
+    mirror:
+      rest:
+        metrics:
+          config:
+            password: password
+            username: metrics
 
 fullnameOverride: ""
 
@@ -107,7 +114,8 @@ serviceAccount:
   name:
 
 serviceMonitor:
-  enabled: true
+  enabled: false
+  interval: 30s
 
 terminationGracePeriodSeconds: 60
 
