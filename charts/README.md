@@ -25,6 +25,14 @@ Note that dependent charts are already downloaded and checked in, allowing for a
 $ helm dependency update charts/hedera-mirror
 ```
 
+## Testing
+
+To verify the chart installation is successful, you can run the helm tests. These tests are not automatically executed by helm on install/upgrade, they have to be executed manually:
+
+```shell script
+helm test mirror
+```
+
 ## Using
 
 All of the APIs and dashboards can be accessed via a single IP. To get the load balancer IP:
