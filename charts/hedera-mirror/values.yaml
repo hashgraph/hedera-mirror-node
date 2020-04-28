@@ -17,6 +17,8 @@ grpc:
     middleware:
       enabled: true
   priorityClassName: medium
+  serviceMonitor:
+    enabled: true
 
 importer:
   config:
@@ -29,6 +31,8 @@ importer:
             password: mirror_node_pass
             username: mirror_node
   enabled: true
+  podMonitor:
+    enabled: true
   priorityClassName: high
 
 labels: {}
@@ -115,6 +119,8 @@ postgresql:
       requests:
         cpu: 100m
         memory: 128Mi
+  postgresqlImage:
+    debug: true
   postgresql:
     affinity:
       podAntiAffinity:
@@ -232,8 +238,6 @@ prometheus:
       requests:
         cpu: 75m
         memory: 30Mi
-    service:
-      type: ClusterIP
   kube-state-metrics:
     fullnameOverride: prometheus-kube-state-metrics
     resources:
@@ -254,7 +258,17 @@ prometheus:
         cpu: 20m
         memory: 10Mi
   prometheus:
+    additionalPodMonitors:
+      - name: traefik
+        podMetricsEndpoints:
+        - port: traefik
+          path: /metrics
+          interval: 15s
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: traefik
     prometheusSpec:
+      podMonitorSelectorNilUsesHelmValues: false
       priorityClassName: low
       resources:
         limits:
@@ -294,6 +308,8 @@ rest:
     middleware:
       enabled: true
   priorityClassName: medium
+  serviceMonitor:
+    enabled: true
 
 traefik:
   affinity:
@@ -314,10 +330,7 @@ traefik:
     grpc:
       port: 5600
       expose: true
-    web:
-      port: 80
-    websecure:
-      port: 443
+  priorityClassName: critical
   resources:
     requests:
       cpu: 100m
@@ -325,9 +338,6 @@ traefik:
     limits:
       cpu: 300m
       memory: 150Mi
-  serviceMonitor:
-    enabled: true
-    interval: 30s
   service:
     spec:
       externalTrafficPolicy: Local

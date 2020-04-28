@@ -114,7 +114,7 @@ serviceAccount:
   name:
 
 serviceMonitor:
-  enabled: true
+  enabled: false
   interval: 30s
 
 terminationGracePeriodSeconds: 60

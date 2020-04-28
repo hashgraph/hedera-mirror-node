@@ -17,7 +17,7 @@ hedera:
         enabled: true
         config:
           authentication: true
-          username: mirror_api_metrics
-          password: mirror_api_metrics_pass
+          password: password
+          username: metrics
           uriPath: '/swagger'
       shard: 0

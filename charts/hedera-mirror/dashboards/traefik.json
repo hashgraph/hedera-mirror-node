@@ -844,10 +844,10 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(rate(traefik_service_requests_total{namespace=\"$namespace\"}[1m])) by (exported_service)",
+            "expr": "sum(rate(traefik_service_requests_total{namespace=\"$namespace\"}[1m])) by (service)",
             "format": "time_series",
             "intervalFactor": 2,
-            "legendFormat": "{{ exported_service }}",
+            "legendFormat": "{{ service }}",
             "refId": "A"
           }
         ],
@@ -1050,10 +1050,10 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(rate(traefik_service_requests_total{namespace=\"$namespace\"}[5m])) by (exported_service, code)",
+            "expr": "sum(rate(traefik_service_requests_total{namespace=\"$namespace\"}[5m])) by (service, code)",
             "format": "time_series",
             "intervalFactor": 2,
-            "legendFormat": "{{exported_service}} ({{code}})",
+            "legendFormat": "{{service}} ({{code}})",
             "refId": "A"
           }
         ],
