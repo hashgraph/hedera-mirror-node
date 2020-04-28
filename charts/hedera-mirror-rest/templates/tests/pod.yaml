@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    helm.sh/hook: test-success
+    helm.sh/hook-delete-policy: hook-succeeded
+  labels:
+    {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rest.fullname" . }}-test
+  namespace: {{ include "hedera-mirror-rest.namespace" . }}
+spec:
+  containers:
+    - name: test
+      image: bats/bats:v1.1.0
+      imagePullPolicy: IfNotPresent
+      args:
+        - /usr/lib/hedera-mirror-rest/test.sh
+      volumeMounts:
+        - name: tests
+          mountPath: /usr/lib/hedera-mirror-rest
+  restartPolicy: Never
+  volumes:
+    - name: tests
+      configMap:
+        name: {{ include "hedera-mirror-rest.fullname" . }}-test

@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    helm.sh/hook: test-success
+    helm.sh/hook-delete-policy: hook-succeeded
+  labels:
+    {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rest.fullname" . }}-test
+  namespace: {{ include "hedera-mirror-rest.namespace" . }}
+data:
+  test.sh: |-
+    #!/usr/bin/env bash
+
+    URI='http://{{ include "hedera-mirror-rest.fullname" . }}:{{ .Values.service.port }}'
+
+    # Infinite loop is okay since helm test itself has a timeout
+    function setup() {
+      apk add -qu curl jq
+      until (curl -s "${URI}/api/v1/transactions?limit=1"); do
+        sleep 1
+      done
+    }
+
+    @test "Has accounts" {
+      curl -s "${URI}/api/v1/accounts?limit=1" | jq -e '.accounts | length >= 1'
+      [[ "$?" -eq 0 ]]
+    }
+
+    @test "Has balances" {
+      curl -s "${URI}/api/v1/balances?limit=1" | jq -e '.balances | length >= 1'
+      [[ "$?" -eq 0 ]]
+    }
+
+    @test "Has transactions" {
+      curl -s "${URI}/api/v1/transactions?limit=1" | jq -e '.transactions | length >= 1'
+      [[ "$?" -eq 0 ]]
+    }
