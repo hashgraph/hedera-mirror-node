@@ -21,7 +21,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 
 | Name                                                                 | Default                 | Description                                                                                    |
 | -------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
-| `hedera.mirror.importer.addressBookPath`                             | ""                      | The path to an address book used to override the built-in address book                         |
 | `hedera.mirror.importer.dataPath`                                    | ./data                  | The data directory used to store downloaded files and other application state                  |
 | `hedera.mirror.importer.db.restPassword`                             | mirror_api_pass         | The database password the API uses to connect. **Should be changed from default**              |
 | `hedera.mirror.importer.db.restUsername`                             | mirror_api              | The username the API uses to connect to the database                                           |
@@ -46,6 +45,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.record.threads`                   | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.importer.downloader.region`                           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.importer.downloader.secretKey`                        | ""                      | The cloud storage secret key                                                                   |
+| `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET` or `TESTNET`                      |
 | `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |
 | `hedera.mirror.importer.parser.balance.enabled`                      | true                    | Whether to enable balance file parsing                                                         |

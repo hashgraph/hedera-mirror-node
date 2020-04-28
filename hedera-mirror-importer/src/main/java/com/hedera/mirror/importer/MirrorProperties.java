@@ -38,10 +38,10 @@ public class MirrorProperties {
 
     private static final String ADDRESS_BOOK_FILE = "addressbook.bin";
 
-    private Path addressBookPath;
-
     @NotNull
     private Path dataPath = Paths.get(".", "data");
+
+    private Path initialAddressBook;
 
     @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;
@@ -50,7 +50,7 @@ public class MirrorProperties {
     private long shard = 0L;
 
     public Path getAddressBookPath() {
-        return addressBookPath != null ? addressBookPath : dataPath.resolve(ADDRESS_BOOK_FILE);
+        return dataPath.resolve(ADDRESS_BOOK_FILE);
     }
 
     public void setDataPath(Path dataPath) {
