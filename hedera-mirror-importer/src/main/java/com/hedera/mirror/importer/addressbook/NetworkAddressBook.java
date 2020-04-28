@@ -91,13 +91,22 @@ public class NetworkAddressBook {
                     Files.move(path, path.resolveSibling(path + ".unreadable"));
                 }
 
-                HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
-                String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
-                Resource resource = new ClassPathResource(resourcePath, getClass());
-                Utility.ensureDirectory(path.getParent());
+                byte[] addressBookBytes = null;
+                Path initialAddressBook = mirrorProperties.getInitialAddressBook();
 
-                log.info("Loading default address book {}", resource);
-                update(IOUtils.toByteArray(resource.getInputStream()));
+                if (initialAddressBook != null) {
+                    addressBookBytes = Files.readAllBytes(initialAddressBook);
+                    log.info("Loading bootstrap address book from {}", initialAddressBook);
+                } else {
+                    HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
+                    String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
+                    Resource resource = new ClassPathResource(resourcePath, getClass());
+                    addressBookBytes = IOUtils.toByteArray(resource.getInputStream());
+                    log.info("Loading bootstrap address book from {}", resource);
+                }
+
+                Utility.ensureDirectory(path.getParent());
+                update(addressBookBytes);
             } else {
                 log.info("Restoring existing address book {}", path);
                 update(Files.readAllBytes(path));

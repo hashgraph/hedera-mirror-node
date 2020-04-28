@@ -51,6 +51,30 @@ public class NetworkAddressBookTest {
     private Path addressBookPath;
     private Path tempPath;
 
+    private static NodeAddressBook addressBook(int size) {
+        NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
+        for (int i = 0; i < size; ++i) {
+            builder.addNodeAddress(NodeAddress.newBuilder().setPortno(i).build());
+        }
+        return builder.build();
+    }
+
+    private static void update(NetworkAddressBook networkAddressBook, byte[] contents) {
+        networkAddressBook.updateFrom(TransactionBody.newBuilder()
+                .setFileUpdate(FileUpdateTransactionBody.newBuilder()
+                        .setContents(ByteString.copyFrom(contents))
+                        .build())
+                .build());
+    }
+
+    private static void append(NetworkAddressBook networkAddressBook, byte[] contents) {
+        networkAddressBook.updateFrom(TransactionBody.newBuilder()
+                .setFileAppend(FileAppendTransactionBody.newBuilder()
+                        .setContents(ByteString.copyFrom(contents))
+                        .build())
+                .build());
+    }
+
     @BeforeEach
     void setup() throws Exception {
         mirrorProperties = new MirrorProperties();
@@ -61,7 +85,7 @@ public class NetworkAddressBookTest {
     }
 
     @Test
-    void startupWithoutExisting() throws Exception {
+    void startupWithClasspath() throws Exception {
         Files.deleteIfExists(addressBookPath);
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties);
 
@@ -69,6 +93,23 @@ public class NetworkAddressBookTest {
                 .describedAs("Loads default address book from classpath")
                 .hasSize(4);
         assertThat(addressBookPath).exists();
+        assertThat(tempPath).doesNotExist();
+    }
+
+    @Test
+    void startupWithInitial() throws Exception {
+        Path initialAddressBook = dataPath.resolve("initial.bin");
+        Files.write(initialAddressBook, UPDATED.toByteArray());
+        Files.deleteIfExists(addressBookPath);
+        mirrorProperties.setInitialAddressBook(initialAddressBook);
+        NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties);
+
+        assertThat(networkAddressBook.getAddresses())
+                .describedAs("Loads default address book from filesystem")
+                .hasSize(UPDATED.getNodeAddressCount());
+        assertThat(addressBookPath).exists()
+                .hasBinaryContent(UPDATED.toByteArray())
+                .hasSameContentAs(initialAddressBook);
         assertThat(tempPath).doesNotExist();
     }
 
@@ -141,29 +182,5 @@ public class NetworkAddressBookTest {
         assertThat(networkAddressBook.getAddresses()).hasSize(INITIAL.getNodeAddressCount());
         assertThat(addressBookPath).exists().hasBinaryContent(INITIAL.toByteArray());
         assertThat(tempPath).doesNotExist();
-    }
-
-    private static NodeAddressBook addressBook(int size) {
-        NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
-        for (int i = 0; i < size; ++i) {
-            builder.addNodeAddress(NodeAddress.newBuilder().setPortno(i).build());
-        }
-        return builder.build();
-    }
-
-    private static void update(NetworkAddressBook networkAddressBook, byte[] contents) {
-        networkAddressBook.updateFrom(TransactionBody.newBuilder()
-                .setFileUpdate(FileUpdateTransactionBody.newBuilder()
-                        .setContents(ByteString.copyFrom(contents))
-                        .build())
-                .build());
-    }
-
-    private static void append(NetworkAddressBook networkAddressBook, byte[] contents) {
-        networkAddressBook.updateFrom(TransactionBody.newBuilder()
-                .setFileAppend(FileAppendTransactionBody.newBuilder()
-                        .setContents(ByteString.copyFrom(contents))
-                        .build())
-                .build());
     }
 }
