@@ -64,6 +64,8 @@ spring:
       api-user: ${hedera.mirror.importer.db.restUsername}
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
+      # service r5-rc4 deployDate in consensus_timestamp format e.g. 1587068400721029030, must be set for v1.23.1 migration
+      r5-rc4-deployDate:
   jpa:
     properties:
       hibernate:

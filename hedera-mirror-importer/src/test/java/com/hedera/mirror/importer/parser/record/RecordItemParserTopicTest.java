@@ -401,18 +401,19 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.9000, test-message0, 9000000, runninghash, 1",
-            "0.0.9001, '', 9000001, '', 9223372036854775807"
+            "0.0.9000, test-message0, 9000000, runninghash, 1, 1",
+            "0.0.9001, '', 9000001, '', 9223372036854775807, 2"
     })
     void submitMessageTest(@ConvertWith(TopicIdConverter.class) TopicID topicId, String message,
                            long consensusTimestamp, String runningHash,
-                           long sequenceNumber) throws Exception {
+                           long sequenceNumber, long runningHashVersion) throws Exception {
         var responseCode = ResponseCodeEnum.SUCCESS;
 
         var topic = createTopicEntity(topicId, 10L, 20, null, null, null, null, null);
         entityRepository.save(topic);
 
-        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp);
+        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
+                runningHashVersion);
         var transaction = createSubmitMessageTransaction(topicId, message);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), consensusTimestamp, responseCode);
@@ -437,11 +438,13 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var message = "message";
         var sequenceNumber = 10_000L;
         var runningHash = "running-hash";
+        var runningHashVersion = 2;
 
         var topic = createTopicEntity(topicId, null, null, null, null, null, null, null);
         // Topic NOT saved in the repository.
 
-        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp);
+        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
+                runningHashVersion);
         var transaction = createSubmitMessageTransaction(topicId, message);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), consensusTimestamp, responseCode);
@@ -597,7 +600,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
     }
 
     private TopicMessage createTopicMessage(TopicID topicId, String message, long sequenceNumber, String runningHash,
-                                            long consensusTimestamp) {
+                                            long consensusTimestamp, long runningHashVersion) {
         var topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusTimestamp);
         topicMessage.setRealmNum((int) topicId.getRealmNum());
@@ -605,6 +608,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         topicMessage.setMessage(message.getBytes());
         topicMessage.setSequenceNumber(sequenceNumber);
         topicMessage.setRunningHash(runningHash.getBytes());
+        topicMessage.setRunningHashVersion(runningHashVersion);
         return topicMessage;
     }
 

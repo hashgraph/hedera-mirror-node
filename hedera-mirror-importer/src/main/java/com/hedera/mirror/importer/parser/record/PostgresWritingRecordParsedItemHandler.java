@@ -136,8 +136,9 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
                     + " VALUES (?, ?)");
 
             sqlInsertTopicMessage = connection.prepareStatement("insert into topic_message"
-                    + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number)"
-                    + " values (?, ?, ?, ?, ?, ?)");
+                    + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number, " +
+                    "runningHashVersion)"
+                    + " values (?, ?, ?, ?, ?, ?, ?)");
         } catch (SQLException e) {
             throw new ParserSQLException("Unable to prepare SQL statements", e);
         }
@@ -253,6 +254,8 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             sqlInsertTopicMessage.setBytes(F_TOPICMESSAGE.MESSAGE.ordinal(), topicMessage.getMessage());
             sqlInsertTopicMessage.setBytes(F_TOPICMESSAGE.RUNNING_HASH.ordinal(), topicMessage.getRunningHash());
             sqlInsertTopicMessage.setLong(F_TOPICMESSAGE.SEQUENCE_NUMBER.ordinal(), topicMessage.getSequenceNumber());
+            sqlInsertTopicMessage
+                    .setInt(F_TOPICMESSAGE.RUNNING_HASH_VERSION.ordinal(), (int) topicMessage.getRunningHashVersion());
             sqlInsertTopicMessage.addBatch();
         } catch (SQLException e) {
             throw new ParserSQLException(e);
@@ -317,7 +320,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
 
     enum F_TOPICMESSAGE {
         ZERO // column indices start at 1, this creates the necessary offset
-        , CONSENSUS_TIMESTAMP, REALM_NUM, TOPIC_NUM, MESSAGE, RUNNING_HASH, SEQUENCE_NUMBER
+        , CONSENSUS_TIMESTAMP, REALM_NUM, TOPIC_NUM, MESSAGE, RUNNING_HASH, SEQUENCE_NUMBER, RUNNING_HASH_VERSION
     }
 
     enum F_FILE_DATA {

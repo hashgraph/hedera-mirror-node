@@ -202,7 +202,7 @@ public class RecordItemParser implements RecordItemListener {
                 Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()),
                 transactionBody.getMessage().toByteArray(), (int) topicId.getRealmNum(),
                 receipt.getTopicRunningHash().toByteArray(), receipt.getTopicSequenceNumber(),
-                (int) topicId.getTopicNum());
+                (int) topicId.getTopicNum(), receipt.getTopicRunningHashVersion());
         recordParsedItemHandler.onTopicMessage(topicMessage);
     }
 
