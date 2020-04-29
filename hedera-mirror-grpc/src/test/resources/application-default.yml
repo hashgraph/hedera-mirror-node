@@ -36,6 +36,6 @@ spring:
       api-user: mirror_api
       db-name: ${hedera.mirror.grpc.db.name}
       db-user: ${hedera.mirror.grpc.db.username}
-      # service r5-rc4 deployDate in consensus_timestamp format e.g. 1588636800000000001, must be set for v1.23.1 migration
-      r5-rc4-deployDate: 1588636800000000001
+      # service v0.5 deployDate in consensus_timestamp format e.g. 1588636800000000001, must be set for v1.23.1 migration
+      v05-deployDate: 1588705200000000000
       runningHashDefaultVersion: 2
