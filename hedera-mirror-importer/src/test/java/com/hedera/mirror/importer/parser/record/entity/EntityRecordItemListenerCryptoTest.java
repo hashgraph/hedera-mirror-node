@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.record.entity;
 
 /*-
  * ‌
@@ -55,7 +55,7 @@ import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
+public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
 
     //TODO: These transaction data items are not saved to the database
     //  cryptoCreateTransactionBody.getReceiveRecordThreshold()

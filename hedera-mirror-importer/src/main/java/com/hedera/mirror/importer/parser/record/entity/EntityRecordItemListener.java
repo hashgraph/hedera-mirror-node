@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.record.entity;
 
 /*-
  * ‌
@@ -52,7 +52,9 @@ import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.parser.record.entity.EntityEnabledCondition;
+import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
+import com.hedera.mirror.importer.parser.record.RecordItemListener;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -61,35 +63,31 @@ import com.hedera.mirror.importer.util.Utility;
 @Log4j2
 @Named
 @Conditional(EntityEnabledCondition.class)
-public class RecordItemParser implements RecordItemListener {
+public class EntityRecordItemListener implements RecordItemListener {
     private final RecordParserProperties parserProperties;
     private final NetworkAddressBook networkAddressBook;
     private final EntityRepository entityRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final Predicate<TransactionFilterFields> transactionFilter;
-    private final RecordParsedItemHandler recordParsedItemHandler;
+    private final EntityListener entityListener;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
-    public RecordItemParser(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
-                            NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
-                            NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
-                            RecordParsedItemHandler recordParsedItemHandler,
-                            TransactionHandlerFactory transactionHandlerFactory) {
+    public EntityRecordItemListener(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
+                                    NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
+                                    NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
+                                    EntityListener entityListener,
+                                    TransactionHandlerFactory transactionHandlerFactory) {
         this.parserProperties = parserProperties;
         this.networkAddressBook = networkAddressBook;
         this.entityRepository = entityRepository;
         this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
-        this.recordParsedItemHandler = recordParsedItemHandler;
+        this.entityListener = entityListener;
         this.transactionHandlerFactory = transactionHandlerFactory;
         transactionFilter = commonParserProperties.getFilter();
     }
 
     public static boolean isSuccessful(TransactionRecord transactionRecord) {
         return ResponseCodeEnum.SUCCESS == transactionRecord.getReceipt().getStatus();
-    }
-
-    private static boolean isFileAddressBook(FileID fileId) {
-        return (fileId.getFileNum() == 102) && (fileId.getShardNum() == 0) && (fileId.getRealmNum() == 0);
     }
 
     @Override
@@ -144,7 +142,7 @@ public class RecordItemParser implements RecordItemListener {
                 insertFileUpdate(consensusNs, body.getFileUpdate());
             }
         }
-        recordParsedItemHandler.onTransaction(tx);
+        entityListener.onTransaction(tx);
         log.debug("Storing transaction: {}", tx);
 
         if (NetworkAddressBook.isAddressBook(entityId)) {
@@ -187,7 +185,7 @@ public class RecordItemParser implements RecordItemListener {
         }
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
-                recordParsedItemHandler.onNonFeeTransfer(
+                entityListener.onNonFeeTransfer(
                         new NonFeeTransfer(consensusTimestamp, aa.getAccountID().getRealmNum(),
                                 aa.getAccountID().getAccountNum(), aa.getAmount()));
             }
@@ -203,13 +201,13 @@ public class RecordItemParser implements RecordItemListener {
                 transactionBody.getMessage().toByteArray(), (int) topicId.getRealmNum(),
                 receipt.getTopicRunningHash().toByteArray(), receipt.getTopicSequenceNumber(),
                 (int) topicId.getTopicNum());
-        recordParsedItemHandler.onTopicMessage(topicMessage);
+        entityListener.onTopicMessage(topicMessage);
     }
 
     private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID) {
         if (parserProperties.getPersist().isFiles() ||
                 (parserProperties.getPersist().isSystemFiles() && fileID.getFileNum() < 1000)) {
-            recordParsedItemHandler.onFileData(new FileData(consensusTimestamp, contents));
+            entityListener.onFileData(new FileData(consensusTimestamp, contents));
         }
     }
 
@@ -222,7 +220,7 @@ public class RecordItemParser implements RecordItemListener {
                                          CryptoAddLiveHashTransactionBody transactionBody) {
         if (parserProperties.getPersist().isClaims()) {
             byte[] liveHash = transactionBody.getLiveHash().getHash().toByteArray();
-            recordParsedItemHandler.onLiveHash(new LiveHash(consensusTimestamp, liveHash));
+            entityListener.onLiveHash(new LiveHash(consensusTimestamp, liveHash));
         }
     }
 
@@ -308,7 +306,7 @@ public class RecordItemParser implements RecordItemListener {
     }
 
     private void addCryptoTransferList(long consensusTimestamp, long realmNum, long accountNum, long amount) {
-        recordParsedItemHandler
+        entityListener
                 .onCryptoTransferList(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
     }
 
@@ -320,7 +318,7 @@ public class RecordItemParser implements RecordItemListener {
 
     private void insertContractResults(
             long consensusTimestamp, byte[] functionParams, long gasSupplied, byte[] callResult, long gasUsed) {
-        recordParsedItemHandler.onContractResult(
+        entityListener.onContractResult(
                 new ContractResult(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed));
     }
 

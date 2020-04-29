@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.record.entity;
 
 /*-
  * ‌
@@ -28,12 +28,11 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.ParsedItemHandler;
 
 /**
  * Handlers for items parsed during processing of record stream.
  */
-public interface RecordParsedItemHandler extends ParsedItemHandler {
+public interface EntityListener {
     void onTransaction(Transaction transaction) throws ImporterException;
 
     void onCryptoTransferList(CryptoTransfer cryptoTransfer) throws ImporterException;
