@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.record.entity;
 
 /*-
  * ‌
@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public class RecordItemParserFreezeTest extends AbstractRecordItemParserTest {
+public class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListenerTest {
 
     private static final String memo = "File test memo";
 

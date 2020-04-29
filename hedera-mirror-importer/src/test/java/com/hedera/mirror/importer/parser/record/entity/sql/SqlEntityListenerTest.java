@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.record.entity.sql;
 
 /*-
  * ‌
@@ -20,33 +20,49 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.*;
-import com.hedera.mirror.importer.exception.DuplicateFileException;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
-import com.hedera.mirror.importer.repository.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.test.context.jdbc.Sql;
-import org.testcontainers.shaded.org.bouncycastle.util.Strings;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import javax.annotation.Resource;
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import javax.annotation.Resource;
+import javax.sql.DataSource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.test.context.jdbc.Sql;
+import org.testcontainers.shaded.org.bouncycastle.util.Strings;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.ContractResult;
+import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.domain.LiveHash;
+import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.exception.DuplicateFileException;
+import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.repository.ContractResultRepository;
+import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.FileDataRepository;
+import com.hedera.mirror.importer.repository.LiveHashRepository;
+import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.TopicMessageRepository;
+import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest {
+public class SqlEntityListenerTest extends IntegrationTest {
 
     @Resource
     protected TransactionRepository transactionRepository;
@@ -73,21 +89,21 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
     protected RecordFileRepository recordFileRepository;
 
     @Resource
-    protected PostgresWritingRecordParsedItemHandler postgresWriter;
+    protected SqlEntityListener sqlEntityListener;
 
     @Resource
-    protected PostgresWriterProperties postgresWriterProperties;
+    protected SqlProperties sqlProperties;
 
     private String fileName;
 
     @BeforeEach
     final void beforeEach() {
         fileName = UUID.randomUUID().toString();
-        postgresWriter.onStart(new StreamFileData(fileName, null));
+        sqlEntityListener.onStart(new StreamFileData(fileName, null));
     }
 
     void completeFileAndCommit() {
-        postgresWriter.onEnd(new RecordFile(null, fileName, 0L, 0L, UUID.randomUUID().toString(), ""));
+        sqlEntityListener.onEnd(new RecordFile(null, fileName, 0L, 0L, UUID.randomUUID().toString(), ""));
     }
 
     @Test
@@ -97,8 +113,8 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, 0L, 2L);
 
         // when
-        postgresWriter.onCryptoTransferList(cryptoTransfer1);
-        postgresWriter.onCryptoTransferList(cryptoTransfer2);
+        sqlEntityListener.onCryptoTransferList(cryptoTransfer1);
+        sqlEntityListener.onCryptoTransferList(cryptoTransfer2);
         completeFileAndCommit();
 
         // then
@@ -114,8 +130,8 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         NonFeeTransfer nonFeeTransfer2 = new NonFeeTransfer(2L, -2L, 0L, 2L);
 
         // when
-        postgresWriter.onNonFeeTransfer(nonFeeTransfer1);
-        postgresWriter.onNonFeeTransfer(nonFeeTransfer2);
+        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer1);
+        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer2);
         completeFileAndCommit();
 
         // then
@@ -132,7 +148,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash, 10L, 1001);
 
         // when
-        postgresWriter.onTopicMessage(expectedTopicMessage);
+        sqlEntityListener.onTopicMessage(expectedTopicMessage);
         completeFileAndCommit();
 
         // then
@@ -146,7 +162,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"));
 
         // when
-        postgresWriter.onFileData(expectedFileData);
+        sqlEntityListener.onFileData(expectedFileData);
         completeFileAndCommit();
 
         // then
@@ -161,7 +177,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
                 10000L, Strings.toByteArray("call result"), 10000L);
 
         // when
-        postgresWriter.onContractResult(expectedContractResult);
+        sqlEntityListener.onContractResult(expectedContractResult);
         completeFileAndCommit();
 
         // then
@@ -175,7 +191,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         LiveHash expectedLiveHash = new LiveHash(20L, Strings.toByteArray("live hash"));
 
         // when
-        postgresWriter.onLiveHash(expectedLiveHash);
+        sqlEntityListener.onLiveHash(expectedLiveHash);
         completeFileAndCommit();
 
         // then
@@ -190,7 +206,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
                 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
 
         // when
-        postgresWriter.onTransaction(expectedTransaction);
+        sqlEntityListener.onTransaction(expectedTransaction);
         completeFileAndCommit();
 
         // then
@@ -204,7 +220,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
     void batchSize() throws Exception {
         // given
         int batchSize = 10;
-        postgresWriterProperties.setBatchSize(batchSize);
+        sqlProperties.setBatchSize(batchSize);
 
         Connection connection = mock(Connection.class);
         List<PreparedStatement> insertStatements = new ArrayList<>(); // tracks all PreparedStatements
@@ -217,13 +233,13 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
         DataSource dataSource = mock(DataSource.class);
         when(dataSource.getConnection()).thenReturn(connection);
-        PostgresWritingRecordParsedItemHandler postgresWriter2 =
-                new PostgresWritingRecordParsedItemHandler(postgresWriterProperties, dataSource, recordFileRepository);
-        postgresWriter2.onStart(new StreamFileData(UUID.randomUUID().toString(), null)); // setup connection
+        SqlEntityListener sqlEntityListener2 =
+                new SqlEntityListener(sqlProperties, dataSource, recordFileRepository);
+        sqlEntityListener2.onStart(new StreamFileData(UUID.randomUUID().toString(), null)); // setup connection
 
         // when
         for (int i = 0; i < batchSize; i++) {
-            postgresWriter2.onTransaction(mock(Transaction.class));
+            sqlEntityListener2.onTransaction(mock(Transaction.class));
         }
 
         // then
@@ -231,15 +247,15 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
             verify(ps).executeBatch();
         }
 
-        completeFileAndCommit();  // close postgresWriter
+        completeFileAndCommit();  // close connection
     }
 
     @Test
     void onError() {
         // when
-        postgresWriter.onNonFeeTransfer(new NonFeeTransfer(1L, 1L, 0L, 1L));
-        postgresWriter.onCryptoTransferList(new CryptoTransfer(2L, -2L, 0L, 2L));
-        postgresWriter.onError();
+        sqlEntityListener.onNonFeeTransfer(new NonFeeTransfer(1L, 1L, 0L, 1L));
+        sqlEntityListener.onCryptoTransferList(new CryptoTransfer(2L, -2L, 0L, 2L));
+        sqlEntityListener.onError();
 
         // then
         assertEquals(0, nonFeeTransferRepository.count());
@@ -253,10 +269,10 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
         // when, then
         assertThrows(DuplicateFileException.class, () -> {
-                    postgresWriter.onStart(new StreamFileData(fileName, null));
+                    sqlEntityListener.onStart(new StreamFileData(fileName, null));
                 });
 
-        postgresWriter.onError();  // close connection
+        sqlEntityListener.onError();  // close connection
     }
 
     // TODO: add test to check contents of recordFileRepo
