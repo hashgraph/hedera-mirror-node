@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.record.entity;
 
 /*-
  * ‌
@@ -51,6 +51,8 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -65,7 +67,7 @@ import com.hedera.mirror.importer.util.Utility;
 //Class manually commits so have to manually cleanup tables
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-public class AbstractRecordItemParserTest extends IntegrationTest {
+public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     @Resource
     protected TransactionRepository transactionRepository;
@@ -87,7 +89,7 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
     protected NonFeeTransferRepository nonFeeTransferRepository;
 
     @Resource
-    protected RecordItemParser recordItemParser;
+    protected EntityRecordItemListener entityRecordItemListener;
 
     @Resource
     protected RecordParserProperties parserProperties;
@@ -156,7 +158,7 @@ public class AbstractRecordItemParserTest extends IntegrationTest {
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
         String fileName = UUID.randomUUID().toString();
         recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
-        recordItemParser.onItem(recordItem);
+        entityRecordItemListener.onItem(recordItem);
         // commit, close connection
         recordStreamFileListener.onEnd(new RecordFile(null, fileName, 0L, 0L, UUID.randomUUID().toString(), ""));
     }

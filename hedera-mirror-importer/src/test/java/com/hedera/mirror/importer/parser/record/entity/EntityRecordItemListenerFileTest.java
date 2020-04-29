@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.record.entity;
 
 /*-
  * ‌
@@ -65,7 +65,7 @@ import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public class RecordItemParserFileTest extends AbstractRecordItemParserTest {
+public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
 
     //TODO: The following are not yet saved to the mirror node database
     // transactionBody.getTransactionFee()

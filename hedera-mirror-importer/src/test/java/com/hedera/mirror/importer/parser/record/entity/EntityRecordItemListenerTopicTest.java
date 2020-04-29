@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.record.entity;
 
 /*-
  * ‌
@@ -53,7 +53,7 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
+public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListenerTest {
 
     static final String TRANSACTION_MEMO = "transaction memo";
     static final String NODE_ID = "0.0.3";

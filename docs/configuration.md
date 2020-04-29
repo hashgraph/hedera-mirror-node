@@ -68,6 +68,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
 | `hedera.mirror.importer.parser.record.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
 | `hedera.mirror.importer.parser.record.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
+| `hedera.mirror.importer.parser.record.sql.batchSize`                 | 100                     | When inserting transactions into db, executeBatches() is called every these many transactions  |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | 1588636800000000001     | The Unix timestamp when topic message running hash v2 was introduced                           |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
 

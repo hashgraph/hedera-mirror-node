@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.record.entity.sql;
 
 /*-
  * ‌
@@ -27,8 +27,8 @@ import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.importer.parser.record.postgresql")
-public class PostgresWriterProperties {
+@ConfigurationProperties("hedera.mirror.importer.parser.record.sql")
+public class SqlProperties {
     /**
      * PreparedStatement.executeBatch() is called after every batchSize number of transactions from record stream file.
      */

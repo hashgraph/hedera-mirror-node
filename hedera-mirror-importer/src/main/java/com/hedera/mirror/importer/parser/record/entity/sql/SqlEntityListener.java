@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser.record.entity.sql;
 
 /*-
  * ‌
@@ -42,15 +42,17 @@ import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityEnabledCondition;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Log4j2
 @Named
 @RequiredArgsConstructor
 @Conditional(EntityEnabledCondition.class)
-public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemHandler, RecordStreamFileListener {
-    private final PostgresWriterProperties properties;
+public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
+    private final SqlProperties properties;
     private final DataSource dataSource;
     private final RecordFileRepository recordFileRepository;
     private long batch_count = 0;
