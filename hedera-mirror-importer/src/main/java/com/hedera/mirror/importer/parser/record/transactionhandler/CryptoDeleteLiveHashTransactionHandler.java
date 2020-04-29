@@ -28,10 +28,10 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
 @AllArgsConstructor
-public class CryptoDeleteClaimTransactionHandler implements TransactionHandler {
+public class CryptoDeleteLiveHashTransactionHandler implements TransactionHandler {
 
     @Override
     public EntityId getEntityId(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getCryptoDeleteClaim().getAccountIDToDeleteFrom());
+        return EntityId.of(recordItem.getTransactionBody().getCryptoDeleteLiveHash().getAccountOfLiveHash());
     }
 }
