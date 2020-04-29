@@ -221,8 +221,8 @@ public class RecordItemParser implements RecordItemListener {
     private void insertCryptoAddLiveHash(long consensusTimestamp,
                                          CryptoAddLiveHashTransactionBody transactionBody) {
         if (parserProperties.getPersist().isClaims()) {
-            byte[] claim = transactionBody.getLiveHash().getHash().toByteArray();
-            recordParsedItemHandler.onLiveHash(new LiveHash(consensusTimestamp, claim));
+            byte[] liveHash = transactionBody.getLiveHash().getHash().toByteArray();
+            recordParsedItemHandler.onLiveHash(new LiveHash(consensusTimestamp, liveHash));
         }
     }
 
