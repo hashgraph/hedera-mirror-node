@@ -45,5 +45,5 @@ public class TopicMessage {
 
     private int topicNum;
 
-    private long runningHashVersion;
+    private int runningHashVersion;
 }

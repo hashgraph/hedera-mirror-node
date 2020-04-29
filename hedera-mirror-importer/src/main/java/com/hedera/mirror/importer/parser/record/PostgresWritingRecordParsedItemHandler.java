@@ -255,7 +255,7 @@ public class PostgresWritingRecordParsedItemHandler implements RecordParsedItemH
             sqlInsertTopicMessage.setBytes(F_TOPICMESSAGE.RUNNING_HASH.ordinal(), topicMessage.getRunningHash());
             sqlInsertTopicMessage.setLong(F_TOPICMESSAGE.SEQUENCE_NUMBER.ordinal(), topicMessage.getSequenceNumber());
             sqlInsertTopicMessage
-                    .setInt(F_TOPICMESSAGE.RUNNING_HASH_VERSION.ordinal(), (int) topicMessage.getRunningHashVersion());
+                    .setInt(F_TOPICMESSAGE.RUNNING_HASH_VERSION.ordinal(), topicMessage.getRunningHashVersion());
             sqlInsertTopicMessage.addBatch();
         } catch (SQLException e) {
             throw new ParserSQLException(e);

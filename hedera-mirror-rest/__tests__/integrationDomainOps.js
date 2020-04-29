@@ -29,7 +29,7 @@ const SERVICE_FEE = 4;
 let sqlConnection;
 let accountEntityIds;
 
-const setUp = async function(testDataJson, sqlconn) {
+const setUp = async function (testDataJson, sqlconn) {
   accountEntityIds = {};
   sqlConnection = sqlconn;
   await loadAccounts(testDataJson['accounts']);
@@ -39,7 +39,7 @@ const setUp = async function(testDataJson, sqlconn) {
   await loadTopicMessages(testDataJson['topicmessages']);
 };
 
-const loadAccounts = async function(accounts) {
+const loadAccounts = async function (accounts) {
   if (accounts == null) {
     return;
   }
@@ -49,7 +49,7 @@ const loadAccounts = async function(accounts) {
   }
 };
 
-const loadBalances = async function(balances) {
+const loadBalances = async function (balances) {
   if (balances == null) {
     return;
   }
@@ -59,7 +59,7 @@ const loadBalances = async function(balances) {
   }
 };
 
-const loadCryptoTransfers = async function(cryptoTransfers) {
+const loadCryptoTransfers = async function (cryptoTransfers) {
   if (cryptoTransfers == null) {
     return;
   }
@@ -69,7 +69,7 @@ const loadCryptoTransfers = async function(cryptoTransfers) {
   }
 };
 
-const loadTransactions = async function(transactions) {
+const loadTransactions = async function (transactions) {
   if (transactions == null) {
     return;
   }
@@ -79,7 +79,7 @@ const loadTransactions = async function(transactions) {
   }
 };
 
-const loadTopicMessages = async function(messages) {
+const loadTopicMessages = async function (messages) {
   if (messages == null) {
     return;
   }
@@ -89,20 +89,20 @@ const loadTopicMessages = async function(messages) {
   }
 };
 
-const getAccountId = function(account) {
+const getAccountId = function (account) {
   return account.entity_shard + '.' + account.entity_realm + '.' + account.entity_num;
 };
 
-const toAccount = function(str) {
+const toAccount = function (str) {
   let tokens = str.split('.');
   return {
     entity_shard: tokens[0],
     entity_realm: tokens[1],
-    entity_num: tokens[2]
+    entity_num: tokens[2],
   };
 };
 
-const addAccount = async function(account) {
+const addAccount = async function (account) {
   account = Object.assign(
     {
       entity_shard: 0,
@@ -111,7 +111,7 @@ const addAccount = async function(account) {
       public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
       entity_type: 1,
       auto_renew_period: null,
-      key: null
+      key: null,
     },
     account
   );
@@ -133,7 +133,7 @@ const addAccount = async function(account) {
       false,
       account.public_key,
       account.auto_renew_period,
-      account.key
+      account.key,
     ]
   );
   e = res.rows[0]['id'];
@@ -142,7 +142,7 @@ const addAccount = async function(account) {
   return e;
 };
 
-const setAccountBalance = async function(account) {
+const setAccountBalance = async function (account) {
   account = Object.assign({timestamp: 0, realm_num: 0, id: null, balance: 0}, account);
   await sqlConnection.query(
     'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
@@ -150,7 +150,7 @@ const setAccountBalance = async function(account) {
   );
 };
 
-const addTransaction = async function(transaction) {
+const addTransaction = async function (transaction) {
   transaction = Object.assign(
     {
       type: 14,
@@ -159,7 +159,7 @@ const addTransaction = async function(transaction) {
       valid_duration_seconds: 11,
       transfers: [],
       non_fee_transfers: [],
-      charged_tx_fee: NODE_FEE + NETWORK_FEE + SERVICE_FEE
+      charged_tx_fee: NODE_FEE + NETWORK_FEE + SERVICE_FEE,
     },
     transaction
   );
@@ -177,7 +177,7 @@ const addTransaction = async function(transaction) {
       transaction.type,
       transaction.valid_duration_seconds,
       transaction.max_fee,
-      transaction.charged_tx_fee
+      transaction.charged_tx_fee,
     ]
   );
 
@@ -198,7 +198,7 @@ const addTransaction = async function(transaction) {
   }
 };
 
-const addCryptoTransaction = async function(cryptoTransfer) {
+const addCryptoTransaction = async function (cryptoTransfer) {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }
@@ -211,26 +211,35 @@ const addCryptoTransaction = async function(cryptoTransfer) {
     cryptoTransfer['transfers'] = [
       Object.assign({}, sender, {amount: -NETWORK_FEE - cryptoTransfer.amount}),
       Object.assign({}, recipient, {amount: cryptoTransfer.amount}),
-      Object.assign({}, treasury, {amount: NETWORK_FEE})
+      Object.assign({}, treasury, {amount: NETWORK_FEE}),
     ];
   }
 
   await addTransaction(cryptoTransfer);
 };
 
-const addTopicMessage = async function(message) {
+const addTopicMessage = async function (message) {
   message = Object.assign(
     {
       realm_num: 0,
       message: 'message', // Base64 encoding: bWVzc2FnZQ==
-      running_hash: 'running_hash' // Base64 encoding: cnVubmluZ19oYXNo
+      running_hash: 'running_hash', // Base64 encoding: cnVubmluZ19oYXNo
+      running_hash_version: 2,
     },
     message
   );
 
   await sqlConnection.query(
-    'insert into topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number) values ($1, $2, $3, $4, $5, $6);',
-    [message.timestamp, message.realm_num, message.topic_num, message.message, message.running_hash, message.seq_num]
+    'insert into topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number, running_hash) values ($1, $2, $3, $4, $5, $6, $7);',
+    [
+      message.timestamp,
+      message.realm_num,
+      message.topic_num,
+      message.message,
+      message.running_hash,
+      message.seq_num,
+      message.running_hash_version,
+    ]
   );
 };
 
@@ -244,5 +253,5 @@ module.exports = {
   loadTransactions: loadTransactions,
   setAccountBalance: setAccountBalance,
   setUp: setUp,
-  toAccount: toAccount
+  toAccount: toAccount,
 };

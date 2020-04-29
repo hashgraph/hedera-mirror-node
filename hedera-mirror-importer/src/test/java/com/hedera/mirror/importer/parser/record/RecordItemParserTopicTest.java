@@ -399,7 +399,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
     })
     void submitMessageTest(@ConvertWith(TopicIdConverter.class) TopicID topicId, String message,
                            long consensusTimestamp, String runningHash,
-                           long sequenceNumber, long runningHashVersion) throws Exception {
+                           long sequenceNumber, int runningHashVersion) throws Exception {
         var responseCode = ResponseCodeEnum.SUCCESS;
 
         var topic = createTopicEntity(topicId, 10L, 20, null, null, null, null, null);
@@ -539,7 +539,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
     }
 
     private TransactionRecord createTransactionRecord(TopicID topicId, Long topicSequenceNumber,
-                                                      byte[] topicRunningHash, long runningHashVersion,
+                                                      byte[] topicRunningHash, int runningHashVersion,
                                                       long consensusTimestamp, ResponseCodeEnum responseCode) {
         var receipt = TransactionReceipt.newBuilder().setStatus(responseCode);
         if (null != topicId) {
@@ -602,7 +602,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
     }
 
     private TopicMessage createTopicMessage(TopicID topicId, String message, long sequenceNumber, String runningHash,
-                                            long consensusTimestamp, long runningHashVersion) {
+                                            long consensusTimestamp, int runningHashVersion) {
         var topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusTimestamp);
         topicMessage.setRealmNum((int) topicId.getRealmNum());
