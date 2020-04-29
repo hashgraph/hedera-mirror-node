@@ -89,7 +89,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     protected RecordFileRepository recordFileRepository;
 
     @Resource
-    protected SqlEntityListener postgresWriter;
+    protected SqlEntityListener sqlEntityListener;
 
     @Resource
     protected SqlProperties sqlProperties;
@@ -99,11 +99,11 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @BeforeEach
     final void beforeEach() {
         fileName = UUID.randomUUID().toString();
-        postgresWriter.onStart(new StreamFileData(fileName, null));
+        sqlEntityListener.onStart(new StreamFileData(fileName, null));
     }
 
     void completeFileAndCommit() {
-        postgresWriter.onEnd(new RecordFile(null, fileName, 0L, 0L, UUID.randomUUID().toString(), ""));
+        sqlEntityListener.onEnd(new RecordFile(null, fileName, 0L, 0L, UUID.randomUUID().toString(), ""));
     }
 
     @Test
@@ -113,8 +113,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
         CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, 0L, 2L);
 
         // when
-        postgresWriter.onCryptoTransferList(cryptoTransfer1);
-        postgresWriter.onCryptoTransferList(cryptoTransfer2);
+        sqlEntityListener.onCryptoTransferList(cryptoTransfer1);
+        sqlEntityListener.onCryptoTransferList(cryptoTransfer2);
         completeFileAndCommit();
 
         // then
@@ -130,8 +130,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
         NonFeeTransfer nonFeeTransfer2 = new NonFeeTransfer(2L, -2L, 0L, 2L);
 
         // when
-        postgresWriter.onNonFeeTransfer(nonFeeTransfer1);
-        postgresWriter.onNonFeeTransfer(nonFeeTransfer2);
+        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer1);
+        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer2);
         completeFileAndCommit();
 
         // then
@@ -148,7 +148,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash, 10L, 1001);
 
         // when
-        postgresWriter.onTopicMessage(expectedTopicMessage);
+        sqlEntityListener.onTopicMessage(expectedTopicMessage);
         completeFileAndCommit();
 
         // then
@@ -162,7 +162,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"));
 
         // when
-        postgresWriter.onFileData(expectedFileData);
+        sqlEntityListener.onFileData(expectedFileData);
         completeFileAndCommit();
 
         // then
@@ -177,7 +177,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
                 10000L, Strings.toByteArray("call result"), 10000L);
 
         // when
-        postgresWriter.onContractResult(expectedContractResult);
+        sqlEntityListener.onContractResult(expectedContractResult);
         completeFileAndCommit();
 
         // then
@@ -191,7 +191,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         LiveHash expectedLiveHash = new LiveHash(20L, Strings.toByteArray("live hash"));
 
         // when
-        postgresWriter.onLiveHash(expectedLiveHash);
+        sqlEntityListener.onLiveHash(expectedLiveHash);
         completeFileAndCommit();
 
         // then
@@ -206,7 +206,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
                 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
 
         // when
-        postgresWriter.onTransaction(expectedTransaction);
+        sqlEntityListener.onTransaction(expectedTransaction);
         completeFileAndCommit();
 
         // then
@@ -233,13 +233,13 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
         DataSource dataSource = mock(DataSource.class);
         when(dataSource.getConnection()).thenReturn(connection);
-        SqlEntityListener postgresWriter2 =
+        SqlEntityListener sqlEntityListener2 =
                 new SqlEntityListener(sqlProperties, dataSource, recordFileRepository);
-        postgresWriter2.onStart(new StreamFileData(UUID.randomUUID().toString(), null)); // setup connection
+        sqlEntityListener2.onStart(new StreamFileData(UUID.randomUUID().toString(), null)); // setup connection
 
         // when
         for (int i = 0; i < batchSize; i++) {
-            postgresWriter2.onTransaction(mock(Transaction.class));
+            sqlEntityListener2.onTransaction(mock(Transaction.class));
         }
 
         // then
@@ -247,15 +247,15 @@ public class SqlEntityListenerTest extends IntegrationTest {
             verify(ps).executeBatch();
         }
 
-        completeFileAndCommit();  // close postgresWriter
+        completeFileAndCommit();  // close connection
     }
 
     @Test
     void onError() {
         // when
-        postgresWriter.onNonFeeTransfer(new NonFeeTransfer(1L, 1L, 0L, 1L));
-        postgresWriter.onCryptoTransferList(new CryptoTransfer(2L, -2L, 0L, 2L));
-        postgresWriter.onError();
+        sqlEntityListener.onNonFeeTransfer(new NonFeeTransfer(1L, 1L, 0L, 1L));
+        sqlEntityListener.onCryptoTransferList(new CryptoTransfer(2L, -2L, 0L, 2L));
+        sqlEntityListener.onError();
 
         // then
         assertEquals(0, nonFeeTransferRepository.count());
@@ -269,10 +269,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
         // when, then
         assertThrows(DuplicateFileException.class, () -> {
-                    postgresWriter.onStart(new StreamFileData(fileName, null));
+                    sqlEntityListener.onStart(new StreamFileData(fileName, null));
                 });
 
-        postgresWriter.onError();  // close connection
+        sqlEntityListener.onError();  // close connection
     }
 
     // TODO: add test to check contents of recordFileRepo
