@@ -206,7 +206,8 @@ class PubSubMessageTest {
                 "  \"receipt\": {" +
                 "    \"status\": \"SUCCESS\"," +
                 "    \"topicSequenceNumber\": \"100000000\"," +
-                "    \"topicRunningHash\": \"YWJjZGVm\"" +
+                "    \"topicRunningHash\": \"YWJjZGVm\"," +
+                "    \"topicRunningHashVersion\": \"0\"" +
                 "  }," +
                 "  \"transactionHash\": \"YWJjZGVm\"," +
                 "  \"consensusTimestamp\": {" +

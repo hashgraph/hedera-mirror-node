@@ -36,7 +36,7 @@ public class LiveHashRepositoryTest extends AbstractRepositoryTest {
     @Test
     void insert() {
         Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(entity, "CRYPTOADDCLAIM");
+        Transaction transaction = insertTransaction(entity, "CRYPTOADDLIVEHASH");
 
         LiveHash liveHash = new LiveHash();
         liveHash.setConsensusTimestamp(transaction.getConsensusNs());
