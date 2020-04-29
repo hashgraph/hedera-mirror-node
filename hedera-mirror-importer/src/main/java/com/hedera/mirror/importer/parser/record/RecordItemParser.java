@@ -134,7 +134,7 @@ public class RecordItemParser implements RecordItemListener {
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
             } else if (body.hasCryptoAddLiveHash()) {
-                insertCryptoAddClaim(consensusNs, body.getCryptoAddLiveHash());
+                insertCryptoAddLiveHash(consensusNs, body.getCryptoAddLiveHash());
             } else if (body.hasFileAppend()) {
                 insertFileAppend(consensusNs, body.getFileAppend());
             } else if (body.hasFileCreate()) {
@@ -218,8 +218,8 @@ public class RecordItemParser implements RecordItemListener {
         insertFileData(consensusTimestamp, contents, transactionBody.getFileID());
     }
 
-    private void insertCryptoAddClaim(long consensusTimestamp,
-                                      CryptoAddLiveHashTransactionBody transactionBody) {
+    private void insertCryptoAddLiveHash(long consensusTimestamp,
+                                         CryptoAddLiveHashTransactionBody transactionBody) {
         if (parserProperties.getPersist().isClaims()) {
             byte[] claim = transactionBody.getLiveHash().getHash().toByteArray();
             recordParsedItemHandler.onLiveHash(new LiveHash(consensusTimestamp, claim));

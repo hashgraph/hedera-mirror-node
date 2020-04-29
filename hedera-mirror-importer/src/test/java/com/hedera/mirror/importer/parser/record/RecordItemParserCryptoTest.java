@@ -76,33 +76,6 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
     private static final long[] transferAccounts = {98, 2002, 3};
     private static final long[] transferAmounts = {1000, -2000, 20};
 
-    private static Transaction cryptoUpdateTransaction() {
-
-        Transaction.Builder transaction = Transaction.newBuilder();
-        CryptoUpdateTransactionBody.Builder cryptoUpdate = CryptoUpdateTransactionBody.newBuilder();
-        String key = "0a2312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110aaa";
-
-        // Build a transaction
-        cryptoUpdate.setAccountIDToUpdate(accountId);
-        cryptoUpdate.setAutoRenewPeriod(Duration.newBuilder().setSeconds(5001L));
-        cryptoUpdate.setExpirationTime(Utility.instantToTimestamp(Instant.now()));
-        cryptoUpdate.setKey(keyFromString(key));
-        cryptoUpdate.setProxyAccountID(AccountID.newBuilder().setShardNum(5).setRealmNum(6).setAccountNum(8));
-        cryptoUpdate.setReceiveRecordThreshold(5001L);
-        cryptoUpdate.setReceiverSigRequired(false);
-        cryptoUpdate.setSendRecordThreshold(6001L);
-
-        // Transaction body
-        TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
-        // body transaction
-        body.setCryptoUpdateAccount(cryptoUpdate.build());
-
-        transaction.setBodyBytes(body.build().toByteString());
-        transaction.setSigMap(getSigMap());
-
-        return transaction.build();
-    }
-
     @BeforeEach
     void before() {
         parserProperties.getPersist().setClaims(true);
@@ -1025,6 +998,33 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
         // body transaction
         body.setCryptoCreateAccount(cryptoCreate.build());
         transaction.setBody(body.build());
+        transaction.setSigMap(getSigMap());
+
+        return transaction.build();
+    }
+
+    private Transaction cryptoUpdateTransaction() {
+
+        Transaction.Builder transaction = Transaction.newBuilder();
+        CryptoUpdateTransactionBody.Builder cryptoUpdate = CryptoUpdateTransactionBody.newBuilder();
+        String key = "0a2312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110aaa";
+
+        // Build a transaction
+        cryptoUpdate.setAccountIDToUpdate(accountId);
+        cryptoUpdate.setAutoRenewPeriod(Duration.newBuilder().setSeconds(5001L));
+        cryptoUpdate.setExpirationTime(Utility.instantToTimestamp(Instant.now()));
+        cryptoUpdate.setKey(keyFromString(key));
+        cryptoUpdate.setProxyAccountID(AccountID.newBuilder().setShardNum(5).setRealmNum(6).setAccountNum(8));
+        cryptoUpdate.setReceiveRecordThreshold(5001L);
+        cryptoUpdate.setReceiverSigRequired(false);
+        cryptoUpdate.setSendRecordThreshold(6001L);
+
+        // Transaction body
+        TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
+        // body transaction
+        body.setCryptoUpdateAccount(cryptoUpdate.build());
+
+        transaction.setBodyBytes(body.build().toByteString());
         transaction.setSigMap(getSigMap());
 
         return transaction.build();
