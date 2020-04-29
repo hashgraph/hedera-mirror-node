@@ -56,65 +56,6 @@ class PubSubMessageTest {
     private static final ByteString BYTE_STRING = ByteString.copyFromUtf8("abcdef");
     private static final Long INT64_VALUE = 100_000_000L;
 
-    @Test
-    void testSerializationAllFieldsSet() throws Exception {
-        Iterable<AccountAmount> nonFeeTransfers = Lists.newArrayList(
-                AccountAmount.newBuilder().setAccountID(ACCOUNT_ID).setAmount(INT64_VALUE).build(),
-                AccountAmount.newBuilder().setAccountID(ACCOUNT_ID).setAmount(INT64_VALUE).build());
-        PubSubMessage pubSubMessage = new PubSubMessage(
-                DEFAULT_TIMESTAMP_LONG,
-                EntityId.of(TOPIC_ID),
-                10,
-                getTransaction(),
-                getTransactionRecord(),
-                nonFeeTransfers);
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode actual = objectMapper.readTree(objectMapper.writeValueAsString(pubSubMessage));
-        JsonNode expected = objectMapper.readTree("{" +
-                "  \"consensusTimestamp\" : 123456789," +
-                "  \"entity\" : {" +
-                "    \"shardNum\" : 0," +
-                "    \"realmNum\" : 0," +
-                "    \"entityNum\" : 20," +
-                "    \"type\" : 4" +
-                "  }," +
-                "  \"transactionType\" : 10," +
-                getExpectedTransactionJson() + "," +
-                getExpectedTransactionRecord() + "," +
-                "  \"nonFeeTransfers\" : [ {" +
-                "    \"accountID\": {" +
-                "      \"shardNum\": \"0\"," +
-                "      \"realmNum\": \"0\"," +
-                "      \"accountNum\": \"10\"" +
-                "      }," +
-                "    \"amount\": \"100000000\"" +
-                "  }, {" +
-                "    \"accountID\": {" +
-                "      \"shardNum\": \"0\"," +
-                "      \"realmNum\": \"0\"," +
-                "      \"accountNum\": \"10\"" +
-                "      }," +
-                "    \"amount\": \"100000000\"" +
-                "  } ]" +
-                "}");
-        assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    void testSerializationWithNullFields() throws Exception {
-        PubSubMessage pubSubMessage = new PubSubMessage(DEFAULT_TIMESTAMP_LONG, null, 10, getTransaction(),
-                getTransactionRecord(), null);
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode actual = objectMapper.readTree(objectMapper.writeValueAsString(pubSubMessage));
-        JsonNode expected = objectMapper.readTree("{" +
-                "  \"consensusTimestamp\" : 123456789," +
-                "  \"transactionType\" : 10," +
-                getExpectedTransactionJson() + "," +
-                getExpectedTransactionRecord() +
-                "}");
-        assertThat(actual).isEqualTo(expected);
-    }
-
     private static Transaction getTransaction() {
         return Transaction.newBuilder()
                 .setBody(TransactionBody.newBuilder()
@@ -206,7 +147,8 @@ class PubSubMessageTest {
                 "  \"receipt\": {" +
                 "    \"status\": \"SUCCESS\"," +
                 "    \"topicSequenceNumber\": \"100000000\"," +
-                "    \"topicRunningHash\": \"YWJjZGVm\"" +
+                "    \"topicRunningHash\": \"YWJjZGVm\"," +
+                "    \"topicRunningHashVersion\": \"0\"" +
                 "  }," +
                 "  \"transactionHash\": \"YWJjZGVm\"," +
                 "  \"consensusTimestamp\": {" +
@@ -233,5 +175,64 @@ class PubSubMessageTest {
                 "    }]" +
                 "  }" +
                 "}";
+    }
+
+    @Test
+    void testSerializationAllFieldsSet() throws Exception {
+        Iterable<AccountAmount> nonFeeTransfers = Lists.newArrayList(
+                AccountAmount.newBuilder().setAccountID(ACCOUNT_ID).setAmount(INT64_VALUE).build(),
+                AccountAmount.newBuilder().setAccountID(ACCOUNT_ID).setAmount(INT64_VALUE).build());
+        PubSubMessage pubSubMessage = new PubSubMessage(
+                DEFAULT_TIMESTAMP_LONG,
+                EntityId.of(TOPIC_ID),
+                10,
+                getTransaction(),
+                getTransactionRecord(),
+                nonFeeTransfers);
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode actual = objectMapper.readTree(objectMapper.writeValueAsString(pubSubMessage));
+        JsonNode expected = objectMapper.readTree("{" +
+                "  \"consensusTimestamp\" : 123456789," +
+                "  \"entity\" : {" +
+                "    \"shardNum\" : 0," +
+                "    \"realmNum\" : 0," +
+                "    \"entityNum\" : 20," +
+                "    \"type\" : 4" +
+                "  }," +
+                "  \"transactionType\" : 10," +
+                getExpectedTransactionJson() + "," +
+                getExpectedTransactionRecord() + "," +
+                "  \"nonFeeTransfers\" : [ {" +
+                "    \"accountID\": {" +
+                "      \"shardNum\": \"0\"," +
+                "      \"realmNum\": \"0\"," +
+                "      \"accountNum\": \"10\"" +
+                "      }," +
+                "    \"amount\": \"100000000\"" +
+                "  }, {" +
+                "    \"accountID\": {" +
+                "      \"shardNum\": \"0\"," +
+                "      \"realmNum\": \"0\"," +
+                "      \"accountNum\": \"10\"" +
+                "      }," +
+                "    \"amount\": \"100000000\"" +
+                "  } ]" +
+                "}");
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void testSerializationWithNullFields() throws Exception {
+        PubSubMessage pubSubMessage = new PubSubMessage(DEFAULT_TIMESTAMP_LONG, null, 10, getTransaction(),
+                getTransactionRecord(), null);
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode actual = objectMapper.readTree(objectMapper.writeValueAsString(pubSubMessage));
+        JsonNode expected = objectMapper.readTree("{" +
+                "  \"consensusTimestamp\" : 123456789," +
+                "  \"transactionType\" : 10," +
+                getExpectedTransactionJson() + "," +
+                getExpectedTransactionRecord() +
+                "}");
+        assertThat(actual).isEqualTo(expected);
     }
 }

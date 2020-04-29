@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -156,6 +157,7 @@ public class RecordItemParserFreezeTest extends AbstractRecordItemParserTest {
         freezeTransactionBody.setEndMin(2);
         freezeTransactionBody.setStartHour(3);
         freezeTransactionBody.setStartMin(4);
+        freezeTransactionBody.setUpdateFile(FileID.newBuilder().setFileNum(5).build());
 
         // Transaction body
         TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);

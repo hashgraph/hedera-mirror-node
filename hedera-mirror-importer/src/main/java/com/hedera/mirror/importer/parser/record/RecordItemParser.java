@@ -24,7 +24,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoAddClaimTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
@@ -133,8 +133,8 @@ public class RecordItemParser implements RecordItemListener {
         if (isSuccessful) {
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
-            } else if (body.hasCryptoAddClaim()) {
-                insertCryptoAddClaim(consensusNs, body.getCryptoAddClaim());
+            } else if (body.hasCryptoAddLiveHash()) {
+                insertCryptoAddClaim(consensusNs, body.getCryptoAddLiveHash());
             } else if (body.hasFileAppend()) {
                 insertFileAppend(consensusNs, body.getFileAppend());
             } else if (body.hasFileCreate()) {
@@ -219,9 +219,9 @@ public class RecordItemParser implements RecordItemListener {
     }
 
     private void insertCryptoAddClaim(long consensusTimestamp,
-                                      CryptoAddClaimTransactionBody transactionBody) {
+                                      CryptoAddLiveHashTransactionBody transactionBody) {
         if (parserProperties.getPersist().isClaims()) {
-            byte[] claim = transactionBody.getClaim().getHash().toByteArray();
+            byte[] claim = transactionBody.getLiveHash().getHash().toByteArray();
             recordParsedItemHandler.onLiveHash(new LiveHash(consensusTimestamp, claim));
         }
     }

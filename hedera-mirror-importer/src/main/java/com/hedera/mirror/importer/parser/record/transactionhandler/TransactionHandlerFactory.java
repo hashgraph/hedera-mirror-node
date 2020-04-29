@@ -35,9 +35,9 @@ public class TransactionHandlerFactory {
     private final ContractCreateTransactionHandler contractCreateTransactionHandler;
     private final ContractDeleteTransactionHandler contractDeleteTransactionHandler;
     private final ContractUpdateTransactionHandler contractUpdateTransactionHandler;
-    private final CryptoAddClaimTransactionHandler cryptoAddClaimTransactionHandler;
+    private final CryptoAddLiveHashTransactionHandler cryptoAddLiveHashTransactionHandler;
     private final CryptoCreateTransactionHandler cryptoCreateTransactionHandler;
-    private final CryptoDeleteClaimTransactionHandler cryptoDeleteClaimTransactionHandler;
+    private final CryptoDeleteLiveHashTransactionHandler cryptoDeleteLiveHashTransactionHandler;
     private final CryptoDeleteTransactionHandler cryptoDeleteTransactionHandler;
     private final CryptoTransferTransactionHandler cryptoTransferTransactionHandler;
     private final CryptoUpdateTransactionHandler cryptoUpdateTransactionHandler;
@@ -66,12 +66,12 @@ public class TransactionHandlerFactory {
             return contractDeleteTransactionHandler;
         } else if (body.hasContractUpdateInstance()) {
             return contractUpdateTransactionHandler;
-        } else if (body.hasCryptoAddClaim()) {
-            return cryptoAddClaimTransactionHandler;
+        } else if (body.hasCryptoAddLiveHash()) {
+            return cryptoAddLiveHashTransactionHandler;
         } else if (body.hasCryptoCreateAccount()) {
             return cryptoCreateTransactionHandler;
-        } else if (body.hasCryptoDeleteClaim()) {
-            return cryptoDeleteClaimTransactionHandler;
+        } else if (body.hasCryptoDeleteLiveHash()) {
+            return cryptoDeleteLiveHashTransactionHandler;
         } else if (body.hasCryptoDelete()) {
             return cryptoDeleteTransactionHandler;
         } else if (body.hasCryptoTransfer()) {
