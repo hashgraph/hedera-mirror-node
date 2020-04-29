@@ -230,7 +230,7 @@ const addTopicMessage = async function (message) {
   );
 
   await sqlConnection.query(
-    'insert into topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number, running_hash) values ($1, $2, $3, $4, $5, $6, $7);',
+    'insert into topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number, running_hash_version) values ($1, $2, $3, $4, $5, $6, $7);',
     [
       message.timestamp,
       message.realm_num,
