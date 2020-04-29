@@ -20,29 +20,45 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.*;
-import com.hedera.mirror.importer.exception.DuplicateFileException;
-import com.hedera.mirror.importer.parser.domain.StreamFileData;
-import com.hedera.mirror.importer.repository.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.test.context.jdbc.Sql;
-import org.testcontainers.shaded.org.bouncycastle.util.Strings;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import javax.annotation.Resource;
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import javax.annotation.Resource;
+import javax.sql.DataSource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.test.context.jdbc.Sql;
+import org.testcontainers.shaded.org.bouncycastle.util.Strings;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.ContractResult;
+import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.domain.LiveHash;
+import com.hedera.mirror.importer.domain.NonFeeTransfer;
+import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.exception.DuplicateFileException;
+import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.repository.ContractResultRepository;
+import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.FileDataRepository;
+import com.hedera.mirror.importer.repository.LiveHashRepository;
+import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.TopicMessageRepository;
+import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
@@ -129,7 +145,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         // given
         byte[] message = Strings.toByteArray("test message");
         byte[] runningHash = Strings.toByteArray("running hash");
-        TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash, 10L, 1001);
+        TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash, 10L, 1001, 1);
 
         // when
         postgresWriter.onTopicMessage(expectedTopicMessage);
@@ -210,7 +226,7 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
         List<PreparedStatement> insertStatements = new ArrayList<>(); // tracks all PreparedStatements
         when(connection.prepareStatement(any())).then(ignored -> {
             PreparedStatement preparedStatement = mock(PreparedStatement.class);
-            when(preparedStatement.executeBatch()).thenReturn(new int[]{});
+            when(preparedStatement.executeBatch()).thenReturn(new int[] {});
             insertStatements.add(preparedStatement);
             return preparedStatement;
         });
@@ -253,8 +269,8 @@ public class PostgresWritingRecordParserItemHandlerTest extends IntegrationTest 
 
         // when, then
         assertThrows(DuplicateFileException.class, () -> {
-                    postgresWriter.onStart(new StreamFileData(fileName, null));
-                });
+            postgresWriter.onStart(new StreamFileData(fileName, null));
+        });
 
         postgresWriter.onError();  // close connection
     }
