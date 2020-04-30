@@ -52,7 +52,7 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:0.10.0-rc1" \
+              --filter="tags:release" \
               --format="csv[no-heading](digest,tags,timestamp)")
             for image in ${OLD_IMAGES[*]}; do
             (
@@ -117,8 +117,6 @@ workflows:
             branches:
               only:
                 - master
-                # autoclean-images branch present for testing to be removed
-                - autoclean-images
             tags:
               only: /^.*/
       - perf_maven:
