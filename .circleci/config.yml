@@ -52,7 +52,7 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:release*" \
+              --filter="tags:master-* AND timestamp.datetime < '${UNTAG_BEFORE}'" \
               --format="csv[no-heading](digest,tags,timestamp)")
             for image in ${OLD_IMAGES[*]}; do
             (
@@ -76,7 +76,7 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="-tags:*" \
+              --filter="-tags:* AND timestamp.datetime < '${DELETE_BEFORE}'" \
               --format="get(digest)")
             for digest in ${OLD_IMAGES[*]}; do
             (
@@ -126,14 +126,12 @@ workflows:
             tags:
               only: /.*/
       - cleanup_images:
-          #          requires:
-          #            - publish_images
+          requires:
+            - publish_images
           filters:
             branches:
               only:
                 - master
-                # autoclean-images branch present for testing to be removed
-                - autoclean-images
 
 jobs:
   build_maven:
