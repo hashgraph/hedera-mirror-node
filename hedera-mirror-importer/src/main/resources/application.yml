@@ -67,14 +67,14 @@ spring:
       db-name: ${hedera.mirror.db.name}
       db-user: ${hedera.mirror.db.username}
       topicRunningHashV2AddedTimestamp: ${hedera.mirror.topicRunningHashV2AddedTimestamp}
-jpa:
-  properties:
-    hibernate:
-      generate_statistics: true
-task:
-  scheduling:
-    pool:
-      size: 6
-test:
-  database:
-    replace: NONE
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: true
+  task:
+    scheduling:
+      pool:
+        size: 6
+  test:
+    database:
+      replace: NONE
