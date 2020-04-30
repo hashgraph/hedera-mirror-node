@@ -59,3 +59,4 @@ spring:
       api-user: ${hedera.mirror.db.apiUsername}
       db-name: ${hedera.mirror.db.name}
       db-user: ${hedera.mirror.db.username}
+      topicRunningHashV2AddedTimestamp: 1588705200000000000

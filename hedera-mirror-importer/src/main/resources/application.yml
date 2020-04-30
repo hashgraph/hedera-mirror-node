@@ -8,6 +8,8 @@ hedera:
       password: mirror_node_pass
       port: 5432
       username: mirror_node
+    # service v05 AddedTimestamp in consensus_timestamp format e.g. 1588636800000000001, must be set for v1.23.1 migration
+    topicRunningHashV2AddedTimestamp:
 logging:
   level:
     root: warn
@@ -63,14 +65,15 @@ spring:
       api-user: ${hedera.mirror.db.api-username}
       db-name: ${hedera.mirror.db.name}
       db-user: ${hedera.mirror.db.username}
-  jpa:
-    properties:
-      hibernate:
-        generate_statistics: true
-  task:
-    scheduling:
-      pool:
-        size: 6
-  test:
-    database:
-      replace: NONE
+      topicRunningHashV2AddedTimestamp: ${hedera.mirror.topicRunningHashV2AddedTimestamp}
+jpa:
+  properties:
+    hibernate:
+      generate_statistics: true
+task:
+  scheduling:
+    pool:
+      size: 6
+test:
+  database:
+    replace: NONE

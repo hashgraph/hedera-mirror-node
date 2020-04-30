@@ -17,3 +17,6 @@ spring:
   task:
     scheduling:
       enabled: false
+  flyway:
+    placeholders:
+      topicRunningHashV2AddedTimestamp: 1588705200000000000

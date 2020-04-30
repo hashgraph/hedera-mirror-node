@@ -111,6 +111,7 @@ public class TopicTransactionGenerator extends TransactionGenerator {
         topicMessage.setRealmNum(0);
         topicMessage.setTopicNum((int) topicId);
         topicMessage.setRunningHash(runningHash);
+        topicMessage.setRunningHashVersion(2);
         int sequenceNumber = topicToNextSequenceNumber.get(topicId);
         topicMessage.setSequenceNumber(sequenceNumber);
         topicToNextSequenceNumber.put(topicId, sequenceNumber + 1);
