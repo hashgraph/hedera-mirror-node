@@ -39,10 +39,6 @@
                         <image>
                             <build>
                                 <contextDir>${project.basedir}</contextDir>
-                                <tags>
-                                    <tag>${docker.tag.latest}</tag>
-                                    <tag>${docker.tag.version}</tag>
-                                </tags>
                             </build>
                             <name>${docker.push.repository}/${project.artifactId}</name>
                         </image>

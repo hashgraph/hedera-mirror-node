@@ -76,7 +76,7 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="-tags:* AND timestamp.datetime < '${DELETE_BEFORE}'" \
+              --filter="tags:image-deploy-cleanup-*" \
               --format="get(digest)")
             for digest in ${OLD_IMAGES[*]}; do
             (
@@ -117,6 +117,8 @@ workflows:
             branches:
               only:
                 - master
+                # autoclean-images branch present for testing to be removed
+                - autoclean-images
             tags:
               only: /^.*/
       - perf_maven:
@@ -132,6 +134,8 @@ workflows:
             branches:
               only:
                 - master
+                # autoclean-images branch present for testing to be removed
+                - autoclean-images
 
 jobs:
   build_maven:
@@ -293,10 +297,14 @@ jobs:
       - run:
           name: Running maven deploy
           command: |
-            if [ "$CIRCLE_BRANCH" = "master" ]; then
-                DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
+            set -ex
+            if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "autoclean-images" ]; then
+                DOCKER_TAGS="${CIRCLE_BRANCH}-${CIRCLE_SHA1},master"
+                DOCKER_TAG_OVERRIDE="-Djib.to.tags=${DOCKER_TAGS} -Ddocker.tags=${DOCKER_TAGS}"
+            else
+                DOCKER_TAGS="${CIRCLE_TAG:1},latest"
+                DOCKER_TAG_OVERRIDE="-Djib.to.tags=${DOCKER_TAGS} -Ddocker.tags=${DOCKER_TAGS}"
             fi
-            echo DOCKER_TAG_OVERRIDE: ${DOCKER_TAG_OVERRIDE}
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
       - *save_maven_cache
   cleanup_images:
