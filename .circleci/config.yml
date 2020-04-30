@@ -117,6 +117,8 @@ workflows:
             branches:
               only:
                 - master
+                # autoclean-images branch present for testing to be removed
+                - autoclean-images
             tags:
               only: /^.*/
       - perf_maven:
@@ -132,6 +134,8 @@ workflows:
             branches:
               only:
                 - master
+                # autoclean-images branch present for testing to be removed
+                - autoclean-images
 
 jobs:
   build_maven:

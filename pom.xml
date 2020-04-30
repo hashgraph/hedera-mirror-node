@@ -136,7 +136,7 @@
                             <image>${docker.push.repository}/${project.artifactId}</image>
                             <tags>
                                 <tag>${docker.tag.latest}</tag>
-                                <tag>${docker.tag.version}</tag>
+<!--                                <tag>${docker.tag.version}</tag>-->
                             </tags>
                         </to>
                         <container>
