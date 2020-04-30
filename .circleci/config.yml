@@ -52,7 +52,7 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:image-deploy-cleanup-*" \
+              --filter="tags:autoclean-images-*" \
               --format="csv[no-heading](digest,tags,timestamp)")
             for image in ${OLD_IMAGES[*]}; do
             (
@@ -299,9 +299,7 @@ jobs:
           command: |
             set -ex
             if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "autoclean-images" ]; then
-                DOCKER_TAG_OVERRIDE="-Djib.to.tags=${CIRCLE_BRANCH}-${CIRCLE_SHA1},master -Ddocker.tags.0=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tags.1=master"
-            else
-                DOCKER_TAG_OVERRIDE="-Djib.to.tags=${CIRCLE_TAG:1},latest -Ddocker.tags.0=${CIRCLE_TAG:1} -Ddocker.tags.1=latest"
+                DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
             fi
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
       - *save_maven_cache

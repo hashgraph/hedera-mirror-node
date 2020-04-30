@@ -56,7 +56,7 @@
         <disruptor.version>3.4.2</disruptor.version> <!-- Used for asynchronous logging -->
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.tag.version>${project.version}</docker.tag.version>
-        <docker.tag.latest>latest</docker.tag.latest>
+        <docker.tag.latest>release</docker.tag.latest>
         <grpc.version>1.25.0</grpc.version>
         <guava.version>28.2-jre</guava.version>
         <hedera-protobuf.version>0.4.2</hedera-protobuf.version>
@@ -134,6 +134,10 @@
                     <configuration>
                         <to>
                             <image>${docker.push.repository}/${project.artifactId}</image>
+                            <tags>
+                                <tag>${docker.tag.latest}</tag>
+                                <tag>${docker.tag.version}</tag>
+                            </tags>
                         </to>
                         <container>
                             <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
