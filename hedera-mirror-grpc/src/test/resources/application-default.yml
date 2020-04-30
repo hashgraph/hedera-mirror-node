@@ -36,3 +36,4 @@ spring:
       api-user: mirror_api
       db-name: ${hedera.mirror.grpc.db.name}
       db-user: ${hedera.mirror.grpc.db.username}
+      topicRunningHashV2AddedTimestamp: 1588705200000000000

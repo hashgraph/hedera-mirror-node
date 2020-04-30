@@ -72,8 +72,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
                          Long autoRenewAccount, Long autoRenewPeriod) throws Exception {
         var responseCode = ResponseCodeEnum.SUCCESS;
         var transaction = createCreateTopicTransaction(adminKey, submitKey, memo, autoRenewAccount, autoRenewPeriod);
-        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
-                responseCode);
+        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -94,7 +93,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var responseCode = ResponseCodeEnum.SUCCESS;
         var transaction = createCreateTopicTransaction(null, null, null, null, null);
         var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
-                .build(), null, null, consensusTimestamp, responseCode);
+                .build(), null, null, 2, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -119,7 +118,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var responseCode = ResponseCodeEnum.SUCCESS;
         var transaction = createCreateTopicTransaction(null, null, null, autoRenewAccount, null);
         var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
-                .build(), null, null, consensusTimestamp, responseCode);
+                .build(), null, null, 1, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -142,7 +141,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var responseCode = ResponseCodeEnum.SUCCESS;
         var transaction = createCreateTopicTransaction(null, null, null, null, null);
         var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
-                .build(), null, null, consensusTimestamp, responseCode);
+                .build(), null, null, 1, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -155,7 +154,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var consensusTimestamp = 3_000_000L;
         var responseCode = ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
         var transaction = createCreateTopicTransaction(null, null, "memo", null, null);
-        var transactionRecord = createTransactionRecord(null, null, null, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(null, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -187,8 +186,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var transaction = createUpdateTopicTransaction(topicId, updatedExpirationTimeSeconds,
                 updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedMemo, autoRenewAccount,
                 autoRenewPeriod);
-        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
-                responseCode);
+        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
         var expectedEntity = createTopicEntity(topicId, updatedExpirationTimeSeconds, updatedExpirationTimeNanos,
                 updatedAdminKey, updatedSubmitKey, updatedMemo, autoRenewAccountEntityId, autoRenewPeriod);
 
@@ -218,8 +216,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
 
         var transaction = createUpdateTopicTransaction(topicId, 11L, 21,
                 updatedAdminKey, updatedSubmitKey, "updated-memo", null, 30L);
-        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
-                responseCode);
+        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -244,7 +241,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
 
         var transaction = createUpdateTopicTransaction(topicId, 11L, 0, adminKey, submitKey, memo, autoRenewAccount,
                 30L);
-        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -302,8 +299,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var transaction = createUpdateTopicTransaction(topicId, updatedExpirationTimeSeconds,
                 updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedMemo, updatedAutoRenewAccount,
                 updatedAutoRenewPeriod);
-        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
-                responseCode);
+        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -336,8 +332,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         topic.setDeleted(true);
 
         var transaction = createDeleteTopicTransaction(topicId);
-        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
-                responseCode);
+        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -361,8 +356,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         // Topic not saved to the repository.
 
         var transaction = createDeleteTopicTransaction(topicId);
-        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
-                responseCode);
+        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -385,8 +379,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         entityRepository.save(topic);
 
         var transaction = createDeleteTopicTransaction(topicId);
-        var transactionRecord = createTransactionRecord(topicId, null, null, consensusTimestamp,
-                responseCode);
+        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -401,21 +394,22 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.9000, test-message0, 9000000, runninghash, 1",
-            "0.0.9001, '', 9000001, '', 9223372036854775807"
+            "0.0.9000, test-message0, 9000000, runninghash, 1, 1",
+            "0.0.9001, '', 9000001, '', 9223372036854775807, 2"
     })
     void submitMessageTest(@ConvertWith(TopicIdConverter.class) TopicID topicId, String message,
                            long consensusTimestamp, String runningHash,
-                           long sequenceNumber) throws Exception {
+                           long sequenceNumber, int runningHashVersion) throws Exception {
         var responseCode = ResponseCodeEnum.SUCCESS;
 
         var topic = createTopicEntity(topicId, 10L, 20, null, null, null, null, null);
         entityRepository.save(topic);
 
-        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp);
+        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
+                runningHashVersion);
         var transaction = createSubmitMessageTransaction(topicId, message);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
-                .getBytes(), consensusTimestamp, responseCode);
+                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -437,14 +431,16 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var message = "message";
         var sequenceNumber = 10_000L;
         var runningHash = "running-hash";
+        var runningHashVersion = 2;
 
         var topic = createTopicEntity(topicId, null, null, null, null, null, null, null);
         // Topic NOT saved in the repository.
 
-        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp);
+        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
+                runningHashVersion);
         var transaction = createSubmitMessageTransaction(topicId, message);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
-                .getBytes(), consensusTimestamp, responseCode);
+                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -468,10 +464,11 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var message = "message";
         var sequenceNumber = 10_000L;
         var runningHash = "running-hash";
+        var runningHashVersion = 1;
 
         var transaction = createSubmitMessageTransaction(topicId, message);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
-                .getBytes(), consensusTimestamp, responseCode);
+                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
         // when
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
@@ -490,13 +487,14 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         var message = "message";
         var sequenceNumber = 11_000L;
         var runningHash = "running-hash";
+        var runningHashVersion = 2;
 
         var topic = createTopicEntity(topicId, 10L, 20, null, null, null, null, null);
         entityRepository.save(topic);
 
         var transaction = createSubmitMessageTransaction(topicId, message);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
-                .getBytes(), consensusTimestamp, responseCode);
+                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -534,9 +532,15 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
                 .build();
     }
 
-    private TransactionRecord createTransactionRecord(TopicID topicId, Long topicSequenceNumber,
-                                                      byte[] topicRunningHash, long consensusTimestamp,
+    private TransactionRecord createTransactionRecord(TopicID topicId, long consensusTimestamp,
                                                       ResponseCodeEnum responseCode) {
+        return createTransactionRecord(topicId, 10_000L, "running_hash"
+                .getBytes(), 1, consensusTimestamp, responseCode);
+    }
+
+    private TransactionRecord createTransactionRecord(TopicID topicId, Long topicSequenceNumber,
+                                                      byte[] topicRunningHash, int runningHashVersion,
+                                                      long consensusTimestamp, ResponseCodeEnum responseCode) {
         var receipt = TransactionReceipt.newBuilder().setStatus(responseCode);
         if (null != topicId) {
             receipt.setTopicID(topicId);
@@ -546,6 +550,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         }
         if (null != topicRunningHash) {
             receipt.setTopicRunningHash(ByteString.copyFrom(topicRunningHash));
+            receipt.setTopicRunningHashVersion(runningHashVersion);
         }
         var transactionRecord = TransactionRecord.newBuilder().setReceipt(receipt)
                 .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp));
@@ -597,7 +602,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
     }
 
     private TopicMessage createTopicMessage(TopicID topicId, String message, long sequenceNumber, String runningHash,
-                                            long consensusTimestamp) {
+                                            long consensusTimestamp, int runningHashVersion) {
         var topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusTimestamp);
         topicMessage.setRealmNum((int) topicId.getRealmNum());
@@ -605,6 +610,7 @@ public class RecordItemParserTopicTest extends AbstractRecordItemParserTest {
         topicMessage.setMessage(message.getBytes());
         topicMessage.setSequenceNumber(sequenceNumber);
         topicMessage.setRunningHash(runningHash.getBytes());
+        topicMessage.setRunningHashVersion(runningHashVersion);
         return topicMessage;
     }
 

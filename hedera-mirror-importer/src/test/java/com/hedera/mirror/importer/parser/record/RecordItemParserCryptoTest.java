@@ -25,10 +25,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Claim;
-import com.hederahashgraph.api.proto.java.CryptoAddClaimTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoDeleteClaimTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -660,7 +659,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
     }
 
     @Test
-    void cryptoAddClaimPersist() throws Exception {
+    void cryptoAddLiveHashPersist() throws Exception {
 
         // first create the account
         Transaction createTransaction = cryptoCreateTransaction();
@@ -669,10 +668,10 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
-        // now add claim
-        Transaction transaction = cryptoAddClaimTransaction();
+        // now add live hash
+        Transaction transaction = cryptoAddLiveHashTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        CryptoAddClaimTransactionBody cryptoAddClaimTransactionBody = transactionBody.getCryptoAddClaim();
+        CryptoAddLiveHashTransactionBody cryptoAddLiveHashTransactionBody = transactionBody.getCryptoAddLiveHash();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -700,9 +699,10 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
                 , () -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
 
                 // transaction body inputs
-                , () -> assertAccount(cryptoAddClaimTransactionBody.getClaim().getAccountID(), dbAccountEntity)
+                , () -> assertAccount(cryptoAddLiveHashTransactionBody.getLiveHash().getAccountId(), dbAccountEntity)
                 // TODO (issue #303) cryptoAddClaimTransactionBody.getClaim().getClaimDuration()
-                , () -> assertArrayEquals(cryptoAddClaimTransactionBody.getClaim().getHash().toByteArray(), dbLiveHash
+                , () -> assertArrayEquals(cryptoAddLiveHashTransactionBody.getLiveHash().getHash()
+                        .toByteArray(), dbLiveHash
                         .getLivehash())
         );
 
@@ -711,7 +711,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
     }
 
     @Test
-    void cryptoAddClaimDoNotPersist() throws Exception {
+    void cryptoAddLiveHashDoNotPersist() throws Exception {
         parserProperties.getPersist().setClaims(false);
         // first create the account
         Transaction createTransaction = cryptoCreateTransaction();
@@ -720,10 +720,10 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
-        // now add claim
-        Transaction transaction = cryptoAddClaimTransaction();
+        // now add live hash
+        Transaction transaction = cryptoAddLiveHashTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        CryptoAddClaimTransactionBody cryptoAddClaimTransactionBody = transactionBody.getCryptoAddClaim();
+        CryptoAddLiveHashTransactionBody cryptoAddLiveHashTransactionBody = transactionBody.getCryptoAddLiveHash();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -750,7 +750,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
                 , () -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
 
                 // transaction body inputs
-                , () -> assertAccount(cryptoAddClaimTransactionBody.getClaim().getAccountID(), dbAccountEntity)
+                , () -> assertAccount(cryptoAddLiveHashTransactionBody.getLiveHash().getAccountId(), dbAccountEntity)
         );
 
         // Crypto transfer list
@@ -758,7 +758,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
     }
 
     @Test
-    void cryptoDeleteClaim() throws Exception {
+    void cryptoDeleteLiveHash() throws Exception {
 
         // first create the account
         Transaction createTransaction = cryptoCreateTransaction();
@@ -767,17 +767,17 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
 
         parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
-        // add a claim
-        Transaction transactionAddClaim = cryptoAddClaimTransaction();
-        TransactionBody transactionBodyAddClaim = TransactionBody.parseFrom(transactionAddClaim.getBodyBytes());
-        TransactionRecord recordAddClaim = transactionRecordSuccess(transactionBodyAddClaim);
+        // add a live hash
+        Transaction transactionAddLiveHash = cryptoAddLiveHashTransaction();
+        TransactionBody transactionBodyAddLiveHash = TransactionBody.parseFrom(transactionAddLiveHash.getBodyBytes());
+        TransactionRecord recordAddLiveHash = transactionRecordSuccess(transactionBodyAddLiveHash);
 
-        parseRecordItemAndCommit(new RecordItem(transactionAddClaim, recordAddClaim));
+        parseRecordItemAndCommit(new RecordItem(transactionAddLiveHash, recordAddLiveHash));
 
-        // now delete the claim
-        Transaction transaction = cryptoDeleteClaimTransaction();
+        // now delete the live hash
+        Transaction transaction = cryptoDeleteLiveHashTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        CryptoDeleteClaimTransactionBody deleteClaimTransactionBody = transactionBody.getCryptoDeleteClaim();
+        CryptoDeleteLiveHashTransactionBody deleteLiveHashTransactionBody = transactionBody.getCryptoDeleteLiveHash();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -803,7 +803,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
                 , () -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity)
 
                 // transaction body inputs
-                , () -> assertAccount(deleteClaimTransactionBody.getAccountIDToDeleteFrom(), dbAccountEntity)
+                , () -> assertAccount(deleteLiveHashTransactionBody.getAccountOfLiveHash(), dbAccountEntity)
                 // TODO (issue #303) check deleted
         );
 
@@ -1003,7 +1003,7 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
         return transaction.build();
     }
 
-    private static Transaction cryptoUpdateTransaction() {
+    private Transaction cryptoUpdateTransaction() {
 
         Transaction.Builder transaction = Transaction.newBuilder();
         CryptoUpdateTransactionBody.Builder cryptoUpdate = CryptoUpdateTransactionBody.newBuilder();
@@ -1050,28 +1050,29 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
         return transaction.build();
     }
 
-    private Transaction cryptoAddClaimTransaction() {
+    private Transaction cryptoAddLiveHashTransaction() {
 
         // transaction id
         Transaction.Builder transaction = Transaction.newBuilder();
-        CryptoAddClaimTransactionBody.Builder cryptoAddClaim = CryptoAddClaimTransactionBody.newBuilder();
+        CryptoAddLiveHashTransactionBody.Builder cryptoLiveHash = CryptoAddLiveHashTransactionBody.newBuilder();
 
-        // Build a claim
-        Claim.Builder claim = Claim.newBuilder();
-        claim.setAccountID(accountId);
-        claim.setClaimDuration(Duration.newBuilder().setSeconds(10000L));
-        claim.setHash(ByteString.copyFromUtf8("claim hash"));
+        // Build a live hash
+        com.hederahashgraph.api.proto.java.LiveHash.Builder liveHash = com.hederahashgraph.api.proto.java.LiveHash
+                .newBuilder();
+        liveHash.setAccountId(accountId);
+        liveHash.setDuration(Duration.newBuilder().setSeconds(10000L));
+        liveHash.setHash(ByteString.copyFromUtf8("live hash"));
         KeyList.Builder keyList = KeyList.newBuilder();
         keyList.addKeys(keyFromString("0a2312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110aaa"));
-        claim.setKeys(keyList);
+        liveHash.setKeys(keyList);
 
         // Build a transaction
-        cryptoAddClaim.setClaim(claim);
+        cryptoLiveHash.setLiveHash(liveHash);
 
         // Transaction body
         TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
         // body transaction
-        body.setCryptoAddClaim(cryptoAddClaim);
+        body.setCryptoAddLiveHash(cryptoLiveHash);
 
         transaction.setBodyBytes(body.build().toByteString());
         transaction.setSigMap(getSigMap());
@@ -1079,21 +1080,21 @@ public class RecordItemParserCryptoTest extends AbstractRecordItemParserTest {
         return transaction.build();
     }
 
-    private Transaction cryptoDeleteClaimTransaction() {
+    private Transaction cryptoDeleteLiveHashTransaction() {
 
         // transaction id
         Transaction.Builder transaction = Transaction.newBuilder();
-        CryptoDeleteClaimTransactionBody.Builder cryptoDeleteClaim = CryptoDeleteClaimTransactionBody
+        CryptoDeleteLiveHashTransactionBody.Builder cryptoDeleteLiveHash = CryptoDeleteLiveHashTransactionBody
                 .newBuilder();
 
         // Build a transaction
-        cryptoDeleteClaim.setAccountIDToDeleteFrom(accountId);
-        cryptoDeleteClaim.setHashToDelete(ByteString.copyFromUtf8("claim hash"));
+        cryptoDeleteLiveHash.setAccountOfLiveHash(accountId);
+        cryptoDeleteLiveHash.setLiveHashToDelete(ByteString.copyFromUtf8("live hash"));
 
         // Transaction body
         TransactionBody.Builder body = defaultTransactionBodyBuilder(memo);
         // body transaction
-        body.setCryptoDeleteClaim(cryptoDeleteClaim);
+        body.setCryptoDeleteLiveHash(cryptoDeleteLiveHash);
 
         transaction.setBodyBytes(body.build().toByteString());
         transaction.setSigMap(getSigMap());

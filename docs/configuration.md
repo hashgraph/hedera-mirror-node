@@ -122,4 +122,5 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.parser.record.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
 | `hedera.mirror.parser.record.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
 | `hedera.mirror.parser.record.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
+| `hedera.mirror.topicRunningHashV2AddedTimestamp`            |                         | The Unix timestamp when topic message running hash v2 was introduced                           |
 | `hedera.mirror.shard`                                       | 0                       | The default shard number that this mirror node participates in                                 |

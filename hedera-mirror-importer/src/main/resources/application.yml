@@ -8,6 +8,9 @@ hedera:
       password: mirror_node_pass
       port: 5432
       username: mirror_node
+    # Used for setting running hash version of topic messages when migrating from v1 to v2.
+    # All messages with consensusTimestamp >= this value will be marked version 2, and those less will be marked version 1.
+    topicRunningHashV2AddedTimestamp:
 logging:
   level:
     root: warn
@@ -63,6 +66,7 @@ spring:
       api-user: ${hedera.mirror.db.api-username}
       db-name: ${hedera.mirror.db.name}
       db-user: ${hedera.mirror.db.username}
+      topicRunningHashV2AddedTimestamp: ${hedera.mirror.topicRunningHashV2AddedTimestamp}
   jpa:
     properties:
       hibernate:

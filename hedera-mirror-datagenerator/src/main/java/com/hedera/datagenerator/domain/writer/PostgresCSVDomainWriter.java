@@ -136,7 +136,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         return new CSVPrinter(
                 Files.newBufferedWriter(Paths.get(outputDir, "topic_message")),
                 CSVFormat.DEFAULT.withHeader("consensus_timestamp", "realm_num", "topic_num", "message",
-                        "running_hash", "sequence_number"));
+                        "running_hash", "sequence_number", "running_hash_version"));
     }
 
     private static CSVPrinter getAccountBalancesCSVPrinter(String outputDir) throws IOException {
@@ -187,7 +187,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
                     entity.getEntityTypeId(), entity.getAutoRenewPeriod(), toHex(entity.getKey()), entity
                             .getProxyAccountId(), entity.isDeleted(), entity.getExpiryTimeNs(), entity
                             .getEd25519PublicKeyHex(), toHex(entity.getSubmitKey()), entity.getMemo(),
-                            entity.getAutoRenewAccountId());
+                    entity.getAutoRenewAccountId());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

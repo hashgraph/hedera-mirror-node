@@ -91,7 +91,8 @@ public class DomainBuilder {
                 .message(new byte[] {0, 1, 2})
                 .runningHash(new byte[] {3, 4, 5})
                 .sequenceNumber(++sequenceNumber)
-                .topicNum(0);
+                .topicNum(0)
+                .runningHashVersion(2);
 
         customizer.accept(builder);
         TopicMessage topicMessage = builder.build();

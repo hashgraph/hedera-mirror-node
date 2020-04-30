@@ -31,7 +31,7 @@ public class TransactionTypeRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void findByName() {
-        assertThat(transactionTypeRepository.findByName("CRYPTOADDCLAIM"))
+        assertThat(transactionTypeRepository.findByName("CRYPTOADDLIVEHASH"))
                 .isPresent()
                 .get()
                 .extracting(TransactionType::getProtoId)
