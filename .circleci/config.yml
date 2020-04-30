@@ -128,8 +128,8 @@ workflows:
             tags:
               only: /.*/
       - cleanup_images:
-          requires:
-            - publish_images
+          #          requires:
+          #            - publish_images
           filters:
             branches:
               only:
@@ -298,7 +298,7 @@ jobs:
           name: Running maven deploy
           command: |
             set -ex
-            if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "autoclean-images" ]; then
+            if [ "$CIRCLE_BRANCH" = "master" ]; then
                 DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
             fi
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
