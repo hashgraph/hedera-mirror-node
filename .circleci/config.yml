@@ -52,7 +52,7 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="tags:master-* AND timestamp.datetime < '${UNTAG_BEFORE}'" \
+              --filter="tags:0.10.0-rc1" \
               --format="csv[no-heading](digest,tags,timestamp)")
             for image in ${OLD_IMAGES[*]}; do
             (
@@ -76,7 +76,7 @@ commands:
             OLD_IMAGES=$(gcloud container images list-tags ${IMAGE_PATH} \
               --limit=1000 \
               --sort-by=TIMESTAMP \
-              --filter="-tags:* AND timestamp.datetime < '${DELETE_BEFORE}'" \
+              --filter="-tags:*" \
               --format="get(digest)")
             for digest in ${OLD_IMAGES[*]}; do
             (

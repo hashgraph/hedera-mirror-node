@@ -40,7 +40,7 @@
                             <build>
                                 <contextDir>${project.basedir}</contextDir>
                                 <tags>
-                                    <tag>${docker.tag.latest}</tag>
+<!--                                    <tag>${docker.tag.latest}</tag>-->
 <!--                                    <tag>${docker.tag.version}</tag>-->
                                 </tags>
                             </build>
