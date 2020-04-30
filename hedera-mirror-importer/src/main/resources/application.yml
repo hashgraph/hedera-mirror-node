@@ -9,8 +9,7 @@ hedera:
       port: 5432
       username: mirror_node
     # Used for setting running hash version of topic messages when migrating from v1 to v2.
-    # If non-zero, all messages with consensusTimestamp >= this value will be marked version 2, and those less will be marked version 1.
-    # If zero, all messages are marked version 1
+    # All messages with consensusTimestamp >= this value will be marked version 2, and those less will be marked version 1.
     topicRunningHashV2AddedTimestamp:
 logging:
   level:
