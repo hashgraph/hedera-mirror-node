@@ -126,8 +126,8 @@ workflows:
             tags:
               only: /.*/
       - cleanup_images:
-          requires:
-            - publish_images
+          #          requires:
+          #            - publish_images
           filters:
             branches:
               only:
