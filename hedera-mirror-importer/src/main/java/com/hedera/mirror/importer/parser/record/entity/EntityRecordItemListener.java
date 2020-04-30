@@ -196,11 +196,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                                              TransactionRecord transactionRecord) {
         var receipt = transactionRecord.getReceipt();
         var topicId = transactionBody.getTopicID();
+        int runningHashVersion = receipt.getTopicRunningHashVersion() == 0 ? 1 : (int) receipt
+                .getTopicRunningHashVersion();
         TopicMessage topicMessage = new TopicMessage(
                 Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()),
                 transactionBody.getMessage().toByteArray(), (int) topicId.getRealmNum(),
                 receipt.getTopicRunningHash().toByteArray(), receipt.getTopicSequenceNumber(),
-                (int) topicId.getTopicNum());
+                (int) topicId.getTopicNum(), runningHashVersion);
         entityListener.onTopicMessage(topicMessage);
     }
 

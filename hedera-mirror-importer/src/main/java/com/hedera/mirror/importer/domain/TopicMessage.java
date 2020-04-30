@@ -44,4 +44,6 @@ public class TopicMessage {
     private long sequenceNumber;
 
     private int topicNum;
+
+    private int runningHashVersion;
 }

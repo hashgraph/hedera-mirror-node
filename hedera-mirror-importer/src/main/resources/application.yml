@@ -9,6 +9,8 @@ hedera:
         restPassword: mirror_api_pass
         restUsername: mirror_api
         username: mirror_node
+      # service v05 AddedTimestamp in consensus_timestamp format e.g. 1588636800000000001, must be set for v1.23.1 migration
+      topicRunningHashV2AddedTimestamp:
 logging:
   level:
     root: warn
@@ -64,6 +66,7 @@ spring:
       api-user: ${hedera.mirror.importer.db.restUsername}
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
+      topicRunningHashV2AddedTimestamp: ${hedera.mirror.importer.topicRunningHashV2AddedTimestamp}
   jpa:
     properties:
       hibernate:

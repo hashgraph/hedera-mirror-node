@@ -12,7 +12,12 @@ hedera:
         exclude:
           - entity: 0.0.999
       network: TESTNET
+      # timestamp service added running hash v2 in Unix timestamp format e.g. 1588705200000000000, must be set for v1.23.1 migration
+      topicRunningHashV2AddedTimestamp: 1588705200000000000
 spring:
   task:
     scheduling:
       enabled: false
+  flyway:
+    placeholders:
+      topicRunningHashV2AddedTimestamp: ${hedera.mirror.importer.topicRunningHashV2AddedTimestamp}

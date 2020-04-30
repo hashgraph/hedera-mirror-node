@@ -59,6 +59,8 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
 
     private int topicNum;
 
+    private int runningHashVersion;
+
     @Override
     public int compareTo(TopicMessage other) {
         return Comparator.nullsFirst(Comparator.comparingLong(TopicMessage::getSequenceNumber)).compare(this, other);
@@ -87,7 +89,8 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
         }
 
         public TopicMessage build() {
-            return new TopicMessage(consensusTimestamp, message, realmNum, runningHash, sequenceNumber, topicNum);
+            return new TopicMessage(consensusTimestamp, message, realmNum, runningHash, sequenceNumber, topicNum,
+                    runningHashVersion);
         }
     }
 }

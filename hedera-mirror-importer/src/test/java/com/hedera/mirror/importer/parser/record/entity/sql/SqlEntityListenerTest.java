@@ -145,7 +145,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // given
         byte[] message = Strings.toByteArray("test message");
         byte[] runningHash = Strings.toByteArray("running hash");
-        TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash, 10L, 1001);
+        TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash, 10L, 1001, 1);
 
         // when
         sqlEntityListener.onTopicMessage(expectedTopicMessage);
@@ -226,7 +226,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         List<PreparedStatement> insertStatements = new ArrayList<>(); // tracks all PreparedStatements
         when(connection.prepareStatement(any())).then(ignored -> {
             PreparedStatement preparedStatement = mock(PreparedStatement.class);
-            when(preparedStatement.executeBatch()).thenReturn(new int[]{});
+            when(preparedStatement.executeBatch()).thenReturn(new int[] {});
             insertStatements.add(preparedStatement);
             return preparedStatement;
         });
