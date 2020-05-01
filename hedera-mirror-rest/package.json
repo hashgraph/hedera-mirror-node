@@ -29,6 +29,7 @@
   },
   "bundledDependencies": [
     "asn1js",
+    "@awaitjs/express",
     "body-parser",
     "compression",
     "cors",
@@ -39,12 +40,13 @@
     "mathjs",
     "node-cache",
     "node-fetch",
-    "pg"
+    "pg",
+    "swagger-stats"
   ],
   "devDependencies": {
     "codecov": "^3.6.5",
     "husky": "^4.2.3",
-    "jest": "^25.2.7",
+    "jest": "^25.5.3",
     "jest-junit": "^10.0.0",
     "node-flywaydb": "^2.1.3",
     "nodemon": "^2.0.2",
