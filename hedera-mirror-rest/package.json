@@ -29,6 +29,7 @@
   },
   "bundledDependencies": [
     "asn1js",
+    "@awaitjs/express",
     "body-parser",
     "compression",
     "cors",
@@ -39,7 +40,8 @@
     "mathjs",
     "node-cache",
     "node-fetch",
-    "pg"
+    "pg",
+    "swagger-stats"
   ],
   "devDependencies": {
     "codecov": "^3.6.5",
