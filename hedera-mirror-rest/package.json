@@ -1,6 +1,6 @@
 {
   "name": "hedera-mirror-rest",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Hedera Mirror Node REST API",
   "main": "server.js",
   "private": true,
@@ -28,6 +28,7 @@
     "swagger-stats": "^0.95.17"
   },
   "bundledDependencies": [
+    "@awaitjs/express",
     "asn1js",
     "body-parser",
     "compression",
@@ -39,7 +40,8 @@
     "mathjs",
     "node-cache",
     "node-fetch",
-    "pg"
+    "pg",
+    "swagger-stats"
   ],
   "devDependencies": {
     "codecov": "^3.6.5",
