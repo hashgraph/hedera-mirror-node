@@ -26,8 +26,6 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.cloud.gcp.autoconfigure.pubsub.GcpPubSubAutoConfiguration;
 import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
 import org.springframework.cloud.gcp.pubsub.integration.outbound.PubSubMessageHandler;
-import org.springframework.cloud.gcp.pubsub.support.PublisherFactory;
-import org.springframework.cloud.gcp.pubsub.support.SubscriberFactory;
 import org.springframework.cloud.gcp.pubsub.support.converter.JacksonPubSubMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,9 +45,7 @@ public class PubSubAutoConfiguration {
 
     private final PubSubProperties pubSubProperties;
 
-    private final SubscriberFactory subscriberFactory;
-
-    private final PublisherFactory publisherFactory;
+    private final PubSubTemplate pubSubTemplate;
 
     // Required by PubSubRecordItemListener
     @Bean
@@ -60,7 +56,6 @@ public class PubSubAutoConfiguration {
     @Bean
     @ServiceActivator(inputChannel = "pubsubOutputChannel")
     MessageHandler pubSubMessageSender() {
-        PubSubTemplate pubSubTemplate = new PubSubTemplate(publisherFactory, subscriberFactory);
         pubSubTemplate.setMessageConverter(new JacksonPubSubMessageConverter(new ObjectMapper()));
         PubSubMessageHandler pubSubMessageHandler =
                 new PubSubMessageHandler(pubSubTemplate, pubSubProperties.getTopicName());
