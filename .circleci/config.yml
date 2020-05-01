@@ -315,10 +315,10 @@ jobs:
       - run:
           name: Running maven deploy
           command: |
+            set -ex
             if [ "$CIRCLE_BRANCH" = "master" ]; then
                 DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
             fi
-            echo DOCKER_TAG_OVERRIDE: ${DOCKER_TAG_OVERRIDE}
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
       - *save_maven_cache
   cleanup_images:
