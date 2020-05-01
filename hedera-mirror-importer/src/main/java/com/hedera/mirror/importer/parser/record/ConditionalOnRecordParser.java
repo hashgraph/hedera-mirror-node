@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.pubsub;
+package com.hedera.mirror.importer.parser.record;
 
 /*-
  * ‌
@@ -20,18 +20,16 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
-import javax.validation.constraints.NotBlank;
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.validation.annotation.Validated;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
-// Exporting to PubSub can be configured using properties in spring.cloud.gcp.pubsub.* and here. See configuration
-// docs for more details.
-@Data
-@Validated
-@ConditionalOnPubSubRecordParser
-@ConfigurationProperties("hedera.mirror.importer.parser.record.pubsub")
-public class PubSubProperties {
-    @NotBlank
-    private String topicName;
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+// default value same as in RecordParserProperties.enabled
+@ConditionalOnProperty(name = "hedera.mirror.importer.parser.record.enabled", havingValue = "true",
+        matchIfMissing = true)
+public @interface ConditionalOnRecordParser {
 }

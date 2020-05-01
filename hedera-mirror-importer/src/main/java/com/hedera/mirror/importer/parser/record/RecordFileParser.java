@@ -61,6 +61,7 @@ import com.hedera.mirror.importer.util.Utility;
  */
 @Log4j2
 @Named
+@ConditionalOnRecordParser
 public class RecordFileParser implements FileParser {
 
     private final ApplicationStatusRepository applicationStatusRepository;
@@ -143,8 +144,7 @@ public class RecordFileParser implements FileParser {
         long loadStart = Instant.now().getEpochSecond();
         recordStreamFileListener.onStart(streamFileData);
         String fileName = streamFileData.getFilename();
-        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(
-                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
+        String actualPrevFileHash = "";
         long counter = 0;
         Integer recordFileVersion = 0;
         Boolean success = false;
@@ -160,7 +160,9 @@ public class RecordFileParser implements FileParser {
                     case FileDelimiter.RECORD_TYPE_PREV_HASH:
                         byte[] readFileHash = new byte[48];
                         dis.read(readFileHash);
-                        String actualPrevFileHash = Hex.encodeHexString(readFileHash);
+                        actualPrevFileHash = Hex.encodeHexString(readFileHash);
+                        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(
+                                ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
                         if (Utility.hashIsEmpty(expectedPrevFileHash)) {
                             log.error("Previous file hash not available");
                             expectedPrevFileHash = actualPrevFileHash;
@@ -229,7 +231,7 @@ public class RecordFileParser implements FileParser {
             String thisFileHash = Hex.encodeHexString(Utility.getRecordFileHash(fileName));
             log.trace("Calculated file hash for the current file {}", thisFileHash);
             recordStreamFileListener.onEnd(new RecordFile(null, fileName, loadStart, Instant.now().getEpochSecond(),
-                    thisFileHash, expectedPrevFileHash));
+                    thisFileHash, actualPrevFileHash));
 
             if (!Utility.hashIsEmpty(thisFileHash)) {
                 applicationStatusRepository
@@ -283,9 +285,6 @@ public class RecordFileParser implements FileParser {
     @Override
     @Scheduled(fixedRateString = "${hedera.mirror.importer.parser.record.frequency:500}")
     public void parse() {
-        if (!parserProperties.isEnabled()) {
-            return;
-        }
         if (ShutdownHelper.isStopping()) {
             return;
         }

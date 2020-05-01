@@ -31,7 +31,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -40,8 +39,6 @@ import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 @Log4j2
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ParserRecordIngestionTest extends IntegrationTest {

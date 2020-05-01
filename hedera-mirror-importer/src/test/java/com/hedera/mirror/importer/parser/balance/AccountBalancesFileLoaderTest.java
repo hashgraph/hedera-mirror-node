@@ -24,14 +24,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.file.Path;
 import javax.annotation.Resource;
-import javax.transaction.Transactional;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.IntegrationTest;
 
-@Transactional
 public class AccountBalancesFileLoaderTest extends IntegrationTest {
 
     @Value("classpath:data/accountBalances/balance0.0.3/2019-08-30T18_15_00.016002001Z_Balances.csv")

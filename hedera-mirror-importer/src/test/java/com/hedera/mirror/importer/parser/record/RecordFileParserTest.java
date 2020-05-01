@@ -31,28 +31,26 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.jdbc.Sql;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
@@ -60,28 +58,20 @@ import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
-// Class manually commits so have to manually cleanup tables
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-public class RecordFileParserTest extends IntegrationTest {
+@ExtendWith(MockitoExtension.class)
+public class RecordFileParserTest {
 
     @TempDir
     Path dataPath;
-    @Value("classpath:data")
-    Path testPath;
-    @Resource
-    @InjectMocks
-    private RecordFileParser recordFileParser;
-    @Resource
+    @Mock
     private ApplicationStatusRepository applicationStatusRepository;
-    @Resource
-    private RecordParserProperties parserProperties;
-    @MockBean
+    @Mock
     private RecordItemListener recordItemListener;
-    @MockBean
+    @Mock
     private RecordStreamFileListener recordStreamFileListener;
     private FileCopier fileCopier;
-    private StreamType streamType;
+    private RecordFileParser recordFileParser;
+    private RecordParserProperties parserProperties;
 
     private File file1;
     private File file2;
@@ -89,16 +79,18 @@ public class RecordFileParserTest extends IntegrationTest {
     private static final int NUM_TXNS_FILE_2 = 15;
     private static RecordFile recordFile1;
     private static RecordFile recordFile2;
-    private static final Set<String> filesProcessed = new HashSet<>();
 
     @BeforeEach
     void before() {
-        parserProperties.setEnabled(true);
+        var mirrorProperties = new MirrorProperties();
+        mirrorProperties.setDataPath(dataPath);
+        parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
-        streamType = parserProperties.getStreamType();
-        parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
-        fileCopier = FileCopier.create(testPath, dataPath)
+        recordFileParser = new RecordFileParser(applicationStatusRepository, parserProperties,
+                new SimpleMeterRegistry(), recordItemListener, recordStreamFileListener);
+        StreamType streamType = StreamType.RECORD;
+        fileCopier = FileCopier.create(Path.of(this.getClass().getClassLoader().getResource("data").getPath()), dataPath)
                 .from(streamType.getPath(), "v2", "record0.0.3")
                 .filterFiles("*.rcd")
                 .to(streamType.getPath(), streamType.getValid());
@@ -138,19 +130,6 @@ public class RecordFileParserTest extends IntegrationTest {
     }
 
     @Test
-    void disabled() throws Exception {
-        // given
-        parserProperties.setEnabled(false);
-        fileCopier.copy();
-
-        // when
-        recordFileParser.parse();
-
-        // then
-        assertNoneProcessed();
-    }
-
-    @Test
     void noFiles() throws Exception {
         // when
         recordFileParser.parse();
@@ -179,7 +158,7 @@ public class RecordFileParserTest extends IntegrationTest {
     @Test
     void hashMismatch() throws Exception {
         // given
-        applicationStatusRepository.updateStatusValue(LAST_PROCESSED_RECORD_HASH, "123");
+        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
         fileCopier.copy();
 
         // when
@@ -194,8 +173,9 @@ public class RecordFileParserTest extends IntegrationTest {
     @Test
     void bypassHashMismatch() throws Exception {
         // given
-        applicationStatusRepository.updateStatusValue(
-                RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER, "2019-09-01T00:00:00.000000Z.rcd");
+        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
+        when(applicationStatusRepository.findByStatusCode(RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER))
+                .thenReturn("2019-09-01T00:00:00.000000Z.rcd");
         fileCopier.copy();
 
         // when

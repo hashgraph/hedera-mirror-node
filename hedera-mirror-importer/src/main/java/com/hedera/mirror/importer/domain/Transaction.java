@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -61,7 +60,7 @@ public class Transaction implements Persistable<Long> {
     private Long initialBalance;
 
     @JoinColumn(name = "fk_cud_entity_id")
-    @ManyToOne(cascade = CascadeType.PERSIST)
+    @ManyToOne
     private Entities entity;
 
     private Long validStartNs;

@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
 
@@ -46,7 +45,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Log4j2
 @Named
 @RequiredArgsConstructor
-@Conditional(PubSubEnabledCondition.class)
+@ConditionalOnPubSubRecordParser
 public class PubSubRecordItemListener implements RecordItemListener {
 
     private final MessageChannel pubsubOutputChannel;

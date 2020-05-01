@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Conditional;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
@@ -33,7 +32,7 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Named
 @RequiredArgsConstructor
-@Conditional(PubSubEnabledCondition.class)
+@ConditionalOnPubSubRecordParser
 public class PubSubRecordStreamFileListener implements RecordStreamFileListener {
     private final RecordFileRepository recordFileRepository;
 
