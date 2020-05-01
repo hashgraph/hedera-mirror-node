@@ -100,10 +100,17 @@ workflows:
               only: /.*/
             tags:
               only: /.*/
+      - helm:
+          filters: # required since `release_artifacts` has tag filters AND requires `this`
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
       - release_artifacts:
           requires:
             - build_maven
             - build_rest
+            - helm
           filters:
             branches:
               ignore: /.*/
@@ -113,6 +120,7 @@ workflows:
           requires:
             - build_maven
             - build_rest
+            - helm
           filters:
             branches:
               only:
@@ -254,6 +262,20 @@ jobs:
             mkdir -p /tmp/workspace/artifacts
             mv hedera-mirror-rest*.tgz /tmp/workspace/artifacts/${NAME}.tgz
       - *persist_artifacts
+
+  helm:
+    docker:
+      - image: alpine/helm:3.2.0
+    steps:
+      - checkout
+      - run:
+          name: lint
+          command: |
+            helm lint charts/hedera-mirror
+      - run:
+          name: template
+          command: |
+            helm template charts/hedera-mirror
 
   release_artifacts:
     docker:
