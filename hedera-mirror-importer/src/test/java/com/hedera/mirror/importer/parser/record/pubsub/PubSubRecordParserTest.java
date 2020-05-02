@@ -72,7 +72,7 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
 
         // then
         List<String> expectedMessages =
-                Files.readAllLines(testResourcesPath.resolve("expected_transactions_json.txt"));
+                Files.readAllLines(testResourcesPath.resolve("pubsub-messages.txt"));
         assertThat(getAllMessages(NUM_TXNS)).isEqualTo(expectedMessages);
     }
 }

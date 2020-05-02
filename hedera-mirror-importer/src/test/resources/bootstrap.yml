@@ -1,0 +1,11 @@
+spring:
+  cloud:
+    kubernetes:
+      enabled: false
+
+embedded:
+  postgresql:
+    docker-image: postgres:9.6-alpine
+  google:
+    pubsub:
+      docker-image: google/cloud-sdk:290.0.1

@@ -28,20 +28,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.gcp.pubsub.PubSubAdmin;
 import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestExecutionListeners;
 
 import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
 
-@ContextConfiguration(
-        initializers = {DatabaseApplicationContextInitializer.class, PubSubEmulatorApplicationContextInitializer.class})
-@TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
-        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 @SpringBootTest(properties = {
-        "spring.cloud.kubernetes.enabled=false",
+        "embedded.google.pubsub.enabled=true",
         "spring.cloud.gcp.pubsub.enabled=true",
         "hedera.mirror.importer.parser.record.entity.enabled=false"})
-public class PubSubIntegrationTest {
+public class PubSubIntegrationTest extends IntegrationTest {
     private static final String SUBSCRIPTION = "testSubscription";
 
     @Resource

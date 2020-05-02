@@ -25,12 +25,13 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.jdbc.Sql;
 
-@ContextConfiguration(initializers = DatabaseApplicationContextInitializer.class)
+@ContextConfiguration(
+        initializers = {DatabaseApplicationContextInitializer.class, PubSubEmulatorApplicationContextInitializer.class})
 @TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 // Same database is used for all tests, so clean it up before each test.
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@SpringBootTest(properties = "spring.cloud.kubernetes.enabled=false")
+@SpringBootTest(properties =  "embedded.google.pubsub.enabled=false")
 public class IntegrationTest {
 }

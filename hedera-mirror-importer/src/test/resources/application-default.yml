@@ -27,5 +27,5 @@ spring:
   cloud:
     gcp:
       pubsub:
-        projectId: testProjectId
-        emulator-host: 127.0.0.1:8681
+        projectId: my-project-id # Default project id in pubsub emulator
+        emulator-host: 127.0.0.1:8089

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer;
+package com.hedera.mirror.grpc;
 
 /*-
  * ‌

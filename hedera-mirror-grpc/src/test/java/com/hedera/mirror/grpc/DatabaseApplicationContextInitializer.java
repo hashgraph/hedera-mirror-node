@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer;
+package com.hedera.mirror.grpc;
 
 /*-
  * ‌
@@ -38,11 +38,11 @@ public class DatabaseApplicationContextInitializer
             return;
         }
         TestPropertyValues
-                .of("hedera.mirror.importer.db.host=" + env.getProperty("embedded.postgresql.host"))
-                .and("hedera.mirror.importer.db.port=" + env.getProperty("embedded.postgresql.port"))
-                .and("hedera.mirror.importer.db.name=" + env.getProperty("embedded.postgresql.schema"))
-                .and("hedera.mirror.importer.db.password=" + env.getProperty("embedded.postgresql.password"))
-                .and("hedera.mirror.importer.db.username=" + env.getProperty("embedded.postgresql.user"))
+                .of("hedera.mirror.grpc.db.host=" + env.getProperty("embedded.postgresql.host"))
+                .and("hedera.mirror.grpc.db.port=" + env.getProperty("embedded.postgresql.port"))
+                .and("hedera.mirror.grpc.db.name=" + env.getProperty("embedded.postgresql.schema"))
+                .and("hedera.mirror.grpc.db.password=" + env.getProperty("embedded.postgresql.password"))
+                .and("hedera.mirror.grpc.db.username=" + env.getProperty("embedded.postgresql.user"))
                 .applyTo(applicationContext);
     }
 }

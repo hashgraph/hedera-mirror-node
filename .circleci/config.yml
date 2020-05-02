@@ -35,9 +35,12 @@ references:
       POSTGRES_PASSWORD: mirror_node_pass
       POSTGRES_USER: mirror_node
   docker_pubsub: &docker_pubsub
-    image: messagebird/gcloud-pubsub-emulator:latest
-    environment:
-      PUBSUB_PROJECT1: testProjectId
+    image: google/cloud-sdk:290.0.1
+    command: [
+      "/bin/sh",
+      "-c",
+      "gcloud beta emulators pubsub start --project my-project-id --host-port=0.0.0.0:8089"
+    ]
   machine_ubuntu: &machine_ubuntu
     machine:
       image: ubuntu-1604:201903-01
