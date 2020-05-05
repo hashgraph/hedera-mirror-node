@@ -9,7 +9,9 @@ hedera:
         restPassword: mirror_api_pass
         restUsername: mirror_api
         username: mirror_node
-      # service v05 AddedTimestamp in consensus_timestamp format e.g. 1588636800000000001, must be set for v1.23.1 migration
+      # Used for setting running hash version of topic messages when migrating from v1 to v2.
+      # All messages with consensusTimestamp >= this value will be marked version 2, and those less will be marked
+      # version 1.
       topicRunningHashV2AddedTimestamp:
 logging:
   level:

@@ -21,11 +21,9 @@ package com.hedera.mirror.grpc;
  */
 
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.jdbc.Sql;
 
-@ContextConfiguration(initializers = DatabaseApplicationContextInitializer.class)
 @TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 // Same database is used for all tests, so clean it up before each test.

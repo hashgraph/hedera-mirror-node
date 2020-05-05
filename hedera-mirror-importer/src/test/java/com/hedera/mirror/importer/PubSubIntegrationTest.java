@@ -28,13 +28,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.gcp.pubsub.PubSubAdmin;
 import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
+import org.springframework.test.context.ActiveProfiles;
 
 import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
 
-@SpringBootTest(properties = {
-        "embedded.google.pubsub.enabled=true",
-        "spring.cloud.gcp.pubsub.enabled=true",
-        "hedera.mirror.importer.parser.record.entity.enabled=false"})
+@ActiveProfiles("pubsub")
+@SpringBootTest
 public class PubSubIntegrationTest extends IntegrationTest {
     private static final String SUBSCRIPTION = "testSubscription";
 

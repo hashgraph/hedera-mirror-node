@@ -59,4 +59,4 @@ spring:
       api-user: ${hedera.mirror.datagenerator.db.restUsername}
       db-name: ${hedera.mirror.datagenerator.db.name}
       db-user: ${hedera.mirror.datagenerator.db.username}
-      topicRunningHashV2AddedTimestamp: 1588705200000000000
+      topicRunningHashV2AddedTimestamp: 0

@@ -2,48 +2,29 @@ version: 2.1
 
 references:
   workspace_root: &workspace_root /tmp/workspace
-  attach_workspace: &attach_workspace
-    attach_workspace:
-      at: *workspace_root
-  persist_artifacts: &persist_artifacts
-    persist_to_workspace:
-      root: *workspace_root
-      paths:
-        - artifacts
-  pom_checksum: &pom_checksum
-    run:
-      name: Calculate checksum of all pom.xml
-      command: find . -type f -name "pom.xml" | sort -u | xargs sha512sum > pom.xml.checksum
-  restore_maven_cache: &restore_maven_cache
-    restore_cache:
-      keys:
-        #  Perms on ~/.m2 differ by executor (docker/machine), so {{ arch }} is needed.
-        - maven-v2-{{ arch }}-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
-        - maven-v2-{{ arch }}-{{ .Branch }}
-        - maven-v2-{{ arch }}-
-  save_maven_cache: &save_maven_cache
-    save_cache:
-      key: maven-v2-{{ arch }}-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
-      paths:
-        - ~/.m2
+
+  # Docker images
   docker_jdk11: &docker_jdk11
     image: adoptopenjdk:11-jdk-hotspot
+
   docker_db: &docker_db
     image: postgres:9.6-alpine
     environment:
-      POSTGRES_DB: mirror_node_test
-      POSTGRES_PASSWORD: mirror_node_pass
-      POSTGRES_USER: mirror_node
+      POSTGRES_PASSWORD: password
+
   docker_pubsub: &docker_pubsub
     image: google/cloud-sdk:290.0.1
-    command: [
-      "/bin/sh",
-      "-c",
-      "gcloud beta emulators pubsub start --project my-project-id --host-port=0.0.0.0:8089"
-    ]
+    command: [ "/bin/sh", "-c", "gcloud beta emulators pubsub start" ]
+
   machine_ubuntu: &machine_ubuntu
     machine:
       image: ubuntu-1604:201903-01
+
+  # Maven helpers
+  maven_opts: &maven_opts
+    MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+    # Disable embedded testcontainers. Use externally provided postgres and pubsub emulator
+    MAVEN_SPRING_OPTS: -Dspring.config.additional-location=file:${WORKSPACE}/ -Dembedded.postgresql.enabled=false -Dembedded.google.pubsub.enabled=false
 
 commands:
   gcloud_image_untag:
@@ -70,6 +51,7 @@ commands:
               gcloud container images untag -q "${IMAGE_PATH}:${tag}"
             )
             done
+
   gcloud_image_delete:
     description: "Deletes old untagged images"
     parameters:
@@ -94,8 +76,85 @@ commands:
             )
             done
 
+  restore_maven_cache:
+    description: "Restore maven cache"
+    steps:
+      - run:
+          name: Calculate checksum of all pom.xml
+          command: find . -type f -name "pom.xml" | sort -u | xargs sha512sum > pom.xml.checksum
+      - restore_cache:
+          keys:
+            #  Perms on ~/.m2 differ by executor (docker/machine), so {{ arch }} is needed.
+            - maven-v2-{{ arch }}-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
+            - maven-v2-{{ arch }}-{{ .Branch }}
+            - maven-v2-{{ arch }}-
+
+  save_maven_cache:
+    steps:
+    - save_cache:
+        key: maven-v2-{{ arch }}-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
+        paths:
+          - ~/.m2
+
+  write_spring_override_config:
+    steps:
+    - run:
+        name: Write spring override config
+        command: |
+          mkdir -p ${WORKSPACE}
+          cat >> ${WORKSPACE}/application.yml \<< EOF
+          db: &db
+            db:
+              # Postgres' default values
+              host: 127.0.0.1
+              port: 5432
+              name: postgres
+              username: postgres
+              password: password
+          hedera:
+            mirror:
+              importer:
+                \<<: *db
+              grpc:
+                \<<: *db
+
+          ---
+
+          spring:
+            profiles: pubsub
+            cloud:
+              gcp:
+                pubsub:
+                  projectId: my-project-id # Pubsub emulator's default values
+                  emulator-host: 127.0.0.1:8085
+          EOF
+
+  collect_java_assets:
+    parameters:
+      module_name:
+        type: string
+    steps:
+      - run:
+          name: Collecting assets for << parameters.module_name >>
+          command: |
+            set -ex
+            MODULE=<< parameters.module_name >>
+            VERSION_TAG=${CIRCLE_TAG/*\//}
+            NAME=${MODULE}-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
+            mkdir -p ${WORKSPACE}/${NAME}
+            mv ${MODULE}/target/${MODULE}-*-exec.jar ${WORKSPACE}/${NAME}/${NAME}.jar
+            mv ${MODULE}/scripts ${WORKSPACE}/${NAME}
+            mkdir -p ${WORKSPACE}/artifacts
+            tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}
+
+  persist_artifacts_to_workspace:
+    steps:
+      - persist_to_workspace:
+          root: *workspace_root
+          paths:
+            - artifacts
+
 workflows:
-  version: 2
   main:
     jobs:
       - build_maven:
@@ -154,23 +213,24 @@ workflows:
 jobs:
   build_maven:
     environment:
-      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+      WORKSPACE: *workspace_root
+      <<: *maven_opts
     docker:
       - *docker_jdk11
       - *docker_db
       - *docker_pubsub
     steps:
       - checkout
-      - *pom_checksum
-      - *restore_maven_cache
+      - restore_maven_cache
       - run:
           name: Resolve dependencies
           # See https://issues.apache.org/jira/browse/MDEP-516 for why we don't use maven-dependency-plugin
           command: ./mvnw ${MAVEN_CLI_OPTS} de.qaware.maven:go-offline-maven-plugin:resolve-dependencies
-      - *save_maven_cache
+      - save_maven_cache
+      - write_spring_override_config
       - run:
           name: Running maven (validate, compile, test, package)
-          command: ./mvnw ${MAVEN_CLI_OPTS} package
+          command: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} package
       - store_artifacts:
           path: hedera-mirror-importer/target/surefire-reports
           destination: /importer-surefire
@@ -182,50 +242,33 @@ jobs:
       - run:
           name: Upload Code Coverage
           command: bash <(curl -s https://codecov.io/bash)
-      - run:
-          name: Collecting assets for hedera-mirror-grpc
-          command: |
-            set -ex
-            VERSION_TAG=${CIRCLE_TAG/*\//}
-            NAME=hedera-mirror-grpc-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
-            WORKSPACE=/tmp/workspace
-            mkdir -p ${WORKSPACE}/${NAME}
-            mv hedera-mirror-grpc/target/hedera-mirror-grpc-*-exec.jar ${WORKSPACE}/${NAME}/${NAME}.jar
-            mv hedera-mirror-grpc/scripts ${WORKSPACE}/${NAME}
-            mkdir -p ${WORKSPACE}/artifacts
-            tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}
-      - run:
-          name: Collecting assets for hedera-mirror-importer
-          command: |
-            set -ex
-            VERSION_TAG=${CIRCLE_TAG/*\//}
-            NAME=hedera-mirror-importer-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
-            WORKSPACE=/tmp/workspace
-            mkdir -p ${WORKSPACE}/${NAME}
-            mv hedera-mirror-importer/target/hedera-mirror-importer-*-exec.jar ${WORKSPACE}/${NAME}/${NAME}.jar
-            mv hedera-mirror-importer/scripts ${WORKSPACE}/${NAME}
-            mkdir -p ${WORKSPACE}/artifacts
-            tar -czf ${WORKSPACE}/artifacts/${NAME}.tgz -C ${WORKSPACE} ${NAME}
-      - *persist_artifacts
+      - collect_java_assets:
+          module_name: hedera-mirror-grpc
+      - collect_java_assets:
+          module_name: hedera-mirror-importer
+      - persist_artifacts_to_workspace
 
   perf_maven:
     environment:
-      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+      WORKSPACE: *workspace_root
+      <<: *maven_opts
     docker:
       - *docker_jdk11
       - *docker_db
     steps:
       - checkout
-      - *pom_checksum
-      - *restore_maven_cache
+      - restore_maven_cache
+      - write_spring_override_config
       - run:
           name: Running maven (integration)
-          command: ./mvnw ${MAVEN_CLI_OPTS} integration-test --projects hedera-mirror-importer/ -P performance-test
-      - *save_maven_cache
+          command: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} integration-test --projects hedera-mirror-importer/ -P performance-test
+      - save_maven_cache
       - store_test_results:
           path: hedera-mirror-importer/target/failsafe-reports
 
   build_rest:
+    environment:
+      WORKSPACE: *workspace_root
     docker:
       - image: node:12.10.0
       - image: postgres:9.6-alpine
@@ -274,9 +317,9 @@ jobs:
             VERSION_TAG=${CIRCLE_TAG/*\//}
             NAME=hedera-mirror-rest-${VERSION_TAG:-b$CIRCLE_BUILD_NUM}
             npm pack
-            mkdir -p /tmp/workspace/artifacts
-            mv hedera-mirror-rest*.tgz /tmp/workspace/artifacts/${NAME}.tgz
-      - *persist_artifacts
+            mkdir -p ${WORKSPACE}/artifacts
+            mv hedera-mirror-rest*.tgz ${WORKSPACE}/artifacts/${NAME}.tgz
+      - persist_artifacts_to_workspace
 
   helm:
     docker:
@@ -296,14 +339,15 @@ jobs:
     docker:
       - *docker_jdk11
     steps:
-      - *attach_workspace
+      - attach_workspace:
+          at: *workspace_root
       - store_artifacts:
           path: /tmp/workspace/artifacts
 
   publish_images:
     <<: *machine_ubuntu
     environment:
-      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+      <<: *maven_opts
       JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
       GOOGLE_APPLICATION_CREDENTIALS: json_key_file
     steps:
@@ -324,8 +368,7 @@ jobs:
             chmod +x /usr/bin/docker-credential-gcr
             echo ${GCR_JSON_KEY_FILE} > json_key_file
             docker-credential-gcr configure-docker
-      - *pom_checksum
-      - *restore_maven_cache
+      - restore_maven_cache
       - run:
           name: Running maven deploy
           command: |
@@ -334,7 +377,7 @@ jobs:
                 DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
             fi
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
-      - *save_maven_cache
+      - save_maven_cache
 
   cleanup_images:
     <<: *machine_ubuntu

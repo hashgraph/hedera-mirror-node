@@ -124,7 +124,7 @@ const flywayMigrate = function () {
         'FLYWAY_PLACEHOLDERS_db-user': dbUser,
         'FLYWAY_PLACEHOLDERS_api-user': 'mirror_api',
         'FLYWAY_PLACEHOLDERS_api-password': 'mirror_api_pass',
-        FLYWAY_PLACEHOLDERS_topicRunningHashV2AddedTimestamp: 1588705200000000000,
+        FLYWAY_PLACEHOLDERS_topicRunningHashV2AddedTimestamp: 0,
         FLYWAY_LOCATIONS:
           'filesystem:' + path.join('..', 'hedera-mirror-importer', 'src', 'main', 'resources', 'db', 'migration'),
       },

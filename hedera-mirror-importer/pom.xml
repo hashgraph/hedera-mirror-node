@@ -185,7 +185,6 @@
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>com.playtika.testcontainers</groupId>
             <artifactId>embedded-postgresql</artifactId>
