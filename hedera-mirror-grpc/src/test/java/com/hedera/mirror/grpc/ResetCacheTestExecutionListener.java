@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.serializer;
+package com.hedera.mirror.grpc;
 
 /*-
  * ‌
@@ -20,19 +20,17 @@ package com.hedera.mirror.importer.parser.serializer;
  * ‍
  */
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
-import java.io.IOException;
+import org.springframework.cache.CacheManager;
+import org.springframework.test.context.TestContext;
+import org.springframework.test.context.TestExecutionListener;
 
-public class ProtoJsonSerializer extends JsonSerializer<Message> {
+// Clears all caches before each test is run (equivalent of @BeforeEach).
+public class ResetCacheTestExecutionListener implements TestExecutionListener {
     @Override
-    public void serialize(Message message, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        gen.writeRawValue(JsonFormat.printer()
-                .includingDefaultValueFields()
-                .omittingInsignificantWhitespace()
-                .print(message));
+    public void beforeTestMethod(TestContext testContext) {
+        testContext.getApplicationContext().getBeansOfType(CacheManager.class).forEach(
+                (cacheManagerName, cacheManager) ->
+                        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear())
+        );
     }
 }

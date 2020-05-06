@@ -70,7 +70,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 100                     | When inserting transactions into db, executeBatches() is called every these many transactions  |
 | `hedera.mirror.importer.parser.record.pubsub.topicName`                     |                         | Pubsub topic to publish transactions to                                                        |
-| `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | 1588636800000000001     | The Unix timestamp when topic message running hash v2 was introduced                           |
+| `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            |                         | The Unix timestamp when topic message running hash v2 was introduced                           |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
 
 #### Export transactions to PubSub

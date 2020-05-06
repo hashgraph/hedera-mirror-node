@@ -27,21 +27,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.ContextConfiguration;
 
-import com.hedera.mirror.importer.DatabaseApplicationContextInitializer;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.parser.record.entity.EntityRecordItemListener;
 import com.hedera.mirror.importer.parser.record.entity.sql.SqlEntityListener;
 import com.hedera.mirror.importer.parser.record.pubsub.PubSubRecordItemListener;
 import com.hedera.mirror.importer.parser.record.pubsub.PubSubRecordStreamFileListener;
 
-@ContextConfiguration(initializers = DatabaseApplicationContextInitializer.class)
 @SpringBootTest(properties = {
-        "spring.cloud.kubernetes.enabled=false",
         "hedera.mirror.importer.parser.record.enabled=false",
         "hedera.mirror.importer.parser.record.entity.enabled=true",
         "hedera.mirror.importer.parser.record.pubsub.enabled=true"})
-public class RecordParserDisabledTest {
+public class RecordParserDisabledTest extends IntegrationTest {
     @Resource
     ApplicationContext context;
 

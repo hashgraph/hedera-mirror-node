@@ -1,0 +1,16 @@
+hedera:
+  mirror:
+    importer:
+      parser:
+        record:
+          entity:
+            enabled: false
+
+spring:
+  cloud:
+    gcp:
+      pubsub:
+        enabled: true # Defaults to false in application.yml
+        # https://github.com/testcontainers/testcontainers-spring-boot#embedded-google-pubsub
+        projectId: ${embedded.google.pubsub.project-id}
+        emulator-host: ${embedded.google.pubsub.host}:${embedded.google.pubsub.port}
