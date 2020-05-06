@@ -1,6 +1,6 @@
 charts/**
 *.md
-hedera-mirror-importer/**
+edera-mirror-importer/**
 hedera-mirror-grpc/**
 hedera-mirror-datagenerator/**
 *.yml
