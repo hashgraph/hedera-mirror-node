@@ -65,7 +65,7 @@
         <javax.version>1</javax.version>
         <jib.version>2.1.0</jib.version>
         <micrometer-jvm-extras.version>0.2.0</micrometer-jvm-extras.version>
-        <testcontainers.version>1.12.5</testcontainers.version>
+        <testcontainers.version>1.54</testcontainers.version>
     </properties>
 
     <scm>

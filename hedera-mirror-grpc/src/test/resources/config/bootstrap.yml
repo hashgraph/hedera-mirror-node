@@ -1,0 +1,4 @@
+embedded:
+  postgresql:
+    enabled: true
+    docker-image: postgres:9.6-alpine

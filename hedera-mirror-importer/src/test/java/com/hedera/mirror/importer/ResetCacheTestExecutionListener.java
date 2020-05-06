@@ -27,7 +27,7 @@ import org.springframework.test.context.TestExecutionListener;
 // Clears all caches before each test is run (equivalent of @BeforeEach).
 public class ResetCacheTestExecutionListener implements TestExecutionListener {
     @Override
-    public void beforeTestMethod(TestContext testContext) throws Exception {
+    public void beforeTestMethod(TestContext testContext) {
         testContext.getApplicationContext().getBeansOfType(CacheManager.class).forEach(
                 (cacheManagerName, cacheManager) ->
                         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear())

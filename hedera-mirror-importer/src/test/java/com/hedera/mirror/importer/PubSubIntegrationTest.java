@@ -20,15 +20,52 @@ package com.hedera.mirror.importer;
  * ‍
  */
 
+import com.google.api.gax.rpc.NotFoundException;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.annotation.Resource;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestExecutionListeners;
+import org.springframework.cloud.gcp.pubsub.PubSubAdmin;
+import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
+import org.springframework.test.context.ActiveProfiles;
 
-@ContextConfiguration(
-        initializers = {DatabaseApplicationContextInitializer.class, TestPubSubConfiguration.ContextInitializer.class},
-        classes = TestPubSubConfiguration.class)
-@TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
-        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
-@SpringBootTest(properties = "spring.cloud.kubernetes.enabled=false")
-public class PubSubIntegrationTest {
+import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
+
+@ActiveProfiles("pubsub")
+@SpringBootTest
+public class PubSubIntegrationTest extends IntegrationTest {
+    private static final String SUBSCRIPTION = "testSubscription";
+
+    @Resource
+    private PubSubProperties properties;
+    @Resource
+    private PubSubTemplate pubSubTemplate;
+    @Resource
+    private PubSubAdmin pubSubAdmin;
+
+    @BeforeEach
+    void setup() {
+        String topicName = properties.getTopicName();
+        // delete old topic and subscription if present
+        try {
+            pubSubAdmin.deleteTopic(topicName);
+            pubSubAdmin.deleteSubscription(SUBSCRIPTION);
+        } catch (NotFoundException e) {
+            // ignored
+        }
+        pubSubAdmin.createTopic(topicName);
+        pubSubAdmin.createSubscription(SUBSCRIPTION, topicName);
+    }
+
+    // Synchronously waits for numMessages from the subscription. Acks them and extracts payloads from them.
+    public List<String> getAllMessages(int numMessages) {
+        return pubSubTemplate.pull(SUBSCRIPTION, numMessages, false)
+                .stream()
+                .map(m -> {
+                    m.ack();
+                    return m.getPubsubMessage().getData().toStringUtf8();
+                })
+                .collect(Collectors.toList());
+    }
 }

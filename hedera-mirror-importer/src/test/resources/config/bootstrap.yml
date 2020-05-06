@@ -1,0 +1,9 @@
+embedded:
+  postgresql:
+    enabled: true
+    docker-image: postgres:9.6-alpine
+  google:
+    pubsub:
+      # Adding embedded containers' dependencies enables them by default. However, only few tests needs pubsub emulator,
+      # so it is enabled only for those tests.
+      enabled: false

@@ -1,0 +1,28 @@
+hedera:
+  mirror:
+    importer:
+      db:
+        # https://github.com/testcontainers/testcontainers-spring-boot#embedded-postgresql
+        host: ${embedded.postgresql.host}
+        port: ${embedded.postgresql.port}
+        name: ${embedded.postgresql.schema}
+        username: ${embedded.postgresql.user}
+        password: ${embedded.postgresql.password}
+      downloader:
+        bucketName: test
+        cloudProvider: LOCAL
+      parser:
+        balance:
+          enabled: false
+        exclude:
+          - entity: 0.0.999
+        record:
+          pubsub:
+            topicName: testTopic
+      network: TESTNET
+      topicRunningHashV2AddedTimestamp: 0 # Zero since tests use clean db with no data.
+
+spring:
+  task:
+    scheduling:
+      enabled: false
