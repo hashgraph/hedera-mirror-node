@@ -65,6 +65,8 @@
         <javax.version>1</javax.version>
         <jib.version>2.1.0</jib.version>
         <micrometer-jvm-extras.version>0.2.0</micrometer-jvm-extras.version>
+        <release.version>${project.version}</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.1.0</release.chartVersion>
         <testcontainers.version>1.54</testcontainers.version>
     </properties>
 
@@ -168,6 +170,8 @@
                     </configuration>
                 </plugin>
                 <plugin>
+                    <!-- To download licenses: ./mvnw license:download-licenses -N -->
+                    <!-- To generate license report: ./mvnw license:aggregate-third-party-report -->
                     <!-- To update license headers: ./mvnw license:update-file-header -N -->
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>license-maven-plugin</artifactId>
@@ -180,11 +184,30 @@
                             <exclude>**/target/**/*</exclude>
                             <exclude>.mvn/**/*</exclude>
                         </excludes>
+                        <excludedScopes>test</excludedScopes>
                         <includes>
                             <include>**/*.js</include>
                             <include>**/*.java</include>
                             <include>**/*.proto</include>
                         </includes>
+                        <licenseMerges>
+                            <licenseMerge>
+                                <![CDATA[Apache License, Version 2.0|Apache 2|Apache License, version 2.0|The Apache License, Version 2.0|The Apache Software License, Version 2.0|Apache-2.0|Apache License 2.0|Apache 2.0]]>
+                            </licenseMerge>
+                            <licenseMerge><![CDATA[BSD License|BSD]]></licenseMerge>
+                            <licenseMerge>
+                                <![CDATA[BSD 3-Clause License|3-Clause BSD License|BSD License 2.0|BSD New license|BSD 3-clause New License|BSD 3-clause]]>
+                            </licenseMerge>
+                            <licenseMerge>CC0|Public Domain, per Creative Commons CC0</licenseMerge>
+                            <licenseMerge>
+                                <![CDATA[CDDL + GPLv2 with classpath exception|CDDL/GPLv2+CE|CDDL 1.1 with GPL2 w/ CPE|CDDL 1.1 + GPL2 w/ CPE]]>
+                            </licenseMerge>
+                            <licenseMerge><![CDATA[Eclipse Distribution License - v 1.0|EDL 1.0]]></licenseMerge>
+                            <licenseMerge>
+                                <![CDATA[GNU Lesser General Public License (LGPL) version 2.1|LGPLv2.1|GNU Library General Public License v2.1 or later|]]>
+                            </licenseMerge>
+                            <licenseMerge><![CDATA[MIT License|MIT|MIT license|The MIT License]]></licenseMerge>
+                        </licenseMerges>
                         <licenseName>apache_v2</licenseName>
                         <!-- These contain unprintable characters to suppress showing the delimiters -->
                         <processEndTag>‍</processEndTag>
@@ -198,4 +221,63 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.google.code.maven-replacer-plugin</groupId>
+                        <artifactId>replacer</artifactId>
+                        <version>1.5.3</version>
+                        <configuration>
+                            <basedir>${project.basedir}</basedir>
+                            <includes>
+                                <include>charts/**/Chart.yaml</include>
+                                <include>charts/**/values.yaml</include>
+                                <include>hedera-mirror-rest/package*.json</include>
+                                <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
+                                <include>*/pom.xml</include>
+                                <include>pom.xml</include>
+                            </includes>
+                            <replacements>
+                                <replacement>
+                                    <token>
+                                        <![CDATA[(?<="hedera-mirror-(rest|monitor)",\s{3}"version": ")[^"]+]]></token>
+                                    <value>${release.version}</value>
+                                </replacement>
+                                <replacement>
+                                    <token>
+                                        <![CDATA[(?<=hedera-mirror-node</artifactId>(\s{9}|\s{5})<version>)[^<]+]]></token>
+                                    <value>${release.version}</value>
+                                </replacement>
+                                <replacement>
+                                    <token><![CDATA[(?<=tag: )[0-9a-z.-]+]]></token>
+                                    <value>${release.version}</value>
+                                </replacement>
+                                <replacement>
+                                    <token><![CDATA[(?<=appVersion: )[0-9a-z.-]+]]></token>
+                                    <value>${release.version}</value>
+                                </replacement>
+                                <replacement>
+                                    <token><![CDATA[(?<=version: )[0-9a-z.-]+]]></token>
+                                    <value>${release.chartVersion}</value>
+                                </replacement>
+                            </replacements>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>replace</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <phase>prepare-package</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

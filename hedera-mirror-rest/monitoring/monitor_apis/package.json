@@ -1,14 +1,14 @@
 {
-  "name": "backend",
+  "name": "hedera-mirror-monitor",
   "version": "0.10.0-rc1",
-  "description": "REST API for Hedera mirror node",
+  "description": "Hedera Mirror Node Monitor",
   "main": "server.js",
   "private": true,
   "scripts": {
     "test": "jest --watchAll",
     "dev": "nodemon app.js"
   },
-  "author": "Atul Mahamuni",
+  "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
     "abort-controller": "^3.0.0",

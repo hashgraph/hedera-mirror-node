@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import com.google.common.base.Stopwatch;
-import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -46,6 +45,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.FileParser;
@@ -192,29 +192,26 @@ public class RecordFileParser implements FileParser {
                         dis.readFully(recordRawBytes);
                         RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);
 
-                        try {
-                            if (log.isTraceEnabled()) {
-                                log.trace("Transaction = {}, Record = {}",
-                                        Utility.printProtoMessage(recordItem.getTransaction()),
-                                        Utility.printProtoMessage(recordItem.getRecord()));
-                            } else {
-                                log.debug("Storing transaction with consensus timestamp {}", () ->
-                                        Utility.printProtoMessage(recordItem.getRecord().getConsensusTimestamp()));
-                            }
-                            recordItemListener.onItem(recordItem);
-                        } finally {
-                            DataCase dc = recordItem.getTransactionBody().getDataCase();
-                            String type = dc != null && dc != DataCase.DATA_NOT_SET ? dc.name() : "UNKNOWN";
-                            transactionSizeMetric.tag("type", type)
-                                    .register(meterRegistry)
-                                    .record(transactionRawBytes.length);
-
-                            Instant consensusTimestamp = Utility.convertToInstant(
-                                    recordItem.getRecord().getConsensusTimestamp());
-                            transactionLatencyMetric.tag("type", type)
-                                    .register(meterRegistry)
-                                    .record(Duration.between(consensusTimestamp, Instant.now()));
+                        if (log.isTraceEnabled()) {
+                            log.trace("Transaction = {}, Record = {}",
+                                    Utility.printProtoMessage(recordItem.getTransaction()),
+                                    Utility.printProtoMessage(recordItem.getRecord()));
+                        } else {
+                            log.debug("Storing transaction with consensus timestamp {}", () ->
+                                    Utility.printProtoMessage(recordItem.getRecord().getConsensusTimestamp()));
                         }
+                        recordItemListener.onItem(recordItem);
+
+                        String type = TransactionTypeEnum.of(recordItem.getTransactionType()).toString();
+                        transactionSizeMetric.tag("type", type)
+                                .register(meterRegistry)
+                                .record(transactionRawBytes.length);
+
+                        Instant consensusTimestamp = Utility.convertToInstant(
+                                recordItem.getRecord().getConsensusTimestamp());
+                        transactionLatencyMetric.tag("type", type)
+                                .register(meterRegistry)
+                                .record(Duration.between(consensusTimestamp, Instant.now()));
                         break;
                     case FileDelimiter.RECORD_TYPE_SIGNATURE:
                         int sigLength = dis.readInt();

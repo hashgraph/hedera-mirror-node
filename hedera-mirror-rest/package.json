@@ -9,7 +9,7 @@
     "perftest": "__performancetests__/perfTest.js",
     "dev": "nodemon app.js"
   },
-  "author": "Atul Mahamuni",
+  "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.5.1",
