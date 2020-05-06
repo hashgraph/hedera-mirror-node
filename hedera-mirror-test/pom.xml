@@ -10,9 +10,9 @@
     <packaging>jar</packaging>
 
     <parent>
-        <artifactId>hedera-mirror-node</artifactId>
         <groupId>com.hedera</groupId>
-        <version>0.10.0-rc1</version>
+        <artifactId>hedera-mirror-node</artifactId>
+        <version>0.11.0-rc1</version>
     </parent>
 
     <properties>

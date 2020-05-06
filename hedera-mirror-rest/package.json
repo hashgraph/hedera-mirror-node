@@ -1,6 +1,6 @@
 {
   "name": "hedera-mirror-rest",
-  "version": "0.10.0-rc1",
+  "version": "0.11.0-rc1",
   "description": "Hedera Mirror Node REST API",
   "main": "server.js",
   "private": true,
@@ -9,7 +9,7 @@
     "perftest": "__performancetests__/perfTest.js",
     "dev": "nodemon app.js"
   },
-  "author": "Atul Mahamuni",
+  "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.5.1",

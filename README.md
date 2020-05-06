@@ -67,6 +67,15 @@ docker-compose up
 -   [Testing](docs/testing.md)
 -   [Troubleshooting](docs/troubleshooting.md)
 
+## Releasing
+
+To prepare for a new release:
+
+```
+./mvnw clean package -P=release -Drelease.version=x.y.z -Drelease.chartVersion=x.y.z
+helm dependency update charts/hedera-mirror
+```
+
 ## Contributing
 
 Contributions are welcome. Please see the [contributing](CONTRIBUTING.md) guide to see how you can get
