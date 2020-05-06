@@ -1,6 +1,7 @@
 [![CircleCI](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master.svg?style=shield)](https://circleci.com/gh/hashgraph/hedera-mirror-node/tree/master)
 [![codecov](https://img.shields.io/codecov/c/github/hashgraph/hedera-mirror-node/master)](https://codecov.io/gh/hashgraph/hedera-mirror-node)
 [![GitHub](https://img.shields.io/github/license/hashgraph/hedera-mirror-node)](LICENSE)
+[![Discord](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://hedera.com/discord)
 
 # Hedera Mirror Node
 

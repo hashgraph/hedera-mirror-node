@@ -61,16 +61,30 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.enabled`                       | true                    | Whether to enable record file parsing                                                          |
 | `hedera.mirror.importer.parser.record.frequency`                     | 500ms                   | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
 | `hedera.mirror.importer.parser.record.keepFiles`                     | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |
-| `hedera.mirror.importer.parser.record.persist.claims`                | false                   | Persist claim data to the database                                                             |
-| `hedera.mirror.importer.parser.record.persist.contracts`             | true                    | Persist contract data to the database                                                          |
-| `hedera.mirror.importer.parser.record.persist.cryptoTransferAmounts` | true                    | Persist crypto transfer amounts to the database                                                |
-| `hedera.mirror.importer.parser.record.persist.files`                 | true                    | Persist all file data to the database                                                          |
-| `hedera.mirror.importer.parser.record.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
-| `hedera.mirror.importer.parser.record.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
-| `hedera.mirror.importer.parser.record.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
-| `hedera.mirror.importer.parser.record.sql.batchSize`                 | 100                     | When inserting transactions into db, executeBatches() is called every these many transactions  |
+| `hedera.mirror.importer.parser.record.entity.persist.claims`                | false                   | Persist claim data to the database                                                             |
+| `hedera.mirror.importer.parser.record.entity.persist.contracts`             | true                    | Persist contract data to the database                                                          |
+| `hedera.mirror.importer.parser.record.entity.persist.cryptoTransferAmounts` | true                    | Persist crypto transfer amounts to the database                                                |
+| `hedera.mirror.importer.parser.record.entity.persist.files`                 | true                    | Persist all file data to the database                                                          |
+| `hedera.mirror.importer.parser.record.entity.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
+| `hedera.mirror.importer.parser.record.entity.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
+| `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
+| `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 100                     | When inserting transactions into db, executeBatches() is called every these many transactions  |
+| `hedera.mirror.importer.parser.record.pubsub.topicName`                     |                         | Pubsub topic to publish transactions to                                                        |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            |                         | The Unix timestamp when topic message running hash v2 was introduced                           |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
+
+#### Export transactions to PubSub
+
+Importer can be configured to publish transactions (in json format) to a Pubsub topic using following properties:
+
+-   `spring.cloud.gcp.pubsub.enabled`
+-   `spring.cloud.gcp.pubsub.project-id`
+-   `hedera.mirror.importer.parser.record.pubsub.topicName`
+-   `spring.cloud.gcp.pubsub.credentials.*`
+-   `hedera.mirror.importer.parser.record.entity.enabled` (Importer can not export to both database and pubsub simultaneously)
+
+See [Spring Cloud documentation](https://cloud.spring.io/spring-cloud-static/spring-cloud-gcp/1.2.2.RELEASE/reference/html/#pubsub-configuration)
+for more info about `spring.cloud.gcp.*` properties.
 
 ## GRPC API
 

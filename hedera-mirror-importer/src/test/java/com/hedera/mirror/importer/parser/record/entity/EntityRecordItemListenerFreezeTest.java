@@ -47,9 +47,9 @@ public class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItem
 
     @BeforeEach
     void before() {
-        parserProperties.getPersist().setFiles(true);
-        parserProperties.getPersist().setSystemFiles(true);
-        parserProperties.getPersist().setCryptoTransferAmounts(true);
+        entityProperties.getPersist().setFiles(true);
+        entityProperties.getPersist().setSystemFiles(true);
+        entityProperties.getPersist().setCryptoTransferAmounts(true);
     }
 
     @Test

@@ -53,7 +53,6 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -63,7 +62,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 @ConditionOnEntityRecordParser
 public class EntityRecordItemListener implements RecordItemListener {
-    private final RecordParserProperties parserProperties;
+    private final EntityProperties entityProperties;
     private final NetworkAddressBook networkAddressBook;
     private final EntityRepository entityRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
@@ -71,12 +70,12 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityListener entityListener;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
-    public EntityRecordItemListener(CommonParserProperties commonParserProperties, RecordParserProperties parserProperties,
+    public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
                                     NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
                                     TransactionHandlerFactory transactionHandlerFactory) {
-        this.parserProperties = parserProperties;
+        this.entityProperties = entityProperties;
         this.networkAddressBook = networkAddressBook;
         this.entityRepository = entityRepository;
         this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
@@ -112,7 +111,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         transactionHandler.updateTransaction(tx, recordItem);
         tx.setEntity(getEntity(recordItem, transactionHandler, entityId, isSuccessful));
 
-        if ((txRecord.hasTransferList()) && parserProperties.getPersist().isCryptoTransferAmounts()) {
+        if ((txRecord.hasTransferList()) && entityProperties.getPersist().isCryptoTransferAmounts()) {
             processNonFeeTransfers(consensusNs, body, txRecord);
             if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
                 insertCryptoCreateTransferList(consensusNs, txRecord, body);
@@ -159,7 +158,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         tx.setMaxFee(body.getTransactionFee());
         tx.setResult(txRecord.getReceipt().getStatusValue());
         tx.setType(recordItem.getTransactionType());
-        tx.setTransactionBytes(parserProperties.getPersist().isTransactionBytes() ?
+        tx.setTransactionBytes(entityProperties.getPersist().isTransactionBytes() ?
                 recordItem.getTransactionBytes() : null);
         tx.setTransactionHash(txRecord.getTransactionHash().toByteArray());
         Long validDurationSeconds = body.hasTransactionValidDuration() ?
@@ -179,7 +178,7 @@ public class EntityRecordItemListener implements RecordItemListener {
      */
     private void processNonFeeTransfers(
             long consensusTimestamp, TransactionBody body, TransactionRecord transactionRecord) {
-        if (!parserProperties.getPersist().isNonFeeTransfers()) {
+        if (!entityProperties.getPersist().isNonFeeTransfers()) {
             return;
         }
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
@@ -206,8 +205,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID) {
-        if (parserProperties.getPersist().isFiles() ||
-                (parserProperties.getPersist().isSystemFiles() && fileID.getFileNum() < 1000)) {
+        if (entityProperties.getPersist().isFiles() ||
+                (entityProperties.getPersist().isSystemFiles() && fileID.getFileNum() < 1000)) {
             entityListener.onFileData(new FileData(consensusTimestamp, contents));
         }
     }
@@ -219,7 +218,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertCryptoAddLiveHash(long consensusTimestamp,
                                          CryptoAddLiveHashTransactionBody transactionBody) {
-        if (parserProperties.getPersist().isClaims()) {
+        if (entityProperties.getPersist().isClaims()) {
             byte[] liveHash = transactionBody.getLiveHash().getHash().toByteArray();
             entityListener.onLiveHash(new LiveHash(consensusTimestamp, liveHash));
         }
@@ -228,7 +227,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertContractCall(long consensusTimestamp,
                                     ContractCallTransactionBody transactionBody,
                                     TransactionRecord transactionRecord) {
-        if (parserProperties.getPersist().isContracts()) {
+        if (entityProperties.getPersist().isContracts()) {
             byte[] functionParams = transactionBody.getFunctionParameters().toByteArray();
             long gasSupplied = transactionBody.getGas();
             byte[] callResult = new byte[0];
@@ -244,7 +243,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertContractCreateInstance(long consensusTimestamp,
                                               ContractCreateTransactionBody transactionBody,
                                               TransactionRecord transactionRecord) {
-        if (parserProperties.getPersist().isContracts()) {
+        if (entityProperties.getPersist().isContracts()) {
             byte[] functionParams = transactionBody.getConstructorParameters().toByteArray();
             long gasSupplied = transactionBody.getGas();
             byte[] callResult = new byte[0];

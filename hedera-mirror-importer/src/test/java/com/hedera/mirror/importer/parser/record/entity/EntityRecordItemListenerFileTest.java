@@ -98,9 +98,9 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @BeforeEach
     void before() throws Exception {
         mirrorProperties.setDataPath(dataPath);
-        parserProperties.getPersist().setFiles(true);
-        parserProperties.getPersist().setSystemFiles(true);
-        parserProperties.getPersist().setCryptoTransferAmounts(true);
+        entityProperties.getPersist().setFiles(true);
+        entityProperties.getPersist().setSystemFiles(true);
+        entityProperties.getPersist().setCryptoTransferAmounts(true);
         parserProperties.init();
     }
 
@@ -157,8 +157,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
     @Test
     void fileCreateDoNotPersist() throws Exception {
-        parserProperties.getPersist().setFiles(false);
-        parserProperties.getPersist().setSystemFiles(false);
+        entityProperties.getPersist().setFiles(false);
+        entityProperties.getPersist().setSystemFiles(false);
         Transaction transaction = fileCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         TransactionRecord record = transactionRecord(transactionBody);
@@ -192,7 +192,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
     @Test
     void fileCreatePersistSystemPositive() throws Exception {
-        parserProperties.getPersist().setFiles(false);
+        entityProperties.getPersist().setFiles(false);
         Transaction transaction = fileCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();
@@ -244,7 +244,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
     @Test
     void fileCreatePersistSystemNegative() throws Exception {
-        parserProperties.getPersist().setFiles(false);
+        entityProperties.getPersist().setFiles(false);
         Transaction transaction = fileCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         FileCreateTransactionBody fileCreateTransactionBody = transactionBody.getFileCreate();
@@ -419,8 +419,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
                 .setRealmNum(0).setFileNum(10).build());
 
-        parserProperties.getPersist().setFiles(true);
-        parserProperties.getPersist().setSystemFiles(true);
+        entityProperties.getPersist().setFiles(true);
+        entityProperties.getPersist().setSystemFiles(true);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -576,8 +576,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
     @Test
     void fileAppendToAddressBook() throws Exception {
-        parserProperties.getPersist().setFiles(true);
-        parserProperties.getPersist().setSystemFiles(true);
+        entityProperties.getPersist().setFiles(true);
+        entityProperties.getPersist().setSystemFiles(true);
         byte[] addressBook = FileUtils.readFileToByteArray(addressBookLarge);
         byte[] addressBookUpdate = Arrays.copyOf(addressBook, 6144);
         byte[] addressBookAppend = Arrays.copyOfRange(addressBook, 6144, addressBook.length);
@@ -1006,8 +1006,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
                 .setRealmNum(0).setFileNum(10).build());
 
-        parserProperties.getPersist().setFiles(true);
-        parserProperties.getPersist().setSystemFiles(true);
+        entityProperties.getPersist().setFiles(true);
+        entityProperties.getPersist().setSystemFiles(true);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -1065,8 +1065,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
                 .setRealmNum(0).setFileNum(102).build());
 
-        parserProperties.getPersist().setFiles(true);
-        parserProperties.getPersist().setSystemFiles(true);
+        entityProperties.getPersist().setFiles(true);
+        entityProperties.getPersist().setSystemFiles(true);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -1130,8 +1130,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         TransactionRecord record = transactionRecord(transactionBody, FileID.newBuilder().setShardNum(0)
                 .setRealmNum(0).setFileNum(102).build());
 
-        parserProperties.getPersist().setFiles(true);
-        parserProperties.getPersist().setSystemFiles(true);
+        entityProperties.getPersist().setFiles(true);
+        entityProperties.getPersist().setSystemFiles(true);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
