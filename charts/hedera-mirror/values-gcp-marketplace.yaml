@@ -1,0 +1,59 @@
+#properties:
+#  grpcImage:
+#    type: string
+#    default: gcr.io/mirror-node/hedera-mirror-grpc:0.10.1
+#    x-google-marketplace:
+#      type: IMAGE
+#      image:
+#        generatedProperties:
+#          splitToRegistryRepoTag:
+#            registry: hedera-mirror.grpc.image.registry
+#            repo: hedera-mirror.grpc.image.repository
+#            tag: hedera-mirror.grpc.image.tag
+#  importerImage:
+#    type: string
+#    default: gcr.io/mirror-node/hedera-mirror-importer:0.10.1
+#    x-google-marketplace:
+#      type: IMAGE
+#      image:
+#        generatedProperties:
+#          splitToRegistryRepoTag:
+#            registry: hedera-mirror.importer.image.registry
+#            repo: hedera-mirror.importer.image.repository
+#            tag: hedera-mirror.importer.image.tag
+#  restImage:
+#    type: string
+#    default: gcr.io/mirror-node/hedera-mirror-rest:0.10.1
+#    x-google-marketplace:
+#      type: IMAGE
+#      image:
+#        generatedProperties:
+#          splitToRegistryRepoTag:
+#            registry: hedera-mirror.rest.image.registry
+#            repo: hedera-mirror.rest.image.repository
+#            tag: hedera-mirror.rest.image.tag
+
+mirrornode:
+  image:
+    repo: null
+    tag: null
+
+grpc:
+  image:
+    repo: null
+    tag: null
+
+rest:
+  image:
+    repo: null
+    tag: null
+
+deployer:
+  image:
+    repo: null
+    tag: null
+
+metrics:
+  image: null
+  exporter:
+    enabled: false

@@ -1,0 +1,67 @@
+x-google-marketplace:
+  schemaVersion: v2
+
+  applicationApiVersion: v1beta1
+
+  # The release version, MUST match the release tag on the the deployer.
+  publishedVersion: "$TAG"
+  publishedVersionMetadata:
+    releaseNote: >-
+      A mirror-node update.
+    # releaseTypes list is optional. Feature | BugFix | Security
+    # "Security" should only be used if this is an important update to patch
+    # an existing vulnerability, as such updates will display more prominently for users.
+    releaseTypes:
+      - Feature
+    # If "recommended" is "true", users using older releases are encouraged
+    # to update as soon as possible. This is useful if, for example, this release
+    # fixes a critical issue.
+    recommended: false
+
+  images:
+    '': # Importer primary image
+      properties:
+        mirrornode.image.repo:
+          type: REPO_WITH_REGISTRY
+        mirrornode.image.tag:
+          type: TAG
+    grpc:
+      properties:
+        grpc.image:
+          type: FULL
+    rest:
+      properties:
+        rest.image:
+          type: FULL
+
+  # Other fields, like clusterConstraints, can be included here.
+
+  # The Properties and Required sections of v2 are structured the same as those of v1.
+  # IMPORTANT: These IDs must match your listing ID in Marketplace.
+  partnerId: partner
+  solutionId: hedera-mirrorpublishedVersion
+
+properties:
+  name:
+    type: string
+    x-google-marketplace:
+      type: NAME
+  namespace:
+    type: string
+    x-google-marketplace:
+      type: NAMESPACE
+  metrics.exporter.enabled:
+    type: boolean
+    title: Enable Stackdriver Metrics Exporter
+    description: Your GCP project should have Stackdriver enabled. For non-GCP clusters,
+      export of metrics to Stackdriver is not supported yet
+    default: false
+  deployer.image:
+    type: string
+    x-google-marketplace:
+      type: DEPLOYER_IMAGE
+
+required:
+  - name
+  - namespace
+  - metrics.exporter.enabled
