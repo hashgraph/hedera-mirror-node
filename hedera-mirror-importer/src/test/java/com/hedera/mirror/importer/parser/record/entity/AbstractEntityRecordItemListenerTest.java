@@ -91,6 +91,9 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected RecordParserProperties parserProperties;
 
     @Resource
+    protected EntityProperties entityProperties;
+
+    @Resource
     protected RecordStreamFileListener recordStreamFileListener;
 
     protected static SignatureMap getSigMap() {
@@ -161,7 +164,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     protected void assertRecordTransfers(TransactionRecord record) {
         long consensusTimestamp = Utility.timeStampInNanos(record.getConsensusTimestamp());
-        if (parserProperties.getPersist().isCryptoTransferAmounts()) {
+        if (entityProperties.getPersist().isCryptoTransferAmounts()) {
             TransferList transferList = record.getTransferList();
             for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
                 AccountID account = accountAmount.getAccountID();

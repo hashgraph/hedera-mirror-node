@@ -65,10 +65,10 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
     @BeforeEach
     void before() throws Exception {
-        parserProperties.getPersist().setFiles(true);
-        parserProperties.getPersist().setSystemFiles(true);
-        parserProperties.getPersist().setContracts(true);
-        parserProperties.getPersist().setCryptoTransferAmounts(true);
+        entityProperties.getPersist().setFiles(true);
+        entityProperties.getPersist().setSystemFiles(true);
+        entityProperties.getPersist().setContracts(true);
+        entityProperties.getPersist().setCryptoTransferAmounts(true);
     }
 
     @Test
@@ -171,7 +171,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     @Disabled
     void contractCreateDoNotPersist() throws Exception {
-        parserProperties.getPersist().setContracts(false);
+        entityProperties.getPersist().setContracts(false);
 
         Transaction transaction = contractCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -681,7 +681,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     @Test
     @Disabled
     void contractCallDoNotPersist() throws Exception {
-        parserProperties.getPersist().setContracts(false);
+        entityProperties.getPersist().setContracts(false);
 
         // now call
         Transaction transaction = contractCallTransaction();
