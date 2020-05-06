@@ -29,6 +29,10 @@ x-google-marketplace:
       properties:
         grpc.image:
           type: FULL
+    rest:
+      properties:
+        rest.image:
+          type: FULL
     loki-stack:
       properties:
         loki.stack.image:
