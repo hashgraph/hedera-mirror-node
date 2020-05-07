@@ -33,6 +33,7 @@
     <modules>
         <module>hedera-mirror-coverage</module>
         <module>hedera-mirror-datagenerator</module>
+        <module>hedera-mirror-gcp-marketplace</module>
         <module>hedera-mirror-grpc</module>
         <module>hedera-mirror-importer</module>
         <module>hedera-mirror-protobuf</module>
