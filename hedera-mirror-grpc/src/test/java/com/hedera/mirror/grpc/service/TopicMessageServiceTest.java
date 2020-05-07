@@ -308,7 +308,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     void historicalMessagesWithLimit() {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+        domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(2)
@@ -373,7 +373,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> generator.blockLast())
+                .then(generator::blockLast)
                 .expectNext(1L, 2L)
                 .expectComplete()
                 .verify(Duration.ofMillis(1000));
@@ -397,7 +397,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> generator.blockLast())
+                .then(generator::blockLast)
                 .expectNext(1L, 2L)
                 .expectComplete()
                 .verify(Duration.ofMillis(500));
@@ -405,9 +405,9 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void bothMessages() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
+        domainBuilder.topicMessage().block();
+        domainBuilder.topicMessage().block();
+        domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(5)
@@ -446,7 +446,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> generator.blockLast())
+                .then(generator::blockLast)
                 .expectNext(1L, 2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -474,7 +474,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> generator.blockLast())
+                .then(generator::blockLast)
                 .expectNext(1L, 2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -496,7 +496,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .findByCompositeKey(0, retrieverFilter.getRealmNum(), retrieverFilter.getTopicNum()))
                 .thenReturn(Optional
                         .of(Entity.builder().entityTypeId(EntityType.TOPIC).build()));
-        
+
         Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers
                 .any()))
                 .thenReturn(Flux
@@ -601,6 +601,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .verify(Duration.ofMillis(700));
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void missingMessagesFromRetrieverAndListener() {
         TopicListener topicListener = Mockito.mock(TopicListener.class);
@@ -635,14 +636,15 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .listen(ArgumentMatchers.argThat(l -> l.getStartTime().equals(listenerFilter.getStartTime()))))
                 .thenReturn(Flux.just(beforeMissing1, beforeMissing2, afterMissing1, afterMissing2, afterMissing3));
 
-        Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers
-                .any()))
-                .thenReturn(Flux.just(retrieved1),
+        Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers.isA(TopicMessageFilter.class)))
+                .thenReturn(
+                        Flux.just(retrieved1),
                         Flux.just(retrieved2), // missing historic
                         Flux.just(
                                 topicMessage(5), // missing incoming
                                 topicMessage(6),
-                                topicMessage(7)));
+                                topicMessage(7)
+                        ));
 
         topicMessageService.subscribeTopic(retrieverFilter)
                 .map(TopicMessage::getSequenceNumber)

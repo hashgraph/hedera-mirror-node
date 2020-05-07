@@ -175,7 +175,7 @@ public class RecordFileParser implements FileParser {
                                     .compareTo(Utility.getFileName(fileName)) < 0) {
                                 // last file for which mismatch is allowed is in the past
                                 throw new ParserException(String.format(
-                                        "Hash mismatch for file %s. Actual = %s, Expected = %s",
+                                        "Hash mismatch for file %s. Expected = %s, Actual = %s",
                                         fileName, expectedPrevFileHash, actualPrevFileHash));
                             }
                         }
