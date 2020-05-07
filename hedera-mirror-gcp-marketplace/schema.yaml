@@ -29,25 +29,9 @@ x-google-marketplace:
       properties:
         grpc.image:
           type: FULL
-    loki-stack:
+    rest:
       properties:
-        loki.stack.image:
-          type: FULL
-    postgresql-ha:
-      properties:
-        postgresql.ha.image:
-          type: FULL
-    prometheus-adapter:
-      properties:
-        prometheus.adapter.image:
-          type: FULL
-    prometheus-operator:
-      properties:
-        prometheus.operator.image:
-          type: FULL
-    traefik:
-      properties:
-        traefik.image:
+        rest.image:
           type: FULL
     loki-stack:
       properties:
