@@ -60,7 +60,7 @@
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${project.version}</docker.tag.version>
         <docker.tag.latest>latest</docker.tag.latest>
-        <gmp.track>0.1</gmp.track>
+        <gmp.track>0.11.0</gmp.track>
         <grpc.version>1.29.0</grpc.version>
         <guava.version>28.2-jre</guava.version>
         <hedera-protobuf.version>0.4.2</hedera-protobuf.version>
