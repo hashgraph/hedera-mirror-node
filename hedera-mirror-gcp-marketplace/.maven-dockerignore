@@ -1,0 +1,7 @@
+target/**
+**/hedera-mirror-coverage**
+**/hedera-mirror-grpc**
+**/hedera-mirror-importer**
+**/hedera-mirror-protobuf**
+**/hedera-mirror-rest**
+**/hedera-mirror-test**
