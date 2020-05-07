@@ -307,7 +307,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void addCryptoTransferList(long consensusTimestamp, long realmNum, long accountNum, long amount) {
         entityListener
-                .onCryptoTransferList(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
+                .onCryptoTransfer(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
     }
 
     private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody) {
