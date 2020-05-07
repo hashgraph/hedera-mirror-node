@@ -1,0 +1,45 @@
+grpc:
+  hpa:
+    enabled: false
+  ingress:
+    enabled: false
+  rbac:
+    enabled: false
+  serviceAccount:
+    create: false
+  serviceMonitor:
+    enabled: false
+importer:
+  podMonitor:
+    enabled: false
+  rbac:
+    enabled: false
+  replicas: 1
+  serviceAccount:
+    create: false
+loki:
+  enabled: false
+postgresql:
+  metrics:
+    enabled: false
+  pgpool:
+    replicaCount: 1
+  postgresql:
+    replicaCount: 1
+prometheus-adapter:
+  enabled: false
+prometheus:
+  enabled: false
+rest:
+  hpa:
+    enabled: false
+  ingress:
+    enabled: false
+  rbac:
+    enabled: false
+  serviceAccount:
+    create: false
+  serviceMonitor:
+    enabled: false
+traefik:
+  enabled: false

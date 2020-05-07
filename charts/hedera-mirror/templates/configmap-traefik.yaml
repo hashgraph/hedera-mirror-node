@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
-  name: traefik
+  name: {{ .Values.traefik.fullnameOverride }}
   namespace: {{ include "hedera-mirror.namespace" . }}
 data:
   traefik.yaml: |-
@@ -25,6 +25,10 @@ data:
       prometheus: {}
     ping: {}
     providers:
-      kubernetesCRD: {}
-      kubernetesIngress: {}
+      kubernetesCRD:
+        namespaces:
+          - {{ include "hedera-mirror.namespace" . }}
+      kubernetesIngress:
+        namespaces:
+          - {{ include "hedera-mirror.namespace" . }}
 {{- end -}}

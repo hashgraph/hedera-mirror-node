@@ -1,3 +1,9 @@
+applicationResource:
+  enabled: false
+  partnerId: ""
+  partnerName: ""
+  projectId: ""
+
 fullnameOverride: mirror
 
 global:
@@ -217,8 +223,7 @@ prometheus:
         root_url: "%(protocol)s://%(domain)s/grafana/"
     ingress:
       annotations:
-        # TODO: Open ticket with Traefik to not require namespace and/or fix grafana chart to template annotations
-        traefik.ingress.kubernetes.io/router.middlewares: "default-grafana@kubernetescrd"
+        traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror.namespace" . }}-grafana@kubernetescrd'
       enabled: true
       hosts: [""]
       middleware:

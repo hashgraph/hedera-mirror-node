@@ -1,3 +1,4 @@
+{{- if and .Values.prometheus.enabled .Values.prometheus.grafana.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,3 +9,4 @@ metadata:
   namespace: {{ include "hedera-mirror.namespace" . }}
 data:
   {{- (.Files.Glob "dashboards/*").AsConfig | nindent 2 }}
+{{- end }}
