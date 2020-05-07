@@ -1,3 +1,4 @@
+target/docker/
 target/**
 **/hedera-mirror-coverage**
 **/hedera-mirror-grpc**
