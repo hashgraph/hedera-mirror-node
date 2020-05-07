@@ -16,7 +16,29 @@
 
     <build>
         <plugins>
-
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-chart</id>
+                        <!-- here the phase you need -->
+                        <phase>install</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${basedir}/chart</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/../charts/hedera-mirror</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
@@ -39,16 +61,20 @@
                     <images>
                         <image>
                             <build>
-                                <contextDir>${project.basedir}/../</contextDir>
+                                <contextDir>${project.basedir}/</contextDir>
                                 <dockerFile>${project.basedir}/Dockerfile</dockerFile>
                                 <args>
                                     <registry>${docker.push.repository}/${project.artifactId}</registry>
                                     <tag>${gmp.track}</tag>
                                 </args>
+                                <nocache>true</nocache>
                                 <tags>
                                     <tag>${docker.tag.latest}</tag>
                                     <tag>${docker.tag.version}</tag>
                                 </tags>
+                                <assembly>
+                                    <exportTargetDir>false</exportTargetDir>
+                                </assembly>
                             </build>
                             <name>${docker.push.repository}/${project.artifactId}/deployer</name>
                         </image>
