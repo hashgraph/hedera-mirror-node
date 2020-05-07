@@ -28,5 +28,4 @@ RUN cat /tmp/schema.yaml \
 RUN mv /tmp/hedera-mirror.tar.gz /data/chart/
 RUN mv /tmp/schema.yaml /data/schema.yaml
 
-RUN mkdir -p /data-test
-RUN mv /tmp/schema.yaml /data-test/schema.yaml
+RUN cp /data/schema.yaml /data-test/schema.yaml
