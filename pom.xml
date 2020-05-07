@@ -285,44 +285,6 @@
                         </execution>
                     </executions>
                 </plugin>
-                <plugin>
-                    <groupId>io.fabric8</groupId>
-                    <artifactId>docker-maven-plugin</artifactId>
-                    <version>0.31.0</version>
-                    <executions>
-                        <execution>
-                            <id>dockerBuild</id>
-                            <goals>
-                                <goal>build</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>dockerPush</id>
-                            <goals>
-                                <goal>push</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <images>
-                            <image>
-                                <build>
-                                    <contextDir>${project.basedir}</contextDir>
-                                    <dockerFile>hedera-mirror-gcp-marketplace/Dockerfile</dockerFile>
-                                    <args>
-                                        <registry>${docker.push.repository}/${project.artifactId}</registry>
-                                        <tag>${gmp.track}</tag>
-                                    </args>
-                                    <tags>
-                                        <tag>${docker.tag.latest}</tag>
-                                        <tag>${docker.tag.version}</tag>
-                                    </tags>
-                                </build>
-                                <name>${docker.push.repository}/${project.artifactId}/deployer</name>
-                            </image>
-                        </images>
-                    </configuration>
-                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
