@@ -1,4 +1,4 @@
-{{- if .Values.ingress.middleware.enabled -}}
+{{- if and .Values.ingress.enabled .Values.ingress.middleware.enabled -}}
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:

@@ -9,5 +9,7 @@ To access the GRPC API:
 To access the REST API:
   curl -s "http://${SERVICE_IP}:{{ .Values.traefik.ports.web.exposedPort }}/api/v1/transactions?limit=1"
 
+{{ if and .Values.prometheus.enabled .Values.prometheus.grafana.enabled -}}
 To view the Grafana dashboard:
   open "http://${SERVICE_IP}:{{ .Values.traefik.ports.web.exposedPort }}/grafana"
+{{- end -}}
