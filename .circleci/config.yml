@@ -194,6 +194,7 @@ workflows:
             branches:
               only:
                 - master
+                - helm-deployer-image
             tags:
               only: /^.*/
       - perf_maven:
@@ -373,8 +374,8 @@ jobs:
           name: Running maven deploy
           command: |
             set -ex
-            if [ "$CIRCLE_BRANCH" = "master" ]; then
-                DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
+            if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "helm-deployer-image" ]; then
+                DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=master-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
             fi
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
       - save_maven_cache
