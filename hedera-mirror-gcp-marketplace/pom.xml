@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <artifactId>hedera-mirror-gcp-marketplace</artifactId>
+    <description>Google Cloud Platform Marketplace solution for the Hedera Mirror Node</description>
+    <modelVersion>4.0.0</modelVersion>
+    <name>Hedera Mirror Node GCP Marketplace</name>
+    <packaging>pom</packaging>
+
+    <parent>
+        <groupId>com.hedera</groupId>
+        <artifactId>hedera-mirror-node</artifactId>
+        <version>0.10.0-rc1</version>
+    </parent>
+
+    <build>
+        <plugins>
+
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>0.31.0</version>
+                <executions>
+                    <execution>
+                        <id>dockerBuild</id>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>dockerPush</id>
+                        <goals>
+                            <goal>push</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <images>
+                        <image>
+                            <build>
+                                <contextDir>${project.basedir}/../</contextDir>
+                                <dockerFile>Dockerfile</dockerFile>
+                                <args>
+                                    <registry>${docker.push.repository}/${project.artifactId}</registry>
+                                    <tag>${gmp.track}</tag>
+                                </args>
+                                <tags>
+                                    <tag>${docker.tag.latest}</tag>
+                                    <tag>${docker.tag.version}</tag>
+                                </tags>
+                            </build>
+                            <name>${docker.push.repository}/${project.artifactId}/deployer</name>
+                        </image>
+                    </images>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
