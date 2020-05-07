@@ -82,6 +82,7 @@
                     <artifactId>spring-boot-starter-logging</artifactId>
                 </exclusion>
                 <exclusion>
+                    <!-- Caused compilation errors when included -->
                     <groupId>org.junit.vintage</groupId>
                     <artifactId>junit-vintage-engine</artifactId>
                 </exclusion>
