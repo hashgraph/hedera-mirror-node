@@ -40,7 +40,7 @@
                         <image>
                             <build>
                                 <contextDir>${project.basedir}/../</contextDir>
-                                <dockerFile>Dockerfile</dockerFile>
+                                <dockerFile>${project.basedir}/Dockerfile</dockerFile>
                                 <args>
                                     <registry>${docker.push.repository}/${project.artifactId}</registry>
                                     <tag>${gmp.track}</tag>
