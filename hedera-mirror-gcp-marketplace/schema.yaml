@@ -29,9 +29,25 @@ x-google-marketplace:
       properties:
         grpc.image:
           type: FULL
-    rest:
+    loki-stack:
       properties:
-        rest.image:
+        loki.stack.image:
+          type: FULL
+    postgresql-ha:
+      properties:
+        postgresql.ha.image:
+          type: FULL
+    prometheus-adapter:
+      properties:
+        prometheus.adapter.image:
+          type: FULL
+    prometheus-operator:
+      properties:
+        prometheus.operator.image:
+          type: FULL
+    traefik:
+      properties:
+        traefik.image:
           type: FULL
 
   # Other fields, like clusterConstraints, can be included here.
@@ -60,8 +76,10 @@ properties:
     type: string
     x-google-marketplace:
       type: DEPLOYER_IMAGE
+  # To-do : Add postgres credentials placeholders
 
 required:
   - name
   - namespace
   - metrics.exporter.enabled
+  - deployer.image

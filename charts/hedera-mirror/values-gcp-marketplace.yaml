@@ -32,26 +32,53 @@
 #            registry: hedera-mirror.rest.image.registry
 #            repo: hedera-mirror.rest.image.repository
 #            tag: hedera-mirror.rest.image.tag
+deployer:
+  image:
+    repo: gcr.io/mirrornode/hedera/hedera-mirror-node/deployer
+    tag: 0.10.1
 
 mirrornode:
   image:
-    repo: null
-    tag: null
+    repo: gcr.io/mirrornode/hedera/hedera-mirror-node
+    tag: 0.10.1
 
 grpc:
   image:
-    repo: null
-    tag: null
+    repo: gcr.io/mirrornode/hedera/hedera-mirror-node/grpc
+    tag: 0.10.1
 
 rest:
   image:
-    repo: null
-    tag: null
+    repo: gcr.io/mirrornode/hedera/hedera-mirror-node/rest
+    tag: 0.10.1
 
-deployer:
+loki:
+  stack:
   image:
-    repo: null
-    tag: null
+    repo: gcr.io/mirrornode/hedera/hedera-mirror-node/loki-stack
+    tag: 0.36.1
+
+postgresql:
+  ha:
+  image:
+    repo: gcr.io/mirrornode/hedera/hedera-mirror-node/postgresql-ha
+    tag: 3.1.0
+
+prometheus:
+  adapter:
+    image:
+      repo: gcr.io/mirrornode/hedera/hedera-mirror-node/prometheus-adapter
+      tag: 2.3.1
+  operator:
+    image:
+      repo: gcr.io/mirrornode/hedera/hedera-mirror-node/prometheus-operator
+      tag: 8.13.2
+
+traefik:
+  image:
+    repo: gcr.io/mirrornode/hedera/hedera-mirror-node/traefik
+    tag: 8.1.2
+
 
 metrics:
   image: null
