@@ -1,6 +1,7 @@
 FROM gcr.io/cloud-marketplace-tools/k8s/deployer_helm AS build
 
 ## pull in chart, swap values file and archive chart
+RUN echo $(ls .)
 ADD charts/hedera-mirror /tmp/chart
 RUN mv /tmp/chart/values-gcp-marketplace.yaml /tmp/chart/values.yaml
 RUN cd /tmp && tar -czvf /tmp/hedera-mirror.tar.gz chart
