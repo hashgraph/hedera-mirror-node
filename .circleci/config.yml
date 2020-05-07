@@ -91,43 +91,43 @@ commands:
 
   save_maven_cache:
     steps:
-    - save_cache:
-        key: maven-v2-{{ arch }}-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
-        paths:
-          - ~/.m2
+      - save_cache:
+          key: maven-v2-{{ arch }}-{{ .Branch }}-{{ checksum "pom.xml.checksum" }}
+          paths:
+            - ~/.m2
 
   write_spring_override_config:
     steps:
-    - run:
-        name: Write spring override config
-        command: |
-          mkdir -p ${WORKSPACE}
-          cat >> ${WORKSPACE}/application.yml \<< EOF
-          db: &db
-            db:
-              # Postgres' default values
-              host: 127.0.0.1
-              port: 5432
-              name: postgres
-              username: postgres
-              password: password
-          hedera:
-            mirror:
-              importer:
-                \<<: *db
-              grpc:
-                \<<: *db
+      - run:
+          name: Write spring override config
+          command: |
+            mkdir -p ${WORKSPACE}
+            cat >> ${WORKSPACE}/application.yml \<< EOF
+            db: &db
+              db:
+                # Postgres' default values
+                host: 127.0.0.1
+                port: 5432
+                name: postgres
+                username: postgres
+                password: password
+            hedera:
+              mirror:
+                importer:
+                  \<<: *db
+                grpc:
+                  \<<: *db
 
-          ---
+            ---
 
-          spring:
-            profiles: pubsub
-            cloud:
-              gcp:
-                pubsub:
-                  projectId: my-project-id # Pubsub emulator's default values
-                  emulator-host: 127.0.0.1:8085
-          EOF
+            spring:
+              profiles: pubsub
+              cloud:
+                gcp:
+                  pubsub:
+                    projectId: my-project-id # Pubsub emulator's default values
+                    emulator-host: 127.0.0.1:8085
+            EOF
 
   collect_java_assets:
     parameters:
@@ -374,8 +374,8 @@ jobs:
           name: Running maven deploy
           command: |
             set -ex
-            if [ "$CIRCLE_BRANCH" = "master" -o "$CIRCLE_BRANCH" = "helm-deployer-image" ]; then
-                DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=master-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
+            if [ "$CIRCLE_BRANCH" = "master" ]; then
+                DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
             fi
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
       - save_maven_cache

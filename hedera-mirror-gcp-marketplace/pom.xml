@@ -69,7 +69,7 @@
                                 </args>
                                 <nocache>true</nocache>
                                 <tags>
-                                    <tag>${docker.tag.latest}</tag>
+                                    <tag>${gmp.track}</tag>
                                     <tag>${docker.tag.version}</tag>
                                 </tags>
                                 <assembly>
