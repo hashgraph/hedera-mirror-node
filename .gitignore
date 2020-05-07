@@ -39,6 +39,7 @@ hedera-mirror-*/application.yml
 /db/
 *.log
 !/charts/**/*.tgz
+hedera-mirror-gcp-marketplace/chart/
 
 ### VisualStudioCode ###
 .vscode/

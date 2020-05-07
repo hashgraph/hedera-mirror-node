@@ -76,7 +76,7 @@
                                     <exportTargetDir>false</exportTargetDir>
                                 </assembly>
                             </build>
-                            <name>${docker.push.repository}/${project.artifactId}/deployer</name>
+                            <name>${docker.push.repository}/hedera-mirror-node/deployer</name>
                         </image>
                     </images>
                 </configuration>
