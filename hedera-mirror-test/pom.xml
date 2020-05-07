@@ -18,7 +18,8 @@
     <properties>
         <jmeter.test>E2E_Subscribe_Only.jmx</jmeter.test>
         <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
-        <cucumber.version>5.6.0</cucumber.version>
+        <cucumber.version>5.7.0</cucumber.version>
+        <cucumber-reporting.version>4.0.48</cucumber-reporting.version>
         <skipTests>true</skipTests>
     </properties>
 
@@ -26,7 +27,7 @@
         <dependency>
             <groupId>com.hedera.hashgraph</groupId>
             <artifactId>sdk</artifactId>
-            <version>1.1.4</version>
+            <version>${hedera-sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
@@ -80,12 +81,16 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-logging</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>de.monochromata.cucumber</groupId>
             <artifactId>reporting-plugin</artifactId>
-            <version>4.0.15</version>
+            <version>${cucumber-reporting.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
