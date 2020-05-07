@@ -35,7 +35,7 @@ import com.hedera.mirror.importer.exception.ImporterException;
 public interface EntityListener {
     void onTransaction(Transaction transaction) throws ImporterException;
 
-    void onCryptoTransferList(CryptoTransfer cryptoTransfer) throws ImporterException;
+    void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException;
 
     void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException;
 
