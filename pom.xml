@@ -56,6 +56,7 @@
         <disruptor.version>3.4.2</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.33.0</docker-maven-plugin.version>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
+        <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${project.version}</docker.tag.version>
         <docker.tag.latest>latest</docker.tag.latest>
         <grpc.version>1.29.0</grpc.version>
@@ -101,6 +102,25 @@
     <build>
         <pluginManagement>
             <plugins>
+                <!-- Download library source jars and package in container image for GCP Marketplace compliance -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>copy-dependencies</goal>
+                            </goals>
+                            <configuration>
+                                <classifier>sources</classifier>
+                                <includeScope>runtime</includeScope>
+                                <outputDirectory>${docker.resources}/third_party/sources</outputDirectory>
+                                <prependGroupId>true</prependGroupId>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
@@ -136,6 +156,11 @@
                     <artifactId>jib-maven-plugin</artifactId>
                     <version>${jib.version}</version>
                     <configuration>
+                        <extraDirectories>
+                            <paths>
+                                <path>${docker.resources}</path>
+                            </paths>
+                        </extraDirectories>
                         <to>
                             <image>${docker.push.repository}/${project.artifactId}</image>
                             <tags>
@@ -172,13 +197,11 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <!-- To download licenses: ./mvnw license:download-licenses -->
                     <!-- To generate license report: ./mvnw license:aggregate-third-party-report -->
                     <!-- To update license headers: ./mvnw license:update-file-header -N -->
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>license-maven-plugin</artifactId>
                     <version>2.0.0</version>
-                    <inherited>false</inherited>
                     <configuration>
                         <canUpdateCopyright>true</canUpdateCopyright>
                         <excludes>
@@ -186,7 +209,6 @@
                             <exclude>**/target/**/*</exclude>
                             <exclude>.mvn/**/*</exclude>
                         </excludes>
-                        <excludedScopes>test</excludedScopes>
                         <includes>
                             <include>**/*.js</include>
                             <include>**/*.java</include>
@@ -219,6 +241,27 @@
                         </roots>
                         <sectionDelimiter>​</sectionDelimiter>
                     </configuration>
+                    <executions>
+                        <execution>
+                            <id>download-licenses-for-container</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>download-licenses</goal>
+                            </goals>
+                            <configuration>
+                                <excludedScopes>test</excludedScopes>
+                                <licensesOutputDirectory>${docker.resources}/third_party/licenses
+                                </licensesOutputDirectory>
+                                <licenseUrlReplacements>
+                                    <licenseUrlReplacement>
+                                        <regexp>\Qhttps://glassfish.dev.java.net/nonav/public/CDDL+GPL.html\E</regexp>
+                                        <replacement>https://oss.oracle.com/licenses/CDDL+GPL-1.1</replacement>
+                                    </licenseUrlReplacement>
+                                </licenseUrlReplacements>
+                                <organizeLicensesByDependencies>true</organizeLicensesByDependencies>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -226,6 +269,7 @@
             <plugin>
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
+                <inherited>false</inherited>
                 <configuration>
                     <failOnNoGitDirectory>false</failOnNoGitDirectory>
                     <injectAllReactorProjects>true</injectAllReactorProjects>
