@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.downloader.balance;
  * ‍
  */
 
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -39,8 +40,9 @@ public class AccountBalancesDownloader extends Downloader {
 
     public AccountBalancesDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
-            NetworkAddressBook networkAddressBook, BalanceDownloaderProperties downloaderProperties) {
-        super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties);
+            NetworkAddressBook networkAddressBook, BalanceDownloaderProperties downloaderProperties,
+            MeterRegistry meterRegistry) {
+        super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties, meterRegistry);
     }
 
     @Leader

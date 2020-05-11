@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.downloader;
 import java.nio.file.Path;
 import javax.annotation.PostConstruct;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -31,6 +32,8 @@ public interface DownloaderProperties {
     int getBatchSize();
 
     CommonDownloaderProperties getCommon();
+
+    MirrorProperties getMirrorProperties();
 
     /**
      * The number of current mainnet nodes used to download signatures in parallel. Should be adjusted when nodes
@@ -53,6 +56,8 @@ public interface DownloaderProperties {
     }
 
     boolean isEnabled();
+
+    void setEnabled(boolean enabled);
 
     @PostConstruct
     default void init() {

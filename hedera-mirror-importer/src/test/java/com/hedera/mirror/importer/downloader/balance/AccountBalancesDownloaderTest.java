@@ -50,7 +50,7 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     @Override
     protected Downloader getDownloader() {
         return new AccountBalancesDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook,
-                (BalanceDownloaderProperties) downloaderProperties);
+                (BalanceDownloaderProperties) downloaderProperties, meterRegistry);
     }
 
     @Override

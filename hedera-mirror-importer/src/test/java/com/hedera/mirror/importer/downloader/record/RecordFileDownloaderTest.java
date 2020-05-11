@@ -58,7 +58,7 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
     @Override
     protected Downloader getDownloader() {
         return new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook,
-                (RecordDownloaderProperties) downloaderProperties);
+                (RecordDownloaderProperties) downloaderProperties, meterRegistry);
     }
 
     @Override

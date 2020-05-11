@@ -21,10 +21,14 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Splitter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Value;
 
 /**
@@ -36,6 +40,9 @@ import lombok.Value;
  */
 @Value
 public class EntityId {
+
+    private static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
+
     // Ignored so not included in json serialization of PubSubMessage
     @JsonIgnore
     private Long id;
@@ -76,7 +83,17 @@ public class EntityId {
         return of(topicID.getShardNum(), topicID.getRealmNum(), topicID.getTopicNum(), EntityTypeEnum.TOPIC);
     }
 
-    private static EntityId of(long entityShard, long entityRealm, long entityNum, EntityTypeEnum type) {
+    public static EntityId of(String entityId, EntityTypeEnum type) {
+        List<Long> parts = SPLITTER.splitToStream(Objects.requireNonNullElse(entityId, ""))
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        if (parts.size() != 3) {
+            throw new IllegalArgumentException("Invalid entity ID: " + entityId);
+        }
+        return of(parts.get(0), parts.get(1), parts.get(2), type);
+    }
+
+    public static EntityId of(long entityShard, long entityRealm, long entityNum, EntityTypeEnum type) {
         if (entityNum == 0 && entityRealm == 0 && entityShard == 0) {
             return null;
         }

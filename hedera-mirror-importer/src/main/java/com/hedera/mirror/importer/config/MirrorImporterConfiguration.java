@@ -35,6 +35,7 @@ import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
@@ -59,7 +60,7 @@ public class MirrorImporterConfiguration {
     }
 
     @Bean
-    public S3AsyncClient s3AsyncClient() {
+    public S3AsyncClient s3AsyncClient(ExecutionInterceptor metricsExecutionInterceptor) {
         SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder()
                 .maxConcurrency(downloaderProperties.getMaxConcurrency())
                 .connectionMaxIdleTime(Duration.ofSeconds(5))  // https://github.com/aws/aws-sdk-java-v2/issues/1122
@@ -72,6 +73,7 @@ public class MirrorImporterConfiguration {
                 .credentialsProvider(awsCredentialsProvider(downloaderProperties))
                 .region(Region.of(downloaderProperties.getRegion()))
                 .httpClient(httpClient)
+                .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor))
                 .applyMutation(this::overrideEndpoint)
                 .build();
     }
