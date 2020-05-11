@@ -121,6 +121,25 @@
                         </execution>
                     </executions>
                 </plugin>
+                <!-- antlr 2.x (Hibernate dependency) is so old it doesn't have sources in Maven Central -->
+                <plugin>
+                    <groupId>com.googlecode.maven-download-plugin</groupId>
+                    <artifactId>download-maven-plugin</artifactId>
+                    <version>1.6.0</version>
+                    <executions>
+                        <execution>
+                            <id>download-antlr-source</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>wget</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${docker.resources}/third_party/sources</outputDirectory>
+                                <url>https://www.antlr2.org/download/antlr-2.7.7.tar.gz</url>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
