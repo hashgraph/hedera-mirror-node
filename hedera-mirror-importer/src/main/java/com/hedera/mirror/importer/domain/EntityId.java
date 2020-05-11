@@ -86,6 +86,7 @@ public class EntityId {
     public static EntityId of(String entityId, EntityTypeEnum type) {
         List<Long> parts = SPLITTER.splitToStream(Objects.requireNonNullElse(entityId, ""))
                 .map(Long::valueOf)
+                .filter(n -> n >= 0)
                 .collect(Collectors.toList());
         if (parts.size() != 3) {
             throw new IllegalArgumentException("Invalid entity ID: " + entityId);

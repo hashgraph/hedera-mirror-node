@@ -23,18 +23,26 @@ package com.hedera.mirror.importer.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class EntityIdTest {
+
+    @CsvSource({"null", ".", "0..1", "0", "0.0", "0.0.0.1", "-1.-2.-3", "0.0.9223372036854775808", "foo.bar.baz"})
+    @DisplayName("Convert String to EntityId and fail")
+    @ParameterizedTest(name = "with {0}")
+    void ofStringNegative(String string) {
+        assertThatThrownBy(() -> EntityId.of(string, EntityTypeEnum.ACCOUNT))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @DisplayName("Convert String to EntityId")
     @Test
-    void ofString() {
+    void ofStringPositive() {
         EntityTypeEnum type = EntityTypeEnum.ACCOUNT;
         assertThat(EntityId.of("0.0.1", type)).isEqualTo(EntityId.of(0, 0, 1, type));
         assertThat(EntityId.of("0.0.0", type)).isNull();
-        assertThatThrownBy(() -> EntityId.of(null, type)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> EntityId.of("", type)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> EntityId.of("0", type)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> EntityId.of("0.0", type)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> EntityId.of("0.0.0.1", type)).isInstanceOf(IllegalArgumentException.class);
     }
 }
