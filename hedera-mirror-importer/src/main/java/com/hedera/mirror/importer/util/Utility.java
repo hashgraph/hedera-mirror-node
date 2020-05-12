@@ -202,22 +202,6 @@ public class Utility {
         }
     }
 
-    public static AccountID stringToAccountID(String string) throws IllegalArgumentException {
-        if (string == null || string.isEmpty()) {
-            throw new IllegalArgumentException("Cannot parse empty string to AccountID");
-        }
-        String[] strs = string.split("[.]");
-
-        if (strs.length != 3) {
-            throw new IllegalArgumentException("Cannot parse string to AccountID: Invalid format.");
-        }
-        AccountID.Builder idBuilder = AccountID.newBuilder();
-        idBuilder.setShardNum(Integer.valueOf(strs[0]))
-                .setRealmNum(Integer.valueOf(strs[1]))
-                .setAccountNum(Integer.valueOf(strs[2]));
-        return idBuilder.build();
-    }
-
     public static byte[] integerToBytes(int number) {
         ByteBuffer b = ByteBuffer.allocate(4);
         b.putInt(number);

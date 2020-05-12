@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Instant;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -53,13 +52,6 @@ public class UtilityTest {
         AccountID accountId = AccountID.newBuilder().setAccountNum(100).build();
         String parsed = Utility.accountIDToString(accountId);
         assertThat(parsed).isEqualTo("0.0.100");
-    }
-
-    @Test
-    void stringToAccountID() {
-        String accountIdString = "0.0.100";
-        AccountID parsed = Utility.stringToAccountID(accountIdString);
-        assertThat(parsed).isEqualTo(AccountID.newBuilder().setAccountNum(100).build());
     }
 
     @Test

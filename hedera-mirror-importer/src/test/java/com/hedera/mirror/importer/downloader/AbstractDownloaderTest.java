@@ -26,6 +26,8 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 
 import io.findify.s3mock.S3Mock;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,6 +41,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Answers;
 import org.mockito.Mock;
+import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.FileCopier;
@@ -51,6 +54,7 @@ import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public abstract class AbstractDownloaderTest {
+
     @Mock(answer = Answers.RETURNS_SMART_NULLS)
     protected ApplicationStatusRepository applicationStatusRepository;
     @TempDir
@@ -64,6 +68,8 @@ public abstract class AbstractDownloaderTest {
     protected DownloaderProperties downloaderProperties;
     protected Downloader downloader;
     protected Path validPath;
+    protected MeterRegistry meterRegistry = new LoggingMeterRegistry();
+
     @TempDir
     Path dataPath;
 
@@ -96,7 +102,9 @@ public abstract class AbstractDownloaderTest {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
-        s3AsyncClient = new MirrorImporterConfiguration(commonDownloaderProperties).s3AsyncClient();
+        s3AsyncClient = new MirrorImporterConfiguration(commonDownloaderProperties)
+                .s3AsyncClient(new ExecutionInterceptor() {
+                });
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
         downloader = getDownloader();
 

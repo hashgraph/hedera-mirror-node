@@ -86,7 +86,8 @@ public class RecordFileParser implements FileParser {
         this.recordStreamFileListener = recordStreamFileListener;
 
         parseDurationMetric = Timer.builder("hedera.mirror.parse.duration")
-                .description("The duration in ms it took to parse the file and store it in the database");
+                .description("The duration in seconds it took to parse the file and store it in the database")
+                .tag("type", parserProperties.getStreamType().toString());
 
         transactionSizeMetric = DistributionSummary.builder("hedera.mirror.transaction.size")
                 .description("The size of the transaction in bytes")
@@ -240,8 +241,7 @@ public class RecordFileParser implements FileParser {
             var rate = elapsed > 0 ? (int) (1000.0 * counter / elapsed) : 0;
             log.info("Finished parsing {} transactions from record file {} in {} ({}/s)",
                     counter, fileName, stopwatch, rate);
-            parseDurationMetric.tag("type", "record")
-                    .tag("success", success.toString())
+            parseDurationMetric.tag("success", success.toString())
                     .tag("version", recordFileVersion.toString())
                     .register(meterRegistry)
                     .record(stopwatch.elapsed());

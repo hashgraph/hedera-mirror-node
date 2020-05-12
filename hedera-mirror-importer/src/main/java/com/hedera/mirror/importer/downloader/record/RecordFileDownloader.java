@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
+import io.micrometer.core.instrument.MeterRegistry;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -39,8 +40,9 @@ public class RecordFileDownloader extends Downloader {
 
     public RecordFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
-            NetworkAddressBook networkAddressBook, RecordDownloaderProperties downloaderProperties) {
-        super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties);
+            NetworkAddressBook networkAddressBook, RecordDownloaderProperties downloaderProperties,
+            MeterRegistry meterRegistry) {
+        super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties, meterRegistry);
     }
 
     @Leader
