@@ -45,18 +45,21 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
 
+/**
+ * Intercepts requests to the S3 API and records relevant metrics before continuing.
+ */
 @Log4j2
 @Named
 @RequiredArgsConstructor
 public class MetricsExecutionInterceptor implements ExecutionInterceptor {
 
-    private static final Pattern ENTITY_ID_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)");
+    private static final Pattern ENTITY_ID_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)");
     private static final ExecutionAttribute<ResponseSizeSubscriber> SIZE = new ExecutionAttribute("size");
     private static final ExecutionAttribute<Instant> START_TIME = new ExecutionAttribute("start-time");
 
     private final MeterRegistry meterRegistry;
 
-    private final Timer.Builder requestsMetric = Timer.builder("hedera.mirror.download.request")
+    private final Timer.Builder requestMetric = Timer.builder("hedera.mirror.download.request")
             .description("The time in seconds it took to receive the response from S3");
 
     private final DistributionSummary.Builder responseSizeMetric = DistributionSummary
@@ -84,22 +87,22 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     public void afterExecution(Context.AfterExecution context, ExecutionAttributes executionAttributes) {
         try {
             String uri = context.httpRequest().getUri().toString();
-            EntityId nodeId = getNodeAccountId(uri);
+            EntityId nodeAccountId = getNodeAccountId(uri);
             Instant startTime = executionAttributes.getAttribute(START_TIME);
             ResponseSizeSubscriber responseSizeSubscriber = executionAttributes.getAttribute(SIZE);
 
             String[] tags = {
                     "action", getAction(uri),
                     "method", context.httpRequest().method().name(),
-                    "node", nodeId.getEntityNum().toString(),
-                    "realm", nodeId.getRealmNum().toString(),
-                    "shard", nodeId.getShardNum().toString(),
+                    "nodeAccount", nodeAccountId.getEntityNum().toString(),
+                    "realm", nodeAccountId.getRealmNum().toString(),
+                    "shard", nodeAccountId.getShardNum().toString(),
                     "status", String.valueOf(context.httpResponse().statusCode()),
                     "type", getType(uri)
             };
 
             if (startTime != null) {
-                requestsMetric.tags(tags)
+                requestMetric.tags(tags)
                         .register(meterRegistry)
                         .record(Duration.between(startTime, Instant.now()));
             }
@@ -128,11 +131,8 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     private EntityId getNodeAccountId(String uri) {
         Matcher matcher = ENTITY_ID_PATTERN.matcher(uri);
 
-        if (matcher.find() && matcher.groupCount() == 3) {
-            long shard = Long.valueOf(matcher.group(1));
-            long realm = Long.valueOf(matcher.group(2));
-            long num = Long.valueOf(matcher.group(3));
-            return EntityId.of(shard, realm, num, EntityTypeEnum.ACCOUNT);
+        if (matcher.find() && matcher.groupCount() == 1) {
+            return EntityId.of(matcher.group(1), EntityTypeEnum.ACCOUNT);
         }
 
         throw new IllegalStateException("Could not detect a node account ID in URI: " + uri);

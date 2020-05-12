@@ -121,7 +121,7 @@ public abstract class Downloader {
             MirrorProperties mirrorProperties = downloaderProperties.getMirrorProperties();
             if (sigFilesMap.isEmpty() && mirrorProperties.getNetwork() == HederaNetwork.DEMO) {
                 downloaderProperties.setEnabled(false);
-                log.warn("Disabling polling after downloading all files in demo bucket");
+                log.warn("Disabled polling after downloading all files in demo bucket");
             }
 
             // Verify signature files and download corresponding files of valid signature files
@@ -326,7 +326,7 @@ public abstract class Downloader {
             } finally {
                 for (FileStreamSignature signature : signatures) {
                     EntityId nodeAccountId = EntityId.of(signature.getNode(), EntityTypeEnum.ACCOUNT);
-                    signatureVerificationMetric.tag("node", nodeAccountId.getEntityNum().toString())
+                    signatureVerificationMetric.tag("nodeAccount", nodeAccountId.getEntityNum().toString())
                             .tag("realm", nodeAccountId.getRealmNum().toString())
                             .tag("shard", nodeAccountId.getShardNum().toString())
                             .tag("status", signature.getStatus().toString())

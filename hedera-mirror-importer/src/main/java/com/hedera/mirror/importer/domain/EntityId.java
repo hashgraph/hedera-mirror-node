@@ -88,9 +88,11 @@ public class EntityId {
                 .map(Long::valueOf)
                 .filter(n -> n >= 0)
                 .collect(Collectors.toList());
+
         if (parts.size() != 3) {
             throw new IllegalArgumentException("Invalid entity ID: " + entityId);
         }
+
         return of(parts.get(0), parts.get(1), parts.get(2), type);
     }
 
