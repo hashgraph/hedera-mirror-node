@@ -266,9 +266,9 @@ prometheus:
     additionalPodMonitors:
       - name: traefik
         podMetricsEndpoints:
-        - port: traefik
-          path: /metrics
-          interval: 15s
+          - port: traefik
+            path: /metrics
+            interval: 15s
         selector:
           matchLabels:
             app.kubernetes.io/name: traefik
@@ -350,3 +350,6 @@ traefik:
     - name: traefik
       mountPath: /etc/traefik/
       type: configMap
+
+priorityClass:
+  enabled: true

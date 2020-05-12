@@ -1,45 +1,212 @@
+applicationResource:
+  enabled: true
+  partnerId: hederaPartnerId
+  partnerName: partner_name
+  projectId: hederaMirrorSolutionId
+
+fullnameOverride: mirror
+
+global:
+  namespaceOverride: ""
+
+mirror-node:
+  tag: 0.11.0
+  version: 0.11.0-rc1
+
+deployer:
+  image: gcr.io/mirrornode/hedera/hedera-mirror-node/deployer:${mirror-node.tag}
+
+mirrornode:
+  image:
+    repository: gcr.io/mirrornode/hedera/hedera-mirror-node
+    tag: ${mirror-node.tag}
+
 grpc:
+  config:
+    hedera:
+      mirror:
+        grpc:
+          db:
+            host: postgresql-pgpool
+            password: mirror_grpc_pass
+            username: mirror_grpc
+  enabled: true
+  ingress:
+    middleware:
+      enabled: true
+  priorityClassName: ""
+  serviceMonitor:
+    enabled: true
   hpa:
     enabled: false
-  ingress:
-    enabled: false
-  rbac:
-    enabled: false
-  serviceAccount:
-    create: false
-  serviceMonitor:
-    enabled: false
+    ingress:
+      enabled: false
+    rbac:
+      enabled: false
+    serviceAccount:
+      create: false
+    serviceMonitor:
+      enabled: false
+  image:
+    repository: gcr.io/mirrornode/hedera/hedera-mirror-node/grpc
+    tag: ${mirror-node.tag}
+  service:
+    type: LoadBalancer
+
 importer:
+  config:
+    hedera:
+      mirror:
+        importer:
+          db:
+            host: postgresql-pgpool
+            name: mirror_node
+            password: mirror_node_pass
+            username: mirror_node
+  enabled: true
   podMonitor:
     enabled: false
+  priorityClassName: ""
   rbac:
-    enabled: false
+    enabled: true
   replicas: 1
   serviceAccount:
     create: false
+  image:
+    repository: gcr.io/mirrornode/hedera/hedera-mirror-node/importer
+    tag: ${mirror-node.tag}
+
+labels: {}
+
 loki:
   enabled: false
+
+networkPolicy:
+  enabled: false
+
 postgresql:
+  enabled: true
   metrics:
     enabled: false
+  fullnameOverride: postgresql
+  networkPolicy:
+    allowExternal: false
+    enabled: true
+  persistence:
+    size: 750Gi
   pgpool:
+    adminPassword: password
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/component: pgpool
+    initdbScriptsSecret: pgpool-init
+    podLabels:
+      role: db
+    pdb:
+      create: true
+    priorityClassName: ""
     replicaCount: 1
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+  postgresqlImage:
+    debug: true
+    registry: gcr.io
+    repository: mirrornode/hedera/hedera-mirror-node/postgresql
+    #    tag: 11.7.0
+    pullSecrets: []
   postgresql:
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/component: postgresql
+    initdbScriptsSecret: postgresql-init
+    podLabels:
+      role: db
+    password: password
+    priorityClassName: ""
+    repmgrPassword: password
+    resources:
+      limits:
+        cpu: 1500m
+        memory: 1000Mi
+      requests:
+        cpu: 250m
+        memory: 500Mi
     replicaCount: 1
+  pgpoolImage:
+    registry: gcr.io
+    repository: mirrornode/hedera/hedera-mirror-node/pgpool
+    #    tag: 4.1.1
+    pullSecrets: []
+
 prometheus-adapter:
   enabled: false
+
 prometheus:
   enabled: false
+  grafana:
+    enabled: false
+    ingress:
+      middleware:
+        enabled: false
+
 rest:
+  enabled: true
+  config:
+    hedera:
+      mirror:
+        rest:
+          db:
+            host: postgresql-pgpool
+            password: mirror_api_pass
+            username: mirror_api
+  ingress:
+    middleware:
+      enabled: true
+  priorityClassName: ""
+  serviceMonitor:
+    enabled: true
   hpa:
     enabled: false
-  ingress:
-    enabled: false
-  rbac:
-    enabled: false
-  serviceAccount:
-    create: false
-  serviceMonitor:
-    enabled: false
+    ingress:
+      enabled: false
+    rbac:
+      enabled: false
+    serviceAccount:
+      create: false
+    serviceMonitor:
+      enabled: false
+  image:
+    repository: gcr.io/mirrornode/hedera/hedera-mirror-node/rest
+    tag: ${mirror-node.tag}
+  service:
+    type: LoadBalancer
+
 traefik:
+  enabled: false
+  ports:
+    web:
+
+metrics:
+  image: null
+  exporter:
+    enabled: false
+
+priorityClass:
   enabled: false

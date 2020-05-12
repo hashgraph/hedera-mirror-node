@@ -3,11 +3,13 @@ Hedera Mirror Node {{ .Chart.AppVersion }} successfully installed.
 To get the load balancer IP:
   export SERVICE_IP=$(kubectl get svc -n {{ include "hedera-mirror.namespace" . }} {{ .Values.traefik.fullnameOverride }} -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
 
+{{ if and .Values.traefik.enabled -}}
 To access the GRPC API:
   grpcurl -plaintext ${SERVICE_IP}:{{ .Values.traefik.ports.web.exposedPort }} list
 
 To access the REST API:
   curl -s "http://${SERVICE_IP}:{{ .Values.traefik.ports.web.exposedPort }}/api/v1/transactions?limit=1"
+{{- end -}}
 
 {{ if and .Values.prometheus.enabled .Values.prometheus.grafana.enabled -}}
 To view the Grafana dashboard:

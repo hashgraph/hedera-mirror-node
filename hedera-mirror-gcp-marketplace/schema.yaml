@@ -21,45 +21,43 @@ x-google-marketplace:
   images:
     '': # Importer primary image
       properties:
-        mirrornode.image.repo:
+        mirrornode.image.repository:
           type: REPO_WITH_REGISTRY
         mirrornode.image.tag:
           type: TAG
     grpc:
       properties:
-        grpc.image:
-          type: FULL
+        grpc.image.repository:
+          type: REPO_WITH_REGISTRY
+        grpc.image.tag:
+          type: TAG
     rest:
       properties:
-        rest.image:
-          type: FULL
-    loki-stack:
+        rest.image.repository:
+          type: REPO_WITH_REGISTRY
+        rest.image.tag:
+          type: TAG
+    postgresql:
       properties:
-        loki.stack.image:
-          type: FULL
-    postgresql-ha:
-      properties:
-        postgresql.ha.image:
-          type: FULL
-    prometheus-adapter:
-      properties:
-        prometheus.adapter.image:
-          type: FULL
-    prometheus-operator:
-      properties:
-        prometheus.operator.image:
-          type: FULL
-    traefik:
-      properties:
-        traefik.image:
-          type: FULL
+        postgresql.postgresqlImage.registry:
+          type: REGISTRY
+        postgresql.postgresqlImage.repository:
+          type: REPO_WITHOUT_REGISTRY
+        postgresql.postgresqlImage.tag:
+          type: TAG
+        postgresql.pgpoolImage.registry:
+          type: REGISTRY
+        postgresql.pgpoolImage.repository:
+          type: REPO_WITHOUT_REGISTRY
+        postgresql.pgpoolImage.tag:
+          type: TAG
 
   # Other fields, like clusterConstraints, can be included here.
 
   # The Properties and Required sections of v2 are structured the same as those of v1.
   # IMPORTANT: These IDs must match your listing ID in Marketplace.
-  partnerId: partner
-  solutionId: hedera-mirrorpublishedVersion
+  partnerId: hederaPartnerId
+  solutionId: hederaMirrorSolutionId
 
 properties:
   name:
@@ -80,7 +78,6 @@ properties:
     type: string
     x-google-marketplace:
       type: DEPLOYER_IMAGE
-  # To-do : Add postgres credentials placeholders
 
 required:
   - name

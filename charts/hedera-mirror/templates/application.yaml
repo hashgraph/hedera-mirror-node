@@ -4,12 +4,12 @@ kind: Application
 metadata:
   annotations:
     kubernetes-engine.cloud.google.com/icon: data:image/png;base64,{{ .Files.Get "logo.png" | b64enc }}
-    marketplace.cloud.google.com/deploy-info: |-
-      {
-        partner_id: {{ .Values.applicationResource.partnerId | quote }},
-        partner_name: {{ .Values.applicationResource.partnerName | quote }},
-        product_id: {{ .Values.applicationResource.productId | quote }}
-      }
+    marketplace.cloud.google.com/deploy-info:
+      '{
+        "partner_id": "hederaPartnerId",
+        "partner_name": "partner_name",
+        "product_id": "hederaMirrorSolutionId"
+      }'
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror.fullname" . }}
@@ -20,24 +20,24 @@ spec:
       {{- include "hedera-mirror.selectorLabels" . | nindent 6 }}
   addOwnerRef: true
   componentKinds:
-  - group: v1
-    kind: ConfigMap
-  - group: apps/v1
-    kind: Deployment
-  - group: networking.k8s.io/v1
-    kind: NetworkPolicy
-  - group: v1
-    kind: Pod
-  - group: policy/v1beta1
-    kind: PodDisruptionBudget
-  - apiVersion: scheduling.k8s.io/v1
-    kind: PriorityClass
-  - group: v1
-    kind: Secret
-  - group: v1
-    kind: Service
-  - group: apps/v1
-    kind: StatefulSet
+    - group: v1
+      kind: ConfigMap
+    - group: apps/v1
+      kind: Deployment
+    - group: networking.k8s.io/v1
+      kind: NetworkPolicy
+    - group: v1
+      kind: Pod
+    - group: policy/v1beta1
+      kind: PodDisruptionBudget
+    #    - apiVersion: scheduling.k8s.io/v1
+    #      kind: PriorityClass
+    - group: v1
+      kind: Secret
+    - group: v1
+      kind: Service
+    - group: apps/v1
+      kind: StatefulSet
   descriptor:
     description: Hedera Mirror Node mirrors transaction data from Hedera nodes and serves it via GRPC and REST APIs
     icons:
@@ -50,6 +50,7 @@ spec:
       - hedera
       - hashgraph
       - mirror
+      - hedera
     links:
       - description: Source Repository
         url: https://github.com/hashgraph/hedera-mirror-node
@@ -60,4 +61,4 @@ spec:
         email: mirrornode@hedera.com
     type: hedera-mirror-node
     version: {{ .Chart.AppVersion | quote }}
-{{- end }}
+  {{- end }}

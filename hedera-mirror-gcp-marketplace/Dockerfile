@@ -1,31 +1,24 @@
 FROM gcr.io/cloud-marketplace-tools/k8s/deployer_helm AS build
 
 ## pull in chart, swap values file and archive chart
-ADD chart /tmp/chart
-RUN mv /tmp/chart/values-gcp-marketplace.yaml /tmp/chart/values.yaml
-RUN cd /tmp && tar -czvf /tmp/hedera-mirror.tar.gz chart
+COPY chart /tmp/chart
+#RUN  apt update \
+#    && pip install yq
+#RUN yq m -x /tmp/chart/values.yaml /tmp/chart/values-marketplace.yaml
+RUN cat /tmp/chart/values.yaml
+RUN mv /tmp/chart/values-marketplace.yaml /tmp/chart/values.yaml
+RUN cd /tmp && tar -czvf /tmp/hedera-mirror-node.tar.gz chart/
 
-##ADD apptest/deployer/hedera-mirror /tmp/test/chart
-##RUN cd /tmp/test \
-##    && tar -czvf /tmp/test/hedera-mirror.tar.gz chart/
+COPY schema.yaml /tmp/schema.yaml
 
-ADD schema.yaml /tmp/schema.yaml
-
-ARG REGISTRY
-ARG TAG
+ARG tag
 
 RUN cat /tmp/schema.yaml \
-    | env -i "REGISTRY=$REGISTRY" "TAG=$TAG" envsubst \
+    | env -i "TAG=$tag" envsubst \
     > /tmp/schema.yaml.new \
     && mv /tmp/schema.yaml.new /tmp/schema.yaml
 
-#ADD apptest/deployer/schema.yaml /tmp/apptest/schema.yaml
-#RUN cat /tmp/apptest/schema.yaml \
-#    | env -i "REGISTRY=$REGISTRY" "TAG=$TAG" envsubst \
-#    > /tmp/apptest/schema.yaml.new \
-#    && mv /tmp/apptest/schema.yaml.new /tmp/apptest/schema.yaml
-
-RUN mv /tmp/hedera-mirror.tar.gz /data/chart/
+RUN mv /tmp/hedera-mirror-node.tar.gz /data/chart/
 RUN mv /tmp/schema.yaml /data/schema.yaml
 
-RUN cp /data/schema.yaml /data-test/schema.yaml
+#RUN cp /data/schema.yaml /data-test/schema.yaml
