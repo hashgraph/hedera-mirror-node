@@ -146,7 +146,8 @@ const addAccount = async function (account) {
 const setAccountBalance = async function (account) {
   account = Object.assign({timestamp: 0, realm_num: 0, id: null, balance: 0}, account);
   await sqlConnection.query(
-    'INSERT INTO account_balances (consensus_timestamp, account_realm_num, account_num, balance) VALUES ($1, $2, $3, $4);',
+    `INSERT INTO account_balances (consensus_timestamp, account_realm_num, account_num, balance)
+    VALUES (\$1, \$2, \$3, \$4);`,
     [account.timestamp, account.realm_num, account.id, account.balance]
   );
 };
@@ -170,9 +171,9 @@ const addTransaction = async function (transaction) {
 
   await sqlConnection.query(
     `INSERT INTO t_transactions (
-        consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type,
-        valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash)
-       VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10);`,
+      consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type,
+      valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash)
+    VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10);`,
     [
       transaction.consensus_timestamp.toString(),
       transaction.consensus_timestamp.minus(1).toString(),
@@ -190,7 +191,8 @@ const addTransaction = async function (transaction) {
   for (let i = 0; i < transaction.transfers.length; ++i) {
     let transfer = transaction.transfers[i];
     await sqlConnection.query(
-      'INSERT INTO t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num) VALUES ($1, $2, $3, $4);',
+      `INSERT INTO t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num)
+         VALUES (\$1, \$2, \$3, \$4);`,
       [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
     );
   }
@@ -198,7 +200,7 @@ const addTransaction = async function (transaction) {
   for (let i = 0; i < transaction.non_fee_transfers.length; ++i) {
     let transfer = transaction.non_fee_transfers[i];
     await sqlConnection.query(
-      'INSERT INTO non_fee_transfers (consensus_timestamp, amount, realm_num, entity_num) VALUES ($1, $2, $3, $4);',
+      `INSERT INTO non_fee_transfers (consensus_timestamp, amount, realm_num, entity_num) VALUES (\$1, \$2, \$3, \$4);`,
       [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
     );
   }
@@ -237,9 +239,8 @@ const addTopicMessage = async function (message) {
 
   await sqlConnection.query(
     `INSERT INTO topic_message (
-       consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number,
-       running_hash_version)
-     VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7);`,
+       consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number, running_hash_version)
+    VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7);`,
     [
       message.timestamp,
       message.realm_num,
