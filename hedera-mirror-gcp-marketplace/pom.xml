@@ -40,21 +40,6 @@
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
-                <version>0.31.0</version>
-                <executions>
-                    <execution>
-                        <id>dockerBuild</id>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>dockerPush</id>
-                        <goals>
-                            <goal>push</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <configuration>
                     <images>
                         <image>
@@ -62,11 +47,6 @@
                                 <contextDir>${project.basedir}/</contextDir>
                                 <dockerFile>${project.basedir}/Dockerfile</dockerFile>
                                 <nocache>true</nocache>
-                                <tags>
-                                    <tag>${gmp.track}</tag>
-                                    <tag>${docker.tag.version}</tag>
-                                    <tag>${docker.tag.latest}</tag>
-                                </tags>
                                 <assembly>
                                     <exportTargetDir>false</exportTargetDir>
                                 </assembly>

@@ -18,8 +18,9 @@ x-google-marketplace:
     # fixes a critical issue.
     recommended: false
 
+  # images for subcharts. Primary image is importer
   images:
-    '': # Importer primary image
+    '':
       properties:
         mirrornode.image.repository:
           type: REPO_WITH_REGISTRY
