@@ -4,16 +4,12 @@ kind: Application
 metadata:
   annotations:
     kubernetes-engine.cloud.google.com/icon: data:image/png;base64,{{ .Files.Get "logo.png" | b64enc }}
-    marketplace.cloud.google.com/deploy-info:
-      '{
-        "partner_id": "hederaPartnerId",
-        "partner_name": "partner_name",
-        "product_id": "hederaMirrorSolutionId"
-      }'
+    marketplace.cloud.google.com/deploy-info: '{ "partner_id": "hederaPartnerId", "partner_name": "partner_name", "product_id": "hederaMirrorSolutionId" }'
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
-  name: {{ include "hedera-mirror.fullname" . }}
-  namespace: {{ include "hedera-mirror.namespace" . }}
+    app.kubernetes.io/name: {{ .Release.Name }}
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   selector:
     matchLabels:

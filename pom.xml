@@ -188,6 +188,7 @@
                             <tags>
                                 <tag>${docker.tag.latest}</tag>
                                 <tag>${docker.tag.version}</tag>
+                                <tag>${gmp.track}</tag>
                             </tags>
                         </to>
                         <container>

@@ -42,6 +42,7 @@
                                 <tags>
                                     <tag>${docker.tag.latest}</tag>
                                     <tag>${docker.tag.version}</tag>
+                                    <tag>${gmp.track}</tag>
                                 </tags>
                             </build>
                             <name>${docker.push.repository}/${project.artifactId}</name>

@@ -68,12 +68,6 @@ properties:
     type: string
     x-google-marketplace:
       type: NAMESPACE
-  metrics.exporter.enabled:
-    type: boolean
-    title: Enable Stackdriver Metrics Exporter
-    description: Your GCP project should have Stackdriver enabled. For non-GCP clusters,
-      export of metrics to Stackdriver is not supported yet
-    default: false
   deployer.image:
     type: string
     x-google-marketplace:
@@ -82,5 +76,4 @@ properties:
 required:
   - name
   - namespace
-  - metrics.exporter.enabled
   - deployer.image
