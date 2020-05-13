@@ -234,10 +234,7 @@ const getOneAccount = async (req, res) => {
 
   const creditDebit = utils.parseCreditDebitParams(req);
 
-  const accountQuery =
-    'realm_num = ?\n' +
-    '    and entity_num = ? ' +
-    (creditDebit === 'credit' ? ' and ctl.amount > 0 ' : creditDebit === 'debit' ? ' and ctl.amount < 0 ' : '');
+  const accountQuery = 'realm_num = ? and entity_num = ?';
   const accountParams = [acc.realm, acc.num];
 
   let innerQuery = transactions.getTransactionsInnerQuery(
