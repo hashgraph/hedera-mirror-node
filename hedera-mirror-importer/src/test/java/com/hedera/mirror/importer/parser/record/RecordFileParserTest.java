@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import static com.hedera.mirror.importer.domain.ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH;
-import static com.hedera.mirror.importer.domain.ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -98,10 +97,11 @@ public class RecordFileParserTest {
         file2 = parserProperties.getValidPath().resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
         recordFile1 = new RecordFile(null, file1.getPath(), 0L, 0L,
                 "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                null, 0);
         recordFile2 = new RecordFile(null, file2.getPath(), 0L, 0L,
                 "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
-                recordFile1.getFileHash());
+                recordFile1.getFileHash(), null, 0);
     }
 
     @Test
@@ -110,6 +110,8 @@ public class RecordFileParserTest {
         fileCopier.copy();
 
         // when
+        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("")
+                .thenReturn(recordFile1.getFileHash());
         recordFileParser.parse();
 
         // then
@@ -123,6 +125,8 @@ public class RecordFileParserTest {
         fileCopier.copy();
 
         // when
+        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("")
+                .thenReturn(recordFile1.getFileHash());
         recordFileParser.parse();
 
         // then
@@ -173,9 +177,8 @@ public class RecordFileParserTest {
     @Test
     void bypassHashMismatch() throws Exception {
         // given
+        parserProperties.getMirrorProperties().setVerifyHashAfter("2019-09-01T00:00:00.000000Z.rcd");
         when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
-        when(applicationStatusRepository.findByStatusCode(RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER))
-                .thenReturn("2019-09-01T00:00:00.000000Z.rcd");
         fileCopier.copy();
 
         // when

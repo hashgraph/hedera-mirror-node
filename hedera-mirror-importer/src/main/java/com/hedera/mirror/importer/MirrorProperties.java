@@ -44,6 +44,9 @@ public class MirrorProperties {
     private Path initialAddressBook;
 
     @NotNull
+    private String verifyHashAfter = "";
+
+    @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;
 
     @Min(0)

@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.downloader.balance;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.util.Arrays;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -53,8 +54,8 @@ public class AccountBalancesDownloader extends Downloader {
     }
 
     @Override
-    protected boolean verifyHashChain(File file) {
-        return true;
+    protected boolean verifyDataFile(String filePath, byte[] verifiedHash) {
+        return Arrays.equals(verifiedHash, Utility.getBalanceFileHash(filePath));
     }
 
     @Override
@@ -65,20 +66,5 @@ public class AccountBalancesDownloader extends Downloader {
     @Override
     protected ApplicationStatusCode getLastValidDownloadedFileHashKey() {
         return null;
-    }
-
-    @Override
-    protected ApplicationStatusCode getBypassHashKey() {
-        return null;
-    }
-
-    @Override
-    protected String getPrevFileHash(String filePath) {
-        return null;
-    }
-
-    @Override
-    protected byte[] getDataFileHash(String fileName) {
-        return Utility.getBalanceFileHash(fileName);
     }
 }
