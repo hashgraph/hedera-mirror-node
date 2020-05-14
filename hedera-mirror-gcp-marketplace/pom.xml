@@ -45,7 +45,6 @@
                         <image>
                             <build>
                                 <contextDir>${project.basedir}/</contextDir>
-                                <dockerFile>${project.basedir}/Dockerfile</dockerFile>
                                 <nocache>true</nocache>
                                 <assembly>
                                     <exportTargetDir>false</exportTargetDir>

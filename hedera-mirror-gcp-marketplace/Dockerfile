@@ -28,5 +28,5 @@ RUN cat /tmp/schema.yaml \
 # move chart and schema to expected /data folder structure
 RUN mv /tmp/hedera-mirror-node.tar.gz /data/chart/
 RUN mv /tmp/schema.yaml /data/schema.yaml
-
+RUN rm -r /tmp
 #RUN cp /data/schema.yaml /data-test/schema.yaml
