@@ -19,11 +19,6 @@
  */
 'use strict';
 
-const request = require('supertest');
-const math = require('mathjs');
-const server = require('../server');
-const utils = require('../utils.js');
-
 const checkSql = function (parsedparams, condition) {
   for (const p of parsedparams) {
     if (p.field == condition.field && p.operator == condition.operator && p.value == condition.value) {

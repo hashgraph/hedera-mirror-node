@@ -19,7 +19,6 @@
  */
 'use strict';
 
-const utils = require('../utils');
 const math = require('mathjs');
 
 const NETWORK_FEE = 1;
@@ -122,8 +121,10 @@ const addAccount = async function (account) {
   }
 
   let res = await sqlConnection.query(
-    'insert into t_entities (fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted, ed25519_public_key_hex, auto_renew_period, key) ' +
-      'values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id;',
+    `INSERT INTO t_entities (
+      fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted, ed25519_public_key_hex,
+      auto_renew_period, key)
+    VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9) RETURNING id;`,
     [
       account.entity_type,
       account.entity_shard,
@@ -145,7 +146,8 @@ const addAccount = async function (account) {
 const setAccountBalance = async function (account) {
   account = Object.assign({timestamp: 0, realm_num: 0, id: null, balance: 0}, account);
   await sqlConnection.query(
-    'insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) values ($1, $2, $3, $4);',
+    `INSERT INTO account_balances (consensus_timestamp, account_realm_num, account_num, balance)
+    VALUES (\$1, \$2, \$3, \$4);`,
     [account.timestamp, account.realm_num, account.id, account.balance]
   );
 };
@@ -160,6 +162,7 @@ const addTransaction = async function (transaction) {
       transfers: [],
       non_fee_transfers: [],
       charged_tx_fee: NODE_FEE + NETWORK_FEE + SERVICE_FEE,
+      transaction_hash: 'hash',
     },
     transaction
   );
@@ -167,7 +170,10 @@ const addTransaction = async function (transaction) {
   transaction.consensus_timestamp = math.bignumber(transaction.consensus_timestamp);
 
   await sqlConnection.query(
-    'insert into t_transactions (consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type, valid_duration_seconds, max_fee, charged_tx_fee) values ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
+    `INSERT INTO t_transactions (
+      consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type,
+      valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash)
+    VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10);`,
     [
       transaction.consensus_timestamp.toString(),
       transaction.consensus_timestamp.minus(1).toString(),
@@ -178,13 +184,15 @@ const addTransaction = async function (transaction) {
       transaction.valid_duration_seconds,
       transaction.max_fee,
       transaction.charged_tx_fee,
+      transaction.transaction_hash,
     ]
   );
 
   for (let i = 0; i < transaction.transfers.length; ++i) {
     let transfer = transaction.transfers[i];
     await sqlConnection.query(
-      'insert into t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
+      `INSERT INTO t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num)
+         VALUES (\$1, \$2, \$3, \$4);`,
       [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
     );
   }
@@ -192,7 +200,7 @@ const addTransaction = async function (transaction) {
   for (let i = 0; i < transaction.non_fee_transfers.length; ++i) {
     let transfer = transaction.non_fee_transfers[i];
     await sqlConnection.query(
-      'insert into non_fee_transfers (consensus_timestamp, amount, realm_num, entity_num) values ($1, $2, $3, $4);',
+      `INSERT INTO non_fee_transfers (consensus_timestamp, amount, realm_num, entity_num) VALUES (\$1, \$2, \$3, \$4);`,
       [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
     );
   }
@@ -230,7 +238,9 @@ const addTopicMessage = async function (message) {
   );
 
   await sqlConnection.query(
-    'insert into topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number, running_hash_version) values ($1, $2, $3, $4, $5, $6, $7);',
+    `INSERT INTO topic_message (
+       consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number, running_hash_version)
+    VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7);`,
     [
       message.timestamp,
       message.realm_num,

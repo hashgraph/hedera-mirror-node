@@ -242,7 +242,7 @@ ij_java_wrap_comments = true
 ij_java_wrap_long_lines = true
 
 [*.js]
-ij_continuation_indent_size = 4
+ij_continuation_indent_size = 2
 ij_javascript_align_imports = false
 ij_javascript_align_multiline_array_initializer_expression = false
 ij_javascript_align_multiline_binary_operation = false

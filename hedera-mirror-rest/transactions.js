@@ -25,6 +25,23 @@ const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
+const selectClause = `SELECT etrans.entity_shard, etrans.entity_realm, etrans.entity_num,
+       t.memo,
+       t.consensus_ns,
+       t.valid_start_ns,
+       coalesce(ttr.result, 'UNKNOWN') AS result,
+       coalesce(ttt.name, 'UNKNOWN') AS name,
+       t.fk_node_acc_id,
+       enode.entity_realm AS node_realm,
+       enode.entity_num AS node_num,
+       ctl.realm_num AS account_realm,
+       ctl.entity_num AS account_num,
+       ctl.amount,
+       t.charged_tx_fee,
+       t.valid_duration_seconds,
+       t.max_fee,
+       t.transaction_hash\n`;
+
 /**
  * Create transferlists from the output of SQL queries. The SQL table has different
  * rows for each of the transfers in a single transaction. This function collates all
@@ -45,6 +62,7 @@ const createTransferLists = function (rows, arr) {
       var validStartTimestamp = row.valid_start_ns;
       transactions[row.consensus_ns] = {};
       transactions[row.consensus_ns]['consensus_timestamp'] = utils.nsToSecNs(row['consensus_ns']);
+      transactions[row.consensus_ns]['transaction_hash'] = utils.encodeBase64(row['transaction_hash']);
       transactions[row.consensus_ns]['valid_start_timestamp'] = utils.nsToSecNs(validStartTimestamp);
       transactions[row.consensus_ns]['charged_tx_fee'] = Number(row['charged_tx_fee']);
       transactions[row.consensus_ns]['id'] = row['id'];
@@ -93,36 +111,17 @@ const createTransferLists = function (rows, arr) {
  * @return {String} outerQuery Fully formed SQL query
  */
 const getTransactionsOuterQuery = function (innerQuery, order) {
-  let outerQuery =
-    'select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n' +
-    '   , t.memo\n' +
-    '	, t.consensus_ns\n' +
-    '   , valid_start_ns\n' +
-    "   , coalesce(ttr.result, 'UNKNOWN') as result\n" +
-    "   , coalesce(ttt.name, 'UNKNOWN') as name\n" +
-    '   , t.fk_node_acc_id\n' +
-    '   , enode.entity_realm as node_realm\n' +
-    '   , enode.entity_num as node_num\n' +
-    '   , ctl.realm_num as account_realm\n' +
-    '   , ctl.entity_num as account_num\n' +
-    '   , amount\n' +
-    '   , t.charged_tx_fee\n' +
-    '   , t.valid_duration_seconds\n' +
-    '   , t.max_fee\n' +
-    ' from (' +
-    innerQuery +
-    ') as tlist\n' +
-    '   join t_transactions t on tlist.consensus_timestamp = t.consensus_ns\n' +
-    '   left outer join t_transaction_results ttr on ttr.proto_id = t.result\n' +
-    '   join t_entities enode on enode.id = t.fk_node_acc_id\n' +
-    '   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n' +
-    '   left outer join t_transaction_types ttt on ttt.proto_id = t.type\n' +
-    '   join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl.consensus_timestamp\n' +
-    '   order by t.consensus_ns ' +
-    order +
-    ', account_num asc, amount asc ' +
-    '\n';
-  return outerQuery;
+  return (
+    selectClause +
+    `FROM ( ${innerQuery} ) AS tlist
+       JOIN t_transactions t ON tlist.consensus_timestamp = t.consensus_ns
+       LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
+       JOIN t_entities enode ON enode.id = t.fk_node_acc_id
+       JOIN t_entities etrans ON etrans.id = t.fk_payer_acc_id
+       LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
+       JOIN t_cryptotransferlists ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
+     ORDER BY t.consensus_ns ${order} , account_num ASC, amount ASC`
+  );
 };
 
 /**
@@ -141,23 +140,23 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
  * @return {String} innerQuery SQL query that filters transactions based on various types of queries
  */
 const getTransactionsInnerQuery = function (accountQuery, tsQuery, resultTypeQuery, limitQuery, creditDebit, order) {
-  let innerQuery =
-    '      select distinct ctl.consensus_timestamp\n' +
-    '       from t_cryptotransferlists ctl\n' +
-    '       join t_transactions t on t.consensus_ns = ctl.consensus_timestamp\n' +
-    '       where ';
+  let innerQuery = `
+       SELECT DISTINCT ctl.consensus_timestamp
+       FROM t_cryptotransferlists ctl
+       JOIN t_transactions t ON t.consensus_ns = ctl.consensus_timestamp
+       WHERE `;
   if (accountQuery) {
     innerQuery += accountQuery; // Max limit on the inner query.
   } else {
     innerQuery += '1=1\n';
   }
-  innerQuery += 'and ' + [tsQuery, resultTypeQuery].map((q) => (q === '' ? '1=1' : q)).join(' and ');
+  innerQuery += ' AND ' + [tsQuery, resultTypeQuery].map((q) => (q === '' ? '1=1' : q)).join(' AND ');
   if ('credit' === creditDebit) {
-    innerQuery += ' and ctl.amount > 0 ';
+    innerQuery += ' AND ctl.amount > 0 ';
   } else if ('debit' === creditDebit) {
-    innerQuery += ' and ctl.amount < 0 ';
+    innerQuery += ' AND ctl.amount < 0 ';
   }
-  innerQuery += '   order by ctl.consensus_timestamp ' + order + '\n' + limitQuery;
+  innerQuery += ' ORDER BY ctl.consensus_timestamp ' + order + '\n' + limitQuery;
   return innerQuery;
 };
 
@@ -272,33 +271,18 @@ const getOneTransaction = async (req, res) => {
   const sqlParams = [txIdMatches[1], txIdMatches[2], txIdMatches[3], txIdMatches[4] + '' + txIdMatches[5]];
 
   let sqlQuery =
-    'select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n' +
-    '   , t.memo\n' +
-    '	, t.consensus_ns\n' +
-    '   , valid_start_ns\n' +
-    "   , coalesce(ttr.result, 'UNKNOWN') as result\n" +
-    "   , coalesce(ttt.name, 'UNKNOWN') as name\n" +
-    '   , t.fk_node_acc_id\n' +
-    '   , enode.entity_shard as node_shard\n' +
-    '   , enode.entity_realm as node_realm\n' +
-    '   , enode.entity_num as node_num\n' +
-    '   , ctl.realm_num as account_realm\n' +
-    '   , ctl.entity_num as account_num\n' +
-    '   , amount\n' +
-    '   , charged_tx_fee\n' +
-    '   , valid_duration_seconds\n' +
-    '   , max_fee\n' +
-    ' from t_transactions t\n' +
-    '   join t_transaction_results ttr on ttr.proto_id = t.result\n' +
-    '   join t_entities enode on enode.id = t.fk_node_acc_id\n' +
-    '   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n' +
-    '   join t_transaction_types ttt on ttt.proto_id = t.type\n' +
-    '   join t_cryptotransferlists ctl on  ctl.consensus_timestamp = t.consensus_ns\n' +
-    ' where etrans.entity_shard = ?\n' +
-    '   and  etrans.entity_realm = ?\n' +
-    '   and  etrans.entity_num = ?\n' +
-    '   and  t.valid_start_ns = ?\n' +
-    ' order by consensus_ns asc, account_num asc, amount asc'; // In case of duplicate transactions, only the first succeeds
+    selectClause +
+    `FROM t_transactions t
+       JOIN t_transaction_results ttr ON ttr.proto_id = t.result
+       JOIN t_entities enode ON enode.id = t.fk_node_acc_id
+       JOIN t_entities etrans ON etrans.id = t.fk_payer_acc_id
+       JOIN t_transaction_types ttt ON ttt.proto_id = t.type
+       JOIN t_cryptotransferlists ctl ON  ctl.consensus_timestamp = t.consensus_ns
+     WHERE etrans.entity_shard = ?
+       AND  etrans.entity_realm = ?
+       AND  etrans.entity_num = ?
+       AND  t.valid_start_ns = ?
+     ORDER BY consensus_ns ASC, account_num ASC, amount ASC`; // In case of duplicate transactions, only the first succeeds
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
   if (logger.isTraceEnabled()) {
