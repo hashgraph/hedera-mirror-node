@@ -33,7 +33,6 @@
     <modules>
         <module>hedera-mirror-coverage</module>
         <module>hedera-mirror-datagenerator</module>
-        <module>hedera-mirror-gcp-marketplace</module>
         <module>hedera-mirror-grpc</module>
         <module>hedera-mirror-importer</module>
         <module>hedera-mirror-protobuf</module>
@@ -312,6 +311,10 @@
                                         <tag>${docker.tag.version}</tag>
                                         <tag>${gmp.track}</tag>
                                     </tags>
+                                    <assembly>
+                                        <exportTargetDir>false</exportTargetDir>
+                                    </assembly>
+                                    <noCache>true</noCache>
                                 </build>
                             </image>
                         </images>
@@ -329,6 +332,25 @@
                     <injectAllReactorProjects>true</injectAllReactorProjects>
                     <runOnlyOnce>true</runOnlyOnce>
                     <skipPoms>false</skipPoms>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <inherited>false</inherited>
+                <configuration>
+                    <images>
+                        <image>
+                            <build>
+                                <contextDir>${project.basedir}/charts</contextDir>
+                                <dockerFile>${project.basedir}/charts/marketplace/gcp/Dockerfile</dockerFile>
+                                <args>
+                                    <tag>${docker.tag.version}</tag>
+                                </args>
+                            </build>
+                            <name>${docker.push.repository}/hedera-mirror-node/deployer</name>
+                        </image>
+                    </images>
                 </configuration>
             </plugin>
         </plugins>

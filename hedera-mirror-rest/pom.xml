@@ -20,23 +20,12 @@
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
                 <version>${docker-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>dockerBuild</id>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>dockerPush</id>
-                        <goals>
-                            <goal>push</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <configuration>
                     <images>
                         <image>
+                            <build>
+                                <contextDir>${project.basedir}/</contextDir>
+                            </build>
                             <name>${docker.push.repository}/${project.artifactId}</name>
                         </image>
                     </images>

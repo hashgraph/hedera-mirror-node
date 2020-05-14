@@ -1,7 +1,7 @@
 FROM gcr.io/cloud-marketplace-tools/k8s/deployer_helm AS build
 
 ## pull in chart
-COPY chart /tmp/chart
+COPY hedera-mirror /tmp/chart
 
 # get yq and merge values files
 RUN apt-get update \
@@ -19,7 +19,7 @@ RUN cd /tmp && tar -czvf /tmp/hedera-mirror-node.tar.gz chart/
 
 # Pull in and update schema for marketplace deployer
 ARG tag
-COPY schema.yaml /tmp/schema.yaml
+COPY marketplace/gcp/schema.yaml /tmp/schema.yaml
 RUN cat /tmp/schema.yaml \
     | env -i "TAG=$tag" envsubst \
     > /tmp/schema.yaml.new \
