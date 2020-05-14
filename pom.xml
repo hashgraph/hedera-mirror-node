@@ -306,6 +306,7 @@
                         <images>
                             <image>
                                 <build>
+                                    <contextDir>${project.basedir}</contextDir>
                                     <tags>
                                         <tag>${docker.tag.latest}</tag>
                                         <tag>${docker.tag.version}</tag>
@@ -316,6 +317,7 @@
                                     </assembly>
                                     <noCache>true</noCache>
                                 </build>
+                                <name>${docker.push.repository}/${project.artifactId}</name>
                             </image>
                         </images>
                     </configuration>

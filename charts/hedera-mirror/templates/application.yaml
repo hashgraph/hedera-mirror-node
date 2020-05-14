@@ -9,7 +9,7 @@ metadata:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
     app.kubernetes.io/name: {{ .Release.Name }}
   name: {{ .Release.Name }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ include "hedera-mirror.namespace" . }}
 spec:
   selector:
     matchLabels:

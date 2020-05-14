@@ -151,6 +151,9 @@ postgresql:
         cpu: 250m
         memory: 500Mi
 
+priorityClass:
+  enabled: true
+
 prometheus-adapter:
   enabled: true
   fullnameOverride: prometheus-adapter
@@ -350,6 +353,3 @@ traefik:
     - name: traefik
       mountPath: /etc/traefik/
       type: configMap
-
-priorityClass:
-  enabled: true

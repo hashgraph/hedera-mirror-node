@@ -49,12 +49,7 @@ importer:
     repository: gcr.io/mirrornode/hedera-mirror-node/importer
     <<: *versiontag
 
-labels: {}
-
 loki:
-  enabled: false
-
-networkPolicy:
   enabled: false
 
 postgresql:
@@ -63,6 +58,8 @@ postgresql:
   pgpool:
     priorityClassName: ""
     replicaCount: 1
+    adminUsername: admin
+    adminPassword:
   postgresqlImage:
     registry: gcr.io
     repository: mirrornode/hedera-mirror-node/postgresql
@@ -71,11 +68,35 @@ postgresql:
   postgresql:
     priorityClassName: ""
     replicaCount: 1
+    username: mirror_node
+    password: mirror_node_pass
+    database: mirror_node
+    repmgrUsername: mirror_node
+    repmgrPassword: mirror_node_pass
   pgpoolImage:
     registry: gcr.io
     repository: mirrornode/hedera-mirror-node/pgpool
     <<: *tracktag
     pullSecrets: []
+  db:
+    password: mirror_node_pass
+    name: mirror_node
+    user: mirror_node
+  global:
+    postgresql:
+      username: mirror_node
+      password: mirror_node_pass
+      database: mirror_node
+      repmgrUsername: mirror_node
+      repmgrPassword: mirror_node_pass
+  username: mirror_node
+  password: mirror_node_pass
+  database: mirror_node
+  repmgrUsername: mirror_node
+  repmgrPassword: mirror_node_pass
+postgresdb: "mirror_node"
+postgresuser: "mirror_node"
+postgrespass: "mirror_node_pass"
 
 prometheus-adapter:
   enabled: false
