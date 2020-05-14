@@ -26,8 +26,6 @@ spec:
       kind: Pod
     - group: policy/v1beta1
       kind: PodDisruptionBudget
-    #    - apiVersion: scheduling.k8s.io/v1
-    #      kind: PriorityClass
     - group: v1
       kind: Secret
     - group: v1
@@ -46,7 +44,6 @@ spec:
       - hedera
       - hashgraph
       - mirror
-      - hedera
     links:
       - description: Source Repository
         url: https://github.com/hashgraph/hedera-mirror-node

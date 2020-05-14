@@ -22,14 +22,14 @@ grpc:
   priorityClassName: ""
   hpa:
     enabled: false
-    ingress:
-      enabled: false
-    rbac:
-      enabled: false
-    serviceAccount:
-      create: false
-    serviceMonitor:
-      enabled: false
+  ingress:
+    enabled: false
+  rbac:
+    enabled: false
+  serviceAccount:
+    create: false
+  serviceMonitor:
+    enabled: false
   image:
     repository: gcr.io/mirrornode/hedera-mirror-node/grpc
     <<: *versiontag
@@ -41,7 +41,7 @@ importer:
     enabled: false
   priorityClassName: ""
   rbac:
-    enabled: true
+    enabled: false
   replicas: 1
   serviceAccount:
     create: false
@@ -92,14 +92,14 @@ rest:
   priorityClassName: ""
   hpa:
     enabled: false
-    ingress:
-      enabled: false
-    rbac:
-      enabled: false
-    serviceAccount:
-      create: false
-    serviceMonitor:
-      enabled: false
+  ingress:
+    enabled: false
+  rbac:
+    enabled: false
+  serviceAccount:
+    create: false
+  serviceMonitor:
+    enabled: false
   image:
     repository: gcr.io/mirrornode/hedera-mirror-node/rest
     <<: *versiontag

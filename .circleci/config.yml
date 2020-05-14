@@ -194,7 +194,6 @@ workflows:
             branches:
               only:
                 - master
-                - helm-deployer-image
             tags:
               only: /^.*/
       - perf_maven:
