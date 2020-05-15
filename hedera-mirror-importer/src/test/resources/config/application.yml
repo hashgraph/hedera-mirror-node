@@ -20,7 +20,6 @@ hedera:
           pubsub:
             topicName: testTopic
       network: TESTNET
-      topicRunningHashV2AddedTimestamp: 0 # Zero since tests use clean db with no data.
 
 spring:
   task:
