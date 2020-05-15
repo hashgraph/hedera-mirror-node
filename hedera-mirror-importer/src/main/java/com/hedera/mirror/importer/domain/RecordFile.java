@@ -41,6 +41,10 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @Table(name = "t_record_files")
 public class RecordFile {
 
+    private Long consensusStart;
+
+    private Long consensusEnd;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
