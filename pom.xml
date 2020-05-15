@@ -59,7 +59,6 @@
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${project.version}</docker.tag.version>
         <docker.tag.latest>latest</docker.tag.latest>
-        <docker.tag.minor>0.11</docker.tag.minor>
         <grpc.version>1.29.0</grpc.version>
         <hedera-protobuf.version>0.4.2</hedera-protobuf.version>
         <hedera-sdk.version>1.1.5</hedera-sdk.version>
@@ -182,11 +181,9 @@
                             </paths>
                         </extraDirectories>
                         <to>
-                            <image>${docker.push.repository}/${project.artifactId}</image>
+                            <image>${docker.push.repository}/${project.artifactId}:${docker.tag.version}</image>
                             <tags>
                                 <tag>${docker.tag.latest}</tag>
-                                <tag>${docker.tag.version}</tag>
-                                <tag>${docker.tag.minor}</tag>
                             </tags>
                         </to>
                         <container>
@@ -307,17 +304,12 @@
                             <image>
                                 <build>
                                     <contextDir>${project.basedir}</contextDir>
-                                    <tags>
-                                        <tag>${docker.tag.latest}</tag>
-                                        <tag>${docker.tag.version}</tag>
-                                        <tag>${docker.tag.minor}</tag>
-                                    </tags>
                                     <assembly>
                                         <exportTargetDir>false</exportTargetDir>
                                     </assembly>
                                     <noCache>true</noCache>
                                 </build>
-                                <name>${docker.push.repository}/${project.artifactId}</name>
+                                <name>${docker.push.repository}/${project.artifactId}:${docker.tag.version}</name>
                             </image>
                         </images>
                     </configuration>
@@ -350,7 +342,7 @@
                                     <tag>${docker.tag.version}</tag>
                                 </args>
                             </build>
-                            <name>${docker.push.repository}/hedera-mirror-node/deployer</name>
+                            <name>${docker.push.repository}/hedera-mirror-node/deployer:${docker.tag.version}</name>
                         </image>
                     </images>
                 </configuration>

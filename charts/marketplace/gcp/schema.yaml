@@ -22,9 +22,9 @@ x-google-marketplace:
   images:
     '':
       properties:
-        importer.image.repository:
+        mirrornode.image.repository:
           type: REPO_WITH_REGISTRY
-        importer.image.tag:
+        mirrornode.image.tag:
           type: TAG
     grpc:
       properties:
@@ -73,8 +73,60 @@ properties:
     type: string
     x-google-marketplace:
       type: DEPLOYER_IMAGE
+  grpc.config.hedera.mirror.grpc.db.password:
+    type: string
+    default: ''
+    description: The grpc user password
+    title: grpc user password
+    x-google-marketplace:
+      type: MASKED_FIELD
+  grpc.replicas:
+    type: integer
+    default: 1
+    description: Number of grpc node replicas
+    title: gRPC replicas
+    minimun: 1
+    maximum: 10
+  importer.config.hedera.mirror.importer.db.password:
+    type: string
+    default: ''
+    description: The importer user password
+    title: importer user password
+    x-google-marketplace:
+      type: MASKED_FIELD
+  importer.replicas:
+    type: integer
+    default: 2
+    description: Number of importer node replicas
+    title: importer replicas
+    minimun: 2
+    maximum: 10
+  postgres.pgpool.replicaCount:
+    type: integer
+    default: 1
+    description: Number of postgres node replicas
+    title: pgpool replicas
+    minimun: 1
+    maximum: 10
+  rest.config.hedera.mirror.rest.db.password:
+    type: string
+    default: ''
+    description: The rest user password
+    title: rest user password
+    x-google-marketplace:
+      type: MASKED_FIELD
+  rest.replicas:
+    type: integer
+    default: 1
+    description: Number of rest api node replicas
+    title: rest replicas
+    minimun: 1
+    maximum: 10
 
 required:
   - name
   - namespace
   - deployer.image
+  - grpc.config.hedera.mirror.grpc.db.password
+  - importer.config.hedera.mirror.importer.db.password
+  - rest.config.hedera.mirror.rest.db.password
