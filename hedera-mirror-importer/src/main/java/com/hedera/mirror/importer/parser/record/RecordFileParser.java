@@ -120,9 +120,8 @@ public class RecordFileParser implements FileParser {
                     log.trace("Transaction = {}, Record = {}",
                             Utility.printProtoMessage(recordItem.getTransaction()),
                             Utility.printProtoMessage(recordItem.getRecord()));
-                } else {
-                    log.debug("Storing transaction with consensus timestamp {}", () ->
-                            Utility.printProtoMessage(recordItem.getRecord().getConsensusTimestamp()));
+                } else if (log.isDebugEnabled()) {
+                    log.debug("Storing transaction with consensus timestamp {}", recordItem.getConsensusTimestamp());
                 }
                 recordItemListener.onItem(recordItem);
 

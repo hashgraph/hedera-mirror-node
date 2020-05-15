@@ -42,7 +42,6 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.ArrayList;
 import javax.annotation.Nullable;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
@@ -131,7 +130,6 @@ public class Utility {
     public static RecordFile parseRecordFile(String filename, boolean parseRecordItems) {
         RecordFile recordFile = new RecordFile();
         recordFile.setName(filename);
-        recordFile.setRecordItems(new ArrayList<>());
 
         try (DataInputStream dis = new DataInputStream(new FileInputStream(filename))) {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);

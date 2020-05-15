@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -61,7 +62,7 @@ public class RecordFile {
     private String previousHash;
 
     @Transient
-    private List<RecordItem> recordItems;
+    private List<RecordItem> recordItems = new ArrayList<>();
 
     @Transient
     private int recordFormatVersion;

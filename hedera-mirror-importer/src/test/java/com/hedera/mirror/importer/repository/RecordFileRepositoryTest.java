@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import java.util.ArrayList;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +30,8 @@ public class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-        RecordFile recordFile = new RecordFile(0L, 0L, null, "fileName", 20L, 30L, "fileHash", "previousHash", null, 0);
+        RecordFile recordFile = new RecordFile(0L, 0L, null, "fileName", 20L, 30L, "fileHash", "previousHash",
+                new ArrayList<>(), 0);
         recordFile = recordFileRepository.save(recordFile);
         Assertions.assertThat(recordFileRepository.findById(recordFile.getId()).get())
                 .isNotNull()
