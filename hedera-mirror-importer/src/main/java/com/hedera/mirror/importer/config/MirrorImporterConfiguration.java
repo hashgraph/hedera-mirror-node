@@ -116,11 +116,7 @@ public class MirrorImporterConfiguration {
             Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
             if (timestamp == null) {
                 if (mirrorProperties.getNetwork() == HederaNetwork.MAINNET) {
-                    throw new IllegalArgumentException("topicRunningHashV2AddedTimestamp is unknown for MAINNET. To " +
-                            "circumvent this error in local/test setup, override " +
-                            "hedera.mirror.importer.topicRunningHashV2AddedTimestamp to 0 in your config. NOTE: " +
-                            "highly discouraged for production setup unless you know what you are doing.");
-                    // TODO: after R5 mainnet release, set correct value here.
+                    timestamp = 1590080400000000000L;
                 } else {
                     timestamp = 1588706343553042000L;
                 }
