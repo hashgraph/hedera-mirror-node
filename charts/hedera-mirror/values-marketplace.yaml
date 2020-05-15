@@ -4,19 +4,9 @@ applicationResource:
   partnerName: partner_name
   projectId: hederaMirrorSolutionId
 
-track-tag: &tracktag
-  tag: 0.11.0
-
-version-tag: &versiontag
-  tag: 0.11.0-rc1
-
-mirrornode:
-  image:
-    repository: gcr.io/mirrornode/hedera-mirror-node
-    <<: *versiontag
-
 deployer:
-  image: gcr.io/mirrornode/hedera-mirror-node/deployer:0.11.0
+  image:
+    repository: gcr.io/mirrornode/hedera-mirror-node/deployer
 
 grpc:
   priorityClassName: ""
@@ -32,7 +22,6 @@ grpc:
     enabled: false
   image:
     repository: gcr.io/mirrornode/hedera-mirror-node/grpc
-    <<: *versiontag
   service:
     type: LoadBalancer
 
@@ -47,7 +36,6 @@ importer:
     create: false
   image:
     repository: gcr.io/mirrornode/hedera-mirror-node/importer
-    <<: *versiontag
 
 loki:
   enabled: false
@@ -58,56 +46,24 @@ postgresql:
   pgpool:
     priorityClassName: ""
     replicaCount: 1
-    adminUsername: admin
-    adminPassword:
   postgresqlImage:
     registry: gcr.io
     repository: mirrornode/hedera-mirror-node/postgresql
-    <<: *tracktag
-    pullSecrets: []
   postgresql:
     priorityClassName: ""
     replicaCount: 1
-    username: mirror_node
-    password: mirror_node_pass
-    database: mirror_node
-    repmgrUsername: mirror_node
-    repmgrPassword: mirror_node_pass
   pgpoolImage:
     registry: gcr.io
     repository: mirrornode/hedera-mirror-node/pgpool
-    <<: *tracktag
-    pullSecrets: []
-  db:
-    password: mirror_node_pass
-    name: mirror_node
-    user: mirror_node
-  global:
-    postgresql:
-      username: mirror_node
-      password: mirror_node_pass
-      database: mirror_node
-      repmgrUsername: mirror_node
-      repmgrPassword: mirror_node_pass
-  username: mirror_node
-  password: mirror_node_pass
-  database: mirror_node
-  repmgrUsername: mirror_node
-  repmgrPassword: mirror_node_pass
-postgresdb: "mirror_node"
-postgresuser: "mirror_node"
-postgrespass: "mirror_node_pass"
+
+priorityClass:
+  enabled: false
 
 prometheus-adapter:
   enabled: false
 
 prometheus:
   enabled: false
-  grafana:
-    enabled: false
-    ingress:
-      middleware:
-        enabled: false
 
 rest:
   priorityClassName: ""
@@ -123,19 +79,8 @@ rest:
     enabled: false
   image:
     repository: gcr.io/mirrornode/hedera-mirror-node/rest
-    <<: *versiontag
   service:
     type: LoadBalancer
 
 traefik:
-  enabled: false
-  ports:
-    web:
-
-metrics:
-  image: null
-  exporter:
-    enabled: false
-
-priorityClass:
   enabled: false

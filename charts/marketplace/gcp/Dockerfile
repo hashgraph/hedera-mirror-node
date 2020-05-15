@@ -1,21 +1,15 @@
-FROM gcr.io/cloud-marketplace-tools/k8s/deployer_helm AS build
+FROM ubuntu:19.10 AS build
 
 ## pull in chart
 COPY hedera-mirror /tmp/chart
 
 # get yq and merge values files
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends software-properties-common \
-    && add-apt-repository ppa:rmescandon/yq
-RUN apt update && apt install -y --no-install-recommends yq
-RUN yq m -x /tmp/chart/values.yaml /tmp/chart/values-marketplace.yaml > /tmp/chart/values-merged.yaml
+    && apt-get install -y software-properties-common \
+    && add-apt-repository ppa:rmescandon/yq \
+    && apt-get install -y --no-install-recommends yq gettext-base
 
-# helm template to render and verify templates
-RUN helm template /tmp/chart -f /tmp/chart/values-merged.yaml
-
-# overwrite values file and archive
-RUN mv /tmp/chart/values-merged.yaml /tmp/chart/values.yaml
-RUN cd /tmp && tar -czvf /tmp/hedera-mirror-node.tar.gz chart/
+RUN yq m -i --overwrite /tmp/chart/values.yaml /tmp/chart/values-marketplace.yaml
 
 # Pull in and update schema for marketplace deployer
 ARG tag
@@ -25,8 +19,16 @@ RUN cat /tmp/schema.yaml \
     > /tmp/schema.yaml.new \
     && mv /tmp/schema.yaml.new /tmp/schema.yaml
 
+# Setup marketplace structure on helm deployer image base
+FROM gcr.io/cloud-marketplace-tools/k8s/deployer_helm
+COPY --from=build /tmp/ .
+
+# helm template to render and verify templates
+RUN helm template chart -f chart/values.yaml
+RUN tar -czvf hedera-mirror-node.tar.gz chart/
+
 # move chart and schema to expected /data folder structure
-RUN mv /tmp/hedera-mirror-node.tar.gz /data/chart/
-RUN mv /tmp/schema.yaml /data/schema.yaml
-RUN rm -r /tmp
+RUN mv hedera-mirror-node.tar.gz /data/chart/
+RUN mv schema.yaml /data/schema.yaml
+RUN rm -r chart/
 #RUN cp /data/schema.yaml /data-test/schema.yaml

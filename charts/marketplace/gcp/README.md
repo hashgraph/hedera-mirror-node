@@ -15,6 +15,7 @@ The module takes in the wrapper hedera-mirror Helm chart and bundles it into the
 - [docker](https://docs.docker.com/install/)
 - [helm](https://helm.sh/docs/using_helm/#installing-helm)
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- [mpdev](https://github.com/GoogleCloudPlatform/marketplace-k8s-app-tools/blob/master/docs/mpdev-references.md)
 
 ### Kubernetes Setup
 TBD

@@ -7,7 +7,7 @@ x-google-marketplace:
   publishedVersion: "$TAG"
   publishedVersionMetadata:
     releaseNote: >-
-      A mirror-node update.
+      Initial release of the Hedera Mirror Node
     # releaseTypes list is optional. Feature | BugFix | Security
     # "Security" should only be used if this is an important update to patch
     # an existing vulnerability, as such updates will display more prominently for users.
@@ -22,9 +22,9 @@ x-google-marketplace:
   images:
     '':
       properties:
-        mirrornode.image.repository:
+        importer.image.repository:
           type: REPO_WITH_REGISTRY
-        mirrornode.image.tag:
+        importer.image.tag:
           type: TAG
     grpc:
       properties:
