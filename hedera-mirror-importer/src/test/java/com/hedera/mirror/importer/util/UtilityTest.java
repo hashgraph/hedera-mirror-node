@@ -214,4 +214,27 @@ public class UtilityTest {
             Utility.timeStampInNanos(timestamp);
         });
     }
+
+    @ParameterizedTest(name = "verifyHashChain {5}")
+    @CsvSource({
+            "'', '', '', 2000-01-01T10_00_00.000000.rcd, true, passes if both hashes are empty",
+            "xx, '', '', 2000-01-01T10_00_00.000000.rcd, true, " +
+                    " passes if hash mismatch and expected hash is empty", // starting stream in middle
+            "'', xx, '', 2000-01-01T10_00_00.000000.rcd, false," +
+                    " fails if hash mismatch and actual hash is empty", // bad db state
+            "xx, yy, '', 2000-01-01T10_00_00.000000.rcd, false, fails if hash mismatch and hashes are non-empty",
+            "xx, yy, 2000-01-02T10_00_00.000001.rcd, 2000-01-01T10_00_00.000000.rcd, true," +
+                    " passes if hash mismatch but verifyHashAfter is after filename",
+            "xx, yy, 2000-01-01T10_00_00.000000.rcd, 2000-01-01T10_00_00.000000.rcd, true," +
+                    " passes if hash mismatch but verifyHashAfter is same as filename",
+            "xx, yy, 2000-01-01T09_59_59.999999.rcd, 2000-01-01T10_00_00.000000.rcd, false," +
+                    " fails if hash mismatch and verifyHashAfter is before filename",
+            "xx, xx, '', 2000-01-01T10_00_00.000000.rcd, true, passes if hashes are equal"
+    })
+    public void testVerifyHashChain(String actualPrevFileHash, String expectedPrevFileHash, String verifyHashAfter,
+                                    String fileName, Boolean expectedResult, String testName) {
+        assertThat(Utility.verifyHashChain(actualPrevFileHash, expectedPrevFileHash, verifyHashAfter, fileName))
+                .isEqualTo(expectedResult);
+    }
 }
+

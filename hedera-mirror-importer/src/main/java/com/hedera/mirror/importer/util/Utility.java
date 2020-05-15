@@ -461,9 +461,17 @@ public class Utility {
         return TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
     }
 
+    /**
+     * Helps verify chaining for files in a stream.
+     * @param actualPrevFileHash prevFileHash as read from current file
+     * @param expectedPrevFileHash hash of last file from application state
+     * @param verifyHashAfter Point in time. Only the files created after (not including) this point are verified for
+     *                        hash chaining. If empty, all files are checked.
+     * @param fileName name of current stream file being verified
+     * @return true if verification succeeds, else false
+     */
     public static boolean verifyHashChain(
             String actualPrevFileHash, String expectedPrevFileHash, String verifyHashAfter, String fileName) {
-        // If this file is before or at the point, after which hash chain verification kicks in, return true.
         if (verifyHashAfter.compareTo(fileName) >= 0) {
             return true;
         }
