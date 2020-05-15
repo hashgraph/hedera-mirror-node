@@ -159,7 +159,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         recordStreamFileListener.onStart(new StreamFileData(fileName, null)); // open connection
         entityRecordItemListener.onItem(recordItem);
         // commit, close connection
-        recordStreamFileListener.onEnd(new RecordFile(null, fileName, 0L, 0L, UUID.randomUUID().toString(), ""));
+        recordStreamFileListener.onEnd(new RecordFile(null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", null, 0));
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {

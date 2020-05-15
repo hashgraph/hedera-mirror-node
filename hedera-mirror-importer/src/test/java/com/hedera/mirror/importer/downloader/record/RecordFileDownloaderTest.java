@@ -47,6 +47,8 @@ import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 public class RecordFileDownloaderTest extends AbstractDownloaderTest {
+    private static final String FILE1_HASH =
+            "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda";
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
@@ -171,8 +173,7 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
                 .findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
         doReturn("123").when(applicationStatusRepository)
                 .findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
-        doReturn("2019-09-01T00:00:00.000000Z.rcd").when(applicationStatusRepository)
-                .findByStatusCode(ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER);
+        downloaderProperties.getMirrorProperties().setVerifyHashAfter("2019-09-01T00:00:00.000000Z.rcd");
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertValidFiles(List.of(filename));

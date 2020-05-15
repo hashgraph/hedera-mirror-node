@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -48,7 +47,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -76,10 +74,10 @@ public abstract class Downloader {
 
     protected final Logger log = LogManager.getLogger(getClass());
     private final S3AsyncClient s3Client;
-    private final ApplicationStatusRepository applicationStatusRepository;
     private final NetworkAddressBook networkAddressBook;
-    private final DownloaderProperties downloaderProperties;
     private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
+    protected final ApplicationStatusRepository applicationStatusRepository;
+    protected final DownloaderProperties downloaderProperties;
 
     // Metrics
     private final MeterRegistry meterRegistry;
@@ -304,8 +302,6 @@ public abstract class Downloader {
      * file. (3) compare the hash of data file with Hash which has been agreed on by valid signatures, if match, move
      * the data file into `valid` directory; else download the data file from other valid node folder and compare the
      * hash until we find a match.
-     *
-     * @param sigFilesMap
      */
     private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
         // reload address book and keys in case it has been updated by RecordItemParser
@@ -347,12 +343,10 @@ public abstract class Downloader {
 
                 try {
                     File signedDataFile = downloadSignedDataFile(signature.getFile(), signature.getNode());
-                    if (signedDataFile != null
-                            && Arrays.equals(signature.getHash(), getDataFileHash(signedDataFile.getPath()))) {
-                        log.debug("Downloaded data file {} corresponding to verified hash", signedDataFile.getName());
-                        // Check that file is newer than last valid downloaded file. Additionally, if the file type
-                        // uses prevFileHash based linking, verify that new file is next in the sequence.
-                        if (verifyHashChain(signedDataFile)) {
+                    if (signedDataFile == null) {
+                        continue;
+                    }
+                    if (verifyDataFile(signedDataFile.getPath(), signature.getHash())) {
                             // move the file to the valid directory
                             File destination = validPath.resolve(signedDataFile.getName()).toFile();
                             if (moveFile(signedDataFile, destination)) {
@@ -365,11 +359,10 @@ public abstract class Downloader {
                                         .updateStatusValue(getLastValidDownloadedFileKey(), destination.getName());
                                 valid = true;
                                 break;
-                            }
                         }
-                    } else if (signedDataFile != null) {
-                        log.warn("Hash doesn't match the hash contained in valid signature file. Will try to download" +
-                                " a file with same timestamp from other nodes and check the Hash: {}", signedDataFile);
+                    } else {
+                        log.warn("Verification of data file failed. Will try to download a file with same timestamp " +
+                                "from other nodes and check the Hash: {}", signedDataFile);
                     }
                 } catch (Exception e) {
                     log.error("Error downloading data file corresponding to {}", sigFileName, e);
@@ -384,32 +377,6 @@ public abstract class Downloader {
                     .register(meterRegistry)
                     .record(Duration.between(startTime, Instant.now()));
         }
-    }
-
-    /**
-     * Verifies that prevFileHash in given {@code file} matches that in application repository.
-     *
-     * @throws Exception
-     */
-    protected boolean verifyHashChain(File file) {
-        String filePath = file.getAbsolutePath();
-        String lastValidFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
-        String bypassMismatch = applicationStatusRepository.findByStatusCode(getBypassHashKey());
-        String prevFileHash = getPrevFileHash(filePath);
-
-        if (prevFileHash == null) {
-            log.warn("Does not contain valid previous file hash: {}", filePath);
-            return false;
-        }
-
-        if (StringUtils.isBlank(lastValidFileHash) || lastValidFileHash.equals(prevFileHash) ||
-                Utility.hashIsEmpty(prevFileHash) || bypassMismatch.compareTo(file.getName()) > 0) {
-            return true;
-        }
-
-        log.warn("File Hash Mismatch with previous: {}, expected {}, got {}", file
-                .getName(), lastValidFileHash, prevFileHash);
-        return false;
     }
 
     private File downloadSignedDataFile(File sigFile, String nodeAccountId) {
@@ -437,14 +404,7 @@ public abstract class Downloader {
 
     protected abstract ApplicationStatusCode getLastValidDownloadedFileHashKey();
 
-    protected abstract ApplicationStatusCode getBypassHashKey();
-
-    protected abstract String getPrevFileHash(String filePath);
-
-    /**
-     * Returns SHA384 of given data (not signature) file
-     */
-    protected abstract byte[] getDataFileHash(String fileName);
+    protected abstract boolean verifyDataFile(String filePath, byte[] signedHash);
 
     public abstract void download();
 }

@@ -29,7 +29,7 @@ public class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-        RecordFile recordFile = new RecordFile(null, "fileName", 20L, 30L, "fileHash", "previousHash");
+        RecordFile recordFile = new RecordFile(null, "fileName", 20L, 30L, "fileHash", "previousHash", null, 0);
         recordFile = recordFileRepository.save(recordFile);
         Assertions.assertThat(recordFileRepository.findById(recordFile.getId()).get())
                 .isNotNull()
