@@ -103,6 +103,7 @@ public class RecordFileParser implements FileParser {
         recordStreamFileListener.onStart(streamFileData);
         RecordFile recordFile = Utility.parseRecordFile(streamFileData.getFilename(), true);
         String fileName = Utility.getFileName(streamFileData.getFilename());
+        recordFile.setLoadStart(startTime.getEpochSecond());
         int counter = 0;
         boolean success = false;
 
