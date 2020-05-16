@@ -22,14 +22,19 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.protobuf.ByteString;
+import com.google.pubsub.v1.PubsubMessage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.PubSubIntegrationTest;
@@ -73,6 +78,26 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
         // then
         List<String> expectedMessages =
                 Files.readAllLines(testResourcesPath.resolve("pubsub-messages.txt"));
-        assertThat(getAllMessages(NUM_TXNS)).isEqualTo(expectedMessages);
+        List<PubsubMessage> pubsubMessages = getAllMessages(NUM_TXNS);
+        List<String> messages = pubsubMessages.stream()
+                .map(PubsubMessage::getData)
+                .map(ByteString::toStringUtf8)
+                .collect(Collectors.toList());
+        assertThat(messages).isEqualTo(expectedMessages);
+
+        List<String> actualConsensusTimestampAttributeValues = pubsubMessages.stream()
+                .map(m -> m.getAttributesMap().get("consensusTimestamp"))
+                .collect(Collectors.toList());
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<String> expectedConsensusTimestampAttributeValues = expectedMessages.stream()
+                .map(m -> {
+                    try {
+                      return objectMapper.readValue(m, Map.class).get("consensusTimestamp").toString();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .collect(Collectors.toList());
+        assertThat(actualConsensusTimestampAttributeValues).isEqualTo(expectedConsensusTimestampAttributeValues);
     }
 }
