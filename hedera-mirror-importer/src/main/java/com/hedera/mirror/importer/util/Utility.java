@@ -42,7 +42,6 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.ArrayList;
 import javax.annotation.Nullable;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
@@ -131,7 +130,6 @@ public class Utility {
     public static RecordFile parseRecordFile(String filename, boolean parseRecordItems) {
         RecordFile recordFile = new RecordFile();
         recordFile.setName(filename);
-        recordFile.setRecordItems(new ArrayList<>());
 
         try (DataInputStream dis = new DataInputStream(new FileInputStream(filename))) {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
@@ -213,22 +211,6 @@ public class Utility {
         return b.array();
     }
 
-    public static byte[] longToBytes(long number) {
-        ByteBuffer b = ByteBuffer.allocate(8);
-        b.putLong(number);
-        return b.array();
-    }
-
-    public static byte booleanToByte(boolean value) {
-        return value ? (byte) 1 : (byte) 0;
-    }
-
-    public static byte[] instantToBytes(Instant instant) {
-        ByteBuffer b = ByteBuffer.allocate(16);
-        b.putLong(instant.getEpochSecond()).putLong(instant.getNano());
-        return b.array();
-    }
-
     /**
      * @return Timestamp from an instant
      */
@@ -277,13 +259,6 @@ public class Utility {
             return ""; // empty extension
         }
         return path.substring(lastIndexOf + 1);
-    }
-
-    /**
-     * Convert an Instant to a Long type timestampInNanos
-     */
-    public static Long convertInstantToNanos(Instant instant) {
-        return convertToNanos(instant.getEpochSecond(), instant.getNano());
     }
 
     /**
@@ -463,11 +438,12 @@ public class Utility {
 
     /**
      * Helps verify chaining for files in a stream.
-     * @param actualPrevFileHash prevFileHash as read from current file
+     *
+     * @param actualPrevFileHash   prevFileHash as read from current file
      * @param expectedPrevFileHash hash of last file from application state
-     * @param verifyHashAfter Point in time. Only the files created after (not including) this point are verified for
-     *                        hash chaining. If empty, all files are checked.
-     * @param fileName name of current stream file being verified
+     * @param verifyHashAfter      Point in time. Only the files created after (not including) this point are verified
+     *                             for hash chaining. If empty, all files are checked.
+     * @param fileName             name of current stream file being verified
      * @return true if verification succeeds, else false
      */
     public static boolean verifyHashChain(

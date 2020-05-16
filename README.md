@@ -72,7 +72,7 @@ docker-compose up
 To prepare for a new release:
 
 ```
-./mvnw clean package -P=release -Drelease.version=x.y.z -Drelease.chartVersion=x.y.z
+./mvnw clean package -N -P=release -Drelease.version=x.y.z -Drelease.chartVersion=x.y.z
 helm dependency update charts/hedera-mirror
 ```
 

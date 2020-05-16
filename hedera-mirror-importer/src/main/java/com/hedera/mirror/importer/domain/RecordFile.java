@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -41,6 +42,10 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @Table(name = "t_record_files")
 public class RecordFile {
 
+    private Long consensusStart;
+
+    private Long consensusEnd;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -57,7 +62,7 @@ public class RecordFile {
     private String previousHash;
 
     @Transient
-    private List<RecordItem> recordItems;
+    private List<RecordItem> recordItems = new ArrayList<>();
 
     @Transient
     private int recordFormatVersion;

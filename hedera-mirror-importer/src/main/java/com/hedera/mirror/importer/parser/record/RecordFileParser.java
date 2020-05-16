@@ -45,6 +45,7 @@ import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.FileParser;
+import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
@@ -105,34 +106,42 @@ public class RecordFileParser implements FileParser {
         recordFile.setLoadStart(startTime.getEpochSecond());
         int counter = 0;
         boolean success = false;
+
         try {
             if (!Utility.verifyHashChain(recordFile.getPreviousHash(),
                     applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH),
                     parserProperties.getMirrorProperties().getVerifyHashAfter(), fileName)) {
                 throw new ParserException("Hash mismatch for file " + fileName);
             }
+
             for (var recordItem : recordFile.getRecordItems()) {
-                        counter++;
-                        if (log.isTraceEnabled()) {
-                            log.trace("Transaction = {}, Record = {}",
-                                    Utility.printProtoMessage(recordItem.getTransaction()),
-                                    Utility.printProtoMessage(recordItem.getRecord()));
-                        } else {
-                            log.debug("Storing transaction with consensus timestamp {}", () ->
-                                    Utility.printProtoMessage(recordItem.getRecord().getConsensusTimestamp()));
-                        }
-                        recordItemListener.onItem(recordItem);
+                counter++;
 
-                        String type = TransactionTypeEnum.of(recordItem.getTransactionType()).toString();
-                        transactionSizeMetric.tag("type", type)
-                                .register(meterRegistry)
-                                .record(recordItem.getTransactionBytes().length);
+                if (log.isTraceEnabled()) {
+                    log.trace("Transaction = {}, Record = {}",
+                            Utility.printProtoMessage(recordItem.getTransaction()),
+                            Utility.printProtoMessage(recordItem.getRecord()));
+                } else if (log.isDebugEnabled()) {
+                    log.debug("Storing transaction with consensus timestamp {}", recordItem.getConsensusTimestamp());
+                }
+                recordItemListener.onItem(recordItem);
 
-                        Instant consensusTimestamp = Utility.convertToInstant(
-                                recordItem.getRecord().getConsensusTimestamp());
-                        transactionLatencyMetric.tag("type", type)
-                                .register(meterRegistry)
-                                .record(Duration.between(consensusTimestamp, Instant.now()));
+                String type = TransactionTypeEnum.of(recordItem.getTransactionType()).toString();
+                transactionSizeMetric.tag("type", type)
+                        .register(meterRegistry)
+                        .record(recordItem.getTransactionBytes().length);
+
+                Instant consensusTimestamp = Utility.convertToInstant(
+                        recordItem.getRecord().getConsensusTimestamp());
+                transactionLatencyMetric.tag("type", type)
+                        .register(meterRegistry)
+                        .record(Duration.between(consensusTimestamp, Instant.now()));
+            }
+
+            List<RecordItem> items = recordFile.getRecordItems();
+            if (!items.isEmpty()) {
+                recordFile.setConsensusStart(items.get(0).getConsensusTimestamp());
+                recordFile.setConsensusEnd(items.get(items.size() - 1).getConsensusTimestamp());
             }
             recordFile.setLoadEnd(Instant.now().getEpochSecond());
             recordStreamFileListener.onEnd(recordFile);
@@ -162,16 +171,13 @@ public class RecordFileParser implements FileParser {
             if (ShutdownHelper.isStopping()) {
                 return;
             }
-            InputStream fileInputStream;
-            try {
-                fileInputStream = new FileInputStream(new File(name));
+
+            try (InputStream fileInputStream = new FileInputStream(new File(name))) {
+                loadRecordFile(new StreamFileData(name, fileInputStream));
+                Utility.moveOrDeleteParsedFile(name, parserProperties);
             } catch (FileNotFoundException e) {
                 log.warn("File does not exist {}", name);
                 return;
-            }
-            try {
-                loadRecordFile(new StreamFileData(name, fileInputStream));
-                Utility.moveOrDeleteParsedFile(name, parserProperties);
             } catch (Exception e) {
                 log.error("Error parsing file {}", name, e);
                 recordStreamFileListener.onError();
