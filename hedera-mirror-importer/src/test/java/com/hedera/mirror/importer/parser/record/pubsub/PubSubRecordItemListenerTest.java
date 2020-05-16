@@ -55,7 +55,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageHeaders;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -214,9 +213,9 @@ class PubSubRecordItemListenerTest {
         } else {
             assertThat(actual.getNonFeeTransfers()).isEqualTo(expectedNonFeeTransfers);
         }
-        MessageHeaders headers = argument.getValue().getHeaders();
-        assertThat(headers.size()).isEqualTo(3); // +2 are default attributes 'id' and 'timestamp' (publish)
-        assertThat(headers.get("consensusTimestamp")).isEqualTo(CONSENSUS_TIMESTAMP);
+        assertThat(argument.getValue().getHeaders()).describedAs("Headers contain consensus timestamp")
+                .hasSize(3) // +2 are default attributes 'id' and 'timestamp' (publish)
+                .containsEntry("consensusTimestamp", CONSENSUS_TIMESTAMP);
     }
 
     private static AccountAmount buildAccountAmount(long accountNum, long amount) {
