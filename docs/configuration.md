@@ -71,7 +71,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 100                     | When inserting transactions into db, executeBatches() is called every these many transactions  |
 | `hedera.mirror.importer.parser.record.pubsub.topicName`                     |                         | Pubsub topic to publish transactions to                                                        |
-| `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | If network is `MAINNET`, then null, otherwise 1588706343553042000  | Used for setting running hash version of topic messages when migrating from v1 to v2. Messages with consensusTimestamp >= this value will be marked version 2, and those less will be marked version 1 |
+| `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
 
 #### Export transactions to PubSub
