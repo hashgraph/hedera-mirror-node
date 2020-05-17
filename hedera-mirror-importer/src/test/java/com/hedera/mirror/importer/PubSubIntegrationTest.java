@@ -21,6 +21,7 @@ package com.hedera.mirror.importer;
  */
 
 import com.google.api.gax.rpc.NotFoundException;
+import com.google.pubsub.v1.PubsubMessage;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
@@ -59,12 +60,12 @@ public class PubSubIntegrationTest extends IntegrationTest {
     }
 
     // Synchronously waits for numMessages from the subscription. Acks them and extracts payloads from them.
-    public List<String> getAllMessages(int numMessages) {
+    public List<PubsubMessage> getAllMessages(int numMessages) {
         return pubSubTemplate.pull(SUBSCRIPTION, numMessages, false)
                 .stream()
                 .map(m -> {
                     m.ack();
-                    return m.getPubsubMessage().getData().toStringUtf8();
+                    return m.getPubsubMessage();
                 })
                 .collect(Collectors.toList());
     }

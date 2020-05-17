@@ -63,7 +63,10 @@ public class PubSubRecordItemListener implements RecordItemListener {
         EntityId entity = transactionHandler.getEntityId(recordItem);
         PubSubMessage pubSubMessage = buildPubSubMessage(consensusTimestamp, entity, recordItem);
         try {
-            pubsubOutputChannel.send(MessageBuilder.withPayload(pubSubMessage).build());
+            pubsubOutputChannel.send(MessageBuilder
+                    .withPayload(pubSubMessage)
+                    .setHeader("consensusTimestamp", consensusTimestamp)
+                    .build());
         } catch (Exception e) {
             // This will make RecordFileParser to retry whole file, thus sending duplicates of previous transactions
             // in this file. In needed in future, this can be optimized to resend only the txns with consensusTimestamp
