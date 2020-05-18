@@ -31,4 +31,3 @@ RUN tar -czvf hedera-mirror-node.tar.gz chart/
 RUN mv hedera-mirror-node.tar.gz /data/chart/
 RUN mv schema.yaml /data/schema.yaml
 RUN rm -r chart/
-#RUN cp /data/schema.yaml /data-test/schema.yaml

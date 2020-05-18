@@ -98,10 +98,10 @@ properties:
       type: MASKED_FIELD
   importer.replicas:
     type: integer
-    default: 2
+    default: 1
     description: Number of importer node replicas
     title: importer replicas
-    minimun: 2
+    minimun: 1
     maximum: 10
   postgres.pgpool.replicaCount:
     type: integer
@@ -110,6 +110,13 @@ properties:
     title: pgpool replicas
     minimun: 1
     maximum: 10
+  postgres.postgres.repmgrPassword:
+    type: string
+    default: ''
+    description: The repmgr user password
+    title: repmgr user password
+    x-google-marketplace:
+      type: MASKED_FIELD
   rest.config.hedera.mirror.rest.db.password:
     type: string
     default: ''

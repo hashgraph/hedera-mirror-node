@@ -381,7 +381,7 @@ jobs:
                 if [[ $major == v* ]]; then
                   major=${major:1}
                 fi
-                DOCKER_TAG_OVERRIDE="-Ddocker.tag.latest=${major}.${minor}"
+                DOCKER_TAG_OVERRIDE="-Ddocker.tags.0=${major}.${minor}"
             fi
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
       - save_maven_cache
