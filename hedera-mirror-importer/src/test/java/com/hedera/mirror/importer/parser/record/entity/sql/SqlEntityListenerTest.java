@@ -100,7 +100,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     void completeFileAndCommit() {
-        sqlEntityListener.onEnd(new RecordFile(null, fileName, 0L, 0L, UUID.randomUUID().toString(), ""));
+        sqlEntityListener
+                .onEnd(new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", null, 0));
     }
 
     @Test
@@ -266,8 +267,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
         // when, then
         assertThrows(DuplicateFileException.class, () -> {
-                    sqlEntityListener.onStart(new StreamFileData(fileName, null));
-                });
+            sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        });
 
         sqlEntityListener.onError();  // close connection
     }

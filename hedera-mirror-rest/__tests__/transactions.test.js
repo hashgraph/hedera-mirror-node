@@ -76,7 +76,6 @@ const validateTsRange = function (transactions, low, high) {
  */
 const validateAccNumRange = function (transactions, low, high) {
   let ret = false;
-  let offender = null;
   for (const tx of transactions) {
     for (const xfer of tx.transfers) {
       const accNum = xfer.account.split('.')[2];
@@ -124,6 +123,7 @@ const validateFields = function (transactions) {
     'transfers',
     'valid_duration_seconds',
     'max_fee',
+    'transaction_hash',
   ].forEach((field) => {
     ret = ret && transactions[0].hasOwnProperty(field);
   });
@@ -177,11 +177,11 @@ const validateOrder = function (transactions, order) {
  * Definition of each test consists of the url string that is used in the query, and an
  * array of checks to be performed on the resultant SQL query.
  * These individual tests can be combined to form complex combinations as shown in the
- * definition of combinedtests below.
- * NOTE: To add more tests, just give it a unique name, specifiy the url query string, and
+ * definition of combinedTests below.
+ * NOTE: To add more tests, just give it a unique name, specify the url query string, and
  * a set of checks you would like to perform on the resultant SQL query.
  */
-const singletests = {
+const singleTests = {
   timestamp_lowerlimit: {
     urlparam: `timestamp=gte:${timeOneHourAgo}`,
     checks: [{field: 'consensus_ns', operator: '>=', value: timeOneHourAgo + '000000000'}],
@@ -255,7 +255,7 @@ const singletests = {
  * NOTE: To add more combined tests, just add an entry to following array using the
  * individual (single) tests in the object above.
  */
-const combinedtests = [
+const combinedTests = [
   ['timestamp_lowerlimit', 'timestamp_higherlimit'],
   ['accountid_lowerlimit', 'accountid_higherlimit'],
   ['timestamp_lowerlimit', 'timestamp_higherlimit', 'accountid-lowerlimit', 'accountid_higherlimit'],
@@ -269,18 +269,18 @@ describe('Transaction tests', () => {
   let api = '/api/v1/transactions';
 
   // First, execute the single tests
-  for (const [name, item] of Object.entries(singletests)) {
+  for (const [name, item] of Object.entries(singleTests)) {
     test(`Transactions single test: ${name} - URL: ${item.urlparam}`, async () => {
       let response = await request(server).get([api, item.urlparam].join('?'));
 
       expect(response.status).toEqual(200);
       const transactions = JSON.parse(response.text).transactions;
-      const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+      const parsedParams = JSON.parse(response.text).sqlQuery.parsedparams;
 
       // Verify the sql query against each of the specified checks
       let check = true;
-      for (const checkitem of item.checks) {
-        check = check && testutils.checkSql(parsedparams, checkitem);
+      for (const checkItem of item.checks) {
+        check = check && testutils.checkSql(parsedParams, checkItem);
       }
       expect(check).toBeTruthy();
 
@@ -296,16 +296,16 @@ describe('Transaction tests', () => {
   }
 
   // And now, execute the combined tests
-  for (const combination of combinedtests) {
-    // Combine the individual (single) checks as specified in the combinedtests array
+  for (const combination of combinedTests) {
+    // Combine the individual (single) checks as specified in the combinedTests array
     let combtest = {urls: [], checks: [], checkFunctions: [], names: ''};
     for (const testname of combination) {
-      if (testname in singletests) {
+      if (testname in singleTests) {
         combtest.names += testname + ' ';
-        combtest.urls.push(singletests[testname].urlparam);
-        combtest.checks = combtest.checks.concat(singletests[testname].checks);
+        combtest.urls.push(singleTests[testname].urlparam);
+        combtest.checks = combtest.checks.concat(singleTests[testname].checks);
         combtest.checkFunctions = combtest.checkFunctions.concat(
-          singletests[testname].hasOwnProperty('checkFunctions') ? singletests[testname].checkFunctions : []
+          singleTests[testname].hasOwnProperty('checkFunctions') ? singleTests[testname].checkFunctions : []
         );
       }
     }

@@ -102,7 +102,7 @@ public abstract class AbstractDownloaderTest {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
-        s3AsyncClient = new MirrorImporterConfiguration(commonDownloaderProperties)
+        s3AsyncClient = new MirrorImporterConfiguration(null, commonDownloaderProperties)
                 .s3AsyncClient(new ExecutionInterceptor() {
                 });
         networkAddressBook = new NetworkAddressBook(mirrorProperties);

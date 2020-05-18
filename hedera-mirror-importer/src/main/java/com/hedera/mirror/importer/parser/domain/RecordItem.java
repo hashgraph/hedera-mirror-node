@@ -31,6 +31,7 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Value
@@ -128,5 +129,9 @@ public class RecordItem implements StreamItem {
             return transactionType;
         }
         return dataCase.getNumber();
+    }
+
+    public Long getConsensusTimestamp() {
+        return Utility.timestampInNanosMax(record.getConsensusTimestamp());
     }
 }

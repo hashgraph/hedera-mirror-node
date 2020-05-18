@@ -213,6 +213,9 @@ class PubSubRecordItemListenerTest {
         } else {
             assertThat(actual.getNonFeeTransfers()).isEqualTo(expectedNonFeeTransfers);
         }
+        assertThat(argument.getValue().getHeaders()).describedAs("Headers contain consensus timestamp")
+                .hasSize(3) // +2 are default attributes 'id' and 'timestamp' (publish)
+                .containsEntry("consensusTimestamp", CONSENSUS_TIMESTAMP);
     }
 
     private static AccountAmount buildAccountAmount(long accountNum, long amount) {

@@ -44,10 +44,15 @@ public class MirrorProperties {
     private Path initialAddressBook;
 
     @NotNull
+    private String verifyHashAfter = "";
+
+    @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;
 
     @Min(0)
     private long shard = 0L;
+
+    private Long topicRunningHashV2AddedTimestamp;
 
     public Path getAddressBookPath() {
         return dataPath.resolve(ADDRESS_BOOK_FILE);

@@ -48,7 +48,9 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.parser.ParserProperties;
+import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Log4j2
 public class Utility {
@@ -125,102 +127,87 @@ public class Utility {
      * @param filename file name
      * @return byte array of hash value of null if calculating has failed
      */
-    public static byte[] getRecordFileHash(String filename) {
-        byte[] readFileHash = new byte[48];
+    public static RecordFile parseRecordFile(String filename, boolean parseRecordItems) {
+        RecordFile recordFile = new RecordFile();
+        recordFile.setName(filename);
 
         try (DataInputStream dis = new DataInputStream(new FileInputStream(filename))) {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
             MessageDigest mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
 
-            int record_format_version = dis.readInt();
+            int recordFormatVersion = dis.readInt();
             int version = dis.readInt();
+            log.info("Loading record format version {} from record file: {}", recordFormatVersion, filename);
+            recordFile.setRecordFormatVersion(recordFormatVersion);
 
-            md.update(Utility.integerToBytes(record_format_version));
+            md.update(Utility.integerToBytes(recordFormatVersion));
             md.update(Utility.integerToBytes(version));
 
-            log.debug("Calculating hash for version {} record file: {}", record_format_version, filename);
+            log.debug("Calculating hash for version {} record file: {}", recordFormatVersion, filename);
 
             while (dis.available() != 0) {
-
                 byte typeDelimiter = dis.readByte();
-
                 switch (typeDelimiter) {
                     case FileDelimiter.RECORD_TYPE_PREV_HASH:
                         md.update(typeDelimiter);
+                        byte[] readFileHash = new byte[48];
                         dis.read(readFileHash);
+                        recordFile.setPreviousHash(Hex.encodeHexString(readFileHash));
                         md.update(readFileHash);
                         break;
+
                     case FileDelimiter.RECORD_TYPE_RECORD:
-
-                        int byteLength = dis.readInt();
-                        byte[] rawBytes = new byte[byteLength];
-                        dis.readFully(rawBytes);
-                        if (record_format_version >= FileDelimiter.RECORD_FORMAT_VERSION) {
-                            mdForContent.update(typeDelimiter);
-                            mdForContent.update(Utility.integerToBytes(byteLength));
-                            mdForContent.update(rawBytes);
-                        } else {
-                            md.update(typeDelimiter);
-                            md.update(Utility.integerToBytes(byteLength));
-                            md.update(rawBytes);
+                        MessageDigest messageDigest = md;
+                        if (recordFormatVersion >= FileDelimiter.RECORD_FORMAT_VERSION) {
+                            messageDigest = mdForContent;
                         }
-
+                        // Read Transaction
+                        int byteLength = dis.readInt();
+                        byte[] transactionRawBytes = new byte[byteLength];
+                        dis.readFully(transactionRawBytes);
+                        messageDigest.update(typeDelimiter);
+                        messageDigest.update(Utility.integerToBytes(byteLength));
+                        messageDigest.update(transactionRawBytes);
+                        // Read TransactionRecord
                         byteLength = dis.readInt();
-                        rawBytes = new byte[byteLength];
-                        dis.readFully(rawBytes);
-
-                        if (record_format_version >= FileDelimiter.RECORD_FORMAT_VERSION) {
-                            mdForContent.update(Utility.integerToBytes(byteLength));
-                            mdForContent.update(rawBytes);
-                        } else {
-                            md.update(Utility.integerToBytes(byteLength));
-                            md.update(rawBytes);
+                        byte[] recordRawBytes = new byte[byteLength];
+                        dis.readFully(recordRawBytes);
+                        messageDigest.update(Utility.integerToBytes(byteLength));
+                        messageDigest.update(recordRawBytes);
+                        if (parseRecordItems) {
+                            recordFile.getRecordItems().add(new RecordItem(transactionRawBytes, recordRawBytes));
                         }
                         break;
+
                     case FileDelimiter.RECORD_TYPE_SIGNATURE:
                         int sigLength = dis.readInt();
                         byte[] sigBytes = new byte[sigLength];
                         dis.readFully(sigBytes);
-                        log.trace("File {} has signature {}", () -> filename, () -> Hex.encodeHexString(sigBytes));
+                        log.trace("File {} has signature {}", filename, Hex.encodeHexString(sigBytes));
                         break;
+
                     default:
-                        log.error("Unknown record file delimiter {} for file {}", typeDelimiter, filename);
-                        return null;
+                        throw new IllegalArgumentException(String.format(
+                                "Unknown record file delimiter %s for file %s", typeDelimiter, filename));
                 }
             }
-
-            if (record_format_version == FileDelimiter.RECORD_FORMAT_VERSION) {
+            if (recordFormatVersion == FileDelimiter.RECORD_FORMAT_VERSION) {
                 md.update(mdForContent.digest());
             }
-
-            byte[] fileHash = md.digest();
-            log.trace("Calculated file hash for the current file {}", () -> Hex.encodeHexString(fileHash));
-            return fileHash;
+            if (recordFile.getPreviousHash() == null) {
+                throw new IllegalArgumentException("previous hash is null in file " + filename);
+            }
+            recordFile.setFileHash(Hex.encodeHexString(md.digest()));
+            log.trace("Calculated file hash for the record file {}", recordFile.getFileHash());
+            return recordFile;
         } catch (Exception e) {
-            log.error("Error reading hash for file {}", filename, e);
-            return null;
+            throw new IllegalArgumentException("Error parsing bad record file " + filename, e);
         }
     }
 
     public static byte[] integerToBytes(int number) {
         ByteBuffer b = ByteBuffer.allocate(4);
         b.putInt(number);
-        return b.array();
-    }
-
-    public static byte[] longToBytes(long number) {
-        ByteBuffer b = ByteBuffer.allocate(8);
-        b.putLong(number);
-        return b.array();
-    }
-
-    public static byte booleanToByte(boolean value) {
-        return value ? (byte) 1 : (byte) 0;
-    }
-
-    public static byte[] instantToBytes(Instant instant) {
-        ByteBuffer b = ByteBuffer.allocate(16);
-        b.putLong(instant.getEpochSecond()).putLong(instant.getNano());
         return b.array();
     }
 
@@ -272,13 +259,6 @@ public class Utility {
             return ""; // empty extension
         }
         return path.substring(lastIndexOf + 1);
-    }
-
-    /**
-     * Convert an Instant to a Long type timestampInNanos
-     */
-    public static Long convertInstantToNanos(Instant instant) {
-        return convertToNanos(instant.getEpochSecond(), instant.getNano());
     }
 
     /**
@@ -450,10 +430,37 @@ public class Utility {
      * Generates a TransactionID object
      *
      * @param payerAccountId the AccountID of the transaction payer account
-     * @return
      */
     public static TransactionID getTransactionId(AccountID payerAccountId) {
         Timestamp validStart = Utility.instantToTimestamp(Instant.now());
         return TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+    }
+
+    /**
+     * Helps verify chaining for files in a stream.
+     *
+     * @param actualPrevFileHash   prevFileHash as read from current file
+     * @param expectedPrevFileHash hash of last file from application state
+     * @param verifyHashAfter      Point in time. Only the files created after (not including) this point are verified
+     *                             for hash chaining. If empty, all files are checked.
+     * @param fileName             name of current stream file being verified
+     * @return true if verification succeeds, else false
+     */
+    public static boolean verifyHashChain(
+            String actualPrevFileHash, String expectedPrevFileHash, String verifyHashAfter, String fileName) {
+        if (verifyHashAfter.compareTo(fileName) >= 0) {
+            return true;
+        }
+        if (Utility.hashIsEmpty(expectedPrevFileHash)) {
+            log.error("Previous file hash not available");
+            return true;
+        }
+        log.trace("actual file hash = {}, expected file hash = {}", actualPrevFileHash, expectedPrevFileHash);
+        if (actualPrevFileHash.contentEquals(expectedPrevFileHash)) {
+            return true;
+        }
+        log.error("Hash mismatch for file {}. Expected = {}, Actual = {}", fileName, expectedPrevFileHash,
+                actualPrevFileHash);
+        return false;
     }
 }

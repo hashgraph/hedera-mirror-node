@@ -23,14 +23,15 @@ package com.hedera.mirror.importer.downloader.record;
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
+import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.leader.Leader;
-import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -62,18 +63,21 @@ public class RecordFileDownloader extends Downloader {
         return ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH;
     }
 
+    /**
+     * Checks that hash of data file matches the verified hash. Then checks that data file is next in line based on
+     * previous file hash.
+     */
     @Override
-    protected ApplicationStatusCode getBypassHashKey() {
-        return ApplicationStatusCode.RECORD_HASH_MISMATCH_BYPASS_UNTIL_AFTER;
-    }
-
-    @Override
-    protected String getPrevFileHash(String filePath) {
-        return RecordFileParser.readPrevFileHash(filePath);
-    }
-
-    @Override
-    protected byte[] getDataFileHash(String fileName) {
-        return Utility.getRecordFileHash(fileName);
+    protected boolean verifyDataFile(String filePath, byte[] verifiedHash) {
+        RecordFile recordFile =  Utility.parseRecordFile(filePath, false);
+        if (!recordFile.getFileHash().contentEquals(Hex.encodeHexString(verifiedHash))) {
+            return false;
+        }
+        String fileName = Utility.getFileName(filePath);
+        log.debug("Downloaded data file {} corresponding to verified hash", fileName);
+        // Verifies that prevFileHash in given {@code file} matches that in application repository.
+        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
+        return Utility.verifyHashChain(recordFile.getPreviousHash(), expectedPrevFileHash,
+                downloaderProperties.getMirrorProperties().getVerifyHashAfter(), fileName);
     }
 }

@@ -22,14 +22,17 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.pubsub.v1.PubsubMessage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.PubSubIntegrationTest;
@@ -73,6 +76,26 @@ public class PubSubRecordParserTest extends PubSubIntegrationTest {
         // then
         List<String> expectedMessages =
                 Files.readAllLines(testResourcesPath.resolve("pubsub-messages.txt"));
-        assertThat(getAllMessages(NUM_TXNS)).isEqualTo(expectedMessages);
+        List<PubsubMessage> actualMessages = getAllMessages(NUM_TXNS);
+
+        assertThat(actualMessages)
+                .hasSize(expectedMessages.size())
+                .zipSatisfy(expectedMessages, (actual, expected) -> {
+
+                    assertThat(actual.getAttributesMap().get("consensusTimestamp"))
+                            .isEqualTo(getConsensusTimestampFromMessage(expected));
+                    // Users of PubSub will work with JSON. We don't convert these to Java POJOs since we want to
+                    // drectly test json (without deserialization layer)
+                    assertThat(actual.getData().toStringUtf8()).isEqualTo(expected);
+                });
+    }
+
+    private String getConsensusTimestampFromMessage(String message) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            return objectMapper.readValue(message, Map.class).get("consensusTimestamp").toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
