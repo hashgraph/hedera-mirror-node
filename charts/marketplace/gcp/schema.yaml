@@ -46,6 +46,8 @@ x-google-marketplace:
           type: REPO_WITHOUT_REGISTRY
         postgresql.postgresqlImage.tag:
           type: TAG
+    pgpool:
+      properties:
         postgresql.pgpoolImage.registry:
           type: REGISTRY
         postgresql.pgpoolImage.repository:

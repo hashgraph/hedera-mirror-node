@@ -376,6 +376,13 @@ jobs:
             if [ "$CIRCLE_BRANCH" = "master" ]; then
                 DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
             fi
+            if [ -n "$CIRCLE_TAG" ]; then
+                IFS=. read major minor build \<<< ${CIRCLE_TAG}
+                if [[ $major == v* ]]; then
+                  major=${major:1}
+                fi
+                DOCKER_TAG_OVERRIDE="-Ddocker.tag.latest=${major}.${minor}"
+            fi
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
       - save_maven_cache
 

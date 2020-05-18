@@ -4,26 +4,30 @@ applicationResource:
   partnerName: partner_name
   projectId: hederaMirrorSolutionId
 
+mirrornode:
+  image:
+    repository: gcr.io/mirrornode/hedera-mirror-node
+
 deployer:
   image:
     repository: gcr.io/mirrornode/hedera-mirror-node/deployer
 
 grpc:
-  priorityClassName: ""
   hpa:
     enabled: false
+  image:
+    repository: gcr.io/mirrornode/hedera-mirror-node/grpc
   ingress:
     enabled: false
+  priorityClassName: ""
   rbac:
     enabled: false
+  service:
+    type: LoadBalancer
   serviceAccount:
     create: false
   serviceMonitor:
     enabled: false
-  image:
-    repository: gcr.io/mirrornode/hedera-mirror-node/grpc
-  service:
-    type: LoadBalancer
 
 importer:
   podMonitor:
@@ -46,15 +50,15 @@ postgresql:
   pgpool:
     priorityClassName: ""
     replicaCount: 1
+  pgpoolImage:
+    registry: gcr.io
+    repository: mirrornode/hedera-mirror-node/pgpool
   postgresqlImage:
     registry: gcr.io
     repository: mirrornode/hedera-mirror-node/postgresql
   postgresql:
     priorityClassName: ""
     replicaCount: 1
-  pgpoolImage:
-    registry: gcr.io
-    repository: mirrornode/hedera-mirror-node/pgpool
 
 priorityClass:
   enabled: false
