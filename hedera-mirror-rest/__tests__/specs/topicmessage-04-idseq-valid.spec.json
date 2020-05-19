@@ -36,6 +36,7 @@
     "consensus_timestamp": "1234567890.000000003",
     "message": "eyJhIiwiYiIsImMifQ==",
     "running_hash": "eyJkIiwiZSIsImYifQ==",
+    "running_hash_version": 2,
     "sequence_number": 3,
     "topic_id": "0.0.7"
   }

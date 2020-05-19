@@ -36,6 +36,7 @@ const topicmessage = require('./topicmessage.js');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
+const {requestLogger} = require('./middleware/requestLogger');
 
 // Logger
 const logger = log4js.getLogger();
@@ -93,6 +94,9 @@ app.use(
 app.use(bodyParser.json());
 app.use(compression());
 app.use(cors());
+
+// logging middleware
+app.use(requestLogger);
 
 // metrics middleware
 if (config.metrics.enabled) {

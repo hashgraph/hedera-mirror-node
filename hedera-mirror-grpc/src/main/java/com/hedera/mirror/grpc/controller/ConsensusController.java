@@ -64,7 +64,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
     public Flux<ConsensusTopicResponse> subscribeTopic(Mono<ConsensusTopicQuery> request) {
         return request.map(this::toFilter)
                 .flatMapMany(topicMessageService::subscribeTopic)
-                .map(this::toResponse)
+                .map(ConsensusController::toResponse)
                 .onErrorMap(ConstraintViolationException.class, e -> error(e, Status.INVALID_ARGUMENT))
                 .onErrorMap(IllegalArgumentException.class, e -> error(e, Status.INVALID_ARGUMENT))
                 .onErrorMap(NonTransientDataAccessResourceException.class, e -> error(e, Status.UNAVAILABLE, DB_ERROR))
@@ -101,12 +101,14 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return builder.build();
     }
 
-    private ConsensusTopicResponse toResponse(TopicMessage topicMessage) {
+    // package-private for use in tests
+    static ConsensusTopicResponse toResponse(TopicMessage topicMessage) {
         return ConsensusTopicResponse.newBuilder()
                 .setConsensusTimestamp(ProtoUtil.toTimestamp(topicMessage.getConsensusTimestampInstant()))
                 .setMessage(ByteString.copyFrom(topicMessage.getMessage()))
                 .setSequenceNumber(topicMessage.getSequenceNumber())
                 .setRunningHash(ByteString.copyFrom(topicMessage.getRunningHash()))
+                .setRunningHashVersion(topicMessage.getRunningHashVersion())
                 .build();
     }
 

@@ -20,9 +20,9 @@ package com.hedera.mirror.grpc.controller;
  * ‍
  */
 
+import static com.hedera.mirror.grpc.controller.ConsensusController.toResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.Status;
@@ -47,7 +47,6 @@ import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.listener.ListenerProperties;
 import com.hedera.mirror.grpc.listener.SharedPollingTopicListener;
-import com.hedera.mirror.grpc.util.ProtoUtil;
 
 @Log4j2
 public class ConsensusControllerTest extends GrpcIntegrationTest {
@@ -117,9 +116,9 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectNext(response(topicMessage1))
-                .expectNext(response(topicMessage2))
-                .expectNext(response(topicMessage3))
+                .expectNext(toResponse(topicMessage1))
+                .expectNext(toResponse(topicMessage2))
+                .expectNext(toResponse(topicMessage3))
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
@@ -141,7 +140,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
         assertThat(blockingService.subscribeTopic(query))
                 .toIterable()
                 .hasSize(3)
-                .containsSequence(response(topicMessage1), response(topicMessage2), response(topicMessage3));
+                .containsSequence(toResponse(topicMessage1), toResponse(topicMessage2), toResponse(topicMessage3));
     }
 
     @Test
@@ -160,9 +159,9 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectNext(response(topicMessage1))
-                .expectNext(response(topicMessage2))
-                .expectNext(response(topicMessage3))
+                .expectNext(toResponse(topicMessage1))
+                .expectNext(toResponse(topicMessage2))
+                .expectNext(toResponse(topicMessage3))
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
@@ -188,9 +187,9 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectNext(response(topicMessage1))
-                .expectNext(response(topicMessage2))
-                .expectNext(response(topicMessage3))
+                .expectNext(toResponse(topicMessage1))
+                .expectNext(toResponse(topicMessage2))
+                .expectNext(toResponse(topicMessage3))
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
@@ -232,14 +231,5 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
         StatusRuntimeException statusRuntimeException = (StatusRuntimeException) t;
         assertThat(statusRuntimeException.getStatus().getCode()).isEqualTo(status);
-    }
-
-    private ConsensusTopicResponse response(TopicMessage topicMessage) throws Exception {
-        return ConsensusTopicResponse.newBuilder()
-                .setConsensusTimestamp(ProtoUtil.toTimestamp(topicMessage.getConsensusTimestampInstant()))
-                .setMessage(ByteString.copyFrom(topicMessage.getMessage()))
-                .setSequenceNumber(topicMessage.getSequenceNumber())
-                .setRunningHash(ByteString.copyFrom(topicMessage.getRunningHash()))
-                .build();
     }
 }

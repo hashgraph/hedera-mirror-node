@@ -30,6 +30,7 @@ const topicMessageColumns = {
   MESSAGE: 'message',
   REALM_NUM: 'realm_num',
   RUNNING_HASH: 'running_hash',
+  RUNNING_HASH_VERSION: 'running_hash_version',
   SEQUENCE_NUMBER: 'sequence_number',
   TOPIC_NUM: 'topic_num',
 };
@@ -91,14 +92,17 @@ const formatTopicMessageRow = function (row, messageEncoding) {
     topic_id: `${config.shard}.${row[topicMessageColumns.REALM_NUM]}.${row[topicMessageColumns.TOPIC_NUM]}`,
     message: utils.encodeBinary(row[topicMessageColumns.MESSAGE], messageEncoding),
     running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
+    running_hash_version: parseInt(row[topicMessageColumns.RUNNING_HASH_VERSION]),
     sequence_number: parseInt(row[topicMessageColumns.SEQUENCE_NUMBER]),
   };
 };
 
 /**
+ * Handler function for /messages/:consensusTimestamp API.
  * Extracts and validates timestamp input, creates db query logic in preparation for db call to get message
+ * @return {Promise} Promise for PostgreSQL query
  */
-const processGetMessageByConsensusTimestampRequest = (req, res) => {
+const getMessageByConsensusTimestamp = async (req, res) => {
   const consensusTimestampParam = req.params.consensusTimestamp;
   validateConsensusTimestampParam(consensusTimestampParam);
 
@@ -113,18 +117,18 @@ const processGetMessageByConsensusTimestampRequest = (req, res) => {
 };
 
 /**
+ * Handler function for /:id/messages/:sequencenumber API.
  * Extracts and validates topic and sequence params and creates db query statement in preparation for db call to get message
+ * @return {Promise} Promise for PostgreSQL query
  */
-const processGetMessageByTopicAndSequenceRequest = (req, res) => {
+const getMessageByTopicAndSequenceRequest = async (req, res) => {
   const topicId = req.params.id;
   const seqNum = req.params.sequencenumber;
   validateGetSequenceMessageParams(topicId, seqNum);
 
   // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7. Defaults realm to 0 if not stated
   const entity = utils.parseEntityId(topicId);
-  const pgSqlQuery =
-    'select consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number' +
-    ' from topic_message where realm_num = $1 and topic_num = $2 and sequence_number = $3 limit 1';
+  const pgSqlQuery = `select * from topic_message where realm_num = $1 and topic_num = $2 and sequence_number = $3 limit 1`;
   const pgSqlParams = [entity.realm, entity.num, seqNum];
 
   return getMessage(pgSqlQuery, pgSqlParams).then((message) => {
@@ -132,7 +136,11 @@ const processGetMessageByTopicAndSequenceRequest = (req, res) => {
   });
 };
 
-const processGetTopicMessages = (req, res) => {
+/**
+ * Handler function for /topics/:id API.
+ * @returns {Promise} Promise for PostgreSQL query
+ */
+const getTopicMessages = async (req, res) => {
   // retrieve param and filters from request
   const topicId = req.params.id;
   const filters = utils.buildFilterObject(req.query);
@@ -179,9 +187,7 @@ const processGetTopicMessages = (req, res) => {
 
 const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
   const entity = utils.parseEntityId(topicId);
-  let pgSqlQuery =
-    'select consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number' +
-    ' from topic_message where realm_num = $1 and topic_num = $2';
+  let pgSqlQuery = `select * from topic_message where realm_num = $1 and topic_num = $2`;
   let nextParamCount = 3;
   let pgSqlParams = [entity.realm, entity.num];
 
@@ -268,40 +274,6 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
 
       return messages;
     });
-};
-
-/**
- * Handler function for /messages/:consensusTimestamp API.
- * @param {Request} req HTTP request object
- * @return {Promise} Promise for PostgreSQL query
- */
-const getMessageByConsensusTimestamp = async (req, res) => {
-  logger.debug('--------------------  getMessageByConsensusTimestamp --------------------');
-  logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByConsensusTimestampRequest(req, res);
-};
-
-/**
- * Handler function for /:id/messages/:sequencenumber API.
- * @param {Request} req HTTP request object
- * @return {Promise} Promise for PostgreSQL query
- */
-const getMessageByTopicAndSequenceRequest = async (req, res) => {
-  logger.debug('--------------------  getMessageByTopicAndSequenceRequest --------------------');
-  logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetMessageByTopicAndSequenceRequest(req, res);
-};
-
-/**
- * Handler function for /topics/:id API.
- * @param {Request} req HTTP request object
- * @param {Response} res HTTP response object
- * @returns Promise for PostgreSQL query
- */
-const getTopicMessages = async (req, res) => {
-  logger.debug('--------------------  getTopicMessages --------------------');
-  logger.debug(`Client: [ ${req.ip} ] URL: ${req.originalUrl}`);
-  return processGetTopicMessages(req, res);
 };
 
 module.exports = {
