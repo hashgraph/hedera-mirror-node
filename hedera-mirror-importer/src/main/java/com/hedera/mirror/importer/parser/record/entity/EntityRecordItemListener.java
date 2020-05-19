@@ -112,7 +112,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         tx.setEntity(getEntity(recordItem, transactionHandler, entityId, isSuccessful));
 
         if ((txRecord.hasTransferList()) && entityProperties.getPersist().isCryptoTransferAmounts()) {
-            processNonFeeTransfers(consensusNs, body, txRecord);
+            // Don't add failed non-fee transfers as they can contain invalid data and we don't add failed
+            // transactions for aggregated transfers
+            if (isSuccessful) {
+                processNonFeeTransfers(consensusNs, body, txRecord);
+            }
+
             if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
                 insertCryptoCreateTransferList(consensusNs, txRecord, body);
             } else {
