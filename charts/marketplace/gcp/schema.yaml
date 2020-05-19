@@ -38,7 +38,7 @@ x-google-marketplace:
           type: REPO_WITH_REGISTRY
         rest.image.tag:
           type: TAG
-    postgresql:
+    postgresql-repmgr:
       properties:
         postgresql.postgresqlImage.registry:
           type: REGISTRY

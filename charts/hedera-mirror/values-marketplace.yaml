@@ -55,7 +55,7 @@ postgresql:
     repository: mirrornode/hedera-mirror-node/pgpool
   postgresqlImage:
     registry: gcr.io
-    repository: mirrornode/hedera-mirror-node/postgresql
+    repository: mirrornode/hedera-mirror-node/postgresql-repmgr
   postgresql:
     priorityClassName: ""
     replicaCount: 1
