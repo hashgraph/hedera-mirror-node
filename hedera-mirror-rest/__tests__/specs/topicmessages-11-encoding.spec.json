@@ -34,6 +34,7 @@
         "topic_id": "0.0.7",
         "message": "swirlds",
         "running_hash": "cnVubmluZ19oYXNo",
+        "running_hash_version": 2,
         "sequence_number": 1
       },
       {
@@ -41,6 +42,7 @@
         "topic_id": "0.0.7",
         "message": "hedera hashgraph",
         "running_hash": "cnVubmluZ19oYXNo",
+        "running_hash_version": 2,
         "sequence_number": 2
       },
       {
@@ -48,6 +50,7 @@
         "topic_id": "0.0.7",
         "message": "message",
         "running_hash": "cnVubmluZ19oYXNo",
+        "running_hash_version": 2,
         "sequence_number": 3
       }
     ],

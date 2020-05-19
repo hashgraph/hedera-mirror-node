@@ -254,9 +254,6 @@ const getTransactions = async (req, res) => {
  * @return {} None.
  */
 const getOneTransaction = async (req, res) => {
-  logger.debug('--------------------  getOneTransaction --------------------');
-  logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
-
   // The transaction id is in the format of 'shard.realm.num-ssssssssss-nnnnnnnnn'
   // convert it in shard, realm, num and nanoseconds parameters
   let txIdMatches = req.params.id.match(/(\d+)\.(\d+)\.(\d+)-(\d{10})-(\d{9})/);

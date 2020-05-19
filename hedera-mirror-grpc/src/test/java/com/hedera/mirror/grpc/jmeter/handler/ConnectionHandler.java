@@ -79,14 +79,14 @@ public class ConnectionHandler {
 
         for (int i = 1; i <= newTopicsMessageCount; i++) {
             long sequenceNum = nextSequenceNum + i;
-            Instant temp = startTime.plus(sequenceNum, ChronoUnit.NANOS);
-            Long consensusTimestamp = converter.convert(temp);
-            TopicMessage topicMessage = new TopicMessage();
-            topicMessage.setConsensusTimestamp(consensusTimestamp);
-            topicMessage.setSequenceNumber(sequenceNum);
-            topicMessage.setMessage(BYTES);
-            topicMessage.setRunningHash(BYTES);
-            topicMessage.setRealmNum(0);
+            Instant consensusInstant = startTime.plus(sequenceNum, ChronoUnit.NANOS);
+            TopicMessage topicMessage = TopicMessage.builder()
+                    .consensusTimestamp(consensusInstant)
+                    .sequenceNumber(sequenceNum)
+                    .message(BYTES)
+                    .runningHash(BYTES)
+                    .realmNum(0)
+                    .build();
             parameterSources.add(new BeanPropertySqlParameterSource(topicMessage));
 
             if (i % BATCH_SIZE == 0) {

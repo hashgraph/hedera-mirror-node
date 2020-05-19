@@ -136,7 +136,7 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
   let {query, params, order, limit} = topicmessage.extractSqlFromTopicMessagesRequest('7', filters);
 
   expect(query).toStrictEqual(
-    'select consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number from topic_message where realm_num = $1 and topic_num = $2 and sequence_number > $3 and consensus_timestamp <= $4 order by consensus_timestamp desc limit $5;'
+    'select * from topic_message where realm_num = $1 and topic_num = $2 and sequence_number > $3 and consensus_timestamp <= $4 order by consensus_timestamp desc limit $5;'
   );
   expect(params).toStrictEqual([0, '7', '2', '1234567890.000000006', '3']);
   expect(order).toStrictEqual(constants.orderFilterValues.DESC);

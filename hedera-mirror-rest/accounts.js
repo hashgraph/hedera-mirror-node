@@ -190,10 +190,7 @@ const getAccounts = async (req, res) => {
  * @return {} None.
  */
 const getOneAccount = async (req, res) => {
-  logger.debug('Client: [' + req.ip + '] URL: ' + req.originalUrl);
-
   // Parse the filter parameters for account-numbers, balance, and pagination
-
   const acc = utils.parseEntityId(req.params.id);
   if (acc.num === 0) {
     throw InvalidArgumentError.forParams('account.id');
