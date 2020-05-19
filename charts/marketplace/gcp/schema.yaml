@@ -103,14 +103,21 @@ properties:
     title: importer replicas
     minimun: 1
     maximum: 10
-  postgres.pgpool.replicaCount:
+  postgresql.pgpool.replicaCount:
+    type: integer
+    default: 1
+    description: Number of pgpool node replicas
+    title: pgpool replicas
+    minimun: 1
+    maximum: 10
+  postgresql.postgresql.replicaCount:
     type: integer
     default: 1
     description: Number of postgres node replicas
     title: pgpool replicas
     minimun: 1
     maximum: 10
-  postgres.postgres.repmgrPassword:
+  postgresql.postgresql.repmgrPassword:
     type: string
     default: ''
     description: The repmgr user password
