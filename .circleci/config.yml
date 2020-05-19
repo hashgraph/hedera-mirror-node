@@ -374,7 +374,7 @@ jobs:
           command: |
             set -ex
             if [ "$CIRCLE_BRANCH" = "master" ]; then
-                DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tag.latest=master"
+                DOCKER_TAG_OVERRIDE="-Ddocker.tag.version=${CIRCLE_BRANCH}-${CIRCLE_SHA1} -Ddocker.tags.0=master -Djib.to.tags=master"
             fi
             if [ -n "$CIRCLE_TAG" ]; then
                 IFS=. read major minor build \<<< ${CIRCLE_TAG}

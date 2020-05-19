@@ -1,13 +1,13 @@
-FROM ubuntu:19.10 AS build
+# build image to format chart structure and verify templates
+FROM gcr.io/cloud-marketplace-tools/k8s/deployer_helm AS build
 
-## pull in chart
+# pull in chart
 COPY hedera-mirror /tmp/chart
 
 # get yq and merge values files
-RUN apt-get update \
-    && apt-get install -y software-properties-common \
-    && add-apt-repository ppa:rmescandon/yq \
-    && apt-get install -y --no-install-recommends yq gettext-base
+RUN wget https://github.com/mikefarah/yq/releases/download/2.4.0/yq_linux_386 \
+    && mv yq_linux_386 /usr/local/bin/yq \
+    && chmod +x /usr/local/bin/yq
 
 RUN yq m -i --overwrite /tmp/chart/values.yaml /tmp/chart/values-marketplace.yaml
 
@@ -19,15 +19,11 @@ RUN cat /tmp/schema.yaml \
     > /tmp/schema.yaml.new \
     && mv /tmp/schema.yaml.new /tmp/schema.yaml
 
+# helm template to render and verify templates
+RUN helm template /tmp/chart -f /tmp/chart/values.yaml
+RUN cd /tmp && tar -czvf hedera-mirror-node.tar.gz chart
+
 # Setup marketplace structure on helm deployer image base
 FROM gcr.io/cloud-marketplace-tools/k8s/deployer_helm
-COPY --from=build /tmp/ .
-
-# helm template to render and verify templates
-RUN helm template chart -f chart/values.yaml
-RUN tar -czvf hedera-mirror-node.tar.gz chart/
-
-# move chart and schema to expected /data folder structure
-RUN mv hedera-mirror-node.tar.gz /data/chart/
-RUN mv schema.yaml /data/schema.yaml
-RUN rm -r chart/
+COPY --from=build /tmp/hedera-mirror-node.tar.gz /data/chart
+COPY --from=build /tmp/schema.yaml /data

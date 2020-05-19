@@ -8,9 +8,7 @@ x-google-marketplace:
   publishedVersionMetadata:
     releaseNote: >-
       Initial release of the Hedera Mirror Node
-    # releaseTypes list is optional. Feature | BugFix | Security
-    # "Security" should only be used if this is an important update to patch
-    # an existing vulnerability, as such updates will display more prominently for users.
+    # releaseTypes - Feature | BugFix | Security
     releaseTypes:
       - Feature
     # If "recommended" is "true", users using older releases are encouraged
@@ -87,7 +85,7 @@ properties:
     default: 1
     description: Number of grpc node replicas
     title: gRPC replicas
-    minimun: 1
+    minimum: 0
     maximum: 10
   importer.config.hedera.mirror.importer.db.password:
     type: string
@@ -96,26 +94,33 @@ properties:
     title: importer user password
     x-google-marketplace:
       type: MASKED_FIELD
+  importer.config.hedera.mirror.importer.db.restPassword:
+    type: string
+    default: ''
+    description: The importer dc rest user password
+    title: importer db rest user password
+    x-google-marketplace:
+      type: MASKED_FIELD
   importer.replicas:
     type: integer
     default: 1
     description: Number of importer node replicas
     title: importer replicas
-    minimun: 1
+    minimum: 1
     maximum: 10
   postgresql.pgpool.replicaCount:
     type: integer
     default: 1
     description: Number of pgpool node replicas
     title: pgpool replicas
-    minimun: 1
+    minimum: 1
     maximum: 10
   postgresql.postgresql.replicaCount:
     type: integer
     default: 1
     description: Number of postgres node replicas
     title: pgpool replicas
-    minimun: 1
+    minimum: 1
     maximum: 10
   postgresql.postgresql.repmgrPassword:
     type: string
@@ -136,13 +141,12 @@ properties:
     default: 1
     description: Number of rest api node replicas
     title: rest replicas
-    minimun: 1
+    minimum: 0
     maximum: 10
 
 required:
   - name
   - namespace
-  - deployer.image
   - grpc.config.hedera.mirror.grpc.db.password
   - importer.config.hedera.mirror.importer.db.password
   - rest.config.hedera.mirror.rest.db.password

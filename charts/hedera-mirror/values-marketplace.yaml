@@ -8,10 +8,6 @@ mirrornode:
   image:
     repository: gcr.io/mirrornode/hedera-mirror-node
 
-deployer:
-  image:
-    repository: gcr.io/mirrornode/hedera-mirror-node/deployer
-
 grpc:
   hpa:
     enabled: false
