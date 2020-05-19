@@ -4,10 +4,6 @@ applicationResource:
   partnerName: partner_name
   projectId: hederaMirrorSolutionId
 
-mirrornode:
-  image:
-    repository: gcr.io/mirrornode/hedera-mirror-node
-
 grpc:
   hpa:
     enabled: false

@@ -20,9 +20,9 @@ x-google-marketplace:
   images:
     '':
       properties:
-        mirrornode.image.repository:
+        importer.image.repository:
           type: REPO_WITH_REGISTRY
-        mirrornode.image.tag:
+        importer.image.tag:
           type: TAG
     grpc:
       properties:
