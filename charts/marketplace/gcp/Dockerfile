@@ -5,8 +5,8 @@ FROM gcr.io/cloud-marketplace-tools/k8s/deployer_helm AS build
 COPY hedera-mirror /tmp/chart
 
 # get yq and merge values files
-RUN wget https://github.com/mikefarah/yq/releases/download/2.4.0/yq_linux_386 \
-    && mv yq_linux_386 /usr/local/bin/yq \
+RUN wget https://github.com/mikefarah/yq/releases/download/2.4.0/yq_linux_amd64 \
+    && mv yq_linux_amd64 /usr/local/bin/yq \
     && chmod +x /usr/local/bin/yq
 
 RUN yq m -i --overwrite /tmp/chart/values.yaml /tmp/chart/values-marketplace.yaml
