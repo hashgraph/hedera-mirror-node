@@ -96,7 +96,7 @@ app.use(compression());
 app.use(cors());
 
 // logging middleware
-app.use(requestLogger());
+app.use(requestLogger);
 
 // metrics middleware
 if (config.metrics.enabled) {
