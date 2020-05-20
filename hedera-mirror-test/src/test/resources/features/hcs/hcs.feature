@@ -23,7 +23,7 @@ Feature: HCS Base Coverage Feature
             | numMessages |
             | 2           |
 
-    @SubscribeOnly @Acceptance
+    @SubscribeOnly
     Scenario Outline: Validate topic message subscription only
         Given I provide a topic id <topicId>
         And I provide a starting timestamp <startTimestamp> and a number of messages <numMessages> I want to receive

@@ -19,7 +19,7 @@
         <jmeter.test>E2E_Subscribe_Only.jmx</jmeter.test>
         <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
         <cucumber.version>5.7.0</cucumber.version>
-        <cucumber-reporting.version>4.0.48</cucumber-reporting.version>
+        <cucumber-reporting.version>4.0.52</cucumber-reporting.version>
         <skipTests>true</skipTests>
     </properties>
 
@@ -80,11 +80,6 @@
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-logging</artifactId>
-                </exclusion>
-                <exclusion>
-                    <!-- Caused compilation errors when included -->
-                    <groupId>org.junit.vintage</groupId>
-                    <artifactId>junit-vintage-engine</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
