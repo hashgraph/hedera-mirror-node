@@ -130,16 +130,16 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractCreateInvalidTransaction() throws Exception {
-
+    void contractCreateFailedWithResult() throws Exception {
         Transaction transaction = contractCreateTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         ContractCreateTransactionBody contractCreateTransactionBody = transactionBody.getContractCreateInstance();
         // Clear receipt.contractID since transaction is failure.
-        TransactionRecord.Builder recordBuilder = createOrUpdateRecord(
-                transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE).toBuilder();
-        recordBuilder.getReceiptBuilder().clearContractID();
-        TransactionRecord record = recordBuilder.build();
+        TransactionRecord.Builder recordBuilder = createOrUpdateRecord(transactionBody,
+                ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION).toBuilder();
+        TransactionRecord record = recordBuilder
+                .setReceipt(recordBuilder.getReceiptBuilder().clearContractID())
+                .build();
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -147,24 +147,49 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
                 .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
 
         assertAll(
-                // row counts
-                () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(4, entityRepository.count())
-                , () -> assertEquals(1, contractResultRepository.count())
-                , () -> assertEquals(3, cryptoTransferRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(4, entityRepository.count()),
+                () -> assertEquals(1, contractResultRepository.count()),
+                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(0, liveHashRepository.count()),
+                () -> assertEquals(0, fileDataRepository.count()),
+                () -> assertTransaction(transactionBody, dbTransaction),
+                () -> assertNull(dbTransaction.getEntityId()),
+                () -> assertRecord(record),
+                () -> assertEquals(contractCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance())
+        );
+    }
 
-                // transaction
-                , () -> assertTransaction(transactionBody, dbTransaction)
-                , () -> assertNull(dbTransaction.getEntityId())
+    @Test
+    void contractCreateFailedWithoutResult() throws Exception {
+        Transaction transaction = contractCreateTransaction();
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        ContractCreateTransactionBody contractCreateTransactionBody = transactionBody.getContractCreateInstance();
+        // Clear receipt.contractID since transaction is failure.
+        TransactionRecord.Builder recordBuilder = createOrUpdateRecord(transactionBody,
+                ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE)
+                .toBuilder()
+                .clearContractCreateResult();
+        TransactionRecord record = recordBuilder
+                .setReceipt(recordBuilder.getReceiptBuilder().clearContractID())
+                .build();
 
-                // record inputs
-                , () -> assertRecord(record)
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-                // transaction body inputs
-                , () -> assertEquals(contractCreateTransactionBody.getInitialBalance(),
-                        dbTransaction.getInitialBalance())
+        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
+                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(4, entityRepository.count()),
+                () -> assertEquals(0, contractResultRepository.count()),
+                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(0, liveHashRepository.count()),
+                () -> assertEquals(0, fileDataRepository.count()),
+                () -> assertTransaction(transactionBody, dbTransaction),
+                () -> assertNull(dbTransaction.getEntityId()),
+                () -> assertRecord(record),
+                () -> assertEquals(contractCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance())
         );
     }
 
@@ -641,12 +666,10 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractCallToNewInvalidTransaction() throws Exception {
-
-        // now call
+    void contractCallFailedWithResult() throws Exception {
         Transaction transaction = contractCallTransaction();
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
-        TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
+        TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -656,25 +679,44 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
                 .findById(dbTransaction.getEntityId()).get();
 
         assertAll(
-                // row counts
-                () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
-                , () -> assertEquals(1, contractResultRepository.count())
-                , () -> assertEquals(3, cryptoTransferRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(5, entityRepository.count()),
+                () -> assertEquals(1, contractResultRepository.count()),
+                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(0, liveHashRepository.count()),
+                () -> assertEquals(0, fileDataRepository.count()),
+                () -> assertTransaction(transactionBody, dbTransaction),
+                () -> assertRecord(record),
+                () -> assertContract(record.getReceipt().getContractID(), dbContractEntity),
+                () -> assertFalse(dbContractEntity.isDeleted())
+        );
+    }
 
-                // transaction
-                , () -> assertTransaction(transactionBody, dbTransaction)
+    @Test
+    void contractCallFailedWithoutResult() throws Exception {
+        Transaction transaction = contractCallTransaction();
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE)
+                .toBuilder().clearContractCallResult().build();
 
-                // record inputs
-                , () -> assertRecord(record)
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-                // receipt
-                , () -> assertContract(record.getReceipt().getContractID(), dbContractEntity)
+        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
+                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+        com.hedera.mirror.importer.domain.Entities dbContractEntity = entityRepository
+                .findById(dbTransaction.getEntityId()).get();
 
-                // Additional entity checks
-                , () -> assertFalse(dbContractEntity.isDeleted())
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(5, entityRepository.count()),
+                () -> assertEquals(0, contractResultRepository.count()),
+                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(0, liveHashRepository.count()),
+                () -> assertEquals(0, fileDataRepository.count()),
+                () -> assertTransaction(transactionBody, dbTransaction),
+                () -> assertRecord(record),
+                () -> assertContract(record.getReceipt().getContractID(), dbContractEntity),
+                () -> assertFalse(dbContractEntity.isDeleted())
         );
     }
 
