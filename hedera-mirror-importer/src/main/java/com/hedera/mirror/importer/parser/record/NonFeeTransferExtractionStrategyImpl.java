@@ -26,7 +26,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import org.springframework.stereotype.Component;
 
@@ -44,8 +44,9 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
         // Only these types of transactions have non-fee transfers.
         if (!body.hasCryptoCreateAccount() && !body.hasContractCreateInstance() && !body.hasCryptoTransfer()
                 && !body.hasContractCall()) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
+
         AccountID payerAccountId = body.getTransactionID().getAccountID();
         if (body.hasCryptoTransfer()) {
             return body.getCryptoTransfer().getTransfers().getAccountAmountsList();

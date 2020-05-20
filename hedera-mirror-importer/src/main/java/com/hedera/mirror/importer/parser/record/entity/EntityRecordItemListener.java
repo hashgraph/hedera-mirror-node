@@ -93,11 +93,11 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionRecord txRecord = recordItem.getRecord();
         TransactionBody body = recordItem.getTransactionBody();
         TransactionHandler transactionHandler = transactionHandlerFactory.create(body);
-        log.trace("Processing transaction : {}", () -> Utility.printProtoMessage(body));
 
         long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entityId = transactionHandler.getEntityId(recordItem);
         TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(recordItem.getTransactionType());
+        log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusNs, entityId);
 
         TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionTypeEnum);
         if (!transactionFilter.test(transactionFilterFields)) {
@@ -111,21 +111,28 @@ public class EntityRecordItemListener implements RecordItemListener {
         transactionHandler.updateTransaction(tx, recordItem);
         tx.setEntity(getEntity(recordItem, transactionHandler, entityId, isSuccessful));
 
-        if ((txRecord.hasTransferList()) && entityProperties.getPersist().isCryptoTransferAmounts()) {
-            processNonFeeTransfers(consensusNs, body, txRecord);
-            if (body.hasCryptoCreateAccount() && isSuccessful(txRecord)) {
+        if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
+            // Don't add failed non-fee transfers as they can contain invalid data and we don't add failed
+            // transactions for aggregated transfers
+            if (isSuccessful) {
+                processNonFeeTransfers(consensusNs, body, txRecord);
+            }
+
+            if (body.hasCryptoCreateAccount() && isSuccessful) {
                 insertCryptoCreateTransferList(consensusNs, txRecord, body);
             } else {
                 insertTransferList(consensusNs, txRecord.getTransferList());
             }
         }
 
-        // TransactionBody-specific handlers.
+        // Insert contract results even for failed transactions since they could fail during execution and we want to
+        // show the gas used and call result.
         if (body.hasContractCall()) {
             insertContractCall(consensusNs, body.getContractCall(), txRecord);
         } else if (body.hasContractCreateInstance()) {
             insertContractCreateInstance(consensusNs, body.getContractCreateInstance(), txRecord);
         }
+
         if (isSuccessful) {
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
@@ -140,6 +147,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertFileUpdate(consensusNs, body.getFileUpdate());
             }
         }
+
         entityListener.onTransaction(tx);
         log.debug("Storing transaction: {}", tx);
 
@@ -227,15 +235,11 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertContractCall(long consensusTimestamp,
                                     ContractCallTransactionBody transactionBody,
                                     TransactionRecord transactionRecord) {
-        if (entityProperties.getPersist().isContracts()) {
+        if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCallResult()) {
             byte[] functionParams = transactionBody.getFunctionParameters().toByteArray();
             long gasSupplied = transactionBody.getGas();
-            byte[] callResult = new byte[0];
-            long gasUsed = 0;
-            if (transactionRecord.hasContractCallResult()) {
-                callResult = transactionRecord.getContractCallResult().toByteArray();
-                gasUsed = transactionRecord.getContractCallResult().getGasUsed();
-            }
+            byte[] callResult = transactionRecord.getContractCallResult().toByteArray();
+            long gasUsed = transactionRecord.getContractCallResult().getGasUsed();
             insertContractResults(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed);
         }
     }
@@ -243,15 +247,11 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertContractCreateInstance(long consensusTimestamp,
                                               ContractCreateTransactionBody transactionBody,
                                               TransactionRecord transactionRecord) {
-        if (entityProperties.getPersist().isContracts()) {
+        if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCreateResult()) {
             byte[] functionParams = transactionBody.getConstructorParameters().toByteArray();
             long gasSupplied = transactionBody.getGas();
-            byte[] callResult = new byte[0];
-            long gasUsed = 0;
-            if (transactionRecord.hasContractCreateResult()) {
-                callResult = transactionRecord.getContractCreateResult().toByteArray();
-                gasUsed = transactionRecord.getContractCreateResult().getGasUsed();
-            }
+            byte[] callResult = transactionRecord.getContractCreateResult().toByteArray();
+            long gasUsed = transactionRecord.getContractCreateResult().getGasUsed();
             insertContractResults(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed);
         }
     }

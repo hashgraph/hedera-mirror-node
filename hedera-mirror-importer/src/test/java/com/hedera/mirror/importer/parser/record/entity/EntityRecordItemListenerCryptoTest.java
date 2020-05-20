@@ -217,8 +217,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         assertAll(
                 // row counts
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(4, entityRepository.count())
-                , () -> assertEquals(3, cryptoTransferRepository.count())
+                , () -> assertEquals(3, entityRepository.count())
+                , () -> assertEquals(2, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
                 , () -> assertEquals(0, fileDataRepository.count())
@@ -528,7 +528,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 // row counts
                 () -> assertEquals(2, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(8, cryptoTransferRepository.count())
+                , () -> assertEquals(7, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
                 , () -> assertEquals(0, fileDataRepository.count())
@@ -631,7 +631,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 // row counts
                 () -> assertEquals(2, transactionRepository.count())
                 , () -> assertEquals(6, entityRepository.count())
-                , () -> assertEquals(8, cryptoTransferRepository.count())
+                , () -> assertEquals(7, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
                 , () -> assertEquals(0, fileDataRepository.count())
@@ -887,6 +887,33 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
+    void cryptoTransferFailedTransaction() throws Exception {
+        entityProperties.getPersist().setCryptoTransferAmounts(true);
+        // make the transfers
+        Transaction transaction = cryptoTransferTransaction();
+        TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INVALID_ACCOUNT_ID);
+
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
+
+        com.hedera.mirror.importer.domain.Transaction dbTransaction = transactionRepository
+                .findById(Utility.timeStampInNanos(record.getConsensusTimestamp())).get();
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(3, entityRepository.count(), "Payer, node and treasury"),
+                () -> assertEquals(2, cryptoTransferRepository.count(), "Node and network fee"),
+                () -> assertEquals(0, nonFeeTransferRepository.count()),
+                () -> assertEquals(0, contractResultRepository.count()),
+                () -> assertEquals(0, liveHashRepository.count()),
+                () -> assertEquals(0, fileDataRepository.count()),
+                () -> assertTransaction(transactionBody, dbTransaction),
+                () -> assertRecord(record),
+                () -> verifyRepoCryptoTransferList(record)
+        );
+    }
+
+    @Test
     void unknownTransactionResult() throws Exception {
         int unknownResult = -1000;
         Transaction transaction = cryptoCreateTransaction();
@@ -931,11 +958,14 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         TransferList.Builder transferList = TransferList.newBuilder();
 
         for (int i = 0; i < transferAccounts.length; i++) {
-            AccountAmount.Builder accountAmount = AccountAmount.newBuilder();
-            accountAmount.setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0)
-                    .setAccountNum(transferAccounts[i]));
-            accountAmount.setAmount(transferAmounts[i]);
-            transferList.addAccountAmounts(accountAmount);
+            // Unsuccessful transactions will only include node and network fees to system accounts
+            if (responseCode == ResponseCodeEnum.SUCCESS_VALUE || transferAccounts[i] < 1000) {
+                AccountAmount.Builder accountAmount = AccountAmount.newBuilder();
+                accountAmount.setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0)
+                        .setAccountNum(transferAccounts[i]));
+                accountAmount.setAmount(transferAmounts[i]);
+                transferList.addAccountAmounts(accountAmount);
+            }
         }
 
         record.setTransferList(transferList);
