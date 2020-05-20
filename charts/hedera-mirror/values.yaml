@@ -151,6 +151,9 @@ postgresql:
         cpu: 250m
         memory: 500Mi
 
+priorityClass:
+  enabled: true
+
 prometheus-adapter:
   enabled: true
   fullnameOverride: prometheus-adapter
@@ -266,9 +269,9 @@ prometheus:
     additionalPodMonitors:
       - name: traefik
         podMetricsEndpoints:
-        - port: traefik
-          path: /metrics
-          interval: 15s
+          - port: traefik
+            path: /metrics
+            interval: 15s
         selector:
           matchLabels:
             app.kubernetes.io/name: traefik

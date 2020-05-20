@@ -58,7 +58,6 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${project.version}</docker.tag.version>
-        <docker.tag.latest>latest</docker.tag.latest>
         <grpc.version>1.29.0</grpc.version>
         <hedera-protobuf.version>0.4.2</hedera-protobuf.version>
         <hedera-sdk.version>1.1.5</hedera-sdk.version>
@@ -181,11 +180,7 @@
                             </paths>
                         </extraDirectories>
                         <to>
-                            <image>${docker.push.repository}/${project.artifactId}</image>
-                            <tags>
-                                <tag>${docker.tag.latest}</tag>
-                                <tag>${docker.tag.version}</tag>
-                            </tags>
+                            <image>${docker.push.repository}/${project.artifactId}:${docker.tag.version}</image>
                         </to>
                         <container>
                             <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
@@ -282,6 +277,43 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <version>${docker-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>dockerBuild</id>
+                            <goals>
+                                <goal>build</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>dockerPush</id>
+                            <goals>
+                                <goal>push</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <images>
+                            <image>
+                                <external>
+                                    <type>properties</type>
+                                    <prefix>docker</prefix>
+                                    <mode>override</mode>
+                                </external>
+                                <build>
+                                    <contextDir>${project.basedir}</contextDir>
+                                    <assembly>
+                                        <exportTargetDir>false</exportTargetDir>
+                                    </assembly>
+                                </build>
+                                <name>${docker.push.repository}/${project.artifactId}:${docker.tag.version}</name>
+                            </image>
+                        </images>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
@@ -294,6 +326,25 @@
                     <injectAllReactorProjects>true</injectAllReactorProjects>
                     <runOnlyOnce>true</runOnlyOnce>
                     <skipPoms>false</skipPoms>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <inherited>false</inherited>
+                <configuration>
+                    <images>
+                        <image>
+                            <build>
+                                <contextDir>${project.basedir}/charts</contextDir>
+                                <dockerFile>${project.basedir}/charts/marketplace/gcp/Dockerfile</dockerFile>
+                                <args>
+                                    <tag>${docker.tag.version}</tag>
+                                </args>
+                            </build>
+                            <name>${docker.push.repository}/hedera-mirror-node/deployer:${docker.tag.version}</name>
+                        </image>
+                    </images>
                 </configuration>
             </plugin>
         </plugins>

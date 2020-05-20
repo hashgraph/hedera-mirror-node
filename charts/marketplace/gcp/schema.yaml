@@ -1,0 +1,152 @@
+x-google-marketplace:
+  schemaVersion: v2
+
+  applicationApiVersion: v1beta1
+
+  # The release version, MUST match the release tag on the the deployer.
+  publishedVersion: "$TAG"
+  publishedVersionMetadata:
+    releaseNote: >-
+      Initial release of the Hedera Mirror Node
+    # releaseTypes - Feature | BugFix | Security
+    releaseTypes:
+      - Feature
+    # If "recommended" is "true", users using older releases are encouraged
+    # to update as soon as possible. This is useful if, for example, this release
+    # fixes a critical issue.
+    recommended: false
+
+  # images for subcharts. Primary image is importer
+  images:
+    '':
+      properties:
+        importer.image.repository:
+          type: REPO_WITH_REGISTRY
+        importer.image.tag:
+          type: TAG
+    grpc:
+      properties:
+        grpc.image.repository:
+          type: REPO_WITH_REGISTRY
+        grpc.image.tag:
+          type: TAG
+    rest:
+      properties:
+        rest.image.repository:
+          type: REPO_WITH_REGISTRY
+        rest.image.tag:
+          type: TAG
+    postgresql-repmgr:
+      properties:
+        postgresql.postgresqlImage.registry:
+          type: REGISTRY
+        postgresql.postgresqlImage.repository:
+          type: REPO_WITHOUT_REGISTRY
+        postgresql.postgresqlImage.tag:
+          type: TAG
+    pgpool:
+      properties:
+        postgresql.pgpoolImage.registry:
+          type: REGISTRY
+        postgresql.pgpoolImage.repository:
+          type: REPO_WITHOUT_REGISTRY
+        postgresql.pgpoolImage.tag:
+          type: TAG
+
+  # Other fields, like clusterConstraints, can be included here.
+
+  # The Properties and Required sections of v2 are structured the same as those of v1.
+  # IMPORTANT: These IDs must match your listing ID in Marketplace.
+  partnerId: hederaPartnerId
+  solutionId: hederaMirrorSolutionId
+
+properties:
+  name:
+    type: string
+    x-google-marketplace:
+      type: NAME
+  namespace:
+    type: string
+    x-google-marketplace:
+      type: NAMESPACE
+  deployer.image:
+    type: string
+    x-google-marketplace:
+      type: DEPLOYER_IMAGE
+  grpc.config.hedera.mirror.grpc.db.password:
+    type: string
+    default: ''
+    description: The grpc user password
+    title: grpc user password
+    x-google-marketplace:
+      type: MASKED_FIELD
+  grpc.replicas:
+    type: integer
+    default: 1
+    description: Number of grpc node replicas
+    title: gRPC replicas
+    minimum: 0
+    maximum: 10
+  importer.config.hedera.mirror.importer.db.password:
+    type: string
+    default: ''
+    description: The importer user password
+    title: importer user password
+    x-google-marketplace:
+      type: MASKED_FIELD
+  importer.config.hedera.mirror.importer.db.restPassword:
+    type: string
+    default: ''
+    description: The importer dc rest user password
+    title: importer db rest user password
+    x-google-marketplace:
+      type: MASKED_FIELD
+  importer.replicas:
+    type: integer
+    default: 1
+    description: Number of importer node replicas
+    title: importer replicas
+    minimum: 1
+    maximum: 10
+  postgresql.pgpool.replicaCount:
+    type: integer
+    default: 1
+    description: Number of pgpool node replicas
+    title: pgpool replicas
+    minimum: 1
+    maximum: 10
+  postgresql.postgresql.replicaCount:
+    type: integer
+    default: 1
+    description: Number of postgres node replicas
+    title: pgpool replicas
+    minimum: 1
+    maximum: 10
+  postgresql.postgresql.repmgrPassword:
+    type: string
+    default: ''
+    description: The repmgr user password
+    title: repmgr user password
+    x-google-marketplace:
+      type: MASKED_FIELD
+  rest.config.hedera.mirror.rest.db.password:
+    type: string
+    default: ''
+    description: The rest user password
+    title: rest user password
+    x-google-marketplace:
+      type: MASKED_FIELD
+  rest.replicas:
+    type: integer
+    default: 1
+    description: Number of rest api node replicas
+    title: rest replicas
+    minimum: 0
+    maximum: 10
+
+required:
+  - name
+  - namespace
+  - grpc.config.hedera.mirror.grpc.db.password
+  - importer.config.hedera.mirror.importer.db.password
+  - rest.config.hedera.mirror.rest.db.password
