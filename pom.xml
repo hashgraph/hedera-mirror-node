@@ -363,7 +363,6 @@
                             <basedir>${project.basedir}</basedir>
                             <includes>
                                 <include>charts/**/Chart.yaml</include>
-                                <include>charts/**/values.yaml</include>
                                 <include>hedera-mirror-rest/package*.json</include>
                                 <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
                                 <include>*/pom.xml</include>
@@ -378,10 +377,6 @@
                                 <replacement>
                                     <token>
                                         <![CDATA[(?<=hedera-mirror-node</artifactId>(\s{9}|\s{5})<version>)[^<]+]]></token>
-                                    <value>${release.version}</value>
-                                </replacement>
-                                <replacement>
-                                    <token><![CDATA[(?<=tag: )[0-9a-z.-]+]]></token>
                                     <value>${release.version}</value>
                                 </replacement>
                                 <replacement>

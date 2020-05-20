@@ -31,7 +31,7 @@ spec:
           env:
             - name: CONFIG_PATH
               value: "/usr/etc/hedera-mirror-rest/"
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}

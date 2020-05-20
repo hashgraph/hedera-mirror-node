@@ -33,7 +33,7 @@ spec:
               value: "true"
             - name: SPRING_CONFIG_ADDITIONAL_LOCATION
               value: "file:/usr/etc/hedera-mirror-grpc/"
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
