@@ -102,8 +102,7 @@ postgresql:
       enabled: true
   fullnameOverride: postgresql
   networkPolicy:
-    allowExternal: false
-    enabled: true
+    enabled: false
   persistence:
     size: 750Gi
   pgpool:
@@ -131,6 +130,8 @@ postgresql:
       requests:
         cpu: 100m
         memory: 128Mi
+  pgpoolImage:
+    debug: true
   postgresqlImage:
     debug: true
   postgresql:
