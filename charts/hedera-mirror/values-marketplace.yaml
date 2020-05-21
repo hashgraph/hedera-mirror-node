@@ -45,14 +45,12 @@ postgresql:
   pgpoolImage:
     registry: gcr.io
     repository: mirrornode/hedera-mirror-node/pgpool
-    debug: true
   postgresqlImage:
     registry: gcr.io
     repository: mirrornode/hedera-mirror-node/postgresql-repmgr
   postgresql:
     priorityClassName: ""
     replicaCount: 1
-    repmgrLogLevel: DEBUG
 
 priorityClass:
   enabled: false
