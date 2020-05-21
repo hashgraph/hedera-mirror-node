@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.downloader.balance;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Bytes;
@@ -68,6 +69,7 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
                         ".csv");
         assertValidFiles(List
                 .of("2019-08-30T18_15_00.016002001Z_Balances.csv", "2019-08-30T18_30_00.010147001Z_Balances.csv"));
+        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
     }
 
     @Test
@@ -110,6 +112,7 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     @Test
     @DisplayName("overwrite on download")
     void overwriteOnDownload() throws Exception {
+        downloaderProperties.setKeepSignatures(true);
         overwriteOnDownloadHelper(
                 "2019-08-30T18_15_00.016002001Z_Balances.csv", "2019-08-30T18_30_00.010147001Z_Balances.csv",
                 ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);

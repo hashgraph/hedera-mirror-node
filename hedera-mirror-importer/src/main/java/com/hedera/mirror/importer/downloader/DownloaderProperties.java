@@ -47,6 +47,10 @@ public interface DownloaderProperties {
 
     StreamType getStreamType();
 
+    default Path getSignaturesPath() {
+        return getStreamPath().resolve(getStreamType().getSignatures());
+    }
+
     default Path getTempPath() {
         return getStreamPath().resolve(getStreamType().getTemp());
     }
@@ -58,6 +62,10 @@ public interface DownloaderProperties {
     boolean isEnabled();
 
     void setEnabled(boolean enabled);
+
+    boolean isKeepSignatures();
+
+    void setKeepSignatures(boolean keepSignatures);
 
     @PostConstruct
     default void init() {

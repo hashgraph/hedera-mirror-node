@@ -162,7 +162,7 @@ public abstract class AbstractDownloaderTest {
 
         reset(applicationStatusRepository);
         // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
-        Files.walk(downloaderProperties.getStreamPath()).filter(this::isSigFile)
+        Files.walk(downloaderProperties.getSignaturesPath()).filter(this::isSigFile)
                 .forEach(AbstractDownloaderTest::corruptFile);
         // fileName1 will be used to calculate marker for list request. mockS3 also returns back the marker in the
         // results. This is unlike AWS S3 which does not return back the marker.
@@ -228,5 +228,17 @@ public abstract class AbstractDownloaderTest {
         validPath.toFile().delete();
         downloader.download();
         assertThat(validPath).doesNotExist();
+    }
+
+    @Test
+    @DisplayName("Keep signature files")
+    void keepSignatureFiles() throws Exception {
+        downloaderProperties.setKeepSignatures(true);
+        fileCopier.copy();
+        downloader.download();
+        assertThat(Files.walk(downloaderProperties.getSignaturesPath()))
+                .filteredOn(p -> !p.toFile().isDirectory())
+                .hasSizeGreaterThan(0)
+                .allMatch(p -> isSigFile(p));
     }
 }

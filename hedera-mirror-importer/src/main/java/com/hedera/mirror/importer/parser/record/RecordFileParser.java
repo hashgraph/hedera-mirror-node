@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.FileUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
@@ -172,9 +173,16 @@ public class RecordFileParser implements FileParser {
                 return;
             }
 
-            try (InputStream fileInputStream = new FileInputStream(new File(name))) {
+            File file = new File(name);
+
+            try (InputStream fileInputStream = new FileInputStream(file)) {
                 loadRecordFile(new StreamFileData(name, fileInputStream));
-                Utility.moveOrDeleteParsedFile(name, parserProperties);
+
+                if (parserProperties.isKeepFiles()) {
+                    Utility.archiveFile(file, parserProperties.getParsedPath());
+                } else {
+                    FileUtils.deleteQuietly(file);
+                }
             } catch (FileNotFoundException e) {
                 log.warn("File does not exist {}", name);
                 return;

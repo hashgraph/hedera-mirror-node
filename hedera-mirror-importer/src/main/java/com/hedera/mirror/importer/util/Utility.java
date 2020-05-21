@@ -49,7 +49,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.parser.ParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Log4j2
@@ -311,35 +310,18 @@ public class Utility {
         return StringUtils.isBlank(hash) || hash.equals(EMPTY_HASH);
     }
 
-    public static void moveFileToParsedDir(String filePath, ParserProperties parserProperties) {
-        Path source = Path.of(filePath);
-        String fileName = source.getFileName().toString();
-        String dateSubDir = fileName.substring(0, 10).replace("-", File.separator);
-        Path destination = parserProperties.getParsedPath().resolve(dateSubDir).resolve(fileName);
-        destination.getParent().toFile().mkdirs();
+    // Moves a file in the form 2019-08-30T18_10_00.419072Z.rcd to destinationRoot/2019/08/30
+    public static void archiveFile(File source, Path destinationRoot) {
+        String filename = source.getName();
+        String date = filename.substring(0, 10).replace("-", File.separator);
+        Path destination = destinationRoot.resolve(date);
 
         try {
-            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+            destination.toFile().mkdirs();
+            Files.move(source.toPath(), destination.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
             log.trace("Moved {} to {}", source, destination);
         } catch (Exception e) {
             log.error("Error moving file {} to {}", source, destination, e);
-        }
-    }
-
-    public static void deleteFile(String fileName) {
-        try {
-            Files.delete(new File(fileName).toPath());
-            log.trace("Deleted file {}", fileName);
-        } catch (Exception e) {
-            log.error("Error deleting file {}", fileName);
-        }
-    }
-
-    public static void moveOrDeleteParsedFile(String fileName, ParserProperties parserProperties) {
-        if (parserProperties.isKeepFiles()) {
-            Utility.moveFileToParsedDir(fileName, parserProperties);
-        } else {
-            Utility.deleteFile(fileName);
         }
     }
 
