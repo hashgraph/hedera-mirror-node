@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -47,8 +48,6 @@ import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 public class RecordFileDownloaderTest extends AbstractDownloaderTest {
-    private static final String FILE1_HASH =
-            "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda";
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
@@ -101,6 +100,7 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
         verify(applicationStatusRepository, times(2)).updateStatusValue(
                 eq(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH), any());
         assertValidFiles(List.of("2019-08-30T18_10_05.249678Z.rcd", "2019-08-30T18_10_00.419072Z.rcd"));
+        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
     }
 
     @Test
@@ -148,6 +148,7 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
     @Test
     @DisplayName("overwrite on download")
     void overwriteOnDownload() throws Exception {
+        downloaderProperties.setKeepSignatures(true);
         overwriteOnDownloadHelper("2019-08-30T18_10_00.419072Z.rcd", "2019-08-30T18_10_05.249678Z.rcd",
                 ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
     }

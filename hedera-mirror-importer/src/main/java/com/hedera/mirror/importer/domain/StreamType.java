@@ -31,6 +31,7 @@ public enum StreamType {
     RECORD("recordstreams");
 
     private static final String PARSED = "parsed";
+    private static final String SIGNATURES = "signatures";
     private static final String TEMP = "tmp";
     private static final String VALID = "valid";
 
@@ -38,6 +39,10 @@ public enum StreamType {
 
     public String getParsed() {
         return PARSED;
+    }
+
+    public String getSignatures() {
+        return SIGNATURES;
     }
 
     public String getTemp() {

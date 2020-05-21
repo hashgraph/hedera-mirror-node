@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import javax.inject.Named;
+import org.apache.commons.io.FileUtils;
 
 import com.hedera.mirror.importer.parser.FileWatcher;
 import com.hedera.mirror.importer.util.ShutdownHelper;
@@ -103,9 +104,15 @@ public class BalanceFileParser extends FileWatcher {
     }
 
     private void processBalanceFile(File balanceFile) throws Exception {
-        if (new AccountBalancesFileLoader((BalanceParserProperties) parserProperties, balanceFile.toPath())
-                .loadAccountBalances()) {
-            Utility.moveOrDeleteParsedFile(balanceFile.getCanonicalPath(), parserProperties);
+        BalanceParserProperties balanceParserProperties = (BalanceParserProperties) parserProperties;
+        AccountBalancesFileLoader loader = new AccountBalancesFileLoader(balanceParserProperties, balanceFile.toPath());
+
+        if (loader.loadAccountBalances()) {
+            if (parserProperties.isKeepFiles()) {
+                Utility.archiveFile(balanceFile, parserProperties.getParsedPath());
+            } else {
+                FileUtils.deleteQuietly(balanceFile);
+            }
         }
     }
 }

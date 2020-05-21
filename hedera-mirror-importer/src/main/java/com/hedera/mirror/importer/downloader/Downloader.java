@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -152,7 +153,6 @@ public abstract class Downloader {
                 .collect(Collectors.toSet());
         List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
         var totalDownloads = new AtomicInteger();
-        Path dataPath = downloaderProperties.getStreamPath().getParent();
 
         /**
          * For each node, create a thread that will make S3 ListObject requests as many times as necessary to
@@ -165,13 +165,7 @@ public abstract class Downloader {
                 Stopwatch stopwatch = Stopwatch.createStarted();
                 // Get a list of objects in the bucket, 100 at a time
                 String s3Prefix = downloaderProperties.getPrefix() + nodeAccountId + "/";
-
-                // s3Prefix is of format "X/Y/" (e.g. "recordstreams/record0.0.3/"), so a replace here with use of
-                // Paths in rest of the code ensures platform compatibility. More involved way would splitting 'prefix'
-                // in all DownloaderProperties implementations to two values and then join then separately for S3 and
-                // for local filesystem.
-                Path sigFilesDir = dataPath.resolve(s3Prefix.replace('/', File.separatorChar));
-                // Ensure the directory for downloading sig files exists.
+                Path sigFilesDir = downloaderProperties.getTempPath().resolve(nodeAccountId);
                 Utility.ensureDirectory(sigFilesDir);
 
                 try {
@@ -274,24 +268,31 @@ public abstract class Downloader {
     }
 
     /**
-     * Moves a file from one location to another boolean: true if file moved successfully Note: The method doesn't check
-     * if source file or destination directory exist to avoid repeated checks that could hurt performance
+     * Moves a file from one location to another. The method doesn't check if source file or destination directory exist
+     * to avoid repeated checks that could hurt performance.
      *
      * @param sourceFile
      * @param destinationFile
-     * @return boolean
+     * @return whether the file was moved successfully
      */
     private boolean moveFile(File sourceFile, File destinationFile) {
         try {
-            // not checking if file exists to help with performance
-            // assumption is caller has created the destination file folder
-            log.trace("Moving {} to {}", sourceFile, destinationFile);
             Files.move(sourceFile.toPath(), destinationFile.toPath(), REPLACE_EXISTING);
+            log.trace("Moved {} to {}", sourceFile, destinationFile);
             return true;
         } catch (IOException e) {
             log.error("File move from {} to {} failed", sourceFile.getAbsolutePath(), destinationFile
                     .getAbsolutePath(), e);
             return false;
+        }
+    }
+
+    private void moveSignatureFile(FileStreamSignature signature) {
+        if (downloaderProperties.isKeepSignatures()) {
+            Path destination = downloaderProperties.getSignaturesPath().resolve(signature.getNode());
+            Utility.archiveFile(signature.getFile(), destination);
+        } else {
+            FileUtils.deleteQuietly(signature.getFile());
         }
     }
 
@@ -347,18 +348,18 @@ public abstract class Downloader {
                         continue;
                     }
                     if (verifyDataFile(signedDataFile.getPath(), signature.getHash())) {
-                            // move the file to the valid directory
-                            File destination = validPath.resolve(signedDataFile.getName()).toFile();
-                            if (moveFile(signedDataFile, destination)) {
-                                log.debug("Successfully moved file from {} to {}", signedDataFile, destination);
-                                if (getLastValidDownloadedFileHashKey() != null) {
-                                    applicationStatusRepository.updateStatusValue(getLastValidDownloadedFileHashKey(),
-                                            signature.getHashAsHex());
-                                }
-                                applicationStatusRepository
-                                        .updateStatusValue(getLastValidDownloadedFileKey(), destination.getName());
-                                valid = true;
-                                break;
+                        // move the file to the valid directory
+                        File destination = validPath.resolve(signedDataFile.getName()).toFile();
+                        if (moveFile(signedDataFile, destination)) {
+                            if (getLastValidDownloadedFileHashKey() != null) {
+                                applicationStatusRepository.updateStatusValue(getLastValidDownloadedFileHashKey(),
+                                        signature.getHashAsHex());
+                            }
+                            applicationStatusRepository
+                                    .updateStatusValue(getLastValidDownloadedFileKey(), destination.getName());
+                            valid = true;
+                            signatures.forEach(this::moveSignatureFile);
+                            break;
                         }
                     } else {
                         log.warn("Verification of data file failed. Will try to download a file with same timestamp " +
