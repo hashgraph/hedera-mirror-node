@@ -102,8 +102,7 @@ postgresql:
       enabled: true
   fullnameOverride: postgresql
   networkPolicy:
-    allowExternal: false
-    enabled: true
+    enabled: false
   persistence:
     size: 750Gi
   pgpool:
