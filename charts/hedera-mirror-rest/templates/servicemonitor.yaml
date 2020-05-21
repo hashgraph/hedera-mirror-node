@@ -8,16 +8,9 @@ metadata:
   namespace: {{ include "hedera-mirror-rest.namespace" . }}
 spec:
   endpoints:
-  - basicAuth:
-      password:
-        name: {{ include "hedera-mirror-rest.fullname" . }}
-        key: metricsPassword
-      username:
-        name: {{ include "hedera-mirror-rest.fullname" . }}
-        key: metricsUsername
-    interval: {{ .Values.serviceMonitor.interval }}
-    path: /swagger/metrics
-    port: http
+    - interval: {{ .Values.serviceMonitor.interval }}
+      path: /swagger/metrics
+      port: http
   selector:
     matchLabels:
       {{- include "hedera-mirror-rest.selectorLabels" . | nindent 6 }}

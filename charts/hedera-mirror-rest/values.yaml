@@ -16,8 +16,8 @@ config:
       rest:
         metrics:
           config:
-            password: password
-            username: metrics
+            authentication:
+              enabled: false
 
 fullnameOverride: ""
 
@@ -33,7 +33,7 @@ hpa:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-rest
-  tag: 0.11.0-rc1
+  tag: "" # Default to the chart's app version
 
 imagePullSecrets: []
 

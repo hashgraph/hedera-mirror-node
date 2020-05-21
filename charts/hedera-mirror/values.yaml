@@ -8,6 +8,8 @@ fullnameOverride: mirror
 
 global:
   namespaceOverride: ""
+  rbac:
+    pspEnabled: false
 
 grpc:
   config:
@@ -55,6 +57,8 @@ loki:
       enabled: true
     persistence:
       enabled: true
+    rbac:
+      pspEnabled: false
     resources:
       limits:
         cpu: 200m
@@ -68,6 +72,8 @@ loki:
     fullnameOverride: promtail
     loki:
       serviceName: loki
+    rbac:
+      pspEnabled: false
     resources:
       limits:
         cpu: 125m
@@ -150,6 +156,7 @@ postgresql:
       requests:
         cpu: 250m
         memory: 500Mi
+    repmgrLogLevel: DEBUG
 
 priorityClass:
   enabled: true
@@ -239,6 +246,9 @@ prometheus:
           average: 50
           burst: 100
       path: "/grafana"
+    rbac:
+      namespaced: true
+      pspEnabled: false
     resources:
       limits:
         cpu: 150m
@@ -248,6 +258,8 @@ prometheus:
         memory: 30Mi
   kube-state-metrics:
     fullnameOverride: prometheus-kube-state-metrics
+    podSecurityPolicy:
+      enabled: false
     resources:
       limits:
         cpu: 10m
@@ -258,6 +270,8 @@ prometheus:
   prometheus-node-exporter:
     fullnameOverride: prometheus-node-exporter
     hostNetwork: false
+    rbac:
+      pspEnabled: false
     resources:
       limits:
         cpu: 50m
@@ -294,6 +308,9 @@ prometheus:
               requests:
                 storage: 50Gi
   prometheusOperator:
+    namespaces:
+      additional: []
+      releaseNamespace: true
     resources:
       limits:
         cpu: 100m
