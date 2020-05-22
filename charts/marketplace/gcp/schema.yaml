@@ -69,78 +69,108 @@ properties:
     type: string
     x-google-marketplace:
       type: NAMESPACE
-  deployer.image:
-    type: string
-    x-google-marketplace:
-      type: DEPLOYER_IMAGE
   grpc.config.hedera.mirror.grpc.db.password:
     type: string
     default: ''
-    description: The grpc user password
-    title: grpc user password
+    description: The gRPC database user password
+    title: gRPC database user password
     x-google-marketplace:
       type: MASKED_FIELD
   grpc.replicas:
     type: integer
     default: 1
-    description: Number of grpc node replicas
+    description: Number of gRPC node replicas
     title: gRPC replicas
     minimum: 0
     maximum: 10
+  grpc.serviceAccount.name:
+    type: string
+    title: gRPC Service Account
+    description: Service account to assign to gRPC Deployment
+    x-google-marketplace:
+      type: SERVICE_ACCOUNT
+      serviceAccount:
+        roles:
+          - type: Role
+            rulesType: CUSTOM
+            rules:
+              - apiGroups: ['']
+                resources: ['configmaps']
+                verbs: ['get', 'watch']
+              - apiGroups: ['']
+                resources: ['pods']
+                verbs: ['get']
   importer.config.hedera.mirror.importer.db.password:
     type: string
     default: ''
-    description: The importer user password
-    title: importer user password
+    description: The importer database user password
+    title: Importer database user password
     x-google-marketplace:
       type: MASKED_FIELD
   importer.config.hedera.mirror.importer.db.restPassword:
     type: string
     default: ''
-    description: The importer dc rest user password
-    title: importer db rest user password
+    description: The importer database REST API user password
+    title: Importer database REST API user password
     x-google-marketplace:
       type: MASKED_FIELD
   importer.replicas:
     type: integer
     default: 1
     description: Number of importer node replicas
-    title: importer replicas
+    title: Importer replicas
     minimum: 1
     maximum: 10
+  importer.serviceAccount.name:
+    type: string
+    title: Importer Service Account
+    description: Service account to assign to Importer StatefulSet
+    x-google-marketplace:
+      type: SERVICE_ACCOUNT
+      serviceAccount:
+        roles:
+          - type: Role
+            rulesType: CUSTOM
+            rules:
+              - apiGroups: ['']
+                resources: ['configmaps']
+                verbs: ['get', 'list','watch', 'create', 'update']
+              - apiGroups: ['']
+                resources: ['pods']
+                verbs: ['get', 'watch']
   postgresql.pgpool.replicaCount:
     type: integer
     default: 1
     description: Number of pgpool node replicas
-    title: pgpool replicas
+    title: Pgpool replicas
     minimum: 1
     maximum: 10
   postgresql.postgresql.replicaCount:
     type: integer
     default: 1
     description: Number of postgres node replicas
-    title: pgpool replicas
+    title: Pgpool replicas
     minimum: 1
     maximum: 10
   postgresql.postgresql.repmgrPassword:
     type: string
     default: ''
     description: The repmgr user password
-    title: repmgr user password
+    title: Repmgr user password
     x-google-marketplace:
       type: MASKED_FIELD
   rest.config.hedera.mirror.rest.db.password:
     type: string
     default: ''
-    description: The rest user password
-    title: rest user password
+    description: The REST API user database password
+    title: REST API user database password
     x-google-marketplace:
       type: MASKED_FIELD
   rest.replicas:
     type: integer
     default: 1
-    description: Number of rest api node replicas
-    title: rest replicas
+    description: Number of REST API node replicas
+    title: REST API replicas
     minimum: 0
     maximum: 10
 
@@ -149,4 +179,5 @@ required:
   - namespace
   - grpc.config.hedera.mirror.grpc.db.password
   - importer.config.hedera.mirror.importer.db.password
+  - importer.config.hedera.mirror.importer.db.restPassword
   - rest.config.hedera.mirror.rest.db.password
