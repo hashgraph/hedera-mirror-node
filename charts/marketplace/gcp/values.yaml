@@ -7,8 +7,6 @@ applicationResource:
 grpc:
   hpa:
     enabled: false
-  image:
-    repository: gcr.io/mirrornode/hedera-mirror-node/grpc
   ingress:
     enabled: false
   priorityClassName: ""
@@ -30,8 +28,6 @@ importer:
   replicas: 1
   serviceAccount:
     create: false
-  image:
-    repository: gcr.io/mirrornode/hedera-mirror-node/importer
 
 loki:
   enabled: false
@@ -73,8 +69,6 @@ rest:
     create: false
   serviceMonitor:
     enabled: false
-  image:
-    repository: gcr.io/mirrornode/hedera-mirror-node/rest
   service:
     type: LoadBalancer
 
