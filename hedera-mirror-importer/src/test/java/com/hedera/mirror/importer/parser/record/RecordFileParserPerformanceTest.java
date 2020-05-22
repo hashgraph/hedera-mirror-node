@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.benchmark;
+package com.hedera.mirror.importer.parser.record;
 
 /*-
  * ‌
@@ -35,13 +35,11 @@ import org.springframework.beans.factory.annotation.Value;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.record.RecordFileParser;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 @Log4j2
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class ParserRecordIngestionTest extends IntegrationTest {
+public class RecordFileParserPerformanceTest extends IntegrationTest {
 
     @TempDir
     static Path dataPath;
@@ -71,7 +69,7 @@ public class ParserRecordIngestionTest extends IntegrationTest {
         parserProperties.init();
     }
 
-    @Timeout(400)
+    @Timeout(15)
     @Test
     void parseAndIngestMultipleFiles60000Transactions() throws Exception {
         parse("*.rcd");
