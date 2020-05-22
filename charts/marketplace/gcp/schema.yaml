@@ -76,29 +76,46 @@ properties:
   grpc.config.hedera.mirror.grpc.db.password:
     type: string
     default: ''
-    description: The grpc user password
-    title: grpc user password
+    description: The gRPC database user password
+    title: gRPC database user password
     x-google-marketplace:
       type: MASKED_FIELD
   grpc.replicas:
     type: integer
     default: 1
-    description: Number of grpc node replicas
+    description: Number of gRPC node replicas
     title: gRPC replicas
     minimum: 0
     maximum: 10
+  grpc.serviceAccount.name:
+    type: string
+    title: gRPC Service Account
+    description: Service account to assign to gRPC StatefulSet
+    x-google-marketplace:
+      type: SERVICE_ACCOUNT
+      serviceAccount:
+        roles:
+          - type: ClusterRole
+            rulesType: CUSTOM
+            rules:
+              - apiGroups: ['']
+                resources: ['configmaps']
+                verbs: ['get', 'list','watch']
+              - apiGroups: ['']
+                resources: ['pods']
+                verbs: ['get', 'list','watch']
   importer.config.hedera.mirror.importer.db.password:
     type: string
     default: ''
-    description: The importer user password
-    title: importer user password
+    description: The importer database user password
+    title: importer database user password
     x-google-marketplace:
       type: MASKED_FIELD
   importer.config.hedera.mirror.importer.db.restPassword:
     type: string
     default: ''
-    description: The importer dc rest user password
-    title: importer db rest user password
+    description: The importer database rest user password
+    title: importer database rest user password
     x-google-marketplace:
       type: MASKED_FIELD
   importer.replicas:
@@ -108,6 +125,23 @@ properties:
     title: importer replicas
     minimum: 1
     maximum: 10
+  importer.serviceAccount.name:
+    type: string
+    title: Importer Service Account
+    description: Service account to assign to Importer StatefulSet
+    x-google-marketplace:
+      type: SERVICE_ACCOUNT
+      serviceAccount:
+        roles:
+          - type: ClusterRole
+            rulesType: CUSTOM
+            rules:
+              - apiGroups: ['']
+                resources: ['configmaps']
+                verbs: ['get', 'list','watch', 'create']
+              - apiGroups: ['']
+                resources: ['pods']
+                verbs: ['get', 'list','watch']
   postgresql.pgpool.replicaCount:
     type: integer
     default: 1
@@ -132,15 +166,15 @@ properties:
   rest.config.hedera.mirror.rest.db.password:
     type: string
     default: ''
-    description: The rest user password
-    title: rest user password
+    description: The REST API database password
+    title: REST API database password
     x-google-marketplace:
       type: MASKED_FIELD
   rest.replicas:
     type: integer
     default: 1
-    description: Number of rest api node replicas
-    title: rest replicas
+    description: Number of REST API node replicas
+    title: REST API replicas
     minimum: 0
     maximum: 10
 
@@ -149,4 +183,5 @@ required:
   - namespace
   - grpc.config.hedera.mirror.grpc.db.password
   - importer.config.hedera.mirror.importer.db.password
+  - importer.config.hedera.mirror.importer.db.restPassword
   - rest.config.hedera.mirror.rest.db.password
