@@ -69,10 +69,6 @@ properties:
     type: string
     x-google-marketplace:
       type: NAMESPACE
-  deployer.image:
-    type: string
-    x-google-marketplace:
-      type: DEPLOYER_IMAGE
   grpc.config.hedera.mirror.grpc.db.password:
     type: string
     default: ''
@@ -100,10 +96,10 @@ properties:
             rules:
               - apiGroups: ['']
                 resources: ['configmaps']
-                verbs: ['get', 'list','watch']
+                verbs: ['get', 'watch']
               - apiGroups: ['']
                 resources: ['pods']
-                verbs: ['get', 'list','watch']
+                verbs: ['get']
   importer.config.hedera.mirror.importer.db.password:
     type: string
     default: ''
@@ -141,7 +137,7 @@ properties:
                 verbs: ['get', 'list','watch', 'create']
               - apiGroups: ['']
                 resources: ['pods']
-                verbs: ['get', 'list','watch']
+                verbs: ['get', 'watch']
   postgresql.pgpool.replicaCount:
     type: integer
     default: 1
