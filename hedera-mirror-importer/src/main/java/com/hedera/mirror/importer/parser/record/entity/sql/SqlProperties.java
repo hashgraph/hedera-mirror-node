@@ -33,5 +33,5 @@ public class SqlProperties {
      * PreparedStatement.executeBatch() is called after every batchSize number of transactions from record stream file.
      */
     @Min(1)
-    private int batchSize = 100;
+    private int batchSize = 2000;
 }

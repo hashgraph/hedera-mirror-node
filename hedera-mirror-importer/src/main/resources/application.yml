@@ -54,6 +54,9 @@ spring:
     password: ${hedera.mirror.importer.db.password}
     url: jdbc:postgresql://${hedera.mirror.importer.db.host}:${hedera.mirror.importer.db.port}/${hedera.mirror.importer.db.name}
     username: ${hedera.mirror.importer.db.username}
+    hikari:
+      data-source-properties:
+        reWriteBatchedInserts: true
   flyway:
     connectRetries: 20
     baselineOnMigrate: true
