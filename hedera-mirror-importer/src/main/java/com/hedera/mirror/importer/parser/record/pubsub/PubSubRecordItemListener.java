@@ -80,7 +80,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
 
     // Publishes the PubSubMessage while retrying if a retryable error is encountered.
     private void sendPubSubMessage(PubSubMessage pubSubMessage) {
-        for (int numTries = 0; numTries < pubSubProperties.getNumSendTries(); numTries++) {
+        for (int numTries = 0; numTries < pubSubProperties.getMaxSendAttempts(); numTries++) {
             try {
                 pubsubOutputChannel.send(MessageBuilder
                         .withPayload(pubSubMessage)

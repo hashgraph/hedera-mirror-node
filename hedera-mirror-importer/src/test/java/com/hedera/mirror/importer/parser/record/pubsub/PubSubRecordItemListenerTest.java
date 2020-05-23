@@ -171,7 +171,7 @@ class PubSubRecordItemListenerTest {
                 .setTransfers(TransferList.newBuilder().build())
                 .build();
         Transaction transaction = buildTransaction(builder -> builder.setCryptoTransfer(cryptoTransfer));
-        pubSubProperties.setNumSendTries(3);
+        pubSubProperties.setMaxSendAttempts(3);
 
         // when
         when(messageChannel.send(any()))

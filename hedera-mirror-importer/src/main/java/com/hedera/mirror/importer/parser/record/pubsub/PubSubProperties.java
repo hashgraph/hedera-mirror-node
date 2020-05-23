@@ -35,5 +35,5 @@ public class PubSubProperties {
     @NotBlank
     private String topicName;
 
-    private int numSendTries = 5;
+    private int maxSendAttempts = 5;
 }
