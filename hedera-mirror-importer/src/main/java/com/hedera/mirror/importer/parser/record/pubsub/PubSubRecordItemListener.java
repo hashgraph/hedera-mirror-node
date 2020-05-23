@@ -80,14 +80,14 @@ public class PubSubRecordItemListener implements RecordItemListener {
 
     // Publishes the PubSubMessage while retrying if a retryable error is encountered.
     private void sendPubSubMessage(PubSubMessage pubSubMessage) {
-        for (int numRetries = 0; numRetries < pubSubProperties.getNumSendTries(); numRetries++) {
+        for (int numTries = 0; numTries < pubSubProperties.getNumSendTries(); numTries++) {
             try {
                 pubsubOutputChannel.send(MessageBuilder
                         .withPayload(pubSubMessage)
                         .setHeader("consensusTimestamp", pubSubMessage.getConsensusTimestamp())
                         .build());
             } catch (MessageTimeoutException e) {
-                log.warn("Timed out sending message to PubSub");
+                log.warn("Attempt {} to send message to PubSub timed out", numTries + 1);
                 continue;
             }
             return;
