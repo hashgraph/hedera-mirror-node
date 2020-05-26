@@ -73,6 +73,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 2000                    | When inserting transactions into db, executeBatches() is called every these many transactions  |
 | `hedera.mirror.importer.parser.record.pubsub.topicName`                     |                         | Pubsub topic to publish transactions to                                                        |
+| `hedera.mirror.importer.parser.record.pubsub.maxSendAttempts`               | 5                       | Number of attempts when sending messages to PubSub (only for retryable errors)                 |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
 

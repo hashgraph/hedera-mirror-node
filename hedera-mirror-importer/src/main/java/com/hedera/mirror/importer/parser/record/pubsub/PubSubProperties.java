@@ -34,4 +34,6 @@ import org.springframework.validation.annotation.Validated;
 public class PubSubProperties {
     @NotBlank
     private String topicName;
+
+    private int maxSendAttempts = 5;
 }

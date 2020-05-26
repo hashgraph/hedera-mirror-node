@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.integration.MessageTimeoutException;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
 
@@ -48,6 +49,7 @@ import com.hedera.mirror.importer.util.Utility;
 @ConditionalOnPubSubRecordParser
 public class PubSubRecordItemListener implements RecordItemListener {
 
+    private final PubSubProperties pubSubProperties;
     private final MessageChannel pubsubOutputChannel;
     private final NetworkAddressBook networkAddressBook;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
@@ -63,10 +65,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
         EntityId entity = transactionHandler.getEntityId(recordItem);
         PubSubMessage pubSubMessage = buildPubSubMessage(consensusTimestamp, entity, recordItem);
         try {
-            pubsubOutputChannel.send(MessageBuilder
-                    .withPayload(pubSubMessage)
-                    .setHeader("consensusTimestamp", consensusTimestamp)
-                    .build());
+            sendPubSubMessage(pubSubMessage);
         } catch (Exception e) {
             // This will make RecordFileParser to retry whole file, thus sending duplicates of previous transactions
             // in this file. In needed in future, this can be optimized to resend only the txns with consensusTimestamp
@@ -76,6 +75,22 @@ public class PubSubRecordItemListener implements RecordItemListener {
         log.debug("Published transaction : {}", consensusTimestamp);
         if (NetworkAddressBook.isAddressBook(entity)) {
             networkAddressBook.updateFrom(body);
+        }
+    }
+
+    // Publishes the PubSubMessage while retrying if a retryable error is encountered.
+    private void sendPubSubMessage(PubSubMessage pubSubMessage) {
+        for (int numTries = 0; numTries < pubSubProperties.getMaxSendAttempts(); numTries++) {
+            try {
+                pubsubOutputChannel.send(MessageBuilder
+                        .withPayload(pubSubMessage)
+                        .setHeader("consensusTimestamp", pubSubMessage.getConsensusTimestamp())
+                        .build());
+            } catch (MessageTimeoutException e) {
+                log.warn("Attempt {} to send message to PubSub timed out", numTries + 1);
+                continue;
+            }
+            return;
         }
     }
 

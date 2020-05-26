@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +54,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.integration.MessageTimeoutException;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 
@@ -85,13 +87,15 @@ class PubSubRecordItemListenerTest {
     private NetworkAddressBook networkAddressBook;
     @Mock
     private TransactionHandler transactionHandler;
+    private PubSubProperties pubSubProperties;
     private PubSubRecordItemListener pubSubRecordItemListener;
 
     @BeforeEach
     private void beforeEach() {
         TransactionHandlerFactory transactionHandlerFactory = mock(TransactionHandlerFactory.class);
+        pubSubProperties = new PubSubProperties();
         when(transactionHandlerFactory.create(any())).thenReturn(transactionHandler);
-        pubSubRecordItemListener = new PubSubRecordItemListener(messageChannel, networkAddressBook,
+        pubSubRecordItemListener = new PubSubRecordItemListener(pubSubProperties, messageChannel, networkAddressBook,
                 nonFeeTransferExtractionStrategy, transactionHandlerFactory);
     }
 
@@ -112,7 +116,9 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        assertPubSubMessage(topicIdEntity, transaction, null);
+        var pubSubMessage = assertPubSubMessage(transaction, 1);
+        assertThat(pubSubMessage.getEntity()).isEqualTo(topicIdEntity);
+        assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
     }
 
     @Test
@@ -133,11 +139,13 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        assertPubSubMessage(null, transaction, nonFeeTransfers);
+        var pubSubMessage = assertPubSubMessage(transaction, 1);
+        assertThat(pubSubMessage.getEntity()).isNull();
+        assertThat(pubSubMessage.getNonFeeTransfers()).isEqualTo(nonFeeTransfers);
     }
 
     @Test
-    void testParserExceptionIsThrowIfSendingFails() {
+    void testNonRetryableError() {
         // when
         CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
                 .setTransfers(TransferList.newBuilder().build())
@@ -153,6 +161,29 @@ class PubSubRecordItemListenerTest {
                         new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES)))
                 .isInstanceOf(ParserException.class)
                 .hasMessageContaining("Error sending transaction to pubsub");
+        verify(messageChannel, times(1)).send(any());
+    }
+
+    @Test
+    void testSendRetries() throws Exception {
+        // when
+        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(TransferList.newBuilder().build())
+                .build();
+        Transaction transaction = buildTransaction(builder -> builder.setCryptoTransfer(cryptoTransfer));
+        pubSubProperties.setMaxSendAttempts(3);
+
+        // when
+        when(messageChannel.send(any()))
+                .thenThrow(MessageTimeoutException.class)
+                .thenThrow(MessageTimeoutException.class)
+                .thenReturn(true);
+        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+
+        // then
+        var pubSubMessage = assertPubSubMessage(transaction, 3);
+        assertThat(pubSubMessage.getEntity()).isNull();
+        assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
     }
 
     @Test
@@ -192,30 +223,20 @@ class PubSubRecordItemListenerTest {
         verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()));
     }
 
-    private void assertPubSubMessage(EntityId expectedEntity, Transaction expectedTransaction,
-                                     List<AccountAmount> expectedNonFeeTransfers) throws Exception {
+    private PubSubMessage assertPubSubMessage(Transaction expectedTransaction, int numSendTries) throws Exception {
         ArgumentCaptor<Message<PubSubMessage>> argument = ArgumentCaptor.forClass(Message.class);
-        verify(messageChannel).send(argument.capture());
-        PubSubMessage actual = argument.getValue().getPayload();
+        verify(messageChannel, times(numSendTries)).send(argument.capture());
+        var actual = argument.getValue().getPayload();
         assertThat(actual.getConsensusTimestamp()).isEqualTo(CONSENSUS_TIMESTAMP);
-        if (expectedEntity == null) {
-            assertThat(actual.getEntity()).isNull();
-        } else {
-            assertThat(actual.getEntity()).isEqualTo(expectedEntity);
-        }
         assertThat(actual.getTransaction()).isEqualTo(expectedTransaction.toBuilder()
                 .clearBodyBytes()
                 .setBody(TransactionBody.parseFrom(expectedTransaction.getBodyBytes()))
                 .build());
         assertThat(actual.getTransactionRecord()).isEqualTo(DEFAULT_RECORD);
-        if (expectedNonFeeTransfers == null) {
-            assertThat(actual.getNonFeeTransfers()).isNull();
-        } else {
-            assertThat(actual.getNonFeeTransfers()).isEqualTo(expectedNonFeeTransfers);
-        }
         assertThat(argument.getValue().getHeaders()).describedAs("Headers contain consensus timestamp")
                 .hasSize(3) // +2 are default attributes 'id' and 'timestamp' (publish)
                 .containsEntry("consensusTimestamp", CONSENSUS_TIMESTAMP);
+        return actual;
     }
 
     private static AccountAmount buildAccountAmount(long accountNum, long amount) {
