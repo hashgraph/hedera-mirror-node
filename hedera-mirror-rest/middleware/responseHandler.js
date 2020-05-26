@@ -28,7 +28,6 @@ const responseHandler = async (req, res, next) => {
   const responseData = res.locals[constants.responseDataLabel];
   if (responseData === undefined) {
     // unmatched route will have no response data, pass NotFoundError to next middleware
-    logger.debug(`Unsupported API endpoint: ${req.originalUrl}`);
     next(new NotFoundError());
   } else {
     // set response json

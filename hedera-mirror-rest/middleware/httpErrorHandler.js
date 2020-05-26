@@ -21,7 +21,7 @@
 
 const {DbError} = require('../errors/dbError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-const {NotFoundError, NotFoundErrorMessage} = require('../errors/notFoundError');
+const {NotFoundError} = require('../errors/notFoundError');
 
 const httpStatusCodes = {
   OK: 200,
