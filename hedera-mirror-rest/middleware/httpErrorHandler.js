@@ -21,7 +21,7 @@
 
 const {DbError} = require('../errors/dbError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-const {NotFoundError} = require('../errors/notFoundError');
+const {NotFoundError, NotFoundErrorMessage} = require('../errors/notFoundError');
 
 const httpStatusCodes = {
   OK: 200,
@@ -62,6 +62,14 @@ const handleError = (err, req, res, next) => {
       logger.trace(`Unhandled error encountered: ${err.message}`);
       res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessageFormat(httpErrorMessages.INTERNAL_ERROR));
   }
+
+  next();
+};
+
+const pageNotFound = async (req, res, next) => {
+  logger.debug(`Unsupported API endpoint: ${req.originalUrl}`);
+  res.status(httpStatusCodes.NOT_FOUND).json(errorMessageFormat(NotFoundErrorMessage));
+  next();
 };
 
 /**
@@ -85,4 +93,5 @@ const errorMessageFormat = (errorMessages) => {
 
 module.exports = {
   handleError,
+  pageNotFound,
 };

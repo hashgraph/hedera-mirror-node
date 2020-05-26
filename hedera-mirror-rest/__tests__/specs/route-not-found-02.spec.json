@@ -1,0 +1,20 @@
+{
+  "description": "Call for non matching mispelled route",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/topicsx/0.0.1234567891/messages/2",
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
+  }
+}

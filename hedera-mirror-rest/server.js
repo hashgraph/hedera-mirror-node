@@ -33,7 +33,7 @@ const transactions = require('./transactions.js');
 const balances = require('./balances.js');
 const accounts = require('./accounts.js');
 const topicmessage = require('./topicmessage.js');
-const {handleError} = require('./middleware/httpErrorHandler');
+const {handleError, pageNotFound} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
 const {requestLogger} = require('./middleware/requestLogger');
@@ -126,6 +126,9 @@ app.use(responseHandler);
 
 // response error handling middleware
 app.use(handleError);
+
+// Unsupported api endpoint. Must be last middleware
+app.use(pageNotFound);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
