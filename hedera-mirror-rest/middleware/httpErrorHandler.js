@@ -37,7 +37,7 @@ const httpErrorMessages = {
 
 // Error middleware which formats thrown errors and maps them to appropriate http status codes
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
-const handleError = (err, req, res, next) => {
+const handleError = async (err, req, res, next) => {
   // only logs in non test environment
   if (process.env.NODE_ENV !== 'test') {
     logger.error(`Error processing ${req.originalUrl}: `, err);
@@ -66,12 +66,6 @@ const handleError = (err, req, res, next) => {
   next();
 };
 
-const pageNotFound = async (req, res, next) => {
-  logger.debug(`Unsupported API endpoint: ${req.originalUrl}`);
-  res.status(httpStatusCodes.NOT_FOUND).json(errorMessageFormat(NotFoundErrorMessage));
-  next();
-};
-
 /**
  * Application error message format
  * @param array of messages
@@ -93,5 +87,4 @@ const errorMessageFormat = (errorMessages) => {
 
 module.exports = {
   handleError,
-  pageNotFound,
 };
