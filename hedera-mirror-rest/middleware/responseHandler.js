@@ -20,12 +20,19 @@
 'use strict';
 
 const constants = require('../constants.js');
+const {NotFoundError} = require('../errors/notFoundError');
 
-// response middleware that pull response data passed through request and sets in json response
+// response middleware that pulls response data passed through request and sets in json response
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
-const responseHandler = (req, res, next) => {
-  // set response json
-  res.json(res.locals[constants.responseDataLabel]);
+const responseHandler = async (req, res, next) => {
+  const responseData = res.locals[constants.responseDataLabel];
+  if (responseData === undefined) {
+    // unmatched route will have no response data, pass NotFoundError to next middleware
+    next(new NotFoundError());
+  } else {
+    // set response json
+    res.json(res.locals[constants.responseDataLabel]);
+  }
 };
 
 module.exports = {

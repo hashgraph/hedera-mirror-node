@@ -1,0 +1,20 @@
+{
+  "description": "Call for non matching route",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/hedera/0.0.7",
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
+  }
+}

@@ -37,7 +37,7 @@ const httpErrorMessages = {
 
 // Error middleware which formats thrown errors and maps them to appropriate http status codes
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
-const handleError = (err, req, res, next) => {
+const handleError = async (err, req, res, next) => {
   // only logs in non test environment
   if (process.env.NODE_ENV !== 'test') {
     logger.error(`Error processing ${req.originalUrl}: `, err);
@@ -62,6 +62,8 @@ const handleError = (err, req, res, next) => {
       logger.trace(`Unhandled error encountered: ${err.message}`);
       res.status(httpStatusCodes.INTERNAL_ERROR).json(errorMessageFormat(httpErrorMessages.INTERNAL_ERROR));
   }
+
+  next();
 };
 
 /**
