@@ -279,8 +279,10 @@ jobs:
             sudo pip uninstall crcmod
             sudo pip install --no-cache-dir -U crcmod
             gsutil cp gs://hedera-mirror-dev/database/testnet_1M_transactions_pgdump.gz ./testnet_1M_transactions_pgdump.gz
-            echo 'export PATH=/usr/lib/postgresql/9.6/bin/:$PATH' >> $BASH_ENV
-            echo $(ls /usr/lib)
+            sudo add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main"
+            wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+            sudo apt-get update
+            sudo apt-get install postgresql-9.6
             pg_restore -d mirror_node -U mirror_node -1 ./testnet_1M_transactions_pgdump.gz
             echo "pg_restore done"
       - run:
