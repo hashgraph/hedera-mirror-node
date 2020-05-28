@@ -249,17 +249,20 @@ jobs:
       - persist_artifacts_to_workspace
 
   perf_maven:
+    <<: *machine_ubuntu
     environment:
       WORKSPACE: *workspace_root
       <<: *maven_opts
-    docker:
-      - *docker_jdk11
-      - *docker_db
-      - image: 'google/cloud-sdk:latest'
     steps:
       - checkout
       - restore_maven_cache
       - write_spring_override_config
+      - run:
+          name: Install OpenJDK 11
+          command: |
+            sudo add-apt-repository ppa:openjdk-r/ppa \
+            && sudo apt-get update -q \
+            && sudo apt install -y openjdk-11-jdk
       - run:
           name: Loading large data set
           command: |
