@@ -268,6 +268,8 @@ jobs:
           command: |
             set -ex
             export BOTO_CONFIG=/dev/null
+            echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
+            gcloud --quiet config set project mirrornode
             gsutil cp gs://hedera-mirror-dev/database/testnet_1M_transactions_pgdump.gz ./testnet_1M_transactions_pgdump.gz
             pg_restore -d mirror_node -U mirror_node -1 ./testnet_1M_transactions_pgdump.gz
       - run:
