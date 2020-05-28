@@ -260,6 +260,12 @@ jobs:
       - restore_maven_cache
       - write_spring_override_config
       - run:
+          name: Loading large data set
+          command: |
+            set -ex
+            gsutil cp gs://hedera-mirror-dev/database/testnet_1M_transactions_pgdump.gz ./testnet_1M_transactions_pgdump.gz
+            pg_restore -d mirror_node -U mirror_node -1 ./testnet_1M_transactions_pgdump.gz
+      - run:
           name: Running maven (integration)
           command: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} integration-test --projects hedera-mirror-importer/ -P performance-test
       - save_maven_cache
