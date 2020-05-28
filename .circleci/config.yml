@@ -259,6 +259,7 @@ jobs:
       - persist_artifacts_to_workspace
 
   perf_maven:
+    <<: *machine_ubuntu
     environment:
       WORKSPACE: *workspace_root
       <<: *maven_opts
