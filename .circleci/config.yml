@@ -267,21 +267,21 @@ jobs:
       - checkout
       - restore_maven_cache
       - write_spring_override_config
-      - run:
-          name: Install OpenJDK 11
-          command: |
-            sudo add-apt-repository ppa:openjdk-r/ppa \
-            && sudo apt-get update -q \
-            && sudo apt install -y openjdk-11-jdk
+      - install_openjdk_11
       - run:
           name: Loading large data set
           command: |
             set -ex
             export BOTO_CONFIG=/dev/null
             echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
+            echo "Service account auth done"
             gcloud --quiet config set project mirrornode
+            echo "gcloud project set done"
             gsutil cp gs://hedera-mirror-dev/database/testnet_1M_transactions_pgdump.gz ./testnet_1M_transactions_pgdump.gz
+            echo "gsutil cp done"
+            echo $(ls .)
             pg_restore -d mirror_node -U mirror_node -1 ./testnet_1M_transactions_pgdump.gz
+            echo "pg_restore done"
       - run:
           name: Running maven (integration)
           command: ./mvnw ${MAVEN_CLI_OPTS} ${MAVEN_SPRING_OPTS} integration-test --projects hedera-mirror-importer/ -P performance-test
