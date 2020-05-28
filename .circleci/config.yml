@@ -275,7 +275,7 @@ jobs:
             export BOTO_CONFIG=/dev/null
             echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
             gcloud --quiet config set project mirrornode
-            sudo zypper install gcc python-devel
+            sudo apt-get install gcc python-dev python-setuptools
             sudo pip uninstall crcmod
             sudo pip install --no-cache-dir -U crcmod
             gsutil cp gs://hedera-mirror-dev/database/testnet_1M_transactions_pgdump.gz ./testnet_1M_transactions_pgdump.gz
