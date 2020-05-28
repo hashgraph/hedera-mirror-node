@@ -179,8 +179,8 @@ commands:
             sudo pip install --no-cache-dir -U crcmod
             gsutil cp gs://hedera-mirror-dev/database/testnet_1M_transactions_pgdump.gz ./testnet_1M_transactions_pgdump.gz
 
-  pg_restore_transactions:
-    description: "pg_restore archived transactions"
+  postgresql_install:
+    description: "postgresql install"
     steps:
       - run:
           name: pg_restore archived transactions
@@ -190,6 +190,16 @@ commands:
             wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
             sudo apt-get update
             sudo apt-get install postgresql-9.6
+            psql -d mirror_node -U mirror_node -f ./testnet_1M_transactions_pgdump.gz
+            echo "pg_restore done"
+
+  pg_restore_transactions:
+    description: "pg_restore archived transactions"
+    steps:
+      - run:
+          name: pg_restore archived transactions
+          command: |
+            set -ex
             psql -d mirror_node -U mirror_node -f ./testnet_1M_transactions_pgdump.gz
             echo "pg_restore done"
 
@@ -288,15 +298,16 @@ jobs:
       - persist_artifacts_to_workspace
 
   perf_maven:
-    <<: *machine_ubuntu
     environment:
       WORKSPACE: *workspace_root
       <<: *maven_opts
+    docker:
+      - *docker_jdk11
+      - *docker_db
     steps:
       - checkout
       - restore_maven_cache
       - write_spring_override_config
-      - install_openjdk_11
       - gsutil_file_download
       - pg_restore_transactions
       - run:
