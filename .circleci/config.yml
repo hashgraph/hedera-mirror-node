@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-  gcloud: ceddy/gcloud@0.0.2
-
 references:
   workspace_root: &workspace_root /tmp/workspace
 
@@ -273,8 +270,6 @@ jobs:
       - checkout
       - restore_maven_cache
       - write_spring_override_config
-      - gsutil:
-          cmd: "cp gs://hedera-mirror-dev/database/testnet_1M_transactions_pgdump.gz ./testnet_1M_transactions_pgdump.gz"
       - run:
           name: Loading large data set
           command: |
