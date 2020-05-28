@@ -164,6 +164,29 @@ commands:
             && sudo apt-get update -q \
             && sudo apt install -y openjdk-11-jdk
 
+  gcloud_install:
+    description: "gcloud sdk install"
+    steps:
+      - run:
+          name: gcloud sdk install
+          command: |
+            set -ex
+            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+            sudo apt-get install apt-transport-https ca-certificates gnupg
+            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+            sudo apt-get update && sudo apt-get install google-cloud-sdk
+            gcloud init
+
+  gcloud_auth:
+    description: "gcloud auth"
+    steps:
+      - run:
+          name: gcloud auth
+          command: |
+            set -ex
+            echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
+            gcloud --quiet config set project mirrornode
+
   gsutil_file_download:
     description: "Download file from gcp bucket"
     steps:
@@ -172,8 +195,6 @@ commands:
           command: |
             set -ex
             export BOTO_CONFIG=/dev/null
-            echo ${GCR_JSON_KEY_FILE} | gcloud auth activate-service-account --key-file=-
-            gcloud --quiet config set project mirrornode
             sudo apt-get install gcc python-dev python-setuptools
             sudo pip uninstall crcmod
             sudo pip install --no-cache-dir -U crcmod
@@ -308,6 +329,8 @@ jobs:
       - checkout
       - restore_maven_cache
       - write_spring_override_config
+      - gcloud_install
+      - gcloud_auth
       - gsutil_file_download
       - pg_restore_transactions
       - run:
