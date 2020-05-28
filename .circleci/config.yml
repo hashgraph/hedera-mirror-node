@@ -283,7 +283,7 @@ jobs:
             wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
             sudo apt-get update
             sudo apt-get install postgresql-9.6
-            pg_restore -d mirror_node -U mirror_node -1 ./testnet_1M_transactions_pgdump.gz
+            psql -d mirror_node -U mirror_node -f ./testnet_1M_transactions_pgdump.gz
             echo "pg_restore done"
       - run:
           name: Running maven (integration)
