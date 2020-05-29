@@ -22,7 +22,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | Name                                                                 | Default                 | Description                                                                                    |
 | -------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
 | `hedera.mirror.importer.dataPath`                                    | ./data                  | The data directory used to store downloaded files and other application state                  |
-| `hedera.mirror.importer.verfiyHashAfter`                             | ""                      | Streams in which files are linked using hashes (prevHash) to ensure file ordering, the check would be skipped until after (and not including) this value. Format: YYYY-MM-DDTHH:MM:SS.fffffffffZ |
 | `hedera.mirror.importer.db.restPassword`                             | mirror_api_pass         | The database password the API uses to connect. **Should be changed from default**              |
 | `hedera.mirror.importer.db.restUsername`                             | mirror_api              | The username the API uses to connect to the database                                           |
 | `hedera.mirror.importer.db.host`                                     | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
@@ -76,6 +75,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.pubsub.maxSendAttempts`               | 5                       | Number of attempts when sending messages to PubSub (only for retryable errors)                 |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
+| `hedera.mirror.importer.verfiyHashAfter`                             | 0                       | Streams in which files are linked using hashes (prevHash) to ensure file ordering, the check would be skipped until after (and not including) this point of time. Value should in nanoseconds since epoch. |
 
 #### Export transactions to PubSub
 

@@ -347,7 +347,7 @@ public abstract class Downloader {
                     if (signedDataFile == null) {
                         continue;
                     }
-                    if (verifyDataFile(signedDataFile.getPath(), signature.getHash())) {
+                    if (verifyDataFile(signedDataFile, signature.getHash())) {
                         // move the file to the valid directory
                         File destination = validPath.resolve(signedDataFile.getName()).toFile();
                         if (moveFile(signedDataFile, destination)) {
@@ -405,7 +405,7 @@ public abstract class Downloader {
 
     protected abstract ApplicationStatusCode getLastValidDownloadedFileHashKey();
 
-    protected abstract boolean verifyDataFile(String filePath, byte[] signedHash);
+    protected abstract boolean verifyDataFile(File file, byte[] signedHash);
 
     public abstract void download();
 }

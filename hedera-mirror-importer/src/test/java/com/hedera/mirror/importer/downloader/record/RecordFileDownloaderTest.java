@@ -174,7 +174,7 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
                 .findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
         doReturn("123").when(applicationStatusRepository)
                 .findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
-        downloaderProperties.getMirrorProperties().setVerifyHashAfter("2019-09-01T00:00:00.000000Z.rcd");
+        downloaderProperties.getMirrorProperties().setVerifyHashAfter(1567296000000000000L); // "2019-09-01T00:00:00.000000Z.rcd
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertValidFiles(List.of(filename));

@@ -179,7 +179,7 @@ public class RecordFileParserTest {
     @Test
     void bypassHashMismatch() throws Exception {
         // given
-        parserProperties.getMirrorProperties().setVerifyHashAfter("2019-09-01T00:00:00.000000Z.rcd");
+        parserProperties.getMirrorProperties().setVerifyHashAfter(1567296000000000000L); // "2019-09-01T00:00:00.000000Z.rcd
         when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
         fileCopier.copy();
 

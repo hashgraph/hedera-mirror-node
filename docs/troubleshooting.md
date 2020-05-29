@@ -38,7 +38,7 @@ Following is list of error messages and how to begin handling issues when they a
     -   Ensure no service outage happens due to connection limit, restart as needed.
 
 -   `Error parsing record file` \
-    `Expecting previous file hash, but found file delimiter` \
+    `previous hash is null` \
     `Hash mismatch for file` \
     `Previous file hash not available` \
     `Unable to extract hash and signature from file` \
@@ -253,7 +253,7 @@ Response: Requires human action at some point.
 | `Error parsing record file`                                                                 | HIGH             |                                 |
 | `Error starting watch service`                                                              | HIGH             |                                 |
 | `ERRORS processing account balances file`                                                   | HIGH             |                                 |
-| `Expecting previous file hash, but found file delimiter`                                    | HIGH             |                                 |
+| `previous hash is null`                                                                     | HIGH             |                                 |
 | `Failed to parse NodeAddressBook from`                                                      | HIGH             |                                 |
 | `Hash mismatch for file`                                                                    | HIGH             |                                 |
 | `Long overflow when converting time to nanos timestamp`                                     | HIGH             |                                 |
@@ -269,7 +269,6 @@ Response: Requires human action at some point.
 | `Error closing connection`                                                                  | LOW              | HIGH (if 10 entries over 10 min |
 | `Account balance dataset timestamp mismatch!`                                               | LOW              |                                 |
 | `Error decoding hex string`                                                                 | LOW              |                                 |
-| `Error reading previous file hash`                                                          | LOW              |                                 |
 | `Failed to verify`                                                                          | LOW              |                                 |
 | `Input parameter is not a folder`                                                           | LOW              |                                 |
 | `Failed to verify signature with public key`                                                | LOW              |                                 |

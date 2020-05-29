@@ -423,14 +423,15 @@ public class Utility {
      *
      * @param actualPrevFileHash   prevFileHash as read from current file
      * @param expectedPrevFileHash hash of last file from application state
-     * @param verifyHashAfter      Point in time. Only the files created after (not including) this point are verified
-     *                             for hash chaining. If empty, all files are checked.
+     * @param verifyHashAfter Only the files created after (not including) this point of time are verified
+     *                             for hash chaining.
      * @param fileName             name of current stream file being verified
      * @return true if verification succeeds, else false
      */
     public static boolean verifyHashChain(
-            String actualPrevFileHash, String expectedPrevFileHash, String verifyHashAfter, String fileName) {
-        if (verifyHashAfter.compareTo(fileName) >= 0) {
+            String actualPrevFileHash, String expectedPrevFileHash, Long verifyHashAfter, String fileName) {
+        var fileInstant = Instant.parse(fileName.replaceAll(".rcd", "").replaceAll("_", ":"));
+        if (!Instant.ofEpochSecond(0L, verifyHashAfter).isBefore(fileInstant)) {
             return true;
         }
         if (Utility.hashIsEmpty(expectedPrevFileHash)) {
