@@ -41,12 +41,12 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.HederaNetwork;
@@ -54,6 +54,7 @@ import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public abstract class AbstractDownloaderTest {
+    private static final int S3_MOCK_PORT = 8001;
 
     @Mock(answer = Answers.RETURNS_SMART_NULLS)
     protected ApplicationStatusRepository applicationStatusRepository;
@@ -102,9 +103,9 @@ public abstract class AbstractDownloaderTest {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
-        s3AsyncClient = new MirrorImporterConfiguration(null, commonDownloaderProperties)
-                .s3AsyncClient(new ExecutionInterceptor() {
-                });
+        s3AsyncClient = new MirrorImporterConfiguration(
+                null, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry))
+                .s3CloudStorageClient();
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
         downloader = getDownloader();
 
@@ -114,7 +115,7 @@ public abstract class AbstractDownloaderTest {
 
         validPath = downloaderProperties.getValidPath();
 
-        s3 = S3Mock.create(8001, s3Path.toString());
+        s3 = S3Mock.create(S3_MOCK_PORT, s3Path.toString());
         s3.start();
     }
 
@@ -130,7 +131,7 @@ public abstract class AbstractDownloaderTest {
 
         commonDownloaderProperties = new CommonDownloaderProperties();
         commonDownloaderProperties.setBucketName("test");
-        commonDownloaderProperties.setCloudProvider(CommonDownloaderProperties.CloudProvider.LOCAL);
+        commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_MOCK_PORT);
         commonDownloaderProperties.setAccessKey("x"); // https://github.com/findify/s3mock/issues/147
         commonDownloaderProperties.setSecretKey("x");
 
