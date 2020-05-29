@@ -23,11 +23,3 @@ RUN apk --update add postgresql-client && rm -rf /var/cache/apk/*
 
 ENTRYPOINT PGPASSWORD=mirror_node_pass pg_restore -U mirror_node -d mirror_node -p 6432 -h localhost /tmp/pgdump.gz
 # docker run --network="host" -d my-gloud-pg
-#ENTRYPOINT PGPASSWORD=mirror_node_pass pg_restore -U mirror_node -d mirror_node -p 6432 -h localhost /tmp/testnet_1_24_1_flyway_schema_history_pgdump_2.gz
-#ENTRYPOINT PGPASSWORD=mirror_node_pass pg_restore -U mirror_node -d mirror_node -p 6432 -h localhost /tmp/$dumppath
-#ENTRYPOINT ["pg_restore -U mirror_node -d mirror_node -p 6432 -h localhost /tmp/testnet_1_24_1_flyway_schema_history_pgdump_2.gz"]
-#ENTRYPOINT ["pg_restore"]
-#CMD ["-U", "mirror_node", "-d", "mirror_node", "-p", "6432", "-h", "localhost", "/tmp/testnet_1_24_1_flyway_schema_history_pgdump_2.gz"]
-#CMD /tmp/testnet_1_24_1_flyway_schema_history_pgdump_4.gz
-#CMD ["-U", "mirror_node", "-d", "mirror_node", "-p", "6432", "-h", "localhost"]
-#CMD ["/tmp/testnet_1_24_1_flyway_schema_history_pgdump_2.gz"]
