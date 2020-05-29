@@ -7,10 +7,10 @@ dependencies:
   version: 0.1.0
 - name: loki-stack
   repository: https://grafana.github.io/loki/charts
-  version: 0.37.0
+  version: 0.37.1
 - name: postgresql-ha
   repository: https://charts.bitnami.com/bitnami
-  version: 3.2.5
+  version: 3.2.7
 - name: prometheus-adapter
   repository: https://kubernetes-charts.storage.googleapis.com/
   version: 2.3.1
@@ -22,6 +22,6 @@ dependencies:
   version: 0.1.0
 - name: traefik
   repository: https://containous.github.io/traefik-helm-chart
-  version: 8.2.0
-digest: sha256:56002acc6c565a68c7ffb95658347ab188752a39ecace96ec1fd26661de0faaf
-generated: "2020-05-20T16:00:41.375643-05:00"
+  version: 8.2.1
+digest: sha256:2dc4df39c4dbc238397ff29fdb3a851e8c846fce0f8c568d5db4a0226880e416
+generated: "2020-05-28T17:05:55.274329-05:00"

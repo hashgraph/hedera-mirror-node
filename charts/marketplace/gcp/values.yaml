@@ -1,8 +1,8 @@
 applicationResource:
   enabled: true
-  partnerId: hederaPartnerId
-  partnerName: partner_name
-  projectId: hederaMirrorSolutionId
+  partnerId: mirror-node-public
+  partnerName: mirror-node-public
+  solutionId: hedera-mirror-node
 
 grpc:
   hpa:
@@ -71,6 +71,9 @@ rest:
     enabled: false
   service:
     type: LoadBalancer
+  test:
+    image:
+      repository: gcr.io/mirrornode/hedera-mirror-node/test
 
 traefik:
   enabled: false

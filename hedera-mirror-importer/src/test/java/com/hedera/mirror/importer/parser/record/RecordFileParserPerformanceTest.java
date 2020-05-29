@@ -69,7 +69,7 @@ public class RecordFileParserPerformanceTest extends IntegrationTest {
         parserProperties.init();
     }
 
-    @Timeout(15)
+    @Timeout(20)
     @Test
     void parseAndIngestMultipleFiles60000Transactions() throws Exception {
         parse("*.rcd");
