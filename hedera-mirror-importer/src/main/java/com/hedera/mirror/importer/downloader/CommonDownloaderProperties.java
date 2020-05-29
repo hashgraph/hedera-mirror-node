@@ -42,6 +42,8 @@ public class CommonDownloaderProperties {
     @NotNull
     private CloudProvider cloudProvider = CloudProvider.S3;
 
+    private String endpointOverride;
+
     @Min(0)
     private int maxConcurrency = 1000; // aws sdk default = 50
 
@@ -49,12 +51,13 @@ public class CommonDownloaderProperties {
 
     private String secretKey;
 
+    private String gcpProjectId;
+
     @Getter
     @RequiredArgsConstructor
     public enum CloudProvider {
         S3("https://s3.amazonaws.com"),
-        GCP("https://storage.googleapis.com"),
-        LOCAL("http://127.0.0.1:8001"); // Testing
+        GCP("https://storage.googleapis.com");
 
         private final String endpoint;
     }

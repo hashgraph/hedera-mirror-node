@@ -10,7 +10,6 @@ hedera:
         password: ${embedded.postgresql.password}
       downloader:
         bucketName: test
-        cloudProvider: LOCAL
       parser:
         balance:
           enabled: false
