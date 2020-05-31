@@ -384,7 +384,6 @@ jobs:
                 DOCKER_TAG_OVERRIDE="-Ddocker.tags.0=${major}.${minor} -Djib.to.tags=${major}.${minor} -Ddocker.skip.deployer=false"
             fi
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
-      - save_maven_cache
 
   cleanup_images:
     <<: *machine_ubuntu

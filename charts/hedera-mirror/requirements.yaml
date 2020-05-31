@@ -12,13 +12,13 @@ dependencies:
   - alias: loki
     condition: loki.enabled
     name: loki-stack
-    version: 0.37.0
+    version: 0.37.1
     repository: https://grafana.github.io/loki/charts
   - alias: postgresql
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: 3.2.5
+    version: 3.2.7
   - condition: prometheus-adapter.enabled
     name: prometheus-adapter
     repository: https://kubernetes-charts.storage.googleapis.com/
@@ -36,4 +36,4 @@ dependencies:
   - condition: traefik.enabled
     name: traefik
     repository: https://containous.github.io/traefik-helm-chart
-    version: 8.2.0
+    version: 8.2.1

@@ -1,3 +1,4 @@
+{{- if .Values.test.enabled -}}
 apiVersion: v1
 kind: Pod
 metadata:
@@ -11,15 +12,19 @@ metadata:
 spec:
   containers:
     - name: test
-      image: bats/bats:v1.1.0
-      imagePullPolicy: IfNotPresent
+      image: "{{ .Values.test.image.repository }}:{{ .Values.test.image.tag | default .Chart.AppVersion }}"
+      imagePullPolicy: {{ .Values.test.image.pullPolicy }}
       args:
         - /usr/lib/hedera-mirror-rest/test.sh
       volumeMounts:
         - name: tests
           mountPath: /usr/lib/hedera-mirror-rest
+          readOnly: true
+  terminationGracePeriodSeconds: 1
   restartPolicy: Never
   volumes:
     - name: tests
       configMap:
+        defaultMode: 0555
         name: {{ include "hedera-mirror-rest.fullname" . }}-test
+{{- end -}}

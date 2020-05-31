@@ -4,7 +4,7 @@ kind: Application
 metadata:
   annotations:
     kubernetes-engine.cloud.google.com/icon: data:image/png;base64,{{ .Files.Get "logo.png" | b64enc }}
-    marketplace.cloud.google.com/deploy-info: '{ "partner_id": "hederaPartnerId", "partner_name": "partner_name", "product_id": "hederaMirrorSolutionId" }'
+    marketplace.cloud.google.com/deploy-info: '{ "partner_id": "{{.Values.applicationResource.partnerId}}", "partner_name": "{{.Values.applicationResource.partnerName}}", "product_id": "{{.Values.applicationResource.solutionId}}" }'
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
     app.kubernetes.io/name: {{ .Release.Name }}
@@ -20,8 +20,6 @@ spec:
       kind: ConfigMap
     - group: apps/v1
       kind: Deployment
-    - group: networking.k8s.io/v1
-      kind: NetworkPolicy
     - group: v1
       kind: Pod
     - group: policy/v1beta1
@@ -54,4 +52,4 @@ spec:
         email: mirrornode@hedera.com
     type: hedera-mirror-node
     version: {{ .Chart.AppVersion | quote }}
-  {{- end }}
+{{- end }}

@@ -2,7 +2,7 @@ applicationResource:
   enabled: false
   partnerId: ""
   partnerName: ""
-  projectId: ""
+  solutionId: ""
 
 fullnameOverride: mirror
 
@@ -10,6 +10,9 @@ global:
   namespaceOverride: ""
   rbac:
     pspEnabled: false
+  rest:
+    username: mirror_api
+    password: mirror_api_pass
 
 grpc:
   config:
@@ -328,8 +331,6 @@ rest:
         rest:
           db:
             host: postgresql-pgpool
-            password: mirror_api_pass
-            username: mirror_api
   ingress:
     middleware:
       enabled: true

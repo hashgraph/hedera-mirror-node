@@ -1,7 +1,8 @@
 x-google-marketplace:
   schemaVersion: v2
-
   applicationApiVersion: v1beta1
+  partnerId: mirror-node-public
+  solutionId: hedera-mirror-node
 
   # The release version, MUST match the release tag on the the deployer.
   publishedVersion: "$TAG"
@@ -52,13 +53,12 @@ x-google-marketplace:
           type: REPO_WITHOUT_REGISTRY
         postgresql.pgpoolImage.tag:
           type: TAG
-
-  # Other fields, like clusterConstraints, can be included here.
-
-  # The Properties and Required sections of v2 are structured the same as those of v1.
-  # IMPORTANT: These IDs must match your listing ID in Marketplace.
-  partnerId: hederaPartnerId
-  solutionId: hederaMirrorSolutionId
+    test:
+      properties:
+        rest.test.image.repository:
+          type: REPO_WITH_REGISTRY
+        rest.test.image.tag:
+          type: TAG
 
 properties:
   name:
@@ -71,22 +71,21 @@ properties:
       type: NAMESPACE
   grpc.config.hedera.mirror.grpc.db.password:
     type: string
-    default: ''
-    description: The gRPC database user password
-    title: gRPC database user password
+    description: The password used by the gRPC API to connect to the database
+    title: gRPC API database password
     x-google-marketplace:
       type: MASKED_FIELD
   grpc.replicas:
     type: integer
     default: 1
-    description: Number of gRPC node replicas
-    title: gRPC replicas
+    description: The gRPC API replica count
+    title: gRPC API replicas
     minimum: 0
     maximum: 10
   grpc.serviceAccount.name:
     type: string
-    title: gRPC Service Account
-    description: Service account to assign to gRPC Deployment
+    title: gRPC API service account
+    description: The Kubernetes service account to assign to the gRPC API
     x-google-marketplace:
       type: SERVICE_ACCOUNT
       serviceAccount:
@@ -102,29 +101,21 @@ properties:
                 verbs: ['get']
   importer.config.hedera.mirror.importer.db.password:
     type: string
-    default: ''
-    description: The importer database user password
-    title: Importer database user password
-    x-google-marketplace:
-      type: MASKED_FIELD
-  importer.config.hedera.mirror.importer.db.restPassword:
-    type: string
-    default: ''
-    description: The importer database REST API user password
-    title: Importer database REST API user password
+    description: The password used by the importer to connect to the database
+    title: Importer database password
     x-google-marketplace:
       type: MASKED_FIELD
   importer.replicas:
     type: integer
     default: 1
-    description: Number of importer node replicas
+    description: The importer replica count
     title: Importer replicas
     minimum: 1
     maximum: 10
   importer.serviceAccount.name:
     type: string
-    title: Importer Service Account
-    description: Service account to assign to Importer StatefulSet
+    title: Importer service account
+    description: The Kubernetes service account to assign to the importer
     x-google-marketplace:
       type: SERVICE_ACCOUNT
       serviceAccount:
@@ -141,35 +132,33 @@ properties:
   postgresql.pgpool.replicaCount:
     type: integer
     default: 1
-    description: Number of pgpool node replicas
+    description: The Pgpool replica count
     title: Pgpool replicas
     minimum: 1
     maximum: 10
   postgresql.postgresql.replicaCount:
     type: integer
     default: 1
-    description: Number of postgres node replicas
-    title: Pgpool replicas
+    description: The PostgreSQL replica count
+    title: PostgreSQL replicas
     minimum: 1
     maximum: 10
   postgresql.postgresql.repmgrPassword:
     type: string
-    default: ''
-    description: The repmgr user password
-    title: Repmgr user password
+    description: The password used by the PostgreSQL Replication Manager to connect to the database
+    title: PostgreSQL Repmgr password
     x-google-marketplace:
       type: MASKED_FIELD
-  rest.config.hedera.mirror.rest.db.password:
+  global.rest.password:
     type: string
-    default: ''
-    description: The REST API user database password
-    title: REST API user database password
+    description: The password used by the REST API to connect to the database
+    title: REST API database password
     x-google-marketplace:
       type: MASKED_FIELD
   rest.replicas:
     type: integer
     default: 1
-    description: Number of REST API node replicas
+    description: The REST API replica count
     title: REST API replicas
     minimum: 0
     maximum: 10
@@ -177,7 +166,7 @@ properties:
 required:
   - name
   - namespace
+  - global.rest.password
   - grpc.config.hedera.mirror.grpc.db.password
   - importer.config.hedera.mirror.importer.db.password
-  - importer.config.hedera.mirror.importer.db.restPassword
-  - rest.config.hedera.mirror.rest.db.password
+  - postgresql.postgresql.repmgrPassword
