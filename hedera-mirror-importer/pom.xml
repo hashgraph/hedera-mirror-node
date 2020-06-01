@@ -20,6 +20,8 @@
         <commons-io.version>2.6</commons-io.version>
         <guava.version>29.0-jre</guava.version>
         <s3mock.version>0.2.5</s3mock.version>
+        <docker.skip.restore.client>true</docker.skip.restore.client>
+        <db.restore.size>100k</db.restore.size>
     </properties>
 
     <dependencyManagement>
@@ -313,6 +315,29 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <configuration>
+                    <images>
+                        <image>
+                            <build>
+                                <contextDir>${project.basedir}/src/test/resources/data</contextDir>
+                                <dockerFile>${project.basedir}/src/test/resources/data/restore-client/Dockerfile
+                                </dockerFile>
+                                <args>
+                                    <dumpfile>testnet_${db.restore.size}_pgdump.gz</dumpfile>
+                                    <jsonkeyfile>bucket-download-key.json</jsonkeyfile>
+                                </args>
+                            </build>
+                            <name>
+                                ${docker.push.repository}/hedera-mirror-node/postgres-restore-client:${db.restore.size}
+                            </name>
+                        </image>
+                    </images>
+                    <skip>${docker.skip.restore.client}</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>
