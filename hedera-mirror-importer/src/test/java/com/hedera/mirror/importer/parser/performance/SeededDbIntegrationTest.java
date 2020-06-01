@@ -37,6 +37,7 @@ import lombok.extern.log4j.Log4j2;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -127,7 +128,7 @@ public class SeededDbIntegrationTest {
     }
 
     @Test
-    public void checkSeededTables() throws Exception {
+    public void checkSeededTablesArePresent() throws Exception {
         String[] tables = new String[] {"account_balance_sets", "account_balances", "flyway_schema_history",
                 "non_fee_transfers", "t_application_status", "t_contract_result", "t_cryptotransferlists",
                 "t_entities", "t_entity_types", "t_file_data", "t_livehashes", "t_record_files",
@@ -135,10 +136,6 @@ public class SeededDbIntegrationTest {
                 "t_transaction_types", "t_transactions", "topic_message"
         };
         List<String> discoveredTables = new ArrayList<>();
-        long accountsCount = 0;
-        long balancesCount = 0;
-        long topicMessagesCount = 0;
-        long transactionsCount = 0;
 
         try (Connection connection = dataSource.getConnection();
              ResultSet rs = connection.getMetaData().getTables(null, null, null, new String[] {"TABLE"})) {
@@ -146,8 +143,6 @@ public class SeededDbIntegrationTest {
             while (rs.next()) {
                 discoveredTables.add(rs.getString("TABLE_NAME"));
             }
-
-            topicMessagesCount = getTableSize(connection, "topic_message");
         } catch (Exception e) {
             log.error("Unable to retrieve details from database", e);
         }
@@ -156,6 +151,24 @@ public class SeededDbIntegrationTest {
         Collections.sort(discoveredTables);
         log.info("Encountered tables: {}", discoveredTables);
         assertThat(discoveredTables).isEqualTo(Arrays.asList(tables));
+    }
+
+    @Disabled
+    @Test
+    public void checkSeededTablesArePopulated() throws Exception {
+        long accountsCount = 0;
+        long balancesCount = 0;
+        long topicMessagesCount = 0;
+        long transactionsCount = 0;
+
+        try (Connection connection = dataSource.getConnection()) {
+            accountsCount = getTableSize(connection, "t_entities");
+            balancesCount = getTableSize(connection, "account_balances");
+            topicMessagesCount = getTableSize(connection, "t_entities");
+            transactionsCount = getTableSize(connection, "t_transactions");
+        } catch (Exception e) {
+            log.error("Unable to retrieve details from database", e);
+        }
 
         log.info("{} accounts, {} balances, {} topic messages and {} transactions were seeded", accountsCount,
                 balancesCount, topicMessagesCount, transactionsCount);
