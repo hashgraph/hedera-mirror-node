@@ -278,10 +278,4 @@ public class RecordFileParserTest {
         assertOnStart(file1.getPath(), file2.getPath());
         assertOnEnd(recordFile1, recordFile2);
     }
-
-    private void assertNoneProcessed() {
-        assertValidFiles();
-        verifyNoInteractions(recordItemListener);
-        verifyNoInteractions(recordStreamFileListener);
-    }
 }

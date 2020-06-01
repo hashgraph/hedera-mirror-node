@@ -22,10 +22,9 @@ package com.hedera.mirror.importer.parser.balance;
 
 import com.google.common.base.Stopwatch;
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
+import java.util.Objects;
 import javax.inject.Named;
 import org.apache.commons.io.FileUtils;
 
@@ -42,8 +41,7 @@ public class BalanceFileParser extends FileWatcher {
 
     @Override
     public void onCreate() {
-        processLastBalanceFile();
-        processAllFilesForHistory();
+        parse();
     }
 
     @Override
@@ -51,59 +49,32 @@ public class BalanceFileParser extends FileWatcher {
         return parserProperties.isEnabled();
     }
 
-    private File getLatestBalanceFile() throws IOException {
-        File lastFile = null;
-        // find all files in path
-        // return the greatest file name
-
-        File balanceFilePath = parserProperties.getValidPath().toFile();
-        List<String> balancefiles = new ArrayList<>();
-        for (File balanceFile : balanceFilePath.listFiles()) {
-            if (balanceFile.getName().toString().endsWith(".csv")) {
-                balancefiles.add(balanceFile.getName());
-            }
-        }
-        if (balancefiles.size() != 0) {
-            Collections.sort(balancefiles);
-
-            lastFile = parserProperties.getValidPath().resolve(balancefiles.get(balancefiles.size() - 1)).toFile();
-        }
-
-        return lastFile;
-    }
-
-    private void processAllFilesForHistory() {
+    /**
+     * List the verified balance files and parse them. We can process them in any order, but we choose to process the
+     * latest balance first since most clients will want to query for the latest data.
+     */
+    private void parse() {
         Stopwatch stopwatch = Stopwatch.createStarted();
+
         try {
             File balanceFilePath = parserProperties.getValidPath().toFile();
-            File[] balanceFiles = balanceFilePath.listFiles();
+            File[] balanceFiles = Objects.requireNonNullElseGet(balanceFilePath.listFiles(), () -> new File[] {});
+            Arrays.sort(balanceFiles, Collections.reverseOrder());
+
             for (File balanceFile : balanceFiles) {
                 if (ShutdownHelper.isStopping()) {
                     throw new RuntimeException("Process is shutting down");
                 }
-                processBalanceFile(balanceFile);
+                parseBalanceFile(balanceFile);
             }
+
             log.info("Completed processing {} balance files in {}", balanceFiles.length, stopwatch);
         } catch (Exception e) {
             log.error("Error processing balances files after {}", stopwatch, e);
         }
     }
 
-    private void processLastBalanceFile() {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        try {
-            File balanceFile = getLatestBalanceFile();
-            if (balanceFile == null) {
-                return;
-            }
-            log.debug("Processing last balance file {}", balanceFile);
-            processBalanceFile(balanceFile);
-        } catch (Exception e) {
-            log.error("Error processing balances files after {}", stopwatch, e);
-        }
-    }
-
-    private void processBalanceFile(File balanceFile) throws Exception {
+    private void parseBalanceFile(File balanceFile) throws Exception {
         BalanceParserProperties balanceParserProperties = (BalanceParserProperties) parserProperties;
         AccountBalancesFileLoader loader = new AccountBalancesFileLoader(balanceParserProperties, balanceFile.toPath());
 

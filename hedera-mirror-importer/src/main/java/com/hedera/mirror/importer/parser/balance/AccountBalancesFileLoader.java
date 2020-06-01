@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.balance;
  */
 
 import com.google.common.base.Stopwatch;
-
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -32,7 +31,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.stream.Stream;
-
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
@@ -66,6 +64,7 @@ public final class AccountBalancesFileLoader implements AutoCloseable {
     public AccountBalancesFileLoader(BalanceParserProperties balanceProperties, Path filePath) throws IllegalArgumentException, InvalidDatasetException,
             FileNotFoundException {
         this.filePath = filePath;
+        log.info("Starting processing account balances file {}", filePath.getFileName());
         systemShardNum = balanceProperties.getMirrorProperties().getShard();
         var info = new AccountBalancesFileInfo(filePath);
         filenameTimestamp = info.getFilenameTimestamp();
@@ -173,7 +172,6 @@ public final class AccountBalancesFileLoader implements AutoCloseable {
         // 2) stream insert all the account_balances records.
         // 3) update/close the account_balance_set.
         //
-        log.info("Starting processing account balances file {}", filePath);
         var stopwatch = Stopwatch.createStarted();
         try (Connection conn = DatabaseUtilities.getConnection()) {
             Stream<NumberedLine> stream = dataset.getRecordStream();
@@ -194,7 +192,7 @@ public final class AccountBalancesFileLoader implements AutoCloseable {
             if (processRecordStream(insertBalance, longConsensusTimestamp, stream)) {
                 updateSet.setLong(1, longConsensusTimestamp);
                 updateSet.execute();
-                log.info("Successfully processed account balances file {} with {} records in {}", filePath,
+                log.info("Successfully processed account balances file {} with {} records in {}", filePath.getFileName(),
                         validRowCount, stopwatch);
                 return true;
             } else {
