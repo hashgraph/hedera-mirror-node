@@ -20,22 +20,31 @@ package com.hedera.mirror.importer.parser.performance;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import javax.annotation.Resource;
+import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.db.DBProperties;
@@ -46,8 +55,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 @Log4j2
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-//@TestPropertySource
-//@SpringBootTest
+@SpringBootTest
 public class SeededDbIntegrationTest {
     @TempDir
     static Path dataPath;
@@ -70,53 +78,91 @@ public class SeededDbIntegrationTest {
 
     private DBProperties dbPropertiesCache;
 
+    @Resource
+    private DataSource dataSource;
+
     @Rule
-    public GenericContainer dslContainer = new GenericContainer(
-            new ImageFromDockerfile()
-                    .withFileFromClasspath("Dockerfile", "data/seededimage/Dockerfile")
-                    .withFileFromClasspath("bucket-download-key.json", "data/bucket-download-key.json")
-                    .withFileFromClasspath("postgresql.conf", "data/postgresql.conf")
-                    .withBuildArg("dumpfile", "testnet_100k_pgdump.gz")
-                    .withBuildArg("jsonkeyfile", "bucket-download-key.json")
-                    .withFileFromClasspath("restore.sh", "data/restore.sh"))
-            .withExposedPorts(5432)
-            .waitingFor(Wait.forListeningPort());
+    GenericContainer customContainer;
 
     @BeforeAll
     void warmUp() {
-        log.debug("STart container from image {}", dslContainer);
-
-        dslContainer.start();
         dbPropertiesCache = dbProperties.toBuilder().build();
-        dbProperties.setHost("127.0.0.1");
-        dbProperties.setName("mirror_node");
-        dbProperties.setPassword("mirror_node_pass");
-        dbProperties.setPort(dslContainer.getMappedPort(5432));
+        customContainer = CustomPostgresContainer.createContainer(
+                "data/seededimage/Dockerfile",
+                "testnet_100k_pgdump.gz",
+                5432);
 
-        log.debug("dbProperties were set to {}", dbProperties);
+        log.info("Start container {}", customContainer);
+        customContainer.start();
+        setDbProperties(
+                "127.0.0.1",
+                "mirror_node",
+                "mirror_node_pass",
+                customContainer.getMappedPort(5432));
+
+        log.info("dbProperties were set to {}", dbProperties);
         streamType = parserProperties.getStreamType();
         parse("2020-02-09T18_30_00.000084Z.rcd");
     }
 
     @AfterAll
     void coolOff() {
-        dbProperties.setHost(dbPropertiesCache.getHost());
-        dbProperties.setName(dbPropertiesCache.getName());
-        dbProperties.setPassword(dbPropertiesCache.getPassword());
-        dbProperties.setPort(dbPropertiesCache.getPort());
-        dslContainer.stop();
+        log.info("Reset dbProperties to {}", dbPropertiesCache);
+        setDbProperties(
+                dbPropertiesCache.getHost(),
+                dbPropertiesCache.getName(),
+                dbPropertiesCache.getPassword(),
+                dbPropertiesCache.getPort());
+
+        log.info("Stop container {}", customContainer);
+        customContainer.stop();
     }
 
-    @BeforeEach
-    void before() {
+    @Timeout(15)
+    @Test
+    public void parseAndIngestTransactions() throws Exception {
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
+        parse("*.rcd");
     }
 
-    @Timeout(180)
     @Test
-    public void parseAndIngestMultipleFiles60000Transactions() throws Exception {
-        parse("*.rcd");
+    public void checkSeededTables() throws Exception {
+        String[] tables = new String[] {"account_balance_sets", "account_balances", "flyway_schema_history",
+                "non_fee_transfers", "t_application_status", "t_contract_result", "t_cryptotransferlists",
+                "t_entities", "t_entity_types", "t_file_data", "t_livehashes", "t_record_files",
+                "t_transaction_results",
+                "t_transaction_types", "t_transactions", "topic_message"
+        };
+        List<String> discoveredTables = new ArrayList<>();
+        long accountsCount = 0;
+        long balancesCount = 0;
+        long topicMessagesCount = 0;
+        long transactionsCount = 0;
+
+        try (Connection connection = dataSource.getConnection();
+             ResultSet rs = connection.getMetaData().getTables(null, null, null, new String[] {"TABLE"})) {
+
+            while (rs.next()) {
+                discoveredTables.add(rs.getString("TABLE_NAME"));
+            }
+
+            topicMessagesCount = getTableSize(connection, "topic_message");
+        } catch (Exception e) {
+            log.error("Unable to retrieve details from database", e);
+        }
+
+        assertThat(discoveredTables.size()).isGreaterThan(0);
+        Collections.sort(discoveredTables);
+        log.info("Encountered tables: {}", discoveredTables);
+        assertThat(discoveredTables).isEqualTo(Arrays.asList(tables));
+
+        log.info("{} accounts, {} balances, {} topic messages and {} transactions were seeded", accountsCount,
+                balancesCount, topicMessagesCount, transactionsCount);
+        assertThat(accountsCount).isGreaterThan(0);
+        assertThat(balancesCount).isGreaterThan(0);
+        assertThat(topicMessagesCount).isGreaterThan(0);
+        assertThat(transactionsCount).isGreaterThan(0);
     }
 
     private void parse(String filePath) {
@@ -127,5 +173,20 @@ public class SeededDbIntegrationTest {
         fileCopier.copy();
 
         recordFileParser.parse();
+    }
+
+    private void setDbProperties(String host, String name, String password, int port) {
+        dbProperties.setHost(host);
+        dbProperties.setName(name);
+        dbProperties.setPassword(password);
+        dbProperties.setPort(port);
+    }
+
+    private long getTableSize(Connection connection, String table) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement("select count (*) from ?;");
+        statement.setString(1, table);
+        ResultSet rs = statement.executeQuery();
+        rs.next();
+        return rs.getLong("count");
     }
 }
