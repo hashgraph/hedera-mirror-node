@@ -42,6 +42,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
@@ -49,6 +50,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Log4j2
@@ -123,26 +125,27 @@ public class Utility {
     /**
      * Calculate SHA384 hash of a record file
      *
-     * @param filename file name
      * @return byte array of hash value of null if calculating has failed
      */
-    public static RecordFile parseRecordFile(String filename, boolean parseRecordItems) {
+    public static RecordFile parseRecordFile(String filePath, String expectedPrevFileHash, Long verifyHashAfter,
+            Consumer<RecordItem> recordItemConsumer) {
         RecordFile recordFile = new RecordFile();
-        recordFile.setName(filename);
+        recordFile.setName(filePath);
+        String fileName = Utility.getFileName(filePath);
 
-        try (DataInputStream dis = new DataInputStream(new FileInputStream(filename))) {
+        try (DataInputStream dis = new DataInputStream(new FileInputStream(filePath))) {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
             MessageDigest mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
 
             int recordFormatVersion = dis.readInt();
             int version = dis.readInt();
-            log.info("Loading record format version {} from record file: {}", recordFormatVersion, filename);
+            log.info("Loading record format version {} from record file: {}", recordFormatVersion, fileName);
             recordFile.setRecordFormatVersion(recordFormatVersion);
 
             md.update(Utility.integerToBytes(recordFormatVersion));
             md.update(Utility.integerToBytes(version));
 
-            log.debug("Calculating hash for version {} record file: {}", recordFormatVersion, filename);
+            log.debug("Calculating hash for version {} record file: {}", recordFormatVersion, fileName);
 
             while (dis.available() != 0) {
                 byte typeDelimiter = dis.readByte();
@@ -153,6 +156,11 @@ public class Utility {
                         dis.read(readFileHash);
                         recordFile.setPreviousHash(Hex.encodeHexString(readFileHash));
                         md.update(readFileHash);
+
+                        if (!Utility.verifyHashChain(recordFile.getPreviousHash(), expectedPrevFileHash,
+                                verifyHashAfter, fileName)) {
+                            throw new HashMismatchException("Hash mismatch for file " + fileName);
+                        }
                         break;
 
                     case FileDelimiter.RECORD_TYPE_RECORD:
@@ -173,8 +181,13 @@ public class Utility {
                         dis.readFully(recordRawBytes);
                         messageDigest.update(Utility.integerToBytes(byteLength));
                         messageDigest.update(recordRawBytes);
-                        if (parseRecordItems) {
-                            recordFile.getRecordItems().add(new RecordItem(transactionRawBytes, recordRawBytes));
+                        if (recordItemConsumer != null) {
+                            RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);
+                            recordItemConsumer.accept(recordItem);
+                            if (recordFile.getConsensusStart() == null) {
+                                recordFile.setConsensusStart(recordItem.getConsensusTimestamp());
+                            }
+                            recordFile.setConsensusEnd(recordItem.getConsensusTimestamp());
                         }
                         break;
 
@@ -182,25 +195,25 @@ public class Utility {
                         int sigLength = dis.readInt();
                         byte[] sigBytes = new byte[sigLength];
                         dis.readFully(sigBytes);
-                        log.trace("File {} has signature {}", filename, Hex.encodeHexString(sigBytes));
+                        log.trace("File {} has signature {}", fileName, Hex.encodeHexString(sigBytes));
                         break;
 
                     default:
                         throw new IllegalArgumentException(String.format(
-                                "Unknown record file delimiter %s for file %s", typeDelimiter, filename));
+                                "Unknown record file delimiter %s for file %s", typeDelimiter, fileName));
                 }
             }
             if (recordFormatVersion == FileDelimiter.RECORD_FORMAT_VERSION) {
                 md.update(mdForContent.digest());
             }
             if (recordFile.getPreviousHash() == null) {
-                throw new IllegalArgumentException("previous hash is null in file " + filename);
+                throw new IllegalArgumentException("previous hash is null in file " + fileName);
             }
             recordFile.setFileHash(Hex.encodeHexString(md.digest()));
             log.trace("Calculated file hash for the record file {}", recordFile.getFileHash());
             return recordFile;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error parsing bad record file " + filename, e);
+            throw new IllegalArgumentException("Error parsing bad record file " + fileName, e);
         }
     }
 
