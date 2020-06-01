@@ -21,8 +21,6 @@ RUN /usr/local/google-cloud-sdk/bin/gcloud auth activate-service-account --key-f
 RUN /usr/local/google-cloud-sdk/bin/gsutil cp gs://hedera-mirror-dev/database/$dumpfile /tmp/pgdump.gz
 RUN rm /tmp/config.json
 
-FROM hedera-mirror-node/postgres
-
 FROM hedera-mirror-node/postgres:latest
 COPY --from=build /tmp/pgdump.gz /tmp/pgdump.gz
 

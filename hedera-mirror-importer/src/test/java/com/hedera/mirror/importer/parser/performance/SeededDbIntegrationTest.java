@@ -88,7 +88,7 @@ public class SeededDbIntegrationTest {
     @BeforeAll
     void warmUp() {
         dbPropertiesCache = dbProperties.toBuilder().build();
-        customContainer = CustomPostgresContainer.createContainer(
+        customContainer = CustomPostgresContainer.createSeededContainer(
                 "data/seededimage/Dockerfile",
                 "testnet_100k_pgdump.gz",
                 5432);
@@ -164,7 +164,7 @@ public class SeededDbIntegrationTest {
         try (Connection connection = dataSource.getConnection()) {
             accountsCount = getTableSize(connection, "t_entities");
             balancesCount = getTableSize(connection, "account_balances");
-            topicMessagesCount = getTableSize(connection, "t_entities");
+            topicMessagesCount = getTableSize(connection, "topic_message");
             transactionsCount = getTableSize(connection, "t_transactions");
         } catch (Exception e) {
             log.error("Unable to retrieve details from database", e);

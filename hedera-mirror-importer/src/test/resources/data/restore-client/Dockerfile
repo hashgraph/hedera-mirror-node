@@ -1,5 +1,6 @@
-# docker build -f hedera-mirror-importer/scripts/dbperf/Dockerfile ./hedera-mirror-importer/scripts/dbperf \
-#   --build-arg dumpfile=testnet_1_24_1_flyway_schema_history_pgdump_2.gz  \
+# docker build -f hedera-mirror-importer/src/test/resources/data/restore-client//Dockerfile \
+#   ./hedera-mirror-importer/src/test/resources/data/  \
+#   --build-arg dumpfile=<pgdump.gz>  --build-arg jsonkeyfile=bucket-download-key.json
 #   -t hedera-mirror-node/postgres-restore-client
 FROM debian:stretch AS build
 
@@ -23,5 +24,10 @@ FROM alpine:latest
 COPY --from=build /tmp/pgdump.gz /tmp/pgdump.gz
 RUN apk --update add postgresql-client && rm -rf /var/cache/apk/*
 
-ENTRYPOINT PGPASSWORD=mirror_node_pass pg_restore -U mirror_node -d mirror_node -p 6432 -h localhost /tmp/pgdump.gz
-# docker run --network="host" -d hedera-mirror-node/postgres-restore-client
+ENV DB_NAME mirror_node
+ENV DB_USER mirror_node
+ENV DB_PASS mirror_node_pass
+ENV DB_PORT 5432
+
+ENTRYPOINT PGPASSWORD=$DB_PASS pg_restore -U $DB_USER -d $DB_NAME -p $DB_PORT -h localhost /tmp/pgdump.gz
+# docker run --network="host" -d -e DB_PORT=6432 hedera-mirror-node/postgres-restore-client

@@ -25,7 +25,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 public class CustomPostgresContainer {
-    public static ImageFromDockerfile createDockerImage(String dockerFilePath, String pgDumpFile) {
+    public static ImageFromDockerfile createSeededDockerImage(String dockerFilePath, String pgDumpFile) {
         return new ImageFromDockerfile()
                 .withFileFromClasspath("Dockerfile", dockerFilePath)
                 .withFileFromClasspath("bucket-download-key.json", "data/bucket-download-key.json")
@@ -35,9 +35,23 @@ public class CustomPostgresContainer {
                 .withFileFromClasspath("restore.sh", "data/restore.sh");
     }
 
-    public static GenericContainer createContainer(String dockerFilePath, String pgDumpFile, int exposedPort) {
-        return new GenericContainer(createDockerImage(dockerFilePath, pgDumpFile))
+    public static ImageFromDockerfile createDockerRestoreImage(String dockerFilePath, String pgDumpFile) {
+        return new ImageFromDockerfile()
+                .withFileFromClasspath("Dockerfile", dockerFilePath)
+                .withFileFromClasspath("bucket-download-key.json", "data/bucket-download-key.json")
+                .withBuildArg("dumpfile", pgDumpFile)
+                .withBuildArg("jsonkeyfile", "bucket-download-key.json");
+    }
+
+    public static GenericContainer createSeededContainer(String dockerFilePath, String pgDumpFile, int exposedPort) {
+        return new GenericContainer(createSeededDockerImage(dockerFilePath, pgDumpFile))
                 .withExposedPorts(exposedPort)
                 .waitingFor(Wait.forListeningPort());
+    }
+
+    public static GenericContainer createRestoreContainer(String dockerFilePath, String pgDumpFile, int targetPort) {
+        return new GenericContainer(createDockerRestoreImage(dockerFilePath, pgDumpFile))
+                .withEnv("DB_PORT", Integer.toString(targetPort))
+                .withNetworkMode("host");
     }
 }
