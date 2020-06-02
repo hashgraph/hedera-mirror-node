@@ -1,0 +1,9 @@
+#hedera:
+#  mirror:
+#    importer:
+#      downloader:
+#        accessKey:
+#        bucketName:
+#        cloudProvider:
+#        secretKey:
+#      network:
