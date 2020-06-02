@@ -127,7 +127,7 @@ public class Utility {
      *
      * @return byte array of hash value of null if calculating has failed
      */
-    public static RecordFile parseRecordFile(String filePath, String expectedPrevFileHash, Long verifyHashAfter,
+    public static RecordFile parseRecordFile(String filePath, String expectedPrevFileHash, Instant verifyHashAfter,
             Consumer<RecordItem> recordItemConsumer) {
         RecordFile recordFile = new RecordFile();
         recordFile.setName(filePath);
@@ -442,9 +442,9 @@ public class Utility {
      * @return true if verification succeeds, else false
      */
     public static boolean verifyHashChain(
-            String actualPrevFileHash, String expectedPrevFileHash, Long verifyHashAfter, String fileName) {
+            String actualPrevFileHash, String expectedPrevFileHash, Instant verifyHashAfter, String fileName) {
         var fileInstant = Instant.parse(fileName.replaceAll(".rcd", "").replaceAll("_", ":"));
-        if (!Instant.ofEpochSecond(0L, verifyHashAfter).isBefore(fileInstant)) {
+        if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;
         }
         if (Utility.hashIsEmpty(expectedPrevFileHash)) {

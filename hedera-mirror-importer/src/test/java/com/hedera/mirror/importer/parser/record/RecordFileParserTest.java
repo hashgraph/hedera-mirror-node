@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
@@ -177,7 +178,7 @@ public class RecordFileParserTest {
     @Test
     void bypassHashMismatch() throws Exception {
         // given
-        parserProperties.getMirrorProperties().setVerifyHashAfter(1567296000000000000L); // "2019-09-01T00:00:00.000000Z.rcd
+        parserProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-09-01T00:00:00.000000Z"));
         when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
         fileCopier.copy();
 
