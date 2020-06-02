@@ -82,7 +82,7 @@ docker-compose up
 
 #### Demo Data - Free Option
 The free option utilizes a bucket setup for demonstration purposes. The real bucket name is not currently publicly available.
-This is the deafult option and requires no additional steps.
+This is the default option and requires no additional steps.
 
 #### TESTNET & MAINNET Data - Requester Pays
 To access real data from the testnet or mainnet buckets the requester pays flow for [GCP](https://cloud.google.com/storage/docs/requester-pays) or [AWS](https://docs.aws.amazon.com/AmazonS3/latest/dev/RequesterPaysBuckets.html) must be utilized.
@@ -90,7 +90,7 @@ Here the charges associated with request and download of transaction data are pa
 
 To achieve this, 2 simple steps must be taken to configure the mirror node
 - Uncomment the contents of [application.yml](./application.yml) file under the root folder
-- Customize the contents accodring to your setup. See [configurations](docs/configuration.md) for detailed descriptions of config options.
+- Customize the contents according to your setup. See [configurations](docs/configuration.md) for detailed descriptions of config options.
 
 > **_Note_** The [application.yml](./application.yml) file is referenced in the [docker-compose.yml](docker-compose.yml) and allows customized of each of the sub modules.
 
@@ -132,6 +132,10 @@ The following log can be used to confirm the database is up and running
 
 
 #### REST API
+The REST API container will display logs similar to the below at start
+
+    Server running on port: 5551
+
 The REST API endpoints can be verified either through the browser or the terminal.
 The following endpoints are suggestions that can be accessed from your browser. Modify the below IP's and port sif they differ from your running containers.
 
@@ -144,6 +148,11 @@ When using the terminal simply use the `curl` command on the above endpoints. e.
     curl http://127.0.0.1:6551/api/v1/transactions
 
 #### gRPC API
+The gRPC container will display logs similar to the below at start
+
+    MirrorGrpcApplication Started MirrorGrpcApplication ....
+    Listener Starting to poll every 1000ms
+
 The gRPC streaming endpoint can be verified using clients that support [HTTP/2](https://http2.github.io/)
 Some useful clients we're encountered include
 - [grpcurl](https://github.com/fullstorydev/grpcurl)
@@ -155,7 +164,7 @@ Some useful clients we're encountered include
 
 
 
-Additionally logs on each module container can be viewed to verify expected operation or dicipher issues - See [Troubleshooting](docs/troubleshooting.md).
+Additionally logs on each module container can be viewed to verify expected operation or decipher issues - See [Troubleshooting](docs/troubleshooting.md).
 
 Simply access the terminal on each container with the following command and refer to [Operations](docs/operations.md) document for directions on where and how to view logs
 
