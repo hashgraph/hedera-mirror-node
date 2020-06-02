@@ -21,7 +21,11 @@
         <guava.version>29.0-jre</guava.version>
         <s3mock.version>0.2.5</s3mock.version>
         <docker.skip.restore.client>true</docker.skip.restore.client>
-        <db.restore.size>100k</db.restore.size>
+        <docker.restore.client.size>100k</docker.restore.client.size>
+        <testcontainer.version>1.14.3</testcontainer.version>
+        <docker.skip.base.db>true</docker.skip.base.db>
+        <docker.skip.seeded.db>true</docker.skip.seeded.db>
+        <docker.seeded.db.size>100k</docker.seeded.db.size>
     </properties>
 
     <dependencyManagement>
@@ -207,25 +211,25 @@
         <dependency>
             <groupId>com.playtika.testcontainers</groupId>
             <artifactId>embedded-google-pubsub</artifactId>
-            <version>${testcontainers.version}</version>
+            <version>${embedded.testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.playtika.testcontainers</groupId>
             <artifactId>embedded-postgresql</artifactId>
-            <version>${testcontainers.version}</version>
+            <version>${embedded.testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>1.14.3</version>
+            <version>${testcontainer.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>1.14.3</version>
+            <version>${testcontainer.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -319,25 +323,81 @@
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
-                <configuration>
-                    <images>
-                        <image>
-                            <build>
-                                <contextDir>${project.basedir}/src/test/resources/data</contextDir>
-                                <dockerFile>${project.basedir}/src/test/resources/data/restore-client/Dockerfile
-                                </dockerFile>
-                                <args>
-                                    <dumpfile>testnet_${db.restore.size}_pgdump.gz</dumpfile>
-                                    <jsonkeyfile>bucket-download-key.json</jsonkeyfile>
-                                </args>
-                            </build>
-                            <name>
-                                ${docker.push.repository}/hedera-mirror-node/postgres-restore-client:${db.restore.size}
-                            </name>
-                        </image>
-                    </images>
-                    <skip>${docker.skip.restore.client}</skip>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>dockerBuild</id>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>push</goal>
+                        </goals>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <build>
+                                        <contextDir>${project.basedir}</contextDir>
+                                        <dockerFile>${project.basedir}/src/test/resources/data/base-image/Dockerfile
+                                        </dockerFile>
+                                    </build>
+                                    <name>
+                                        ${docker.push.repository}/hedera-mirror-node/postgres:latest
+                                    </name>
+                                </image>
+                            </images>
+                            <skip>${docker.skip.base.db}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>restore-client</id>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>push</goal>
+                        </goals>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <build>
+                                        <contextDir>${project.basedir}/src/test/resources/data</contextDir>
+                                        <dockerFile>${project.basedir}/src/test/resources/data/restore-client/Dockerfile
+                                        </dockerFile>
+                                        <args>
+                                            <dumpfile>testnet_${docker.restore.client.size}_pgdump.gz</dumpfile>
+                                            <jsonkeyfile>bucket-download-key.json</jsonkeyfile>
+                                        </args>
+                                    </build>
+                                    <name>
+                                        ${docker.push.repository}/hedera-mirror-node/postgres-restore-client:${docker.restore.client.size}
+                                    </name>
+                                </image>
+                            </images>
+                            <skip>${docker.skip.restore.client}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>seeded-${docker.seeded.db.size}</id>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <build>
+                                        <contextDir>${project.basedir}/src/test/resources/data</contextDir>
+                                        <dockerFile>${project.basedir}/src/test/resources/data/seeded-image/Dockerfile
+                                        </dockerFile>
+                                        <args>
+                                            <dumpfile>testnet_${docker.seeded.db.size}_pgdump.gz</dumpfile>
+                                            <jsonkeyfile>bucket-download-key.json</jsonkeyfile>
+                                        </args>
+                                    </build>
+                                    <name>
+                                        ${docker.push.repository}/hedera-mirror-node/postgres-seeded:${docker.seeded.db.size}
+                                    </name>
+                                </image>
+                            </images>
+                            <skip>${docker.skip.seeded.db}</skip>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

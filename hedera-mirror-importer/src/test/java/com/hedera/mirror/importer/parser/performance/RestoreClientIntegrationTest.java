@@ -73,7 +73,7 @@ public class RestoreClientIntegrationTest {
         customContainer = CustomPostgresContainer.createRestoreContainer(
                 "data/restore-client/Dockerfile",
                 "testnet_100k_pgdump.gz",
-                dbProperties.getPort());
+                dbProperties);
 
         log.info("Start container {}", customContainer);
         customContainer.start();

@@ -1,7 +1,7 @@
-# docker build -f hedera-mirror-importer/src/test/resources/data/restore-client//Dockerfile \
+# docker build -f hedera-mirror-importer/src/test/resources/data/restore-client/Dockerfile \
 #   ./hedera-mirror-importer/src/test/resources/data/  \
 #   --build-arg dumpfile=<pgdump.gz>  --build-arg jsonkeyfile=bucket-download-key.json
-#   -t hedera-mirror-node/postgres-restore-client
+#   -t gcr.io/mirrornode/hedera-mirror-node/postgres-restore-client:latest
 FROM debian:stretch AS build
 
 # get dump file
@@ -30,4 +30,4 @@ ENV DB_PASS mirror_node_pass
 ENV DB_PORT 5432
 
 ENTRYPOINT PGPASSWORD=$DB_PASS pg_restore -U $DB_USER -d $DB_NAME -p $DB_PORT -h localhost /tmp/pgdump.gz
-# docker run --network="host" -d -e DB_PORT=6432 hedera-mirror-node/postgres-restore-client
+# docker run --network="host" -d -e DB_PORT=6432 gcr.io/mirrornode/hedera-mirror-node/postgres-restore-client

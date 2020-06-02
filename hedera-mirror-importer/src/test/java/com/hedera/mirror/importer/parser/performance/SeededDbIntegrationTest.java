@@ -89,7 +89,7 @@ public class SeededDbIntegrationTest {
     void warmUp() {
         dbPropertiesCache = dbProperties.toBuilder().build();
         customContainer = CustomPostgresContainer.createSeededContainer(
-                "data/seededimage/Dockerfile",
+                "data/seeded-image/Dockerfile",
                 "testnet_100k_pgdump.gz",
                 5432);
 

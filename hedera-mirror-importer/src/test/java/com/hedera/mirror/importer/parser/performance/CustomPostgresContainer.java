@@ -24,23 +24,35 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
+import com.hedera.mirror.importer.db.DBProperties;
+
 public class CustomPostgresContainer {
-    public static ImageFromDockerfile createSeededDockerImage(String dockerFilePath, String pgDumpFile) {
+
+    public static ImageFromDockerfile createBaseDockerImage(String dockerFilePath) {
         return new ImageFromDockerfile()
-                .withFileFromClasspath("Dockerfile", dockerFilePath)
-                .withFileFromClasspath("bucket-download-key.json", "data/bucket-download-key.json")
+                .withFileFromClasspath("Dockerfile", dockerFilePath);
+    }
+
+    public static ImageFromDockerfile createSeededDockerImage(String dockerFilePath, String pgDumpFile) {
+        return createBaseDockerImage(dockerFilePath)
                 .withFileFromClasspath("postgresql.conf", "data/postgresql.conf")
+                .withFileFromClasspath("restore.sh", "data/restore.sh")
                 .withBuildArg("dumpfile", pgDumpFile)
                 .withBuildArg("jsonkeyfile", "bucket-download-key.json")
-                .withFileFromClasspath("restore.sh", "data/restore.sh");
+                .withFileFromClasspath("bucket-download-key.json", "data/bucket-download-key.json");
     }
 
     public static ImageFromDockerfile createDockerRestoreImage(String dockerFilePath, String pgDumpFile) {
-        return new ImageFromDockerfile()
-                .withFileFromClasspath("Dockerfile", dockerFilePath)
+        return createBaseDockerImage(dockerFilePath)
                 .withFileFromClasspath("bucket-download-key.json", "data/bucket-download-key.json")
                 .withBuildArg("dumpfile", pgDumpFile)
                 .withBuildArg("jsonkeyfile", "bucket-download-key.json");
+    }
+
+    public static GenericContainer createBaseContainer(String dockerFilePath, int exposedPort) {
+        return new GenericContainer(createBaseDockerImage(dockerFilePath))
+                .withExposedPorts(exposedPort)
+                .waitingFor(Wait.forListeningPort());
     }
 
     public static GenericContainer createSeededContainer(String dockerFilePath, String pgDumpFile, int exposedPort) {
@@ -49,9 +61,12 @@ public class CustomPostgresContainer {
                 .waitingFor(Wait.forListeningPort());
     }
 
-    public static GenericContainer createRestoreContainer(String dockerFilePath, String pgDumpFile, int targetPort) {
+    public static GenericContainer createRestoreContainer(String dockerFilePath, String pgDumpFile, DBProperties db) {
         return new GenericContainer(createDockerRestoreImage(dockerFilePath, pgDumpFile))
-                .withEnv("DB_PORT", Integer.toString(targetPort))
+                .withEnv("DB_NAME", db.getName())
+                .withEnv("DB_USER", db.getUsername())
+                .withEnv("DB_PASS", db.getPassword())
+                .withEnv("DB_PORT", Integer.toString(db.getPort()))
                 .withNetworkMode("host");
     }
 }
