@@ -47,16 +47,91 @@ The beta mirror node works as follows:
 
 ## Getting Started
 
+### Technologies
+Multiple technologies are utilized in the mirror node. The following topics are areas where basic knowledge is valuable to understanding the product operations.
+- [Git](https://git-scm.com/about)
+- [Maven](https://maven.apache.org/guides/getting-started/index.html)
+- [Docker](https://docs.docker.com/)
+    - [docker-compose commands](https://docs.docker.com/compose/reference/overview/)
+    - [docker commands](https://docs.docker.com/engine/reference/commandline/docker/)
+- [NodeJS](https://nodejs.org/en/about/)
+- [Spring](https://spring.io/quickstart)
+- [Postgres](https://www.postgresql.org/docs/9.6/index.html)
+
+
+### Prerequisite Tools
+Ensure these tools are installed prior to running the mirror node
+
+- [Java Open JDK](https://sdkman.io/jdks#jdk.java.net), version 11 and above
+- [Node](https://nodejs.org/en/)
+- [Docker](https://www.docker.com/products/docker-desktop)
+
+### Running Mirror Node (Importer, gRPC Streamer and REST API)
 Ensure OpenJDK 11 and Docker Compose are installed, then run:
 
+#### Demo Bucket
 ```bash
 git clone git@github.com:hashgraph/hedera-mirror-node.git
 cd hedera-mirror-node
-./mvnw clean install -DskipTests
 docker-compose up
 ```
 
 > **_NOTE:_** This defaults to a bucket setup for demonstration purposes. The real bucket name is not currently publicly available.
+
+#### Non-Demo Bucket
+To utilize non demo bucket data the requester pays flow must be utilized. To configure this 2 steps must be taken
+- Create an application.yaml file under each sub module (hedera-mirror-grpc, hedera-mirror-importer, hedera-mirror-rest) where custom [configurations](docs/configuration.md) can be set.
+- Uncomment the application.yaml reference in the [docker-compose.yml](docker-compose.yml) for your desired component
+
+
+See the [Docker compose Startup section](https://github.com/hashgraph/hedera-mirror-node/blob/master/docs/installation.md#running-via-docker-compose) for further details
+
+
+### Verify Operational Mirror Node
+When running the Mirror Node using docker, activity logs for each module can be viewed from the respective containers in [docker desktop Dashboard](https://docs.docker.com/desktop/dashboard/) to verify expected operation.
+
+You can also interact with some module containers (gRPC and REST API's) to verify their operation.
+
+First list running docker container information using
+
+     docker ps
+Useful information for all the running containers such as CONTAINER ID, IP's and ports will be displayed. e.g. below
+
+    CONTAINED ID    IMAGE                                           COMMAND                 CREATED         STATUS          PORTS                   NAMES
+    21fa2a986d99    gcr.io/mirrornode/hedera-mirror-rest:0.12.0     "docker-entrypoint.s…"  7 minutes ago   Up 12 seconds   0.0.0.0:5551->5551/tcp  hedera-mirror-node_rest_1
+    56647c384d49    gcr.io/mirrornode/hedera-mirror-grpc:0.12.0     "java -cp /app/resou…"  8 minutes ago   Up 16 seconds   0.0.0.0:5600->5600/tcp  edera-mirror-node_grpc_1
+
+Using the IP and port, the gRPC and RET API's can be called. Using the CONTAINER ID docker containers can be accessed for in depth troubleshooting.
+
+#### gRPC
+The gRPC streaming endpoint can be verified using clients that support [HTTP/2](https://http2.github.io/)
+Some useful clients we're encountered include
+- [grpcurl](https://github.com/fullstorydev/grpcurl)
+    - run the following command making substitutions for {topicNum}, {grpcContainerIP} and {grpcContainerPort} appropriately
+
+            grpcurl -plaintext -d '{"topicID":{"shardNum":0,"realmNum":0,"topicNum":{topicNum}},"consensusStartTime":{"seconds":0,"nanos":0},"limit":10}' {grpcContainerIP}:{grpcContainerPort} com.hedera.mirror.api.proto.ConsensusService/subscribeTopic
+
+- [Bloom](https://github.com/uw-labs/bloomrpc)
+
+
+#### REST API
+The REST API endpoints can be verified either through the browser or the terminal.
+The following endpoints are suggestions that can be accessed from your browser. Modify the below IP's and port sif they differ from your running containers.
+
+    http://127.0.0.1:5551/api/v1/accounts
+    http://127.0.0.1:5551/api/v1/balances
+    http://127.0.0.1:5551/api/v1/transactions
+
+When using the terminal simply use the `curl` command on the above endpoints.
+
+    curl http://127.0.0.1:6551/api/v1/transactions
+
+
+Additionally logs on each module container can be viewed to verify expected operation.
+
+Simply access the terminal on each container with the following command and refer to [Operations](docs/operations.md) document for directions on where and how to view logs
+
+     docker exec -it <CONTAINER ID> bash
 
 ## Documentation
 
