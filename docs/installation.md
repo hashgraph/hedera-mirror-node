@@ -97,20 +97,8 @@ Containers use the following persisted volumes:
 
 ### Starting
 
-Before starting, [configure](configuration.md) the application by preparing an `application.yml` with the desired custom
-values. This file can then be passed to Docker compose by uncommenting the following lines in the `docker-compose.yml`
-and setting it to the path of the local file:
-
-```
-volumes:
-- ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
-```
-
-and
-
-```
-- ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
-```
+Before starting, [configure](configuration.md) the application by updating the [application.yml](../application.yml) file with the desired custom
+values. This file is passed to Docker compose and allows customized configuration for each of the sub modules.
 
 Finally, run the commands to build and startup:
 
