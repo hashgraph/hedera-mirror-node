@@ -20,12 +20,24 @@ package com.hedera.mirror.importer.parser.performance;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import javax.annotation.Resource;
+import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -68,8 +80,13 @@ public class RestoreClientIntegrationTest {
     @Rule
     GenericContainer customContainer;
 
+    @Resource
+    private DataSource dataSource;
+
+    private Connection connection;
+
     @BeforeAll
-    void warmUp() {
+    void warmUp() throws SQLException {
         customContainer = CustomPostgresContainer.createRestoreContainer(
                 "data/restore-client/Dockerfile",
                 "testnet_100k_pgdump.gz",
@@ -79,8 +96,8 @@ public class RestoreClientIntegrationTest {
         customContainer.start();
         log.info("Database restore complete to {}", dbProperties);
 
-        streamType = parserProperties.getStreamType();
-        parse("2020-02-09T18_30_00.000084Z.rcd");
+        connection = dataSource.getConnection();
+        checkSeededTablesArePresent();
     }
 
     @AfterAll
@@ -89,12 +106,36 @@ public class RestoreClientIntegrationTest {
         customContainer.stop();
     }
 
-    @Timeout(15)
+    @Disabled("Current test resource transactions data files cause hash mismatch failures")
     @Test
     public void parseAndIngestTransactions() throws Exception {
         parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.init();
         parse("*.rcd");
+    }
+
+    @Timeout(1)
+    @Test
+    public void checkEntitiesTablesIsPopulated() throws Exception {
+        verifyTableSize(connection, "t_entities", "entities");
+    }
+
+    @Timeout(2)
+    @Test
+    public void checkBalancesTablesIsPopulated() throws Exception {
+        verifyTableSize(connection, "account_balances", "balances");
+    }
+
+    @Timeout(1)
+    @Test
+    public void checkTopicMessageTablesIsPopulated() throws Exception {
+        verifyTableSize(connection, "topic_message", "topicmessages");
+    }
+
+    @Timeout(1)
+    @Test
+    public void checkTransactionsTablesIsPopulated() throws Exception {
+        verifyTableSize(connection, "t_transactions", "transactions");
     }
 
     private void parse(String filePath) {
@@ -105,5 +146,40 @@ public class RestoreClientIntegrationTest {
         fileCopier.copy();
 
         recordFileParser.parse();
+    }
+
+    private void checkSeededTablesArePresent() {
+        String[] tables = new String[] {"account_balance_sets", "account_balances", "flyway_schema_history",
+                "non_fee_transfers", "t_application_status", "t_contract_result", "t_cryptotransferlists",
+                "t_entities", "t_entity_types", "t_file_data", "t_livehashes", "t_record_files",
+                "t_transaction_results",
+                "t_transaction_types", "t_transactions", "topic_message"
+        };
+        List<String> discoveredTables = new ArrayList<>();
+
+        try (Connection connection = dataSource.getConnection();
+             ResultSet rs = connection.getMetaData().getTables(null, null, null, new String[] {"TABLE"})) {
+
+            while (rs.next()) {
+                discoveredTables.add(rs.getString("TABLE_NAME"));
+            }
+        } catch (Exception e) {
+            log.error("Unable to retrieve details from database", e);
+        }
+
+        assertThat(discoveredTables.size()).isGreaterThan(0);
+        Collections.sort(discoveredTables);
+        log.info("Encountered tables: {}", discoveredTables);
+        assertThat(discoveredTables).isEqualTo(Arrays.asList(tables));
+    }
+
+    private void verifyTableSize(Connection connection, String table, String label) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement("select count (*) from " + table);
+        ResultSet rs = statement.executeQuery();
+        rs.next();
+        long count = rs.getLong("count");
+
+        log.info("{} {} were seeded", count, label);
+        assertThat(count).isGreaterThan(0);
     }
 }

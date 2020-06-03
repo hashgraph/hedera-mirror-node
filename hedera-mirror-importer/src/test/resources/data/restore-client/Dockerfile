@@ -29,5 +29,9 @@ ENV DB_USER mirror_node
 ENV DB_PASS mirror_node_pass
 ENV DB_PORT 5432
 
-ENTRYPOINT PGPASSWORD=$DB_PASS pg_restore -U $DB_USER -d $DB_NAME -p $DB_PORT -h localhost /tmp/pgdump.gz
+COPY ./restore.sh /tmp/restore.sh
+RUN chmod 755 /tmp/restore.sh
+
+ENTRYPOINT /tmp/restore.sh
+
 # docker run --network="host" -d -e DB_PORT=6432 gcr.io/mirrornode/hedera-mirror-node/postgres-restore-client

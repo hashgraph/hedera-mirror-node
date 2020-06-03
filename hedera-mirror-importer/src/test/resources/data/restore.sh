@@ -1,11 +1,18 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
-while ! pg_isready -d $DB_NAME -p $DB_PORT -q -U $DB_USER; do
-    echo >&2 "Postgres $DB_NAME database at localhost:$DB_PORT is unavailable to user $DB_USER - sleeping"
-    sleep 1
-done
+echo "Setting user and role for Mirror Node"
+PGPASSWORD=$DB_PASS psql -v ON_ERROR_STOP=1 --username "$DB_USER" --dbname "$DB_NAME" -p "$DB_PORT" -h localhost <<-EOSQL
+    \set db_name 'mirror_node'
+    \set db_user 'mirror_node'
+    \set db_password 'mirror_node_pass'
+    \set db_owner 'mirror_node'
+
+    create user :db_user with login createrole password :'db_password';
+
+EOSQL
 
 echo "Importing Mirror Node Data"
-PGPASSWORD=$DB_PASS pg_restore -U $DB_USER -d $DB_NAME -p $DB_PORT /tmp/pgdump.gz
+echo "Connecting to Postgres $DB_NAME database at localhost:$DB_PORT under user $DB_USER"
+PGPASSWORD=$DB_PASS pg_restore -c -v -U $DB_USER -d $DB_NAME -p $DB_PORT -h localhost /tmp/pgdump.gz
 echo "Restored Mirror Node Data from backup"

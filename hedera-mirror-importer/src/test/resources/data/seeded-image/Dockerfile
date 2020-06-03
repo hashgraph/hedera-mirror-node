@@ -29,8 +29,8 @@ ENV DB_USER mirror_node
 ENV DB_PASS mirror_node_pass
 ENV DB_PORT 5432
 
-COPY ./restore.sh /docker-entrypoint-initdb.d/
-RUN chmod 755 /docker-entrypoint-initdb.d/restore.sh
+COPY ./restore-seed.sh /docker-entrypoint-initdb.d/
+RUN chmod 755 /docker-entrypoint-initdb.d/restore-seed.sh
 
 COPY ./postgresql.conf /etc/postgresql/postgresql.conf
 

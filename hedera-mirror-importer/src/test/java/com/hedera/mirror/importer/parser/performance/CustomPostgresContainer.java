@@ -20,12 +20,14 @@ package com.hedera.mirror.importer.parser.performance;
  * ‍
  */
 
+import lombok.extern.log4j.Log4j2;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import com.hedera.mirror.importer.db.DBProperties;
 
+@Log4j2
 public class CustomPostgresContainer {
 
     public static ImageFromDockerfile createBaseDockerImage(String dockerFilePath) {
@@ -36,7 +38,7 @@ public class CustomPostgresContainer {
     public static ImageFromDockerfile createSeededDockerImage(String dockerFilePath, String pgDumpFile) {
         return createBaseDockerImage(dockerFilePath)
                 .withFileFromClasspath("postgresql.conf", "data/postgresql.conf")
-                .withFileFromClasspath("restore.sh", "data/restore.sh")
+                .withFileFromClasspath("restore-seed.sh", "data/restore-seed.sh")
                 .withBuildArg("dumpfile", pgDumpFile)
                 .withBuildArg("jsonkeyfile", "bucket-download-key.json")
                 .withFileFromClasspath("bucket-download-key.json", "data/bucket-download-key.json");
@@ -46,6 +48,7 @@ public class CustomPostgresContainer {
         return createBaseDockerImage(dockerFilePath)
                 .withFileFromClasspath("bucket-download-key.json", "data/bucket-download-key.json")
                 .withBuildArg("dumpfile", pgDumpFile)
+                .withFileFromClasspath("restore.sh", "data/restore.sh")
                 .withBuildArg("jsonkeyfile", "bucket-download-key.json");
     }
 
@@ -67,6 +70,9 @@ public class CustomPostgresContainer {
                 .withEnv("DB_USER", db.getUsername())
                 .withEnv("DB_PASS", db.getPassword())
                 .withEnv("DB_PORT", Integer.toString(db.getPort()))
-                .withNetworkMode("host");
+                .withNetworkMode("host")
+                .waitingFor(
+                        Wait.forLogMessage(".*Restored Mirror Node Data from backup.*\\n", 1)
+                );
     }
 }
