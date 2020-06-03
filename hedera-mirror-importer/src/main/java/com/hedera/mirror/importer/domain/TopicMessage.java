@@ -29,6 +29,8 @@ import lombok.Data;
 import com.hedera.mirror.importer.converter.EntityIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
+import com.hedera.mirror.importer.converter.ByteArraySerializer;
+
 @Data
 @Entity
 public class TopicMessage {
@@ -40,6 +42,7 @@ public class TopicMessage {
     @Id
     private long consensusTimestamp;
 
+    @JsonSerialize(using = ByteArraySerializer.class)
     private byte[] message;
 
     @Convert(converter = EntityIdConverter.class)
@@ -48,6 +51,7 @@ public class TopicMessage {
 
     private int realmNum;
 
+    @JsonSerialize(using = ByteArraySerializer.class)
     private byte[] runningHash;
 
     private int runningHashVersion;

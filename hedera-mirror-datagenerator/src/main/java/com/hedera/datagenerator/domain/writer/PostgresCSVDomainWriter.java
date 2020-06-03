@@ -48,7 +48,7 @@ import com.hedera.mirror.importer.util.Utility;
  * Test data for tables: <br/>
  * <ul>
  *   <li>transaction</li>
- *   <li>t_file_data</li>
+ *   <li>file_data</li>
  *   <li>crypto_transfer</li>
  *   <li>t_entities</li>
  *   <li>topic_message</li>
@@ -64,10 +64,10 @@ import com.hedera.mirror.importer.util.Utility;
  * <p>
  * Tables left empty:
  * <ul>
- *   <li>t_record_files</li>
- *   <li>t_contract_result (empty until contract transaction generator is added)</li>
+ *   <li>record_file</li>
+ *   <li>contract_result (empty until contract transaction generator is added)</li>
  *   <li>t_events (events are disabled in production)</li>
- *   <li>t_livehashes (crypto claims not implemented in services,
+ *   <li>live_hash (crypto claims not implemented in services,
  *     https://github.com/swirlds/services-hedera/issues/1706)</li>
  *   <li>account_balance_sets</li>
  *   <li>t_application_status</li>
@@ -79,6 +79,7 @@ import com.hedera.mirror.importer.util.Utility;
  *   <li>flyway_schema_history</li>
  * </ul>
  */
+// TODO: Replace this by CopySqlEntityListener
 @Named
 @Log4j2
 public class PostgresCSVDomainWriter implements DomainWriter {
@@ -128,7 +129,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
 
     private static CSVPrinter getFileDataCSVPrinter(String outputDir) throws IOException {
         return new CSVPrinter(
-                Files.newBufferedWriter(Paths.get(outputDir, "t_file_data")),
+                Files.newBufferedWriter(Paths.get(outputDir, "file_data")),
                 CSVFormat.DEFAULT.withHeader("file_data", "consensus_timestamp"));
     }
 
@@ -196,7 +197,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
     @Override
     public void addCryptoTransfer(CryptoTransfer cryptoTransfer) {
         try {
-            cryptoTransferListsWriter.printRecord(cryptoTransfer.getEntityId().getId(),
+            cryptoTransferListsWriter.printRecord(cryptoTransfer.getEntityId(),
                     cryptoTransfer.getConsensusTimestamp(), cryptoTransfer.getAmount());
         } catch (IOException e) {
             throw new RuntimeException(e);

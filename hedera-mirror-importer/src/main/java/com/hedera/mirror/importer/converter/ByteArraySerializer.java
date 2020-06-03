@@ -25,15 +25,14 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.domain.EntityId;
+import org.apache.commons.codec.binary.Hex;
 
 @Named
-public class EntityIdSerializer extends JsonSerializer<EntityId> {
+public class ByteArraySerializer extends JsonSerializer<byte[]> {
     @Override
-    public void serialize(EntityId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    public void serialize(byte[] value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         if (value != null) {
-            gen.writeNumber(value.getId());
+            gen.writeString("\\x" + Hex.encodeHexString(value));
         }
     }
 }

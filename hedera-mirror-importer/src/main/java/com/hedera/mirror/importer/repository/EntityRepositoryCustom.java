@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.converter;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,20 +20,8 @@ package com.hedera.mirror.importer.converter;
  * ‍
  */
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import java.io.IOException;
-import javax.inject.Named;
-
 import com.hedera.mirror.importer.domain.EntityId;
 
-@Named
-public class EntityIdSerializer extends JsonSerializer<EntityId> {
-    @Override
-    public void serialize(EntityId value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        if (value != null) {
-            gen.writeNumber(value.getId());
-        }
-    }
+public interface EntityRepositoryCustom {
+    void insertEntityIdDoNothingOnConflict(EntityId entityId);
 }

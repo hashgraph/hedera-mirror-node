@@ -20,22 +20,24 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import com.hedera.mirror.importer.converter.ByteArraySerializer;
 
 @Data
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "t_livehashes")
 public class LiveHash {
 
     @Id
     private Long consensusTimestamp;
 
+    @JsonSerialize(using = ByteArraySerializer.class)
     private byte[] livehash;
 }

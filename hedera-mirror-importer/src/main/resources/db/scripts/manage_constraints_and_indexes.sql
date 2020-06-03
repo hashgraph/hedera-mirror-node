@@ -7,9 +7,9 @@ BEGIN
     -- Drop order is roughly determined by foreign key constraints. If foreign key A.fk_id references B.id, then
     -- foreign key constraint on A.fk_id needs to be dropped before dropping any indexes/primary_key on B.id.
     PERFORM drop_crypto_transfer_constraints_and_indexes();
-    PERFORM drop_t_file_data_constraints_and_indexes();
-    PERFORM drop_t_livehashes_constraints_and_indexes();
-    PERFORM drop_t_contract_result_constraints_and_indexes();
+    PERFORM drop_file_data_constraints_and_indexes();
+    PERFORM drop_live_hash_constraints_and_indexes();
+    PERFORM drop_contract_result_constraints_and_indexes();
     PERFORM drop_topic_message_constraints_and_indexes();
     PERFORM drop_transaction_constraints_and_indexes();
     PERFORM drop_t_entities_constraints_and_indexes();
@@ -27,9 +27,9 @@ BEGIN
     PERFORM create_t_entities_constraints_and_indexes();
     PERFORM create_transaction_constraints_and_indexes();
     PERFORM create_topic_message_constraints_and_indexes();
-    PERFORM create_t_contract_result_constraints_and_indexes();
-    PERFORM create_t_livehashes_constraints_and_indexes();
-    PERFORM create_t_file_data_constraints_and_indexes();
+    PERFORM create_contract_result_constraints_and_indexes();
+    PERFORM create_live_hash_constraints_and_indexes();
+    PERFORM create_file_data_constraints_and_indexes();
     PERFORM create_crypto_transfer_constraints_and_indexes();
 END;
 $$ LANGUAGE plpgsql;
@@ -74,53 +74,53 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION drop_t_file_data_constraints_and_indexes() RETURNS void AS
+CREATE OR REPLACE FUNCTION drop_file_data_constraints_and_indexes() RETURNS void AS
 $$
 DECLARE
 BEGIN
-    DROP INDEX IF EXISTS idx__t_file_data__consensus;
+    DROP INDEX IF EXISTS idx__file_data__consensus;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION create_t_file_data_constraints_and_indexes() RETURNS void AS
+CREATE OR REPLACE FUNCTION create_file_data_constraints_and_indexes() RETURNS void AS
 $$
 DECLARE
 BEGIN
-    CREATE INDEX IF NOT EXISTS idx__t_file_data__consensus ON t_file_data (consensus_timestamp DESC);
-END;
-$$ LANGUAGE plpgsql;
-
-
-CREATE OR REPLACE FUNCTION drop_t_livehashes_constraints_and_indexes() RETURNS void AS
-$$
-DECLARE
-BEGIN
-    DROP INDEX IF EXISTS idx__t_livehashes__consensus;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION create_t_livehashes_constraints_and_indexes() RETURNS void AS
-$$
-DECLARE
-BEGIN
-    CREATE INDEX IF NOT EXISTS idx__t_livehashes__consensus ON t_livehashes (consensus_timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx__file_data__consensus ON file_data (consensus_timestamp DESC);
 END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION drop_t_contract_result_constraints_and_indexes() RETURNS void AS
+CREATE OR REPLACE FUNCTION drop_live_hash_constraints_and_indexes() RETURNS void AS
 $$
 DECLARE
 BEGIN
-    DROP INDEX IF EXISTS idx__t_contract_result__consensus;
+    DROP INDEX IF EXISTS idx__live_hash__consensus;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION create_t_contract_result_constraints_and_indexes() RETURNS void AS
+CREATE OR REPLACE FUNCTION create_live_hash_constraints_and_indexes() RETURNS void AS
 $$
 DECLARE
 BEGIN
-    CREATE INDEX IF NOT EXISTS idx__t_contract_result__consensus ON t_contract_result (consensus_timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx__live_hash__consensus ON live_hash (consensus_timestamp DESC);
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION drop_contract_result_constraints_and_indexes() RETURNS void AS
+$$
+DECLARE
+BEGIN
+    DROP INDEX IF EXISTS idx__contract_result__consensus;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION create_contract_result_constraints_and_indexes() RETURNS void AS
+$$
+DECLARE
+BEGIN
+    CREATE INDEX IF NOT EXISTS idx__contract_result__consensus ON contract_result (consensus_timestamp DESC);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -199,12 +199,12 @@ DECLARE
 BEGIN
     TRUNCATE TABLE account_balance_sets RESTART IDENTITY CASCADE;
     TRUNCATE TABLE account_balances RESTART IDENTITY CASCADE;
-    TRUNCATE TABLE t_contract_result RESTART IDENTITY CASCADE;
+    TRUNCATE TABLE contract_result RESTART IDENTITY CASCADE;
     TRUNCATE TABLE crypto_transfer RESTART IDENTITY CASCADE;
-    TRUNCATE TABLE t_file_data RESTART IDENTITY CASCADE;
-    TRUNCATE TABLE t_livehashes RESTART IDENTITY CASCADE;
+    TRUNCATE TABLE file_data RESTART IDENTITY CASCADE;
+    TRUNCATE TABLE live_hash RESTART IDENTITY CASCADE;
     TRUNCATE TABLE topic_message RESTART IDENTITY CASCADE;
-    TRUNCATE TABLE t_record_files RESTART IDENTITY CASCADE;
+    TRUNCATE TABLE record_file RESTART IDENTITY CASCADE;
     TRUNCATE TABLE t_entities RESTART IDENTITY CASCADE;
     TRUNCATE TABLE transaction RESTART IDENTITY CASCADE;
     UPDATE t_application_status SET status_value = NULL;

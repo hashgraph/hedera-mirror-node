@@ -27,9 +27,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.sql")
 public class SqlProperties {
-    /**
-     * PreparedStatement.executeBatch() is called after every batchSize number of transactions from record stream file.
-     */
     @Min(1)
-    private int batchSize = 2000;
+    private int threads = 10;
 }

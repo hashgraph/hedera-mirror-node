@@ -4,9 +4,9 @@ SELECT cleanup();
 SELECT drop_constraints_and_indexes();
 
 \echo ------------------------------
-\echo COPY data to t_record_files from %%TMP_DIR%%/t_record_files
+\echo COPY data to record_file from %%TMP_DIR%%/record_file
 \echo ------------------------------
-\copy t_record_files FROM '%%TMP_DIR%%/t_record_files' WITH CSV HEADER;
+\copy record_file FROM '%%TMP_DIR%%/record_file' WITH CSV HEADER;
 
 
 \echo ------------------------------
@@ -28,9 +28,9 @@ SELECT drop_constraints_and_indexes();
 
 
 \echo ------------------------------
-\echo COPY data to t_file_data from %%TMP_DIR%%/t_file_data
+\echo COPY data to file_data from %%TMP_DIR%%/file_data
 \echo ------------------------------
-\copy t_file_data FROM '%%TMP_DIR%%/t_file_data' WITH CSV HEADER;
+\copy file_data FROM '%%TMP_DIR%%/file_data' WITH CSV HEADER;
 
 \echo ------------------------------
 \echo COPY data to topic_message from %%TMP_DIR%%/topic_message
