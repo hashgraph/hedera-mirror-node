@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,19 +20,11 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+public class HashMismatchException extends ImporterException {
 
-import com.hedera.mirror.importer.domain.RecordFile;
+    private static final long serialVersionUID = -1093315700008851731L;
 
-public class RecordFileRepositoryTest extends AbstractRepositoryTest {
-
-    @Test
-    void insert() {
-        RecordFile recordFile = new RecordFile(0L, 0L, null, "fileName", 20L, 30L, "fileHash", "previousHash", 0);
-        recordFile = recordFileRepository.save(recordFile);
-        Assertions.assertThat(recordFileRepository.findById(recordFile.getId()).get())
-                .isNotNull()
-                .isEqualTo(recordFile);
+    public HashMismatchException(String message) {
+        super(message);
     }
 }

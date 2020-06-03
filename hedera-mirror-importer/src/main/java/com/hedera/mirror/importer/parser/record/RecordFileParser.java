@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -44,7 +45,6 @@ import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
-import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.FileParser;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
@@ -102,48 +102,19 @@ public class RecordFileParser implements FileParser {
     public void loadRecordFile(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
         recordStreamFileListener.onStart(streamFileData);
-        RecordFile recordFile = Utility.parseRecordFile(streamFileData.getFilename(), true);
-        String fileName = Utility.getFileName(streamFileData.getFilename());
-        recordFile.setLoadStart(startTime.getEpochSecond());
-        int counter = 0;
+        String expectedPrevFileHash =
+                applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
+        AtomicInteger counter = new AtomicInteger(0);
         boolean success = false;
-
         try {
-            if (!Utility.verifyHashChain(recordFile.getPreviousHash(),
-                    applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH),
-                    parserProperties.getMirrorProperties().getVerifyHashAfter(), fileName)) {
-                throw new ParserException("Hash mismatch for file " + fileName);
-            }
-
-            for (var recordItem : recordFile.getRecordItems()) {
-                counter++;
-
-                if (log.isTraceEnabled()) {
-                    log.trace("Transaction = {}, Record = {}",
-                            Utility.printProtoMessage(recordItem.getTransaction()),
-                            Utility.printProtoMessage(recordItem.getRecord()));
-                } else if (log.isDebugEnabled()) {
-                    log.debug("Storing transaction with consensus timestamp {}", recordItem.getConsensusTimestamp());
-                }
-                recordItemListener.onItem(recordItem);
-
-                String type = TransactionTypeEnum.of(recordItem.getTransactionType()).toString();
-                transactionSizeMetric.tag("type", type)
-                        .register(meterRegistry)
-                        .record(recordItem.getTransactionBytes().length);
-
-                Instant consensusTimestamp = Utility.convertToInstant(
-                        recordItem.getRecord().getConsensusTimestamp());
-                transactionLatencyMetric.tag("type", type)
-                        .register(meterRegistry)
-                        .record(Duration.between(consensusTimestamp, Instant.now()));
-            }
-
-            List<RecordItem> items = recordFile.getRecordItems();
-            if (!items.isEmpty()) {
-                recordFile.setConsensusStart(items.get(0).getConsensusTimestamp());
-                recordFile.setConsensusEnd(items.get(items.size() - 1).getConsensusTimestamp());
-            }
+            RecordFile recordFile = Utility.parseRecordFile(
+                    streamFileData.getFilename(), expectedPrevFileHash,
+                    parserProperties.getMirrorProperties().getVerifyHashAfter(),
+                    recordItem -> {
+                        counter.incrementAndGet();
+                        processRecordItem(recordItem);
+                    });
+            recordFile.setLoadStart(startTime.getEpochSecond());
             recordFile.setLoadEnd(Instant.now().getEpochSecond());
             recordStreamFileListener.onEnd(recordFile);
             applicationStatusRepository.updateStatusValue(
@@ -151,14 +122,35 @@ public class RecordFileParser implements FileParser {
             success = true;
         } finally {
             var elapsedTimeMillis = Duration.between(startTime, Instant.now()).toMillis();
-            var rate = elapsedTimeMillis > 0 ? (int) (1000.0 * counter / elapsedTimeMillis) : 0;
+            var rate = elapsedTimeMillis > 0 ? (int) (1000.0 * counter.get() / elapsedTimeMillis) : 0;
             log.info("Finished parsing {} transactions from record file {} in {}ms ({}/s)",
-                    counter, fileName, elapsedTimeMillis, rate);
+                    counter, streamFileData.getFilename(), elapsedTimeMillis, rate);
             parseDurationMetric.tag("success", String.valueOf(success))
-                    .tag("version", String.valueOf(recordFile.getRecordFormatVersion()))
                     .register(meterRegistry)
                     .record(elapsedTimeMillis, TimeUnit.MILLISECONDS);
         }
+    }
+
+    private void processRecordItem(RecordItem recordItem) {
+        if (log.isTraceEnabled()) {
+            log.trace("Transaction = {}, Record = {}",
+                    Utility.printProtoMessage(recordItem.getTransaction()),
+                    Utility.printProtoMessage(recordItem.getRecord()));
+        } else if (log.isDebugEnabled()) {
+            log.debug("Storing transaction with consensus timestamp {}", recordItem.getConsensusTimestamp());
+        }
+        recordItemListener.onItem(recordItem);
+
+        String type = TransactionTypeEnum.of(recordItem.getTransactionType()).toString();
+        transactionSizeMetric.tag("type", type)
+                .register(meterRegistry)
+                .record(recordItem.getTransactionBytes().length);
+
+        Instant consensusTimestamp = Utility.convertToInstant(
+                recordItem.getRecord().getConsensusTimestamp());
+        transactionLatencyMetric.tag("type", type)
+                .register(meterRegistry)
+                .record(Duration.between(consensusTimestamp, Instant.now()));
     }
 
     /**

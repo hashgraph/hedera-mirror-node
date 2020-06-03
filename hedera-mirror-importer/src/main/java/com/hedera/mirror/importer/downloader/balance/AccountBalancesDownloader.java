@@ -54,8 +54,8 @@ public class AccountBalancesDownloader extends Downloader {
     }
 
     @Override
-    protected boolean verifyDataFile(String filePath, byte[] verifiedHash) {
-        return Arrays.equals(verifiedHash, Utility.getBalanceFileHash(filePath));
+    protected boolean verifyDataFile(File file, byte[] verifiedHash) {
+        return Arrays.equals(verifiedHash, Utility.getBalanceFileHash(file.getPath()));
     }
 
     @Override

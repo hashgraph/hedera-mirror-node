@@ -160,7 +160,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         entityRecordItemListener.onItem(recordItem);
         // commit, close connection
         recordStreamFileListener
-                .onEnd(new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", null, 0));
+                .onEnd(new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", 0));
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {

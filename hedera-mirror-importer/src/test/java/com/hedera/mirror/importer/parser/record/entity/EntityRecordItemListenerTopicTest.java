@@ -43,9 +43,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import com.hedera.mirror.importer.KeyConverter;
+import com.hedera.mirror.importer.converter.KeyConverter;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.TopicIdConverter;
+import com.hedera.mirror.importer.converter.TopicIdConverter;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;

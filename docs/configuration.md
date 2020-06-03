@@ -22,7 +22,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | Name                                                                 | Default                 | Description                                                                                    |
 | -------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
 | `hedera.mirror.importer.dataPath`                                    | ./data                  | The data directory used to store downloaded files and other application state                  |
-| `hedera.mirror.importer.verfiyHashAfter`                             | ""                      | Streams in which files are linked using hashes (prevHash) to ensure file ordering, the check would be skipped until after (and not including) this value. Format: YYYY-MM-DDTHH:MM:SS.fffffffffZ |
 | `hedera.mirror.importer.db.restPassword`                             | mirror_api_pass         | The database password the API uses to connect. **Should be changed from default**              |
 | `hedera.mirror.importer.db.restUsername`                             | mirror_api              | The username the API uses to connect to the database                                           |
 | `hedera.mirror.importer.db.host`                                     | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
@@ -38,7 +37,9 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.balance.prefix`                   | accountBalances/balance | The prefix to search cloud storage for balance files                                           |
 | `hedera.mirror.importer.downloader.balance.threads`                  | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.importer.downloader.bucketName`                       | "hedera-demo-streams"   | The cloud storage bucket name to download streamed files                                       |
-| `hedera.mirror.importer.downloader.cloudProvider`                    | S3                      | The cloud provider to download files from. Either `S3`, `GCP` or `LOCAL`                       |
+| `hedera.mirror.importer.downloader.cloudProvider`                    | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                                |
+| `hedera.mirror.importer.downloader.endpointOverride`                 |                         | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible |
+| `hedera.mirror.importer.downloader.gcpProjectId`                     |                         | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.            |
 | `hedera.mirror.importer.downloader.maxConcurrency`                   | 1000                    | The maximum number of allowed open HTTP connections. Used by AWS SDK directly.                 |
 | `hedera.mirror.importer.downloader.record.batchSize`                 | 40                      | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.importer.downloader.record.enabled`                   | true                    | Whether to enable record file downloads                                                        |
@@ -75,6 +76,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.pubsub.topicName`                     |                         | Pubsub topic to publish transactions to                                                        |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
+| `hedera.mirror.importer.verfiyHashAfter`                             | 1970-01-01T00:00:00Z  | Streams in which files are linked using hashes (prevHash) to ensure file ordering, the check would be skipped until after (and not including) this point of time. Value should be a string parsable by Instant. For instance, YYYY-MM-DDTHH:MM:SS.fffffffffZ |
 
 #### Export transactions to PubSub
 
