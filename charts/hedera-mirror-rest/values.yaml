@@ -119,6 +119,13 @@ serviceMonitor:
 
 terminationGracePeriodSeconds: 60
 
+test:
+  enabled: true
+  image:
+    pullPolicy: IfNotPresent
+    repository: bats/bats
+    tag: v1.1.0
+
 tolerations: []
 
 updateStrategy:

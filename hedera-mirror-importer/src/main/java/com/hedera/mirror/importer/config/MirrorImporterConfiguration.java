@@ -38,7 +38,10 @@ import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.interceptor.Context;
+import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
+import software.amazon.awssdk.http.SdkHttpRequest;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
@@ -59,6 +62,7 @@ public class MirrorImporterConfiguration {
 
     private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties downloaderProperties;
+    private final MetricsExecutionInterceptor metricsExecutionInterceptor;
 
     @Bean
     @Profile("kubernetes")
@@ -67,47 +71,63 @@ public class MirrorImporterConfiguration {
     }
 
     @Bean
-    public S3AsyncClient s3AsyncClient(ExecutionInterceptor metricsExecutionInterceptor) {
+    @ConditionalOnProperty(prefix = "hedera.mirror.importer.downloader", name = "cloudProvider", havingValue = "GCP")
+    public S3AsyncClient gcpCloudStorageClient() {
+        log.info("Configured to download from GCP with bucket name '{}'", downloaderProperties.getBucketName());
+        // Any valid region for aws client. Ignored by GCP.
+        S3AsyncClientBuilder clientBuilder = asyncClientBuilder("us-east-1")
+                .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()));
+        String projectId = downloaderProperties.getGcpProjectId();
+        if (projectId != null) {
+            clientBuilder.overrideConfiguration(builder -> builder.addExecutionInterceptor(new ExecutionInterceptor() {
+                @Override
+                public SdkHttpRequest modifyHttpRequest(
+                        Context.ModifyHttpRequest context, ExecutionAttributes executionAttributes) {
+                    return context.httpRequest().toBuilder()
+                            .appendRawQueryParameter("userProject", projectId).build();
+                }
+            }));
+        }
+        return clientBuilder.build();
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "hedera.mirror.importer.downloader", name = "cloudProvider", havingValue = "S3",
+            matchIfMissing = true)
+    public S3AsyncClient s3CloudStorageClient() {
+        log.info("Configured to download from S3 in region {} with bucket name '{}'",
+                downloaderProperties.getRegion(), downloaderProperties.getBucketName());
+        S3AsyncClientBuilder clientBuilder = asyncClientBuilder(downloaderProperties.getRegion());
+        String endpointOverride = downloaderProperties.getEndpointOverride();
+        if (endpointOverride != null) {
+            log.info("Overriding s3 client endpoint to {}", endpointOverride);
+            clientBuilder.endpointOverride(URI.create(endpointOverride));
+        }
+        return clientBuilder.build();
+    }
+
+    private S3AsyncClientBuilder asyncClientBuilder(String region) {
         SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder()
                 .maxConcurrency(downloaderProperties.getMaxConcurrency())
                 .connectionMaxIdleTime(Duration.ofSeconds(5))  // https://github.com/aws/aws-sdk-java-v2/issues/1122
                 .build();
 
-        log.info("Configured to download from {} in region {} with bucket name '{}'", downloaderProperties
-                .getCloudProvider(), downloaderProperties.getRegion(), downloaderProperties.getBucketName());
-
         return S3AsyncClient.builder()
-                .credentialsProvider(awsCredentialsProvider(downloaderProperties))
-                .region(Region.of(downloaderProperties.getRegion()))
+                .region(Region.of(region))
+                .credentialsProvider(awsCredentialsProvider(
+                        downloaderProperties.getAccessKey(), downloaderProperties.getSecretKey()))
                 .httpClient(httpClient)
-                .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor))
-                .applyMutation(this::overrideEndpoint)
-                .build();
+                .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor));
     }
 
-    private void overrideEndpoint(S3AsyncClientBuilder builder) {
-        // If Amazon S3, let the client generate the endpoint automatically based upon the region and bucket name
-        if (downloaderProperties.getCloudProvider() != CommonDownloaderProperties.CloudProvider.S3) {
-            URI endpoint = URI.create(downloaderProperties.getCloudProvider().getEndpoint());
-            builder.endpointOverride(endpoint);
-        }
-    }
-
-    @Bean
-    AwsCredentialsProvider awsCredentialsProvider(CommonDownloaderProperties downloaderProperties) {
-        AwsCredentialsProvider awsCredentials;
-        String accessKey = downloaderProperties.getAccessKey();
-        String secretKey = downloaderProperties.getSecretKey();
-
+    private AwsCredentialsProvider awsCredentialsProvider(String accessKey, String secretKey) {
         if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
             log.info("Setting up S3 async client using provided access/secret key");
-            awsCredentials = StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
+            return StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
         } else {
             log.info("Setting up S3 async client using anonymous credentials");
-            awsCredentials = AnonymousCredentialsProvider.create();
+            return AnonymousCredentialsProvider.create();
         }
-
-        return awsCredentials;
     }
 
     @Bean

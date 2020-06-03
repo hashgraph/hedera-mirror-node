@@ -1,0 +1,21 @@
+properties:
+  global.rest.password:
+    type: string
+    default: password
+    x-google-marketplace:
+      type: MASKED_FIELD
+  grpc.config.hedera.mirror.grpc.db.password:
+    type: string
+    default: password
+    x-google-marketplace:
+      type: MASKED_FIELD
+  importer.config.hedera.mirror.importer.db.password:
+    type: string
+    default: password
+    x-google-marketplace:
+      type: MASKED_FIELD
+  postgresql.postgresql.repmgrPassword:
+    type: string
+    default: password
+    x-google-marketplace:
+      type: MASKED_FIELD

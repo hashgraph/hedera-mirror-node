@@ -1,3 +1,4 @@
+{{- if .Values.test.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11,28 +12,39 @@ metadata:
 data:
   test.sh: |-
     #!/usr/bin/env bash
+    set -o pipefail
+    set -o errexit
 
-    URI='http://{{ include "hedera-mirror-rest.fullname" . }}:{{ .Values.service.port }}'
+    URI='http://{{ include "hedera-mirror-rest.fullname" . }}:{{ .Values.service.port }}/api/v1'
 
-    # Infinite loop is okay since helm test itself has a timeout
     function setup() {
       apk add -qu curl jq
-      until (curl -s "${URI}/api/v1/transactions?limit=1"); do
-        sleep 1
+    }
+
+    # Infinite loop is okay since helm test itself has a timeout
+    function has_data() {
+      local name="${1}"
+      until (curl -s "${URI}/${name}?limit=1" | jq -e ".${name} | length >= 1"); do
+        echo "Waiting for ${name} data" >&3
+        sleep 2
       done
     }
 
     @test "Has accounts" {
-      curl -s "${URI}/api/v1/accounts?limit=1" | jq -e '.accounts | length >= 1'
-      [[ "$?" -eq 0 ]]
+      has_data "accounts"
     }
 
     @test "Has balances" {
-      curl -s "${URI}/api/v1/balances?limit=1" | jq -e '.balances | length >= 1'
-      [[ "$?" -eq 0 ]]
+      has_data "balances"
     }
 
-    @test "Has transactions" {
-      curl -s "${URI}/api/v1/transactions?limit=1" | jq -e '.transactions | length >= 1'
-      [[ "$?" -eq 0 ]]
+    @test "Has recent transactions" {
+      has_data "transactions"
+      local timestamp=$(curl -s "${URI}/transactions?limit=1" | jq -re '.transactions[0].consensus_timestamp')
+
+      until [[ $(curl -s "${URI}/transactions?limit=1" | jq -re '.transactions[0].consensus_timestamp') > "${timestamp}" ]]; do
+        echo "Waiting for new data" >&3
+        sleep 1
+      done
     }
+{{- end -}}
