@@ -34,6 +34,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
@@ -137,7 +138,7 @@ public class CommonParserPropertiesTest {
                 .stream()
                 .map(Long::valueOf)
                 .collect(Collectors.toList());
-        return new EntityId(null, parts.get(0), parts.get(1), parts.get(2), 1 /* account */);
+        return EntityId.of(parts.get(0), parts.get(1), parts.get(2), EntityTypeEnum.ACCOUNT);
     }
 
     private TransactionFilter filter(String entity, TransactionTypeEnum type) {

@@ -1,5 +1,3 @@
-package com.hedera.mirror.importer.repository;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -19,13 +17,19 @@ package com.hedera.mirror.importer.repository;
  * limitations under the License.
  * ‍
  */
+'use strict';
 
-import java.util.Collection;
-
-import com.hedera.mirror.importer.domain.EntityId;
-
-public interface EntityRepositoryCustom {
-    Collection<EntityId> findAllEntityIds(int limit);
-
-    Long lookupOrCreateId(EntityId entityId);
+class EntityId {
+  constructor(shard, realm, num) {
+    this.shard = shard;
+    this.realm = realm;
+    this.num = num;
+  }
 }
+
+const of = function (entityStr) {
+  let tokens = entityStr.split('.');
+  return new EntityId(tokens[0], tokens[1], tokens[2]);
+};
+
+exports.of = of;

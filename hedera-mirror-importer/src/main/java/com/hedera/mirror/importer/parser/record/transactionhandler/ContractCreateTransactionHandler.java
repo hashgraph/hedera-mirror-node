@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import java.util.List;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -28,12 +29,10 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.repository.EntityRepository;
 
 @Named
 @AllArgsConstructor
 public class ContractCreateTransactionHandler implements TransactionHandler {
-    private final EntityRepository entityRepository;
 
     @Override
     public EntityId getEntityId(RecordItem recordItem) {
@@ -51,7 +50,7 @@ public class ContractCreateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem) {
+    public void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
         ContractCreateTransactionBody txMessage = recordItem.getTransactionBody().getContractCreateInstance();
         if (txMessage.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
@@ -65,9 +64,10 @@ public class ContractCreateTransactionHandler implements TransactionHandler {
         }
         // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
         // so no need to persist it to repo.
-        Long proxyAccountId = entityRepository.lookupOrCreateId(EntityId.of(txMessage.getProxyAccountID()));
-        if (proxyAccountId != null) {
-            entity.setProxyAccountId(proxyAccountId);
+        EntityId proxyAccount = EntityId.of(txMessage.getProxyAccountID());
+        if (proxyAccount != null) {
+            linkedEntityIds.add(proxyAccount);
+            entity.setProxyAccount(proxyAccount);
         }
     }
 }

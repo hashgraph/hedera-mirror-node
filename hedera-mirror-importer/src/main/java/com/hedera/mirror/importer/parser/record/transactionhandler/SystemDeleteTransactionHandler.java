@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
+import java.util.List;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -49,7 +50,7 @@ public class SystemDeleteTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem) {
+    public void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
         entity.setDeleted(true);
     }
 }

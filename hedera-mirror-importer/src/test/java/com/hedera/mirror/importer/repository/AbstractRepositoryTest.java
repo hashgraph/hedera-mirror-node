@@ -27,6 +27,7 @@ import javax.annotation.Resource;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
 
@@ -56,40 +57,26 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     private Entities insertEntity(EntityTypeEnum entityType) {
         Random rand = new Random();
 
-        Entities entity = new Entities();
-        entity.setEntityShard((long) rand.nextInt(10000));
-        entity.setEntityRealm((long) rand.nextInt(10000));
-        entity.setEntityNum((long) rand.nextInt(10000));
-
-        entity.setEntityTypeId(entityType.getId());
-        entity = entityRepository.save(entity);
-
-        return entity;
+        EntityId entity = EntityId.of(rand.nextInt(10000), rand.nextInt(10000), rand.nextInt(10000), entityType);
+        return entityRepository.save(entity.toEntity());
     }
 
-    protected final Entities insertAccountEntity() {
-        return insertEntity(EntityTypeEnum.ACCOUNT);
+    protected final EntityId insertAccountEntity() {
+        return insertEntity(EntityTypeEnum.ACCOUNT).toEntityId();
     }
 
-    protected final Entities insertFileEntity() {
-        return insertEntity(EntityTypeEnum.FILE);
-    }
-
-    protected final Entities insertContractEntity() {
-        return insertEntity(EntityTypeEnum.CONTRACT);
-    }
-
-    protected final Transaction insertTransaction(Entities entity, String type) {
+    protected final Transaction insertTransaction(String type) {
         long chargedTxFee = 100;
         long consensusNs = 10;
         long validStartNs = 20;
+        EntityId entity = insertAccountEntity();
 
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(chargedTxFee);
         transaction.setConsensusNs(consensusNs);
         transaction.setEntity(entity);
-        transaction.setNodeAccountId(entity.getId());
-        transaction.setPayerAccountId(entity.getId());
+        transaction.setNodeAccount(entity);
+        transaction.setPayerAccount(entity);
         transaction.setResult(ResponseCodeEnum.SUCCESS.getNumber());
         transaction.setType(TransactionBody.DataCase.valueOf(type).getNumber());
         transaction.setValidStartNs(validStartNs);

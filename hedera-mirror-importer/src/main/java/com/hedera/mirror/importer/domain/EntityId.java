@@ -31,6 +31,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Value;
 
+import com.hedera.mirror.importer.util.EntityIdEncoder;
+
 /**
  * Common encapsulation for accountID, fileID, contractID, and topicID.
  * <p>
@@ -50,6 +52,14 @@ public class EntityId {
     private Long realmNum;
     private Long entityNum;
     private Integer type;
+
+    public EntityId(Long shardNum, Long realmNum, Long entityNum, Integer type) {
+        this.id = EntityIdEncoder.encode(shardNum, realmNum, entityNum);
+        this.shardNum = shardNum;
+        this.realmNum = realmNum;
+        this.entityNum = entityNum;
+        this.type = type;
+    }
 
     public Entities toEntity() {
         Entities entity = new Entities();
@@ -100,6 +110,6 @@ public class EntityId {
         if (entityNum == 0 && entityRealm == 0 && entityShard == 0) {
             return null;
         }
-        return new EntityId(null, entityShard, entityRealm, entityNum, type.getId());
+        return new EntityId(entityShard, entityRealm, entityNum, type.getId());
     }
 }

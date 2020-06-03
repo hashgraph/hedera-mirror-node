@@ -43,4 +43,9 @@ public class CryptoTransfer {
     private Long realmNum;
 
     private Long entityNum;
+
+    public void setAccount(EntityId account) {
+        realmNum = account.getRealmNum();
+        entityNum = account.getEntityNum();
+    }
 }

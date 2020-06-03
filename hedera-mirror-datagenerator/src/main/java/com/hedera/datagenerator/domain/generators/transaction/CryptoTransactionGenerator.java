@@ -33,7 +33,7 @@ import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.FrequencyDistribution;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
 
 /**
@@ -68,22 +68,22 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
         final long value = 1_000_000_000L;
         transaction.setInitialBalance(value);
         transaction.setType(11);  // 11 = CRYPTOCREATEACCOUNT
-        Entities newAccount = entityManager.getAccounts().newEntity();
+        EntityId newAccount = entityManager.getAccounts().newEntity();
         transaction.setEntity(newAccount);
-        transaction.setPayerAccountId(entityManager.getPortalEntity());
+        transaction.setPayerAccount(entityManager.getPortalEntity());
         domainWriter.addCryptoTransfer(createCryptoTransfer(
                 transaction.getConsensusNs(), entityManager.getPortalEntity(), -value));
         domainWriter.addCryptoTransfer(createCryptoTransfer(
-                transaction.getConsensusNs(), newAccount.getId(), value));
-        log.trace("CRYPTOCREATEACCOUNT transaction: entity {}", newAccount.getId());
+                transaction.getConsensusNs(), newAccount, value));
+        log.trace("CRYPTOCREATEACCOUNT transaction: entity {}", newAccount);
     }
 
     private void updateAccount(Transaction transaction) {
         transaction.setInitialBalance(0L);
         transaction.setType(15);  // 15 = CRYPTOUPDATEACCOUNT
-        Entities account = entityManager.getAccounts().getRandom();
+        EntityId account = entityManager.getAccounts().getRandomEntity();
         transaction.setEntity(account);
-        transaction.setPayerAccountId(account.getId());
+        transaction.setPayerAccount(account);
         log.trace("CRYPTOUPDATEACCOUNT transaction: entity {}", account);
     }
 
@@ -93,37 +93,34 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
 
         long numTransferLists = properties.getNumTransferLists().sample();
         // first account is sender, rest are receivers
-        List<Long> accountIds = entityManager.getAccounts().getRandomIds((int) numTransferLists + 1);
+        List<EntityId> accountIds = entityManager.getAccounts().getRandomEntityNum((int) numTransferLists + 1);
 
         final long singleTransferAmount = 1_000L;
         for (int i = 0; i < numTransferLists; i++) {
-            domainWriter.addCryptoTransfer(createCryptoTransfer(
-                    transaction.getConsensusNs(), accountIds.get(i + 1), singleTransferAmount));
+            domainWriter.addCryptoTransfer(createCryptoTransfer(transaction.getConsensusNs(), accountIds.get(i + 1), singleTransferAmount));
         }
         domainWriter.addCryptoTransfer(createCryptoTransfer(
                 transaction.getConsensusNs(), accountIds.get(0), -1 * singleTransferAmount * numTransferLists));
-        transaction.setPayerAccountId(accountIds.get(0));
+        transaction.setPayerAccount(accountIds.get(0));
         log.trace("CRYPTOTRANSFER transaction: num transfer lists {}", numTransferLists);
     }
 
     private void deleteAccount(Transaction transaction) {
         transaction.setInitialBalance(0L);
         transaction.setType(12);  // 12 = CRYPTODELETE
-        Entities account = entityManager.getAccounts().getRandom();
+        EntityId account = entityManager.getAccounts().getRandomEntity();
         entityManager.getAccounts().delete(account);
         transaction.setEntity(account);
-        transaction.setPayerAccountId(account
-                .getId()); // TODO: is payer account different or same as entity being deleted?
-        log.trace("CRYPTODELETE transaction: entity {}", account.getId());
+        transaction.setPayerAccount(account);
+        log.trace("CRYPTODELETE transaction: entity {}", account);
     }
 
-    private CryptoTransfer createCryptoTransfer(long consensusNs, long accountId, long value) {
+    private CryptoTransfer createCryptoTransfer(long consensusNs, EntityId account, long value) {
         CryptoTransfer cryptoTransfer = new CryptoTransfer();
         cryptoTransfer.setConsensusTimestamp(consensusNs);
-        cryptoTransfer.setRealmNum(0L);
-        cryptoTransfer.setEntityNum(accountId);
+        cryptoTransfer.setAccount(account);
         cryptoTransfer.setAmount(value);
-        entityManager.addBalance(accountId, value);
+        entityManager.addBalance(account, value);
         return cryptoTransfer;
     }
 }

@@ -255,9 +255,9 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         assertAll(
-                () -> assertRowCountOnTwoFileTransactions()
-                , () -> assertFileTransaction(transactionBody, record, false)
-                , () -> assertFileEntityAndData(transactionBody.getFileUpdate(), record.getConsensusTimestamp())
+                () -> assertRowCountOnTwoFileTransactions(),
+                () -> assertFileTransaction(transactionBody, record, false),
+                () -> assertFileEntityAndData(transactionBody.getFileUpdate(), record.getConsensusTimestamp())
         );
     }
 
@@ -338,9 +338,9 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         assertAll(
-                () -> assertRowCountOnSuccess()
-                , () -> assertFileTransaction(transactionBody, record, false)
-                , () -> assertFileEntityAndData(transactionBody.getFileUpdate(), record.getConsensusTimestamp())
+                () -> assertRowCountOnSuccess(),
+                () -> assertFileTransaction(transactionBody, record, false),
+                () -> assertFileEntityAndData(transactionBody.getFileUpdate(), record.getConsensusTimestamp())
         );
     }
 
@@ -575,14 +575,12 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         assertThat(networkAddressBook.getAddresses())
                 .describedAs("Should overwrite address book with complete update")
                 .hasSize(4);
-
         assertAll(
                 () -> assertRowCountOnSuccess(),
                 () -> assertFileTransaction(transactionBody, record, false),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
                 () -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(),
-                        FileUtils.readFileToByteArray(mirrorProperties.getAddressBookPath().toFile())
-                )
+                        FileUtils.readFileToByteArray(mirrorProperties.getAddressBookPath().toFile()))
         );
     }
 

@@ -3,11 +3,11 @@ hedera:
     importer:
       db:
         # https://github.com/testcontainers/testcontainers-spring-boot#embedded-postgresql
-        host: ${embedded.postgresql.host}
-        port: ${embedded.postgresql.port}
-        name: ${embedded.postgresql.schema}
-        username: ${embedded.postgresql.user}
-        password: ${embedded.postgresql.password}
+#        host: ${embedded.postgresql.host}
+#        port: ${embedded.postgresql.port}
+#        name: ${embedded.postgresql.schema}
+#        username: ${embedded.postgresql.user}
+#        password: ${embedded.postgresql.password}
       downloader:
         bucketName: test
       parser:

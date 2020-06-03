@@ -22,8 +22,6 @@ package com.hedera.mirror.importer.domain;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import lombok.Data;
@@ -38,9 +36,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Table(name = "t_entities")
 @ToString(exclude = {"key", "submitKey"})
 public class Entities {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long entityNum;
@@ -58,7 +54,6 @@ public class Entities {
 
     private byte[] key;
 
-    @Column(name = "fk_prox_acc_id")
     private Long proxyAccountId;
 
     private boolean deleted;
@@ -85,6 +80,14 @@ public class Entities {
     }
 
     public EntityId toEntityId() {
-        return new EntityId(id, entityShard, entityRealm, entityNum, entityTypeId);
+        return new EntityId(entityShard, entityRealm, entityNum, entityTypeId);
+    }
+
+    public void setAutoRenewAccount(EntityId autoRenewAccount) {
+        autoRenewAccountId = autoRenewAccount.getId();
+    }
+
+    public void setProxyAccount(EntityId proxyAccount) {
+        proxyAccountId = proxyAccount.getId();
     }
 }

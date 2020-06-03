@@ -163,9 +163,9 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         // add initial balance to transfer list
         long initialBalance = cryptoCreateTransactionBody.getInitialBalance();
 
-        TransferList.Builder transferList = tempRecord.getTransferList().toBuilder();
-        transferList.addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId).setAmount(initialBalance));
-        transferList.addAccountAmounts(AccountAmount.newBuilder().setAccountID(PAYER).setAmount(-initialBalance));
+        TransferList.Builder transferList = tempRecord.getTransferList().toBuilder()
+                .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId).setAmount(initialBalance))
+                .addAccountAmounts(AccountAmount.newBuilder().setAccountID(PAYER).setAmount(-initialBalance));
         TransactionRecord record = tempRecord.toBuilder().setTransferList(transferList).build();
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));

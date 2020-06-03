@@ -176,7 +176,6 @@ class Pool {
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
       let row = {};
-      row.entity_shard = 0;
       row.entity_realm = 0;
       row.entity_num = i;
       row.memo = Buffer.from(`Test memo ${i}`);
@@ -185,10 +184,8 @@ class Pool {
       row.result = 'SUCCESS';
       row.type = 14;
       row.name = 'CRYPTOTRANSFER';
-      row.node_shard = 0;
       row.node_realm = 0;
       row.node_num = i % this.NUM_NODES;
-      row.account_shard = 0;
       row.account_realm = 0;
       row.account_num =
         Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low));

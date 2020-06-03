@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.Transaction;
 
 public class TransactionRepositoryTest extends AbstractRepositoryTest {
@@ -37,24 +36,17 @@ public class TransactionRepositoryTest extends AbstractRepositoryTest {
         assertThat(transactionRepository.findById(transaction.getConsensusNs()))
                 .get()
                 .isEqualTo(transaction);
-        assertThat(entityRepository.findById(transaction.getEntity().getId()))
-                .get()
-                .isEqualTo(transaction.getEntity());
     }
 
     private Transaction transaction() {
-        Long nodeAccountId = insertAccountEntity().getId();
-        Long payerAccountId = insertAccountEntity().getId();
-        Entities entity = insertAccountEntity();
-
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
         transaction.setConsensusNs(10L);
-        transaction.setEntity(entity);
+        transaction.setEntity(insertAccountEntity());
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
-        transaction.setNodeAccountId(nodeAccountId);
-        transaction.setPayerAccountId(payerAccountId);
+        transaction.setNodeAccount(insertAccountEntity());
+        transaction.setPayerAccount(insertAccountEntity());
         transaction.setResult(ResponseCodeEnum.SUCCESS.getNumber());
         transaction.setType(TransactionBody.DataCase.CRYPTOCREATEACCOUNT.getNumber());
         transaction.setValidStartNs(20L);

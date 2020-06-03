@@ -34,7 +34,7 @@ import com.hedera.datagenerator.common.TransactionGenerator;
 import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.FrequencyDistribution;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 
@@ -50,7 +50,7 @@ public class TopicTransactionGenerator extends TransactionGenerator {
     @Getter
     private final Distribution<Consumer<Transaction>> transactionDistribution;
     private final byte[] runningHash;
-    private final Map<Long, Integer> topicToNextSequenceNumber;
+    private final Map<EntityId, Integer> topicToNextSequenceNumber;
 
     public TopicTransactionGenerator(
             TopicTransactionProperties properties, EntityManager entityManager, DomainWriter domainWriter) {
@@ -74,47 +74,47 @@ public class TopicTransactionGenerator extends TransactionGenerator {
 
     private void createTopic(Transaction transaction) {
         transaction.setType(24);  // 24 = CONSENSUSCREATETOPIC
-        Entities newTopic = entityManager.getTopics().newEntity();
-        transaction.setEntity(newTopic);
-        topicToNextSequenceNumber.put(newTopic.getId(), 0);
-        createTopicMessage(transaction.getConsensusNs(), newTopic.getId());
-        log.trace("CONSENSUSCREATETOPIC transaction: topicId {}", newTopic);
+        EntityId newTopicNum = entityManager.getTopics().newEntity();
+        transaction.setEntity(newTopicNum);
+        topicToNextSequenceNumber.put(newTopicNum, 0);
+        createTopicMessage(transaction.getConsensusNs(), newTopicNum);
+        log.trace("CONSENSUSCREATETOPIC transaction: topicId {}", newTopicNum);
     }
 
     private void deleteTopic(Transaction transaction) {
         transaction.setType(26);  // 26 = CONSENSUSDELETETOPIC
-        Entities topic = entityManager.getTopics().getRandom();
-        entityManager.getTopics().delete(topic);
-        transaction.setEntity(topic);
-        log.trace("CONSENSUSDELETETOPIC transaction: topicId {}", topic.getId());
+        EntityId topicNum = entityManager.getTopics().getRandomEntity();
+        entityManager.getTopics().delete(topicNum);
+        transaction.setEntity(topicNum);
+        log.trace("CONSENSUSDELETETOPIC transaction: topicId {}", topicNum);
     }
 
     private void updateTopic(Transaction transaction) {
         transaction.setType(25);  // 25 = CONSENSUSUPDATETOPIC
-        Entities topic = entityManager.getTopics().getRandom();
-        transaction.setEntity(topic);
-        createTopicMessage(transaction.getConsensusNs(), topic.getId());
-        log.trace("CONSENSUSUPDATETOPIC transaction: topicId {}", topic.getId());
+        EntityId topicNum = entityManager.getTopics().getRandomEntity();
+        transaction.setEntity(topicNum);
+        createTopicMessage(transaction.getConsensusNs(), topicNum);
+        log.trace("CONSENSUSUPDATETOPIC transaction: topicId {}", topicNum);
     }
 
     private void submitMessage(Transaction transaction) {
         transaction.setType(27);  // 27 = CONSENSUSSUBMITMESSAGE
-        Entities topic = entityManager.getTopics().getRandom();
-        transaction.setEntity(topic);
-        createTopicMessage(transaction.getConsensusNs(), topic.getId());
-        log.trace("CONSENSUSSUBMITMESSAGE transaction: topicId {}", topic.getId());
+        EntityId topicNum = entityManager.getTopics().getRandomEntity();
+        transaction.setEntity(topicNum);
+        createTopicMessage(transaction.getConsensusNs(), topicNum);
+        log.trace("CONSENSUSSUBMITMESSAGE transaction: topicId {}", topicNum);
     }
 
-    private void createTopicMessage(long consensusNs, long topicId) {
+    private void createTopicMessage(long consensusNs, EntityId topic) {
         TopicMessage topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusNs);
-        topicMessage.setRealmNum(0);
-        topicMessage.setTopicNum((int) topicId);
+        topicMessage.setRealmNum(topic.getRealmNum().intValue());
+        topicMessage.setTopicNum(topic.getEntityNum().intValue());
         topicMessage.setRunningHash(runningHash);
         topicMessage.setRunningHashVersion(2);
-        int sequenceNumber = topicToNextSequenceNumber.get(topicId);
+        int sequenceNumber = topicToNextSequenceNumber.get(topic);
         topicMessage.setSequenceNumber(sequenceNumber);
-        topicToNextSequenceNumber.put(topicId, sequenceNumber + 1);
+        topicToNextSequenceNumber.put(topic, sequenceNumber + 1);
         long messageSize = properties.getMessageSize().sample();
         byte[] messageBytes = new byte[(int) messageSize];
         new Random().nextBytes(messageBytes);

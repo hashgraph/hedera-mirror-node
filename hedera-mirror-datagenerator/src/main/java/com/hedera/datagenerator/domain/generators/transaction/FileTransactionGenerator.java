@@ -32,7 +32,7 @@ import com.hedera.datagenerator.common.TransactionGenerator;
 import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.FrequencyDistribution;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.Transaction;
 
@@ -66,34 +66,34 @@ public class FileTransactionGenerator extends TransactionGenerator {
 
     private void createFile(Transaction transaction) {
         transaction.setType(17);  // 17 = FILECREATE
-        Entities newFile = entityManager.getFiles().newEntity();
-        transaction.setEntity(newFile);
+        EntityId newFileNum = entityManager.getFiles().newEntity();
+        transaction.setEntity(newFileNum);
         createFileData(transaction.getConsensusNs());
-        log.trace("FILECREATE transaction: fileId {}", newFile.getId());
+        log.trace("FILECREATE transaction: fileId {}", newFileNum);
     }
 
     private void appendFile(Transaction transaction) {
         transaction.setType(16);  // 16 = FILEAPPEND
-        Entities file = entityManager.getFiles().getRandom();
+        EntityId file = entityManager.getFiles().getRandomEntity();
         transaction.setEntity(file);
         createFileData(transaction.getConsensusNs());
-        log.trace("FILEAPPEND transaction: fileId {}", file.getId());
+        log.trace("FILEAPPEND transaction: fileId {}", file);
     }
 
     private void updateFile(Transaction transaction) {
         transaction.setType(19);  // 19 = FILEUPDATE
-        Entities file = entityManager.getFiles().getRandom();
-        transaction.setEntity(file);
+        EntityId fileNum = entityManager.getFiles().getRandomEntity();
+        transaction.setEntity(fileNum);
         createFileData(transaction.getConsensusNs());
-        log.trace("FILEUPDATE transaction: fileId {}", file.getId());
+        log.trace("FILEUPDATE transaction: fileId {}", fileNum);
     }
 
     private void deleteFile(Transaction transaction) {
         transaction.setType(18);  // 18 = FILEDELETE
-        Entities file = entityManager.getFiles().getRandom();
-        entityManager.getFiles().delete(file);
-        transaction.setEntity(file);
-        log.trace("FILEDELETE transaction: fileId {}", file.getId());
+        EntityId fileNum = entityManager.getFiles().getRandomEntity();
+        entityManager.getFiles().delete(fileNum);
+        transaction.setEntity(fileNum);
+        log.trace("FILEDELETE transaction: fileId {}", fileNum);
     }
 
     private void createFileData(long consensusNs) {

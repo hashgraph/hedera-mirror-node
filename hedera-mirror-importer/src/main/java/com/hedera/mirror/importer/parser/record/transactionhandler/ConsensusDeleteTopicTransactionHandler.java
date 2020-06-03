@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import java.util.List;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -42,7 +43,7 @@ public class ConsensusDeleteTopicTransactionHandler implements TransactionHandle
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem) {
+    public void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
         entity.setDeleted(true);
     }
 }

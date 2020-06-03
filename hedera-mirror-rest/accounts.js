@@ -46,31 +46,23 @@ const processRow = function (row) {
 };
 
 const getAccountQueryPrefix = function () {
-  const prefix =
-    'select ab.balance as account_balance\n' +
-    '    , ab.consensus_timestamp as consensus_timestamp\n' +
-    '    , ' +
-    config.shard +
-    ' as entity_shard\n' +
-    '    , coalesce(ab.account_realm_num, e.entity_realm) as entity_realm\n' +
-    '    , coalesce(ab.account_num, e.entity_num) as entity_num\n' +
-    '    , e.exp_time_ns\n' +
-    '    , e.auto_renew_period\n' +
-    '    , e.key\n' +
-    '    , e.deleted\n' +
-    'from account_balances ab\n' +
-    'full outer join t_entities e\n' +
-    '    on (' +
-    config.shard +
-    ' = e.entity_shard\n' +
-    '        and ab.account_realm_num = e.entity_realm\n' +
-    '        and ab.account_num =  e.entity_num\n' +
-    '        and e.fk_entity_type_id < ' +
-    utils.ENTITY_TYPE_FILE +
-    ')\n' +
-    'where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balances)\n';
-
-  return prefix;
+  return `select ab.balance as account_balance,
+       ab.consensus_timestamp as consensus_timestamp,
+       ${config.shard} as entity_shard,
+       coalesce(ab.account_realm_num, e.entity_realm) as entity_realm,
+       coalesce(ab.account_num, e.entity_num) as entity_num,
+       e.exp_time_ns,
+       e.auto_renew_period,
+       e.key,
+       e.deleted
+    from account_balances ab
+    full outer join t_entities e on (
+        ${config.shard} = e.entity_shard
+        and ab.account_realm_num = e.entity_realm
+        and ab.account_num =  e.entity_num
+        and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}
+    )
+    where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balances)`;
 };
 
 /**
@@ -286,9 +278,9 @@ const getOneAccount = async (req, res) => {
       }
 
       // Process the results of t_transactions query
-      const tl = transactions.createTransferLists(transactionsResults.rows, ret);
-      ret = tl.ret;
-      let anchorSecNs = tl.anchorSecNs;
+      const transferList = transactions.createTransferLists(transactionsResults.rows);
+      ret.transactions = transferList.transactions;
+      let anchorSecNs = transferList.anchorSecNs;
 
       if (process.env.NODE_ENV === 'test') {
         ret.transactionsSqlQuery = transactionsResults.sqlQuery;

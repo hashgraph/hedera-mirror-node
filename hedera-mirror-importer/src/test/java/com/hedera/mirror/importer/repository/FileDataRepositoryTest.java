@@ -22,9 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.jdbc.Sql;
 
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.Transaction;
 
@@ -32,8 +30,7 @@ public class FileDataRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-        Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(entity, "FILECREATE");
+        Transaction transaction = insertTransaction("FILECREATE");
 
         FileData fileData = new FileData();
         fileData.setConsensusTimestamp(transaction.getConsensusNs());

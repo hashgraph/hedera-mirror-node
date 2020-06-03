@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import java.util.List;
+
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
@@ -51,8 +53,9 @@ public interface TransactionHandler {
      * If {@link #updatesEntity()} returns true, and {@link #getEntityId(RecordItem)} returns a non-null id, and the
      * transaction is successful, then this function will be called.
      * @param entity latest state of entity (fetched from the repo)
+     * @param linkedEntityIds entities linked to {@code entity} as proxy account, auto renew account, etc
      */
-    default void updateEntity(Entities entity, RecordItem recordItem) {
+    default void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
     }
 
     /**

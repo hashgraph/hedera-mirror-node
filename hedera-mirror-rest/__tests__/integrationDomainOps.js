@@ -20,6 +20,7 @@
 'use strict';
 
 const math = require('mathjs');
+const EntityId = require('../entityId');
 
 const NETWORK_FEE = 1;
 const NODE_FEE = 2;
@@ -88,19 +89,6 @@ const loadTopicMessages = async function (messages) {
   }
 };
 
-const getAccountId = function (account) {
-  return account.entity_shard + '.' + account.entity_realm + '.' + account.entity_num;
-};
-
-const toAccount = function (str) {
-  let tokens = str.split('.');
-  return {
-    entity_shard: tokens[0],
-    entity_realm: tokens[1],
-    entity_num: tokens[2],
-  };
-};
-
 const addAccount = async function (account) {
   account = Object.assign(
     {
@@ -115,17 +103,13 @@ const addAccount = async function (account) {
     account
   );
 
-  let e = accountEntityIds[account.entity_num];
-  if (e) {
-    return e;
-  }
-
-  let res = await sqlConnection.query(
+  await sqlConnection.query(
     `INSERT INTO t_entities (
-      fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted, ed25519_public_key_hex,
+      id, fk_entity_type_id, entity_shard, entity_realm, entity_num, exp_time_ns, deleted, ed25519_public_key_hex,
       auto_renew_period, key)
-    VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9) RETURNING id;`,
+    VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10);`,
     [
+      getEntityId(account.entity_shard, account.entity_realm, account.entity_num),
       account.entity_type,
       account.entity_shard,
       account.entity_realm,
@@ -137,10 +121,6 @@ const addAccount = async function (account) {
       account.key,
     ]
   );
-  e = res.rows[0]['id'];
-  accountEntityIds[getAccountId(account)] = e;
-
-  return e;
 };
 
 const setAccountBalance = async function (account) {
@@ -169,16 +149,18 @@ const addTransaction = async function (transaction) {
 
   transaction.consensus_timestamp = math.bignumber(transaction.consensus_timestamp);
 
+  let payerAccount = EntityId.of(transaction.payerAccountId);
+  let nodeAccount = EntityId.of(transaction.nodeAccountId);
   await sqlConnection.query(
     `INSERT INTO t_transactions (
-      consensus_ns, valid_start_ns, fk_payer_acc_id, fk_node_acc_id, result, type,
-      valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash)
+      consensus_ns, valid_start_ns, payer_account_id, node_account_id,
+      result, type, valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash)
     VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10);`,
     [
       transaction.consensus_timestamp.toString(),
       transaction.consensus_timestamp.minus(1).toString(),
-      accountEntityIds[transaction.payerAccountId],
-      accountEntityIds[transaction.nodeAccountId],
+      getEntityId(parseInt(payerAccount.shard), parseInt(payerAccount.realm), parseInt(payerAccount.num)),
+      getEntityId(parseInt(nodeAccount.shard), parseInt(nodeAccount.realm), parseInt(nodeAccount.num)),
       transaction.result,
       transaction.type,
       transaction.valid_duration_seconds,
@@ -187,21 +169,17 @@ const addTransaction = async function (transaction) {
       transaction.transaction_hash,
     ]
   );
+  await insertTransfers('t_cryptotransferlists', transaction.consensus_timestamp, transaction.transfers);
+  await insertTransfers('non_fee_transfers', transaction.consensus_timestamp, transaction.non_fee_transfers);
+};
 
-  for (let i = 0; i < transaction.transfers.length; ++i) {
-    let transfer = transaction.transfers[i];
+const insertTransfers = async function (tableName, consensusTimestamp, transfers) {
+  for (let i = 0; i < transfers.length; ++i) {
+    let transfer = transfers[i];
+    let account = EntityId.of(transfer.account);
     await sqlConnection.query(
-      `INSERT INTO t_cryptotransferlists (consensus_timestamp, amount, realm_num, entity_num)
-         VALUES (\$1, \$2, \$3, \$4);`,
-      [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
-    );
-  }
-
-  for (let i = 0; i < transaction.non_fee_transfers.length; ++i) {
-    let transfer = transaction.non_fee_transfers[i];
-    await sqlConnection.query(
-      `INSERT INTO non_fee_transfers (consensus_timestamp, amount, realm_num, entity_num) VALUES (\$1, \$2, \$3, \$4);`,
-      [transaction.consensus_timestamp.toString(), transfer.amount, transfer.entity_realm, transfer.entity_num]
+      `INSERT INTO ${tableName} (consensus_timestamp, amount, realm_num, entity_num) VALUES (\$1, \$2, \$3, \$4);`,
+      [consensusTimestamp.toString(), transfer.amount, account.realm, account.num]
     );
   }
 };
@@ -211,18 +189,13 @@ const addCryptoTransaction = async function (cryptoTransfer) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }
 
-  let sender = toAccount(cryptoTransfer.senderAccountId);
-  let recipient = toAccount(cryptoTransfer.recipientAccountId);
-  let treasury = toAccount(cryptoTransfer.treasuryAccountId);
-
   if (!('transfers' in cryptoTransfer)) {
     cryptoTransfer['transfers'] = [
-      Object.assign({}, sender, {amount: -NETWORK_FEE - cryptoTransfer.amount}),
-      Object.assign({}, recipient, {amount: cryptoTransfer.amount}),
-      Object.assign({}, treasury, {amount: NETWORK_FEE}),
+      {account: cryptoTransfer.senderAccountId, amount: -NETWORK_FEE - cryptoTransfer.amount},
+      {account: cryptoTransfer.recipientAccountId, amount: cryptoTransfer.amount},
+      {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE},
     ];
   }
-
   await addTransaction(cryptoTransfer);
 };
 
@@ -253,15 +226,16 @@ const addTopicMessage = async function (message) {
   );
 };
 
+// JS doesn't have support for bitwise operations on more than 32bits. For testing, this formulae is good enough.
+// This will differ from 'real encoding' in importer only if entity_shard > 32767.
+// Only for testing purposes.
+const getEntityId = function (shard, realm, num) {
+  return num + Math.pow(2, 32) * realm + Math.pow(2, 48) * shard;
+};
+
 module.exports = {
   addAccount: addAccount,
   addCryptoTransaction: addCryptoTransaction,
-  addTransaction: addTransaction,
-  loadAccounts: loadAccounts,
-  loadBalances: loadBalances,
-  loadCryptoTransfers: loadCryptoTransfers,
-  loadTransactions: loadTransactions,
   setAccountBalance: setAccountBalance,
   setUp: setUp,
-  toAccount: toAccount,
 };

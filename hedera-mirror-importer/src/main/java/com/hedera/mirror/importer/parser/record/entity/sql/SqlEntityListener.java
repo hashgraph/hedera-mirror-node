@@ -30,6 +30,7 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
@@ -56,6 +57,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final RecordFileRepository recordFileRepository;
     private long batch_count = 0;
     private PreparedStatement sqlInsertTransaction;
+    private PreparedStatement sqlInsertEntityId;
     private PreparedStatement sqlInsertTransferList;
     private PreparedStatement sqlInsertNonFeeTransfers;
     private PreparedStatement sqlInsertFileData;
@@ -110,11 +112,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
         try {
             sqlInsertTransaction = connection.prepareStatement("INSERT INTO t_transactions"
-                    + " (fk_node_acc_id, memo, valid_start_ns, type, fk_payer_acc_id"
-                    + ", result, consensus_ns, fk_cud_entity_id, charged_tx_fee"
-                    + ", initial_balance, valid_duration_seconds, max_fee"
-                    + ", transaction_hash, transaction_bytes)"
+                    + " (node_account_id, memo, valid_start_ns, type, payer_account_id, result, " +
+                    "consensus_ns, entity_id, charged_tx_fee, initial_balance, valid_duration_seconds, max_fee, " +
+                    "transaction_hash, transaction_bytes)"
                     + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            sqlInsertEntityId = connection.prepareStatement("INSERT INTO t_entities " +
+                    "(id, entity_shard, entity_realm, entity_num, fk_entity_type_id) " +
+                    "VALUES (?, ?, ?, ?, ?) " +
+                    "ON CONFLICT DO NOTHING");
 
             sqlInsertTransferList = connection.prepareStatement("INSERT INTO t_cryptotransferlists"
                     + " (consensus_timestamp, amount, realm_num, entity_num)"
@@ -148,6 +154,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void closeConnectionAndStatements() {
         try {
             sqlInsertTransaction.close();
+            sqlInsertEntityId.close();
             sqlInsertTransferList.close();
             sqlInsertNonFeeTransfers.close();
             sqlInsertFileData.close();
@@ -164,15 +171,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void executeBatches() {
         try {
             int[] transactions = sqlInsertTransaction.executeBatch();
+            int[] entityIds = sqlInsertEntityId.executeBatch();
             int[] transferLists = sqlInsertTransferList.executeBatch();
             int[] nonFeeTransfers = sqlInsertNonFeeTransfers.executeBatch();
             int[] fileData = sqlInsertFileData.executeBatch();
             int[] contractResult = sqlInsertContractResult.executeBatch();
             int[] liveHashes = sqlInsertLiveHashes.executeBatch();
             int[] topicMessages = sqlInsertTopicMessage.executeBatch();
-            log.info("Inserted {} transactions, {} transfer lists, {} files, {} contracts, {} claims, {} topic " +
-                            "messages, {} non-fee transfers",
-                    transactions.length, transferLists.length, fileData.length, contractResult.length,
+            log.info("Inserted {} transactions, {} entities, {} transfer lists, {} files, {} contracts, {} claims, " +
+                            "{} topic messages, {} non-fee transfers",
+                    transactions.length, entityIds.length, transferLists.length, fileData.length, contractResult.length,
                     liveHashes.length, topicMessages.length, nonFeeTransfers.length);
         } catch (SQLException e) {
             log.error("Error committing sql insert batch ", e);
@@ -185,18 +193,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onTransaction(Transaction transaction) throws ImporterException {
         try {
             // Temporary until we convert SQL statements to repository invocations
-            if (transaction.getEntity() != null) {
-                sqlInsertTransaction.setLong(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), transaction.getEntity().getId());
+            if (transaction.getEntityId() != null) {
+                sqlInsertTransaction.setLong(F_TRANSACTION.ENTITY_ID.ordinal(), transaction.getEntityId());
             } else {
-                sqlInsertTransaction.setObject(F_TRANSACTION.CUD_ENTITY_ID.ordinal(), null);
+                sqlInsertTransaction.setObject(F_TRANSACTION.ENTITY_ID.ordinal(), null);
             }
-            sqlInsertTransaction.setLong(F_TRANSACTION.FK_NODE_ACCOUNT_ID.ordinal(), transaction.getNodeAccountId());
+            sqlInsertTransaction.setLong(F_TRANSACTION.NODE_ACCOUNT_ID.ordinal(), transaction.getNodeAccountId());
             sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), transaction.getMemo());
             sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), transaction.getValidStartNs());
             sqlInsertTransaction.setInt(F_TRANSACTION.TYPE.ordinal(), transaction.getType());
             sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION_SECONDS.ordinal(),
                     transaction.getValidDurationSeconds());
-            sqlInsertTransaction.setLong(F_TRANSACTION.FK_PAYER_ACCOUNT_ID.ordinal(), transaction.getPayerAccountId());
+            sqlInsertTransaction.setLong(F_TRANSACTION.PAYER_ACCOUNT_ID.ordinal(), transaction.getPayerAccountId());
             sqlInsertTransaction.setLong(F_TRANSACTION.RESULT.ordinal(), transaction.getResult());
             sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), transaction.getConsensusNs());
             sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), transaction.getChargedTxFee());
@@ -212,6 +220,20 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             } else {
                 batch_count += 1;
             }
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        }
+    }
+
+    @Override
+    public void onEntityId(EntityId entityId) throws ImporterException {
+        try {
+            sqlInsertEntityId.setLong(F_ENTITY_ID.ID.ordinal(), entityId.getId());
+            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_SHARD.ordinal(), entityId.getShardNum());
+            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_REALM.ordinal(), entityId.getRealmNum());
+            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_NUM.ordinal(), entityId.getEntityNum());
+            sqlInsertEntityId.setLong(F_ENTITY_ID.TYPE.ordinal(), entityId.getType());
+            sqlInsertEntityId.addBatch();
         } catch (SQLException e) {
             throw new ParserSQLException(e);
         }
@@ -303,10 +325,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     enum F_TRANSACTION {
-        ZERO // column indices start at 1, this creates the necessary offset
-        , FK_NODE_ACCOUNT_ID, MEMO, VALID_START_NS, TYPE, FK_PAYER_ACCOUNT_ID, RESULT, CONSENSUS_NS,
-        CUD_ENTITY_ID, CHARGED_TX_FEE, INITIAL_BALANCE, VALID_DURATION_SECONDS, MAX_FEE,
-        TRANSACTION_HASH, TRANSACTION_BYTES
+        ZERO, // column indices start at 1, this creates the necessary offset
+        NODE_ACCOUNT_ID, MEMO, VALID_START_NS, TYPE, PAYER_ACCOUNT_ID,
+        RESULT, CONSENSUS_NS, ENTITY_ID, CHARGED_TX_FEE, INITIAL_BALANCE, VALID_DURATION_SECONDS,
+        MAX_FEE, TRANSACTION_HASH, TRANSACTION_BYTES
+    }
+
+    enum F_ENTITY_ID {
+        ZERO, // column indices start at 1, this creates the necessary offset
+        ID, ENTITY_SHARD, ENTITY_REALM, ENTITY_NUM, TYPE
     }
 
     enum F_TRANSFERLIST {

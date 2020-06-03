@@ -45,7 +45,6 @@ public class RecordParserDisabledTest extends IntegrationTest {
     @Test
     public void testNoRecordParserBeans() {
         assertBeanNotPresent(RecordFileParser.class);
-        assertBeanNotPresent(EntityIdCacheLoader.class);
         assertBeanNotPresent(PubSubRecordItemListener.class);
         assertBeanNotPresent(PubSubRecordStreamFileListener.class);
         assertBeanNotPresent(EntityRecordItemListener.class);

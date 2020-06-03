@@ -27,8 +27,6 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const ENTITY_TYPE_FILE = 3;
 const TRANSACTION_RESULT_SUCCESS = 22;
 
-const successValidationResponse = {isValid: true, code: 200, contents: 'OK'};
-
 const opsMap = {
   lt: ' < ',
   lte: ' <= ',

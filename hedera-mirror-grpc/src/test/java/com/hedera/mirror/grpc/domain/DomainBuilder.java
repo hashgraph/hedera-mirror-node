@@ -65,6 +65,7 @@ public class DomainBuilder {
                 .entityNum(0L)
                 .entityRealm(0L)
                 .entityShard(0L)
+                .id(0L)
                 .entityTypeId(EntityType.TOPIC);
 
         customizer.accept(builder);

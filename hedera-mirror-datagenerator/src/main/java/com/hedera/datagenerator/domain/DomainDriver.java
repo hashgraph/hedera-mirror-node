@@ -20,6 +20,9 @@ package com.hedera.datagenerator.domain;
  */
 
 import com.google.common.base.Stopwatch;
+
+import com.hedera.mirror.importer.domain.EntityId;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +102,7 @@ public class DomainDriver implements ApplicationRunner {
 
     // Writes account balances stream
     private void writeBalances(long consensusNs) {
-        for (Map.Entry<Long, Long> entry : entityManager.getBalances().entrySet()) {
+        for (Map.Entry<EntityId, Long> entry : entityManager.getBalances().entrySet()) {
             domainWriter.addAccountBalances(consensusNs, entry.getValue(), entry.getKey());
         }
         log.debug("Wrote balances data at {}", consensusNs);
