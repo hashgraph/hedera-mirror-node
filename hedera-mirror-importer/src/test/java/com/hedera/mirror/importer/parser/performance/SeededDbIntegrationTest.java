@@ -22,17 +22,8 @@ package com.hedera.mirror.importer.parser.performance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import javax.annotation.Resource;
-import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterAll;
@@ -42,51 +33,24 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.containers.GenericContainer;
 
-import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.db.DBProperties;
-import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.record.RecordFileParser;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 @Log4j2
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@SpringBootTest
-public class SeededDbIntegrationTest {
-    @TempDir
-    static Path dataPath;
-
-    @Value("classpath:data")
-    Path testPath;
-
-    @Resource
-    private RecordFileParser recordFileParser;
-
-    @Resource
-    private RecordParserProperties parserProperties;
-
-    private FileCopier fileCopier;
-
-    private StreamType streamType;
-
+public class SeededDbIntegrationTest extends PerformanceIntegrationTest {
     @Resource
     private DBProperties dbProperties;
 
     private DBProperties dbPropertiesCache;
 
-    @Resource
-    private DataSource dataSource;
-
     @Rule
     GenericContainer customContainer;
 
     @BeforeAll
-    void warmUp() {
+    void warmUp() throws SQLException {
         dbPropertiesCache = dbProperties.toBuilder().build();
         customContainer = CustomPostgresContainer.createSeededContainer(
                 "data/seeded-image/Dockerfile",
@@ -101,8 +65,10 @@ public class SeededDbIntegrationTest {
                 "mirror_node_pass",
                 5432);
 
+        connection = dataSource.getConnection();
+        checkSeededTablesArePresent();
+
         log.info("dbProperties were set to {}", dbProperties);
-        streamType = parserProperties.getStreamType();
         parse("2020-02-09T18_30_00.000084Z.rcd");
     }
 
@@ -123,71 +89,55 @@ public class SeededDbIntegrationTest {
     @Timeout(15)
     @Test
     public void parseAndIngestTransactions() throws Exception {
-        parserProperties.getMirrorProperties().setDataPath(dataPath);
-        parserProperties.init();
+        long entitiesStartCount = getTableSize("t_entities");
+        long balanceStartCount = getTableSize("account_balances");
+        long topicMessagesStartCount = getTableSize("topic_message");
+        long transactionsStartCount = getTableSize("t_transactions");
+        log.info("{} entities, {} balances, {} topic messages and {} transactions were seeded", entitiesStartCount,
+                balanceStartCount, topicMessagesStartCount, transactionsStartCount);
+
+        clearLastProcessedRecordHash();
         parse("*.rcd");
+
+        // verify table sizes grew and transactions were ingested to expected table
+        long entitiesEndCount = getTableSize("t_entities");
+        long balanceEndCount = getTableSize("account_balances");
+        long topicMessagesEndCount = getTableSize("topic_message");
+        long transactionsEndCount = getTableSize("t_transactions");
+        log.info("{} entities, {} balances, {} topic messages and {} transactions were seeded", entitiesEndCount,
+                balanceEndCount, topicMessagesEndCount, transactionsEndCount);
+        assertThat(entitiesEndCount).isGreaterThan(entitiesStartCount);
+        assertThat(balanceEndCount).isGreaterThan(balanceStartCount);
+        assertThat(topicMessagesEndCount).isGreaterThan(topicMessagesStartCount);
+        assertThat(transactionsEndCount).isGreaterThan(transactionsStartCount);
     }
 
     @Disabled("Currently still pointing at embedded container instead of customcontianer created here")
+    @Timeout(1)
     @Test
-    public void checkSeededTablesArePresent() throws Exception {
-        String[] tables = new String[] {"account_balance_sets", "account_balances", "flyway_schema_history",
-                "non_fee_transfers", "t_application_status", "t_contract_result", "t_cryptotransferlists",
-                "t_entities", "t_entity_types", "t_file_data", "t_livehashes", "t_record_files",
-                "t_transaction_results",
-                "t_transaction_types", "t_transactions", "topic_message"
-        };
-        List<String> discoveredTables = new ArrayList<>();
-
-        try (Connection connection = dataSource.getConnection();
-             ResultSet rs = connection.getMetaData().getTables(null, null, null, new String[] {"TABLE"})) {
-
-            while (rs.next()) {
-                discoveredTables.add(rs.getString("TABLE_NAME"));
-            }
-        } catch (Exception e) {
-            log.error("Unable to retrieve details from database", e);
-        }
-
-        assertThat(discoveredTables.size()).isGreaterThan(0);
-        Collections.sort(discoveredTables);
-        log.info("Encountered tables: {}", discoveredTables);
-        assertThat(discoveredTables).isEqualTo(Arrays.asList(tables));
+    public void checkEntitiesTablesIsPopulated() throws Exception {
+        verifyTableSize("t_entities", "entities");
     }
 
     @Disabled("Currently still pointing at embedded container instead of customcontianer created here")
+    @Timeout(2)
     @Test
-    public void checkSeededTablesArePopulated() throws Exception {
-        long accountsCount = 0;
-        long balancesCount = 0;
-        long topicMessagesCount = 0;
-        long transactionsCount = 0;
-
-        try (Connection connection = dataSource.getConnection()) {
-            accountsCount = getTableSize(connection, "t_entities");
-            balancesCount = getTableSize(connection, "account_balances");
-            topicMessagesCount = getTableSize(connection, "topic_message");
-            transactionsCount = getTableSize(connection, "t_transactions");
-        } catch (Exception e) {
-            log.error("Unable to retrieve details from database", e);
-        }
-
-        log.info("{} accounts, {} balances, {} topic messages and {} transactions were seeded", accountsCount,
-                balancesCount, topicMessagesCount, transactionsCount);
-        assertThat(accountsCount).isGreaterThan(0);
-        assertThat(balancesCount).isGreaterThan(0);
-        assertThat(topicMessagesCount).isGreaterThan(0);
-        assertThat(transactionsCount).isGreaterThan(0);
+    public void checkBalancesTablesIsPopulated() throws Exception {
+        verifyTableSize("account_balances", "balances");
     }
 
-    private void parse(String filePath) {
-        fileCopier = FileCopier.create(testPath, dataPath)
-                .from(streamType.getPath(), "performance")
-                .filterFiles(filePath)
-                .to(streamType.getPath(), streamType.getValid());
-        fileCopier.copy();
+    @Disabled("Currently still pointing at embedded container instead of customcontianer created here")
+    @Timeout(1)
+    @Test
+    public void checkTopicMessageTablesIsPopulated() throws Exception {
+        verifyTableSize("topic_message", "topicmessages");
+    }
 
-        recordFileParser.parse();
+    @Disabled("Currently still pointing at embedded container instead of customcontianer created here")
+    @Timeout(1)
+    @Test
+    public void checkTransactionsTablesIsPopulated() throws Exception {
+        verifyTableSize("t_transactions", "transactions");
     }
 
     private void setDbProperties(String host, String name, String password, int port) {
@@ -195,12 +145,5 @@ public class SeededDbIntegrationTest {
         dbProperties.setName(name);
         dbProperties.setPassword(password);
         dbProperties.setPort(port);
-    }
-
-    private long getTableSize(Connection connection, String table) throws SQLException {
-        PreparedStatement statement = connection.prepareStatement("select count(*) from " + table);
-        ResultSet rs = statement.executeQuery();
-        rs.next();
-        return rs.getLong("count");
     }
 }

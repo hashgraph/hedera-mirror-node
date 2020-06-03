@@ -20,70 +20,29 @@ package com.hedera.mirror.importer.parser.performance;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import javax.annotation.Resource;
-import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.containers.GenericContainer;
 
-import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.db.DBProperties;
-import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.record.RecordFileParser;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 @Log4j2
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@SpringBootTest
-public class RestoreClientIntegrationTest {
-    @TempDir
-    static Path dataPath;
-
-    @Value("classpath:data")
-    Path testPath;
-
-    @Resource
-    private RecordFileParser recordFileParser;
-
-    @Resource
-    private RecordParserProperties parserProperties;
-
-    private FileCopier fileCopier;
-
-    private StreamType streamType;
-
+public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
     @Resource
     private DBProperties dbProperties;
 
     @Rule
     GenericContainer customContainer;
-
-    @Resource
-    private DataSource dataSource;
-
-    private Connection connection;
 
     @BeforeAll
     void warmUp() throws SQLException {
@@ -106,80 +65,33 @@ public class RestoreClientIntegrationTest {
         customContainer.stop();
     }
 
-    @Disabled("Current test resource transactions data files cause hash mismatch failures")
     @Test
     public void parseAndIngestTransactions() throws Exception {
-        parserProperties.getMirrorProperties().setDataPath(dataPath);
-        parserProperties.init();
+        clearLastProcessedRecordHash();
         parse("*.rcd");
     }
 
     @Timeout(1)
     @Test
     public void checkEntitiesTablesIsPopulated() throws Exception {
-        verifyTableSize(connection, "t_entities", "entities");
+        verifyTableSize("t_entities", "entities");
     }
 
     @Timeout(2)
     @Test
     public void checkBalancesTablesIsPopulated() throws Exception {
-        verifyTableSize(connection, "account_balances", "balances");
+        verifyTableSize("account_balances", "balances");
     }
 
     @Timeout(1)
     @Test
     public void checkTopicMessageTablesIsPopulated() throws Exception {
-        verifyTableSize(connection, "topic_message", "topicmessages");
+        verifyTableSize("topic_message", "topicmessages");
     }
 
     @Timeout(1)
     @Test
     public void checkTransactionsTablesIsPopulated() throws Exception {
-        verifyTableSize(connection, "t_transactions", "transactions");
-    }
-
-    private void parse(String filePath) {
-        fileCopier = FileCopier.create(testPath, dataPath)
-                .from(streamType.getPath(), "performance")
-                .filterFiles(filePath)
-                .to(streamType.getPath(), streamType.getValid());
-        fileCopier.copy();
-
-        recordFileParser.parse();
-    }
-
-    private void checkSeededTablesArePresent() {
-        String[] tables = new String[] {"account_balance_sets", "account_balances", "flyway_schema_history",
-                "non_fee_transfers", "t_application_status", "t_contract_result", "t_cryptotransferlists",
-                "t_entities", "t_entity_types", "t_file_data", "t_livehashes", "t_record_files",
-                "t_transaction_results",
-                "t_transaction_types", "t_transactions", "topic_message"
-        };
-        List<String> discoveredTables = new ArrayList<>();
-
-        try (Connection connection = dataSource.getConnection();
-             ResultSet rs = connection.getMetaData().getTables(null, null, null, new String[] {"TABLE"})) {
-
-            while (rs.next()) {
-                discoveredTables.add(rs.getString("TABLE_NAME"));
-            }
-        } catch (Exception e) {
-            log.error("Unable to retrieve details from database", e);
-        }
-
-        assertThat(discoveredTables.size()).isGreaterThan(0);
-        Collections.sort(discoveredTables);
-        log.info("Encountered tables: {}", discoveredTables);
-        assertThat(discoveredTables).isEqualTo(Arrays.asList(tables));
-    }
-
-    private void verifyTableSize(Connection connection, String table, String label) throws SQLException {
-        PreparedStatement statement = connection.prepareStatement("select count (*) from " + table);
-        ResultSet rs = statement.executeQuery();
-        rs.next();
-        long count = rs.getLong("count");
-
-        log.info("{} {} were seeded", count, label);
-        assertThat(count).isGreaterThan(0);
+        verifyTableSize("t_transactions", "transactions");
     }
 }

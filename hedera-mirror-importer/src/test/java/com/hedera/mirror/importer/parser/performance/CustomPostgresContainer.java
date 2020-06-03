@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.performance;
 
 import lombok.extern.log4j.Log4j2;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
@@ -71,8 +72,8 @@ public class CustomPostgresContainer {
                 .withEnv("DB_PASS", db.getPassword())
                 .withEnv("DB_PORT", Integer.toString(db.getPort()))
                 .withNetworkMode("host")
-                .waitingFor(
-                        Wait.forLogMessage(".*Restored Mirror Node Data from backup.*\\n", 1)
+                .withStartupCheckStrategy(
+                        new IndefiniteWaitOneShotStartupCheckStrategy()
                 );
     }
 }
