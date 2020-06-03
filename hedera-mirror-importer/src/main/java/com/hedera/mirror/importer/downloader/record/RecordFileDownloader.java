@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.downloader.record;
  */
 
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.File;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
@@ -31,6 +32,7 @@ import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.downloader.Downloader;
+import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -64,20 +66,22 @@ public class RecordFileDownloader extends Downloader {
     }
 
     /**
-     * Checks that hash of data file matches the verified hash. Then checks that data file is next in line based on
-     * previous file hash.
+     * Checks that hash of data file matches the verified hash and that data file is next in line based on previous file
+     * hash. Returns false if any condition is false.
      */
     @Override
-    protected boolean verifyDataFile(String filePath, byte[] verifiedHash) {
-        RecordFile recordFile =  Utility.parseRecordFile(filePath, false);
-        if (!recordFile.getFileHash().contentEquals(Hex.encodeHexString(verifiedHash))) {
+    protected boolean verifyDataFile(File file, byte[] verifiedHash) {
+        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
+        try {
+            RecordFile recordFile = Utility.parseRecordFile(file.getPath(), expectedPrevFileHash,
+                    downloaderProperties.getMirrorProperties().getVerifyHashAfter(), null);
+            if (!recordFile.getFileHash().contentEquals(Hex.encodeHexString(verifiedHash))) {
+                return false;
+            }
+        } catch (HashMismatchException e) {
+            log.error(e);
             return false;
         }
-        String fileName = Utility.getFileName(filePath);
-        log.debug("Downloaded data file {} corresponding to verified hash", fileName);
-        // Verifies that prevFileHash in given {@code file} matches that in application repository.
-        String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
-        return Utility.verifyHashChain(recordFile.getPreviousHash(), expectedPrevFileHash,
-                downloaderProperties.getMirrorProperties().getVerifyHashAfter(), fileName);
+        return true;
     }
 }

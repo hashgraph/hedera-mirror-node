@@ -31,6 +31,7 @@ import com.google.common.primitives.Bytes;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -174,7 +175,7 @@ public class RecordFileDownloaderTest extends AbstractDownloaderTest {
                 .findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE);
         doReturn("123").when(applicationStatusRepository)
                 .findByStatusCode(ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE_HASH);
-        downloaderProperties.getMirrorProperties().setVerifyHashAfter("2019-09-01T00:00:00.000000Z.rcd");
+        downloaderProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-09-01T00:00:00.000000Z"));
         fileCopier.filterFiles(filename + "*").copy(); // Skip first file with zero hash
         downloader.download();
         assertValidFiles(List.of(filename));
