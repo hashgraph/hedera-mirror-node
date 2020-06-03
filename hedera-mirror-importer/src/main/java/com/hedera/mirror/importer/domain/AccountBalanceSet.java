@@ -33,7 +33,7 @@ import org.springframework.data.domain.Persistable;
 public class AccountBalanceSet implements Persistable<Long> {
 
     @Id
-    private long consensusTimestamp;
+    private Long consensusTimestamp;
 
     private boolean isComplete;
 
