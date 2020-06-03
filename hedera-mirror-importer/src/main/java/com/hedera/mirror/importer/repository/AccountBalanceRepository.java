@@ -20,19 +20,12 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import java.util.List;
+import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.AccountBalance;
 
-public class RecordFileRepositoryTest extends AbstractRepositoryTest {
+public interface AccountBalanceRepository extends CrudRepository<AccountBalance, AccountBalance.AccountBalanceId> {
 
-    @Test
-    void insert() {
-        RecordFile recordFile = new RecordFile(0L, 0L, null, "fileName", 20L, 30L, "fileHash", "previousHash", 0);
-        recordFile = recordFileRepository.save(recordFile);
-        Assertions.assertThat(recordFileRepository.findById(recordFile.getId()).get())
-                .isNotNull()
-                .isEqualTo(recordFile);
-    }
+    List<AccountBalance> findByIdConsensusTimestamp(long consensusTimestamp);
 }

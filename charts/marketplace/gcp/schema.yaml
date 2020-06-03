@@ -105,13 +105,6 @@ properties:
     title: Importer database password
     x-google-marketplace:
       type: MASKED_FIELD
-  importer.replicas:
-    type: integer
-    default: 1
-    description: The importer replica count
-    title: Importer replicas
-    minimum: 1
-    maximum: 10
   importer.serviceAccount.name:
     type: string
     title: Importer service account
@@ -129,20 +122,6 @@ properties:
               - apiGroups: ['']
                 resources: ['pods']
                 verbs: ['get', 'watch']
-  postgresql.pgpool.replicaCount:
-    type: integer
-    default: 1
-    description: The Pgpool replica count
-    title: Pgpool replicas
-    minimum: 1
-    maximum: 10
-  postgresql.postgresql.replicaCount:
-    type: integer
-    default: 1
-    description: The PostgreSQL replica count
-    title: PostgreSQL replicas
-    minimum: 1
-    maximum: 10
   postgresql.postgresql.repmgrPassword:
     type: string
     description: The password used by the PostgreSQL Replication Manager to connect to the database

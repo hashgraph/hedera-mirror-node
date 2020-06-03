@@ -20,43 +20,34 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Column;
+import java.time.LocalDateTime;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.persistence.Transient;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Persistable;
 
 @Data
 @Entity
-@AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "t_record_files")
-public class RecordFile {
-
-    private Long consensusStart;
-
-    private Long consensusEnd;
+@Table(name = "account_balance_sets")
+public class AccountBalanceSet implements Persistable<Long> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long consensusTimestamp;
 
-    private String name;
+    private boolean isComplete;
 
-    private Long loadStart;
+    private LocalDateTime processingEndTimestamp;
 
-    private Long loadEnd;
+    private LocalDateTime processingStartTimestamp;
 
-    private String fileHash;
+    @Override
+    public Long getId() {
+        return consensusTimestamp;
+    }
 
-    @Column(name = "prev_hash")
-    private String previousHash;
-
-    @Transient
-    private int recordFormatVersion;
+    @Override
+    public boolean isNew() {
+        return true; // Since we never update balance sets and use a natural ID, avoid Hibernate querying before insert
+    }
 }

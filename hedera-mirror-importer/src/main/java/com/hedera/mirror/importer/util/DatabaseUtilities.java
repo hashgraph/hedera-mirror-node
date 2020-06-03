@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.util;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.sql.DataSource;
@@ -57,14 +56,5 @@ public class DatabaseUtilities {
                 Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
             }
         }
-    }
-
-    public static Connection openDatabase(Connection connect) {
-        return getConnection();
-    }
-
-    public static Connection closeDatabase(Connection connect) throws SQLException {
-        connect.close();
-        return null;
     }
 }

@@ -17,18 +17,18 @@ services:
       - 5432:5432
 
   grpc:
-    image: gcr.io/mirrornode/hedera-mirror-grpc
+    image: gcr.io/mirrornode/hedera-mirror-grpc:0.12.0-beta2
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_GRPC_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-grpc/
-    #volumes:
-    #- ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
+    volumes:
+      - ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
     ports:
       - 5600:5600
 
   importer:
-    image: gcr.io/mirrornode/hedera-mirror-importer
+    image: gcr.io/mirrornode/hedera-mirror-importer:0.12.0-beta2
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_IMPORTER_DATAPATH: /var/lib/hedera-mirror-importer
@@ -36,10 +36,10 @@ services:
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-importer/
     volumes:
       - ./data:/var/lib/hedera-mirror-importer
-      #- ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
+      - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
 
   rest:
-    image: gcr.io/mirrornode/hedera-mirror-rest
+    image: gcr.io/mirrornode/hedera-mirror-rest:0.12.0-beta2
     environment:
       HEDERA_MIRROR_REST_DB_HOST: db
     restart: unless-stopped

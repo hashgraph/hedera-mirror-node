@@ -1,0 +1,9 @@
+#hedera:
+#  mirror:
+#    importer:
+#      downloader:
+#        accessKey: {GOOG1E....}
+#        bucketName: {bucketName}
+#        cloudProvider: "GCP"
+#        secretKey: {GOOG1E....}
+#      network: TESTNET

@@ -36,7 +36,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.time.Instant;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
@@ -98,12 +98,11 @@ public class RecordFileParserTest {
         file2 = parserProperties.getValidPath().resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
         recordFile1 = new RecordFile(1567188600419072000L, 1567188604906443001L, null, file1.getPath(), 0L, 0L,
                 "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
-                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                new ArrayList<>(), 2);
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", 2);
 
         recordFile2 = new RecordFile(1567188605249678000L, 1567188609705382001L, null, file2.getPath(), 0L, 0L,
                 "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
-                recordFile1.getFileHash(), new ArrayList<>(), 2);
+                recordFile1.getFileHash(), 2);
     }
 
     @Test
@@ -179,7 +178,7 @@ public class RecordFileParserTest {
     @Test
     void bypassHashMismatch() throws Exception {
         // given
-        parserProperties.getMirrorProperties().setVerifyHashAfter("2019-09-01T00:00:00.000000Z.rcd");
+        parserProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-09-01T00:00:00.000000Z"));
         when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
         fileCopier.copy();
 
@@ -277,11 +276,5 @@ public class RecordFileParserTest {
         verify(recordItemListener, times(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)).onItem(any());
         assertOnStart(file1.getPath(), file2.getPath());
         assertOnEnd(recordFile1, recordFile2);
-    }
-
-    private void assertNoneProcessed() {
-        assertValidFiles();
-        verifyNoInteractions(recordItemListener);
-        verifyNoInteractions(recordStreamFileListener);
     }
 }

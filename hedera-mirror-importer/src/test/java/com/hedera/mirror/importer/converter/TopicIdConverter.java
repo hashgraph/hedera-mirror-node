@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer;
+package com.hedera.mirror.importer.converter;
 
 /*-
  * ‌
@@ -20,13 +20,13 @@ package com.hedera.mirror.importer;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TopicID;
+
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
-public final class KeyConverter implements ArgumentConverter {
+public final class TopicIdConverter implements ArgumentConverter {
     @Override
     public Object convert(Object input, ParameterContext parameterContext)
             throws ArgumentConversionException {
@@ -36,11 +36,8 @@ public final class KeyConverter implements ArgumentConverter {
         if (!(input instanceof String)) {
             throw new ArgumentConversionException(input + " is not a string");
         }
-        var inputString = (String) input;
-        if (0 == inputString.length()) {
-            return Key.newBuilder().build();
-        } else {
-            return Key.newBuilder().setEd25519(ByteString.copyFrom(inputString.getBytes())).build();
-        }
+        var parts = ((String) input).split("\\.");
+        return TopicID.newBuilder().setShardNum(Long.parseLong(parts[0])).setRealmNum(Long.parseLong(parts[1]))
+                .setTopicNum(Long.parseLong(parts[2])).build();
     }
 }
