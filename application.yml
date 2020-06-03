@@ -2,8 +2,8 @@
 #  mirror:
 #    importer:
 #      downloader:
-#        accessKey:
-#        bucketName:
-#        cloudProvider:
-#        secretKey:
-#      network:
+#        accessKey: {GOOG1E....}
+#        bucketName: {bucketName}
+#        cloudProvider: "GCP"
+#        secretKey: {GOOG1E....}
+#      network: TESTNET

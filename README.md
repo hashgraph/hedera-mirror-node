@@ -58,20 +58,17 @@ Multiple technologies are utilized in the mirror node. The following topics are 
 - [Spring](https://spring.io/quickstart)
     - [Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/getting-started.html#getting-started)
     - [Externalized Configurations](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config)
-- [Postgres](https://www.postgresql.org/docs/9.6/index.html)
-    - [SQL commands](https://www.postgresql.org/docs/10/sql-commands.html)
-    - [Client Application & Utilities](https://www.postgresql.org/docs/10/reference-client.html)
+- [PostgreSQL](https://www.postgresql.org/docs/9.6/index.html)
+    - [SQL commands](https://www.postgresql.org/docs/9.6/sql-commands.html)
+    - [Client Application & Utilities](https://www.postgresql.org/docs/9.6/reference-client.html)
 
 
 ### Prerequisite Tools
 Ensure these tools are installed prior to running the mirror node
 
-- [Java Open JDK](https://sdkman.io/jdks#jdk.java.net), version 11 and above
-- [Node](https://nodejs.org/en/)
 - [Docker](https://www.docker.com/products/docker-desktop)
 
-### Running Mirror Node (Importer, gRPC Streamer and REST API)
-Ensure OpenJDK 11 and Docker Compose are installed, then run:
+### Running Mirror Node (Importer, gRPC API and REST API)
 
 To run the mirror node, execute these 3 commands in your terminal.
 ```bash
@@ -79,12 +76,14 @@ git clone git@github.com:hashgraph/hedera-mirror-node.git
 cd hedera-mirror-node
 docker-compose up
 ```
-
-#### Demo Data - Free Option
+> **_NOTE:_** This defaults to a bucket setup for demonstration purposes. The real bucket name is not currently publicly available.
+> See [Testnet / Mainnet](https://github.com/hashgraph/hedera-mirror-node#Testnet/Mainnet) section for how to configure for real data
+## Data Access
+### Demo
 The free option utilizes a bucket setup for demonstration purposes. The real bucket name is not currently publicly available.
 This is the default option and requires no additional steps.
 
-#### TESTNET & MAINNET Data - Requester Pays
+### Testnet / Mainnet
 To access real data from the testnet or mainnet buckets the requester pays flow for [GCP](https://cloud.google.com/storage/docs/requester-pays) or [AWS](https://docs.aws.amazon.com/AmazonS3/latest/dev/RequesterPaysBuckets.html) must be utilized.
 Here the charges associated with request and download of transaction data are paid for by the requester and not the bucket owner.
 
@@ -92,7 +91,7 @@ To achieve this, 2 simple steps must be taken to configure the mirror node
 - Uncomment the contents of [application.yml](./application.yml) file under the root folder
 - Customize the contents according to your setup. See [configurations](docs/configuration.md) for detailed descriptions of config options.
 
-> **_Note_** The [application.yml](./application.yml) file is referenced in the [docker-compose.yml](docker-compose.yml) and allows customized of each of the sub modules.
+> **_Note_** The [application.yml](./application.yml) file contents represent the minimal set of fields required to configure requester pays and must all be uncommented and filled in. The file is referenced in the [docker-compose.yml](docker-compose.yml) and allows customized configuration for each of the sub modules.
 
 
 See the [Docker compose Startup section](https://github.com/hashgraph/hedera-mirror-node/blob/master/docs/installation.md#running-via-docker-compose) for further details
@@ -108,7 +107,7 @@ First list running docker container information using
      docker ps
 Useful information for all the running containers such as CONTAINER ID, STATUS, IP's and ports will be displayed as below
 
-    CONTAINED ID    IMAGE                                           COMMAND                 CREATED         STATUS          PORTS                   NAMES
+    CONTAINER ID    IMAGE                                           COMMAND                 CREATED         STATUS          PORTS                   NAMES
     21fa2a986d99    gcr.io/mirrornode/hedera-mirror-rest:0.12.0     "docker-entrypoint.s…"  7 minutes ago   Up 12 seconds   0.0.0.0:5551->5551/tcp  hedera-mirror-node_rest_1
     56647c384d49    gcr.io/mirrornode/hedera-mirror-grpc:0.12.0     "java -cp /app/resou…"  8 minutes ago   Up 16 seconds   0.0.0.0:5600->5600/tcp  edera-mirror-node_grpc_1
 
@@ -137,7 +136,7 @@ The REST API container will display logs similar to the below at start
     Server running on port: 5551
 
 The REST API endpoints can be verified either through the browser or the terminal.
-The following endpoints are suggestions that can be accessed from your browser. Modify the below IP's and port sif they differ from your running containers.
+The following endpoints are suggestions that can be accessed from your browser. Modify the below IP's and ports if they differ from your running containers.
 
     http://127.0.0.1:5551/api/v1/accounts
     http://127.0.0.1:5551/api/v1/balances
@@ -145,7 +144,7 @@ The following endpoints are suggestions that can be accessed from your browser. 
 
 When using the terminal simply use the `curl` command on the above endpoints. e.g.
 
-    curl http://127.0.0.1:6551/api/v1/transactions
+    curl http://127.0.0.1:5551/api/v1/transactions
 
 #### gRPC API
 The gRPC container will display logs similar to the below at start
@@ -169,6 +168,7 @@ Additionally logs on each module container can be viewed to verify expected oper
 Simply access the terminal on each container with the following command and refer to [Operations](docs/operations.md) document for directions on where and how to view logs
 
      docker exec -it <CONTAINER ID> bash
+> **_Note_** You cannot exec into the gRPC and Importer containers as they are [distroless](https://github.com/GoogleContainerTools/distroless) java images.
 
 ## Documentation
 
