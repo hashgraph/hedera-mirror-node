@@ -103,7 +103,6 @@ values. This file is passed to Docker compose and allows customized configuratio
 Finally, run the commands to build and startup:
 
 ```console
-./mvnw clean install -DskipTests
 docker-compose up
 ```
 
