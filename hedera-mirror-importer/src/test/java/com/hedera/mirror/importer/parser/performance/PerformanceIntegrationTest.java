@@ -118,6 +118,93 @@ public abstract class PerformanceIntegrationTest {
         return rs.getLong("count");
     }
 
+    void getAccounts(long pageSize) throws SQLException {
+        String sqlQuery = "select ab.balance as account_balance\n" +
+                "    , ab.consensus_timestamp as consensus_timestamp\n" +
+                "    , 0 as entity_shard\n" +
+                "    , coalesce(ab.account_realm_num, e.entity_realm) as entity_realm\n" +
+                "    , coalesce(ab.account_num, e.entity_num) as entity_num\n" +
+                "    , e.exp_time_ns\n" +
+                "    , e.auto_renew_period\n" +
+                "    , e.key\n" +
+                "    , e.deleted\n" +
+                "from account_balances ab\n" +
+                "full outer join t_entities e\n" +
+                "    on (0 = e.entity_shard\n" +
+                "        and ab.account_realm_num = e.entity_realm\n" +
+                "        and ab.account_num =  e.entity_num\n" +
+                "        and e.fk_entity_type_id < 3)\n" +
+                "where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balances)\n" +
+                "    and \n" +
+                "1=1 and 1=1 and 1=1 order by coalesce(ab.account_num, e.entity_num) desc\n" +
+                "limit ?";
+        runSelectStatementWithPageSize(sqlQuery, pageSize);
+    }
+
+    void getBalances(long pageSize) throws SQLException {
+        String sqlQuery = "select ab.consensus_timestamp,\n" +
+                "ab.account_realm_num as realm_num, ab.account_num as entity_num, ab.balance\n" +
+                " from account_balances ab\n" +
+                " where  consensus_timestamp = (select consensus_timestamp from account_balances ab\n" +
+                " where\n" +
+                "((ab.consensus_timestamp  >=  0) )\n" +
+                "order by consensus_timestamp desc limit 1)\n" +
+                " and\n" +
+                "1=1 and 1=1 and 1=1 order by consensus_timestamp desc, account_realm_num desc,account_num desc limit" +
+                " ?";
+        runSelectStatementWithPageSize(sqlQuery, pageSize);
+    }
+
+    void getTopicMessages(long pageSize) throws SQLException {
+        String sqlQuery = "select consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number\n" +
+                "from topic_message limit ?;";
+
+        runSelectStatementWithPageSize(sqlQuery, pageSize);
+    }
+
+    void getTransactions(long pageSize) throws SQLException {
+        String sqlQuery = "select etrans.entity_shard,  etrans.entity_realm, etrans.entity_num\n" +
+                "   , t.memo\n" +
+                "\t, t.consensus_ns\n" +
+                "   , valid_start_ns\n" +
+                "   , coalesce(ttr.result, 'UNKNOWN') as result\n" +
+                "   , coalesce(ttt.name, 'UNKNOWN') as name\n" +
+                "   , t.fk_node_acc_id\n" +
+                "   , enode.entity_realm as node_realm\n" +
+                "   , enode.entity_num as node_num\n" +
+                "   , ctl.realm_num as account_realm\n" +
+                "   , ctl.entity_num as account_num\n" +
+                "   , amount\n" +
+                "   , t.charged_tx_fee\n" +
+                "   , t.valid_duration_seconds\n" +
+                "   , t.max_fee\n" +
+                " from (      select distinct ctl.consensus_timestamp\n" +
+                "       from t_cryptotransferlists ctl\n" +
+                "       join t_transactions t on t.consensus_ns = ctl.consensus_timestamp\n" +
+                "       where 1=1\n" +
+                "and ((t.consensus_ns  >=  0) ) and 1=1   order by ctl.consensus_timestamp desc\n" +
+                "limit ? ) as tlist\n" +
+                "   join t_transactions t on tlist.consensus_timestamp = t.consensus_ns\n" +
+                "   left outer join t_transaction_results ttr on ttr.proto_id = t.result\n" +
+                "   join t_entities enode on enode.id = t.fk_node_acc_id\n" +
+                "   join t_entities etrans on etrans.id = t.fk_payer_acc_id\n" +
+                "   left outer join t_transaction_types ttt on ttt.proto_id = t.type\n" +
+                "   left outer join t_cryptotransferlists ctl on  tlist.consensus_timestamp = ctl" +
+                ".consensus_timestamp\n" +
+                "   order by t.consensus_ns desc, account_num asc, amount asc;";
+        runSelectStatementWithPageSize(sqlQuery, pageSize);
+    }
+
+    void runSelectStatementWithPageSize(String sqlQuery, long pageSize) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(sqlQuery,
+                ResultSet.TYPE_SCROLL_INSENSITIVE,
+                ResultSet.CONCUR_READ_ONLY);
+        statement.setLong(1, pageSize);
+        ResultSet rs = statement.executeQuery();
+        rs.last();
+        assertThat(rs.getRow()).isEqualTo(pageSize);
+    }
+
     void verifyTableSize(String table, String label) throws SQLException {
         long count = getTableSize(table);
 

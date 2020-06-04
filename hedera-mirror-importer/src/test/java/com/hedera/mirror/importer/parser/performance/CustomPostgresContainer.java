@@ -23,8 +23,6 @@ package com.hedera.mirror.importer.parser.performance;
 import lombok.extern.log4j.Log4j2;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCheckStrategy;
-import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import com.hedera.mirror.importer.db.DBProperties;
@@ -41,24 +39,12 @@ public class CustomPostgresContainer {
     private static final String jsonKeyFileArgName = "jsonkeyfile";
     private static final String jsonKeyFileName = "bucket-download-key.json";
     private static final String jsonKeyFilePath = "data/bucket-download-key.json";
-    private static final String postgresConfFileName = "postgresql.conf";
-    private static final String postgresConfPath = "data/postgresql.conf";
     private static final String restoreScriptFileName = "restore.sh";
     private static final String restoreScriptFilePath = "data/restore.sh";
-    private static final String restoreSeedScriptFilePath = "data/restore-seed.sh";
 
     public static ImageFromDockerfile createBaseDockerImage(String dockerFilePath) {
         return new ImageFromDockerfile()
                 .withFileFromClasspath(dockerFileName, dockerFilePath);
-    }
-
-    public static ImageFromDockerfile createSeededDockerImage(String dockerFilePath, String pgDumpFile) {
-        return createBaseDockerImage(dockerFilePath)
-                .withFileFromClasspath(postgresConfFileName, postgresConfPath)
-                .withFileFromClasspath(restoreScriptFileName, restoreSeedScriptFilePath)
-                .withBuildArg(dumpFileArgName, pgDumpFile)
-                .withBuildArg(jsonKeyFileArgName, jsonKeyFileName)
-                .withFileFromClasspath(jsonKeyFileName, jsonKeyFilePath);
     }
 
     public static ImageFromDockerfile createDockerRestoreImage(String dockerFilePath, String pgDumpFile) {
@@ -67,24 +53,6 @@ public class CustomPostgresContainer {
                 .withBuildArg(dumpFileArgName, pgDumpFile)
                 .withFileFromClasspath(restoreScriptFileName, restoreScriptFilePath)
                 .withBuildArg(jsonKeyFileArgName, jsonKeyFileName);
-    }
-
-    public static GenericContainer createBaseContainer(String dockerFilePath, int exposedPort) {
-        return new GenericContainer(createBaseDockerImage(dockerFilePath))
-                .withExposedPorts(exposedPort)
-                .waitingFor(Wait.forListeningPort());
-    }
-
-    public static GenericContainer createSeededContainer(String dockerFilePath, String pgDumpFile, int exposedPort,
-                                                         DBProperties db) {
-        return new GenericContainer(createSeededDockerImage(dockerFilePath, pgDumpFile))
-                .withEnv(dbNameEnvVar, db.getName())
-                .withEnv(dbUserEnvVar, db.getUsername())
-                .withEnv(dbPasswordEnvVar, db.getPassword())
-                .withExposedPorts(exposedPort)
-                .withStartupCheckStrategy(
-                        new IsRunningStartupCheckStrategy()
-                );
     }
 
     public static GenericContainer createRestoreContainer(String dockerFilePath, String pgDumpFile, DBProperties db) {

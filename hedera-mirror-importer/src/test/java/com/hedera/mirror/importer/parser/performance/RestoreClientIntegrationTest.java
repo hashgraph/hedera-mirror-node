@@ -21,11 +21,13 @@ package com.hedera.mirror.importer.parser.performance;
  */
 
 import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -43,6 +45,8 @@ public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
 
     @Rule
     GenericContainer customContainer;
+
+    private final long maxPageSize = 1000;
 
     @BeforeAll
     void warmUp() throws SQLException {
@@ -93,5 +97,30 @@ public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
     @Test
     public void checkTransactionsTablesIsPopulated() throws Exception {
         verifyTableSize("t_transactions", "transactions");
+    }
+
+    @Timeout(value = 500, unit = TimeUnit.MILLISECONDS)
+    @Test
+    public void checkAccountsRequest() throws Exception {
+        getAccounts(maxPageSize);
+    }
+
+    @Timeout(value = 50, unit = TimeUnit.MILLISECONDS)
+    @Test
+    public void checkAccountBalancesRequest() throws Exception {
+        getBalances(maxPageSize);
+    }
+
+    @Disabled("Returning more rows than expected on sql query")
+    @Timeout(2)
+    @Test
+    public void checkTransactionsRequest() throws Exception {
+        getTransactions(maxPageSize);
+    }
+
+    @Timeout(value = 50, unit = TimeUnit.MILLISECONDS)
+    @Test
+    public void checkTopicMessagesRequest() throws Exception {
+        getTopicMessages(maxPageSize);
     }
 }
