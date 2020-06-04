@@ -72,7 +72,7 @@ Ensure these tools are installed prior to running the mirror node
 
 To run the mirror node, execute these 3 commands in your terminal.
 ```bash
-git clone git@github.com:hashgraph/hedera-mirror-node.git
+git clone https://github.com/hashgraph/hedera-mirror-node.git
 cd hedera-mirror-node
 docker-compose up
 ```
