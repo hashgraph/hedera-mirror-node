@@ -77,7 +77,7 @@ public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
         verifyTableSize("t_entities", "entities");
     }
 
-    @Timeout(2)
+    @Timeout(3)
     @Test
     public void checkBalancesTablesIsPopulated() throws Exception {
         verifyTableSize("account_balances", "balances");

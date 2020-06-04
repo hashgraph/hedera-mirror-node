@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.performance;
 import lombok.extern.log4j.Log4j2;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCheckStrategy;
+import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
@@ -59,10 +60,16 @@ public class CustomPostgresContainer {
                 .waitingFor(Wait.forListeningPort());
     }
 
-    public static GenericContainer createSeededContainer(String dockerFilePath, String pgDumpFile, int exposedPort) {
+    public static GenericContainer createSeededContainer(String dockerFilePath, String pgDumpFile, int exposedPort,
+                                                         DBProperties db) {
         return new GenericContainer(createSeededDockerImage(dockerFilePath, pgDumpFile))
+                .withEnv("DB_NAME", db.getName())
+                .withEnv("DB_USER", db.getUsername())
+                .withEnv("DB_PASS", db.getPassword())
                 .withExposedPorts(exposedPort)
-                .waitingFor(Wait.forListeningPort());
+                .withStartupCheckStrategy(
+                        new IsRunningStartupCheckStrategy()
+                );
     }
 
     public static GenericContainer createRestoreContainer(String dockerFilePath, String pgDumpFile, DBProperties db) {

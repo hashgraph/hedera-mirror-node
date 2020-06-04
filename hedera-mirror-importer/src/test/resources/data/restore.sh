@@ -3,10 +3,8 @@ set -e
 
 echo "Setting user and role for Mirror Node"
 PGPASSWORD=$DB_PASS psql -v ON_ERROR_STOP=1 --username "$DB_USER" --dbname "$DB_NAME" -p "$DB_PORT" -h localhost <<-EOSQL
-    \set db_name 'mirror_node'
     \set db_user 'mirror_node'
     \set db_password 'mirror_node_pass'
-    \set db_owner 'mirror_node'
 
     create user :db_user with login createrole password :'db_password';
 
