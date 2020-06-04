@@ -347,7 +347,7 @@ public abstract class Downloader {
                     if (signedDataFile == null) {
                         continue;
                     }
-                    if (verifyDataFile(signedDataFile.getPath(), signature.getHash())) {
+                    if (verifyDataFile(signedDataFile, signature.getHash())) {
                         // move the file to the valid directory
                         File destination = validPath.resolve(signedDataFile.getName()).toFile();
                         if (moveFile(signedDataFile, destination)) {
@@ -363,7 +363,7 @@ public abstract class Downloader {
                         }
                     } else {
                         log.warn("Verification of data file failed. Will try to download a file with same timestamp " +
-                                "from other nodes and check the Hash: {}", signedDataFile);
+                                "from other nodes and check the hash: {}", signedDataFile);
                     }
                 } catch (Exception e) {
                     log.error("Error downloading data file corresponding to {}", sigFileName, e);
@@ -405,7 +405,7 @@ public abstract class Downloader {
 
     protected abstract ApplicationStatusCode getLastValidDownloadedFileHashKey();
 
-    protected abstract boolean verifyDataFile(String filePath, byte[] signedHash);
+    protected abstract boolean verifyDataFile(File file, byte[] signedHash);
 
     public abstract void download();
 }

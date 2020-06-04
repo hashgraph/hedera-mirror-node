@@ -101,7 +101,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     void completeFileAndCommit() {
         sqlEntityListener
-                .onEnd(new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", null, 0));
+                .onEnd(new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", 0));
     }
 
     @Test
