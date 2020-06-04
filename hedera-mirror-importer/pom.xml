@@ -20,12 +20,7 @@
         <commons-io.version>2.6</commons-io.version>
         <guava.version>29.0-jre</guava.version>
         <s3mock.version>0.2.5</s3mock.version>
-        <docker.skip.restore.client>true</docker.skip.restore.client>
-        <docker.restore.client.size>100k</docker.restore.client.size>
         <testcontainer.version>1.14.3</testcontainer.version>
-        <docker.skip.base.db>true</docker.skip.base.db>
-        <docker.skip.seeded.db>true</docker.skip.seeded.db>
-        <docker.seeded.db.size>100k</docker.seeded.db.size>
     </properties>
 
     <dependencyManagement>

@@ -1,8 +1,9 @@
-FROM postgres:9.6
+# Empty postgres db image with mirror node users and empty database created
 # Build using command from repo root:
 # docker build -f hedera-mirror-importer/src/test/resources/data/base-image/Dockerfile \
 #   ./hedera-mirror-importer/ \
 #   -t gcr.io/mirrornode/hedera-mirror-node/postgres:latest
+FROM postgres:9.6
 
 # Update Ubuntu
 RUN \

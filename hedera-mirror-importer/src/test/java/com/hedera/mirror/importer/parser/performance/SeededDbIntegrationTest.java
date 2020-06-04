@@ -88,12 +88,12 @@ public class SeededDbIntegrationTest extends PerformanceIntegrationTest {
     @AfterAll
     void coolOff() {
         log.info("Reset dbProperties to {}", dbPropertiesCache);
-//        setDbProperties(
-//                dbPropertiesCache.getHost(),
-//                dbPropertiesCache.getName(),
-//                dbPropertiesCache.getUsername(),
-//                dbPropertiesCache.getPassword(),
-//                dbPropertiesCache.getPort());
+        setDbProperties(
+                dbPropertiesCache.getHost(),
+                dbPropertiesCache.getName(),
+                dbPropertiesCache.getUsername(),
+                dbPropertiesCache.getPassword(),
+                dbPropertiesCache.getPort());
 
         log.info("Stop container {}", customContainer);
         customContainer.stop();
@@ -103,7 +103,6 @@ public class SeededDbIntegrationTest extends PerformanceIntegrationTest {
     }
 
     @Disabled("Currently still pointing at embedded container instead of customcontianer created here")
-    @Timeout(15)
     @Test
     public void parseAndIngestTransactions() throws Exception {
         clearLastProcessedRecordHash();
@@ -118,7 +117,7 @@ public class SeededDbIntegrationTest extends PerformanceIntegrationTest {
     }
 
     @Disabled("Currently still pointing at embedded container instead of customcontianer created here")
-    @Timeout(2)
+    @Timeout(3)
     @Test
     public void checkBalancesTablesIsPopulated() throws Exception {
         verifyTableSize("account_balances", "balances");

@@ -32,26 +32,41 @@ import com.hedera.mirror.importer.db.DBProperties;
 @Log4j2
 public class CustomPostgresContainer {
 
+    private static final String dbNameEnvVar = "DB_NAME";
+    private static final String dbUserEnvVar = "DB_USER";
+    private static final String dbPasswordEnvVar = "DB_PASS";
+    private static final String dbPortEnvVar = "DB_PORT";
+    private static final String dockerFileName = "Dockerfile";
+    private static final String dumpFileArgName = "dumpfile";
+    private static final String jsonKeyFileArgName = "jsonkeyfile";
+    private static final String jsonKeyFileName = "bucket-download-key.json";
+    private static final String jsonKeyFilePath = "data/bucket-download-key.json";
+    private static final String postgresConfFileName = "postgresql.conf";
+    private static final String postgresConfPath = "data/postgresql.conf";
+    private static final String restoreScriptFileName = "restore.sh";
+    private static final String restoreScriptFilePath = "data/restore.sh";
+    private static final String restoreSeedScriptFilePath = "data/restore-seed.sh";
+
     public static ImageFromDockerfile createBaseDockerImage(String dockerFilePath) {
         return new ImageFromDockerfile()
-                .withFileFromClasspath("Dockerfile", dockerFilePath);
+                .withFileFromClasspath(dockerFileName, dockerFilePath);
     }
 
     public static ImageFromDockerfile createSeededDockerImage(String dockerFilePath, String pgDumpFile) {
         return createBaseDockerImage(dockerFilePath)
-                .withFileFromClasspath("postgresql.conf", "data/postgresql.conf")
-                .withFileFromClasspath("restore-seed.sh", "data/restore-seed.sh")
-                .withBuildArg("dumpfile", pgDumpFile)
-                .withBuildArg("jsonkeyfile", "bucket-download-key.json")
-                .withFileFromClasspath("bucket-download-key.json", "data/bucket-download-key.json");
+                .withFileFromClasspath(postgresConfFileName, postgresConfPath)
+                .withFileFromClasspath(restoreScriptFileName, restoreSeedScriptFilePath)
+                .withBuildArg(dumpFileArgName, pgDumpFile)
+                .withBuildArg(jsonKeyFileArgName, jsonKeyFileName)
+                .withFileFromClasspath(jsonKeyFileName, jsonKeyFilePath);
     }
 
     public static ImageFromDockerfile createDockerRestoreImage(String dockerFilePath, String pgDumpFile) {
         return createBaseDockerImage(dockerFilePath)
-                .withFileFromClasspath("bucket-download-key.json", "data/bucket-download-key.json")
-                .withBuildArg("dumpfile", pgDumpFile)
-                .withFileFromClasspath("restore.sh", "data/restore.sh")
-                .withBuildArg("jsonkeyfile", "bucket-download-key.json");
+                .withFileFromClasspath(jsonKeyFileName, jsonKeyFilePath)
+                .withBuildArg(dumpFileArgName, pgDumpFile)
+                .withFileFromClasspath(restoreScriptFileName, restoreScriptFilePath)
+                .withBuildArg(jsonKeyFileArgName, jsonKeyFileName);
     }
 
     public static GenericContainer createBaseContainer(String dockerFilePath, int exposedPort) {
@@ -63,9 +78,9 @@ public class CustomPostgresContainer {
     public static GenericContainer createSeededContainer(String dockerFilePath, String pgDumpFile, int exposedPort,
                                                          DBProperties db) {
         return new GenericContainer(createSeededDockerImage(dockerFilePath, pgDumpFile))
-                .withEnv("DB_NAME", db.getName())
-                .withEnv("DB_USER", db.getUsername())
-                .withEnv("DB_PASS", db.getPassword())
+                .withEnv(dbNameEnvVar, db.getName())
+                .withEnv(dbUserEnvVar, db.getUsername())
+                .withEnv(dbPasswordEnvVar, db.getPassword())
                 .withExposedPorts(exposedPort)
                 .withStartupCheckStrategy(
                         new IsRunningStartupCheckStrategy()
@@ -74,10 +89,10 @@ public class CustomPostgresContainer {
 
     public static GenericContainer createRestoreContainer(String dockerFilePath, String pgDumpFile, DBProperties db) {
         return new GenericContainer(createDockerRestoreImage(dockerFilePath, pgDumpFile))
-                .withEnv("DB_NAME", db.getName())
-                .withEnv("DB_USER", db.getUsername())
-                .withEnv("DB_PASS", db.getPassword())
-                .withEnv("DB_PORT", Integer.toString(db.getPort()))
+                .withEnv(dbNameEnvVar, db.getName())
+                .withEnv(dbUserEnvVar, db.getUsername())
+                .withEnv(dbPasswordEnvVar, db.getPassword())
+                .withEnv(dbPortEnvVar, Integer.toString(db.getPort()))
                 .withNetworkMode("host")
                 .withStartupCheckStrategy(
                         new IndefiniteWaitOneShotStartupCheckStrategy()

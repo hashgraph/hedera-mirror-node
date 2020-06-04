@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @Log4j2
 @SpringBootTest
-public class PerformanceIntegrationTest {
+public abstract class PerformanceIntegrationTest {
     @Resource
     DataSource dataSource;
 
