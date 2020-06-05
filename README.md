@@ -120,6 +120,12 @@ Using the CONTAINER ID docker containers can be accessed for in depth troublesho
 #### Importer
 Logs similar to the following snippets can be used to confirm the Importer is downloading and parsing transactions to the database
 
+    Current version of schema "public": << Empty Schema >>
+    ...
+    Migrating schema "public" to version 1.0 - Init
+    ...
+    Successfully applied 41 migrations to schema "public" (execution time 00:01.656s)
+    ...
     Loading record format version 2 from record file: ...
     Inserted 2 transactions, 6 transfer lists, 0 files, 0 contracts, 0 claims, 0 topic messages, 0 non-fee transfers
     Finished parsing 2 transactions from record file ....
@@ -129,6 +135,18 @@ The following log can be used to confirm the database is up and running
 
     LOG: database system is ready to accept connections
 
+If you have postgresql installed you can connect directly to your database using the following psql command and default [configurations](docs/configuration.md)
+
+    psql "dbname=mirror_node host=localhost user=mirror_node password=mirror_node_pass port=5432"
+
+If psql is not available you can `docker exec -it <CONTAINER ID> bash` into the db container and run the same command above
+
+Some useful basic queries to help view database contents and data include
+
+    \du
+    select * from account_balances limit 5;
+    select * from transactions limit 5;
+    select * from topic_message limit 5;
 
 #### REST API
 The REST API container will display logs similar to the below at start
