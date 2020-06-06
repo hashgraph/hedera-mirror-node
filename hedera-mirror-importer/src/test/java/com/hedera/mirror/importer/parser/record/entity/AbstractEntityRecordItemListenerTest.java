@@ -32,12 +32,15 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -64,6 +67,10 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
+    protected static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
+    protected static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
+    protected static final AccountID PAYER =
+            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build();
 
     @Resource
     protected TransactionRepository transactionRepository;
@@ -127,7 +134,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
     }
 
-    protected final void assertAccount(AccountID accountId, com.hedera.mirror.importer.domain.Entities dbEntity) {
+    protected final void assertAccount(AccountID accountId, Entities dbEntity) {
         assertThat(accountId)
                 .isNotEqualTo(AccountID.getDefaultInstance())
                 .extracting(AccountID::getShardNum, AccountID::getRealmNum, AccountID::getAccountNum)
@@ -136,7 +143,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                 .isEqualTo(entityTypeRepository.findByName("account").get().getId());
     }
 
-    protected final void assertFile(FileID fileId, com.hedera.mirror.importer.domain.Entities dbEntity) {
+    protected final void assertFile(FileID fileId, Entities dbEntity) {
         assertThat(fileId)
                 .isNotEqualTo(FileID.getDefaultInstance())
                 .extracting(FileID::getShardNum, FileID::getRealmNum, FileID::getFileNum)
@@ -145,7 +152,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                 .isEqualTo(entityTypeRepository.findByName("file").get().getId());
     }
 
-    protected final void assertContract(ContractID contractId, com.hedera.mirror.importer.domain.Entities dbEntity) {
+    protected final void assertContract(ContractID contractId, Entities dbEntity) {
         assertThat(contractId)
                 .isNotEqualTo(ContractID.getDefaultInstance())
                 .extracting(ContractID::getShardNum, ContractID::getRealmNum, ContractID::getContractNum)
@@ -169,24 +176,25 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
             TransferList transferList = record.getTransferList();
             for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
                 AccountID account = accountAmount.getAccountID();
-                var cryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndEntityNumAndAmount(
-                        consensusTimestamp, account.getAccountNum(), accountAmount.getAmount()).get();
-                assertEquals(account.getRealmNum(), cryptoTransfer.getRealmNum());
+                assertThat(cryptoTransferRepository.findByConsensusTimestampAndEntityNumAndAmount(
+                        consensusTimestamp, account.getAccountNum(), accountAmount.getAmount())).isPresent();
             }
         } else {
             assertTrue(cryptoTransferRepository.findById(consensusTimestamp).isEmpty());
         }
     }
 
-    protected void assertRecord(TransactionRecord record) {
-        long consensusTimestamp = Utility.timeStampInNanos(record.getConsensusTimestamp());
-        com.hedera.mirror.importer.domain.Transaction dbTransaction =
-                transactionRepository.findById(consensusTimestamp).get();
+    protected void assertTransactionAndRecord(TransactionBody transactionBody, TransactionRecord record) {
+        var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+        assertTransaction(transactionBody, dbTransaction);
+        assertRecord(record, dbTransaction);
+    }
+
+    private void assertRecord(TransactionRecord record, Transaction dbTransaction) {
         // record inputs
         assertEquals(record.getTransactionFee(), dbTransaction.getChargedTxFee());
         // payer
-        com.hedera.mirror.importer.domain.Entities dbPayerEntity = entityRepository
-                .findById(dbTransaction.getPayerAccountId()).get();
+        Entities dbPayerEntity = entityRepository .findById(dbTransaction.getPayerAccountId()).get();
         assertAccount(record.getTransactionID().getAccountID(), dbPayerEntity);
         // transaction id
         assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()),
@@ -198,11 +206,9 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         assertRecordTransfers(record);
     }
 
-    protected void assertTransaction(TransactionBody transactionBody,
-                                     Transaction dbTransaction) {
-        com.hedera.mirror.importer.domain.Entities dbNodeEntity = entityRepository
-                .findById(dbTransaction.getNodeAccountId()).get();
-        Entities dbPayerEntity = entityRepository.findById(dbTransaction.getPayerAccountId()).get();
+    private void assertTransaction(TransactionBody transactionBody, Transaction dbTransaction) {
+        Entities dbNodeEntity = getEntity(dbTransaction.getNodeAccountId());
+        Entities dbPayerEntity = getEntity(dbTransaction.getPayerAccountId());
 
         assertAll(
                 () -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.getMemo())
@@ -219,20 +225,50 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         );
     }
 
-    protected static Builder defaultTransactionBodyBuilder(String memo) {
-
-        long validDuration = 120;
-        AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build();
-        long txFee = 100L;
-        AccountID nodeAccount = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build();
-
+    private static Builder defaultTransactionBodyBuilder() {
         TransactionBody.Builder body = TransactionBody.newBuilder();
-        body.setTransactionFee(txFee);
-        body.setMemo(memo);
-        body.setNodeAccountID(nodeAccount);
-        body.setTransactionID(Utility.getTransactionId(payerAccountId));
-        body.setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration).build());
+        body.setTransactionFee(100L);
+        body.setMemo("transaction memo");
+        body.setNodeAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build());
+        body.setTransactionID(Utility.getTransactionId(PAYER));
+        body.setTransactionValidDuration(Duration.newBuilder().setSeconds(120).build());
         return body;
+    }
+
+    protected com.hederahashgraph.api.proto.java.Transaction buildTransaction(Consumer<Builder> customBuilder) {
+        TransactionBody.Builder bodyBuilder = defaultTransactionBodyBuilder();
+        customBuilder.accept(bodyBuilder);
+
+        return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                .setBodyBytes(bodyBuilder.build().toByteString())
+                .setSigMap(getSigMap())
+                .build();
+    }
+
+    protected TransactionRecord buildTransactionRecord(
+            Consumer<TransactionRecord.Builder> customBuilder, TransactionBody transactionBody, int status) {
+        TransactionRecord.Builder recordBuilder = TransactionRecord.newBuilder();
+        recordBuilder.setConsensusTimestamp(Utility.instantToTimestamp(Instant.now()));
+        recordBuilder.setMemoBytes(ByteString.copyFromUtf8(transactionBody.getMemo()));
+        recordBuilder.setTransactionFee(transactionBody.getTransactionFee());
+        recordBuilder.setTransactionHash(ByteString.copyFromUtf8("TransactionHash"));
+        recordBuilder.setTransactionID(transactionBody.getTransactionID());
+        recordBuilder.getReceiptBuilder().setStatusValue(status);
+
+        // Give from payer to treasury and node
+        long[] transferAccounts = {PAYER.getAccountNum(), 98, 3};
+        long[] transferAmounts = {-2000, 1000, 1000};
+        TransferList.Builder transferList = recordBuilder.getTransferListBuilder();
+        for (int i = 0; i < transferAccounts.length; i++) {
+            // Irrespective of transaction success, node and network fees are present.
+            AccountAmount.Builder accountAmount = AccountAmount.newBuilder();
+            accountAmount.setAccountID(
+                    AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(transferAccounts[i]));
+            accountAmount.setAmount(transferAmounts[i]);
+            transferList.addAccountAmounts(accountAmount);
+        }
+    customBuilder.accept(recordBuilder);
+        return recordBuilder.build();
     }
 
     public Long assertEntityExistsAndLookupId(Long entityNum) {
@@ -250,5 +286,23 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         }
         EntityId entityId = new EntityId(null, 0L, 0L, accountNum, EntityTypeEnum.ACCOUNT.getId());
         return entityRepository.save(entityId.toEntity()).getId();
+    }
+
+    protected com.hedera.mirror.importer.domain.Transaction getDbTransaction(Timestamp consensusTimestamp) {
+        return transactionRepository.findById(Utility.timeStampInNanos(consensusTimestamp)).get();
+    }
+
+    protected Entities getTransactionEntity(Timestamp consensusTimestamp) {
+        var transaction = transactionRepository.findById(Utility.timeStampInNanos(consensusTimestamp)).get();
+        return getEntity(transaction.getEntityId());
+    }
+
+    protected Entities getEntity(long entityId) {
+        return entityRepository.findById(entityId).get();
+    }
+
+    protected AccountAmount.Builder accountAmount(long accountNum, long amount) {
+        return AccountAmount.newBuilder().setAccountID(AccountID.newBuilder().setAccountNum(accountNum))
+                .setAmount(amount);
     }
 }

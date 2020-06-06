@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -182,11 +181,6 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         entityProperties.getPersist().setNonFeeTransfers(true);
         givenFailedCryptoTransferTransaction();
         assertEverything();
-    }
-
-    private AccountAmount.Builder accountAmount(long accountNum, long amount) {
-        return AccountAmount.newBuilder().setAccountID(AccountID.newBuilder().setAccountNum(accountNum))
-                .setAmount(amount);
     }
 
     private void assertEntities() {
