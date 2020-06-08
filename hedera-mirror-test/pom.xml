@@ -107,6 +107,43 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>test</includeScope>
+                            <outputDirectory>${project.build.testOutputDirectory}/dependencies</outputDirectory>
+                            <stripVersion>true</stripVersion>
+                            <stripClassifier>true</stripClassifier>
+                            <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
     <profiles>
         <profile>
             <id>acceptance-tests</id>

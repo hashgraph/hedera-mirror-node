@@ -1,8 +1,6 @@
 #!/bin/sh
 set -e
 
-echo "Running $testProfile Mirror Node tests"
-
 #./mvnw integration-test --projects hedera-mirror-test/ -P=$testProfile -Dcucumber.filter.tags=$cucumberFlags \
 #    -Dhedera.mirror.test.acceptance.emitBackgroundMessages=$emitBackgroundMessages \
 #    -Dhedera.mirror.test.acceptance.messageTimeout=$messageTimeout \
@@ -21,6 +19,8 @@ nodeAddress=testnet
 nodeId=0.0.3
 cucumberFlags="@BalanceCheck"
 testProfile=acceptance-tests
+
+echo "Running $testProfile Mirror Node tests"
 
 function set_acceptance_configs() {
     testoptions="-Dcucumber.filter.tags=$cucumberFlags -Dhedera.mirror.test.acceptance.emitBackgroundMessages=$emitBackgroundMessages
