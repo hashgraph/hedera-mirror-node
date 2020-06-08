@@ -28,7 +28,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Resource;
@@ -56,10 +55,6 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 @Log4j2
 @SpringBootTest
 public abstract class PerformanceIntegrationTest {
-    @Resource
-    DataSource dataSource;
-
-    Connection connection;
 
     @TempDir
     static Path dataPath;
@@ -78,7 +73,9 @@ public abstract class PerformanceIntegrationTest {
     private RecordParserProperties parserProperties;
 
     @Resource
-    private Collection<CrudRepository<?, ?>> repositories;
+    DataSource dataSource;
+
+    Connection connection;
 
     @Resource
     private ApplicationStatusRepository applicationStatusRepository;
@@ -143,8 +140,7 @@ public abstract class PerformanceIntegrationTest {
             log.error("Unable to retrieve details from database", e);
         }
 
-        assertThat(discoveredTables.size()).isGreaterThan(0);
-
+        // verify all expected tables are present
         Collections.sort(discoveredTables);
         log.info("Encountered tables: {}", discoveredTables);
         assertThat(discoveredTables).isEqualTo(Arrays.asList(tables));

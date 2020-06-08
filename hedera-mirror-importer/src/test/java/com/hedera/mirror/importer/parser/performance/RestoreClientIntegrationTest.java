@@ -36,8 +36,8 @@ import com.hedera.mirror.importer.db.DBProperties;
 
 @Log4j2
 @Tag("largedbperf")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Testcontainers
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
     @Resource
     private DBProperties dbProperties;
