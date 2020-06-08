@@ -20,7 +20,7 @@
         <commons-io.version>2.6</commons-io.version>
         <guava.version>29.0-jre</guava.version>
         <s3mock.version>0.2.5</s3mock.version>
-        <testcontainer.version>1.14.3</testcontainer.version>
+        <testcontainers.version>1.14.3</testcontainers.version>
     </properties>
 
     <dependencyManagement>
@@ -217,14 +217,8 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
-            <version>${testcontainer.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${testcontainer.version}</version>
+            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -245,6 +239,7 @@
                                 <id>default-test</id>
                                 <configuration>
                                     <excludedGroups>performance</excludedGroups>
+                                    <excludedGroups>largedbperf</excludedGroups>
                                 </configuration>
                             </execution>
                         </executions>

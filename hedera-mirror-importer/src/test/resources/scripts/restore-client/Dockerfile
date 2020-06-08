@@ -1,15 +1,15 @@
 # Creates image to be used as an executable container that performs a pg_restore against an already existing database
-# docker build -f hedera-mirror-importer/src/test/resources/data/restore-client/Dockerfile \
-#   ./hedera-mirror-importer/src/test/resources/data/  \
+# docker build -f hedera-mirror-importer/src/test/resources/scripts/restore-client/Dockerfile \
+#   ./hedera-mirror-importer/src/test/resources/scripts/  \
 #   --build-arg dumpfile=<pgdump.gz>  --build-arg jsonkeyfile=bucket-download-key.json
 #   -t gcr.io/mirrornode/hedera-mirror-node/postgres-restore-client:latest
-FROM debian:stretch AS build
+FROM alpine:latest AS build
 
 ARG dumpfile
 ARG jsonkeyfile
 
 # install gcloud tools
-RUN apt-get -qqy update && apt-get install -qqy curl python-dev
+RUN apk --update add curl python3
 RUN curl https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz > /tmp/google-cloud-sdk.tar.gz
 RUN tar -C /usr/local/ -xvf /tmp/google-cloud-sdk.tar.gz
 RUN /usr/local/google-cloud-sdk/install.sh
@@ -20,7 +20,6 @@ RUN /usr/local/google-cloud-sdk/bin/gcloud auth activate-service-account --key-f
 
 # download file from remote bucket and remove key file
 RUN /usr/local/google-cloud-sdk/bin/gsutil cp gs://hedera-mirror-dev/database/$dumpfile /tmp/pgdump.gz
-RUN rm /tmp/config.json
 
 FROM alpine:latest
 COPY --from=build /tmp/pgdump.gz /tmp/pgdump.gz

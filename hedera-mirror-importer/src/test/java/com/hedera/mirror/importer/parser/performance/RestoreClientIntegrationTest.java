@@ -24,35 +24,34 @@ import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
-import org.junit.Rule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.hedera.mirror.importer.db.DBProperties;
 
 @Log4j2
-@Tag("performance")
+@Tag("largedbperf")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Testcontainers
 public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
     @Resource
     private DBProperties dbProperties;
 
-    @Rule
+    @Container
     GenericContainer customContainer;
 
     private final long maxPageSize = 1000;
 
     @BeforeAll
     void warmUp() throws SQLException {
-        customContainer = CustomPostgresContainer.createRestoreContainer(
-                "data/restore-client/Dockerfile",
-                "testnet_100k_pgdump.gz",
+        customContainer = createRestoreContainer("100k",
                 dbProperties);
 
         log.info("Start container {}", customContainer);
@@ -75,30 +74,6 @@ public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
         parse("*.rcd");
     }
 
-    @Timeout(1)
-    @Test
-    public void checkEntitiesTablesIsPopulated() throws Exception {
-        verifyTableSize("t_entities", "entities");
-    }
-
-    @Timeout(3)
-    @Test
-    public void checkBalancesTablesIsPopulated() throws Exception {
-        verifyTableSize("account_balances", "balances");
-    }
-
-    @Timeout(1)
-    @Test
-    public void checkTopicMessageTablesIsPopulated() throws Exception {
-        verifyTableSize("topic_message", "topicmessages");
-    }
-
-    @Timeout(1)
-    @Test
-    public void checkTransactionsTablesIsPopulated() throws Exception {
-        verifyTableSize("t_transactions", "transactions");
-    }
-
     @Timeout(value = 500, unit = TimeUnit.MILLISECONDS)
     @Test
     public void checkAccountsRequest() throws Exception {
@@ -111,7 +86,7 @@ public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
         getBalances(maxPageSize);
     }
 
-    @Disabled("Returning more rows than expected on sql query")
+    //    @Disabled("Returning more rows than expected on sql query")
     @Timeout(2)
     @Test
     public void checkTransactionsRequest() throws Exception {

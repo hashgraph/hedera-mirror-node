@@ -37,8 +37,11 @@ import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCheckStrategy;
 
 import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.db.DBProperties;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
@@ -72,6 +75,21 @@ public abstract class PerformanceIntegrationTest {
     @Resource
     private RecordParserProperties parserProperties;
 
+    private static final String restoreClientImagePrefix = "gcr.io/mirrornode/hedera-mirror-node/postgres-restore" +
+            "-client:";
+
+    public static GenericContainer createRestoreContainer(String dockerImageTag, DBProperties db) {
+        return new GenericContainer(restoreClientImagePrefix + dockerImageTag)
+                .withEnv("DB_NAME", db.getName())
+                .withEnv("DB_USER", db.getUsername())
+                .withEnv("DB_PASS", db.getPassword())
+                .withEnv("DB_PORT", Integer.toString(db.getPort()))
+                .withNetworkMode("host")
+                .withStartupCheckStrategy(
+                        new IndefiniteWaitOneShotStartupCheckStrategy()
+                );
+    }
+
     void parse(String filePath) {
         streamType = parserProperties.getStreamType();
         parserProperties.getMirrorProperties().setDataPath(dataPath);
@@ -86,7 +104,7 @@ public abstract class PerformanceIntegrationTest {
         recordFileParser.parse();
     }
 
-    void checkSeededTablesArePresent() {
+    void checkSeededTablesArePresent() throws SQLException {
         String[] tables = new String[] {"account_balance_sets", "account_balances", "flyway_schema_history",
                 "non_fee_transfers", "t_application_status", "t_contract_result", "t_cryptotransferlists",
                 "t_entities", "t_entity_types", "t_file_data", "t_livehashes", "t_record_files",
@@ -109,6 +127,12 @@ public abstract class PerformanceIntegrationTest {
         Collections.sort(discoveredTables);
         log.info("Encountered tables: {}", discoveredTables);
         assertThat(discoveredTables).isEqualTo(Arrays.asList(tables));
+
+        // verify select tables were populated
+        verifyTableSize("t_entities", "entities");
+        verifyTableSize("account_balances", "balances");
+        verifyTableSize("topic_message", "topicmessages");
+        verifyTableSize("t_transactions", "transactions");
     }
 
     long getTableSize(String table) throws SQLException {

@@ -20,7 +20,8 @@ package com.hedera.mirror.importer.db;
  * ‍
  */
 
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -33,22 +34,22 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("hedera.mirror.importer.db")
 @ConstructorBinding
 public class DBProperties {
-    @NotNull
+    @NotBlank
     private String host = "";
 
-    @NotNull
+    @NotBlank
     private String name = "";
 
-    @NotNull
+    @NotBlank
     private String password = "";
 
-    @NotNull
+    @Min(0)
     private int port = 5432;
 
     private String restPassword = "";
 
     private String restUsername = "";
 
-    @NotNull
+    @NotBlank
     private String username = "";
 }
