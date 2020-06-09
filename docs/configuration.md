@@ -55,7 +55,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.balance.enabled`                      | true                    | Whether to enable balance file parsing                                                         |
 | `hedera.mirror.importer.parser.balance.fileBufferSize`               | 200000                  | The size of the buffer to use when reading in the balance file                                 |
 | `hedera.mirror.importer.parser.balance.keepFiles`                    | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |
-| `hedera.mirror.importer.parser.entityIdCacheSize`                    | 100000                  | Cache size for (shard,realm,num) -> t_entities.id map (parser performance)                     |
 | `hedera.mirror.importer.parser.exclude`                              | []                      | A list of filters that determine which transactions are ignored. Takes precedence over include |
 | `hedera.mirror.importer.parser.exclude.entity`                       | []                      | A list of entity IDs to ignore in shard.realm.num (e.g. 0.0.3) format                          |
 | `hedera.mirror.importer.parser.exclude.transaction`                  | []                      | A list of transaction types to ignore. See `TransactionTypeEnum.java` for possible values      |

@@ -1,6 +1,6 @@
 embedded:
   postgresql:
-    enabled: false
+    enabled: true
     docker-image: postgres:9.6-alpine
   google:
     pubsub:

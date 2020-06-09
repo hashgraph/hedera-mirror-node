@@ -207,7 +207,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     void onTransaction() throws Exception {
         // given
         Transaction expectedTransaction = new Transaction(101L, 0L, Strings.toByteArray("memo"), 0, 0, 1L,
-                1L, 1L, 1L, 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
+                1L, 1L, null, 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
 
         // when
         sqlEntityListener.onTransaction(expectedTransaction);
@@ -231,8 +231,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertEquals(1, entityRepository.count());
         assertExistsAndEquals(entityRepository, entityId.toEntity(), 10L);
     }
-
-    // TODO: add test for onEntityId
 
     // Test that on seeing 'batchSize' number of transactions, 'executeBatch()' is called for all PreparedStatements
     // issued by the connection.
