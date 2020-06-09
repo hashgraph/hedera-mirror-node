@@ -46,8 +46,10 @@ public class DBProperties {
     @Min(0)
     private int port = 5432;
 
+    @NotBlank
     private String restPassword = "";
 
+    @NotBlank
     private String restUsername = "";
 
     @NotBlank

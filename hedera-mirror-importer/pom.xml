@@ -238,8 +238,7 @@
                             <execution>
                                 <id>default-test</id>
                                 <configuration>
-                                    <excludedGroups>performance</excludedGroups>
-                                    <excludedGroups>largedbperf</excludedGroups>
+                                    <excludedGroups>performance, largedbperf</excludedGroups>
                                 </configuration>
                             </execution>
                         </executions>
