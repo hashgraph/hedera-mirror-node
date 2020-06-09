@@ -55,6 +55,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListenerTest {
 
+    static final TopicID TOPIC_ID = TopicID.newBuilder().setTopicNum(200L).build();
     static final String TRANSACTION_MEMO = "transaction memo";
     static final String NODE_ID = "0.0.3";
     static final String TRANSACTION_ID = "0.0.9999-123456789";
@@ -77,8 +78,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
         long entityCount = autoRenewAccount != null ? 4 : 3; // Node, payer, topic & optionally autorenew
-        var entity = entityRepository.findByPrimaryKey(
-                topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(entityCount, entityRepository.count());
         var expectedEntity = createTopicEntity(topicId, null, null, adminKey, submitKey, memo,
@@ -88,16 +88,14 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
     @Test
     void createTopicTestNulls() throws Exception {
-        var topicId = 200L;
         var consensusTimestamp = 2_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
         var transaction = createCreateTopicTransaction(null, null, null, null, null);
-        var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
-                .build(), null, null, 2, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(TOPIC_ID, null, null, 2, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
-        var entity = entityRepository.findByPrimaryKey(0L, 0L, topicId).get();
+        var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(3L, entityRepository.count()); // Node, payer, topic
         assertThat(entity)
@@ -113,16 +111,14 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     void createTopicTestExistingAutoRenewAccount() throws Exception {
         Long autoRenewAccount = 100L;
         Long autoRenewAccountId = createIdForAccountNum(autoRenewAccount);
-        var topicId = 200L;
         var consensusTimestamp = 2_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
         var transaction = createCreateTopicTransaction(null, null, null, autoRenewAccount, null);
-        var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
-                .build(), null, null, 1, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(TOPIC_ID, null, null, 1, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
-        var entity = entityRepository.findByPrimaryKey(0L, 0L, topicId).get();
+        var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(4L, entityRepository.count()); // Node, payer, topic, autorenew
         assertThat(entity)
@@ -193,8 +189,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
         long entityCount = autoRenewAccount != null ? 4 : 3; // Node, payer, topic & optionally autorenew
-        var entity = entityRepository
-                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(entityCount, entityRepository.count());
         assertThat(entity).isEqualToIgnoringGivenFields(expectedEntity, "id");
@@ -203,10 +198,10 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     @Test
     void updateTopicTestError() throws Exception {
         var topicId = TopicID.newBuilder().setTopicNum(1600).build();
-        var adminKey = (Key) new KeyConverter().convert("admin-key", null);
-        var submitKey = (Key) new KeyConverter().convert("submit-key", null);
-        var updatedAdminKey = (Key) new KeyConverter().convert("updated-admin-key", null);
-        var updatedSubmitKey = (Key) new KeyConverter().convert("updated-submit-key", null);
+        var adminKey = keyFromString("admin-key");
+        var submitKey = keyFromString("submit-key");
+        var updatedAdminKey = keyFromString("updated-admin-key");
+        var updatedSubmitKey = keyFromString("updated-submit-key");
         var consensusTimestamp = 6_000_000L;
         var responseCode = ResponseCodeEnum.INVALID_TOPIC_ID;
 
@@ -219,9 +214,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
-
-        var entity = entityRepository
-                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(3L, entityRepository.count()); // Node, payer, topic
         assertThat(entity)
@@ -230,27 +223,24 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
     @Test
     void updateTopicTestTopicNotFound() throws Exception {
-        var topicId = TopicID.newBuilder().setTopicNum(1800).build();
-        var adminKey = (Key) new KeyConverter().convert("updated-admin-key", null);
-        var submitKey = (Key) new KeyConverter().convert("updated-submit-key", null);
+        var adminKey =  keyFromString("updated-admin-key");
+        var submitKey = keyFromString("updated-submit-key");
         var consensusTimestamp = 6_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
         var memo = "updated-memo";
         Long autoRenewAccount = 1L;
         // Topic does not get stored in the repository beforehand.
 
-        var transaction = createUpdateTopicTransaction(topicId, 11L, 0, adminKey, submitKey, memo, autoRenewAccount,
+        var transaction = createUpdateTopicTransaction(TOPIC_ID, 11L, 0, adminKey, submitKey, memo, autoRenewAccount,
                 30L);
-        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
+        var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
-
-        var entity = entityRepository.findByPrimaryKey(
-                topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(4L, entityRepository.count()); // Node, payer, topic, autorenew
 
-        var expectedTopic = createTopicEntity(topicId, 11L, 0, adminKey, submitKey, memo,
+        var expectedTopic = createTopicEntity(TOPIC_ID, 11L, 0, adminKey, submitKey, memo,
                 assertEntityExistsAndLookupId(autoRenewAccount), 30L);
         assertThat(entity).isEqualToIgnoringGivenFields(expectedTopic, "id");
     }
@@ -320,24 +310,22 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
     @Test
     void deleteTopicTest() throws Exception {
-        var topicId = TopicID.newBuilder().setTopicNum(1700L).build();
         var consensusTimestamp = 7_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
 
         // Store topic to be deleted.
-        var topic = createTopicEntity(topicId, null, null, null, null, null, null, null);
+        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, null, null, null);
         entityRepository.save(topic);
 
         // Setup expected data
         topic.setDeleted(true);
 
-        var transaction = createDeleteTopicTransaction(topicId);
-        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
+        var transaction = createDeleteTopicTransaction(TOPIC_ID);
+        var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
-        var entity = entityRepository
-                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(3L, entityRepository.count()); // Node, payer, topic
         assertThat(entity)
@@ -346,22 +334,20 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
     @Test
     void deleteTopicTestTopicNotFound() throws Exception {
-        var topicId = TopicID.newBuilder().setTopicNum(2000L).build();
         var consensusTimestamp = 10_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
 
         // Setup expected data
-        var topic = createTopicEntity(topicId, null, null, null, null, null, null, null);
+        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, null, null, null);
         topic.setDeleted(true);
         // Topic not saved to the repository.
 
-        var transaction = createDeleteTopicTransaction(topicId);
-        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
+        var transaction = createDeleteTopicTransaction(TOPIC_ID);
+        var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
-        var entity = entityRepository
-                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(3L, entityRepository.count()); // Node, payer, topic
         assertThat(entity)
@@ -370,22 +356,19 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
     @Test
     void deleteTopicTestError() throws Exception {
-        var topicId = TopicID.newBuilder().setTopicNum(1900L).build();
         var consensusTimestamp = 9_000_000L;
         var responseCode = ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 
         // Store topic to be deleted.
-        var topic = createTopicEntity(topicId, 10L, 20, null, null, null, null, null);
+        var topic = createTopicEntity(TOPIC_ID, 10L, 20, null, null, null, null, null);
         entityRepository.save(topic);
 
-        var transaction = createDeleteTopicTransaction(topicId);
-        var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
+        var transaction = createDeleteTopicTransaction(TOPIC_ID);
+        var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
-        var entity = entityRepository
-                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
-
+        var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(3L, entityRepository.count()); // Node, payer, topic
         assertThat(entity)
@@ -413,8 +396,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
-        var entity = entityRepository
-                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(3L, entityRepository.count()); // Node, payer, topic
         assertThat(entity)
@@ -426,26 +408,24 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     @Test
     void submitMessageTestTopicNotFound() throws Exception {
         var responseCode = ResponseCodeEnum.SUCCESS;
-        var topicId = (TopicID) new TopicIdConverter().convert("0.0.10000", null);
         var consensusTimestamp = 10_000_000L;
         var message = "message";
         var sequenceNumber = 10_000L;
         var runningHash = "running-hash";
         var runningHashVersion = 2;
 
-        var topic = createTopicEntity(topicId, null, null, null, null, null, null, null);
+        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, null, null, null);
         // Topic NOT saved in the repository.
 
-        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
+        var topicMessage = createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
                 runningHashVersion);
-        var transaction = createSubmitMessageTransaction(topicId, message);
-        var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
+        var transaction = createSubmitMessageTransaction(TOPIC_ID, message);
+        var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
-        var entity = entityRepository
-                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(3L, entityRepository.count()); // Node, payer, topic
         assertEquals(1L, topicMessageRepository.count());
@@ -482,24 +462,22 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     @Test
     void submitMessageTestTopicError() throws Exception {
         var responseCode = ResponseCodeEnum.INVALID_TOPIC_ID;
-        var topicId = (TopicID) new TopicIdConverter().convert("0.0.11000", null);
         var consensusTimestamp = 11_000_000L;
         var message = "message";
         var sequenceNumber = 11_000L;
         var runningHash = "running-hash";
         var runningHashVersion = 2;
 
-        var topic = createTopicEntity(topicId, 10L, 20, null, null, null, null, null);
+        var topic = createTopicEntity(TOPIC_ID, 10L, 20, null, null, null, null, null);
         entityRepository.save(topic);
 
-        var transaction = createSubmitMessageTransaction(topicId, message);
-        var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
-                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
+        var transaction = createSubmitMessageTransaction(TOPIC_ID, message);
+        var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash.getBytes(),
+                runningHashVersion, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
-        var entity = entityRepository
-                .findByPrimaryKey(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
+        var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(3L, entityRepository.count()); // Node, payer, topic
         assertThat(entity)
@@ -507,10 +485,8 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         assertEquals(0L, topicMessageRepository.count());
     }
 
-    private com.hederahashgraph.api.proto.java.Transaction createCreateTopicTransaction(Key adminKey, Key submitKey,
-                                                                                        String memo,
-                                                                                        Long autoRenewAccount,
-                                                                                        Long autoRenewPeriod) {
+    private com.hederahashgraph.api.proto.java.Transaction createCreateTopicTransaction(
+            Key adminKey, Key submitKey, String memo, Long autoRenewAccount, Long autoRenewPeriod) {
         var innerBody = ConsensusCreateTopicTransactionBody.newBuilder();
         if (autoRenewAccount != null) {
             innerBody.setAutoRenewAccount(AccountID.newBuilder().setAccountNum(autoRenewAccount).build());
@@ -565,15 +541,6 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 .setMemo(TRANSACTION_MEMO);
     }
 
-    private Entities createEntity(long num, EntityTypeEnum entityType) {
-        Entities entities = new Entities();
-        entities.setEntityShard(0L);
-        entities.setEntityRealm(0L);
-        entities.setEntityNum(num);
-        entities.setEntityTypeId(entityType.getId());
-        return entityRepository.save(entities);
-    }
-
     private Entities createTopicEntity(TopicID topicId, Long expirationTimeSeconds, Integer expirationTimeNanos,
                                        Key adminKey, Key submitKey, String memo, Long autoRenewAccountEntityId,
                                        Long autoRenewPeriod) {
@@ -614,13 +581,9 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         return topicMessage;
     }
 
-    private com.hederahashgraph.api.proto.java.Transaction createUpdateTopicTransaction(TopicID topicId,
-                                                                                        Long expirationTimeSeconds,
-                                                                                        Integer expirationTimeNanos,
-                                                                                        Key adminKey, Key submitKey,
-                                                                                        String memo,
-                                                                                        Long autoRenewAccount,
-                                                                                        Long autoRenewPeriod) {
+    private com.hederahashgraph.api.proto.java.Transaction createUpdateTopicTransaction(
+            TopicID topicId, Long expirationTimeSeconds, Integer expirationTimeNanos, Key adminKey, Key submitKey,
+            String memo, Long autoRenewAccount, Long autoRenewPeriod) {
         var innerBody = ConsensusUpdateTopicTransactionBody.newBuilder().setTopicID(topicId);
 
         if (expirationTimeSeconds != null && expirationTimeNanos != null) {
@@ -673,5 +636,10 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
             assertThat(transaction)
                     .returns(entityId, from(Transaction::getEntityId));
         }
+    }
+
+    private Entities getTopicEntity(TopicID topicId) {
+        return entityRepository.findByPrimaryKey(
+                topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum()).get();
     }
 }
