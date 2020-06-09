@@ -37,7 +37,7 @@ public class EntityIdEncoder {
     private static final long REALM_MASK = (1L << REALM_BITS) - 1;
     private static final long NUM_MASK = (1L << NUM_BITS) - 1;
 
-    // TODO: payer, node, cud entity id limit
+    // TODO: verify validity of payer, node, cud entity id
     public static long encode(long shardNum, long realmNum, long entityNum) {
         if (shardNum > SHARD_MASK || realmNum > REALM_MASK || entityNum > NUM_MASK) {
             throw new IllegalArgumentException("entity is outside range of encoding constraints: "

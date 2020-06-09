@@ -348,7 +348,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 .orElseGet(entityId::toEntity);
         List<EntityId> linkedEntityIds = new ArrayList<>();
         transactionHandler.updateEntity(entity, recordItem, linkedEntityIds);
-        // TODO: check for not null proxy / auto renew and insert them.
         for (var id : linkedEntityIds) {
             entityListener.onEntityId(id);
         }
