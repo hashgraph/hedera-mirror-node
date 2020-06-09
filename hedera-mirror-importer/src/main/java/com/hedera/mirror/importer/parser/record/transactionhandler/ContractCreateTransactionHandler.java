@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import java.util.List;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -35,7 +34,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class ContractCreateTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getRecord().getReceipt().getContractID());
     }
 
@@ -45,12 +44,17 @@ public class ContractCreateTransactionHandler implements TransactionHandler {
     }
 
     @Override
+    public EntityId getProxyAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getContractCreateInstance().getProxyAccountID());
+    }
+
+    @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         transaction.setInitialBalance(recordItem.getTransactionBody().getContractCreateInstance().getInitialBalance());
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
+    public void updateEntity(Entities entity, RecordItem recordItem) {
         ContractCreateTransactionBody txMessage = recordItem.getTransactionBody().getContractCreateInstance();
         if (txMessage.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
@@ -61,13 +65,6 @@ public class ContractCreateTransactionHandler implements TransactionHandler {
         }
         if (txMessage.hasAdminKey()) {
             entity.setKey(txMessage.getAdminKey().toByteArray());
-        }
-        // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
-        // so no need to persist it to repo.
-        EntityId proxyAccount = EntityId.of(txMessage.getProxyAccountID());
-        if (proxyAccount != null) {
-            linkedEntityIds.add(proxyAccount);
-            entity.setProxyAccount(proxyAccount);
         }
     }
 }

@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
-import java.util.List;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -35,8 +34,13 @@ import com.hedera.mirror.importer.util.Utility;
 public class ContractUpdateTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getContractUpdateInstance().getContractID());
+    }
+
+    @Override
+    public EntityId getProxyAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getContractUpdateInstance().getProxyAccountID());
     }
 
     @Override
@@ -45,7 +49,7 @@ public class ContractUpdateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
+    public void updateEntity(Entities entity, RecordItem recordItem) {
         ContractUpdateTransactionBody txMessage = recordItem.getTransactionBody().getContractUpdateInstance();
         if (txMessage.hasExpirationTime()) {
             entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
@@ -59,11 +63,6 @@ public class ContractUpdateTransactionHandler implements TransactionHandler {
         // Can't clear memo on contracts. 0 length indicates no change
         if (txMessage.getMemo() != null && txMessage.getMemo().length() > 0) {
             entity.setMemo(txMessage.getMemo());
-        }
-        EntityId proxyAccount = EntityId.of(txMessage.getProxyAccountID());
-        if (proxyAccount != null) {
-            linkedEntityIds.add(proxyAccount);
-            entity.setProxyAccount(proxyAccount);
         }
     }
 }

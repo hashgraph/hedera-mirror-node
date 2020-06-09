@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class CryptoTransferTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return null;
     }
 }

@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.List;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -33,7 +32,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class CryptoDeleteTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getCryptoDelete().getDeleteAccountID());
     }
 
@@ -43,7 +42,7 @@ public class CryptoDeleteTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
+    public void updateEntity(Entities entity, RecordItem recordItem) {
         entity.setDeleted(true);
     }
 }

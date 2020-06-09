@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
-import java.util.List;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -35,7 +34,7 @@ import com.hedera.mirror.importer.util.Utility;
 public class FileCreateTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getRecord().getReceipt().getFileID());
     }
 
@@ -45,7 +44,7 @@ public class FileCreateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
+    public void updateEntity(Entities entity, RecordItem recordItem) {
         FileCreateTransactionBody txMessage = recordItem.getTransactionBody().getFileCreate();
         if (txMessage.hasExpirationTime()) {
             entity.setExpiryTimeNs(Utility.timestampInNanosMax(txMessage.getExpirationTime()));

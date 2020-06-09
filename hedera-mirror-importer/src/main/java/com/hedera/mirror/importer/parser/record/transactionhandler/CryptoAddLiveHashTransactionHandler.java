@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class CryptoAddLiveHashTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getCryptoAddLiveHash().getLiveHash().getAccountId());
     }
 }

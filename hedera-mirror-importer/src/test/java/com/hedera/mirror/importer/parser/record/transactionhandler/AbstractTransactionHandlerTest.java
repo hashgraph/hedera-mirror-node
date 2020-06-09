@@ -72,6 +72,6 @@ public abstract class AbstractTransactionHandlerTest {
         RecordItem recordItem = new RecordItem(
                 Transaction.newBuilder().setBodyBytes(transactionBody.toByteString()).build(),
                 transactionRecord);
-        assertThat(transactionHandler.getEntityId(recordItem)).isEqualTo(expectedEntity);
+        assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedEntity);
     }
 }

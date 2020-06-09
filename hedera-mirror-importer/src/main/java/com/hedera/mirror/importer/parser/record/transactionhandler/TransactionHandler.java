@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.List;
-
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
@@ -38,11 +36,19 @@ public interface TransactionHandler {
     /**
      * @return main entity associated with this transaction
      */
-    EntityId getEntityId(RecordItem recordItem);
+    EntityId getEntity(RecordItem recordItem);
+
+    default EntityId getProxyAccount(RecordItem recordItem) {
+        return null;
+    }
+
+    default EntityId getAutoRenewAccount(RecordItem recordItem) {
+        return null;
+    }
 
     /**
      * Override to return true if an implementation wants to update the entity returned by
-     * {@link #getEntityId(RecordItem)}.
+     * {@link #getEntity(RecordItem)}.
      */
     default boolean updatesEntity() {
         return false;
@@ -50,12 +56,11 @@ public interface TransactionHandler {
 
     /**
      * Override to update fields of the entity.
-     * If {@link #updatesEntity()} returns true, and {@link #getEntityId(RecordItem)} returns a non-null id, and the
+     * If {@link #updatesEntity()} returns true, and {@link #getEntity(RecordItem)} returns a non-null id, and the
      * transaction is successful, then this function will be called.
      * @param entity latest state of entity (fetched from the repo)
-     * @param linkedEntityIds entities linked to {@code entity} as proxy account, auto renew account, etc
      */
-    default void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
+    default void updateEntity(Entities entity, RecordItem recordItem) {
     }
 
     /**

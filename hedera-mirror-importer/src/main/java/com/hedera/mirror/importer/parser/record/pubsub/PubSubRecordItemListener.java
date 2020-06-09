@@ -62,7 +62,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
         TransactionHandler transactionHandler = transactionHandlerFactory.create(body);
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
         long consensusTimestamp = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
-        EntityId entity = transactionHandler.getEntityId(recordItem);
+        EntityId entity = transactionHandler.getEntity(recordItem);
         PubSubMessage pubSubMessage = buildPubSubMessage(consensusTimestamp, entity, recordItem);
         try {
             sendPubSubMessage(pubSubMessage);

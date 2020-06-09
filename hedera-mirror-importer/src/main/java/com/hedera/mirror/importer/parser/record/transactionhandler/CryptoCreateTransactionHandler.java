@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import java.util.List;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -35,8 +34,13 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class CryptoCreateTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+    }
+
+    @Override
+    public EntityId getProxyAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getCryptoCreateAccount().getProxyAccountID());
     }
 
     @Override
@@ -50,18 +54,13 @@ public class CryptoCreateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
+    public void updateEntity(Entities entity, RecordItem recordItem) {
         CryptoCreateTransactionBody txMessage = recordItem.getTransactionBody().getCryptoCreateAccount();
         if (txMessage.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
         }
         if (txMessage.hasKey()) {
             entity.setKey(txMessage.getKey().toByteArray());
-        }
-        EntityId proxyAccount = EntityId.of(txMessage.getProxyAccountID());
-        if (proxyAccount != null) {
-            linkedEntityIds.add(proxyAccount);
-            entity.setProxyAccount(proxyAccount);
         }
     }
 }

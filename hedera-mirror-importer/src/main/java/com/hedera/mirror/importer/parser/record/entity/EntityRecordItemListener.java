@@ -32,8 +32,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -97,7 +95,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionHandler transactionHandler = transactionHandlerFactory.create(body);
 
         long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
-        EntityId entityId = transactionHandler.getEntityId(recordItem);
+        EntityId entityId = transactionHandler.getEntity(recordItem);
         TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(recordItem.getTransactionType());
         log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusNs, entityId);
 
@@ -346,10 +344,18 @@ public class EntityRecordItemListener implements RecordItemListener {
         // TODO: remove lookup and batch this update with rest of the db operations. Options: upsert.
         Entities entity = entityRepository.findById(entityId.getId())
                 .orElseGet(entityId::toEntity);
-        List<EntityId> linkedEntityIds = new ArrayList<>();
-        transactionHandler.updateEntity(entity, recordItem, linkedEntityIds);
-        for (var id : linkedEntityIds) {
-            entityListener.onEntityId(id);
+        transactionHandler.updateEntity(entity, recordItem);
+        EntityId autoRenewAccount = transactionHandler.getAutoRenewAccount(recordItem);
+        if (autoRenewAccount != null) {
+            entityListener.onEntityId(autoRenewAccount);
+            entity.setAutoRenewAccount(autoRenewAccount);
+        }
+        // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
+        // so no need to persist it to repo.
+        EntityId proxyAccount = transactionHandler.getProxyAccount(recordItem);
+        if (proxyAccount != null) {
+            entityListener.onEntityId(proxyAccount);
+            entity.setProxyAccount(proxyAccount);
         }
         entityRepository.save(entity);
     }

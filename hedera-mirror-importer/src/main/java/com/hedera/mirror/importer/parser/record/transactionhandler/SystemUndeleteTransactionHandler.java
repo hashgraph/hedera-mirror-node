@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
-import java.util.List;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -34,7 +33,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class SystemUndeleteTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         SystemUndeleteTransactionBody systemUndelete = recordItem.getTransactionBody().getSystemUndelete();
         if (systemUndelete.hasContractID()) {
             return EntityId.of(systemUndelete.getContractID());
@@ -50,7 +49,7 @@ public class SystemUndeleteTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
+    public void updateEntity(Entities entity, RecordItem recordItem) {
         entity.setDeleted(false);
     }
 }

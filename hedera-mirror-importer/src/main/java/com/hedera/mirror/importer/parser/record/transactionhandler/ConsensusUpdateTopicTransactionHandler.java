@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.Timestamp;
-import java.util.List;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -35,8 +34,13 @@ import com.hedera.mirror.importer.util.Utility;
 public class ConsensusUpdateTopicTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
+    }
+
+    @Override
+    public EntityId getAutoRenewAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getAutoRenewAccount());
     }
 
     @Override
@@ -45,17 +49,11 @@ public class ConsensusUpdateTopicTransactionHandler implements TransactionHandle
     }
 
     @Override
-    public void updateEntity(Entities entity, RecordItem recordItem, List<EntityId> linkedEntityIds) {
+    public void updateEntity(Entities entity, RecordItem recordItem) {
         var updateTopic = recordItem.getTransactionBody().getConsensusUpdateTopic();
         if (updateTopic.hasExpirationTime()) {
             Timestamp expirationTime = updateTopic.getExpirationTime();
             entity.setExpiryTimeNs(Utility.timestampInNanosMax(expirationTime));
-        }
-        // Looks up (in the big cache) or creates new id.
-        EntityId autoRenewAccount = EntityId.of(updateTopic.getAutoRenewAccount());
-        if (autoRenewAccount != null) {
-            linkedEntityIds.add(autoRenewAccount);
-            entity.setAutoRenewAccount(autoRenewAccount);
         }
         if (updateTopic.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(updateTopic.getAutoRenewPeriod().getSeconds());
