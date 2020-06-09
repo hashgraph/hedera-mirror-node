@@ -154,6 +154,16 @@ commands:
           paths:
             - artifacts
 
+  install_openjdk_11:
+    description: "Install OpenJDK 11"
+    steps:
+      - run:
+          name: Install OpenJDK 11
+          command: |
+            sudo add-apt-repository ppa:openjdk-r/ppa \
+            && sudo apt-get update -q \
+            && sudo apt install -y openjdk-11-jdk
+
 workflows:
   main:
     jobs:
@@ -352,12 +362,7 @@ jobs:
       GOOGLE_APPLICATION_CREDENTIALS: json_key_file
     steps:
       - checkout
-      - run:
-          name: Install OpenJDK 11
-          command: |
-            sudo add-apt-repository ppa:openjdk-r/ppa \
-            && sudo apt-get update -q \
-            && sudo apt install -y openjdk-11-jdk
+      - install_openjdk_11
       - run:
           name: Setup docker-credential-gcr
           command: |
