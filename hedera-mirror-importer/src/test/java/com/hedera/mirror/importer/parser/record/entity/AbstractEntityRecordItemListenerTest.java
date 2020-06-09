@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -267,7 +268,12 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
             accountAmount.setAmount(transferAmounts[i]);
             transferList.addAccountAmounts(accountAmount);
         }
-    customBuilder.accept(recordBuilder);
+        if (transactionBody.hasCryptoTransfer() && status == ResponseCodeEnum.SUCCESS.getNumber()) {
+            for (var aa : transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList()) {
+                transferList.addAccountAmounts(aa);
+            }
+        }
+        customBuilder.accept(recordBuilder);
         return recordBuilder.build();
     }
 

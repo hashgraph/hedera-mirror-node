@@ -518,8 +518,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(3, entityRepository.count())
-                , () -> assertEquals(3, cryptoTransferRepository.count())
+                , () -> assertEquals(5, entityRepository.count())
+                , () -> assertEquals(6, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
                 , () -> assertEquals(0, fileDataRepository.count())
