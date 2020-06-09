@@ -16,7 +16,7 @@ alter table if exists t_entities
     add column if not exists encoded_id entity_id null,
     add column if not exists proxy_account_id entity_id null;
 
--- Compute encoded ids once
+-- Compute encoded ids once. Simple udpate is okay since entities table is very small.
 update t_entities e
 set encoded_id = encodeEntityId(entity_shard, entity_realm, entity_num);
 
@@ -40,48 +40,46 @@ where e.fk_prox_acc_id = e2.id
 -- t_transactions table
 -------------------
 
-alter table if exists t_transactions
-    add column if not exists node_account_id entity_id null,
-    add column if not exists payer_account_id entity_id null,
-    add column if not exists entity_id entity_id null;
+create table if not exists t_transactions_new (
+  consensus_ns bigint not null,
+  type smallint not null,
+  result smallint not null,
+  payer_account_id entity_id not null ,
+  valid_start_ns bigint not null,
+  valid_duration_seconds bigint,
+  node_account_id entity_id not null,
+  entity_id entity_id null,
+  initial_balance bigint default 0,
+  max_fee hbar_tinybars,
+  charged_tx_fee bigint,
+  memo bytea,
+  transaction_hash bytea,
+  transaction_bytes bytea
+);
 
 -- Migrate data
 
-update t_transactions t
-set payer_account_id = payer.encoded_id,
-    node_account_id = node.encoded_id
-from t_transactions t2
-    join t_entities payer on t2.fk_payer_acc_id = payer.id
-    join t_entities node on t2.fk_node_acc_id = node.id
-where t.consensus_ns = t2.consensus_ns;
+insert into t_transactions_new
+    (consensus_ns, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id,
+     initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes)
+select
+    consensus_ns, type, result, payer.encoded_id, valid_start_ns, valid_duration_seconds, node.encoded_id,
+     e.encoded_id, initial_balance, max_fee, charged_tx_fee, t_transactions.memo, transaction_hash, transaction_bytes
+from t_transactions
+join t_entities node on t_transactions.fk_node_acc_id = node.id
+join t_entities payer on t_transactions.fk_payer_acc_id = payer.id
+left join t_entities e on t_transactions.fk_cud_entity_id = e.id;
 
-update t_transactions
-set entity_id = e.encoded_id
-from t_entities e
-where t_transactions.fk_cud_entity_id = e.id
-  and t_transactions.fk_cud_entity_id is not null;
+-- Move table and recreate indexes
 
--- Drop indexes and columns
-
-drop index if exists idx__t_transactions__transaction_id;
-drop index if exists idx_t_transactions_node_account;
-drop index if exists idx_t_transactions_payer_id;
+drop index if exists idx_t_transactions_node_account; -- drop explicitly for history since it is not re-created
+drop table if exists t_transactions;
+alter table if exists t_transactions_new rename to t_transactions;
 
 alter table if exists t_transactions
-    drop column if exists fk_node_acc_id,
-    drop column if exists fk_payer_acc_id,
-    drop column if exists fk_cud_entity_id;
-
--- Add column constraints and create indexes
-
-alter table if exists t_transactions
-    alter column node_account_id set not null,
-    alter column payer_account_id set not null;
-
+    add primary key (consensus_ns);
 create index if not exists t_transactions__transaction_id
     on t_transactions (valid_start_ns, payer_account_id);
-create index if not exists t_transactions__node_account_id
-    on t_transactions (node_account_id);
 create index if not exists t_transactions__payer_account_id
     on t_transactions (payer_account_id);
 
