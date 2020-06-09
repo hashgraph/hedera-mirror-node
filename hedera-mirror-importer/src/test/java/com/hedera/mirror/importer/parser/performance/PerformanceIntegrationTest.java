@@ -78,6 +78,9 @@ public abstract class PerformanceIntegrationTest {
     Connection connection;
 
     @Resource
+    private DBProperties dbProperties;
+
+    @Resource
     private ApplicationStatusRepository applicationStatusRepository;
 
     @Resource
@@ -95,12 +98,13 @@ public abstract class PerformanceIntegrationTest {
     private static final String restoreClientImagePrefix = "gcr.io/mirrornode/hedera-mirror-node/postgres-restore" +
             "-client:";
 
-    public static GenericContainer createRestoreContainer(String dockerImageTag, DBProperties db) {
+    protected GenericContainer createRestoreContainer(String dockerImageTag) {
+        log.debug("Creating restore container to connect to {}", dbProperties);
         return new GenericContainer(restoreClientImagePrefix + dockerImageTag)
-                .withEnv("DB_NAME", db.getName())
-                .withEnv("DB_USER", db.getUsername())
-                .withEnv("DB_PASS", db.getPassword())
-                .withEnv("DB_PORT", Integer.toString(db.getPort()))
+                .withEnv("DB_NAME", dbProperties.getName())
+                .withEnv("DB_USER", dbProperties.getUsername())
+                .withEnv("DB_PASS", dbProperties.getPassword())
+                .withEnv("DB_PORT", Integer.toString(dbProperties.getPort()))
                 .withNetworkMode("host")
                 .withStartupCheckStrategy(
                         new IndefiniteWaitOneShotStartupCheckStrategy()

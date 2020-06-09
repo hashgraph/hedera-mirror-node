@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.performance;
  */
 
 import java.sql.SQLException;
-import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -32,27 +31,21 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.hedera.mirror.importer.db.DBProperties;
-
 @Log4j2
 @Tag("largedbperf")
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
-    @Resource
-    private DBProperties dbProperties;
 
     @Container
     GenericContainer customContainer;
 
     @BeforeAll
     void warmUp() throws SQLException {
-        customContainer = createRestoreContainer("100k",
-                dbProperties);
+        customContainer = createRestoreContainer("100k");
 
         log.info("Start container {}", customContainer);
         customContainer.start();
-        log.info("Database restore complete to {}", dbProperties);
 
         connection = dataSource.getConnection();
         checkSeededTablesArePresent();
