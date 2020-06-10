@@ -24,7 +24,6 @@ import java.util.Optional;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
@@ -34,7 +33,6 @@ import com.hedera.mirror.importer.domain.Entities;
 public interface EntityRepository extends PagingAndSortingRepository<Entities, Long> {
 
     @Cacheable(key = "{#p0}", sync = true)
-    @Query("from Entities where id = ?1")
     Optional<Entities> findById(long id);
 
     @CachePut(key = "{#p0.entityShard, #p0.entityRealm, #p0.entityNum}")
