@@ -4,7 +4,7 @@ create function encodeEntityId(shard bigint, realm bigint, num bigint)
 returns entity_id as $$
 begin
     -- Encoding: 16 bits for shard, followed by 16 bits for realm, followed by 32 bits for num
-    return (num & 4294967295) | ((realm & 65535) << 32) | ((shard & 65535) << 48);
+    return (num & 4294967295) | ((realm & 65535) << 32) | ((shard & 32767) << 48);
 end
 $$ language plpgsql;
 

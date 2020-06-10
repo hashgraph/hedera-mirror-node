@@ -63,7 +63,7 @@ import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
-import com.hedera.mirror.importer.util.EntityIdEncoder;
+import com.hedera.mirror.importer.util.EntityIdEndec;
 import com.hedera.mirror.importer.util.Utility;
 
 public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
@@ -285,7 +285,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     protected Optional<Entities> getEntity(long shard, long realm, long num) {
-        return entityRepository.findById(EntityIdEncoder.encode(shard, realm, num));
+        return entityRepository.findById(EntityIdEndec.encode(shard, realm, num));
     }
 
     protected AccountAmount.Builder accountAmount(long accountNum, long amount) {
