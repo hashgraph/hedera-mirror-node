@@ -80,23 +80,16 @@ describe('Utils nsToSecNs tests', () => {
 });
 
 describe('Utils createTransactionId tests', () => {
-  var validStartNs = '9223372036854775837';
-  var shard = 1;
-  var realm = 2;
-  var num = 995;
   test('Verify createTransactionId returns correct result for valid inputs', () => {
-    var val = utils.createTransactionId(shard, realm, num, validStartNs);
-    expect(val).toBe(`${shard}.${realm}.${num}-` + '9223372036-854775837');
+    expect(utils.createTransactionId('1.2.995', '9223372036854775837')).toEqual('1.2.995-9223372036-854775837');
   });
 
   test('Verify nsToSecNs returns correct result for 0 inputs', () => {
-    var val = utils.createTransactionId(0, 0, 0, 0);
-    expect(val).toBe('0.0.0-0-000000000');
+    expect(utils.createTransactionId('0.0.0', 0)).toEqual('0.0.0-0-000000000');
   });
 
   test('Verify nsToSecNs returns correct result for null inputs', () => {
-    var val = utils.createTransactionId(0, 0, 0, null);
-    expect(val).toBe('0.0.0-0-000000000');
+    expect(utils.createTransactionId('0.0.0', null)).toEqual('0.0.0-0-000000000');
   });
 });
 

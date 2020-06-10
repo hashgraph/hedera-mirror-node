@@ -109,7 +109,7 @@ const addAccount = async function (account) {
       auto_renew_period, key)
     VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10);`,
     [
-      getEntityId(account.entity_shard, account.entity_realm, account.entity_num),
+      EntityId.of(account.entity_shard, account.entity_realm, account.entity_num).getEncodedId(),
       account.entity_type,
       account.entity_shard,
       account.entity_realm,
@@ -149,8 +149,8 @@ const addTransaction = async function (transaction) {
 
   transaction.consensus_timestamp = math.bignumber(transaction.consensus_timestamp);
 
-  let payerAccount = EntityId.of(transaction.payerAccountId);
-  let nodeAccount = EntityId.of(transaction.nodeAccountId);
+  let payerAccount = EntityId.fromString(transaction.payerAccountId);
+  let nodeAccount = EntityId.fromString(transaction.nodeAccountId);
   await sqlConnection.query(
     `INSERT INTO t_transactions (
       consensus_ns, valid_start_ns, payer_account_id, node_account_id,
@@ -159,8 +159,8 @@ const addTransaction = async function (transaction) {
     [
       transaction.consensus_timestamp.toString(),
       transaction.consensus_timestamp.minus(1).toString(),
-      getEntityId(parseInt(payerAccount.shard), parseInt(payerAccount.realm), parseInt(payerAccount.num)),
-      getEntityId(parseInt(nodeAccount.shard), parseInt(nodeAccount.realm), parseInt(nodeAccount.num)),
+      payerAccount.getEncodedId(),
+      nodeAccount.getEncodedId(),
       transaction.result,
       transaction.type,
       transaction.valid_duration_seconds,
@@ -176,7 +176,7 @@ const addTransaction = async function (transaction) {
 const insertTransfers = async function (tableName, consensusTimestamp, transfers) {
   for (let i = 0; i < transfers.length; ++i) {
     let transfer = transfers[i];
-    let account = EntityId.of(transfer.account);
+    let account = EntityId.fromString(transfer.account);
     await sqlConnection.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, realm_num, entity_num) VALUES (\$1, \$2, \$3, \$4);`,
       [consensusTimestamp.toString(), transfer.amount, account.realm, account.num]
@@ -224,13 +224,6 @@ const addTopicMessage = async function (message) {
       message.running_hash_version,
     ]
   );
-};
-
-// JS doesn't have support for bitwise operations on more than 32bits. For testing, this formulae is good enough.
-// This will differ from 'real encoding' in importer only if entity_shard > 32767.
-// Only for testing purposes.
-const getEntityId = function (shard, realm, num) {
-  return num + Math.pow(2, 32) * realm + Math.pow(2, 48) * shard;
 };
 
 module.exports = {

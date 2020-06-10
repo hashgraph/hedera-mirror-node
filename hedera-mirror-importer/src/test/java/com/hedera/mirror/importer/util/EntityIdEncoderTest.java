@@ -17,8 +17,7 @@ class EntityIdEncoderTest {
             "0, 0, 4294967295, 4294967295",
             "10, 10, 10, 2814792716779530",
             "32767, 65535, 4294967295, 9223372036854775807", // max +ve for shard, max for realm, max for num = max +ve long
-            "32768, 0, 0, -9223372036854775808", // max -ve long
-            "65535, 65535, 4294967295, -1"
+            "32767, 0, 0, 9223090561878065152" // max -ve long
     })
     void testEntityEncoding(long shard, long realm, long num, long encodedId) {
         assertThat(EntityIdEncoder.encode(shard, realm, num)).isEqualTo(encodedId);

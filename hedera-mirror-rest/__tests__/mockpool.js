@@ -19,6 +19,7 @@
  */
 'use strict';
 
+const EntityId = require('../entityId');
 const testutils = require('./testutils.js');
 const config = require('../config.js');
 const math = require('mathjs');
@@ -176,16 +177,14 @@ class Pool {
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
       let row = {};
-      row.entity_realm = 0;
-      row.entity_num = i;
+      row.payer_account_id = EntityId.of(0, 0, i).getEncodedId();
       row.memo = Buffer.from(`Test memo ${i}`);
       row.consensus_ns = this.toNs(this.timeNow - i);
       row.valid_start_ns = this.toNs(this.timeNow - i - 1);
       row.result = 'SUCCESS';
       row.type = 14;
       row.name = 'CRYPTOTRANSFER';
-      row.node_realm = 0;
-      row.node_num = i % this.NUM_NODES;
+      row.node_account_id = EntityId.of(0, 0, i % this.NUM_NODES).getEncodedId();
       row.account_realm = 0;
       row.account_num =
         Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low));

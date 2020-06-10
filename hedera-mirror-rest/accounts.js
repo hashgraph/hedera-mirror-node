@@ -41,6 +41,8 @@ const processRow = function (row) {
   accRecord.auto_renew_period = row.auto_renew_period === null ? null : Number(row.auto_renew_period);
   accRecord.key = row.key === null ? null : utils.encodeKey(row.key);
   accRecord.deleted = row.deleted;
+  logger.info(typeof row.id);
+  logger.info(row.id);
 
   return accRecord;
 };

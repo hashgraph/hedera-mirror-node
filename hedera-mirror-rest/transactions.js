@@ -21,20 +21,19 @@
 const utils = require('./utils.js');
 const config = require('./config.js');
 const constants = require('./constants.js');
+const EntityId = require('./entityId');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 const selectClause = `SELECT
-       etrans.entity_realm,
-       etrans.entity_num,
+       t.payer_account_id,
        t.memo,
        t.consensus_ns,
        t.valid_start_ns,
        coalesce(ttr.result, 'UNKNOWN') AS result,
        coalesce(ttt.name, 'UNKNOWN') AS name,
-       enode.entity_realm AS node_realm,
-       enode.entity_num AS node_num,
+       t.node_account_id,
        ctl.realm_num AS account_realm,
        ctl.entity_num AS account_num,
        ctl.amount,
@@ -71,16 +70,11 @@ const createTransferLists = function (rows) {
       transactions[row.consensus_ns]['name'] = row['name'];
       transactions[row.consensus_ns]['max_fee'] = utils.getNullableNumber(row['max_fee']);
       transactions[row.consensus_ns]['valid_duration_seconds'] = utils.getNullableNumber(row['valid_duration_seconds']);
-      transactions[row.consensus_ns]['node'] = config.shard + '.' + row.node_realm + '.' + row.node_num;
-
-      // Construct a transaction id using format: shard.realm.num-sssssssssss-nnnnnnnnn
+      transactions[row.consensus_ns]['node'] = EntityId.fromEncodedId(row['node_account_id']).toString();
       transactions[row.consensus_ns]['transaction_id'] = utils.createTransactionId(
-        config.shard,
-        row.entity_realm,
-        row.entity_num,
+        EntityId.fromEncodedId(row['payer_account_id']).toString(),
         validStartTimestamp
       );
-
       transactions[row.consensus_ns].transfers = [];
     }
 
@@ -114,8 +108,6 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
     `FROM ( ${innerQuery} ) AS tlist
        JOIN t_transactions t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
-       JOIN t_entities enode ON enode.id = t.node_account_id
-       JOIN t_entities etrans ON etrans.id = t.payer_account_id
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        JOIN t_cryptotransferlists ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
      ORDER BY t.consensus_ns ${order} , account_num ASC, amount ASC`
@@ -255,19 +247,18 @@ const getOneTransaction = async (req, res) => {
       'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
     throw new InvalidArgumentError(message);
   }
-  const sqlParams = [txIdMatches[1], txIdMatches[2], txIdMatches[3], txIdMatches[4] + '' + txIdMatches[5]];
+  const sqlParams = [
+    EntityId.fromString(`${txIdMatches[0]}.${txIdMatches[1]}.${txIdMatches[2]}`).getEncodedId(),
+    txIdMatches[4] + '' + txIdMatches[5],
+  ];
 
   let sqlQuery =
     selectClause +
     `FROM t_transactions t
        JOIN t_transaction_results ttr ON ttr.proto_id = t.result
-       JOIN t_entities enode ON enode.id = t.node_account_id
-       JOIN t_entities etrans ON etrans.id = t.payer_account_id
        JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        JOIN t_cryptotransferlists ctl ON  ctl.consensus_timestamp = t.consensus_ns
-     WHERE ${config.shard} = ?
-       AND  etrans.entity_realm = ?
-       AND  etrans.entity_num = ?
+     WHERE t.payer_account_id = ?
        AND  t.valid_start_ns = ?
      ORDER BY consensus_ns ASC, account_num ASC, amount ASC`; // In case of duplicate transactions, only the first succeeds
 

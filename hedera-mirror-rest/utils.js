@@ -652,15 +652,10 @@ const getNullableNumber = function (num) {
 };
 
 /**
- * Construct a transaction id using format: shard.realm.num-sssssssssss-nnnnnnnnn
- * @param {String} shard shard number
- * @param {String} realm realm number
- * @param {String} num entity number
- * @param {String} validStartTimestamp valid start time
- * @returns {String} transactionId of format format: shard.realm.num-sssssssssss-nnnnnnnnn
+ * @returns {String} transactionId of format shard.realm.num-sssssssssss-nnnnnnnnn
  */
-const createTransactionId = function (shard, realm, num, validStartTimestamp) {
-  return shard + '.' + realm + '.' + num + '-' + nsToSecNsWithHyphen(validStartTimestamp);
+const createTransactionId = function (entityStr, validStartTimestamp) {
+  return entityStr + '-' + nsToSecNsWithHyphen(validStartTimestamp);
 };
 
 /**

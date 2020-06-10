@@ -22,15 +22,22 @@ package com.hedera.mirror.importer.util;
 
 /**
  * Encodes given shard, realm, num into 8 bytes long.
- * Encoding is done using bitwise operators to use full 64bit in a simple way. Using mathematical operators would make
- * it complicated to use full 64 bits
+ * Encoding is done using mathematical operators (as opposed to bitwise operators) to make it easy to encode/decode
+ * in javascript (REST server) since javascript's support for bitwise operations is very limited (truncates numbers to
+ * 32 bits internally before bitwise operation). To keep encoding/decoding using divide and modulo easier, range of
+ * encoded ids has been limited to +ve numbers.
+ *
  * Format:
- * First 16 bits are for shard, next 16 for realm, last 32 bits are for entity num.
- * Placing entity num in the end has the advantage that encoded ids less than 4294967296 would also be human readable.
- * Such an encoded id, say X, would be for the entity 0.0.X.
+ * First bit (sign bit) is left 0.
+ * Next 15 bits are for shard, followed by 16 bits for realm, and then 32 bits for entity num.
+ * This encoding will support following ranges:
+ * shard: 0 - 32767
+ * realm: 0 - 65535
+ * num: 0 - 4294967295
+ * Placing entity num in the end has the advantage that encoded ids <= 4294967295 will also be human readable.
  */
 public class EntityIdEncoder {
-    static final int SHARD_BITS = 16;
+    static final int SHARD_BITS = 15;
     static final int REALM_BITS = 16;
     static final int NUM_BITS = 32; // bits for entity num
     private static final long SHARD_MASK = (1L << SHARD_BITS) - 1;

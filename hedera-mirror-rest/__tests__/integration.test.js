@@ -48,7 +48,6 @@ const transactions = require('../transactions.js');
 const path = require('path');
 const request = require('supertest');
 const server = require('../server');
-const EntityId = require('../entityId');
 const fs = require('fs');
 const integrationDbOps = require('./integrationDbOps.js');
 const integrationDomainOps = require('./integrationDomainOps.js');

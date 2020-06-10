@@ -21,13 +21,15 @@
 
 const transactions = require('../transactions.js');
 
+// TODO: consider removing these tests. These are legacy tests and now that we have much better integration tests
+//  covering for both these sql queries in much more variety, these tests do not seem useful.
 function normalizeSql(str) {
   return str.replace(/\s+/g, ' ').replace(/,\s*/g, ',').replace(/\s*,/g, ',').replace(/\s+$/, '');
 }
 
-const boilerplatePrefix = `SELECT etrans.entity_realm,etrans.entity_num, t.memo,
+const boilerplatePrefix = `SELECT t.payer_account_id, t.memo,
        t.consensus_ns, t.valid_start_ns, coalesce(ttr.result,'UNKNOWN') AS result, coalesce(ttt.name,'UNKNOWN') AS name,
-       enode.entity_realm AS node_realm,enode.entity_num AS node_num, ctl.realm_num AS account_realm, ctl.entity_num AS account_num,
+       t.node_account_id, ctl.realm_num AS account_realm, ctl.entity_num AS account_num,
        ctl.amount, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash
     FROM (
        SELECT DISTINCT ctl.consensus_timestamp
@@ -35,8 +37,6 @@ const boilerplatePrefix = `SELECT etrans.entity_realm,etrans.entity_num, t.memo,
 
 const boilerplateSuffix = ` JOIN t_transactions t ON tlist.consensus_timestamp = t.consensus_ns
       LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
-      JOIN t_entities enode ON enode.id = t.node_account_id
-      JOIN t_entities etrans ON etrans.id = t.payer_account_id
       LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
       JOIN t_cryptotransferlists ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
     ORDER BY t.consensus_ns desc, account_num ASC, amount ASC`;
