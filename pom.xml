@@ -276,6 +276,18 @@
                                 <organizeLicensesByDependencies>true</organizeLicensesByDependencies>
                             </configuration>
                         </execution>
+                        <execution>
+                            <id>default-cli</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>aggregate-third-party-report</goal>
+                            </goals>
+                            <configuration>
+                                <useMissingFile>true</useMissingFile>
+                                <missingFile>licenses/THIRD-PARTY.properties</missingFile>
+                                <outputDirectory>licenses</outputDirectory>
+                            </configuration>
+                        </execution>
                     </executions>
                 </plugin>
                 <plugin>
