@@ -405,9 +405,13 @@ jobs:
           imagepath: "importer"
       - gcloud_image_untag:
           imagepath: "rest"
+      - gcloud_image_untag:
+          imagepath: "test"
       - gcloud_image_delete:
           imagepath: "grpc"
       - gcloud_image_delete:
           imagepath: "importer"
       - gcloud_image_delete:
           imagepath: "rest"
+      - gcloud_image_delete:
+          imagepath: "test"
