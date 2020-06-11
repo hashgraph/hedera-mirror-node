@@ -69,8 +69,8 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
         transaction.setInitialBalance(value);
         transaction.setType(11);  // 11 = CRYPTOCREATEACCOUNT
         EntityId newAccount = entityManager.getAccounts().newEntity();
-        transaction.setEntity(newAccount);
-        transaction.setPayerAccount(entityManager.getPortalEntity());
+        transaction.setEntityId(newAccount);
+        transaction.setPayerAccountId(entityManager.getPortalEntity());
         domainWriter.addCryptoTransfer(createCryptoTransfer(
                 transaction.getConsensusNs(), entityManager.getPortalEntity(), -value));
         domainWriter.addCryptoTransfer(createCryptoTransfer(
@@ -82,8 +82,8 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
         transaction.setInitialBalance(0L);
         transaction.setType(15);  // 15 = CRYPTOUPDATEACCOUNT
         EntityId account = entityManager.getAccounts().getRandomEntity();
-        transaction.setEntity(account);
-        transaction.setPayerAccount(account);
+        transaction.setEntityId(account);
+        transaction.setPayerAccountId(account);
         log.trace("CRYPTOUPDATEACCOUNT transaction: entity {}", account);
     }
 
@@ -101,7 +101,7 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
         }
         domainWriter.addCryptoTransfer(createCryptoTransfer(
                 transaction.getConsensusNs(), accountIds.get(0), -1 * singleTransferAmount * numTransferLists));
-        transaction.setPayerAccount(accountIds.get(0));
+        transaction.setPayerAccountId(accountIds.get(0));
         log.trace("CRYPTOTRANSFER transaction: num transfer lists {}", numTransferLists);
     }
 
@@ -110,8 +110,8 @@ public class CryptoTransactionGenerator extends TransactionGenerator {
         transaction.setType(12);  // 12 = CRYPTODELETE
         EntityId account = entityManager.getAccounts().getRandomEntity();
         entityManager.getAccounts().delete(account);
-        transaction.setEntity(account);
-        transaction.setPayerAccount(account);
+        transaction.setEntityId(account);
+        transaction.setPayerAccountId(account);
         log.trace("CRYPTODELETE transaction: entity {}", account);
     }
 

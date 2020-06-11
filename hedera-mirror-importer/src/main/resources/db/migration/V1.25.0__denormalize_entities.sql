@@ -3,7 +3,8 @@ create domain entity_id as bigint;
 create function encodeEntityId(shard bigint, realm bigint, num bigint)
 returns entity_id as $$
 begin
-    -- Encoding: 16 bits for shard, followed by 16 bits for realm, followed by 32 bits for num
+    -- Encoding: 15 bits for shard (mask = 0x7fff = 32767), followed by 16 bits for realm (mask = 0xffff = 65535),
+    -- followed by 32 bits for num (max = 0xffffffff = 4294967295)
     return (num & 4294967295) | ((realm & 65535) << 32) | ((shard & 32767) << 48);
 end
 $$ language plpgsql;
@@ -74,13 +75,13 @@ left join t_entities e on t_transactions.fk_cud_entity_id = e.id;
 
 drop index if exists idx_t_transactions_node_account; -- drop explicitly for history since it is not re-created
 drop table if exists t_transactions;
-alter table if exists t_transactions_new rename to t_transactions;
+alter table t_transactions_new rename to t_transactions;
 
-alter table if exists t_transactions
+alter table t_transactions
     add primary key (consensus_ns);
-create index if not exists t_transactions__transaction_id
+create index t_transactions__transaction_id
     on t_transactions (valid_start_ns, payer_account_id);
-create index if not exists t_transactions__payer_account_id
+create index t_transactions__payer_account_id
     on t_transactions (payer_account_id);
 
 -------------------

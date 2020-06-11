@@ -20,8 +20,11 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
+import lombok.extern.log4j.Log4j2;
+
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.exception.InvalidEntityException;
 
 /**
  * Encodes given shard, realm, num into 8 bytes long.
@@ -39,6 +42,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
  * num: 0 - 4294967295 <br/>
  * Placing entity num in the end has the advantage that encoded ids <= 4294967295 will also be human readable.
  */
+@Log4j2
 public class EntityIdEndec {
     static final int SHARD_BITS = 15;
     static final int REALM_BITS = 16;
@@ -47,10 +51,11 @@ public class EntityIdEndec {
     private static final long REALM_MASK = (1L << REALM_BITS) - 1;
     private static final long NUM_MASK = (1L << NUM_BITS) - 1;
 
-    // TODO: verify validity of payer, node, cud entity id
-    public static long encode(long shardNum, long realmNum, long entityNum) {
-        if (shardNum > SHARD_MASK || realmNum > REALM_MASK || entityNum > NUM_MASK) {
-            throw new IllegalArgumentException("entity is outside range of encoding constraints: "
+    public static Long encode(long shardNum, long realmNum, long entityNum) {
+        if (shardNum > SHARD_MASK || shardNum < 0 ||
+                realmNum > REALM_MASK || realmNum < 0 ||
+                entityNum > NUM_MASK || entityNum < 0) {
+            throw new InvalidEntityException("Entity outside encoding range: "
                     + shardNum + "." + realmNum + "." + entityNum);
         }
         return (entityNum & NUM_MASK) |
@@ -60,7 +65,7 @@ public class EntityIdEndec {
 
     public static EntityId decode(long encodedId) {
         if (encodedId < 0) {
-            throw new IllegalArgumentException("encodedId can not be negative: " + encodedId);
+            throw new InvalidEntityException("encodedId can not be negative: " + encodedId);
         }
         long shard = encodedId >> (REALM_BITS + NUM_BITS);
         long realm = (encodedId >> NUM_BITS) & REALM_MASK;

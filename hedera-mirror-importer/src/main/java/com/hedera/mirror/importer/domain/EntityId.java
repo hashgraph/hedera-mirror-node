@@ -26,9 +26,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 import com.hedera.mirror.importer.util.EntityIdEndec;
@@ -41,12 +43,14 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
  * of(..) functions, null is returned.
  */
 @Value
-public class EntityId {
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+public class EntityId implements Serializable {
 
     private static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
 
     // Ignored so not included in json serialization of PubSubMessage
     @JsonIgnore
+    @EqualsAndHashCode.Include
     private Long id;
     private Long shardNum;
     private Long realmNum;

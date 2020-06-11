@@ -206,8 +206,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTransaction() throws Exception {
         // given
-        Transaction expectedTransaction = new Transaction(101L, 0L, Strings.toByteArray("memo"), 0, 0, 1L,
-                1L, 1L, null, 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
+        var expectedTransaction = makeTransaction();
 
         // when
         sqlEntityListener.onTransaction(expectedTransaction);
@@ -257,7 +256,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         for (int i = 0; i < batchSize; i++) {
-            sqlEntityListener2.onTransaction(mock(Transaction.class));
+            sqlEntityListener2.onTransaction(makeTransaction());
         }
 
         // then
@@ -299,5 +298,24 @@ public class SqlEntityListenerTest extends IntegrationTest {
         Optional<T> actual = repository.findById(id);
         assertTrue(actual.isPresent());
         assertEquals(expected, actual.get());
+    }
+
+    private Transaction makeTransaction() {
+        EntityId entityId = EntityId.of(10, 10, 10, EntityTypeEnum.ACCOUNT);
+        Transaction transaction = new Transaction();
+        transaction.setConsensusNs(101L);
+        transaction.setEntityId(entityId);
+        transaction.setNodeAccountId(entityId);
+        transaction.setMemo(Strings.toByteArray("memo"));
+        transaction.setType(14);
+        transaction.setResult(22);
+        transaction.setTransactionHash(Strings.toByteArray("transactionHash"));
+        transaction.setPayerAccountId(entityId);
+        transaction.setValidStartNs(1L);
+        transaction.setValidDurationSeconds(1L);
+        transaction.setMaxFee(1L);
+        transaction.setChargedTxFee(1L);
+        transaction.setInitialBalance(0L);
+        return transaction;
     }
 }

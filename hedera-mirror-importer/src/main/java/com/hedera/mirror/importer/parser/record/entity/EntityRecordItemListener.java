@@ -49,6 +49,7 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.InvalidEntityException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
@@ -95,7 +96,13 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionHandler transactionHandler = transactionHandlerFactory.create(body);
 
         long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
-        EntityId entityId = transactionHandler.getEntity(recordItem);
+        EntityId entityId;
+        try {
+            entityId = transactionHandler.getEntity(recordItem);
+        } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
+            log.error(e);
+            entityId = null;
+        }
         TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(recordItem.getTransactionType());
         log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusNs, entityId);
 
@@ -110,7 +117,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         Transaction tx = buildTransaction(consensusNs, recordItem);
         transactionHandler.updateTransaction(tx, recordItem);
         if (entityId != null) {
-            tx.setEntity(entityId);
+            tx.setEntityId(entityId);
             // Irrespective of transaction failure/success, if entityId is not null, it will be inserted into repo since
             // it is guaranteed to be valid entity on network (validated to exist in pre-consensus checks).
             entityListener.onEntityId(entityId);
@@ -182,11 +189,12 @@ public class EntityRecordItemListener implements RecordItemListener {
                 body.getTransactionValidDuration().getSeconds() : null;
         tx.setValidDurationSeconds(validDurationSeconds);
         tx.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
+        // transactions in stream always have valid node account id and payer account id.
         var nodeAccount = EntityId.of(body.getNodeAccountID());
-        tx.setNodeAccount(nodeAccount);
+        tx.setNodeAccountId(nodeAccount);
         entityListener.onEntityId(nodeAccount);
         var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
-        tx.setPayerAccount(payerAccount);
+        tx.setPayerAccountId(payerAccount);
         entityListener.onEntityId(payerAccount);
         tx.setInitialBalance(0L);
         return tx;
@@ -348,14 +356,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         EntityId autoRenewAccount = transactionHandler.getAutoRenewAccount(recordItem);
         if (autoRenewAccount != null) {
             entityListener.onEntityId(autoRenewAccount);
-            entity.setAutoRenewAccount(autoRenewAccount);
+            entity.setAutoRenewAccountId(autoRenewAccount);
         }
         // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
         // so no need to persist it to repo.
         EntityId proxyAccount = transactionHandler.getProxyAccount(recordItem);
         if (proxyAccount != null) {
             entityListener.onEntityId(proxyAccount);
-            entity.setProxyAccount(proxyAccount);
+            entity.setProxyAccountId(proxyAccount);
         }
         entityRepository.save(entity);
     }

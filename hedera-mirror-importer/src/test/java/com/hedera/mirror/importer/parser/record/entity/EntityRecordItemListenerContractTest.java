@@ -439,6 +439,29 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
         );
     }
 
+    // Test for bad entity id in a failed transaction
+    @Test
+    void cryptoTransferBadContractId() throws Exception {
+        Transaction transaction = contractCallTransaction(ContractID.newBuilder().setContractNum(-1L).build());
+        var transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+        TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.INVALID_CONTRACT_ID);
+
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
+
+        var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(3, entityRepository.count()), // payer, node, treasury
+                () -> assertEquals(1, contractResultRepository.count()),
+                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(0, liveHashRepository.count()),
+                () -> assertEquals(0, fileDataRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertNull(dbTransaction.getEntityId())
+        );
+    }
+
     private void assertContractTransaction(TransactionBody transactionBody, TransactionRecord record, boolean deleted) {
         Entities actualContract = getTransactionEntity(record.getConsensusTimestamp());
         assertAll(
@@ -581,7 +604,12 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
         });
     }
 
+
     private Transaction contractCallTransaction() {
+        return contractCallTransaction(contractId);
+    }
+
+    private Transaction contractCallTransaction(ContractID contractId) {
         return buildTransaction(builder -> {
             ContractCallTransactionBody.Builder contractCall = builder.getContractCallBuilder();
             contractCall.setAmount(88889);

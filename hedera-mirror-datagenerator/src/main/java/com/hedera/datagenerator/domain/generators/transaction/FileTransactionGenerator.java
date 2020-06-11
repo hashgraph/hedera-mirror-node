@@ -67,7 +67,7 @@ public class FileTransactionGenerator extends TransactionGenerator {
     private void createFile(Transaction transaction) {
         transaction.setType(17);  // 17 = FILECREATE
         EntityId newFileNum = entityManager.getFiles().newEntity();
-        transaction.setEntity(newFileNum);
+        transaction.setEntityId(newFileNum);
         createFileData(transaction.getConsensusNs());
         log.trace("FILECREATE transaction: fileId {}", newFileNum);
     }
@@ -75,7 +75,7 @@ public class FileTransactionGenerator extends TransactionGenerator {
     private void appendFile(Transaction transaction) {
         transaction.setType(16);  // 16 = FILEAPPEND
         EntityId file = entityManager.getFiles().getRandomEntity();
-        transaction.setEntity(file);
+        transaction.setEntityId(file);
         createFileData(transaction.getConsensusNs());
         log.trace("FILEAPPEND transaction: fileId {}", file);
     }
@@ -83,7 +83,7 @@ public class FileTransactionGenerator extends TransactionGenerator {
     private void updateFile(Transaction transaction) {
         transaction.setType(19);  // 19 = FILEUPDATE
         EntityId fileNum = entityManager.getFiles().getRandomEntity();
-        transaction.setEntity(fileNum);
+        transaction.setEntityId(fileNum);
         createFileData(transaction.getConsensusNs());
         log.trace("FILEUPDATE transaction: fileId {}", fileNum);
     }
@@ -92,7 +92,7 @@ public class FileTransactionGenerator extends TransactionGenerator {
         transaction.setType(18);  // 18 = FILEDELETE
         EntityId fileNum = entityManager.getFiles().getRandomEntity();
         entityManager.getFiles().delete(fileNum);
-        transaction.setEntity(fileNum);
+        transaction.setEntityId(fileNum);
         log.trace("FILEDELETE transaction: fileId {}", fileNum);
     }
 
