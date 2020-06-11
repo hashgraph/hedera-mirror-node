@@ -109,21 +109,33 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
-                        <phase>test-compile</phase>
                         <goals>
-                            <goal>copy-dependencies</goal>
+                            <goal>test-jar</goal>
                         </goals>
-                        <configuration>
-                            <includeScope>test</includeScope>
-                            <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
-                            <stripVersion>true</stripVersion>
-                            <stripClassifier>true</stripClassifier>
-                        </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <inherited>false</inherited>
+                <configuration>
+                    <images>
+                        <image>
+                            <build>
+                                <contextDir>${project.basedir}</contextDir>
+                                <dockerFile>${project.basedir}/Dockerfile</dockerFile>
+                                <args>
+                                    <tag>${docker.tag.version}</tag>
+                                </args>
+                            </build>
+                        </image>
+                    </images>
+                </configuration>
             </plugin>
         </plugins>
     </build>

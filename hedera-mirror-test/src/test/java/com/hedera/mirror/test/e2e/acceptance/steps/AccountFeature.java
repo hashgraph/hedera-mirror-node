@@ -28,14 +28,12 @@ import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 
 @Log4j2
 @Cucumber
-@SpringBootTest
 public class AccountFeature {
     private long balance;
 
