@@ -9,35 +9,29 @@ RUN mkdir /usr/etc
 
 WORKDIR /usr/etc
 
-# create hedera-mirror-node dir
-RUN mkdir hedera-mirror-node
+ENV branch master
+RUN git clone -b $branch https://github.com/hashgraph/hedera-mirror-node.git
+
 WORKDIR /usr/etc/hedera-mirror-node
 
-# pull JUnit 5 ConsoleLauncher to aid test runs
-ADD https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.5.2/junit-platform-console-standalone-1.5.2.jar .
+#RUN ./mvnw package -DskipTests -Djib.skip -Ddocker.skip --no-transfer-progress \
+#    --show-version -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
 
-COPY target ./target
-
-#ENV operatorid opid
-#ENV operatorkey opkey
-#ENV emitBackgroundMessages false
-#ENV messageTimeout 30s
-#ENV existingTopicNum 12345
-#ENV mirrorNodeAddress hcs.testnet.mirrornode.hedera.com:5600
-#ENV nodeAddress testnet
-#ENV nodeId 0.0.3
+ENV testProfile acceptance
 ENV cucumberFlags "@BalanceCheck"
-#ENV testProfile acceptance-tests
+ENV subscribeThreadCount 30
+ENV jmeterTestPlan E2E_Subscribe_Only.jmx
 
-ENTRYPOINT java -jar junit-platform-console-standalone-1.5.2.jar \
-            -cp 'target' \
-           	-cp 'target/test-classes' \
-           	-cp 'target/test-classes/dependencies' \
-#           	--select-package com.hedera.mirror.test.e2e.acceptance \
-#           	--include-classname='.*'
-            --scan-classpath \
-#            -p "" \
-#           	-c com.hedera.mirror.test.e2e.acceptance.AcceptanceTest \
-           	--config=cucumber.filter.tags=$cucumberFlags
+COPY . hedera-mirror-test
+
+#RUN rm -rf hedera-mirror-test
+#RUN mkdir hedera-mirror-test
+#COPY . hedera-mirror-test
+
+#COPY pom.xml hedera-mirror-test
+#RUN mkdir hedera-mirror-test/scripts
+#COPY scripts/run-tests.sh hedera-mirror-test/scripts/run-tests.sh
+
+ENTRYPOINT hedera-mirror-test/scripts/run-tests.sh
 
 # docker run -d -e operatorid=<opId> -e operatorkey=<opKey> gcr.io/mirrornode/hedera-mirror-test:latest
