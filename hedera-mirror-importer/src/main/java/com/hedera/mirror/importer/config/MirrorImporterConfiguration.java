@@ -78,7 +78,7 @@ public class MirrorImporterConfiguration {
         S3AsyncClientBuilder clientBuilder = asyncClientBuilder("us-east-1")
                 .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()));
         String projectId = downloaderProperties.getGcpProjectId();
-        if (projectId != null) {
+        if (StringUtils.isNotBlank(projectId)) {
             clientBuilder.overrideConfiguration(builder -> builder.addExecutionInterceptor(new ExecutionInterceptor() {
                 @Override
                 public SdkHttpRequest modifyHttpRequest(

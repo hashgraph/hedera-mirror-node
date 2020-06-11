@@ -97,6 +97,27 @@ properties:
     title: Importer database password
     x-google-marketplace:
       type: MASKED_FIELD
+  importer.config.hedera.mirror.importer.downloader.accessKey:
+    type: string
+    description: The Google Cloud access key used to pay for downloaded streamed files
+    title: Importer GCP access key
+  importer.config.hedera.mirror.importer.downloader.bucketName:
+    type: string
+    description: The Google Cloud Storage bucket name to download streamed files
+    title: Importer GCS bucket name
+  importer.config.hedera.mirror.importer.downloader.gcpProjectId:
+    type: string
+    description: GCP project id to bill for requests to GCS bucket with requester pays enabled
+    title: Importer GCP billing project ID
+  importer.config.hedera.mirror.importer.downloader.secretKey:
+    type: string
+    description: The Google Cloud secret key used to pay for downloaded streamed files
+    title: Importer GCP secret key
+  importer.config.hedera.mirror.importer.network:
+    default: MAINNET
+    type: string
+    description: Which Hedera network to use. Can be either DEMO (free), TESTNET or MAINNET.
+    title: Importer Hedera network
   importer.persistence.size:
     default: 10Gi
     description: The storage size for the importer persistent volume
@@ -158,6 +179,10 @@ required:
   - grpc.replicas
   - grpc.serviceAccount.name
   - importer.config.hedera.mirror.importer.db.password
+  - importer.config.hedera.mirror.importer.downloader.accessKey
+  - importer.config.hedera.mirror.importer.downloader.bucketName
+  - importer.config.hedera.mirror.importer.downloader.secretKey
+  - importer.config.hedera.mirror.importer.network
   - importer.persistence.size
   - importer.serviceAccount.name
   - postgresql.persistence.size

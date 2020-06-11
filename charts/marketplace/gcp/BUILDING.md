@@ -59,13 +59,14 @@ The mpdev tool is provided by Google Cloud Platform Marketplace to help verify t
 ## Verify
 
 Run `mpdev verify` to automatically install the application in a new namespace, execute acceptance tests against it and uninstall it.
-Set `TAG` to the version you want to test.
+Ensure [schema-test.yaml](schema-test.yaml) contains defaults for any required fields in [schema.yaml](schema.yaml).
 
     mpdev verify --deployer=gcr.io/mirrornode/hedera-mirror-node/deployer:${TAG}
 
 ## Install
 
-To install run `mpdev install`. Note the properties in the `required` section of the [schema.yaml](schema.yaml) file must be specified via the parameters flag.
+To install run `mpdev install`. Note the properties in the `required` section of the [schema.yaml](schema.yaml)
+file must be specified via the parameters flag.
 
     kubectl create namespace "${NAMESPACE}"
     mpdev install --deployer=gcr.io/mirrornode/hedera-mirror-node/deployer:${TAG} --parameters='{"name": "'${NAME}'",
@@ -73,6 +74,10 @@ To install run `mpdev install`. Note the properties in the `required` section of
         "global.rest.password": "password",
         "grpc.config.hedera.mirror.grpc.db.password": "password",
         "importer.config.hedera.mirror.importer.db.password": "password",
+        "importer.config.hedera.mirror.importer.downloader.accessKey": "",
+        "importer.config.hedera.mirror.importer.downloader.bucketName": "hedera-demo-streams",
+        "importer.config.hedera.mirror.importer.downloader.secretKey": "",
+        "importer.config.hedera.mirror.importer.network": "DEMO",
         "postgresql.postgresql.password": "password",
         "postgresql.postgresql.repmgrPassword": "password"}'
 
