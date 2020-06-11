@@ -13,7 +13,7 @@ ENV jmeterTestPlan E2E_Subscribe_Only.jmx
 # ensure all maven dependecies are placed ahead of test run
 RUN ./mvnw install -DskipTests -Djib.skip -Ddocker.skip --no-transfer-progress \
     --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-
+    
 ENTRYPOINT scripts/test-container/run-tests.sh
 
 # docker run -d -e testProfile=acceptance -e cucumberFlags="@SubscribeOnly" \
