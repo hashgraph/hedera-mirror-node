@@ -96,7 +96,7 @@
         "tableColumn": "",
         "targets": [
           {
-            "expr": "count(kube_pod_status_ready{namespace=\"$namespace\",condition=\"true\",pod=~\"traefik.*\"})",
+            "expr": "count(kube_pod_status_ready{namespace=\"$namespace\",condition=\"true\",pod=~\".*traefik.*\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
@@ -1156,21 +1156,21 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(container_memory_usage_bytes{namespace=\"$namespace\", container=\"traefik\"})",
+            "expr": "sum(container_memory_usage_bytes{namespace=\"$namespace\", container=~\".*traefik\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Memory used",
             "refId": "A"
           },
           {
-            "expr": "sum(kube_pod_container_resource_requests_memory_bytes{namespace=\"$namespace\", container=\"traefik\"})",
+            "expr": "sum(kube_pod_container_resource_requests_memory_bytes{namespace=\"$namespace\", container=~\".*traefik\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Requested memory",
             "refId": "B"
           },
           {
-            "expr": "sum(kube_pod_container_resource_limits_memory_bytes{namespace=\"$namespace\", container=\"traefik\"})",
+            "expr": "sum(kube_pod_container_resource_limits_memory_bytes{namespace=\"$namespace\", container=~\".*traefik\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Limit memory usage",
@@ -1261,21 +1261,21 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", container=\"traefik\"}[2m]))",
+            "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", container=~\".*traefik\"}[2m]))",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Cpu used",
             "refId": "A"
           },
           {
-            "expr": "sum(kube_pod_container_resource_requests_cpu_cores{namespace=\"$namespace\", container=\"traefik\"})",
+            "expr": "sum(kube_pod_container_resource_requests_cpu_cores{namespace=\"$namespace\", container=~\".*traefik\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Requested cpu",
             "refId": "B"
           },
           {
-            "expr": "sum(kube_pod_container_resource_limits_cpu_cores{namespace=\"$namespace\", container=\"traefik\"})",
+            "expr": "sum(kube_pod_container_resource_limits_cpu_cores{namespace=\"$namespace\", container=~\".*traefik\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Limit cpu usage",

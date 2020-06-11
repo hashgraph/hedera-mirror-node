@@ -31,6 +31,8 @@ spec:
           env:
             - name: CONFIG_PATH
               value: "/usr/etc/hedera-mirror-rest/"
+            - name: HEDERA_MIRROR_REST_DB_HOST
+              value: {{ include "hedera-mirror-rest.db-host" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           livenessProbe:

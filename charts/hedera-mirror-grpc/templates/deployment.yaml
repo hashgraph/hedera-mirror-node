@@ -29,6 +29,8 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           env:
+            - name: HEDERA_MIRROR_GRPC_DB_HOST
+              value: {{ include "hedera-mirror-grpc.db-host" . }}
             - name: SPRING_CLOUD_KUBERNETES_ENABLED
               value: "true"
             - name: SPRING_CONFIG_ADDITIONAL_LOCATION
