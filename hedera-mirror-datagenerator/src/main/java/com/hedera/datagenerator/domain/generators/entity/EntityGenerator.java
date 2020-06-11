@@ -19,10 +19,13 @@ package com.hedera.datagenerator.domain.generators.entity;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityTypeEnum.FILE;
+import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOPIC;
+
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
-import java.util.function.Function;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
@@ -30,6 +33,8 @@ import org.apache.commons.codec.binary.Hex;
 import com.hedera.datagenerator.common.EntityManager;
 import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 /**
  * Generates entities. Only types 'account' and 'files' are supported currently.
@@ -51,12 +56,12 @@ public class EntityGenerator {
         }
     }
 
-    private static void generateAndWriteEntityType(EntityManager.EntitySet entitySet, DomainWriter domainWriter,
-                                                   Function<Long, Entities> generateFn, String type) {
+    private void generateAndWriteEntityType(EntityManager.EntitySet entitySet, DomainWriter domainWriter,
+                                            EntityTypeEnum type) {
         int count = 0;
         int deleted = 0;
-        for (Long entityId = entitySet.getStartEntityId(); entityId < entitySet.getNextEntityId(); entityId++) {
-            Entities entity = generateFn.apply(entityId);
+        for (Long entityId = entitySet.getStartEntityNum(); entityId < entitySet.getEntityNum(); entityId++) {
+            Entities entity = createEntity(entityId, type);
             if (entitySet.getDeleted().contains(entityId)) {
                 entity.setDeleted(true);
                 deleted++;
@@ -72,37 +77,15 @@ public class EntityGenerator {
      */
     public void generateAndWriteEntities(EntityManager entityManager, DomainWriter domainWriter) {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        generateAndWriteEntityType(entityManager.getAccounts(), domainWriter, this::generateAccountEntity, "account");
-        generateAndWriteEntityType(entityManager.getFiles(), domainWriter, this::generateFileEntity, "file");
-        generateAndWriteEntityType(entityManager.getTopics(), domainWriter, this::generateTopicEntity, "topic");
+        generateAndWriteEntityType(entityManager.getAccounts(), domainWriter, ACCOUNT);
+        generateAndWriteEntityType(entityManager.getFiles(), domainWriter, FILE);
+        generateAndWriteEntityType(entityManager.getTopics(), domainWriter, TOPIC);
         log.info("Generated all entities in {}", stopwatch);
     }
 
-    private Entities createBaseEntity(Long id) {
-        Entities entity = new Entities();
-        entity.setId(id);
-        entity.setEntityShard(0L);
-        entity.setEntityRealm(0L);
-        entity.setEntityNum(id);
+    private Entities createEntity(Long id, EntityTypeEnum type) {
+        Entities entity = EntityId.of(0L, 0L, id, type).toEntity();
         entity.setKey(fixedKey);
-        return entity;
-    }
-
-    private Entities generateAccountEntity(long id) {
-        Entities entity = createBaseEntity(id);
-        entity.setEntityTypeId(1); // 1 = account
-        return entity;
-    }
-
-    private Entities generateFileEntity(long id) {
-        Entities entity = createBaseEntity(id);
-        entity.setEntityTypeId(3); // 3 = file
-        return entity;
-    }
-
-    private Entities generateTopicEntity(long id) {
-        Entities entity = createBaseEntity(id);
-        entity.setEntityTypeId(4); // 4 = topic
         return entity;
     }
 }

@@ -28,17 +28,14 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.mockito.Mock;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.repository.EntityRepository;
 
 public abstract class AbstractTransactionHandlerTest {
     protected static final Long DEFAULT_ENTITY_NUM = 100L;
-    @Mock
-    protected EntityRepository entityRepository;
+
     private TransactionHandler transactionHandler;
 
     protected abstract TransactionHandler getTransactionHandler();
@@ -64,7 +61,7 @@ public abstract class AbstractTransactionHandlerTest {
         EntityId expectedEntityId = null;
         var entityType = getExpectedEntityIdType();
         if (entityType != null) {
-            expectedEntityId = new EntityId(null, 0L, 0L, DEFAULT_ENTITY_NUM, entityType.getId());
+            expectedEntityId = EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, entityType);
         }
         testGetEntityIdHelper(getDefaultTransactionBody().build(), getDefaultTransactionRecord().build(),
                 expectedEntityId);
@@ -75,6 +72,6 @@ public abstract class AbstractTransactionHandlerTest {
         RecordItem recordItem = new RecordItem(
                 Transaction.newBuilder().setBodyBytes(transactionBody.toByteString()).build(),
                 transactionRecord);
-        assertThat(transactionHandler.getEntityId(recordItem)).isEqualTo(expectedEntity);
+        assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedEntity);
     }
 }

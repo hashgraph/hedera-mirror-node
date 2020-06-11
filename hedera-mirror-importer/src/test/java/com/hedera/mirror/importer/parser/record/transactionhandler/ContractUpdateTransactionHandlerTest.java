@@ -29,7 +29,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractUpdateTransactionHandler(entityRepository);
+        return new ContractUpdateTransactionHandler();
     }
 
     @Override

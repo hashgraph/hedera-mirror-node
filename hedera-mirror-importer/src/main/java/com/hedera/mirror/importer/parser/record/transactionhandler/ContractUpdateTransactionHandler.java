@@ -27,17 +27,20 @@ import lombok.AllArgsConstructor;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @AllArgsConstructor
 public class ContractUpdateTransactionHandler implements TransactionHandler {
-    private final EntityRepository entityRepository;
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getContractUpdateInstance().getContractID());
+    }
+
+    @Override
+    public EntityId getProxyAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getContractUpdateInstance().getProxyAccountID());
     }
 
     @Override
@@ -60,10 +63,6 @@ public class ContractUpdateTransactionHandler implements TransactionHandler {
         // Can't clear memo on contracts. 0 length indicates no change
         if (txMessage.getMemo() != null && txMessage.getMemo().length() > 0) {
             entity.setMemo(txMessage.getMemo());
-        }
-        Long proxyAccountId = entityRepository.lookupOrCreateId(EntityId.of(txMessage.getProxyAccountID()));
-        if (proxyAccountId != null) {
-            entity.setProxyAccountId(proxyAccountId);
         }
     }
 }

@@ -23,9 +23,7 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.jdbc.Sql;
 
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.Transaction;
 
@@ -33,8 +31,7 @@ public class LiveHashRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-        Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(entity, "CRYPTOADDLIVEHASH");
+        Transaction transaction = insertTransaction("CRYPTOADDLIVEHASH");
 
         LiveHash liveHash = new LiveHash();
         liveHash.setConsensusTimestamp(transaction.getConsensusNs());

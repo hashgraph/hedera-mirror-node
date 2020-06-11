@@ -95,7 +95,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionHandler transactionHandler = transactionHandlerFactory.create(body);
 
         long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
-        EntityId entityId = transactionHandler.getEntityId(recordItem);
+        EntityId entityId = transactionHandler.getEntity(recordItem);
         TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(recordItem.getTransactionType());
         log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusNs, entityId);
 
@@ -109,7 +109,16 @@ public class EntityRecordItemListener implements RecordItemListener {
         boolean isSuccessful = isSuccessful(txRecord);
         Transaction tx = buildTransaction(consensusNs, recordItem);
         transactionHandler.updateTransaction(tx, recordItem);
-        tx.setEntity(getEntity(recordItem, transactionHandler, entityId, isSuccessful));
+        if (entityId != null) {
+            tx.setEntity(entityId);
+            // Irrespective of transaction failure/success, if entityId is not null, it will be inserted into repo since
+            // it is guaranteed to be valid entity on network (validated to exist in pre-consensus checks).
+            entityListener.onEntityId(entityId);
+
+            if (isSuccessful && transactionHandler.updatesEntity()) {
+                updateEntity(recordItem, transactionHandler, entityId);
+            }
+        }
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
             // Don't add failed non-fee transfers as they can contain invalid data and we don't add failed
@@ -173,8 +182,12 @@ public class EntityRecordItemListener implements RecordItemListener {
                 body.getTransactionValidDuration().getSeconds() : null;
         tx.setValidDurationSeconds(validDurationSeconds);
         tx.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
-        tx.setNodeAccountId(entityRepository.lookupOrCreateId(EntityId.of(body.getNodeAccountID())));
-        tx.setPayerAccountId(entityRepository.lookupOrCreateId(EntityId.of(body.getTransactionID().getAccountID())));
+        var nodeAccount = EntityId.of(body.getNodeAccountID());
+        tx.setNodeAccount(nodeAccount);
+        entityListener.onEntityId(nodeAccount);
+        var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
+        tx.setPayerAccount(payerAccount);
+        entityListener.onEntityId(payerAccount);
         tx.setInitialBalance(0L);
         return tx;
     }
@@ -259,10 +272,10 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTransferList(long consensusTimestamp, TransferList transferList) {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
+            entityListener.onEntityId(EntityId.of(aa.getAccountID()));
             var accountId = aa.getAccountID();
-            entityRepository.lookupOrCreateId(EntityId.of(aa.getAccountID())); // ensures existence of entity in db
-            addCryptoTransferList(consensusTimestamp, accountId.getRealmNum(), accountId.getAccountNum(), aa
-                    .getAmount());
+            addCryptoTransferList(consensusTimestamp, accountId.getRealmNum(), accountId.getAccountNum(),
+                    aa.getAmount());
         }
     }
 
@@ -284,8 +297,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var accountId = aa.getAccountID();
+            entityListener.onEntityId(EntityId.of(accountId));
             long accountNum = accountId.getAccountNum();
-            entityRepository.lookupOrCreateId(EntityId.of(accountId)); // ensures existence of entity in db
             addCryptoTransferList(consensusTimestamp, accountId.getRealmNum(), accountNum, aa.getAmount());
 
             if (addInitialBalance && (initialBalance == aa.getAmount()) && (accountNum == createdAccountNum)) {
@@ -296,10 +309,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (addInitialBalance) {
             AccountID payerAccountId = body.getTransactionID().getAccountID();
             AccountID createdAccountId = txRecord.getReceipt().getAccountID();
-            entityRepository.lookupOrCreateId(EntityId.of(payerAccountId)); // ensures existence of entity in db
+            entityListener.onEntityId(EntityId.of(payerAccountId));
+            entityListener.onEntityId(EntityId.of(createdAccountId));
             addCryptoTransferList(consensusTimestamp, payerAccountId.getRealmNum(), payerAccountId
                     .getAccountNum(), -initialBalance);
-            entityRepository.lookupOrCreateId(EntityId.of(createdAccountId)); // ensures existence of entity in db
             addCryptoTransferList(consensusTimestamp, createdAccountId
                     .getRealmNum(), createdAccountNum, initialBalance);
         }
@@ -323,30 +336,27 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     /**
+     * @param entityId entity to be updated. Should not be null.
      * @return entity associated with the transaction. Entity is guaranteed to be persisted in repo.
      */
-    private Entities getEntity(
-            RecordItem recordItem, TransactionHandler transactionHandler, EntityId entityId, boolean isSuccessful) {
-        // Irrespective of transaction failure/success, if entityId is not null, it will be inserted into repo since:
-        //   (1) it is guaranteed to be valid entity on network (validated to exist in pre-consensus checks)
-        //   (2) fk_cud_entity_id is foreign key in t_transactions
-        //
-        // Additionally, if transaction is successful:
-        // - Fields of 'entity' will be updated.
-        // - proxyAccountId/autoRenewAccountId: If present, the account's id are looked up (from big cache) or created
-        //   immediately in TransactionHandler.updateEntity(..).
-        if (transactionHandler.updatesEntity() && isSuccessful && entityId != null) {
-            Entities entity = entityRepository.findByPrimaryKey(
-                    entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum())
-                    .orElseGet(entityId::toEntity);
-            transactionHandler.updateEntity(entity, recordItem);
-            return entityRepository.save(entity);
-        } else if (entityId != null) {
-            Entities entity = entityId.toEntity();
-            entity.setId(entityRepository.lookupOrCreateId(entityId)); // look up in big cache
-            return entity;
+    private void updateEntity(
+            RecordItem recordItem, TransactionHandler transactionHandler, EntityId entityId) {
+        // TODO: remove lookup and batch this update with rest of the db operations. Options: upsert.
+        Entities entity = entityRepository.findById(entityId.getId())
+                .orElseGet(entityId::toEntity);
+        transactionHandler.updateEntity(entity, recordItem);
+        EntityId autoRenewAccount = transactionHandler.getAutoRenewAccount(recordItem);
+        if (autoRenewAccount != null) {
+            entityListener.onEntityId(autoRenewAccount);
+            entity.setAutoRenewAccount(autoRenewAccount);
         }
-        // else leave tx.entity null
-        return null;
+        // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
+        // so no need to persist it to repo.
+        EntityId proxyAccount = transactionHandler.getProxyAccount(recordItem);
+        if (proxyAccount != null) {
+            entityListener.onEntityId(proxyAccount);
+            entity.setProxyAccount(proxyAccount);
+        }
+        entityRepository.save(entity);
     }
 }

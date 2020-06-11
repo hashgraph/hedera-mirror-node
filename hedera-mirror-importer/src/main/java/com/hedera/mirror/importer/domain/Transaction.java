@@ -20,11 +20,8 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -43,7 +40,6 @@ public class Transaction implements Persistable<Long> {
     @Id
     private Long consensusNs;
 
-    @Column(name = "fk_node_acc_id")
     private Long nodeAccountId;
 
     private byte[] memo;
@@ -52,16 +48,13 @@ public class Transaction implements Persistable<Long> {
 
     private Integer result;
 
-    @Column(name = "fk_payer_acc_id")
     private Long payerAccountId;
 
     private Long chargedTxFee;
 
     private Long initialBalance;
 
-    @JoinColumn(name = "fk_cud_entity_id")
-    @ManyToOne
-    private Entities entity;
+    private Long entityId;
 
     private Long validStartNs;
 
@@ -73,9 +66,16 @@ public class Transaction implements Persistable<Long> {
 
     private byte[] transactionBytes;
 
-    // Helper to avoid having to update a 100 places in tests
-    public Long getEntityId() {
-        return entity != null ? entity.getId() : null;
+    public void setEntity(EntityId entity) {
+        entityId = entity.getId();
+    }
+
+    public void setNodeAccount(EntityId nodeAccount) {
+        nodeAccountId = nodeAccount.getId();
+    }
+
+    public void setPayerAccount(EntityId payerAccount) {
+        payerAccountId = payerAccount.getId();
     }
 
     @Override

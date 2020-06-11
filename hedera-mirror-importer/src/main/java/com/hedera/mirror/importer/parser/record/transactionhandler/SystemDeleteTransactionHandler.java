@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class SystemDeleteTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         SystemDeleteTransactionBody systemDelete = recordItem.getTransactionBody().getSystemDelete();
         if (systemDelete.hasContractID()) {
             return EntityId.of(systemDelete.getContractID());

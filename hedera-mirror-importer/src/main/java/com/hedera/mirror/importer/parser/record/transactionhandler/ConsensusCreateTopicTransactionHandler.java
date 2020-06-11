@@ -26,16 +26,19 @@ import lombok.AllArgsConstructor;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.repository.EntityRepository;
 
 @Named
 @AllArgsConstructor
 public class ConsensusCreateTopicTransactionHandler implements TransactionHandler {
-    private final EntityRepository entityRepository;
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getRecord().getReceipt().getTopicID());
+    }
+
+    @Override
+    public EntityId getAutoRenewAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getConsensusCreateTopic().getAutoRenewAccount());
     }
 
     @Override
@@ -46,11 +49,6 @@ public class ConsensusCreateTopicTransactionHandler implements TransactionHandle
     @Override
     public void updateEntity(Entities entity, RecordItem recordItem) {
         var createTopic = recordItem.getTransactionBody().getConsensusCreateTopic();
-        // Looks up (in the big cache) or creates new id.
-        Long autoRenewAccountId = entityRepository.lookupOrCreateId(EntityId.of(createTopic.getAutoRenewAccount()));
-        if (autoRenewAccountId != null) {
-            entity.setAutoRenewAccountId(autoRenewAccountId);
-        }
         if (createTopic.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(createTopic.getAutoRenewPeriod().getSeconds());
         }

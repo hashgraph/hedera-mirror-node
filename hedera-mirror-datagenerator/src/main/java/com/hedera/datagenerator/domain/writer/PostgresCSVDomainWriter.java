@@ -33,6 +33,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
@@ -105,10 +106,9 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         return new CSVPrinter(
                 Files.newBufferedWriter(Paths.get(outputDir, "t_transactions")),
                 CSVFormat.DEFAULT.withHeader(
-                        "fk_node_acc_id", "memo", "fk_payer_acc_id", "charged_tx_fee", "initial_balance",
-                        "fk_cud_entity_id", "valid_start_ns", "consensus_ns",
-                        "valid_duration_seconds", "max_fee", "transaction_hash", "result", "type",
-                        "transaction_bytes"));
+                        "node_account_id", "memo", "payer_account_id", "charged_tx_fee", "initial_balance", "entity_id",
+                        "valid_start_ns", "consensus_ns", "valid_duration_seconds", "max_fee", "transaction_hash",
+                        "result", "type", "transaction_bytes"));
     }
 
     private static CSVPrinter getEntitiesCSVPrinter(String outputDir) throws IOException {
@@ -116,7 +116,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
                 Files.newBufferedWriter(Paths.get(outputDir, "t_entities")),
                 CSVFormat.DEFAULT.withHeader(
                         "id", "entity_num", "entity_realm", "entity_shard", "fk_entity_type_id", "auto_renew_period",
-                        "key", "fk_prox_acc_id", "deleted", "exp_time_ns", "ed25519_public_key_hex", "submit_key",
+                        "key", "proxy_account_id", "deleted", "exp_time_ns", "ed25519_public_key_hex", "submit_key",
                         "memo", "auto_renew_account_id"));
     }
 
@@ -169,10 +169,9 @@ public class PostgresCSVDomainWriter implements DomainWriter {
             transactionsWriter.printRecord(
                     transaction.getNodeAccountId(), toHex(transaction.getMemo()), transaction.getPayerAccountId(),
                     transaction.getChargedTxFee(), transaction.getInitialBalance(), transaction.getEntityId(),
-                    transaction.getValidStartNs(), transaction.getConsensusNs(),
-                    transaction.getValidDurationSeconds(), transaction.getMaxFee(),
-                    toHex(transaction.getTransactionHash()), transaction.getResult(), transaction.getType(),
-                    toHex(transaction.getTransactionBytes()));
+                    transaction.getValidStartNs(), transaction.getConsensusNs(), transaction.getValidDurationSeconds(),
+                    transaction.getMaxFee(), toHex(transaction.getTransactionHash()), transaction.getResult(),
+                    transaction.getType(), toHex(transaction.getTransactionBytes()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -184,14 +183,14 @@ public class PostgresCSVDomainWriter implements DomainWriter {
         try {
             entitiesWriter.printRecord(
                     entity.getId(), entity.getEntityNum(), entity.getEntityRealm(), entity.getEntityShard(),
-                    entity.getEntityTypeId(), entity.getAutoRenewPeriod(), toHex(entity.getKey()), entity
-                            .getProxyAccountId(), entity.isDeleted(), entity.getExpiryTimeNs(), entity
-                            .getEd25519PublicKeyHex(), toHex(entity.getSubmitKey()), entity.getMemo(),
+                    entity.getEntityTypeId(), entity.getAutoRenewPeriod(), toHex(entity.getKey()),
+                    entity.getProxyAccountId(), entity.isDeleted(), entity.getExpiryTimeNs(),
+                    entity.getEd25519PublicKeyHex(), toHex(entity.getSubmitKey()), entity.getMemo(),
                     entity.getAutoRenewAccountId());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        log.trace("added entity {}", entity.getId());
+        log.trace("added entity id {}", entity.getId());
     }
 
     @Override
@@ -229,9 +228,9 @@ public class PostgresCSVDomainWriter implements DomainWriter {
     }
 
     @Override
-    public void addAccountBalances(long consensusNs, long balance, long accountNum) {
+    public void addAccountBalances(long consensusNs, long balance, EntityId account) {
         try {
-            accountBalancesWriter.printRecord(consensusNs, balance, 0, accountNum);
+            accountBalancesWriter.printRecord(consensusNs, balance, account.getRealmNum(), account.getEntityNum());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

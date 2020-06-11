@@ -29,7 +29,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ConsensusUpdateTopicTransactionHandler(entityRepository);
+        return new ConsensusUpdateTopicTransactionHandler();
     }
 
     @Override

@@ -24,20 +24,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.RandomDistributionFromRange;
-import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 @Log4j2
 @Named
 @Getter
 public class EntityManager {
 
-    private final long nodeAccountId;
+    private final EntityId nodeAccount;
 
     private final EntitySet accounts;
 
@@ -46,9 +48,9 @@ public class EntityManager {
     private final EntitySet topics;
 
     // Keeps track of entities' balances.
-    private final Map<Long, Long> balances;
+    private final Map<EntityId, Long> balances;
 
-    private final long portalEntity;  // Used to create crypto accounts
+    private EntityId portalEntity;  // Used to create crypto accounts
 
     public EntityManager() {
         accounts = new EntitySet(0L);  // Account entities start from 0
@@ -56,61 +58,59 @@ public class EntityManager {
         topics = new EntitySet(200_000_000L);
         balances = new HashMap<>();
 
-        // Create one node account with id = 0.
-        nodeAccountId = accounts.newEntity().getId();
-        balances.put(nodeAccountId, 0L);  // balance of nodeAccountId
+        // Create one node account with entity num = 0.
+        nodeAccount = accounts.newEntity();
+        balances.put(nodeAccount, 0L);  // balance of node account
 
-        // Create portal account with id = 1 which can fund other accounts on creation.
-        portalEntity = accounts.newEntity().getId();
+        // Create portal account with entity num = 1 which can fund other accounts on creation.
+        portalEntity = accounts.newEntity();
         // Source of all hbars for couple 100 million transactions.
-        balances.put(portalEntity, 1000_000_000_000_000_000L);  // balance of nodeAccountId
+        balances.put(portalEntity, 1000_000_000_000_000_000L);  // balance of node account
     }
 
-    public void addBalance(long accountId, long value) {
-        long oldBalance = balances.getOrDefault(accountId, 0L);
-        balances.put(accountId, oldBalance + value);
+    public void addBalance(EntityId account, long value) {
+        long oldBalance = balances.getOrDefault(account, 0L);
+        balances.put(account, oldBalance + value);
     }
 
     /**
-     * Represents set of entities for a specific entity type. Only keeps track of entity ids ever created. Does not keep
-     * track of active/deleted entity ids since mirror node does not do rigorous validations like - no update
+     * Represents set of entities for a specific entity type. Only keeps track of entity nums ever created. Does not keep
+     * track of active/deleted entities since mirror node does not do rigorous validations like - no update
      * transaction should be done on deleted entity.
      */
     @Getter
     public static class EntitySet {
-        private final long startEntityId;
+        private final long startEntityNum;
         private final Set<Long> deleted = new HashSet<>();
-        private long nextEntityId;
+        private long entityNum;
         private Distribution<Long> entitySampler;
 
-        EntitySet(Long startEntityId) {
-            this.startEntityId = startEntityId;
-            nextEntityId = startEntityId;
-            entitySampler = new RandomDistributionFromRange(startEntityId, nextEntityId);
+        EntitySet(Long startEntityNum) {
+            this.startEntityNum = startEntityNum;
+            entityNum = startEntityNum;
+            entitySampler = new RandomDistributionFromRange(startEntityNum, entityNum);
         }
 
-        public Entities getRandom() {
-            Entities entity = new Entities();
-            entity.setId(entitySampler.sample(1).get(0));
-            return entity;
+        public EntityId getRandomEntity() {
+            return EntityId.of(0L, 0L, entitySampler.sample(1).get(0), EntityTypeEnum.ACCOUNT);
         }
 
-        public List<Long> getRandomIds(int n) {
-            return entitySampler.sampleDistinct(n);
+        public List<EntityId> getRandomEntityNum(int n) {
+            return entitySampler.sampleDistinct(n).stream()
+                    .map(entityNum -> EntityId.of(0L, 0L, entityNum, EntityTypeEnum.ACCOUNT))
+                    .collect(Collectors.toList());
         }
 
-        public Entities newEntity() {
-            long newEntityId = nextEntityId;
-            nextEntityId++;
-            entitySampler = new RandomDistributionFromRange(startEntityId, nextEntityId);
-            log.trace("New entity {}", newEntityId);
-            Entities entities = new Entities();
-            entities.setId(newEntityId);
-            return entities;
+        public EntityId newEntity() {
+            long entityNum = this.entityNum;
+            this.entityNum++;
+            entitySampler = new RandomDistributionFromRange(startEntityNum, this.entityNum);
+            log.trace("New entity {}", entityNum);
+            return EntityId.of(0L, 0L, entityNum, EntityTypeEnum.ACCOUNT);
         }
 
-        public void delete(Entities entity) {
-            deleted.add(entity.getId());
+        public void delete(EntityId entity) {
+            deleted.add(entity.getEntityNum());
         }
     }
 }

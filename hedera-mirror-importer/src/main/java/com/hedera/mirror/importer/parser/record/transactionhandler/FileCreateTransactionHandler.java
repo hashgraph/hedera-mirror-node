@@ -34,7 +34,7 @@ import com.hedera.mirror.importer.util.Utility;
 public class FileCreateTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getRecord().getReceipt().getFileID());
     }
 

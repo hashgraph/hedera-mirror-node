@@ -28,21 +28,24 @@ import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.repository.EntityRepository;
 
 @Named
 @AllArgsConstructor
 public class ContractCreateTransactionHandler implements TransactionHandler {
-    private final EntityRepository entityRepository;
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getRecord().getReceipt().getContractID());
     }
 
     @Override
     public boolean updatesEntity() {
         return true;
+    }
+
+    @Override
+    public EntityId getProxyAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getContractCreateInstance().getProxyAccountID());
     }
 
     @Override
@@ -62,12 +65,6 @@ public class ContractCreateTransactionHandler implements TransactionHandler {
         }
         if (txMessage.hasAdminKey()) {
             entity.setKey(txMessage.getAdminKey().toByteArray());
-        }
-        // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
-        // so no need to persist it to repo.
-        Long proxyAccountId = entityRepository.lookupOrCreateId(EntityId.of(txMessage.getProxyAccountID()));
-        if (proxyAccountId != null) {
-            entity.setProxyAccountId(proxyAccountId);
         }
     }
 }

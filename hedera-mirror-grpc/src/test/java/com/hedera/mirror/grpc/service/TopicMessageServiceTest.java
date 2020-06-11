@@ -168,7 +168,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void invalidTopic() {
-        domainBuilder.entity(e -> e.entityTypeId(EntityType.ACCOUNT).entityNum(1L)).block();
+        domainBuilder.entity(e -> e.entityTypeId(EntityType.ACCOUNT).entityNum(1L).id(1L)).block();
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .topicNum(1)
                 .build();
@@ -426,8 +426,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void bothMessagesWithTopicNum() {
-        domainBuilder.entity(e -> e.entityNum(1L)).block();
-        domainBuilder.entity(e -> e.entityNum(2L)).block();
+        domainBuilder.entity(e -> e.entityNum(1L).id(1L)).block();
+        domainBuilder.entity(e -> e.entityNum(2L).id(2L)).block();
         domainBuilder.topicMessage(t -> t.topicNum(0).sequenceNumber(1)).block();
         domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(1)).block();
 
@@ -454,8 +454,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void bothMessagesWithRealmNum() {
-        domainBuilder.entity(e -> e.entityRealm(1L)).block();
-        domainBuilder.entity(e -> e.entityRealm(2L)).block();
+        domainBuilder.entity(e -> e.entityRealm(1L).id(1L)).block();
+        domainBuilder.entity(e -> e.entityRealm(2L).id(2L)).block();
         domainBuilder.topicMessage(t -> t.realmNum(0).sequenceNumber(1)).block();
         domainBuilder.topicMessage(t -> t.realmNum(1).sequenceNumber(1)).block();
 

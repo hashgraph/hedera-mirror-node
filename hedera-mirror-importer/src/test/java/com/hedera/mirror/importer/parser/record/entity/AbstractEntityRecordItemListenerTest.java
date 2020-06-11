@@ -48,8 +48,6 @@ import org.junit.jupiter.api.TestInfo;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -65,6 +63,7 @@ import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import com.hedera.mirror.importer.util.EntityIdEndec;
 import com.hedera.mirror.importer.util.Utility;
 
 public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
@@ -195,8 +194,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         // record inputs
         assertEquals(record.getTransactionFee(), dbTransaction.getChargedTxFee());
         // payer
-        Entities dbPayerEntity = entityRepository .findById(dbTransaction.getPayerAccountId()).get();
-        assertAccount(record.getTransactionID().getAccountID(), dbPayerEntity);
+        Entities dbPayerEntity = entityRepository.findById(dbTransaction.getPayerAccountId()).get();
         // transaction id
         assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()),
                 dbTransaction.getValidStartNs());
@@ -262,11 +260,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         TransferList.Builder transferList = recordBuilder.getTransferListBuilder();
         for (int i = 0; i < transferAccounts.length; i++) {
             // Irrespective of transaction success, node and network fees are present.
-            AccountAmount.Builder accountAmount = AccountAmount.newBuilder();
-            accountAmount.setAccountID(
-                    AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(transferAccounts[i]));
-            accountAmount.setAmount(transferAmounts[i]);
-            transferList.addAccountAmounts(accountAmount);
+            transferList.addAccountAmounts(accountAmount(transferAccounts[i], transferAmounts[i]));
         }
         if (transactionBody.hasCryptoTransfer() && status == ResponseCodeEnum.SUCCESS.getNumber()) {
             for (var aa : transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList()) {
@@ -275,23 +269,6 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         }
         customBuilder.accept(recordBuilder);
         return recordBuilder.build();
-    }
-
-    public Long assertEntityExistsAndLookupId(Long entityNum) {
-        if (entityNum == null) { // ignore when entity is not set in test case
-            return null;
-        }
-        Optional<Entities> entity = entityRepository.findByPrimaryKey(0L, 0L, entityNum);
-        assertThat(entity).isPresent();
-        return entity.get().getId();
-    }
-
-    public Long createIdForAccountNum(Long accountNum) {
-        if (accountNum == null) { // ignore when entity is not set in test case
-            return null;
-        }
-        EntityId entityId = new EntityId(null, 0L, 0L, accountNum, EntityTypeEnum.ACCOUNT.getId());
-        return entityRepository.save(entityId.toEntity()).getId();
     }
 
     protected com.hedera.mirror.importer.domain.Transaction getDbTransaction(Timestamp consensusTimestamp) {
@@ -305,6 +282,10 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     protected Entities getEntity(long entityId) {
         return entityRepository.findById(entityId).get();
+    }
+
+    protected Optional<Entities> getEntity(long shard, long realm, long num) {
+        return entityRepository.findById(EntityIdEndec.encode(shard, realm, num));
     }
 
     protected AccountAmount.Builder accountAmount(long accountNum, long amount) {

@@ -50,9 +50,9 @@ import org.springframework.test.context.TestPropertySource;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.EntityTypeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Disabled("This refreshes the ApplicationContext halfway through tests, causing multiple DataSource objects to be in " +
@@ -70,8 +70,6 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
     @Resource
     private EntityRepository entityRepository;
     @Resource
-    private EntityTypeRepository entityTypeRepository;
-    @Resource
     private MirrorProperties mirrorProperties;
     @Resource
     private JdbcTemplate jdbcTemplate;
@@ -86,8 +84,7 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
         AccountInfo.Builder accountInfo = accountInfo();
         write(accountInfo.build());
         migration.migrate(new FlywayContext());
-        Assertions.assertThat(entityRepository
-                .findByPrimaryKey(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum()))
+        Assertions.assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
                 .get()
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entities::getAutoRenewPeriod))
                 .returns(Utility.protobufKeyToHexIfEd25519OrNull(accountInfo.getKey()
@@ -100,8 +97,7 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
     void nullValues() throws Exception {
         write(AccountInfo.newBuilder().setAccountID(accountId).build());
         migration.migrate(new FlywayContext());
-        Assertions.assertThat(entityRepository
-                .findByPrimaryKey(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum()))
+        Assertions.assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
                 .get()
                 .returns(null, from(Entities::getAutoRenewPeriod))
                 .returns(null, from(Entities::getEd25519PublicKeyHex))
@@ -122,20 +118,21 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
                 .queryForObject("select id from t_transaction_types where name = ?", new Object[] {
                         "CRYPTOCREATEACCOUNT"}, Integer.class);
 
-        jdbcTemplate.update("insert into t_transactions (consensus_ns, fk_cud_entity_id, fk_node_acc_id, " +
-                        "fk_payer_acc_id, fk_trans_type_id, valid_start_ns) values(?,?,?,?,?,?,?)",
-                1L, entity.getId(), node.getId(), payer.getId(), transactionTypeId, 1L);
+        jdbcTemplate.update("insert into t_transactions (consensus_ns, entity_id, node_account_id, payer_account_id, " +
+                        "fk_trans_type_id, valid_start_ns) " +
+                        "values(?,?,?,?,?,?,?)",
+                1L, entity.getId(), node.getId(), payer.getId(), payer.getEntityNum(), transactionTypeId, 1L);
 
         migration.migrate(new FlywayContext());
 
         Assertions.assertThat(entityRepository.findAll())
-                .extracting(Entities::getId)
-                .containsExactlyInAnyOrder(entity.getId(), node.getId(), payer.getId());
+                .extracting(Entities::getEntityNum)
+                .containsExactlyInAnyOrder(entity.getEntityNum(), node.getEntityNum(), payer.getEntityNum());
 
         Assertions.assertThat(entityRepository.findById(entity.getId()))
                 .get()
                 .extracting(Entities::getKey)
-                .withFailMessage("Expecting entity <%d> to not be updated", entity.getId())
+                .withFailMessage("Expecting entity <%d> to not be updated", entity.getEntityNum())
                 .isNull();
     }
 
@@ -163,8 +160,7 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
 
         migration.migrate(new FlywayContext());
 
-        Assertions.assertThat(entityRepository
-                .findByPrimaryKey(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum()))
+        Assertions.assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
                 .get()
                 .extracting(Entities::isDeleted)
                 .isEqualTo(true);
@@ -213,12 +209,7 @@ public class V1_11_6__Missing_EntitiesTest extends IntegrationTest {
     }
 
     private Entities entity(long num) {
-        Entities entity = new Entities();
-        entity.setEntityNum(num);
-        entity.setEntityRealm(0L);
-        entity.setEntityShard(0L);
-        entity.setEntityTypeId(entityTypeRepository.findByName("account").map(EntityType::getId).orElse(null));
-        return entityRepository.save(entity);
+        return entityRepository.save(EntityId.of(0L, 0L, num, EntityTypeEnum.ACCOUNT).toEntity());
     }
 
     void write(AccountInfo accountInfo) throws Exception {

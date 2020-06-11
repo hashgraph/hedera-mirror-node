@@ -21,19 +21,19 @@
 const utils = require('./utils.js');
 const config = require('./config.js');
 const constants = require('./constants.js');
+const EntityId = require('./entityId');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
-const selectClause = `SELECT etrans.entity_shard, etrans.entity_realm, etrans.entity_num,
+const selectClause = `SELECT
+       t.payer_account_id,
        t.memo,
        t.consensus_ns,
        t.valid_start_ns,
        coalesce(ttr.result, 'UNKNOWN') AS result,
        coalesce(ttt.name, 'UNKNOWN') AS name,
-       t.fk_node_acc_id,
-       enode.entity_realm AS node_realm,
-       enode.entity_num AS node_num,
+       t.node_account_id,
        ctl.realm_num AS account_realm,
        ctl.entity_num AS account_num,
        ctl.amount,
@@ -47,10 +47,9 @@ const selectClause = `SELECT etrans.entity_shard, etrans.entity_realm, etrans.en
  * rows for each of the transfers in a single transaction. This function collates all
  * transfers into a single list.
  * @param {Array of objects} rows Array of rows returned as a result of an SQL query
- * @param {Array} arr REST API return array
- * @return {Array} arr Updated REST API return array
+ * @return {{anchorSecNs: (String|number), transactions: {}}}
  */
-const createTransferLists = function (rows, arr) {
+const createTransferLists = function (rows) {
   // If the transaction has a transferlist (i.e. list of individual trasnfers, it
   // will show up as separate rows. Combine those into a single transferlist for
   // a given consensus_ns (Note that there could be two records for the same
@@ -71,16 +70,11 @@ const createTransferLists = function (rows, arr) {
       transactions[row.consensus_ns]['name'] = row['name'];
       transactions[row.consensus_ns]['max_fee'] = utils.getNullableNumber(row['max_fee']);
       transactions[row.consensus_ns]['valid_duration_seconds'] = utils.getNullableNumber(row['valid_duration_seconds']);
-      transactions[row.consensus_ns]['node'] = config.shard + '.' + row.node_realm + '.' + row.node_num;
-
-      // Construct a transaction id using format: shard.realm.num-sssssssssss-nnnnnnnnn
+      transactions[row.consensus_ns]['node'] = EntityId.fromEncodedId(row['node_account_id']).toString();
       transactions[row.consensus_ns]['transaction_id'] = utils.createTransactionId(
-        config.shard,
-        row.entity_realm,
-        row.entity_num,
+        EntityId.fromEncodedId(row['payer_account_id']).toString(),
         validStartTimestamp
       );
-
       transactions[row.consensus_ns].transfers = [];
     }
 
@@ -92,10 +86,8 @@ const createTransferLists = function (rows, arr) {
 
   const anchorSecNs = rows.length > 0 ? utils.nsToSecNs(rows[rows.length - 1].consensus_ns) : 0;
 
-  arr.transactions = Object.values(transactions);
-
   return {
-    ret: arr,
+    transactions: Object.values(transactions),
     anchorSecNs: anchorSecNs,
   };
 };
@@ -116,8 +108,6 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
     `FROM ( ${innerQuery} ) AS tlist
        JOIN t_transactions t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
-       JOIN t_entities enode ON enode.id = t.fk_node_acc_id
-       JOIN t_entities etrans ON etrans.id = t.fk_payer_acc_id
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        JOIN t_cryptotransferlists ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
      ORDER BY t.consensus_ns ${order} , account_num ASC, amount ASC`
@@ -143,7 +133,7 @@ const getTransactionsInnerQuery = function (accountQuery, tsQuery, resultTypeQue
   let innerQuery = `
        SELECT DISTINCT ctl.consensus_timestamp
        FROM t_cryptotransferlists ctl
-       JOIN t_transactions t ON t.consensus_ns = ctl.consensus_timestamp
+         JOIN t_transactions t ON t.consensus_ns = ctl.consensus_timestamp
        WHERE `;
   if (accountQuery) {
     innerQuery += accountQuery; // Max limit on the inner query.
@@ -217,23 +207,17 @@ const getTransactions = async (req, res) => {
       throw new DbError(err.message);
     })
     .then((results) => {
+      const transferList = createTransferLists(results.rows);
       let ret = {
-        transactions: [],
-        links: {
-          next: null,
-        },
+        transactions: transferList.transactions,
       };
-
-      const tl = createTransferLists(results.rows, ret);
-      ret = tl.ret;
-      let anchorSecNs = tl.anchorSecNs;
 
       ret.links = {
         next: utils.getPaginationLink(
           req,
           ret.transactions.length !== query.limit,
           'timestamp',
-          anchorSecNs,
+          transferList.anchorSecNs,
           query.order
         ),
       };
@@ -243,7 +227,6 @@ const getTransactions = async (req, res) => {
       }
 
       logger.debug('getTransactions returning ' + ret.transactions.length + ' entries');
-
       res.locals[constants.responseDataLabel] = ret;
     });
 };
@@ -258,26 +241,24 @@ const getOneTransaction = async (req, res) => {
   // convert it in shard, realm, num and nanoseconds parameters
   let txIdMatches = req.params.id.match(/(\d+)\.(\d+)\.(\d+)-(\d{10})-(\d{9})/);
   if (txIdMatches === null || txIdMatches.length != 6) {
-    logger.info(`getOneTransaction: Invalid transaction id ${req.params.id}`);
+    logger.debug(`getOneTransaction: Invalid transaction id ${req.params.id}`);
     let message =
       'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" ' +
       'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
-
     throw new InvalidArgumentError(message);
   }
-  const sqlParams = [txIdMatches[1], txIdMatches[2], txIdMatches[3], txIdMatches[4] + '' + txIdMatches[5]];
+  const sqlParams = [
+    EntityId.fromString(`${txIdMatches[0]}.${txIdMatches[1]}.${txIdMatches[2]}`).getEncodedId(),
+    txIdMatches[4] + '' + txIdMatches[5],
+  ];
 
   let sqlQuery =
     selectClause +
     `FROM t_transactions t
        JOIN t_transaction_results ttr ON ttr.proto_id = t.result
-       JOIN t_entities enode ON enode.id = t.fk_node_acc_id
-       JOIN t_entities etrans ON etrans.id = t.fk_payer_acc_id
        JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        JOIN t_cryptotransferlists ctl ON  ctl.consensus_timestamp = t.consensus_ns
-     WHERE etrans.entity_shard = ?
-       AND  etrans.entity_realm = ?
-       AND  etrans.entity_num = ?
+     WHERE t.payer_account_id = ?
        AND  t.valid_start_ns = ?
      ORDER BY consensus_ns ASC, account_num ASC, amount ASC`; // In case of duplicate transactions, only the first succeeds
 
@@ -293,20 +274,14 @@ const getOneTransaction = async (req, res) => {
       throw new DbError(err.message);
     })
     .then((results) => {
-      let ret = {
-        transactions: [],
-      };
-
-      logger.debug('# rows returned: ' + results.rows.length);
-      const tl = createTransferLists(results.rows, ret);
-      ret = tl.ret;
-
-      if (ret.transactions.length === 0) {
+      const transferList = createTransferLists(results.rows);
+      if (transferList.transactions.length === 0) {
         throw new NotFoundError('Not found');
       }
-
-      logger.debug('getOneTransaction returning ' + ret.transactions.length + ' entries');
-      res.locals[constants.responseDataLabel] = ret;
+      logger.debug('getOneTransaction returning ' + transferList.transactions.length + ' entries');
+      res.locals[constants.responseDataLabel] = {
+        transactions: transferList.transactions,
+      };
     });
 };
 

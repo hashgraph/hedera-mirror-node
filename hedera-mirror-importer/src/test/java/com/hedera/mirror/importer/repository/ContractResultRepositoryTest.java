@@ -24,15 +24,13 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.ContractResult;
-import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.Transaction;
 
 public class ContractResultRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void insert() {
-        Entities entity = insertAccountEntity();
-        Transaction transaction = insertTransaction(entity, "CONTRACTCALL");
+        Transaction transaction = insertTransaction("CONTRACTCALL");
 
         ContractResult contractResult = new ContractResult();
         contractResult.setCallResult("CallResult".getBytes());

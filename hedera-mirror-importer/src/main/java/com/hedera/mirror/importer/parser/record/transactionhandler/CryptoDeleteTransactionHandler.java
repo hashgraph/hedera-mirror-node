@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class CryptoDeleteTransactionHandler implements TransactionHandler {
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getCryptoDelete().getDeleteAccountID());
     }
 

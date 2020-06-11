@@ -27,17 +27,20 @@ import lombok.AllArgsConstructor;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @AllArgsConstructor
 public class CryptoUpdateTransactionHandler implements TransactionHandler {
-    private final EntityRepository entityRepository;
 
     @Override
-    public EntityId getEntityId(RecordItem recordItem) {
+    public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getCryptoUpdateAccount().getAccountIDToUpdate());
+    }
+
+    @Override
+    public EntityId getProxyAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getCryptoUpdateAccount().getProxyAccountID());
     }
 
     @Override
@@ -56,10 +59,6 @@ public class CryptoUpdateTransactionHandler implements TransactionHandler {
         }
         if (txMessage.hasKey()) {
             entity.setKey(txMessage.getKey().toByteArray());
-        }
-        Long proxyAccountId = entityRepository.lookupOrCreateId(EntityId.of(txMessage.getProxyAccountID()));
-        if (proxyAccountId != null) {
-            entity.setProxyAccountId(proxyAccountId);
         }
     }
 }

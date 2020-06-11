@@ -42,6 +42,8 @@ import org.testcontainers.shaded.org.bouncycastle.util.Strings;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
@@ -52,6 +54,7 @@ import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
@@ -63,6 +66,9 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     @Resource
     protected TransactionRepository transactionRepository;
+
+    @Resource
+    protected EntityRepository entityRepository;
 
     @Resource
     protected CryptoTransferRepository cryptoTransferRepository;
@@ -200,8 +206,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTransaction() throws Exception {
         // given
-        Transaction expectedTransaction = new Transaction(101L, 0L, Strings.toByteArray("memo"), 0, 0, 1L, 1L, 1L, null,
-                1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
+        Transaction expectedTransaction = new Transaction(101L, 0L, Strings.toByteArray("memo"), 0, 0, 1L,
+                1L, 1L, null, 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
 
         // when
         sqlEntityListener.onTransaction(expectedTransaction);
@@ -210,6 +216,20 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertEquals(1, transactionRepository.count());
         assertExistsAndEquals(transactionRepository, expectedTransaction, 101L);
+    }
+
+    @Test
+    void onEntityId() throws Exception {
+        // given
+        EntityId entityId = EntityId.of(0L, 0L, 10L, EntityTypeEnum.ACCOUNT);
+
+        // when
+        sqlEntityListener.onEntityId(entityId);
+        completeFileAndCommit();
+
+        // then
+        assertEquals(1, entityRepository.count());
+        assertExistsAndEquals(entityRepository, entityId.toEntity(), 10L);
     }
 
     // Test that on seeing 'batchSize' number of transactions, 'executeBatch()' is called for all PreparedStatements

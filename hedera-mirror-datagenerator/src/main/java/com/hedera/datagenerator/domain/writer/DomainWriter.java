@@ -23,6 +23,7 @@ import java.io.Closeable;
 
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
@@ -38,5 +39,5 @@ public interface DomainWriter extends Closeable {
 
     void addTopicMessage(TopicMessage topicMessage);
 
-    void addAccountBalances(long consensusNs, long balance, long accountNum);
+    void addAccountBalances(long consensusNs, long balance, EntityId account);
 }
