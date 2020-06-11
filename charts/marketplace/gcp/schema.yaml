@@ -45,14 +45,6 @@ x-google-marketplace:
           type: REPO_WITHOUT_REGISTRY
         postgresql.postgresqlImage.tag:
           type: TAG
-    pgpool:
-      properties:
-        postgresql.pgpoolImage.registry:
-          type: REGISTRY
-        postgresql.pgpoolImage.repository:
-          type: REPO_WITHOUT_REGISTRY
-        postgresql.pgpoolImage.tag:
-          type: TAG
     test:
       properties:
         rest.test.image.repository:
@@ -105,6 +97,11 @@ properties:
     title: Importer database password
     x-google-marketplace:
       type: MASKED_FIELD
+  importer.persistence.size:
+    default: 10Gi
+    description: The storage size for the importer persistent volume
+    title: Importer storage size
+    type: string
   importer.serviceAccount.name:
     type: string
     title: Importer service account
@@ -122,6 +119,17 @@ properties:
               - apiGroups: ['']
                 resources: ['pods']
                 verbs: ['get', 'watch']
+  postgresql.persistence.size:
+    default: 500Gi
+    description: The storage size for the PostgreSQL persistent volume
+    title: PostgreSQL storage size
+    type: string
+  postgresql.postgresql.password:
+    type: string
+    description: The password for the 'postgres' superuser
+    title: PostgreSQL admin password
+    x-google-marketplace:
+      type: MASKED_FIELD
   postgresql.postgresql.repmgrPassword:
     type: string
     description: The password used by the PostgreSQL Replication Manager to connect to the database
@@ -147,5 +155,12 @@ required:
   - namespace
   - global.rest.password
   - grpc.config.hedera.mirror.grpc.db.password
+  - grpc.replicas
+  - grpc.serviceAccount.name
   - importer.config.hedera.mirror.importer.db.password
+  - importer.persistence.size
+  - importer.serviceAccount.name
+  - postgresql.persistence.size
+  - postgresql.postgresql.password
   - postgresql.postgresql.repmgrPassword
+  - rest.replicas
