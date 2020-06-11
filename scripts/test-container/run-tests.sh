@@ -1,11 +1,6 @@
 #!/bin/sh
 set -ex
 
-#cucumberFlags="@BalanceCheck"
-#testProfile=acceptance
-#subscribeThreadCount=20
-#jmeterTestPlan=E2E_Subscribe_Only.jmx
-
 echo "Running $testProfile Mirror Node tests"
 
 set_acceptance_configs() {

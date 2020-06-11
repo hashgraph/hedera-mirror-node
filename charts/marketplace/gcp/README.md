@@ -358,6 +358,7 @@ kubectl scale -n "${NAMESPACE}" --replicas=1 "statefulset/${APP_NAME}-importer"
 ```
 
 # Upgrade
+    ./mvnw clean deploy -N -Ddocker.skip.customfiles=false -Ddocker.tags.0=0.12 -Ddocker.tag.version=0.12.0-rc1
 
 Obtain the version of the Helm chart you want to install by first changing to the directory
 that contains the mirror node git repository then:
