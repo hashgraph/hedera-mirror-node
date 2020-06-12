@@ -100,7 +100,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.error(e);
+            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusNs, e.getMessage());
             entityId = null;
         }
         TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(recordItem.getTransactionType());

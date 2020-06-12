@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
@@ -59,7 +60,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private long batch_count = 0;
     // Keeps track of entityIds seen in the current file being processed. This is for optimizing inserts into
     // t_entities table so that insertion of node and treasury ids are not tried for every transaction.
-    private HashSet<EntityId> entityIds;
+    private Collection<EntityId> entityIds;
     private PreparedStatement sqlInsertTransaction;
     private PreparedStatement sqlInsertEntityId;
     private PreparedStatement sqlInsertTransferList;

@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class InvalidEntityException extends RuntimeException {
+public class InvalidEntityException extends ImporterException {
 
     private static final long serialVersionUID = 1988238764876411857L;
 
