@@ -216,12 +216,12 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
     private void assertTransactions() {
         expectedTransactions.forEach(t -> {
             var dbTransaction = getDbTransaction(t.record.getConsensusTimestamp());
-            var dbNode = getEntity(0, 0, NODE_ACCOUNT_NUM).get();
-            var dbPayer = getEntity(0, 0, PAYER_ACCOUNT_NUM).get();
+            var dbNodeEntity = getEntity(0, 0, NODE_ACCOUNT_NUM);
+            var dbPayerEntity = getEntity(0, 0, PAYER_ACCOUNT_NUM);
 
             assertAll(
-                    () -> assertEquals(dbNode.getId(), dbTransaction.getNodeAccountId()),
-                    () -> assertEquals(dbPayer.getId(), dbTransaction.getPayerAccountId())
+                    () -> assertEquals(dbNodeEntity.getId(), dbTransaction.getNodeAccountId().getId()),
+                    () -> assertEquals(dbPayerEntity.getId(), dbTransaction.getPayerAccountId().getId())
             );
         });
     }

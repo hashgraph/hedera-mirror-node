@@ -12,6 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.exception.InvalidEntityException;
 
 class EntityIdEndecTest {
 
@@ -30,16 +31,28 @@ class EntityIdEndecTest {
 
     @Test
     void throwsExceptionEncoding() {
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(InvalidEntityException.class, () -> {
             EntityIdEndec.encode(1L << SHARD_BITS, 0, 0);
         });
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(InvalidEntityException.class, () -> {
             EntityIdEndec.encode(0, 1L << REALM_BITS, 0);
         });
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(InvalidEntityException.class, () -> {
             EntityIdEndec.encode(0, 0, 1L << NUM_BITS);
+        });
+
+        assertThrows(InvalidEntityException.class, () -> {
+            EntityIdEndec.encode(-1, 0, 0);
+        });
+
+        assertThrows(InvalidEntityException.class, () -> {
+            EntityIdEndec.encode(0, -1, 0);
+        });
+
+        assertThrows(InvalidEntityException.class, () -> {
+            EntityIdEndec.encode(0, 0, -1);
         });
     }
 
@@ -58,7 +71,7 @@ class EntityIdEndecTest {
 
     @Test
     void throwsExceptionDecoding() {
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(InvalidEntityException.class, () -> {
             EntityIdEndec.decode(-1);
         });
     }

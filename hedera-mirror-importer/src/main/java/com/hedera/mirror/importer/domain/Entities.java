@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.domain;
  */
 
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -28,6 +29,7 @@ import lombok.Data;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.mirror.importer.converter.EntityIdConverter;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
@@ -48,13 +50,15 @@ public class Entities {
     @Column(name = "fk_entity_type_id")
     private Integer entityTypeId;
 
-    private Long autoRenewAccountId;
+    @Convert(converter = EntityIdConverter.class)
+    private EntityId autoRenewAccountId;
 
     private Long autoRenewPeriod;
 
     private byte[] key;
 
-    private Long proxyAccountId;
+    @Convert(converter = EntityIdConverter.class)
+    private EntityId proxyAccountId;
 
     private boolean deleted;
 
@@ -81,13 +85,5 @@ public class Entities {
 
     public EntityId toEntityId() {
         return new EntityId(entityShard, entityRealm, entityNum, entityTypeId);
-    }
-
-    public void setAutoRenewAccount(EntityId autoRenewAccount) {
-        autoRenewAccountId = autoRenewAccount.getId();
-    }
-
-    public void setProxyAccount(EntityId proxyAccount) {
-        proxyAccountId = proxyAccount.getId();
     }
 }

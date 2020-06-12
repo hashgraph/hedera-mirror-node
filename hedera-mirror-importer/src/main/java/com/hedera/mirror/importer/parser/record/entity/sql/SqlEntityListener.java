@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collection;
+import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +58,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final DataSource dataSource;
     private final RecordFileRepository recordFileRepository;
     private long batch_count = 0;
+    // Keeps track of entityIds seen in the current file being processed. This is for optimizing inserts into
+    // t_entities table so that insertion of node and treasury ids are not tried for every transaction.
+    private Collection<EntityId> entityIds;
     private PreparedStatement sqlInsertTransaction;
     private PreparedStatement sqlInsertEntityId;
     private PreparedStatement sqlInsertTransferList;
@@ -69,6 +74,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onStart(StreamFileData streamFileData) {
         String fileName = streamFileData.getFilename();
+        entityIds = new HashSet<>();
         if (recordFileRepository.findByName(fileName).size() > 0) {
             throw new DuplicateFileException("File already exists in the database: " + fileName);
         }
@@ -194,17 +200,19 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         try {
             // Temporary until we convert SQL statements to repository invocations
             if (transaction.getEntityId() != null) {
-                sqlInsertTransaction.setLong(F_TRANSACTION.ENTITY_ID.ordinal(), transaction.getEntityId());
+                sqlInsertTransaction.setLong(F_TRANSACTION.ENTITY_ID.ordinal(), transaction.getEntityId().getId());
             } else {
                 sqlInsertTransaction.setObject(F_TRANSACTION.ENTITY_ID.ordinal(), null);
             }
-            sqlInsertTransaction.setLong(F_TRANSACTION.NODE_ACCOUNT_ID.ordinal(), transaction.getNodeAccountId());
+            sqlInsertTransaction.setLong(F_TRANSACTION.NODE_ACCOUNT_ID.ordinal(),
+                    transaction.getNodeAccountId().getId());
             sqlInsertTransaction.setBytes(F_TRANSACTION.MEMO.ordinal(), transaction.getMemo());
             sqlInsertTransaction.setLong(F_TRANSACTION.VALID_START_NS.ordinal(), transaction.getValidStartNs());
             sqlInsertTransaction.setInt(F_TRANSACTION.TYPE.ordinal(), transaction.getType());
             sqlInsertTransaction.setLong(F_TRANSACTION.VALID_DURATION_SECONDS.ordinal(),
                     transaction.getValidDurationSeconds());
-            sqlInsertTransaction.setLong(F_TRANSACTION.PAYER_ACCOUNT_ID.ordinal(), transaction.getPayerAccountId());
+            sqlInsertTransaction.setLong(F_TRANSACTION.PAYER_ACCOUNT_ID.ordinal(),
+                    transaction.getPayerAccountId().getId());
             sqlInsertTransaction.setLong(F_TRANSACTION.RESULT.ordinal(), transaction.getResult());
             sqlInsertTransaction.setLong(F_TRANSACTION.CONSENSUS_NS.ordinal(), transaction.getConsensusNs());
             sqlInsertTransaction.setLong(F_TRANSACTION.CHARGED_TX_FEE.ordinal(), transaction.getChargedTxFee());
@@ -227,6 +235,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
+        if (entityIds.contains(entityId)) {
+            return;
+        }
         try {
             sqlInsertEntityId.setLong(F_ENTITY_ID.ID.ordinal(), entityId.getId());
             sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_SHARD.ordinal(), entityId.getShardNum());
@@ -237,6 +248,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } catch (SQLException e) {
             throw new ParserSQLException(e);
         }
+        entityIds.add(entityId);
     }
 
     @Override

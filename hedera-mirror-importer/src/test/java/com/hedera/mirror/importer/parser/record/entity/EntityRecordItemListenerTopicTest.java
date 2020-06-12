@@ -127,7 +127,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 .returns("", from(Entities::getMemo))
                 .returns(false, from(Entities::isDeleted))
                 .returns(EntityTypeEnum.TOPIC.getId(), from(Entities::getEntityTypeId))
-                .returns(autoRenewAccountId, from(Entities::getAutoRenewAccountId));
+                .returns(autoRenewAccountId, e -> e.getAutoRenewAccountId().getId());
     }
 
     @Test
@@ -259,7 +259,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                                        Integer updatedExpirationTimeNanos,
                                        @ConvertWith(KeyConverter.class) Key updatedAdminKey,
                                        @ConvertWith(KeyConverter.class) Key updatedSubmitKey, String updatedMemo,
-                                       Long autoRenewAccountNum, Long autoRenewPeriod, Long updatedAutoRenewAccount,
+                                       Long autoRenewAccountNum, Long autoRenewPeriod, Long updatedAutoRenewAccountNum,
                                        Long updatedAutoRenewPeriod) {
         // Store topic to be updated.
         var topic = createTopicEntity(topicId, expirationTimeSeconds, expirationTimeNanos, adminKey, submitKey, memo,
@@ -284,7 +284,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
         var responseCode = ResponseCodeEnum.SUCCESS;
         var transaction = createUpdateTopicTransaction(topicId, updatedExpirationTimeSeconds,
-                updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedMemo, updatedAutoRenewAccount,
+                updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedMemo, updatedAutoRenewAccountNum,
                 updatedAutoRenewPeriod);
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
@@ -294,9 +294,9 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         if (autoRenewAccountNum != null) {
             ++entityCount;
         }
-        if (updatedAutoRenewAccount != null) {
+        if (updatedAutoRenewAccountNum != null) {
             ++entityCount;
-            topic.setAutoRenewAccountId(updatedAutoRenewAccount);
+            topic.setAutoRenewAccountId(EntityId.of(0L, 0L, updatedAutoRenewAccountNum, EntityTypeEnum.ACCOUNT));
         }
         var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
@@ -536,9 +536,10 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                                        Long autoRenewPeriod) {
         var topic = EntityId.of(topicId).toEntity();
         if (autoRenewAccountNum != null) {
-            var autoRenewAccount = EntityId.of(0L, 0L, autoRenewAccountNum, EntityTypeEnum.ACCOUNT).toEntity();
-            entityRepository.findById(autoRenewAccount.getId()).orElse(entityRepository.save(autoRenewAccount));
-            topic.setAutoRenewAccountId(autoRenewAccount.getId());
+            var autoRenewAccount = EntityId.of(0L, 0L, autoRenewAccountNum, EntityTypeEnum.ACCOUNT);
+            entityRepository.findById(autoRenewAccount.getId())
+                    .orElse(entityRepository.save(autoRenewAccount.toEntity()));
+            topic.setAutoRenewAccountId(autoRenewAccount);
         }
         if (autoRenewPeriod != null) {
             topic.setAutoRenewPeriod(autoRenewPeriod);
@@ -624,7 +625,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 .returns(TRANSACTION_MEMO.getBytes(), from(Transaction::getMemo));
         if (entityId != null) {
             assertThat(transaction)
-                    .returns(entityId, from(Transaction::getEntityId));
+                    .returns(entityId, t -> t.getEntityId().getId());
         }
     }
 

@@ -75,7 +75,7 @@ public class TopicTransactionGenerator extends TransactionGenerator {
     private void createTopic(Transaction transaction) {
         transaction.setType(24);  // 24 = CONSENSUSCREATETOPIC
         EntityId newTopicNum = entityManager.getTopics().newEntity();
-        transaction.setEntity(newTopicNum);
+        transaction.setEntityId(newTopicNum);
         topicToNextSequenceNumber.put(newTopicNum, 0);
         createTopicMessage(transaction.getConsensusNs(), newTopicNum);
         log.trace("CONSENSUSCREATETOPIC transaction: topicId {}", newTopicNum);
@@ -85,14 +85,14 @@ public class TopicTransactionGenerator extends TransactionGenerator {
         transaction.setType(26);  // 26 = CONSENSUSDELETETOPIC
         EntityId topicNum = entityManager.getTopics().getRandomEntity();
         entityManager.getTopics().delete(topicNum);
-        transaction.setEntity(topicNum);
+        transaction.setEntityId(topicNum);
         log.trace("CONSENSUSDELETETOPIC transaction: topicId {}", topicNum);
     }
 
     private void updateTopic(Transaction transaction) {
         transaction.setType(25);  // 25 = CONSENSUSUPDATETOPIC
         EntityId topicNum = entityManager.getTopics().getRandomEntity();
-        transaction.setEntity(topicNum);
+        transaction.setEntityId(topicNum);
         createTopicMessage(transaction.getConsensusNs(), topicNum);
         log.trace("CONSENSUSUPDATETOPIC transaction: topicId {}", topicNum);
     }
@@ -100,7 +100,7 @@ public class TopicTransactionGenerator extends TransactionGenerator {
     private void submitMessage(Transaction transaction) {
         transaction.setType(27);  // 27 = CONSENSUSSUBMITMESSAGE
         EntityId topicNum = entityManager.getTopics().getRandomEntity();
-        transaction.setEntity(topicNum);
+        transaction.setEntityId(topicNum);
         createTopicMessage(transaction.getConsensusNs(), topicNum);
         log.trace("CONSENSUSSUBMITMESSAGE transaction: topicId {}", topicNum);
     }

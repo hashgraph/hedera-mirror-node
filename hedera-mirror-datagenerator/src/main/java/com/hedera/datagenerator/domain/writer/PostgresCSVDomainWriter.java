@@ -167,7 +167,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
     public void addTransaction(Transaction transaction) {
         try {
             transactionsWriter.printRecord(
-                    transaction.getNodeAccountId(), toHex(transaction.getMemo()), transaction.getPayerAccountId(),
+                    transaction.getNodeAccountId(), toHex(transaction.getMemo()), transaction.getPayerAccountId().getId(),
                     transaction.getChargedTxFee(), transaction.getInitialBalance(), transaction.getEntityId(),
                     transaction.getValidStartNs(), transaction.getConsensusNs(), transaction.getValidDurationSeconds(),
                     transaction.getMaxFee(), toHex(transaction.getTransactionHash()), transaction.getResult(),

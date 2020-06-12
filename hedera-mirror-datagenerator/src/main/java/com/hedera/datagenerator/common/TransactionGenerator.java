@@ -46,7 +46,7 @@ public abstract class TransactionGenerator {
         Transaction transaction = new Transaction();
         // Set default value for fields
         transaction.setConsensusNs(consensusTimestampNs);
-        transaction.setNodeAccount(entityManager.getNodeAccount());
+        transaction.setNodeAccountId(entityManager.getNodeAccount());
         transaction.setResult(RESULT_SUCCESS);
         transaction.setChargedTxFee(100_000L); // Note: place holder value only. Doesn't affect balances.
         // set to fixed 10 sec before consensus time
@@ -54,7 +54,7 @@ public abstract class TransactionGenerator {
         transaction.setValidDurationSeconds(120L);
         transaction.setMaxFee(1_000_000L);
         transaction.setInitialBalance(0L);
-        transaction.setPayerAccount(entityManager.getAccounts().getRandomEntity());
+        transaction.setPayerAccountId(entityManager.getAccounts().getRandomEntity());
         transaction.setMemo(MEMO);
 
         if (numTransactionsGenerated < numSeedEntities) {

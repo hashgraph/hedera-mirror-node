@@ -74,9 +74,9 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(chargedTxFee);
         transaction.setConsensusNs(consensusNs);
-        transaction.setEntity(entity);
-        transaction.setNodeAccount(entity);
-        transaction.setPayerAccount(entity);
+        transaction.setEntityId(entity);
+        transaction.setNodeAccountId(entity);
+        transaction.setPayerAccountId(entity);
         transaction.setResult(ResponseCodeEnum.SUCCESS.getNumber());
         transaction.setType(TransactionBody.DataCase.valueOf(type).getNumber());
         transaction.setValidStartNs(validStartNs);
