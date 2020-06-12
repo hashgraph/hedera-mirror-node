@@ -20,13 +20,17 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.sql.DataSource;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -128,13 +132,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     "VALUES (?, ?, ?, ?, ?) " +
                     "ON CONFLICT DO NOTHING");
 
-            sqlInsertTransferList = connection.prepareStatement("INSERT INTO t_cryptotransferlists"
-                    + " (consensus_timestamp, amount, realm_num, entity_num)"
-                    + " VALUES (?, ?, ?, ?)");
+            sqlInsertTransferList = connection.prepareStatement("INSERT INTO cryptotransferlists"
+                    + " (consensus_timestamp, amount, entity_id)"
+                    + " VALUES (?, ?, ?)");
 
             sqlInsertNonFeeTransfers = connection.prepareStatement("insert into non_fee_transfers"
-                    + " (consensus_timestamp, amount, realm_num, entity_num)"
-                    + " values (?, ?, ?, ?)");
+                    + " (consensus_timestamp, amount, entity_id)"
+                    + " values (?, ?, ?)");
 
             sqlInsertFileData = connection.prepareStatement("INSERT INTO t_file_data"
                     + " (consensus_timestamp, file_data)"
@@ -176,23 +180,29 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void executeBatches() {
         try {
-            int[] transactions = sqlInsertTransaction.executeBatch();
-            int[] entityIds = sqlInsertEntityId.executeBatch();
-            int[] transferLists = sqlInsertTransferList.executeBatch();
-            int[] nonFeeTransfers = sqlInsertNonFeeTransfers.executeBatch();
-            int[] fileData = sqlInsertFileData.executeBatch();
-            int[] contractResult = sqlInsertContractResult.executeBatch();
-            int[] liveHashes = sqlInsertLiveHashes.executeBatch();
-            int[] topicMessages = sqlInsertTopicMessage.executeBatch();
-            log.info("Inserted {} transactions, {} entities, {} transfer lists, {} files, {} contracts, {} claims, " +
-                            "{} topic messages, {} non-fee transfers",
-                    transactions.length, entityIds.length, transferLists.length, fileData.length, contractResult.length,
-                    liveHashes.length, topicMessages.length, nonFeeTransfers.length);
+            var transactions = executeBatch(sqlInsertTransaction);
+            var entityIds = executeBatch(sqlInsertEntityId);
+            var transferLists = executeBatch(sqlInsertTransferList);
+            var nonFeeTransfers = executeBatch(sqlInsertNonFeeTransfers);
+            var fileData = executeBatch(sqlInsertFileData);
+            var contractResult = executeBatch(sqlInsertContractResult);
+            var liveHashes = executeBatch(sqlInsertLiveHashes);
+            var topicMessages = executeBatch(sqlInsertTopicMessage);
+            log.info("Inserted transactions: {}, entities: {}, transfer lists: {}, files: {}, contracts: {}, " +
+                            "claims: {}, topic messages: {}, non-fee transfers: {}",
+                    transactions, entityIds, transferLists, fileData, contractResult, liveHashes, topicMessages,
+                    nonFeeTransfers);
         } catch (SQLException e) {
             log.error("Error committing sql insert batch ", e);
             throw new ParserSQLException(e);
         }
         batch_count = 0;
+    }
+
+    private ExecuteBatchResult executeBatch(PreparedStatement ps) throws SQLException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        var executeResult = ps.executeBatch();
+        return new ExecuteBatchResult(executeResult.length, stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     @Override
@@ -256,9 +266,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         try {
             sqlInsertTransferList.setLong(F_TRANSFERLIST.CONSENSUS_TIMESTAMP.ordinal(),
                     cryptoTransfer.getConsensusTimestamp());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.REALM_NUM.ordinal(), cryptoTransfer.getRealmNum());
-            sqlInsertTransferList.setLong(F_TRANSFERLIST.ENTITY_NUM.ordinal(), cryptoTransfer.getEntityNum());
             sqlInsertTransferList.setLong(F_TRANSFERLIST.AMOUNT.ordinal(), cryptoTransfer.getAmount());
+            sqlInsertTransferList.setLong(F_TRANSFERLIST.ENTITY_ID.ordinal(), cryptoTransfer.getEntityId().getId());
             sqlInsertTransferList.addBatch();
         } catch (SQLException e) {
             throw new ParserSQLException(e);
@@ -271,8 +280,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.CONSENSUS_TIMESTAMP.ordinal(),
                     nonFeeTransfer.getConsensusTimestamp());
             sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.AMOUNT.ordinal(), nonFeeTransfer.getAmount());
-            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.REALM_NUM.ordinal(), nonFeeTransfer.getRealmNum());
-            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.ENTITY_NUM.ordinal(), nonFeeTransfer.getEntityNum());
+            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.ENTITY_ID.ordinal(), nonFeeTransfer.getEntityId().getId());
             sqlInsertNonFeeTransfers.addBatch();
         } catch (SQLException e) {
             throw new ParserSQLException(e);
@@ -336,6 +344,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
     }
 
+    @Data
+    @AllArgsConstructor
+    private static class ExecuteBatchResult {
+        int numRows;
+        long timeTakenInMs;
+
+        @Override
+        public String toString() {
+            return numRows + " (" + timeTakenInMs + "ms)";
+        }
+    }
+
     enum F_TRANSACTION {
         ZERO, // column indices start at 1, this creates the necessary offset
         NODE_ACCOUNT_ID, MEMO, VALID_START_NS, TYPE, PAYER_ACCOUNT_ID,
@@ -350,12 +370,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     enum F_TRANSFERLIST {
         ZERO // column indices start at 1, this creates the necessary offset
-        , CONSENSUS_TIMESTAMP, AMOUNT, REALM_NUM, ENTITY_NUM
+        , CONSENSUS_TIMESTAMP, AMOUNT, ENTITY_ID
     }
 
     enum F_NONFEETRANSFER {
         ZERO // column indices start at 1, this creates the necessary offset
-        , CONSENSUS_TIMESTAMP, AMOUNT, REALM_NUM, ENTITY_NUM
+        , CONSENSUS_TIMESTAMP, AMOUNT, ENTITY_ID
     }
 
     enum F_TOPICMESSAGE {

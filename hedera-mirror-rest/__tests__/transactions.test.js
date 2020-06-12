@@ -79,6 +79,8 @@ const validateAccNumRange = function (transactions, low, high) {
   for (const tx of transactions) {
     for (const xfer of tx.transfers) {
       const accNum = xfer.account.split('.')[2];
+      // epxect(accNum).toBeGreaterThanOrEqual(low);
+      // expect(accNum).toBeLessThanOrEqual(high);
       if (accNum >= low && accNum <= high) {
         // if at least one transfer is valid move to next transaction
         ret = true;
@@ -200,7 +202,7 @@ const singleTests = {
   },
   accountid_lowerlimit: {
     urlparam: 'account.id=gte:0.0.1111',
-    checks: [{field: 'entity_num', operator: '>=', value: 1111}],
+    checks: [{field: 'entity_id', operator: '>=', value: '1111'}],
     checkFunctions: [
       {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
       {func: validateFields, args: []},
@@ -208,7 +210,7 @@ const singleTests = {
   },
   accountid_higherlimit: {
     urlparam: 'account.id=lt:0.0.2222',
-    checks: [{field: 'entity_num', operator: '<', value: 2222}],
+    checks: [{field: 'entity_id', operator: '<', value: '2222'}],
     checkFunctions: [
       {func: validateAccNumRange, args: [0, 2222]},
       {func: validateFields, args: []},
@@ -216,12 +218,12 @@ const singleTests = {
   },
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
-    checks: [{field: 'entity_num', operator: '=', value: 3333}],
+    checks: [{field: 'entity_id', operator: '=', value: '3333'}],
     checkFunctions: [{func: validateAccNumRange, args: [3333, 3333]}],
   },
   limit: {
     urlparam: 'limit=99',
-    checks: [{field: 'limit', operator: '=', value: 99}],
+    checks: [{field: 'limit', operator: '=', value: '99'}],
     checkFunctions: [
       {func: validateLen, args: [99]},
       {func: validateFields, args: []},
@@ -239,11 +241,11 @@ const singleTests = {
   },
   result_fail: {
     urlparam: 'result=fail',
-    checks: [{field: 'result', operator: '!=', value: utils.TRANSACTION_RESULT_SUCCESS}],
+    checks: [{field: 'result', operator: '!=', value: '' + utils.TRANSACTION_RESULT_SUCCESS}],
   },
   result_success: {
     urlparam: 'result=success',
-    checks: [{field: 'result', operator: '=', value: utils.TRANSACTION_RESULT_SUCCESS}],
+    checks: [{field: 'result', operator: '=', value: '' + utils.TRANSACTION_RESULT_SUCCESS}],
   },
 };
 
@@ -278,14 +280,10 @@ describe('Transaction tests', () => {
       const parsedParams = JSON.parse(response.text).sqlQuery.parsedparams;
 
       // Verify the sql query against each of the specified checks
-      let check = true;
-      for (const checkItem of item.checks) {
-        check = check && testutils.checkSql(parsedParams, checkItem);
-      }
-      expect(check).toBeTruthy();
+      expect(parsedParams).toEqual(expect.arrayContaining(item.checks));
 
       // Execute the specified functions to validate the output from the REST API
-      check = true;
+      let check = true;
       if (item.hasOwnProperty('checkFunctions')) {
         for (const cf of item.checkFunctions) {
           check = check && cf.func.apply(null, [transactions].concat(cf.args));
@@ -314,18 +312,14 @@ describe('Transaction tests', () => {
     test(`Transactions combination test: ${combtest.names} - URL: ${comburl}`, async () => {
       let response = await request(server).get([api, comburl].join('?'));
       expect(response.status).toEqual(200);
-      const parsedparams = JSON.parse(response.text).sqlQuery.parsedparams;
+      const parsedParams = JSON.parse(response.text).sqlQuery.parsedparams;
       const transactions = JSON.parse(response.text).transactions;
 
       // Verify the sql query against each of the specified checks
-      let check = true;
-      for (const checkitem of combtest.checks) {
-        check = check && testutils.checkSql(parsedparams, checkitem);
-      }
-      expect(check).toBeTruthy();
+      expect(parsedParams).toEqual(expect.arrayContaining(combtest.checks));
 
       // Execute the specified functions to validate the output from the REST API
-      check = true;
+      let check = true;
       if (combtest.hasOwnProperty('checkFunctions')) {
         for (const cf of combtest.checkFunctions) {
           check = check && cf.func.apply(null, [transactions].concat(cf.args));

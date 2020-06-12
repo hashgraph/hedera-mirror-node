@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -213,8 +212,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
                 entityListener.onNonFeeTransfer(
-                        new NonFeeTransfer(consensusTimestamp, aa.getAccountID().getRealmNum(),
-                                aa.getAccountID().getAccountNum(), aa.getAmount()));
+                        new NonFeeTransfer(consensusTimestamp, aa.getAmount(), EntityId.of(aa.getAccountID())));
             }
         }
     }
@@ -280,10 +278,9 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTransferList(long consensusTimestamp, TransferList transferList) {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
-            entityListener.onEntityId(EntityId.of(aa.getAccountID()));
-            var accountId = aa.getAccountID();
-            addCryptoTransferList(consensusTimestamp, accountId.getRealmNum(), accountId.getAccountNum(),
-                    aa.getAmount());
+            var account = EntityId.of(aa.getAccountID());
+            entityListener.onEntityId(account);
+            addCryptoTransferList(consensusTimestamp, aa.getAmount(), account);
         }
     }
 
@@ -304,31 +301,28 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransferList transferList = txRecord.getTransferList();
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-            entityListener.onEntityId(EntityId.of(accountId));
-            long accountNum = accountId.getAccountNum();
-            addCryptoTransferList(consensusTimestamp, accountId.getRealmNum(), accountNum, aa.getAmount());
+            var account = EntityId.of(aa.getAccountID());
+            entityListener.onEntityId(account);
+            addCryptoTransferList(consensusTimestamp, aa.getAmount(), account);
 
-            if (addInitialBalance && (initialBalance == aa.getAmount()) && (accountNum == createdAccountNum)) {
+            if (addInitialBalance && (initialBalance == aa.getAmount())
+                    && (account.getEntityNum() == createdAccountNum)) {
                 addInitialBalance = false;
             }
         }
 
         if (addInitialBalance) {
-            AccountID payerAccountId = body.getTransactionID().getAccountID();
-            AccountID createdAccountId = txRecord.getReceipt().getAccountID();
-            entityListener.onEntityId(EntityId.of(payerAccountId));
-            entityListener.onEntityId(EntityId.of(createdAccountId));
-            addCryptoTransferList(consensusTimestamp, payerAccountId.getRealmNum(), payerAccountId
-                    .getAccountNum(), -initialBalance);
-            addCryptoTransferList(consensusTimestamp, createdAccountId
-                    .getRealmNum(), createdAccountNum, initialBalance);
+            var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
+            var createdAccount = EntityId.of(txRecord.getReceipt().getAccountID());
+            entityListener.onEntityId(payerAccount);
+            entityListener.onEntityId(createdAccount);
+            addCryptoTransferList(consensusTimestamp, -initialBalance, payerAccount);
+            addCryptoTransferList(consensusTimestamp, initialBalance, createdAccount);
         }
     }
 
-    private void addCryptoTransferList(long consensusTimestamp, long realmNum, long accountNum, long amount) {
-        entityListener
-                .onCryptoTransfer(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
+    private void addCryptoTransferList(long consensusTimestamp, long amount, EntityId account) {
+        entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, amount, account));
     }
 
     private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody) {

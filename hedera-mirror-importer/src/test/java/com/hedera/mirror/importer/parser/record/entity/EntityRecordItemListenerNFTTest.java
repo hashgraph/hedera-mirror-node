@@ -206,10 +206,10 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
                 .mapToInt(t -> t.record.getTransferList().getAccountAmountsList().size()).sum();
         assertAll(() -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "t_transactions rows")
                 , () -> assertEquals(expectedEntityNum.size(), entityRepository.count(), "t_entities rows")
-                , () -> assertEquals(expectedTransfersCount, cryptoTransferRepository
-                        .count(), "t_cryptotransferlists rows")
-                , () -> assertEquals(expectedNonFeeTransfersCount, nonFeeTransferRepository
-                        .count(), "non_fee_transfers rows")
+                , () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(),
+                        "cryptotransferlists rows")
+                , () -> assertEquals(expectedNonFeeTransfersCount, nonFeeTransferRepository.count(),
+                        "non_fee_transfers rows")
         );
     }
 

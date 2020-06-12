@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
@@ -40,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,11 +50,13 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
+    private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1001)
             .build();
     private static final long[] additionalTransfers = {5000, 6000, PAYER.getAccountNum()};
@@ -97,31 +101,21 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
-        Entities dbNewAccountEntity = getEntity(dbTransaction.getEntityId());
-        CryptoTransfer dbCryptoTransfer = cryptoTransferRepository.findByConsensusTimestampAndEntityNum(
-                Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                dbNewAccountEntity.getEntityNum()).get();
-        AccountID recordReceiptAccountId = record.getReceipt().getAccountID();
-
+        Optional<CryptoTransfer> initialBalanceTransfer =
+                cryptoTransferRepository.findByConsensusTimestampAndEntityIdAndAmount(
+                        Utility.timeStampInNanos(record.getConsensusTimestamp()), EntityId.of(accountId),
+                        INITIAL_BALANCE);
         assertAll(
-                () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(5, entityRepository.count())
-                , () -> assertEquals(5, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
-                , () -> assertCryptoTransaction(transactionBody, record, false)
-                , () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp())
-
-                // transaction body inputs
-                , () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance())
-
-                // Crypto transfer list
-                , () -> assertEquals(Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                        dbCryptoTransfer.getConsensusTimestamp())
-                , () -> assertEquals(recordReceiptAccountId.getRealmNum(), dbCryptoTransfer.getRealmNum())
-                , () -> assertEquals(recordReceiptAccountId.getAccountNum(), dbCryptoTransfer.getEntityNum())
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(5, entityRepository.count()),
+                () -> assertEquals(5, cryptoTransferRepository.count()),
+                () -> assertEquals(0, contractResultRepository.count()),
+                () -> assertEquals(0, liveHashRepository.count()),
+                () -> assertEquals(0, fileDataRepository.count()),
+                () -> assertCryptoTransaction(transactionBody, record, false),
+                () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp()),
+                () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), INITIAL_BALANCE),
+                () -> assertTrue(initialBalanceTransfer.isPresent())
         );
     }
 
@@ -537,28 +531,17 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
+        var transferList = cryptoTransferRepository.findById(Utility.timeStampInNanos(record.getConsensusTimestamp()));
         assertAll(
-                () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEquals(2, entityRepository.count())
-                , () -> assertEquals(0, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
-                , () -> assertTransactionAndRecord(transactionBody, record)
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(2, entityRepository.count()),
+                () -> assertEquals(0, cryptoTransferRepository.count()),
+                () -> assertEquals(0, contractResultRepository.count()),
+                () -> assertEquals(0, liveHashRepository.count()),
+                () -> assertEquals(0, fileDataRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertFalse(transferList.isPresent())
         );
-
-        // Crypto transfer list
-        TransferList transferList = record.getTransferList();
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-
-            boolean isPresent = cryptoTransferRepository.findByConsensusTimestampAndEntityNum(
-                    Utility.timeStampInNanos(record.getConsensusTimestamp()),
-                    accountId.getAccountNum()).isPresent();
-
-            assertEquals(false, isPresent);
-        }
     }
 
     @Test
@@ -592,7 +575,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        org.assertj.core.api.Assertions.assertThat(transactionRepository.findAll())
+        assertThat(transactionRepository.findAll())
                 .hasSize(1)
                 .extracting(com.hedera.mirror.importer.domain.Transaction::getResult)
                 .containsOnly(unknownResult);
@@ -643,7 +626,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     private Transaction cryptoCreateTransaction() {
         return buildTransaction(builder -> builder.getCryptoCreateAccountBuilder()
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
-                .setInitialBalance(1000L)
+                .setInitialBalance(INITIAL_BALANCE)
                 .setKey(keyFromString("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
                 .setNewRealmAdminKey(keyFromString("0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
                 .setProxyAccountID(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3))
@@ -657,7 +640,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     private Transaction createTransactionWithBody() {
         return buildTransaction(builder -> builder.getCryptoCreateAccountBuilder()
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
-                .setInitialBalance(1000L)
+                .setInitialBalance(INITIAL_BALANCE)
                 .setKey(keyFromString(KEY))
                 .setNewRealmAdminKey(keyFromString(KEY2))
                 .setProxyAccountID(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3))

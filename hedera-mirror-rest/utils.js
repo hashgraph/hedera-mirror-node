@@ -19,6 +19,7 @@
  */
 'use strict';
 const constants = require('./constants.js');
+const EntityId = require('./entityId');
 const math = require('mathjs');
 const config = require('./config.js');
 const ed25519 = require('./ed25519.js');
@@ -254,93 +255,22 @@ const parseTimestampParam = function (timestampParam) {
 };
 
 /**
- * Parse the comparator symbols (i.e. gt, lt, etc.) and convert to SQL style query
- * @param {Array} fields Array of fields in the query (e.g. 'account.id' or 'timestamp')
- * @param {Array} valArr Array of values (e.g. 20 or gt:10)
- * @param {String} type Type of the field such as:
- *      'entityId': Could be just a number like 1234 that gets converted to 0.0.1234, or a full
- *          entity id in shard.realm.entityId form; or
- *      'timestamp': Could be just in seconds followed by optional decimal point and millis or nanos
- * @param {Function} valueTranslate Function(str)->str to apply to the query parameter's value (ie toLowerCase)
- *          this happens to the value _after_ operators removed and doesn't affect the operator
- * @return {Object} {queryString, queryVals} Constructed SQL query string and values.
+ * @returns {Object} null if paramValue has invalid operator, or not correctly formatted.
  */
-const parseComparatorSymbol = function (fields, valArr, type = null, valueTranslate = null) {
-  let queryStr = '';
-  let vals = [];
-
-  for (let item of valArr) {
-    // Split the gt:number into operation and value and create a SQL query string
-    let splitItem = item.split(':');
-    if (splitItem.length === 1 || splitItem.length === 2) {
-      let op;
-      let val;
-      if (splitItem.length === 1) {
-        // No operator specified. Just use "eq:"
-        op = 'eq';
-        val = splitItem[0];
-      } else {
-        op = splitItem[0];
-        val = splitItem[1];
-      }
-      if (null !== valueTranslate) {
-        val = valueTranslate(val);
-      }
-
-      let entity = null;
-
-      if (type === 'entityId') {
-        entity = parseEntityId(val);
-      }
-
-      if (op in opsMap) {
-        let fieldQueryStr = '';
-        for (let f of fields) {
-          let fquery = '';
-          if (type === 'entityId') {
-            // add realm_num check once
-            if (!queryStr.includes('realm_num = ?')) {
-              fquery = f.realm + ' ' + opsMap['eq'] + ' ? and ';
-            }
-
-            fquery += f.num + ' ' + opsMap[op] + ' ? ';
-            vals = vals.concat([entity.realm, entity.num]);
-          } else if (type === 'timestamp_ns') {
-            let ts = parseTimestampParam(val);
-            fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
-            vals.push(ts);
-          } else if (type === 'balance') {
-            if (isNumeric(val)) {
-              fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
-              vals.push(val);
-            } else {
-              fquery += '(1=1)';
-            }
-          } else if (type === 'publickey') {
-            // If the supplied key is DER encoded, decode it
-            const decodedKey = ed25519.derToEd25519(val);
-            if (decodedKey != null) {
-              val = decodedKey;
-            }
-            fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
-            vals.push(val.toLowerCase());
-          } else {
-            fquery += '(' + f + ' ' + opsMap[op] + ' ?) ';
-            vals.push(val);
-          }
-          fieldQueryStr += (fieldQueryStr === '' ? '' : ' or ') + fquery;
-        }
-
-        queryStr += (queryStr === '' ? '' : ' and ') + fieldQueryStr;
-      }
+const parseOperatorAndValueFromQueryParam = function (paramValue) {
+  // Split the op:value into operation and value and create a SQL query string
+  let splitItem = paramValue.split(':');
+  if (splitItem.length === 1) {
+    // No operator specified. Just use "eq:"
+    return {op: opsMap['eq'], value: splitItem[0]};
+  } else if (splitItem.length === 2) {
+    if (!(splitItem[0] in opsMap)) {
+      return null;
     }
+    return {op: opsMap[splitItem[0]], value: splitItem[1]};
+  } else {
+    return null;
   }
-  queryStr = queryStr === '' ? '1=1' : queryStr;
-
-  return {
-    queryStr: '(' + queryStr + ')',
-    queryVals: vals,
-  };
 };
 
 /**
@@ -361,48 +291,93 @@ const getIntegerParam = function (param, limit = undefined) {
 
 /**
  * Parse the query filer parameter
- * @param {Request} req HTTP Query request object
- * @param {String} queryField Query filter parameter name (e.g. account.id or timestamp)
- * @param {Array of Strings} SQL table field names to construct the query
- * @param {String} type One of 'entityId' or 'timestamp' for special interpretation as
- *          an entity (shard.realm.entity format), or timestamp (ssssssssss.nnnnnnnnn)
- * @param {Function} valueTranslate Function(str)->str to apply to the query parameter's value (ie toLowerCase)
- *          this happens to the value _after_ operators removed and doesn't affect the operator
+ * @param paramValues Value of the query param after parsing by ExpressJS
+ * @param {Function} processOpAndValue function to compute partial sql clause and sql params using comparator and value
+ *          in the query param.
  * @return {Array} [query, params] Constructed SQL query fragment and corresponding values
  */
-const parseParams = function (req, queryField, fields, type = null, valueTranslate = null) {
-  // Parse the timestamp filter parameters
-  let query = '';
-  let params = [];
-
-  let reqQuery = req.query[queryField];
-  if (reqQuery !== undefined) {
-    // We either have a single entry of account filter, or an array (multiple entries)
-    // Convert a single entry into an array to keep the processing consistent
-    if (!Array.isArray(reqQuery)) {
-      reqQuery = [reqQuery];
-    }
-    // Construct the SQL query fragment
-    let qp = parseComparatorSymbol(fields, reqQuery, type, valueTranslate);
-    query = qp.queryStr;
-    params = qp.queryVals;
+const parseParams = function (paramValues, processOpAndValue) {
+  if (paramValues === undefined) {
+    return ['', []];
   }
-  return [query, params];
+  // We either have a single entry of account filter, or an array (multiple entries)
+  // Convert a single entry into an array to keep the processing consistent
+  if (!Array.isArray(paramValues)) {
+    paramValues = [paramValues];
+  }
+  let partialQueries = [];
+  let values = [];
+  // Iterate for each value of param. For a url '..?q=val1&q=val2', paramValues for 'q' are [val1, val2].
+  for (let paramValue of paramValues) {
+    let opAndValue = parseOperatorAndValueFromQueryParam(paramValue);
+    if (opAndValue === null) {
+      continue;
+    }
+    let queryAndValues = processOpAndValue(opAndValue.op, opAndValue.value);
+    if (queryAndValues !== null) {
+      partialQueries.push(queryAndValues[0]);
+      values = values.concat(queryAndValues[1]);
+    }
+  }
+  return [partialQueries.join(' and '), values];
+};
+
+const parseAccountIdQueryParamAsEncoded = function (parsedQueryParams, columnName) {
+  return parseAccountIdQueryParamCommon(parsedQueryParams, '', columnName, true);
+};
+
+const parseAccountIdQueryParam = function (parsedQueryParams, realmColumnName, numColumnName) {
+  return parseAccountIdQueryParamCommon(parsedQueryParams, realmColumnName, numColumnName, false);
+};
+
+const parseAccountIdQueryParamCommon = function (parsedQueryParams, realmColumnName, numColumnName, isEncoded) {
+  return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_ID], (op, value) => {
+    let entity = parseEntityId(value);
+    if (isEncoded) {
+      return [`${numColumnName} ${op} ?`, [EntityId.of(config.shard, entity.realm, entity.num).getEncodedId()]];
+    }
+    return [`${realmColumnName} ${opsMap['eq']} ? and ${numColumnName} ${op} ?`, [entity.realm, entity.num]];
+  });
+};
+
+const parseTimestampQueryParam = function (parsedQueryParams, columnName) {
+  return parseParams(parsedQueryParams[constants.filterKeys.TIMESTAMP], (op, value) => {
+    return [`${columnName} ${op} ?`, [parseTimestampParam(value)]];
+  });
+};
+
+const parseBalanceQueryParam = function (parsedQueryParams, columnName) {
+  return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_BALANCE], (op, value) => {
+    if (isNumeric(value)) {
+      return [`${columnName} ${op} ?`, [value]];
+    }
+    return null;
+  });
+};
+
+const parsePublicKeyQueryParam = function (parsedQueryParams, columnName) {
+  return parseParams(parsedQueryParams[constants.filterKeys.ACCOUNT_PUBLICKEY], (op, value) => {
+    let key = value.toLowerCase();
+    // If the supplied key is DER encoded, decode it
+    const decodedKey = ed25519.derToEd25519(key);
+    if (decodedKey != null) {
+      key = decodedKey;
+    }
+    return [`${columnName} ${op} ?`, [key]];
+  });
 };
 
 /**
  * Parse the type=[credit | debit | creditDebit] parameter
- * @param {Request} req HTTP query request object
- * @return {String} Value of the credit/debit parameter
  */
-const parseCreditDebitParams = function (req) {
-  // Get the transaction type (credit, debit, or both)
-  // By default, query for both credit and debit transactions
-  let creditDebit = req.query.type;
-  if (!Object.values(constants.cryptoTransferType).includes(creditDebit)) {
-    creditDebit = 'creditAndDebit';
-  }
-  return creditDebit;
+const parseCreditDebitParams = function (parsedQueryParams, columnName) {
+  return parseParams(parsedQueryParams[constants.filterKeys.TYPE], (op, value) => {
+    if ('credit' === value) {
+      return [`${columnName} > 0`, []];
+    } else if ('debit' === value) {
+      return [`${columnName} < 0`, []];
+    }
+  });
 };
 
 /**
@@ -768,7 +743,11 @@ module.exports = {
   parseCreditDebitParams: parseCreditDebitParams,
   parseEntityId: parseEntityId,
   parseLimitAndOrderParams: parseLimitAndOrderParams,
-  parseParams: parseParams,
+  parseBalanceQueryParam: parseBalanceQueryParam,
+  parsePublicKeyQueryParam: parsePublicKeyQueryParam,
+  parseAccountIdQueryParam: parseAccountIdQueryParam,
+  parseAccountIdQueryParamAsEncoded: parseAccountIdQueryParamAsEncoded,
+  parseTimestampQueryParam: parseTimestampQueryParam,
   parseResultParams: parseResultParams,
   parseTimestampParam: parseTimestampParam,
   nsToSecNs: nsToSecNs,

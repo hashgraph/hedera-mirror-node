@@ -20,32 +20,27 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import com.hedera.mirror.importer.converter.EntityIdConverter;
 
 @Data
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "t_cryptotransferlists")
+@Table(name = "cryptotransferlists")
 public class CryptoTransfer {
-
     @Id
     private Long consensusTimestamp;
 
     private Long amount;
 
-    private Long realmNum;
-
-    private Long entityNum;
-
-    public void setAccount(EntityId account) {
-        realmNum = account.getRealmNum();
-        entityNum = account.getEntityNum();
-    }
+    @Convert(converter = EntityIdConverter.class)
+    private EntityId entityId;
 }

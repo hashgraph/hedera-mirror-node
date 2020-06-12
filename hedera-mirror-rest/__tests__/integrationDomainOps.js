@@ -169,17 +169,16 @@ const addTransaction = async function (transaction) {
       transaction.transaction_hash,
     ]
   );
-  await insertTransfers('t_cryptotransferlists', transaction.consensus_timestamp, transaction.transfers);
+  await insertTransfers('cryptotransferlists', transaction.consensus_timestamp, transaction.transfers);
   await insertTransfers('non_fee_transfers', transaction.consensus_timestamp, transaction.non_fee_transfers);
 };
 
 const insertTransfers = async function (tableName, consensusTimestamp, transfers) {
   for (let i = 0; i < transfers.length; ++i) {
     let transfer = transfers[i];
-    let account = EntityId.fromString(transfer.account);
     await sqlConnection.query(
-      `INSERT INTO ${tableName} (consensus_timestamp, amount, realm_num, entity_num) VALUES (\$1, \$2, \$3, \$4);`,
-      [consensusTimestamp.toString(), transfer.amount, account.realm, account.num]
+      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id) VALUES (\$1, \$2, \$3);`,
+      [consensusTimestamp.toString(), transfer.amount, EntityId.fromString(transfer.account).getEncodedId()]
     );
   }
 };

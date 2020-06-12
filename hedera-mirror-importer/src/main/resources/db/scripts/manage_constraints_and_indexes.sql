@@ -6,7 +6,7 @@ DECLARE
 BEGIN
     -- Drop order is roughly determined by foreign key constraints. If foreign key A.fk_id references B.id, then
     -- foreign key constraint on A.fk_id needs to be dropped before dropping any indexes/primary_key on B.id.
-    PERFORM drop_t_cryptotransferlists_constraints_and_indexes();
+    PERFORM drop_cryptotransferlists_constraints_and_indexes();
     PERFORM drop_t_file_data_constraints_and_indexes();
     PERFORM drop_t_livehashes_constraints_and_indexes();
     PERFORM drop_t_contract_result_constraints_and_indexes();
@@ -30,7 +30,7 @@ BEGIN
     PERFORM create_t_contract_result_constraints_and_indexes();
     PERFORM create_t_livehashes_constraints_and_indexes();
     PERFORM create_t_file_data_constraints_and_indexes();
-    PERFORM create_t_cryptotransferlists_constraints_and_indexes();
+    PERFORM create_cryptotransferlists_constraints_and_indexes();
 END;
 $$ LANGUAGE plpgsql;
 
@@ -55,21 +55,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION drop_t_cryptotransferlists_constraints_and_indexes() RETURNS void AS
+CREATE OR REPLACE FUNCTION drop_cryptotransferlists_constraints_and_indexes() RETURNS void AS
 $$
 DECLARE
 BEGIN
-    DROP INDEX IF EXISTS idx__t_cryptotransferlists__realm_and_num_and_consensus;
-    DROP INDEX IF EXISTS idx__t_cryptotransferlists__consensus_and_realm_and_num;
+    DROP INDEX IF EXISTS idx__cryptotransferlists__realm_and_num_and_consensus;
+    DROP INDEX IF EXISTS idx__cryptotransferlists__consensus_and_realm_and_num;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION create_t_cryptotransferlists_constraints_and_indexes() RETURNS void AS
+CREATE OR REPLACE FUNCTION create_cryptotransferlists_constraints_and_indexes() RETURNS void AS
 $$
 DECLARE
 BEGIN
-    CREATE INDEX IF NOT EXISTS idx__t_cryptotransferlists__realm_and_num_and_consensus ON t_cryptotransferlists (realm_num, entity_num, consensus_timestamp);
-    CREATE INDEX IF NOT EXISTS idx__t_cryptotransferlists__consensus_and_realm_and_num ON t_cryptotransferlists (consensus_timestamp, realm_num, entity_num);
+    CREATE INDEX IF NOT EXISTS idx__cryptotransferlists__realm_and_num_and_consensus ON cryptotransferlists (realm_num, entity_num, consensus_timestamp);
+    CREATE INDEX IF NOT EXISTS idx__cryptotransferlists__consensus_and_realm_and_num ON cryptotransferlists (consensus_timestamp, realm_num, entity_num);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -217,7 +217,7 @@ BEGIN
     TRUNCATE TABLE account_balance_sets RESTART IDENTITY CASCADE;
     TRUNCATE TABLE account_balances RESTART IDENTITY CASCADE;
     TRUNCATE TABLE t_contract_result RESTART IDENTITY CASCADE;
-    TRUNCATE TABLE t_cryptotransferlists RESTART IDENTITY CASCADE;
+    TRUNCATE TABLE cryptotransferlists RESTART IDENTITY CASCADE;
     TRUNCATE TABLE t_file_data RESTART IDENTITY CASCADE;
     TRUNCATE TABLE t_livehashes RESTART IDENTITY CASCADE;
     TRUNCATE TABLE topic_message RESTART IDENTITY CASCADE;
