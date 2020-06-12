@@ -123,9 +123,14 @@ public class Utility {
     }
 
     /**
-     * Calculate SHA384 hash of a record file
-     *
-     * @return byte array of hash value of null if calculating has failed
+     * Parses record stream file.
+
+     * @param filePath path to record file
+     * @param expectedPrevFileHash expected previous file's hash in current file. Throws {@link HashMismatchException}
+     *                             on mismatch
+     * @param verifyHashAfter previous file's hash mismatch is ignored if file is from before this time
+     * @param recordItemConsumer if not null, consumer is invoked for each transaction in the record file
+     * @return parsed record file
      */
     public static RecordFile parseRecordFile(String filePath, String expectedPrevFileHash, Instant verifyHashAfter,
             Consumer<RecordItem> recordItemConsumer) {
@@ -156,9 +161,10 @@ public class Utility {
                         dis.read(readFileHash);
                         recordFile.setPreviousHash(Hex.encodeHexString(readFileHash));
                         md.update(readFileHash);
+                        Instant fileInstant = Instant.parse(fileName.replaceAll(".rcd", "").replaceAll("_", ":"));
 
                         if (!Utility.verifyHashChain(recordFile.getPreviousHash(), expectedPrevFileHash,
-                                verifyHashAfter, fileName)) {
+                                verifyHashAfter, fileInstant)) {
                             throw new HashMismatchException("Hash mismatch for file " + fileName);
                         }
                         break;
@@ -438,12 +444,11 @@ public class Utility {
      * @param expectedPrevFileHash hash of last file from application state
      * @param verifyHashAfter Only the files created after (not including) this point of time are verified
      *                             for hash chaining.
-     * @param fileName             name of current stream file being verified
+     * @param fileInstant          instant corresponding to name of the file being verified
      * @return true if verification succeeds, else false
      */
     public static boolean verifyHashChain(
-            String actualPrevFileHash, String expectedPrevFileHash, Instant verifyHashAfter, String fileName) {
-        var fileInstant = Instant.parse(fileName.replaceAll(".rcd", "").replaceAll("_", ":"));
+            String actualPrevFileHash, String expectedPrevFileHash, Instant verifyHashAfter, Instant fileInstant) {
         if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;
         }
@@ -455,8 +460,7 @@ public class Utility {
         if (actualPrevFileHash.contentEquals(expectedPrevFileHash)) {
             return true;
         }
-        log.error("Hash mismatch for file {}. Expected = {}, Actual = {}", fileName, expectedPrevFileHash,
-                actualPrevFileHash);
+        log.error("Hash mismatch. Expected = {}, Actual = {}", expectedPrevFileHash, actualPrevFileHash);
         return false;
     }
 }
