@@ -192,9 +192,9 @@ rest:
 EOF
 ```
 
-Edit the `custom-values.yaml` with any other value you want to change. See the wrapper chart's [values.yaml](../hedera-mirror/values.yaml)
+Edit the `custom-values.yaml` with any other value you want to change. See the wrapper chart's [values.yaml](/charts/hedera-mirror/values.yaml)
 for additional configuration options. You can pass any application configuration option listed in
-[docs/configuration.md](docs/configuration.md) via `grpc.config`, `importer.config` and `rest.config`.
+[docs/configuration.md](/docs/configuration.md) via `grpc.config`, `importer.config` and `rest.config`.
 
 ### Perform the install
 

@@ -14,6 +14,18 @@ properties:
     default: password
     x-google-marketplace:
       type: MASKED_FIELD
+  importer.config.hedera.mirror.importer.downloader.accessKey:
+    default: ""
+    type: string
+  importer.config.hedera.mirror.importer.downloader.bucketName:
+    default: hedera-demo-streams
+    type: string
+  importer.config.hedera.mirror.importer.downloader.secretKey:
+    default: ""
+    type: string
+  importer.config.hedera.mirror.importer.network:
+    default: "DEMO"
+    type: string
   postgresql.postgresql.password:
     type: string
     default: password
