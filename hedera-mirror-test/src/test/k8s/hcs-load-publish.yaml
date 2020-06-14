@@ -31,6 +31,7 @@ spec:
       restartPolicy: Never
       containers:
         - image: gcr.io/mirrornode/hedera-mirror-test:0.13.0-rc1
+          imagePullPolicy: Always
           name: publish-test-img
           env:
             - name: testProfile
@@ -39,7 +40,8 @@ spec:
               value: "@PublishOnly"
           volumeMounts:
             - name: publish-config-volume
-              mountPath: /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/application-default.yaml
+              mountPath: /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/application-default.yml
+              subPath: application-default.yml
       volumes:
         - name: publish-config-volume
           configMap:
@@ -47,4 +49,4 @@ spec:
             name: publish-config
             items:
               - key: application-yaml
-                path: application-default.yaml
+                path: application-default.yml
