@@ -3,12 +3,12 @@ dependencies:
     condition: grpc.enabled
     name: hedera-mirror-grpc
     repository: file://../hedera-mirror-grpc
-    version: ^0.1.0
+    version: ^0.2.0
   - alias: importer
     condition: importer.enabled
     name: hedera-mirror-importer
     repository: file://../hedera-mirror-importer
-    version: ^0.1.0
+    version: ^0.2.0
   - alias: loki
     condition: loki.enabled
     name: loki-stack
@@ -32,7 +32,7 @@ dependencies:
     condition: rest.enabled
     name: hedera-mirror-rest
     repository: file://../hedera-mirror-rest
-    version: ^0.1.0
+    version: ^0.2.0
   - condition: traefik.enabled
     name: traefik
     repository: https://containous.github.io/traefik-helm-chart
