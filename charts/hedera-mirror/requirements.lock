@@ -1,10 +1,10 @@
 dependencies:
 - name: hedera-mirror-grpc
   repository: file://../hedera-mirror-grpc
-  version: 0.2.0
+  version: 0.2.1
 - name: hedera-mirror-importer
   repository: file://../hedera-mirror-importer
-  version: 0.2.0
+  version: 0.2.1
 - name: loki-stack
   repository: https://grafana.github.io/loki/charts
   version: 0.37.1
@@ -19,9 +19,9 @@ dependencies:
   version: 8.13.8
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
-  version: 0.2.0
+  version: 0.2.1
 - name: traefik
   repository: https://containous.github.io/traefik-helm-chart
   version: 8.2.1
-digest: sha256:204dc55414e4ce52d7f4c8517e23b69c0b8793476e5529d64510ec95d0c6ee9b
-generated: "2020-06-14T18:15:57.231857-05:00"
+digest: sha256:ff04b91ebb986d0840a05b1aae9a0a4c299f95cfc026c46c717cec940890862f
+generated: "2020-06-15T14:13:11.350542-05:00"

@@ -12,7 +12,7 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.13.0</version>
+        <version>0.13.1</version>
     </parent>
 
     <properties>
@@ -32,7 +32,9 @@
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
-            <version>${grpc.version}</version>
+            <!-- grpc v 1.27.2 is the last known version that supports acceptance test running  -->
+            <!-- v 1.28.0 introduced a java.lang.NoSuchFieldError: NETTY_SHADED error https://github.com/grpc/grpc-java/issues/6982 -->
+            <version>1.27.2</version>
         </dependency>
         <dependency>
             <groupId>io.cucumber</groupId>
