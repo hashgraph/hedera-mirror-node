@@ -95,6 +95,7 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
                                 if (result.isHistorical()) {
                                     historicMessagesLatch.countDown();
                                 } else {
+                                    result.startIncomingStopWatch();
                                     incomingMessagesLatch.countDown();
                                 }
                             },
@@ -105,15 +106,14 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
                 log.error("Historic messages latch count is {}, did not reach zero", historicMessagesLatch.getCount());
                 result.setSuccess(false);
             }
-
-            log.info("{} Historic messages obtained in {} ({}/s)", result.getHistoricalMessageCount(), result
-                    .getStopwatch(), result.getMessageRate());
+            result.stopHistoricStopWatch();
 
             if (historicMessagesLatch.getCount() == 0 && !incomingMessagesLatch
                     .await(messageListener.getMessagesLatchWaitSeconds(), TimeUnit.SECONDS)) {
                 log.error("incomingMessagesLatch count is {}, did not reach zero", incomingMessagesLatch.getCount());
                 result.setSuccess(false);
             }
+            result.stopIncomingStopWatch();
 
             result.onComplete();
         } catch (Exception ex) {

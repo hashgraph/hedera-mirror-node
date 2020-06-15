@@ -33,7 +33,9 @@ import lombok.extern.log4j.Log4j2;
 public abstract class HCSSamplerResult<T> {
     private final long realmNum;
     private final long topicNum;
-    private final Stopwatch stopwatch = Stopwatch.createStarted();
+    private final Stopwatch totalStopwatch = Stopwatch.createStarted();
+    private final Stopwatch historicStopwatch = Stopwatch.createStarted();
+    private final Stopwatch incomingStopwatch = Stopwatch.createUnstarted();
     private final Instant subscribeStart = Instant.now();
     private Throwable subscribeError;
     private Stopwatch lastMessage = Stopwatch.createStarted();
@@ -49,13 +51,25 @@ public abstract class HCSSamplerResult<T> {
 
     abstract String getMessage(T t);
 
+    public void stopHistoricStopWatch() {
+        historicStopwatch.stop();
+    }
+
+    public void startIncomingStopWatch() {
+        incomingStopwatch.start();
+    }
+
+    public void stopIncomingStopWatch() {
+        incomingStopwatch.stop();
+    }
+
     public long getTotalMessageCount() {
         return historicalMessageCount + incomingMessageCount;
     }
 
-    public long getMessageRate() {
-        long seconds = stopwatch.elapsed(TimeUnit.SECONDS);
-        return seconds > 0 ? getTotalMessageCount() / seconds : 0;
+    public double getMessageRate(long messageCount, Stopwatch stopwatch) {
+        long milliSeconds = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+        return milliSeconds > 0 ? (messageCount * 1.0 / milliSeconds) * (milliSeconds / 1000.0) : 0;
     }
 
     public void onNext(T result) {
@@ -74,10 +88,17 @@ public abstract class HCSSamplerResult<T> {
 
     public void onComplete() {
         String errorMessage = subscribeError == null ? "" : subscribeError.getMessage();
-        log.info("Observed {} historic and {} incoming messages in {} ({}/s). Last message received {} ago. {}",
-                historicalMessageCount,
-                incomingMessageCount, stopwatch, getMessageRate(), lastMessage, success ? "Success" :
+        log.info("Observed {} total messages in {} ({}/s). Last message received {} ago. {}.",
+                getTotalMessageCount(), totalStopwatch, String
+                        .format("%.02f", getMessageRate(getTotalMessageCount(), totalStopwatch)), lastMessage,
+                success ? "Success" :
                         "Failed : " + errorMessage);
+
+        log.info("Observed {} Historic messages in {} ({}/s), {} Incoming messages in {} ({}/s)",
+                historicalMessageCount, historicStopwatch, String
+                        .format("%.02f", getMessageRate(historicalMessageCount, historicStopwatch)),
+                incomingMessageCount,
+                incomingStopwatch, String.format("%.02f", getMessageRate(incomingMessageCount, incomingStopwatch)));
     }
 
     public void onError(Throwable err) {

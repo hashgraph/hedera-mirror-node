@@ -94,6 +94,7 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
                 if (result.isHistorical()) {
                     historicMessagesLatch.countDown();
                 } else {
+                    result.startIncomingStopWatch();
                     incomingMessagesLatch.countDown();
                 }
             }
@@ -118,15 +119,14 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
                 log.error("Historic messages latch count is {}, did not reach zero", historicMessagesLatch.getCount());
                 result.setSuccess(false);
             }
-
-            log.trace("{} Historic messages obtained in {} ({}/s)", result.getHistoricalMessageCount(), result
-                    .getStopwatch(), result.getMessageRate());
+            result.stopHistoricStopWatch();
 
             if (historicMessagesLatch.getCount() == 0 && !incomingMessagesLatch
                     .await(messageListener.getMessagesLatchWaitSeconds(), TimeUnit.SECONDS)) {
                 log.error("incomingMessagesLatch count is {}, did not reach zero", incomingMessagesLatch.getCount());
                 result.setSuccess(false);
             }
+            result.stopIncomingStopWatch();
         } catch (Exception ex) {
             log.error("Error subscribing to topic", ex);
             throw ex;
