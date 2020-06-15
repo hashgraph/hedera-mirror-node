@@ -52,7 +52,9 @@ public abstract class HCSSamplerResult<T> {
     abstract String getMessage(T t);
 
     public void stopHistoricStopWatch() {
-        historicStopwatch.stop();
+        if (historicStopwatch.isRunning()) {
+            historicStopwatch.stop();
+        }
     }
 
     public void startIncomingStopWatch() {
@@ -60,7 +62,9 @@ public abstract class HCSSamplerResult<T> {
     }
 
     public void stopIncomingStopWatch() {
-        incomingStopwatch.stop();
+        if (incomingStopwatch.isRunning()) {
+            incomingStopwatch.stop();
+        }
     }
 
     public long getTotalMessageCount() {
