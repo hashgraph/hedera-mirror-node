@@ -2,14 +2,8 @@
 # docker build -f scripts/test-container/Dockerfile . -t gcr.io/mirrornode/hedera-mirror-test:<project-version>
 FROM adoptopenjdk:11-jdk-hotspot
 
-RUN mkdir /usr/etc
-
-WORKDIR /usr/etc
-
-RUN mkdir /usr/etc/hedera-mirror-node/
-COPY . /usr/etc/hedera-mirror-node/
-
 WORKDIR /usr/etc/hedera-mirror-node
+COPY . .
 
 ENV testProfile acceptance
 ENV cucumberFlags "@BalanceCheck"

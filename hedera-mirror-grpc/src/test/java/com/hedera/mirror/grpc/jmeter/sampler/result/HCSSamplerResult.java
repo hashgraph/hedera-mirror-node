@@ -78,6 +78,10 @@ public abstract class HCSSamplerResult<T> {
         if (historical) {
             ++historicalMessageCount;
         } else {
+            if (!incomingStopwatch.isRunning()) {
+                incomingStopwatch.start();
+            }
+
             ++incomingMessageCount;
         }
 
@@ -88,17 +92,16 @@ public abstract class HCSSamplerResult<T> {
 
     public void onComplete() {
         String errorMessage = subscribeError == null ? "" : subscribeError.getMessage();
+        String historicRate = String.format("%.02f", getMessageRate(getHistoricalMessageCount(), historicStopwatch));
+        String incomingRate = String.format("%.02f", getMessageRate(getIncomingMessageCount(), incomingStopwatch));
+        String totalRate = String.format("%.02f", getMessageRate(getTotalMessageCount(), totalStopwatch));
         log.info("Observed {} total messages in {} ({}/s). Last message received {} ago. {}.",
-                getTotalMessageCount(), totalStopwatch, String
-                        .format("%.02f", getMessageRate(getTotalMessageCount(), totalStopwatch)), lastMessage,
-                success ? "Success" :
-                        "Failed : " + errorMessage);
+                getTotalMessageCount(), totalStopwatch, totalRate, lastMessage,
+                success ? "Success" : "Failed : " + errorMessage);
 
         log.info("Observed {} Historic messages in {} ({}/s), {} Incoming messages in {} ({}/s)",
-                historicalMessageCount, historicStopwatch, String
-                        .format("%.02f", getMessageRate(historicalMessageCount, historicStopwatch)),
-                incomingMessageCount,
-                incomingStopwatch, String.format("%.02f", getMessageRate(incomingMessageCount, incomingStopwatch)));
+                historicalMessageCount, historicStopwatch, historicRate, incomingMessageCount, incomingStopwatch,
+                incomingRate);
     }
 
     public void onError(Throwable err) {

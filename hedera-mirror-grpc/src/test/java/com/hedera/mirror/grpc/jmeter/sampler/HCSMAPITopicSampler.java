@@ -95,7 +95,6 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
                                 if (result.isHistorical()) {
                                     historicMessagesLatch.countDown();
                                 } else {
-                                    result.startIncomingStopWatch();
                                     incomingMessagesLatch.countDown();
                                 }
                             },
