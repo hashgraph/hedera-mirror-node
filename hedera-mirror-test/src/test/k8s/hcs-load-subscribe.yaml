@@ -8,14 +8,14 @@ data:
     hedera.mirror.test.performance.port=5600
     hedera.mirror.test.performance.clientCount=1
     hedera.mirror.test.performance.sharedChannel=false
-    hedera.mirror.test.performance.clientTopicId[0]=65204
-    hedera.mirror.test.performance.clientStartTime[0]=
+    hedera.mirror.test.performance.clientTopicId[0]=47020
+    hedera.mirror.test.performance.clientStartTime[0]=-300
     hedera.mirror.test.performance.clientEndTime[0]=0
     hedera.mirror.test.performance.clientLimit[0]=1000
     hedera.mirror.test.performance.clientRealmNum[0]=0
-    hedera.mirror.test.performance.clientHistoricMessagesCount[0]=0
-    hedera.mirror.test.performance.clientIncomingMessageCount[0]=25
-    hedera.mirror.test.performance.clientSubscribeTimeoutSeconds[0]=180
+    hedera.mirror.test.performance.clientHistoricMessagesCount[0]=50
+    hedera.mirror.test.performance.clientIncomingMessageCount[0]=50
+    hedera.mirror.test.performance.clientSubscribeTimeoutSeconds[0]=300
     hedera.mirror.test.performance.clientMilliSecWaitBefore[0]=0
     hedera.mirror.test.performance.clientUseMAPI[0]=true
 ---
@@ -24,8 +24,8 @@ kind: Job
 metadata:
   name: hcs-perf-subscribe-test
 spec:
-  completions: 1
-  parallelism: 1
+  completions: 2
+  parallelism: 2
   template:
     metadata:
       name: hcs-perf-subscribe-test
@@ -33,12 +33,13 @@ spec:
       restartPolicy: Never
       containers:
         - image: gcr.io/mirrornode/hedera-mirror-test:0.13.0-rc1
+          imagePullPolicy: Always
           name: subscribe-test-img
           env:
             - name: testProfile
               value: "performance"
             - name: subscribeThreadCount
-              value: "50"
+              value: "100"
             - name: jmeter.test
               value: "E2E_Subscribe_Only.jmx"
           volumeMounts:
