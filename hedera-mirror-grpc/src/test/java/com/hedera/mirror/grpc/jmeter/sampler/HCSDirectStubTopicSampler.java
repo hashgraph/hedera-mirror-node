@@ -125,6 +125,7 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
                 log.error("incomingMessagesLatch count is {}, did not reach zero", incomingMessagesLatch.getCount());
                 result.setSuccess(false);
             }
+            result.stopIncomingStopWatch();
         } catch (Exception ex) {
             log.error("Error subscribing to topic", ex);
             throw ex;
