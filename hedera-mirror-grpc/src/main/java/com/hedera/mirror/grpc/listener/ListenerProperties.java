@@ -32,12 +32,6 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("hedera.mirror.grpc.listener")
 public class ListenerProperties {
 
-    @NotNull
-    private Duration bufferInitial = Duration.ofSeconds(5);
-
-    @Min(1)
-    private int bufferSize = 50_000;
-
     private boolean enabled = true;
 
     @Min(32)

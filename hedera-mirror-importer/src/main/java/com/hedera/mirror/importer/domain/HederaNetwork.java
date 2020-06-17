@@ -24,5 +24,6 @@ public enum HederaNetwork {
 
     DEMO,
     MAINNET,
-    TESTNET
+    TESTNET,
+    OTHER // Pre-prod or ad hoc environments
 }

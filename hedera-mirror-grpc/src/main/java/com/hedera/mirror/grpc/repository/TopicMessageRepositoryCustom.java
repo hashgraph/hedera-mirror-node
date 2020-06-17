@@ -21,11 +21,13 @@ package com.hedera.mirror.grpc.repository;
  */
 
 import java.util.stream.Stream;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 public interface TopicMessageRepositoryCustom {
 
+    @Transactional(readOnly = true)
     Stream<TopicMessage> findByFilter(TopicMessageFilter filter);
 }

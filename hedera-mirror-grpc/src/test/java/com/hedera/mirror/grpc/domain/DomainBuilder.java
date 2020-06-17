@@ -100,10 +100,11 @@ public class DomainBuilder {
         return insert(topicMessage).thenReturn(topicMessage);
     }
 
-    public Flux<TopicMessage> topicMessages(long count) {
+    public Flux<TopicMessage> topicMessages(long count, Instant startTime) {
         List<Publisher<TopicMessage>> publishers = new ArrayList<>();
         for (int i = 0; i < count; ++i) {
-            publishers.add(topicMessage());
+            Instant consensusTimestamp = startTime.plusNanos(i);
+            publishers.add(topicMessage(t -> t.consensusTimestamp(consensusTimestamp)));
         }
         return Flux.concat(publishers);
     }

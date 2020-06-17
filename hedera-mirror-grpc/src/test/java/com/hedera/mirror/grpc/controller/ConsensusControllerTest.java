@@ -20,7 +20,6 @@ package com.hedera.mirror.grpc.controller;
  * ‍
  */
 
-import static com.hedera.mirror.grpc.controller.ConsensusController.toResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -28,6 +27,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;
+import java.time.Instant;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -69,7 +69,6 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     void setup() {
         listenerProperties.setEnabled(true);
         domainBuilder.entity().block();
-        sharedPollingTopicListener.init();  // Clear the buffer between runs
     }
 
     @AfterEach
@@ -112,13 +111,13 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
                 .build();
 
-        Flux<TopicMessage> generator = Flux.concat(domainBuilder.topicMessage(), domainBuilder.topicMessage());
+        Flux<TopicMessage> generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectNext(toResponse(topicMessage1))
-                .expectNext(toResponse(topicMessage2))
-                .expectNext(toResponse(topicMessage3))
+                .expectNext(topicMessage1.toResponse())
+                .expectNext(topicMessage2.toResponse())
+                .expectNext(topicMessage3.toResponse())
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
@@ -140,7 +139,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
         assertThat(blockingService.subscribeTopic(query))
                 .toIterable()
                 .hasSize(3)
-                .containsSequence(toResponse(topicMessage1), toResponse(topicMessage2), toResponse(topicMessage3));
+                .containsSequence(topicMessage1.toResponse(), topicMessage2.toResponse(), topicMessage3.toResponse());
     }
 
     @Test
@@ -155,13 +154,13 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
                 .build();
 
-        Flux<TopicMessage> generator = Flux.concat(domainBuilder.topicMessage(), domainBuilder.topicMessage());
+        Flux<TopicMessage> generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectNext(toResponse(topicMessage1))
-                .expectNext(toResponse(topicMessage2))
-                .expectNext(toResponse(topicMessage3))
+                .expectNext(topicMessage1.toResponse())
+                .expectNext(topicMessage2.toResponse())
+                .expectNext(topicMessage3.toResponse())
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
@@ -183,13 +182,13 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
                 .build();
 
-        Flux<TopicMessage> generator = Flux.concat(domainBuilder.topicMessage(), domainBuilder.topicMessage());
+        Flux<TopicMessage> generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectNext(toResponse(topicMessage1))
-                .expectNext(toResponse(topicMessage2))
-                .expectNext(toResponse(topicMessage3))
+                .expectNext(topicMessage1.toResponse())
+                .expectNext(topicMessage2.toResponse())
+                .expectNext(topicMessage3.toResponse())
                 .thenAwait(Duration.ofMillis(50))
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
@@ -209,9 +208,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
                 .build();
 
-        Flux<TopicMessage> generator = Flux
-                .concat(domainBuilder.topicMessage(), domainBuilder.topicMessage(), domainBuilder
-                        .topicMessage(), domainBuilder.topicMessage());
+        Flux<TopicMessage> generator = domainBuilder.topicMessages(4, Instant.now().plusSeconds(10L));
 
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .map(ConsensusTopicResponse::getSequenceNumber)

@@ -20,9 +20,13 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Resource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,6 +39,8 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
+    protected final Instant future = Instant.now().plusSeconds(10L);
+
     @Resource
     protected DomainBuilder domainBuilder;
 
@@ -42,6 +48,16 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     protected ListenerProperties listenerProperties;
 
     protected abstract TopicListener getTopicListener();
+
+    @BeforeEach
+    void setup() {
+        listenerProperties.setEnabled(true);
+    }
+
+    @AfterEach
+    void after() {
+        listenerProperties.setEnabled(false);
+    }
 
     @Test
     void noMessages() {
@@ -67,8 +83,8 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> domainBuilder.topicMessage().block())
-                .expectNext(1L)
+                .then(() -> domainBuilder.topicMessages(2, future).blockLast())
+                .expectNext(1L, 2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
     }
@@ -86,7 +102,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> domainBuilder.topicMessages(2).blockLast())
+                .then(() -> domainBuilder.topicMessages(2, future).blockLast())
                 .expectNext(1L, 2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -107,7 +123,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> domainBuilder.topicMessages(3).blockLast())
+                .then(() -> domainBuilder.topicMessages(3, future).blockLast())
                 .expectNext(1L, 2L, 3L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -125,7 +141,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> domainBuilder.topicMessages(10).blockLast())
+                .then(() -> domainBuilder.topicMessages(10, future).blockLast())
                 .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -133,10 +149,9 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
     @Test
     void startTimeEquals() {
-        Instant now = Instant.now();
-        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(now));
+        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(future));
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(now)
+                .startTime(future)
                 .build();
 
         getTopicListener().listen(filter)
@@ -151,10 +166,9 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
     @Test
     void startTimeAfter() {
-        Instant now = Instant.now();
-        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(1)));
+        Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(future.minusNanos(1)));
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(now)
+                .startTime(future)
                 .build();
 
         getTopicListener().listen(filter)
@@ -169,9 +183,9 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     @Test
     void topicNum() {
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.topicNum(0)),
-                domainBuilder.topicMessage(t -> t.topicNum(1)),
-                domainBuilder.topicMessage(t -> t.topicNum(2))
+                domainBuilder.topicMessage(t -> t.topicNum(0).consensusTimestamp(future.plusNanos(1L))),
+                domainBuilder.topicMessage(t -> t.topicNum(1).consensusTimestamp(future.plusNanos(2L))),
+                domainBuilder.topicMessage(t -> t.topicNum(2).consensusTimestamp(future.plusNanos(3L)))
         );
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
@@ -192,9 +206,9 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     @Test
     void realmNum() {
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.realmNum(0)),
-                domainBuilder.topicMessage(t -> t.realmNum(1)),
-                domainBuilder.topicMessage(t -> t.realmNum(2))
+                domainBuilder.topicMessage(t -> t.realmNum(0).consensusTimestamp(future.plusNanos(1L))),
+                domainBuilder.topicMessage(t -> t.realmNum(1).consensusTimestamp(future.plusNanos(2L))),
+                domainBuilder.topicMessage(t -> t.realmNum(2).consensusTimestamp(future.plusNanos(3L)))
         );
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
@@ -210,5 +224,58 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .expectNext(2L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
+    }
+
+    @Test
+    void multipleSubscribers() {
+        // @formatter:off
+        Flux<TopicMessage> generator = Flux.concat(
+                domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(1).consensusTimestamp(future.plusNanos(1L))),
+                domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2L))),
+                domainBuilder.topicMessage(t -> t.topicNum(2).sequenceNumber(7).consensusTimestamp(future.plusNanos(3L))),
+                domainBuilder.topicMessage(t -> t.topicNum(2).sequenceNumber(8).consensusTimestamp(future.plusNanos(4L))),
+                domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(3).consensusTimestamp(future.plusNanos(5L)))
+        );
+        // @formatter:on
+
+        TopicMessageFilter filter1 = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .topicNum(1)
+                .build();
+        TopicMessageFilter filter2 = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .topicNum(2)
+                .build();
+
+        StepVerifier stepVerifier1 = getTopicListener()
+                .listen(filter1)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .expectNext(1L, 2L, 3L)
+                .thenCancel()
+                .verifyLater();
+
+        StepVerifier stepVerifier2 = getTopicListener()
+                .listen(filter2)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .expectNext(7L, 8L)
+                .thenCancel()
+                .verifyLater();
+
+        Uninterruptibles.sleepUninterruptibly(50, TimeUnit.MILLISECONDS);
+        generator.blockLast();
+
+        stepVerifier1.verify(Duration.ofMillis(500));
+        stepVerifier2.verify(Duration.ofMillis(500));
+
+        getTopicListener()
+                .listen(filter1)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .as("Verify can still re-subscribe after poller cancelled when no subscriptions")
+                .expectNextCount(0)
+                .thenCancel()
+                .verify(Duration.ofMillis(100));
     }
 }

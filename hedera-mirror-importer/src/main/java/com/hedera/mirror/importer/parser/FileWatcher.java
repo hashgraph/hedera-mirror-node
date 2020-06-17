@@ -27,7 +27,6 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.concurrent.TimeUnit;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,19 +42,18 @@ public abstract class FileWatcher {
     protected final Logger log = LogManager.getLogger(getClass());
     protected final ParserProperties parserProperties;
 
-    protected abstract boolean isEnabled();
-
     @Async
     @EventListener(ApplicationReadyEvent.class)
     public void watch() {
         Path path = parserProperties.getValidPath();
-        if (!isEnabled()) {
+
+        if (!parserProperties.isEnabled()) {
             log.info("Skip watching directory: {}", path);
             return;
         }
 
         // Invoke on startup to check for any changed files while this process was down.
-        onCreate();
+        parse();
 
         try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
             log.info("Watching directory for changes: {}", path);
@@ -63,7 +61,7 @@ public abstract class FileWatcher {
                     .register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
             boolean valid = rootKey.isValid();
 
-            while (valid && isEnabled()) {
+            while (valid && parserProperties.isEnabled()) {
                 WatchKey key;
                 try {
                     key = watcher.poll(100, TimeUnit.MILLISECONDS);
@@ -87,7 +85,7 @@ public abstract class FileWatcher {
                         continue;
                     }
 
-                    onCreate();
+                    parse();
                 }
 
                 valid = key.reset();
@@ -97,5 +95,5 @@ public abstract class FileWatcher {
         }
     }
 
-    public abstract void onCreate();
+    public abstract void parse();
 }
