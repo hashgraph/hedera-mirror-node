@@ -1,0 +1,8 @@
+charts/**
+data/**
+db/**
+hedera-mirror-grpc/target/**
+hedera-mirror-importer/target/**
+hedera-mirror-rest/node_modules/**
+hedera-mirror-test/target/docker/**
+target/**

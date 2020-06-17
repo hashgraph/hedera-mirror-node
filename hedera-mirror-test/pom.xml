@@ -147,7 +147,7 @@
                     <images>
                         <image>
                             <build>
-                                <contextDir>${project.basedir}</contextDir>
+                                <contextDir>${maven.multiModuleProjectDirectory}</contextDir>
                                 <dockerFile>${project.basedir}/scripts/Dockerfile</dockerFile>
                                 <args>
                                     <tag>${docker.tag.version}</tag>

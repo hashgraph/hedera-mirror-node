@@ -57,7 +57,7 @@
         <docker-maven-plugin.version>0.33.0</docker-maven-plugin.version>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
-        <docker.skip.customfiles>true</docker.skip.customfiles>
+        <docker.skip.deployer>true</docker.skip.deployer>
         <docker.tag.version>${project.version}</docker.tag.version>
         <grpc.version>1.29.0</grpc.version>
         <hedera-protobuf.version>0.4.2</hedera-protobuf.version>
@@ -344,18 +344,8 @@
                             </build>
                             <name>${docker.push.repository}/hedera-mirror-node/deployer:${docker.tag.version}</name>
                         </image>
-                        <image>
-                            <build>
-                                <contextDir>${project.basedir}</contextDir>
-                                <dockerFile>${project.basedir}/scripts/test-container/Dockerfile</dockerFile>
-                                <args>
-                                    <tag>${docker.tag.version}</tag>
-                                </args>
-                            </build>
-                            <name>${docker.push.repository}/hedera-mirror-test:${docker.tag.version}</name>
-                        </image>
                     </images>
-                    <skip>${docker.skip.customfiles}</skip>
+                    <skip>${docker.skip.deployer}</skip>
                 </configuration>
             </plugin>
         </plugins>
