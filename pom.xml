@@ -264,7 +264,6 @@
                                 <goal>download-licenses</goal>
                             </goals>
                             <configuration>
-                                <excludedScopes>test</excludedScopes>
                                 <licensesOutputDirectory>${docker.resources}/third_party/licenses
                                 </licensesOutputDirectory>
                                 <licenseUrlReplacements>
@@ -274,18 +273,6 @@
                                     </licenseUrlReplacement>
                                 </licenseUrlReplacements>
                                 <organizeLicensesByDependencies>true</organizeLicensesByDependencies>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>default-cli</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>aggregate-third-party-report</goal>
-                            </goals>
-                            <configuration>
-                                <useMissingFile>true</useMissingFile>
-                                <missingFile>licenses/THIRD-PARTY.properties</missingFile>
-                                <outputDirectory>licenses</outputDirectory>
                             </configuration>
                         </execution>
                     </executions>

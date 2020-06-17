@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<licenseSummary xmlns="http://mojo.codehaus.org/"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:schemaLocation="http://mojo.codehaus.org/ licenses.xsd">
+    <dependencies>
+        <dependency>
+            <groupId>oro</groupId>
+            <artifactId>oro</artifactId>
+            <licenses>
+                <license>
+                    <name>Apache License, Version 1.1</name>
+                    <url>https://www.apache.org/licenses/LICENSE-1.1</url>
+                </license>
+            </licenses>
+        </dependency>
+    </dependencies>
+</licenseSummary>
