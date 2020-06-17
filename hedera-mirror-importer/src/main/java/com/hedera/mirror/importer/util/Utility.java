@@ -140,15 +140,16 @@ public class Utility {
 
         try (DataInputStream dis = new DataInputStream(new FileInputStream(filePath))) {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
-            MessageDigest mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+            MessageDigest mdForContent = md;
 
-            int recordFormatVersion = dis.readInt();
-            int version = dis.readInt();
+            int recordFormatVersion = readInt(dis, md);
+            if (recordFormatVersion >= FileDelimiter.RECORD_FORMAT_VERSION) {
+                mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+            }
+
+            readInt(dis, md); // version
             log.info("Loading record format version {} from record file: {}", recordFormatVersion, fileName);
             recordFile.setRecordFormatVersion(recordFormatVersion);
-
-            md.update(Utility.integerToBytes(recordFormatVersion));
-            md.update(Utility.integerToBytes(version));
 
             log.debug("Calculating hash for version {} record file: {}", recordFormatVersion, fileName);
 
@@ -170,23 +171,10 @@ public class Utility {
                         break;
 
                     case FileDelimiter.RECORD_TYPE_RECORD:
-                        MessageDigest messageDigest = md;
-                        if (recordFormatVersion >= FileDelimiter.RECORD_FORMAT_VERSION) {
-                            messageDigest = mdForContent;
-                        }
-                        // Read Transaction
-                        int byteLength = dis.readInt();
-                        byte[] transactionRawBytes = new byte[byteLength];
-                        dis.readFully(transactionRawBytes);
-                        messageDigest.update(typeDelimiter);
-                        messageDigest.update(Utility.integerToBytes(byteLength));
-                        messageDigest.update(transactionRawBytes);
-                        // Read TransactionRecord
-                        byteLength = dis.readInt();
-                        byte[] recordRawBytes = new byte[byteLength];
-                        dis.readFully(recordRawBytes);
-                        messageDigest.update(Utility.integerToBytes(byteLength));
-                        messageDigest.update(recordRawBytes);
+                        mdForContent.update(typeDelimiter);
+                        byte[] transactionRawBytes = readBytes(dis, readInt(dis, mdForContent), mdForContent);
+                        byte[] recordRawBytes = readBytes(dis, readInt(dis, mdForContent), mdForContent);
+
                         if (recordItemConsumer != null) {
                             RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);
                             recordItemConsumer.accept(recordItem);
@@ -223,10 +211,25 @@ public class Utility {
         }
     }
 
-    public static byte[] integerToBytes(int number) {
+    /**
+     * Reads int from the input stream and updates the digest.
+     */
+    public static int readInt(DataInputStream dis, MessageDigest md) throws IOException {
+        int value = dis.readInt();
         ByteBuffer b = ByteBuffer.allocate(4);
-        b.putInt(number);
-        return b.array();
+        b.putInt(value);
+        md.update(b.array());
+        return value;
+    }
+
+    /**
+     * Reads given number of bytes from the input stream and updates the digest.
+     */
+    public static byte[] readBytes(DataInputStream dis, int len, MessageDigest md) throws IOException {
+        byte[] bytes = new byte[len];
+        dis.readFully(bytes);
+        md.update(bytes);
+        return bytes;
     }
 
     /**

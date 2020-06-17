@@ -20,6 +20,7 @@
         <commons-io.version>2.6</commons-io.version>
         <guava.version>29.0-jre</guava.version>
         <s3mock.version>0.2.5</s3mock.version>
+        <swirlds.version>0.6.5-patch.2</swirlds.version>
         <testcontainers.version>1.14.3</testcontainers.version>
     </properties>
 
@@ -60,6 +61,11 @@
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
             <version>${protobuf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hedera.hashgraph</groupId>
+            <artifactId>swirlds-common</artifactId>
+            <version>${swirlds.version}</version>
         </dependency>
         <dependency>
             <groupId>com.lmax</groupId>
@@ -311,4 +317,11 @@
             </plugin>
         </plugins>
     </build>
+    <repositories>
+        <repository>
+            <id>ossrh-swirlds-staging</id>
+            <name>Staging repo</name>
+            <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1134</url>
+        </repository>
+    </repositories>
 </project>

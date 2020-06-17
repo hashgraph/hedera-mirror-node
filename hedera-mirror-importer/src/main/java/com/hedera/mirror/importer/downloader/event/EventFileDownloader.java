@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.exception.HashMismatchException;
-import com.hedera.mirror.importer.fileencoding.event.FileParser;
+import com.hedera.mirror.importer.filedecoder.EventsFileDecoder;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
@@ -73,7 +73,7 @@ public class EventFileDownloader extends Downloader {
     protected boolean verifyDataFile(File file, byte[] verifiedHash) {
         String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
         try {
-            EventFile eventFile = FileParser.parse(file.getPath(), expectedPrevFileHash,
+            EventFile eventFile = EventsFileDecoder.decode(file.getPath(), expectedPrevFileHash,
                     downloaderProperties.getMirrorProperties().getVerifyHashAfter(), null);
             if (!eventFile.getFileHash().contentEquals(Hex.encodeHexString(verifiedHash))) {
                 return false;

@@ -20,11 +20,11 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.swirlds.common.Transaction;
 import java.time.Instant;
 import java.util.List;
 import lombok.Data;
 
-import com.hedera.mirror.importer.fileencoding.event.Transaction;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data

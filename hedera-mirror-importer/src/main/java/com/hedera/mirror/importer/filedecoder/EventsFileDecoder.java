@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.fileencoding.event;
+package com.hedera.mirror.importer.filedecoder;
 
 /*-
  * ‌
@@ -20,13 +20,19 @@ package com.hedera.mirror.importer.fileencoding.event;
  * ‍
  */
 
-import java.io.DataInput;
+import static com.hedera.mirror.importer.util.Utility.readBytes;
+import static com.hedera.mirror.importer.util.Utility.readInt;
+
+import com.swirlds.common.Transaction;
+import com.swirlds.common.crypto.Signature;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
@@ -37,7 +43,7 @@ import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
-public class FileParser {
+public class EventsFileDecoder {
     public static final String HASH_ALGORITHM = "SHA-384";
     public static final byte EVENT_TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 or previous files
     public static final byte EVENT_STREAM_FILE_VERSION_LEGACY = 2;
@@ -48,28 +54,21 @@ public class FileParser {
     public static final byte EVENT_COMM_EVENT_LAST = 0x46;
 
     /**
-     * Parses event stream file.
+     * Decodes event stream file.
 
      * @param filePath path to event file
      * @param expectedPrevFileHash expected previous file's hash in current file. Throws {@link HashMismatchException}
      *                             on mismatch
      * @param verifyHashAfter previous file's hash mismatch is ignored if file is from before this time
      * @param eventItemConsumer if not null, consumer is invoked for each event in the file
-     * @return parsed event file
      */
-    public static EventFile parse(String filePath, String expectedPrevFileHash, Instant verifyHashAfter,
-                                  Consumer<EventItem> eventItemConsumer) {
+    public static EventFile decode(String filePath, String expectedPrevFileHash, Instant verifyHashAfter,
+                                   Consumer<EventItem> eventItemConsumer) {
         EventFile eventFile = new EventFile();
         eventFile.setName(filePath);
         String fileName = Utility.getFileName(filePath);
 
         try (DataInputStream dis = new DataInputStream(new FileInputStream(filePath))) {
-            int fileVersion = dis.readInt();
-            if (fileVersion < EVENT_STREAM_FILE_VERSION_LEGACY) {
-                throw new IllegalArgumentException("Invalid event stream file version " + fileVersion);
-            }
-            eventFile.setFileVersion(fileVersion);
-
             // MessageDigest for getting the file Hash
             // suppose file[i] = p[i] || h[i] || c[i];
             // p[i] denotes the bytes before previousFileHash;
@@ -79,7 +78,12 @@ public class FileParser {
             // for Version2, h[i + 1] = hash(p[i] || h[i] || c[i]);
             // for Version3, h[i + 1] = hash(p[i] || h[i] || hash(c[i]))
             MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
-            md.update(Utility.integerToBytes(fileVersion));
+
+            int fileVersion = readInt(dis, md);
+            if (fileVersion < EVENT_STREAM_FILE_VERSION_LEGACY) {
+                throw new IllegalArgumentException("Invalid event stream file version " + fileVersion);
+            }
+            eventFile.setFileVersion(fileVersion);
 
             MessageDigest mdForContent = md;
             if (fileVersion >= EVENT_STREAM_FILE_VERSION_CURRENT) {
@@ -92,10 +96,8 @@ public class FileParser {
                 switch (typeDelimiter) {
                     case EVENT_TYPE_PREV_HASH:
                         md.update(typeDelimiter);
-                        byte[] readPrevFileHash = new byte[48];
-                        dis.readFully(readPrevFileHash);
+                        byte[] readPrevFileHash = readBytes(dis, 48, md);
                         eventFile.setPreviousHash(Hex.encodeHexString(readPrevFileHash));
-                        md.update(readPrevFileHash);
                         Instant fileInstant = Instant.parse(fileName.replaceAll(".evts", "").replaceAll("_", ":"));
 
                         if (!Utility.verifyHashChain(eventFile.getPreviousHash(), expectedPrevFileHash,
@@ -142,116 +144,132 @@ public class FileParser {
     private static EventItem loadEvent(DataInputStream dis, MessageDigest md, boolean hasTransactions)
             throws IOException {
         EventItem eventItem = new EventItem();
-        int version = dis.readInt();
+        int version = readInt(dis, md);
         if (version != EVENT_STREAM_VERSION) {
             throw new IllegalArgumentException("Invalid EventStream format version : " + version);
         }
-        md.update(Utility.integerToBytes(EVENT_STREAM_VERSION));
 
-        long creatorId = dis.readLong();
-        md.update(longToBytes(creatorId));
-        eventItem.setCreatorId(creatorId);
-
-        long creatorSeq = dis.readLong();
-        md.update(longToBytes(creatorSeq));
-        eventItem.setCreatorSeq(creatorSeq);
-
-        long otherId = dis.readLong();
-        md.update(longToBytes(otherId));
-        eventItem.setOtherId(otherId);
-
-        long otherSeq = dis.readLong();
-        md.update(longToBytes(otherSeq));
-        eventItem.setOtherSeq(otherSeq);
-
-        long selfParentGen = dis.readLong();
-        md.update(longToBytes(selfParentGen));
-        eventItem.setSelfParentGen(selfParentGen);
-
-        long otherParentGen = dis.readLong();
-        md.update(longToBytes(otherParentGen));
-        eventItem.setOtherParentGen(otherParentGen);
-
-        eventItem.setSelfParentHash(readNullableByteArray(dis, md));
-        eventItem.setOtherParentHash(readNullableByteArray(dis, md));
-
+        eventItem.setCreatorId(readLong(dis, md));
+        eventItem.setCreatorSeq(readLong(dis, md));
+        eventItem.setOtherId(readLong(dis, md));
+        eventItem.setOtherSeq(readLong(dis, md));
+        eventItem.setSelfParentGen(readLong(dis, md));
+        eventItem.setOtherParentGen(readLong(dis, md));
+        eventItem.setSelfParentHash(readBytesWithChecksum(dis, md, true));
+        eventItem.setOtherParentHash(readBytesWithChecksum(dis, md, true));
         if (hasTransactions) {
-            eventItem.setTransactions(Transaction.readArray(dis, md));
+            eventItem.setTransactions(readTransactions(dis, md));
         }
+        eventItem.setTimeCreated(readInstant(dis, md));
+        eventItem.setSignature(readBytesWithChecksum(dis, md, false));
 
-        Instant timeCreated = readInstant(dis);
-        md.update(instantToBytes(timeCreated));
-        eventItem.setTimeCreated(timeCreated);
-
-        eventItem.setSignature(readByteArray(dis, md));
         byte eventEndMarker = dis.readByte();
         if (eventEndMarker != EVENT_COMM_EVENT_LAST) {
             throw new IllegalArgumentException("Invalid event end marker : " + eventEndMarker);
         }
         md.update(EVENT_COMM_EVENT_LAST);
 
-        eventItem.setHash(readByteArray(dis, md));  // event's hash
-
-        Instant consensusTimeStamp = readInstant(dis);
-        md.update(instantToBytes(consensusTimeStamp));
-        eventItem.setConsensusTimeStamp(consensusTimeStamp);
-
-        long consensusOrder = dis.readLong();
-        md.update(longToBytes(consensusOrder));
-        eventItem.setConsensusOrder(consensusOrder);
-
+        eventItem.setHash(readBytesWithChecksum(dis, md, false));  // event's hash
+        eventItem.setConsensusTimeStamp(readInstant(dis, md));
+        eventItem.setConsensusOrder(readLong(dis, md));
         if (log.isTraceEnabled()) {
             log.trace("Event: {}", eventItem);
         }
         return eventItem;
     }
 
-    private static Instant readInstant(DataInput dis) throws IOException {
-        return Instant.ofEpochSecond(
-                dis.readLong(), // from getEpochSecond()
-                dis.readLong()); // from getNano()
+    /**
+     * Read all {@link Transaction}s from the {@link DataInputStream}.
+     *
+     * @throws IOException  if the internal checksum cannot be validated, or if any error occurs when reading the file
+     */
+    public static List<Transaction> readTransactions(DataInputStream dis, MessageDigest md) throws IOException {
+        int numTransactions = readInt(dis, md);
+        if (numTransactions < 0) {
+            throw new IllegalArgumentException("Invalid number of transactions: " + numTransactions);
+        }
+        readAndValidateChecksum(dis, 1873 - numTransactions, md);
+        List<Transaction> transactions = new ArrayList<>(numTransactions);
+        for (int i = 0; i < numTransactions; i++) {
+            transactions.add(deserialize(dis, md));
+        }
+        return transactions;
     }
 
-    private static byte[] instantToBytes(Instant instant) {
-        ByteBuffer b = ByteBuffer.allocate(16);
-        b.putLong(instant.getEpochSecond()).putLong(instant.getNano());
-        return b.array();
+    /**
+     * Read single {@link Transaction} from the {@link DataInputStream}.
+     *
+     * @throws IOException  if the internal checksum cannot be validated, or if any error occurs when reading the file
+     */
+    private static Transaction deserialize(DataInputStream dis, MessageDigest md) throws IOException {
+        int txLen = readInt(dis, md);
+        if (txLen < 0) {
+            throw new IllegalArgumentException("Invalid number of transactions: " + txLen);
+        }
+        readAndValidateChecksum(dis, 277 - txLen, md);
+        readBoolean(dis, md); // system field of transaction
+        byte[] contents = readBytes(dis, txLen, md);
+        Signature[] signatures = readSignatures(dis, md);
+        return new Transaction(contents, signatures);
     }
 
-    private static byte[] readByteArray(DataInputStream dis, MessageDigest md) throws IOException {
-        int len = dis.readInt();
+    /**
+     * Read all {@link Signature}s from the {@link DataInputStream}.
+     *
+     * @throws IOException  if the internal checksum cannot be validated, or if any error occurs when reading the file
+     */
+    private static Signature[] readSignatures(DataInputStream dis, MessageDigest md) throws IOException {
+        int numSigs = readInt(dis, md);
+        if (numSigs < 0) {
+            throw new IllegalArgumentException("Invalid number of signatures: " + numSigs);
+        }
+        readAndValidateChecksum(dis, 353 - numSigs, md);
+        Signature[] signatures = null;
+        if (numSigs > 0) {
+            signatures = new Signature[numSigs];
+            for (int i = 0; i < numSigs; i++) {
+                signatures[i] = Signature.deserialize(dis, null);
+            }
+        }
+        return signatures;
+    }
+
+    private static Instant readInstant(DataInputStream dis, MessageDigest md) throws IOException {
+         return Instant.ofEpochSecond(readLong(dis, md), readLong(dis, md));
+    }
+
+    private static byte[] readBytesWithChecksum(DataInputStream dis, MessageDigest md, boolean canBeEmpty)
+            throws IOException {
+        int len = readInt(dis, md);
         if (len < 0) {
+            if (canBeEmpty) {
+                return null;
+            }
             throw new IllegalArgumentException("Invalid length: " + len);
         }
-        md.update(Utility.integerToBytes(len));
-        return readByteArrayOfLength(dis, len, md);
+        readAndValidateChecksum(dis, 101 - len, md);
+        return readBytes(dis, len, md);
     }
 
-    private static byte[] readNullableByteArray(DataInputStream dis, MessageDigest md) throws IOException {
-        int len = dis.readInt();
-        md.update(Utility.integerToBytes(len));
-        if (len < 0) {
-            return null;
-        }
-        return readByteArrayOfLength(dis, len, md);
-    }
-
-    private static byte[] readByteArrayOfLength(DataInputStream dis, int len, MessageDigest md) throws IOException {
-        int checksum = dis.readInt();
-        md.update(Utility.integerToBytes(checksum));
-
-        if (checksum != (101 - len)) { // must be at wrong place in the stream
-            throw new IllegalArgumentException("Invalid checksum : " + checksum + ". length is " + len);
-        }
-        byte[] data = new byte[len];
-        dis.readFully(data);
-        md.update(data);
-        return data;
-    }
-
-    private static byte[] longToBytes(long number) {
+    private static long readLong(DataInputStream dis, MessageDigest md) throws IOException {
+        long value = dis.readLong();
         ByteBuffer b = ByteBuffer.allocate(8);
-        b.putLong(number);
-        return b.array();
+        b.putLong(value);
+        md.update(b.array());
+        return value;
+    }
+
+    private static boolean readBoolean(DataInputStream dis, MessageDigest md) throws IOException {
+        boolean value = dis.readBoolean();
+        md.update(value ? (byte) 1 : (byte) 0);
+        return value;
+    }
+
+    private static void readAndValidateChecksum(DataInputStream dis, int expectedChecksum, MessageDigest md)
+            throws IOException {
+        int checksum = readInt(dis, md);
+        if (checksum != expectedChecksum) {
+            throw new IllegalArgumentException("Invalid checksum : " + checksum + ". Expected: " + expectedChecksum);
+        }
     }
 }
