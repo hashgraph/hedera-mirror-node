@@ -119,7 +119,6 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
                 log.error("incomingMessagesLatch count is {}, did not reach zero", incomingMessagesLatch.getCount());
                 result.setSuccess(false);
             }
-            result.stopIncomingStopWatch();
 
             result.onComplete();
         } catch (Exception ex) {
