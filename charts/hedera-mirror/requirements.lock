@@ -24,4 +24,4 @@ dependencies:
   repository: https://containous.github.io/traefik-helm-chart
   version: 8.2.1
 digest: sha256:ff04b91ebb986d0840a05b1aae9a0a4c299f95cfc026c46c717cec940890862f
-generated: "2020-06-15T14:13:11.350542-05:00"
+generated: "2020-06-18T10:29:26.535334-05:00"

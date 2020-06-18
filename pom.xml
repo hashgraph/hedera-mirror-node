@@ -4,7 +4,7 @@
 
     <groupId>com.hedera</groupId>
     <artifactId>hedera-mirror-node</artifactId>
-    <version>0.13.1</version>
+    <version>0.13.2</version>
     <description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
     <inceptionYear>2019</inceptionYear>
     <modelVersion>4.0.0</modelVersion>
@@ -69,7 +69,7 @@
         <micrometer-jvm-extras.version>0.2.0</micrometer-jvm-extras.version>
         <protobuf.version>3.11.1</protobuf.version>
         <release.version>${project.version}</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.2.0</release.chartVersion>
+        <release.chartVersion>0.2.1</release.chartVersion>
         <testcontainers.version>1.62</testcontainers.version>
     </properties>
 
@@ -391,7 +391,8 @@
                                     <value>${release.chartVersion}</value>
                                 </replacement>
                                 <replacement>
-                                    <token><![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|rest):)[0-9a-z.-]+]]></token>
+                                    <token>
+                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|rest):)[0-9a-z.-]+]]></token>
                                     <value>${release.version}</value>
                                 </replacement>
                             </replacements>
