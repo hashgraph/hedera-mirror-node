@@ -280,7 +280,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
             entityListener.onEntityId(account);
-            addCryptoTransferList(consensusTimestamp, aa.getAmount(), account);
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
         }
     }
 
@@ -303,7 +303,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
             entityListener.onEntityId(account);
-            addCryptoTransferList(consensusTimestamp, aa.getAmount(), account);
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
 
             if (addInitialBalance && (initialBalance == aa.getAmount())
                     && (account.getEntityNum() == createdAccountNum)) {
@@ -316,13 +316,9 @@ public class EntityRecordItemListener implements RecordItemListener {
             var createdAccount = EntityId.of(txRecord.getReceipt().getAccountID());
             entityListener.onEntityId(payerAccount);
             entityListener.onEntityId(createdAccount);
-            addCryptoTransferList(consensusTimestamp, -initialBalance, payerAccount);
-            addCryptoTransferList(consensusTimestamp, initialBalance, createdAccount);
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccount));
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount));
         }
-    }
-
-    private void addCryptoTransferList(long consensusTimestamp, long amount, EntityId account) {
-        entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, amount, account));
     }
 
     private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody) {

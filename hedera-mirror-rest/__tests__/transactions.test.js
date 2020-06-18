@@ -79,8 +79,6 @@ const validateAccNumRange = function (transactions, low, high) {
   for (const tx of transactions) {
     for (const xfer of tx.transfers) {
       const accNum = xfer.account.split('.')[2];
-      // epxect(accNum).toBeGreaterThanOrEqual(low);
-      // expect(accNum).toBeLessThanOrEqual(high);
       if (accNum >= low && accNum <= high) {
         // if at least one transfer is valid move to next transaction
         ret = true;
