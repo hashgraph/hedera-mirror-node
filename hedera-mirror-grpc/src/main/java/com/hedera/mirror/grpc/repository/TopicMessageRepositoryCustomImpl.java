@@ -30,6 +30,7 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.hibernate.jpa.QueryHints;
 
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
@@ -63,9 +64,12 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
         query = query.select(root).where(predicate).orderBy(cb.asc(root.get("consensusTimestamp")));
 
         TypedQuery<TopicMessage> typedQuery = entityManager.createQuery(query);
+        typedQuery.setHint(QueryHints.HINT_READONLY, true);
+
         if (filter.hasLimit()) {
             typedQuery.setMaxResults((int) filter.getLimit());
         }
+
         return typedQuery.getResultList().stream(); // getResultStream()'s cursor doesn't work with reactive streams
     }
 }
