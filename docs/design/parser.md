@@ -178,7 +178,7 @@ public class RecordFileReader extends FileWatcher {
 
 1. Does Spring Data repository has support for Postgres COPY command? Couldn't find sources that suggest it does. If
    that indeed turns out to be the case, then I see at least two possibilities:
-    - Use manual connection(s) to COPY to t_transactions, cryptotransferlists, topic_message, other write heavy tables.
+    - Use manual connection(s) to COPY to t_transactions, crypto_transfers, topic_message, other write heavy tables.
       And use Spring Repositories for other tables. However, that raises the question of consistency of data across multiple
       transactions (since there are multiple connections).
     - Use COPY and PreparedStatement over single connection

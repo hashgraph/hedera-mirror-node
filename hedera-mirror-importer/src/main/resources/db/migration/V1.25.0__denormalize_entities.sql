@@ -106,17 +106,17 @@ alter table if exists t_entities
     add primary key (id);
 
 -------------------
--- cryptotransferlists table
+-- crypto_transfers table
 -------------------
 
-create table if not exists cryptotransferlists (
+create table if not exists crypto_transfers (
   entity_id entity_id not null,
   consensus_timestamp nanos_timestamp not null,
   amount hbar_tinybars not null
 );
 
 -- Current assumption in t_cryptotransferlists is that shard = 0. Below migration builds on that assumption.
-insert into cryptotransferlists
+insert into crypto_transfers
 select encodeEntityId(0, realm_num, entity_num), consensus_timestamp, amount
 from t_cryptotransferlists;
 
@@ -124,10 +124,10 @@ drop index if exists idx__t_cryptotransferlists__consensus_and_realm_and_num; --
 drop index if exists idx__t_cryptotransferlists__realm_and_num_and_consensus;
 drop table if exists t_cryptotransferlists;
 
-create index if not exists cryptotransferlists__consensus_timestamp
-    on cryptotransferlists (consensus_timestamp);
-create index cryptotransferlists__entity_id
-    on cryptotransferlists (entity_id)
+create index if not exists crypto_transfers__consensus_timestamp
+    on crypto_transfers (consensus_timestamp);
+create index if not exists crypto_transfers__entity_id
+    on crypto_transfers (entity_id)
     where entity_id != 98; -- id corresponding to treasury address 0.0.98
 
 create table if not exists non_fee_transfers_new (

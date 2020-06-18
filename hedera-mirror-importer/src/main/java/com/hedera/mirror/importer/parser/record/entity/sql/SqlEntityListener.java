@@ -132,7 +132,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     "VALUES (?, ?, ?, ?, ?) " +
                     "ON CONFLICT DO NOTHING");
 
-            sqlInsertTransferList = connection.prepareStatement("INSERT INTO cryptotransferlists"
+            sqlInsertTransferList = connection.prepareStatement("INSERT INTO crypto_transfers"
                     + " (consensus_timestamp, amount, entity_id)"
                     + " VALUES (?, ?, ?)");
 

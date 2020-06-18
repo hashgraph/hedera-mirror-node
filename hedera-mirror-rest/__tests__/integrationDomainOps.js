@@ -169,7 +169,7 @@ const addTransaction = async function (transaction) {
       transaction.transaction_hash,
     ]
   );
-  await insertTransfers('cryptotransferlists', transaction.consensus_timestamp, transaction.transfers);
+  await insertTransfers('crypto_transfers', transaction.consensus_timestamp, transaction.transfers);
   await insertTransfers('non_fee_transfers', transaction.consensus_timestamp, transaction.non_fee_transfers);
 };
 

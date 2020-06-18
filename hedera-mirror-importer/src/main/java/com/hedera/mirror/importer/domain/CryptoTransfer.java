@@ -34,7 +34,7 @@ import com.hedera.mirror.importer.converter.EntityIdConverter;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "cryptotransferlists")
+@Table(name = "crypto_transfers")
 public class CryptoTransfer {
     @Id
     private Long consensusTimestamp;

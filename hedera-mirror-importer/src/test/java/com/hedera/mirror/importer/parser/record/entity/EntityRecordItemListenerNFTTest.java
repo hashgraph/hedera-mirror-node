@@ -207,7 +207,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         assertAll(() -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "t_transactions rows")
                 , () -> assertEquals(expectedEntityNum.size(), entityRepository.count(), "t_entities rows")
                 , () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(),
-                        "cryptotransferlists rows")
+                        "crypto_transfers rows")
                 , () -> assertEquals(expectedNonFeeTransfersCount, nonFeeTransferRepository.count(),
                         "non_fee_transfers rows")
         );
