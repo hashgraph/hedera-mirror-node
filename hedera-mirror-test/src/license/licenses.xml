@@ -55,8 +55,8 @@
             </licenses>
         </dependency>
         <dependency>
-            <groupId>net.sf.jtidy</groupId>
-            <artifactId>jtidy</artifactId>
+            <groupId>xpp3</groupId>
+            <artifactId>xpp3_min</artifactId>
             <licenses>
                 <license>
                     <name>Indiana University Extreme! Lab Software License, vesion 1.1.1</name>
