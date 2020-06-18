@@ -153,7 +153,6 @@
                                     <tag>${docker.tag.version}</tag>
                                 </args>
                             </build>
-                            <name>${docker.push.repository}/hedera-mirror-test:${docker.tag.version}</name>
                         </image>
                     </images>
                 </configuration>
