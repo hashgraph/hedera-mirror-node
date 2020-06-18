@@ -16,7 +16,6 @@
 
     <properties>
         <grpc-spring-boot.version>2.7.0.RELEASE</grpc-spring-boot.version>
-        <jmeter.version>5.2.1</jmeter.version>
     </properties>
 
     <dependencies>

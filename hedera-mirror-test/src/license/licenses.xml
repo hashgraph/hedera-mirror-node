@@ -14,5 +14,65 @@
                 </license>
             </licenses>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <licenses>
+                <license>
+                    <name>MIT License</name>
+                    <url>https://github.com/mockito/mockito/blob/release/3.x/LICENSE</url>
+                </license>
+            </licenses>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <licenses>
+                <license>
+                    <name>MIT License</name>
+                    <url>https://github.com/mockito/mockito/blob/release/3.x/LICENSE</url>
+                </license>
+            </licenses>
+        </dependency>
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <licenses>
+                <license>
+                    <name>Apache License, version 2.0</name>
+                    <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+                </license>
+            </licenses>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.jtidy</groupId>
+            <artifactId>jtidy</artifactId>
+            <licenses>
+                <license>
+                    <name>Java HTML Tidy License</name>
+                    <url>http://jtidy.sourceforge.net/license.html</url>
+                </license>
+            </licenses>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.jtidy</groupId>
+            <artifactId>jtidy</artifactId>
+            <licenses>
+                <license>
+                    <name>Indiana University Extreme! Lab Software License, vesion 1.1.1</name>
+                    <url>http://www.extreme.indiana.edu/LICENSE.txt</url>
+                    <comments>The license applies to the Xpp3 classes (all classes below the org.xmlpull package with
+                        exception of classes directly in package org.xmlpull.v1 )
+                    </comments>
+                </license>
+                <license>
+                    <name>Public Domain</name>
+                    <url>http://creativecommons.org/licenses/publicdomain</url>
+                    <comments>The license applies to the XmlPull API (all classes directly in the org.xmlpull.v1
+                        package)
+                    </comments>
+                </license>
+            </licenses>
+        </dependency>
     </dependencies>
 </licenseSummary>
