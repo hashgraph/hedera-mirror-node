@@ -204,7 +204,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
     private void assertRepositoryRowCounts() {
         var expectedTransfersCount = expectedTransactions.stream()
                 .mapToInt(t -> t.record.getTransferList().getAccountAmountsList().size()).sum();
-        assertAll(() -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "t_transactions rows")
+        assertAll(() -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "transaction rows")
                 , () -> assertEquals(expectedEntityNum.size(), entityRepository.count(), "t_entities rows")
                 , () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(),
                         "crypto_transfer rows")

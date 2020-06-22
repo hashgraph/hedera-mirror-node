@@ -11,7 +11,7 @@ BEGIN
     PERFORM drop_t_livehashes_constraints_and_indexes();
     PERFORM drop_t_contract_result_constraints_and_indexes();
     PERFORM drop_topic_message_constraints_and_indexes();
-    PERFORM drop_t_transactions_constraints_and_indexes();
+    PERFORM drop_transaction_constraints_and_indexes();
     PERFORM drop_t_entities_constraints_and_indexes();
     PERFORM drop_account_balances_constraints_and_indexes();
 END;
@@ -25,7 +25,7 @@ BEGIN
     -- foreign key constraint on A.fk_id should be created after creating index/primary_key on B.id.
     PERFORM create_account_balances_constraints_and_indexes();
     PERFORM create_t_entities_constraints_and_indexes();
-    PERFORM create_t_transactions_constraints_and_indexes();
+    PERFORM create_transaction_constraints_and_indexes();
     PERFORM create_topic_message_constraints_and_indexes();
     PERFORM create_t_contract_result_constraints_and_indexes();
     PERFORM create_t_livehashes_constraints_and_indexes();
@@ -124,24 +124,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION drop_t_transactions_constraints_and_indexes() RETURNS void AS
+CREATE OR REPLACE FUNCTION drop_transaction_constraints_and_indexes() RETURNS void AS
 $$
 DECLARE
 BEGIN
-    ALTER TABLE t_transactions
-        DROP CONSTRAINT IF EXISTS t_transactions_pkey;
-    DROP INDEX IF EXISTS t_transactions__payer_account_id;
-    DROP INDEX IF EXISTS t_transactions__transaction_id;
+    ALTER TABLE transaction
+        DROP CONSTRAINT IF EXISTS transaction_pkey;
+    DROP INDEX IF EXISTS transaction__payer_account_id;
+    DROP INDEX IF EXISTS transaction__transaction_id;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION create_t_transactions_constraints_and_indexes() RETURNS void AS
+CREATE OR REPLACE FUNCTION create_transaction_constraints_and_indexes() RETURNS void AS
 $$
 DECLARE
 BEGIN
-    ALTER TABLE t_transactions ADD PRIMARY KEY (consensus_ns);
-    CREATE INDEX t_transactions__transaction_id ON t_transactions (valid_start_ns, payer_account_id);
-    CREATE INDEX t_transactions__payer_account_id ON t_transactions (payer_account_id);
+    ALTER TABLE transaction ADD PRIMARY KEY (consensus_ns);
+    CREATE INDEX transaction__transaction_id ON transaction (valid_start_ns, payer_account_id);
+    CREATE INDEX transaction__payer_account_id ON transaction (payer_account_id);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -206,7 +206,7 @@ BEGIN
     TRUNCATE TABLE topic_message RESTART IDENTITY CASCADE;
     TRUNCATE TABLE t_record_files RESTART IDENTITY CASCADE;
     TRUNCATE TABLE t_entities RESTART IDENTITY CASCADE;
-    TRUNCATE TABLE t_transactions RESTART IDENTITY CASCADE;
+    TRUNCATE TABLE transaction RESTART IDENTITY CASCADE;
     UPDATE t_application_status SET status_value = NULL;
 END;
 $$ LANGUAGE plpgsql;

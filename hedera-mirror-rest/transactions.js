@@ -105,7 +105,7 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
   return (
     selectClause +
     `FROM ( ${innerQuery} ) AS tlist
-       JOIN t_transactions t ON tlist.consensus_timestamp = t.consensus_ns
+       JOIN transaction t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
@@ -141,7 +141,7 @@ const getTransactionsInnerQuery = function (
   return `
     SELECT DISTINCT ctl.consensus_timestamp
     FROM crypto_transfer ctl
-      JOIN t_transactions t ON t.consensus_ns = ctl.consensus_timestamp
+      JOIN transaction t ON t.consensus_ns = ctl.consensus_timestamp
     ${whereClause}
     ORDER BY ctl.consensus_timestamp ${order}
     ${limitQuery}`;
@@ -235,7 +235,7 @@ const getOneTransaction = async (req, res) => {
 
   let sqlQuery =
     selectClause +
-    `FROM t_transactions t
+    `FROM transaction t
        JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns

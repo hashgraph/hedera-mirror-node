@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.domain;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,7 +35,6 @@ import com.hedera.mirror.importer.converter.EntityIdConverter;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "t_transactions")
 @ToString(exclude = {"memo", "transactionHash", "transactionBytes"})
 public class Transaction implements Persistable<Long> {
 

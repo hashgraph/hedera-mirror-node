@@ -16,9 +16,9 @@ SELECT drop_constraints_and_indexes();
 
 
 \echo ------------------------------
-\echo COPY data to t_transactions from %%TMP_DIR%%/t_transactions
+\echo COPY data to transaction from %%TMP_DIR%%/transaction
 \echo ------------------------------
-\copy t_transactions FROM '%%TMP_DIR%%/t_transactions' WITH CSV HEADER;
+\copy transaction FROM '%%TMP_DIR%%/transaction' WITH CSV HEADER;
 
 
 \echo ------------------------------

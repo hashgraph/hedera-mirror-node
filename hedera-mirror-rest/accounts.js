@@ -251,7 +251,7 @@ const getOneAccount = async (req, res) => {
         ret.entitySqlQuery = entityResults.sqlQuery;
       }
 
-      // Process the results of t_transactions query
+      // Process the results of transaction query
       const transferList = transactions.createTransferLists(transactionsResults.rows);
       ret.transactions = transferList.transactions;
       let anchorSecNs = transferList.anchorSecNs;
