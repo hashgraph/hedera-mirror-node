@@ -29,7 +29,7 @@
             <artifactId>xpp3_min</artifactId>
             <licenses>
                 <license>
-                    <name>Indiana University Extreme! Lab Software License, vesion 1.1.1</name>
+                    <name>Indiana University Extreme! Lab Software License, Version 1.1.1</name>
                     <url>http://www.extreme.indiana.edu/LICENSE.txt</url>
                     <comments>The license applies to the Xpp3 classes (all classes below the org.xmlpull package with
                         exception of classes directly in package org.xmlpull.v1 )

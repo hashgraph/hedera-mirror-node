@@ -170,7 +170,7 @@
                         <image>
                             <build>
                                 <contextDir>${maven.multiModuleProjectDirectory}</contextDir>
-                                <dockerFile>${project.basedir}/src/main/Dockerfile</dockerFile>
+                                <dockerFile>${project.basedir}/src/main/resources/Dockerfile</dockerFile>
                                 <args>
                                     <tag>${docker.tag.version}</tag>
                                 </args>
