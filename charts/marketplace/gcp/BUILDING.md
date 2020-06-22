@@ -36,7 +36,7 @@ is specified in the [Dockerfile](Dockerfile).
 To deploy the image run the below command from the root folder. Additional optional parameters exist to specify the
 needed marketplace tag and desired application version:
 
-    ./mvnw clean deploy -N -Ddocker.skip.deployer=false-Ddocker.tag.version=${TAG} -Ddocker.tags.0=${TAG%\.*} 
+    ./mvnw clean deploy -N -Ddocker.skip.deployer=false-Ddocker.tag.version=${TAG} -Ddocker.tags.0=${TAG%\.*}
 
 ## Third Party Images
 
@@ -91,3 +91,4 @@ Once installed in a Kubernetes cluster the Marketplace solution can be cleaned u
 Or you can simply delete the entire namespace if you created it during the install step and it's no longer needed:
 
     kubectl delete namespace "${NAMESPACE}"
+

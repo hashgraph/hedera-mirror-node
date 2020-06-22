@@ -21,7 +21,7 @@ Further details may be explored at https://cucumber.io/. Additionally, cucumbers
 
 -   Java (JDK 11 and above recommended), can follow https://sdkman.io/install for instructions
 
-### Test Execution
+### Acceptance Test Execution
 
 Tests can be compiled and run by running the following command from the root folder
 
@@ -128,7 +128,7 @@ Then using the [JMeter Maven Plugin](https://github.com/jmeter-maven-plugin/jmet
 
 -   Save test JMX file to `hedera-mirror-test/src/test/jmeter`
 
-## Test Execution
+## Performance Test Execution
 
 -   Ensure desired JMX file(s) are under `hedera-mirror-test/src/test/jmeter/`
 -   Startup database and module, either through Docker Compose or through Spring Boot:
@@ -180,3 +180,29 @@ The initial jmx test plan files under `hedera-mirror-test/src/test/jmeter/` foll
     -   messagesLatchWaitSeconds
 4.  DB_Cleanup_Sampler - Cleans up the db
     -   (See DB_Setup_Sampler options)
+
+# 3 Containerized Run
+
+The hedera-mirror-test module offers a containerized distribution of the [acceptance](#acceptance-test-execution) and [performance](#performance-test-execution) tests.
+
+## Image creation
+
+    docker build -f scripts/test-container/Dockerfile . -t gcr.io/mirrornode/hedera-mirror-test:<project-version>
+
+Run the following commands to configure a docker container to run tests
+
+## Image run (Acceptance tests)
+
+    docker run -d -e testProfile=acceptance -e cucumberFlags="@SubscribeOnly" \
+        -v <host-application-yml>:/usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/application-default.yml \
+        gcr.io/mirrornode/hedera-mirror-test:<project-version>
+
+Refer to the [acceptance tests section](#acceptance-test-execution) for more details on configuration
+
+## Image run (Performance tests)
+
+    docker run -d -e testProfile=performance --e subscribeThreadCount=30 -e jmeter.test=E2E_Subscribe_Only.jmx \
+        #-v <host-user.properties>:/usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/jmeter/user.properties \
+        #gcr.io/mirrornode/hedera-mirror-test:<project-version>
+
+Refer to the [performance](#performance-test-execution) for more details on configuration

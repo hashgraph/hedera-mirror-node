@@ -366,7 +366,7 @@ that contains the mirror node git repository then:
 git checkout tags/v0.12.0 # Change version appropriately
 ```
 
-The command to upgrade is the same to install. Make any necessaary changes to the previously constructed
+The command to upgrade is the same to install. Make any necessary changes to the previously constructed
 `custom-values.yaml` first, then run:
 
 ```shell

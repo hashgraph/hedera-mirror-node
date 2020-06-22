@@ -33,10 +33,14 @@ import lombok.extern.log4j.Log4j2;
 public abstract class HCSSamplerResult<T> {
     private final long realmNum;
     private final long topicNum;
-    private final Stopwatch stopwatch = Stopwatch.createStarted();
+    private final Stopwatch totalStopwatch = Stopwatch.createStarted();
+    private final Stopwatch historicalStopwatch = Stopwatch.createUnstarted();
+    private final Stopwatch incomingStopwatch = Stopwatch.createUnstarted();
     private final Instant subscribeStart = Instant.now();
     private Throwable subscribeError;
-    private Stopwatch lastMessage = Stopwatch.createStarted();
+    private Stopwatch lastMessage = Stopwatch.createUnstarted();
+    private Stopwatch lastHistoricalMessage;
+    private Stopwatch lastIncomingMessage;
     private long historicalMessageCount = 0L;
     private long incomingMessageCount = 0L;
     private T last;
@@ -53,18 +57,39 @@ public abstract class HCSSamplerResult<T> {
         return historicalMessageCount + incomingMessageCount;
     }
 
-    public long getMessageRate() {
-        long seconds = stopwatch.elapsed(TimeUnit.SECONDS);
-        return seconds > 0 ? getTotalMessageCount() / seconds : 0;
+    public double getMessageRate(long messageCount, Stopwatch durationStopwatch, Stopwatch lastResponseStopwatch) {
+        if (messageCount == 0 || durationStopwatch == null) {
+            return 0;
+        }
+
+        long milliSeconds = durationStopwatch.elapsed(TimeUnit.MILLISECONDS) -
+                (lastResponseStopwatch == null ? 0 : lastResponseStopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+        return milliSeconds > 0 ? (messageCount * 1.0 / milliSeconds) * 1000.0 : 0;
     }
 
     public void onNext(T result) {
         lastMessage = Stopwatch.createStarted();
         historical = getConsensusInstant(result).isBefore(subscribeStart);
         if (historical) {
+            if (!historicalStopwatch.isRunning()) {
+                historicalStopwatch.start();
+            }
+
             ++historicalMessageCount;
+            lastHistoricalMessage = Stopwatch.createStarted();
         } else {
+            if (!incomingStopwatch.isRunning()) {
+                incomingStopwatch.start();
+            }
+
+            if (historicalStopwatch.isRunning()) {
+                historicalStopwatch.stop();
+                lastHistoricalMessage.stop();
+            }
+
             ++incomingMessageCount;
+            lastIncomingMessage = Stopwatch.createStarted();
         }
 
         validateResponse(result);
@@ -74,10 +99,25 @@ public abstract class HCSSamplerResult<T> {
 
     public void onComplete() {
         String errorMessage = subscribeError == null ? "" : subscribeError.getMessage();
-        log.info("Observed {} historic and {} incoming messages in {} ({}/s). Last message received {} ago. {}",
-                historicalMessageCount,
-                incomingMessageCount, stopwatch, getMessageRate(), lastMessage, success ? "Success" :
-                        "Failed : " + errorMessage);
+        String totalRate = String.format("%.02f", getMessageRate(getTotalMessageCount(), totalStopwatch, lastMessage));
+
+        log.info("Observed {} total messages in {} ({}/s). Last message received {} ago. {}.",
+                getTotalMessageCount(), totalStopwatch, totalRate, lastMessage,
+                success ? "Success" : "Failed : " + errorMessage);
+
+        printProgress();
+    }
+
+    public void printProgress() {
+        String historicRate = String
+                .format("%.02f", getMessageRate(getHistoricalMessageCount(), historicalStopwatch,
+                        lastHistoricalMessage));
+        String incomingRate = String
+                .format("%.02f", getMessageRate(getIncomingMessageCount(), incomingStopwatch, lastIncomingMessage));
+
+        log.info("Observed {} Historic messages in {} ({}/s), {} Incoming messages in {} ({}/s)",
+                historicalMessageCount, historicalStopwatch, historicRate, incomingMessageCount, incomingStopwatch,
+                incomingRate);
     }
 
     public void onError(Throwable err) {
