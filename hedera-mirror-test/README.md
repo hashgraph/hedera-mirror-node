@@ -218,7 +218,7 @@ The hedera-mirror-test module offers a containerized distribution of the [accept
 
 ## Kubernetes Cluster Run
 
-The repo provides a default Kubernetes [Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/) and [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/) template in a single file under `hedera-mirror-test/src/test/resources/k8s/run-test.yml`
+The repo provides a default Kubernetes [Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/) and [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/) spec template in a single file under `hedera-mirror-test/src/test/resources/k8s/run-test.yml`
 Running this file as follows will deploy a Kubernetes [pod](https://kubernetes.io/docs/concepts/workloads/pods/pod/) with a container that runs the acceptance or performance tests in the cloud.
 
     kubectl apply -f hedera-mirror-test/src/test/resources/k8s/run-test.yml
@@ -228,7 +228,7 @@ The following lines in the file must be configured to specify which test and wha
 - ConfigMap `data` section - The contents of the desired properties file should be pasted here
 - Job `spec.template.spec.containers.env.value` for the `testProfile` environment property - This must be either `acceptance` or `performance`
 - Job `spec.template.spec.containers.volumeMounts.mountPath` and `spec.template.spec.containers.volumeMounts.subPath` - These specify the path and file name relative to the root `hedera-mirror-node` path of the test properties file you are mounting to the container.
-    - For acceptance tests the default values would be 
+    - For acceptance tests the default values would be
 
         `mountPath: /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/application-default.yml`
 
@@ -240,7 +240,40 @@ The following lines in the file must be configured to specify which test and wha
         `subPath: user.properties`
 - Job `spec.template.spec.volumes.configMap.items.path` - This should match the `spec.template.spec.containers.volumeMounts.subPath` value
 
-The `hedera-mirror-test/src/test/resources/k8s/hcs-perf-publish-test.yml` and `hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml` are examples of fully populated template files.
+The `hedera-mirror-test/src/test/resources/k8s/hcs-perf-publish-test.yml` and `hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml` are examples of populated template files.
+
+### HCS Performance Publish
+The `hedera-mirror-test/src/test/resources/k8s/hcs-perf-publish-test.yml` provides a mostly pre-configured Jon and ConfigsMap to run the acceptance tests `@PublishOnly` test
+
+    kubectl apply -f hedera-mirror-test/src/test/resources/k8s/hcs-perf-publish-test.yml
+
+The following properties must be specified prior to deploying this specs
+
+- `operatorid` - as described in [acceptance tests section](#acceptance-test-execution)
+- `operatorkey` - as described in [acceptance tests section](#acceptance-test-execution)
+- `existingTopicNum` - as described in [acceptance tests section](#acceptance-test-execution)
+
+### HCS Performance Subscribe
+The `hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml` provides a mostly pre-configured Job and ConfigsMap to run the performance tests `E2E_Subscribe_Only.jmx` test plan.
+
+    kubectl apply -f hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml
+
+- Job `spec.template.spec.containers.env.subscribeThreadCount` - Sets the jmeter.subscribeThreadCount variable which dictates the number of threads JMeter creates
+- ConfigMap `data` section
+    - `hedera.mirror.test.performance.host` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.port` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientCount` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.sharedChannel` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientTopicId[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientStartTime[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientEndTime[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientLimit[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientRealmNum[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientHistoricMessagesCount[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientIncomingMessageCount[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientSubscribeTimeoutSeconds[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientUseMAPI[x]` - as described in [performance](#performance-test-execution)
+
 
 > **_Note_** based on your test case you may need to specify more than one environment variable under `spec.template.spec.containers.env`
 
