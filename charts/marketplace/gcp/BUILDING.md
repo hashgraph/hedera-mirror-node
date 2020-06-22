@@ -80,3 +80,4 @@ Once installed in a Kubernetes cluster the Marketplace solution can be cleaned u
 Or you can simply delete the entire namespace if you created it during the install step and it's no longer needed:
 
     kubectl delete namespace "${NAMESPACE}"
+

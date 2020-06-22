@@ -53,7 +53,8 @@ import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 @Log4j2
 @Cucumber
 public class TopicFeature {
-    private final AcceptanceTestProperties acceptanceProps;
+    @Autowired
+    private AcceptanceTestProperties acceptanceProps;
     private int messageSubscribeCount;
     private long latency;
     private MirrorConsensusTopicQuery mirrorConsensusTopicQuery;
@@ -66,10 +67,6 @@ public class TopicFeature {
     private MirrorNodeClient mirrorClient;
     @Autowired
     private TopicClient topicClient;
-
-    public TopicFeature(AcceptanceTestProperties acceptanceTestProperties) {
-        acceptanceProps = acceptanceTestProperties;
-    }
 
     @Given("I successfully create a new topic id")
     @Retryable(value = {StatusRuntimeException.class}, exceptionExpression = "#{message.contains('UNAVAILABLE') || " +
