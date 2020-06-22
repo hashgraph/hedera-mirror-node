@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: publish-config
+  name: hcs-perf-publish-config
 data:
   application-yaml: |-
     hedera:
@@ -46,7 +46,7 @@ spec:
         - name: publish-config-volume
           configMap:
             defaultMode: 0555
-            name: publish-config
+            name: hcs-perf-publish-config
             items:
               - key: application-yaml
                 path: application-default.yml

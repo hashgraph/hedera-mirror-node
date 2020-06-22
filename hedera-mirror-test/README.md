@@ -185,13 +185,48 @@ The initial jmx test plan files under `hedera-mirror-test/src/test/jmeter/` foll
 
 The hedera-mirror-test module offers a containerized distribution of the [acceptance](#acceptance-test-execution) and [performance](#performance-test-execution) tests.
 
-## Image creation
+## Kubernetes Cluster Run
+
+The repo provides a default Kubernetes [Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/) and [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/) template in a single file under `hedera-mirror-test/src/test/resources/k8s/run-test.yml`
+Running this file as follows will deploy a Kubernetes [pod](https://kubernetes.io/docs/concepts/workloads/pods/pod/) with a container that runs the acceptance or performance tests in the cloud.
+
+    kubectl apply -f hedera-mirror-test/src/test/resources/k8s/run-test.yml
+
+The following lines in the file must be configured to specify which test and what properties to run with
+
+- ConfigMap `data` section - The contents of the desired properties file should be pasted here
+- Job `spec.template.spec.containers.env.value` for the `testProfile` environment property - This must be either `acceptance` or `performance`
+- Job `spec.template.spec.containers.volumeMounts.mountPath` and `spec.template.spec.containers.volumeMounts.subPath` - These specify the path and file name relative to the root `hedera-mirror-node` path of the test properties file you are mounting to the container.
+    - For acceptance tests the default values would be 
+
+        `mountPath: /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/application-default.yml`
+
+        `subPath: application-default.yml`.
+    - For the performance tests the default would be
+
+        `mountPath: /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/jmeter/user.properties`
+
+        `subPath: user.properties`
+- Job `spec.template.spec.volumes.configMap.items.path` - This should match the `spec.template.spec.containers.volumeMounts.subPath` value
+
+The `hedera-mirror-test/src/test/resources/k8s/hcs-perf-publish-test.yml` and `hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml` are examples of fully populated template files.
+
+> **_Note_** based on your test case you may need to specify more than one environment variable under `spec.template.spec.containers.env`
+
+Refer to the [acceptance tests section](#acceptance-test-execution) and [performance](#performance-test-execution) for more details on configuration options
+
+
+
+## Local run
+
+The hedera-mirror-test image is deployed and available in the `gcr.io/mirrornode` repository. However, in the case of localized changes need to be tests you can build and run the tests as follows
+### Image creation
 
     docker build -f scripts/test-container/Dockerfile . -t gcr.io/mirrornode/hedera-mirror-test:<project-version>
 
 Run the following commands to configure a docker container to run tests
 
-## Image run (Acceptance tests)
+### Image run (Acceptance tests)
 
     docker run -d -e testProfile=acceptance -e cucumberFlags="@SubscribeOnly" \
         -v <host-application-yml>:/usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/application-default.yml \
@@ -199,7 +234,7 @@ Run the following commands to configure a docker container to run tests
 
 Refer to the [acceptance tests section](#acceptance-test-execution) for more details on configuration
 
-## Image run (Performance tests)
+### Image run (Performance tests)
 
     docker run -d -e testProfile=performance --e subscribeThreadCount=30 -e jmeter.test=E2E_Subscribe_Only.jmx \
         #-v <host-user.properties>:/usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/jmeter/user.properties \

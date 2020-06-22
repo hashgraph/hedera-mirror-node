@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: subscribe-config
+  name: hcs-perf-subscribe-config
 data:
   user-props: |-
     hedera.mirror.test.performance.host=hcs.testnet.mirrornode.hedera.com
@@ -50,7 +50,7 @@ spec:
         - name: subscribe-config-volume
           configMap:
             defaultMode: 0555
-            name: subscribe-config
+            name: hcs-perf-subscribe-config
             items:
               - key: user-props
                 path: user.properties
