@@ -21,7 +21,6 @@ package com.hedera.mirror.grpc.jmeter.handler;
  */
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.log4j.Log4j2;
@@ -31,7 +30,6 @@ import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 
-import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 
 @Log4j2
@@ -40,7 +38,6 @@ public class ConnectionHandler {
     private static final int BATCH_SIZE = 100;
     private static final byte[] BYTES = new byte[] {'a', 'b', 'c'};
 
-    private final InstantToLongConverter converter = new InstantToLongConverter();
     private final JdbcTemplate jdbcTemplate;
 
     public ConnectionHandler(String host, int port, String dbName, String dbUser, String dbPassword) {
@@ -79,7 +76,7 @@ public class ConnectionHandler {
 
         for (int i = 1; i <= newTopicsMessageCount; i++) {
             long sequenceNum = nextSequenceNum + i;
-            Instant consensusInstant = startTime.plus(sequenceNum, ChronoUnit.NANOS);
+            Instant consensusInstant = startTime.plusNanos(sequenceNum);
             TopicMessage topicMessage = TopicMessage.builder()
                     .consensusTimestamp(consensusInstant)
                     .sequenceNumber(sequenceNum)

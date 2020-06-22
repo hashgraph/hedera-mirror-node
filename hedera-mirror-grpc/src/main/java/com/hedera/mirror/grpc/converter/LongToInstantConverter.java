@@ -29,6 +29,8 @@ import org.springframework.data.convert.ReadingConverter;
 @ReadingConverter
 public class LongToInstantConverter implements Converter<Long, Instant> {
 
+    public static final LongToInstantConverter INSTANCE = new LongToInstantConverter();
+
     @Override
     public Instant convert(Long source) {
         if (source == null) {

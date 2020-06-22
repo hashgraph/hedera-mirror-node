@@ -29,6 +29,8 @@ import org.springframework.data.convert.WritingConverter;
 @WritingConverter
 public class InstantToLongConverter implements Converter<Instant, Long> {
 
+    public static final InstantToLongConverter INSTANCE = new InstantToLongConverter();
+
     public static final Instant LONG_MAX_INSTANT = Instant.parse("2262-04-11T23:47:16.854775807Z");
     // Reserve 9 of the least significant digits for nanoseconds
     private static final long NANOS_PER_SECOND = 1_000_000_000L;

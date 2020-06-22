@@ -1,12 +1,14 @@
 # Overview
 
-This folder contains logic to support the development and deployment of the Hedera Mirror Node in a Kubernetes cluster in [Google Cloud Platform Marketplace](https://console.cloud.google.com/marketplace).
-It takes in the wrapper `hedera-mirror` Helm chart and bundles it into the required deployer image which is built and pushed to Google Container Registry on maven deploy.
+This folder contains logic to support the development and deployment of the Hedera Mirror Node in a Kubernetes cluster
+in [Google Cloud Platform Marketplace](https://console.cloud.google.com/marketplace). It takes in the wrapper
+`hedera-mirror` Helm chart and bundles it into the required deployer image which is built and pushed to Google Container
+Registry on maven deploy.
 
 # Setup
 
-A Google Kubernetes Engine (GKE) cluster is required to verify and test the deployment of the Marketplace application. Follow the GKE
-[quickstart](https://cloud.google.com/kubernetes-engine/docs/quickstart) to create a test cluster.
+A Google Kubernetes Engine (GKE) cluster is required to verify and test the deployment of the Marketplace application.
+Follow the GKE [quickstart](https://cloud.google.com/kubernetes-engine/docs/quickstart) to create a test cluster.
 
 ## Prerequisites
 
@@ -15,7 +17,7 @@ A Google Kubernetes Engine (GKE) cluster is required to verify and test the depl
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 - [mpdev](https://github.com/GoogleCloudPlatform/marketplace-k8s-app-tools/blob/master/docs/mpdev-references.md)
 
-## Setup environment variables
+## Set environment variables
 
 First ensure the following environment variables are populated with the appropriate version and names.
 These variables will be used for the remainder of the document.
@@ -26,31 +28,18 @@ These variables will be used for the remainder of the document.
 
 # Building
 
-## Deployer
-
 Apps are required to supply a `deployer` container image which is used in UI-based deployment.
 The image should extend from one of the base images provided in the marketplace-k8s-app-tools registry.
 This solution currently extends `gcr.io/cloud-marketplace-tools/k8s/deployer_helm`. Our deployer image build logic
 is specified in the [Dockerfile](Dockerfile).
 
-To deploy the image run the below command from the root folder. Additional optional parameters exist to specify the
-needed marketplace tag and desired application version:
+Additionally, GCP Marketplace restricts applications to images pulled from the Marketplace registry. Since the Mirror
+Node uses some third party images like PostgreSQL, we need to re-publish these images to our registry and keep them up
+to date. Run the below commands to re-tag:
 
-    ./mvnw clean deploy -N -Ddocker.skip.deployer=false-Ddocker.tag.version=${TAG} -Ddocker.tags.0=${TAG%\.*}
-
-## Third Party Images
-
-GCP Marketplace restricts applications to images pulled from the Marketplace registry. Since the mirror node uses some
-third party images like PostgreSQL, we need to re-publish these images to our registry and keep them up to date. Run
-the below commands replacing `latest` with a specific version, if needed:
-
-    docker pull bitnami/postgresql-repmgr:latest
-    docker tag bitnami/postgresql-repmgr:latest gcr.io/mirrornode/hedera-mirror-node/postgresql-repmgr:${TAG}
-    docker push gcr.io/mirrornode/hedera-mirror-node/postgresql-repmgr:${TAG}
-
-    docker pull bats/bats:latest
-    docker tag bats/bats:latest gcr.io/mirrornode/hedera-mirror-node/test:${TAG}
-    docker push gcr.io/mirrornode/hedera-mirror-node/test:${TAG}
+    git checkout "tags/v${TAG}"
+    cd charts/marketplace/gcp
+    ./release.sh "${TAG}"
 
 # Testing
 
@@ -61,7 +50,7 @@ The mpdev tool is provided by Google Cloud Platform Marketplace to help verify t
 Run `mpdev verify` to automatically install the application in a new namespace, execute acceptance tests against it and uninstall it.
 Ensure [schema-test.yaml](schema-test.yaml) contains defaults for any required fields in [schema.yaml](schema.yaml).
 
-    mpdev verify --deployer=gcr.io/mirrornode/hedera-mirror-node/deployer:${TAG}
+    mpdev verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
 
 ## Install
 
@@ -69,15 +58,15 @@ To install run `mpdev install`. Note the properties in the `required` section of
 file must be specified via the parameters flag.
 
     kubectl create namespace "${NAMESPACE}"
-    mpdev install --deployer=gcr.io/mirrornode/hedera-mirror-node/deployer:${TAG} --parameters='{"name": "'${NAME}'",
+    mpdev install --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG} --parameters='{"name": "'${NAME}'",
         "namespace": "'${NAMESPACE}'",
         "global.rest.password": "password",
         "grpc.config.hedera.mirror.grpc.db.password": "password",
         "importer.config.hedera.mirror.importer.db.password": "password",
-        "importer.config.hedera.mirror.importer.downloader.accessKey": "",
-        "importer.config.hedera.mirror.importer.downloader.bucketName": "hedera-demo-streams",
-        "importer.config.hedera.mirror.importer.downloader.secretKey": "",
-        "importer.config.hedera.mirror.importer.network": "DEMO",
+        "importer.config.hedera.mirror.importer.downloader.accessKey": "GOOG1...",
+        "importer.config.hedera.mirror.importer.downloader.bucketName": "...",
+        "importer.config.hedera.mirror.importer.downloader.secretKey": "...",
+        "importer.config.hedera.mirror.importer.network": "MAINNET",
         "postgresql.postgresql.password": "password",
         "postgresql.postgresql.repmgrPassword": "password"}'
 

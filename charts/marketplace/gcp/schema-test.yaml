@@ -36,3 +36,6 @@ properties:
     default: password
     x-google-marketplace:
       type: MASKED_FIELD
+  importer.config.hedera.mirror.importer.downloader.cloudProvider:
+    type: string
+    default: S3

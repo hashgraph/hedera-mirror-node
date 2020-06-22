@@ -21,7 +21,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info, prometheus
+        include: health, info, loggers, prometheus
   metrics:
     export:
       elastic:
@@ -61,6 +61,7 @@ spring:
   jpa:
     database: postgresql
     properties:
+      hibernate.criteria.literal_handling_mode: BIND # Ensure Criteria API queries use bind parameters and not literals
       hibernate.generate_statistics: true
   test:
     database:

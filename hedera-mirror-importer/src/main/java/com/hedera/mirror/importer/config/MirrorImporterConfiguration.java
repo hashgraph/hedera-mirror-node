@@ -136,7 +136,7 @@ public class MirrorImporterConfiguration {
             Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
             if (timestamp == null) {
                 if (mirrorProperties.getNetwork() == HederaNetwork.MAINNET) {
-                    throw new IllegalArgumentException("topicRunningHashV2AddedTimestamp must be set for mainnet");
+                    timestamp = 1592499600000000000L;
                 } else {
                     timestamp = 1588706343553042000L;
                 }

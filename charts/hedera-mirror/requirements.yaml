@@ -3,37 +3,37 @@ dependencies:
     condition: grpc.enabled
     name: hedera-mirror-grpc
     repository: file://../hedera-mirror-grpc
-    version: ^0.1.0
+    version: ^0.2.0
   - alias: importer
     condition: importer.enabled
     name: hedera-mirror-importer
     repository: file://../hedera-mirror-importer
-    version: ^0.1.0
+    version: ^0.2.0
   - alias: loki
     condition: loki.enabled
     name: loki-stack
-    version: 0.37.3
+    version: 0.37.4
     repository: https://grafana.github.io/loki/charts
   - alias: postgresql
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: 3.2.9
+    version: 3.2.10
   - condition: prometheus-adapter.enabled
     name: prometheus-adapter
     repository: https://kubernetes-charts.storage.googleapis.com/
-    version: 2.3.1
+    version: 2.4.0
   - alias: prometheus
     condition: prometheus.enabled
     name: prometheus-operator
     repository: https://kubernetes-charts.storage.googleapis.com
-    version: 8.14.0
+    version: 8.15.5
   - alias: rest
     condition: rest.enabled
     name: hedera-mirror-rest
     repository: file://../hedera-mirror-rest
-    version: ^0.1.0
+    version: ^0.2.0
   - condition: traefik.enabled
     name: traefik
     repository: https://containous.github.io/traefik-helm-chart
-    version: 8.4.1
+    version: 8.6.0

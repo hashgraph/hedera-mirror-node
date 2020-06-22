@@ -53,7 +53,6 @@ loki:
       table_manager:
         retention_deletes_enabled: true
         retention_period: 2184h
-    fullnameOverride: loki
     networkPolicy:
       enabled: true
     persistence:
@@ -70,8 +69,6 @@ loki:
     serviceMonitor:
       enabled: true
   promtail:
-    loki:
-      serviceName: loki
     rbac:
       pspEnabled: false
     resources:
@@ -221,7 +218,7 @@ prometheus:
       - name: Loki
         type: loki
         access: proxy
-        url: http://loki:3100
+        url: http://{{ .Release.Name }}-loki:3100
         jsonData:
           maxLines: 500
     adminPassword: password

@@ -134,7 +134,7 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
 
     @Test
     void startTimeBefore() {
-        domainBuilder.topicMessages(10).blockLast();
+        domainBuilder.topicMessages(10, Instant.now()).blockLast();
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .build();
@@ -223,7 +223,7 @@ public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
         retrieverProperties.setMaxPageSize(1);
         retrieverProperties.setTimeout(Duration.ofMillis(10));
 
-        domainBuilder.topicMessages(10).blockLast();
+        domainBuilder.topicMessages(10, Instant.now()).blockLast();
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
                 .build();

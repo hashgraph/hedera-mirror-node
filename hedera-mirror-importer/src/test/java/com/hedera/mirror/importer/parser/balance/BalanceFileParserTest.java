@@ -88,7 +88,7 @@ public class BalanceFileParserTest extends IntegrationTest {
 
     @Test
     void noFiles() throws Exception {
-        balanceFileParser.onCreate();
+        balanceFileParser.parse();
 
         assertParsedFiles();
         assertAccountBalances();
@@ -98,7 +98,7 @@ public class BalanceFileParserTest extends IntegrationTest {
     void discardFiles() throws Exception {
         fileCopier.copy();
 
-        balanceFileParser.onCreate();
+        balanceFileParser.parse();
 
         assertValidFiles();
         assertParsedFiles();
@@ -110,7 +110,7 @@ public class BalanceFileParserTest extends IntegrationTest {
         parserProperties.setKeepFiles(true);
         fileCopier.copy();
 
-        balanceFileParser.onCreate();
+        balanceFileParser.parse();
 
         assertValidFiles();
         assertParsedFiles(balanceFile1, balanceFile2);
@@ -123,7 +123,7 @@ public class BalanceFileParserTest extends IntegrationTest {
         File file1 = fileCopier.getTo().resolve(balanceFile1.getFilename()).toFile();
         FileUtils.writeStringToFile(file1, "corrupt", "UTF-8");
 
-        balanceFileParser.onCreate();
+        balanceFileParser.parse();
 
         assertValidFiles(balanceFile1);
         assertParsedFiles();
