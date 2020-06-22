@@ -6,7 +6,7 @@ DECLARE
 BEGIN
     -- Drop order is roughly determined by foreign key constraints. If foreign key A.fk_id references B.id, then
     -- foreign key constraint on A.fk_id needs to be dropped before dropping any indexes/primary_key on B.id.
-    PERFORM drop_crypto_transfers_constraints_and_indexes();
+    PERFORM drop_crypto_transfer_constraints_and_indexes();
     PERFORM drop_t_file_data_constraints_and_indexes();
     PERFORM drop_t_livehashes_constraints_and_indexes();
     PERFORM drop_t_contract_result_constraints_and_indexes();
@@ -30,7 +30,7 @@ BEGIN
     PERFORM create_t_contract_result_constraints_and_indexes();
     PERFORM create_t_livehashes_constraints_and_indexes();
     PERFORM create_t_file_data_constraints_and_indexes();
-    PERFORM create_crypto_transfers_constraints_and_indexes();
+    PERFORM create_crypto_transfer_constraints_and_indexes();
 END;
 $$ LANGUAGE plpgsql;
 
@@ -55,22 +55,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION drop_crypto_transfers_constraints_and_indexes() RETURNS void AS
+CREATE OR REPLACE FUNCTION drop_crypto_transfer_constraints_and_indexes() RETURNS void AS
 $$
 DECLARE
 BEGIN
-    DROP INDEX IF EXISTS crypto_transfers__consensus_timestamp;
-    DROP INDEX IF EXISTS crypto_transfers__entity_id_consensus_timestamp;
+    DROP INDEX IF EXISTS crypto_transfer__consensus_timestamp;
+    DROP INDEX IF EXISTS crypto_transfer__entity_id_consensus_timestamp;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION create_crypto_transfers_constraints_and_indexes() RETURNS void AS
+CREATE OR REPLACE FUNCTION create_crypto_transfer_constraints_and_indexes() RETURNS void AS
 $$
 DECLARE
 BEGIN
-    CREATE INDEX IF NOT EXISTS crypto_transfers__consensus_timestamp ON crypto_transfers (consensus_timestamp);
-    CREATE INDEX IF NOT EXISTS crypto_transfers__entity_id_consensus_timestamp
-        ON crypto_transfers (entity_id, consensus_timestamp) WHERE entity_id != 98;
+    CREATE INDEX IF NOT EXISTS crypto_transfer__consensus_timestamp ON crypto_transfer (consensus_timestamp);
+    CREATE INDEX IF NOT EXISTS crypto_transfer__entity_id_consensus_timestamp
+        ON crypto_transfer (entity_id, consensus_timestamp) WHERE entity_id != 98;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -200,7 +200,7 @@ BEGIN
     TRUNCATE TABLE account_balance_sets RESTART IDENTITY CASCADE;
     TRUNCATE TABLE account_balances RESTART IDENTITY CASCADE;
     TRUNCATE TABLE t_contract_result RESTART IDENTITY CASCADE;
-    TRUNCATE TABLE crypto_transfers RESTART IDENTITY CASCADE;
+    TRUNCATE TABLE crypto_transfer RESTART IDENTITY CASCADE;
     TRUNCATE TABLE t_file_data RESTART IDENTITY CASCADE;
     TRUNCATE TABLE t_livehashes RESTART IDENTITY CASCADE;
     TRUNCATE TABLE topic_message RESTART IDENTITY CASCADE;

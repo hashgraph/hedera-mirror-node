@@ -108,7 +108,7 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
        JOIN t_transactions t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-       JOIN crypto_transfers ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
+       JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
      ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`
   );
 };
@@ -140,7 +140,7 @@ const getTransactionsInnerQuery = function (
   whereClause = whereClause === '' ? '' : `WHERE ${whereClause}`;
   return `
     SELECT DISTINCT ctl.consensus_timestamp
-    FROM crypto_transfers ctl
+    FROM crypto_transfer ctl
       JOIN t_transactions t ON t.consensus_ns = ctl.consensus_timestamp
     ${whereClause}
     ORDER BY ctl.consensus_timestamp ${order}
@@ -238,7 +238,7 @@ const getOneTransaction = async (req, res) => {
     `FROM t_transactions t
        JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-       JOIN crypto_transfers ctl ON  ctl.consensus_timestamp = t.consensus_ns
+       JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns
      WHERE t.payer_account_id = ?
        AND  t.valid_start_ns = ?
      ORDER BY consensus_ns ASC, ctl_entity_id ASC, amount ASC`; // In case of duplicate transactions, only the first succeeds

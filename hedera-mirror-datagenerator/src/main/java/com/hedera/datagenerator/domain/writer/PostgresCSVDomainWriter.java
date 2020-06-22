@@ -49,7 +49,7 @@ import com.hedera.mirror.importer.util.Utility;
  * <ul>
  *   <li>t_transactions</li>
  *   <li>t_file_data</li>
- *   <li>crypto_transfers</li>
+ *   <li>crypto_transfer</li>
  *   <li>t_entities</li>
  *   <li>topic_message</li>
  *   <li>account_balances</li>
@@ -122,7 +122,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
 
     private static CSVPrinter getCryptoTransferListsCSVPrinter(String outputDir) throws IOException {
         return new CSVPrinter(
-                Files.newBufferedWriter(Paths.get(outputDir, "crypto_transfers")),
+                Files.newBufferedWriter(Paths.get(outputDir, "crypto_transfer")),
                 CSVFormat.DEFAULT.withHeader("entity_id", "consensus_timestamp", "amount"));
     }
 

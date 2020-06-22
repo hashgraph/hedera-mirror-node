@@ -22,9 +22,9 @@ SELECT drop_constraints_and_indexes();
 
 
 \echo ------------------------------
-\echo COPY data to crypto_transfers from %%TMP_DIR%%/crypto_transfers
+\echo COPY data to crypto_transfer from %%TMP_DIR%%/crypto_transfer
 \echo ------------------------------
-\copy crypto_transfers FROM '%%TMP_DIR%%/crypto_transfers' WITH CSV HEADER;
+\copy crypto_transfer FROM '%%TMP_DIR%%/crypto_transfer' WITH CSV HEADER;
 
 
 \echo ------------------------------

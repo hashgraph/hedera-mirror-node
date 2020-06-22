@@ -169,8 +169,8 @@ const addTransaction = async function (transaction) {
       transaction.transaction_hash,
     ]
   );
-  await insertTransfers('crypto_transfers', transaction.consensus_timestamp, transaction.transfers);
-  await insertTransfers('non_fee_transfers', transaction.consensus_timestamp, transaction.non_fee_transfers);
+  await insertTransfers('crypto_transfer', transaction.consensus_timestamp, transaction.transfers);
+  await insertTransfers('non_fee_transfer', transaction.consensus_timestamp, transaction.non_fee_transfers);
 };
 
 const insertTransfers = async function (tableName, consensusTimestamp, transfers) {

@@ -52,7 +52,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 /**
- * Integration tests relating to RecordItemParser and non_fee_transfers.
+ * Integration tests relating to RecordItemParser and non_fee_transfer.
  */
 public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemListenerTest {
 
@@ -207,9 +207,9 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         assertAll(() -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "t_transactions rows")
                 , () -> assertEquals(expectedEntityNum.size(), entityRepository.count(), "t_entities rows")
                 , () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(),
-                        "crypto_transfers rows")
+                        "crypto_transfer rows")
                 , () -> assertEquals(expectedNonFeeTransfersCount, nonFeeTransferRepository.count(),
-                        "non_fee_transfers rows")
+                        "non_fee_transfer rows")
         );
     }
 
