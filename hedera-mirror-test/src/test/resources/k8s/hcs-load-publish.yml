@@ -8,13 +8,13 @@ data:
       mirror:
         test:
           acceptance:
-            messageTimeout: 20s
+            messageTimeout: 60s
             nodeId: 0.0.3
             nodeAddress: testnet
             mirrornodeAddress: hcs.testnet.mirrornode.hedera.com:5600
-            operatorid: 0.0.88
-            operatorkey: 302e020100300506032b6570042204205fb63ec4b83b655da905a5180c5826b1f88825456d28fca2ab73f206ad3583da
-            existingTopicNum: 65204
+            operatorid:
+            operatorkey:
+            existingTopicNum:
             emitBackgroundMessages: true
 ---
 apiVersion: batch/v1
