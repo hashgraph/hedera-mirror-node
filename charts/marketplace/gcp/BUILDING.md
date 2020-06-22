@@ -92,23 +92,3 @@ Or you can simply delete the entire namespace if you created it during the insta
 
     kubectl delete namespace "${NAMESPACE}"
 
-# Upgrade
-    ./mvnw clean deploy -N -Ddocker.skip.deployer=false -Ddocker.tags.0=0.12 -Ddocker.tag.version=0.12.0-rc1
-
-Obtain the version of the Helm chart you want to install by first changing to the directory
-that contains the mirror node git repository then:
-
-```shell
-git checkout tags/v0.12.0 # Change version appropriately
-```
-
-The command to upgrade is the same to install. Make any necessaary changes to the previously constructed
-`custom-values.yaml` first, then run:
-
-```shell
-helm upgrade "${APP_NAME}" charts/hedera-mirror \
-  --namespace "${NAMESPACE}" \
-  --install \
-  -f charts/marketplace/gcp/values.yaml \
-  -f custom-values.yaml
-```

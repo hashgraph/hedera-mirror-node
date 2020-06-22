@@ -15,42 +15,12 @@
             </licenses>
         </dependency>
         <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <licenses>
-                <license>
-                    <name>MIT License</name>
-                    <url>https://github.com/mockito/mockito/blob/release/3.x/LICENSE</url>
-                </license>
-            </licenses>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <licenses>
-                <license>
-                    <name>MIT License</name>
-                    <url>https://github.com/mockito/mockito/blob/release/3.x/LICENSE</url>
-                </license>
-            </licenses>
-        </dependency>
-        <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
             <licenses>
                 <license>
                     <name>Apache License, version 2.0</name>
                     <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-                </license>
-            </licenses>
-        </dependency>
-        <dependency>
-            <groupId>net.sf.jtidy</groupId>
-            <artifactId>jtidy</artifactId>
-            <licenses>
-                <license>
-                    <name>Java HTML Tidy License</name>
-                    <url>http://jtidy.sourceforge.net/license.html</url>
                 </license>
             </licenses>
         </dependency>

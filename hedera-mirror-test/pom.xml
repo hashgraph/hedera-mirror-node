@@ -146,8 +146,17 @@
                                     <replacement>https://github.com/mockito/mockito/blob/release/3.x/LICENSE
                                     </replacement>
                                 </licenseUrlReplacement>
+                                <licenseUrlReplacement>
+                                    <regexp>\Qhttp://asm.objectweb.org/license.html\E</regexp>
+                                    <replacement>https://asm.ow2.io/license.html</replacement>
+                                </licenseUrlReplacement>
+                                <licenseUrlReplacement>
+                                    <regexp>\Qhttp://jtidy.svn.sourceforge.net/viewvc/jtidy/trunk/jtidy/LICENSE.txt?revision=95\E</regexp>
+                                    <replacement>http://jtidy.sourceforge.net/license.html</replacement>
+                                </licenseUrlReplacement>
                             </licenseUrlReplacements>
-                            <licensesConfigFile>${project.basedir}/src/license/licenses.xml</licensesConfigFile>
+                            <licensesConfigFile>${project.basedir}/src/test/resources/license/licenses.xml
+                            </licensesConfigFile>
                         </configuration>
                     </execution>
                 </executions>
@@ -161,7 +170,7 @@
                         <image>
                             <build>
                                 <contextDir>${maven.multiModuleProjectDirectory}</contextDir>
-                                <dockerFile>${project.basedir}/scripts/Dockerfile</dockerFile>
+                                <dockerFile>${project.basedir}/src/main/Dockerfile</dockerFile>
                                 <args>
                                     <tag>${docker.tag.version}</tag>
                                 </args>

@@ -26,6 +26,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
@@ -114,6 +115,7 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
 
         try {
             asyncStub.subscribeTopic(request, responseObserver);
+            scheduler = Executors.newSingleThreadScheduledExecutor();
             scheduler.scheduleAtFixedRate(() -> {
                 result.printProgress();
             }, 0, 1, TimeUnit.MINUTES);

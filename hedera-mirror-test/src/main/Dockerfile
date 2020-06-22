@@ -16,4 +16,4 @@ ENV jmeterTestPlan E2E_Subscribe_Only.jmx
 RUN ./mvnw install -DskipTests -Djib.skip -Ddocker.skip --no-transfer-progress \
     --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
 
-ENTRYPOINT hedera-mirror-test/scripts/run-tests.sh
+ENTRYPOINT hedera-mirror-test/src/main/resources/run-tests.sh
