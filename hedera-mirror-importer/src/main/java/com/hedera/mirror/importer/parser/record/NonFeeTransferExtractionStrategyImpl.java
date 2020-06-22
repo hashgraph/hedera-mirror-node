@@ -31,7 +31,7 @@ import java.util.LinkedList;
 import org.springframework.stereotype.Component;
 
 /**
- * Non-fee transfers are explicitly requested transfers. This implementation extracts non_fee_transfers requested by a
+ * Non-fee transfers are explicitly requested transfers. This implementation extracts non_fee_transfer requested by a
  * transaction into an iterable of transfers.
  */
 @Component

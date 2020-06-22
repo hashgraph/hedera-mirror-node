@@ -33,11 +33,10 @@ const getBalances = async (req, res) => {
 
   // Parse the filter parameters for credit/debit, account-numbers,
   // timestamp and pagination
-  let [accountQuery, accountParams] = utils.parseParams(
-    req,
-    'account.id',
-    [{shard: '0', realm: 'ab.account_realm_num', num: 'ab.account_num'}],
-    'entityId'
+  let [accountQuery, accountParams] = utils.parseAccountIdQueryParam(
+    req.query,
+    'ab.account_realm_num',
+    'ab.account_num'
   );
 
   // if the request has a timestamp=xxxx or timestamp=eq:xxxxx, then
@@ -55,19 +54,11 @@ const getBalances = async (req, res) => {
     }
   }
 
-  let [tsQuery, tsParams] = utils.parseParams(req, 'timestamp', ['ab.consensus_timestamp'], 'timestamp_ns');
+  let [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'ab.consensus_timestamp');
 
-  let [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance', ['ab.balance'], 'balance');
+  let [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
 
-  let [pubKeyQuery, pubKeyParams] = utils.parseParams(
-    req,
-    'account.publickey',
-    ['e.ed25519_public_key_hex'],
-    'publickey',
-    (s) => {
-      return s.toLowerCase();
-    }
-  );
+  let [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
   let joinEntities = '' !== pubKeyQuery; // Only need to join t_entites if we're selecting on publickey.
 
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'desc');

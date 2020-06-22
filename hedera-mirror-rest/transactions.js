@@ -34,8 +34,7 @@ const selectClause = `SELECT
        coalesce(ttr.result, 'UNKNOWN') AS result,
        coalesce(ttt.name, 'UNKNOWN') AS name,
        t.node_account_id,
-       ctl.realm_num AS account_realm,
-       ctl.entity_num AS account_num,
+       ctl.entity_id as ctl_entity_id,
        ctl.amount,
        t.charged_tx_fee,
        t.valid_duration_seconds,
@@ -79,7 +78,7 @@ const createTransferLists = function (rows) {
     }
 
     transactions[row.consensus_ns].transfers.push({
-      account: config.shard + '.' + row.account_realm + '.' + row.account_num,
+      account: EntityId.fromEncodedId(row['ctl_entity_id']).toString(),
       amount: Number(row.amount),
     });
   }
@@ -109,8 +108,8 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
        JOIN t_transactions t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-       JOIN t_cryptotransferlists ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
-     ORDER BY t.consensus_ns ${order} , account_num ASC, amount ASC`
+       JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
+     ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`
   );
 };
 
@@ -125,57 +124,39 @@ const getTransactionsOuterQuery = function (innerQuery, order) {
  * @param {String} tsQuery SQL query that filters based on the timestamps
  * @param {String} resultTypeQuery SQL query that filters based on the result types
  * @param {String} limitQuery SQL query that limits the number of unique transactions returned
- * @param {String} creditDebit Either 'credit', 'debit' to filter based on credit or debit transactions
+ * @param {String} creditDebitQuery SQL query that filters for credit/debit transactions
  * @param {String} order Sorting order
  * @return {String} innerQuery SQL query that filters transactions based on various types of queries
  */
-const getTransactionsInnerQuery = function (accountQuery, tsQuery, resultTypeQuery, limitQuery, creditDebit, order) {
-  let innerQuery = `
-       SELECT DISTINCT ctl.consensus_timestamp
-       FROM t_cryptotransferlists ctl
-         JOIN t_transactions t ON t.consensus_ns = ctl.consensus_timestamp
-       WHERE `;
-  if (accountQuery) {
-    innerQuery += accountQuery; // Max limit on the inner query.
-  } else {
-    innerQuery += '1=1\n';
-  }
-  innerQuery += ' AND ' + [tsQuery, resultTypeQuery].map((q) => (q === '' ? '1=1' : q)).join(' AND ');
-  if ('credit' === creditDebit) {
-    innerQuery += ' AND ctl.amount > 0 ';
-  } else if ('debit' === creditDebit) {
-    innerQuery += ' AND ctl.amount < 0 ';
-  }
-  innerQuery += ' ORDER BY ctl.consensus_timestamp ' + order + '\n' + limitQuery;
-  return innerQuery;
+const getTransactionsInnerQuery = function (
+  accountQuery,
+  tsQuery,
+  resultTypeQuery,
+  limitQuery,
+  creditDebitQuery,
+  order
+) {
+  let whereClause = [accountQuery, tsQuery, resultTypeQuery, creditDebitQuery].filter((q) => q !== '').join(' AND ');
+  whereClause = whereClause === '' ? '' : `WHERE ${whereClause}`;
+  return `
+    SELECT DISTINCT ctl.consensus_timestamp
+    FROM crypto_transfer ctl
+      JOIN t_transactions t ON t.consensus_ns = ctl.consensus_timestamp
+    ${whereClause}
+    ORDER BY ctl.consensus_timestamp ${order}
+    ${limitQuery}`;
 };
 
 const reqToSql = function (req) {
-  // Parse the filter parameters for credit/debit, account-numbers,
-  // timestamp, and pagination (limit)
-  const creditDebit = utils.parseCreditDebitParams(req);
-
-  let [accountQuery, accountParams] = utils.parseParams(
-    req,
-    'account.id',
-    [
-      {
-        realm: 'realm_num',
-        num: 'entity_num',
-      },
-    ],
-    'entityId'
-  );
-
-  const [tsQuery, tsParams] = utils.parseParams(req, 'timestamp', ['t.consensus_ns'], 'timestamp_ns');
-
+  // Parse the filter parameters for credit/debit, account-numbers, timestamp, and pagination (limit)
+  const [creditDebitQuery] = utils.parseCreditDebitParams(req.query, 'ctl.amount');
+  let [accountQuery, accountParams] = utils.parseAccountIdQueryParamAsEncoded(req.query, 'ctl.entity_id');
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 't.consensus_ns');
   const resultTypeQuery = utils.parseResultParams(req);
-
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-
   let sqlParams = accountParams.concat(tsParams).concat(params);
 
-  let innerQuery = getTransactionsInnerQuery(accountQuery, tsQuery, resultTypeQuery, query, creditDebit, order);
+  let innerQuery = getTransactionsInnerQuery(accountQuery, tsQuery, resultTypeQuery, query, creditDebitQuery, order);
   let sqlQuery = getTransactionsOuterQuery(innerQuery, order);
 
   return {
@@ -257,10 +238,10 @@ const getOneTransaction = async (req, res) => {
     `FROM t_transactions t
        JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-       JOIN t_cryptotransferlists ctl ON  ctl.consensus_timestamp = t.consensus_ns
+       JOIN crypto_transfer ctl ON  ctl.consensus_timestamp = t.consensus_ns
      WHERE t.payer_account_id = ?
        AND  t.valid_start_ns = ?
-     ORDER BY consensus_ns ASC, account_num ASC, amount ASC`; // In case of duplicate transactions, only the first succeeds
+     ORDER BY consensus_ns ASC, ctl_entity_id ASC, amount ASC`; // In case of duplicate transactions, only the first succeeds
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
   if (logger.isTraceEnabled()) {

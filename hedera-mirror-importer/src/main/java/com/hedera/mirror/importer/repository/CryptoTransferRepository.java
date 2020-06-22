@@ -21,13 +21,12 @@ package com.hedera.mirror.importer.repository;
  */
 
 import java.util.Optional;
-
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.EntityId;
 
 public interface CryptoTransferRepository extends CrudRepository<CryptoTransfer, Long> {
-    Optional<CryptoTransfer> findByConsensusTimestampAndEntityNum(Long consensusTimestamp, Long entityNum);
-    Optional<CryptoTransfer> findByConsensusTimestampAndEntityNumAndAmount(Long consensusTimestamp, Long entityNum,
-                                                                           Long amount);
+    Optional<CryptoTransfer> findByConsensusTimestampAndEntityIdAndAmount(
+            Long consensusTimestamp, EntityId entityId, Long amount);
 }

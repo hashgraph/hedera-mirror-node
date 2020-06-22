@@ -49,7 +49,7 @@ import com.hedera.mirror.importer.util.Utility;
  * <ul>
  *   <li>t_transactions</li>
  *   <li>t_file_data</li>
- *   <li>t_cryptotransferlists</li>
+ *   <li>crypto_transfer</li>
  *   <li>t_entities</li>
  *   <li>topic_message</li>
  *   <li>account_balances</li>
@@ -122,8 +122,8 @@ public class PostgresCSVDomainWriter implements DomainWriter {
 
     private static CSVPrinter getCryptoTransferListsCSVPrinter(String outputDir) throws IOException {
         return new CSVPrinter(
-                Files.newBufferedWriter(Paths.get(outputDir, "t_cryptotransferlists")),
-                CSVFormat.DEFAULT.withHeader("consensus_timestamp", "realm_num", "entity_num", "amount"));
+                Files.newBufferedWriter(Paths.get(outputDir, "crypto_transfer")),
+                CSVFormat.DEFAULT.withHeader("entity_id", "consensus_timestamp", "amount"));
     }
 
     private static CSVPrinter getFileDataCSVPrinter(String outputDir) throws IOException {
@@ -196,13 +196,12 @@ public class PostgresCSVDomainWriter implements DomainWriter {
     @Override
     public void addCryptoTransfer(CryptoTransfer cryptoTransfer) {
         try {
-            cryptoTransferListsWriter.printRecord(
-                    cryptoTransfer.getConsensusTimestamp(), cryptoTransfer.getRealmNum(), cryptoTransfer.getEntityNum(),
-                    cryptoTransfer.getAmount());
+            cryptoTransferListsWriter.printRecord(cryptoTransfer.getEntityId().getId(),
+                    cryptoTransfer.getConsensusTimestamp(), cryptoTransfer.getAmount());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        log.trace("added crypto transfer for entity_num = {}", cryptoTransfer.getEntityNum());
+        log.trace("added crypto transfer for entity_num = {}", cryptoTransfer.getEntityId());
     }
 
     @Override
