@@ -56,11 +56,11 @@ const sampleEntityIds = (n) => {
 };
 
 /**
- * Gets 'n' randomly sampled consensus timestamps from t_transactions table.
+ * Gets 'n' randomly sampled consensus timestamps from transaction table.
  */
 const sampleConsensusTimestamps = (n) => {
   return pool
-    .query(`select consensus_ns as value from t_transactions order by RANDOM() limit ${n};`, null)
+    .query(`select consensus_ns as value from transaction order by RANDOM() limit ${n};`, null)
     .then((result) => {
       return result.rows.map(getRowValueAsInt);
     });

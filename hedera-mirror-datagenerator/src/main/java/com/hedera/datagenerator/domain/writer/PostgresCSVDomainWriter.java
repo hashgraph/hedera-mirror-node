@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.util.Utility;
  * <p>
  * Test data for tables: <br/>
  * <ul>
- *   <li>t_transactions</li>
+ *   <li>transaction</li>
  *   <li>t_file_data</li>
  *   <li>crypto_transfer</li>
  *   <li>t_entities</li>
@@ -104,7 +104,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
 
     private static CSVPrinter getTransactionsCSVPrinter(String outputDir) throws IOException {
         return new CSVPrinter(
-                Files.newBufferedWriter(Paths.get(outputDir, "t_transactions")),
+                Files.newBufferedWriter(Paths.get(outputDir, "transaction")),
                 CSVFormat.DEFAULT.withHeader(
                         "node_account_id", "memo", "payer_account_id", "charged_tx_fee", "initial_balance", "entity_id",
                         "valid_start_ns", "consensus_ns", "valid_duration_seconds", "max_fee", "transaction_hash",

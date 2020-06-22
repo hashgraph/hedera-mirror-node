@@ -121,7 +121,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             throw new ParserSQLException("Error setting up connection to database", e);
         }
         try {
-            sqlInsertTransaction = connection.prepareStatement("INSERT INTO t_transactions"
+            sqlInsertTransaction = connection.prepareStatement("INSERT INTO transaction"
                     + " (node_account_id, memo, valid_start_ns, type, payer_account_id, result, " +
                     "consensus_ns, entity_id, charged_tx_fee, initial_balance, valid_duration_seconds, max_fee, " +
                     "transaction_hash, transaction_bytes)"

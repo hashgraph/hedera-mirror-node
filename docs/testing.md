@@ -50,7 +50,7 @@ Where
 -   `filterAxis` is primary axis to filter results. It can have one of the three values:
     -   `ACCOUNTID`: Sets `account.id` param. Values for this param are sampled from `entity_num` column in `t_entities`.
     -   `CONSENSUS_TIMESTAMP`: Sets `timestamp` param. Values for this param are sampled from `consensus_ns` column in
-        `t_transactions`.
+        `transaction`.
     -   `BALANCE`: Sets `account.balance` param. Values for this param are sampled from `balance` column in
         `account_balances`.
 -   `count`: Number of values to sample for the param which will be set based on `filterAxis`. So this also represents

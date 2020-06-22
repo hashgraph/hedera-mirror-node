@@ -152,7 +152,7 @@ const addTransaction = async function (transaction) {
   let payerAccount = EntityId.fromString(transaction.payerAccountId);
   let nodeAccount = EntityId.fromString(transaction.nodeAccountId);
   await sqlConnection.query(
-    `INSERT INTO t_transactions (
+    `INSERT INTO transaction (
       consensus_ns, valid_start_ns, payer_account_id, node_account_id,
       result, type, valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash)
     VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10);`,
