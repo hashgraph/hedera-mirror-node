@@ -8,7 +8,7 @@ data:
     hedera.mirror.test.performance.port=5600
     hedera.mirror.test.performance.clientCount=1
     hedera.mirror.test.performance.sharedChannel=false
-    hedera.mirror.test.performance.clientTopicId[0]=
+    hedera.mirror.test.performance.clientTopicId[0]=47020
     hedera.mirror.test.performance.clientStartTime[0]=
     hedera.mirror.test.performance.clientEndTime[0]=0
     hedera.mirror.test.performance.clientLimit[0]=0
@@ -23,18 +23,30 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: hcs-perf-subscribe-test
+  labels:
+    app.kubernetes.io/name: test
 spec:
   completions: 3
   parallelism: 3
   template:
     metadata:
       name: hcs-perf-subscribe-test
+      labels:
+        app: test
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: test
       restartPolicy: Never
       containers:
         - image: gcr.io/mirrornode/hedera-mirror-test:0.13.0-rc1
-          imagePullPolicy: Always
-          name: subscribe-test-img
+          name: test
           env:
             - name: testProfile
               value: "performance"
@@ -44,12 +56,12 @@ spec:
               value: "E2E_Subscribe_Only.jmx"
           volumeMounts:
             - name: subscribe-config-volume
-              mountPath: /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/jmeter/user.properties
+              mountPath: /usr/etc/hedera-mirror-node/hedera-mirror-test/user.properties
               subPath: user.properties
       volumes:
         - name: subscribe-config-volume
           configMap:
-            defaultMode: 0555
+            defaultMode: 420
             name: hcs-perf-subscribe-config
             items:
               - key: user-props

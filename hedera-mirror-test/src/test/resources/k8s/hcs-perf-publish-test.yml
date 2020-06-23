@@ -1,9 +1,9 @@
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  name: hcs-perf-publish-config
-data:
-  application-yaml: |-
+  name: hcs-perf-publish-secret
+stringData:
+  application-default.yml: |-
     hedera:
       mirror:
         test:
@@ -21,32 +21,43 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: hcs-perf-publish-test
+  labels:
+    app.kubernetes.io/name: test
 spec:
   completions: 1
   parallelism: 1
   template:
     metadata:
       name: hcs-perf-publish-test
+      labels:
+        app: test
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: test
       restartPolicy: Never
       containers:
         - image: gcr.io/mirrornode/hedera-mirror-test:0.13.0-rc1
-          imagePullPolicy: Always
-          name: publish-test-img
+          name: test
           env:
             - name: testProfile
               value: "acceptance"
+            - name: SPRING_CONFIG_ADDITIONAL_LOCATION
+              value: "file:/usr/etc/hedera-mirror-node/hedera-mirror-test/"
             - name: cucumberFlags
               value: "@PublishOnly"
           volumeMounts:
             - name: publish-config-volume
-              mountPath: /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/application-default.yml
+              mountPath: /usr/etc/hedera-mirror-node/hedera-mirror-test/application-default.yml
               subPath: application-default.yml
       volumes:
         - name: publish-config-volume
-          configMap:
-            defaultMode: 0555
-            name: hcs-perf-publish-config
-            items:
-              - key: application-yaml
-                path: application-default.yml
+          secret:
+            defaultMode: 420
+            secretName: hcs-perf-publish-secret
