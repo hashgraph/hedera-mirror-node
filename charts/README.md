@@ -107,3 +107,4 @@ To connect to the database and run queries:
 ```shell script
 $ kubectl exec -it "${RELEASE}-db-postgresql-0" -c postgresql -- psql -d mirror_node -U mirror_node
 ```
+

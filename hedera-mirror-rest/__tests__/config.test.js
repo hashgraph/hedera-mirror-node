@@ -124,6 +124,16 @@ describe('Load environment configuration:', () => {
     const config = require('../config');
     expect(config.shard).toBe(0);
   });
+  test('Unexpected prefix', () => {
+    process.env = {HEDERA_MIRROR_NODE_REST_PORT: '80'};
+    const config = require('../config');
+    expect(config.port).not.toBe(80);
+  });
+  test('Extra path', () => {
+    process.env = {HEDERA_MIRROR_REST_SERVICE_PORT: '80'};
+    const config = require('../config');
+    expect(config.port).not.toBe(80);
+  });
 });
 
 describe('Custom CONFIG_NAME:', () => {
