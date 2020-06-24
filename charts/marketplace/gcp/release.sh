@@ -8,7 +8,7 @@ fi
 
 tag="${1#v}" # Strip v prefix if present
 tag_minor="${tag%\.*}"
-source_tag="0.13.2"
+source_tag="${tag}"
 bats_tag="v1.1.0"
 postgresql_tag="12.3.0-debian-10-r35"
 registry="${2:-gcr.io/mirror-node-public/hedera-mirror-node}"
