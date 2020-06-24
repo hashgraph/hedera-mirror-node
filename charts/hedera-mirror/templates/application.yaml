@@ -43,13 +43,27 @@ spec:
       - hashgraph
       - mirror
     links:
+      - description: Discord
+        url: https://hedera.com/discord
+      - description: Documentation
+        url: https://docs.hedera.com
       - description: Source Repository
         url: https://github.com/hashgraph/hedera-mirror-node
+      - description: User Guide
+        url: https://github.com/hashgraph/hedera-mirror-node/blob/master/charts/marketplace/gcp/README.md
       - description: Website
-        url: https://hedera.com/
+        url: https://hedera.com
     maintainers:
       - name: Hedera Mirror Node team
         email: mirrornode@hedera.com
+    notes: |
+      To access the GRPC API:
+        GRPC_IP=$(kubectl get service/{{ .Release.Name }}-grpc -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        grpcurl -plaintext "${GRPC_IP}:5600" list
+
+      To access the REST API:
+        REST_IP=$(kubectl get service/{{ .Release.Name }}-rest -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        curl -s "http://${REST_IP}/api/v1/transactions?limit=1"
     type: hedera-mirror-node
     version: {{ .Chart.AppVersion | quote }}
 {{- end }}
