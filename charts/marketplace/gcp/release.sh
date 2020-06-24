@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 set -ex
 
-if [[ "$#" -ne 1 ]]; then
-  echo "You must provide the Mirror Node image tag"
+if [[ "$#" -lt 1 ]]; then
+  echo "You must provide the Mirror Node image tag (e.g. 0.14.0)"
   exit 1
 fi
 
-tag="${1}"
+tag="${1#v}" # Strip v prefix if present
 tag_minor="${tag%\.*}"
-bats_tag="latest"
-postgresql_tag="latest"
-registry="gcr.io/mirror-node-public/hedera-mirror-node"
+source_tag="0.13.2"
+bats_tag="v1.1.0"
+postgresql_tag="12.3.0-debian-10-r35"
+registry="${2:-gcr.io/mirror-node-public/hedera-mirror-node}"
 
 function retag() {
   local source=${1}
@@ -35,9 +36,9 @@ docker push "${registry}/deployer:${tag}"
 docker push "${registry}/deployer:${tag_minor}"
 
 # Retag other images
-retag "gcr.io/mirrornode/hedera-mirror-importer:${tag}" ""
-retag "gcr.io/mirrornode/hedera-mirror-grpc:${tag}" "grpc"
-retag "gcr.io/mirrornode/hedera-mirror-rest:${tag}" "rest"
+retag "gcr.io/mirrornode/hedera-mirror-importer:${source_tag}" ""
+retag "gcr.io/mirrornode/hedera-mirror-grpc:${source_tag}" "grpc"
+retag "gcr.io/mirrornode/hedera-mirror-rest:${source_tag}" "rest"
 retag "bats/bats:${bats_tag}" "test"
 retag "bitnami/postgresql-repmgr:${postgresql_tag}" "postgresql-repmgr"
 

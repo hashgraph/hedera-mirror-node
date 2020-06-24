@@ -60,15 +60,10 @@ file must be specified via the parameters flag.
     kubectl create namespace "${NAMESPACE}"
     mpdev install --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG} --parameters='{"name": "'${NAME}'",
         "namespace": "'${NAMESPACE}'",
-        "global.rest.password": "password",
-        "grpc.config.hedera.mirror.grpc.db.password": "password",
-        "importer.config.hedera.mirror.importer.db.password": "password",
         "importer.config.hedera.mirror.importer.downloader.accessKey": "GOOG1...",
         "importer.config.hedera.mirror.importer.downloader.bucketName": "...",
         "importer.config.hedera.mirror.importer.downloader.secretKey": "...",
-        "importer.config.hedera.mirror.importer.network": "MAINNET",
-        "postgresql.postgresql.password": "password",
-        "postgresql.postgresql.repmgrPassword": "password"}'
+        "importer.config.hedera.mirror.importer.network": "MAINNET"}'
 
 ## Uninstall
 
