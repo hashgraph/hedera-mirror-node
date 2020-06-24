@@ -3,7 +3,7 @@ kind: Secret
 metadata:
   name: hcs-perf-publish-secret
 stringData:
-  application-default.yml: |-
+  application.yml: |-
     hedera:
       mirror:
         test:
@@ -30,7 +30,7 @@ spec:
     metadata:
       name: hcs-perf-publish-test
       labels:
-        app: test
+        app.kubernetes.io/name: test
     spec:
       affinity:
         podAntiAffinity:
@@ -48,14 +48,13 @@ spec:
           env:
             - name: testProfile
               value: "acceptance"
-            - name: SPRING_CONFIG_ADDITIONAL_LOCATION
-              value: "file:/usr/etc/hedera-mirror-node/hedera-mirror-test/"
+            - name: SPRING_CONFIG_LOCATION
+              value: "file:/usr/etc/hedera-mirror-test/"
             - name: cucumberFlags
               value: "@PublishOnly"
           volumeMounts:
             - name: publish-config-volume
-              mountPath: /usr/etc/hedera-mirror-node/hedera-mirror-test/application-default.yml
-              subPath: application-default.yml
+              mountPath: /usr/etc/hedera-mirror-test
       volumes:
         - name: publish-config-volume
           secret:

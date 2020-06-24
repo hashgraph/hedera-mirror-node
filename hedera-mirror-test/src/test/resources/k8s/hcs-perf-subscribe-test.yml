@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: hcs-perf-subscribe-config
 data:
-  user-props: |-
+  user.properties: |-
     hedera.mirror.test.performance.host=hcs.testnet.mirrornode.hedera.com
     hedera.mirror.test.performance.port=5600
     hedera.mirror.test.performance.clientCount=1
@@ -32,7 +32,7 @@ spec:
     metadata:
       name: hcs-perf-subscribe-test
       labels:
-        app: test
+        app.kubernetes.io/name: test
     spec:
       affinity:
         podAntiAffinity:
@@ -54,15 +54,13 @@ spec:
               value: "4"
             - name: jmeter.test
               value: "E2E_Subscribe_Only.jmx"
+            - name: jmeter.propertiesDirectory
+              value: "/usr/etc/hedera-mirror-test"
           volumeMounts:
             - name: subscribe-config-volume
-              mountPath: /usr/etc/hedera-mirror-node/hedera-mirror-test/user.properties
-              subPath: user.properties
+              mountPath: /usr/etc/hedera-mirror-test
       volumes:
         - name: subscribe-config-volume
           configMap:
             defaultMode: 420
             name: hcs-perf-subscribe-config
-            items:
-              - key: user-props
-                path: user.properties
