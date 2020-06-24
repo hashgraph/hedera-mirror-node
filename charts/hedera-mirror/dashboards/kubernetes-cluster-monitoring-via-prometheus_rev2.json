@@ -1733,7 +1733,7 @@
       }
     }
   ],
-  "refresh": "10s",
+  "refresh": "1m",
   "schemaVersion": 22,
   "style": "dark",
   "tags": [
@@ -1847,7 +1847,7 @@
         "multi": false,
         "name": "Node",
         "options": [],
-        "query": "label_values(kubernetes_io_hostname)",
+        "query": "label_values(kube_pod_info, node)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -1861,7 +1861,7 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {

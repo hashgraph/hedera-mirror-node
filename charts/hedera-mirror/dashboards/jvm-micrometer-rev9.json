@@ -1892,15 +1892,15 @@
       "legend": {
         "alignAsTable": false,
         "avg": false,
-        "current": true,
+        "current": false,
         "hideEmpty": false,
         "hideZero": false,
-        "max": true,
+        "max": false,
         "min": false,
         "rightSide": false,
         "show": true,
         "total": false,
-        "values": true
+        "values": false
       },
       "lines": true,
       "linewidth": 1,
@@ -1928,7 +1928,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(log4j2_events_total{application=\"$application\", pod=\"$pod\"}[1m])",
+          "expr": "rate(log4j2_events_total{application=\"$application\", pod=\"$pod\"}[5m])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1946,7 +1946,7 @@
       "tooltip": {
         "msResolution": false,
         "shared": true,
-        "sort": 0,
+        "sort": 2,
         "value_type": "individual"
       },
       "type": "graph",

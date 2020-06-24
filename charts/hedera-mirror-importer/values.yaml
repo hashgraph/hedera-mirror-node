@@ -15,6 +15,7 @@ config:
     mirror:
       importer:
         dataPath: /var/lib/hedera-mirror-importer
+        db: {}
 
 fullnameOverride: ""
 
@@ -54,6 +55,11 @@ persistence:
   size: 10Gi
   storageClass: standard
 
+podDisruptionBudget:
+  enabled: false
+  # maxUnavailable: 0
+  # minAvailable: 1
+
 podManagementPolicy: OrderedReady
 
 podMonitor:
@@ -75,7 +81,7 @@ readinessProbe:
   initialDelaySeconds: 60
   timeoutSeconds: 2
 
-replicas: 2
+replicas: 1
 
 resources:
   limits:

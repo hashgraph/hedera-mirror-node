@@ -1,21 +1,16 @@
 properties:
-  global.rest.password:
+  importer.config.hedera.mirror.importer.downloader.accessKey:
+    default: ""
     type: string
-    default: password
-    x-google-marketplace:
-      type: MASKED_FIELD
-  grpc.config.hedera.mirror.grpc.db.password:
+  importer.config.hedera.mirror.importer.downloader.bucketName:
+    default: hedera-demo-streams
     type: string
-    default: password
-    x-google-marketplace:
-      type: MASKED_FIELD
-  importer.config.hedera.mirror.importer.db.password:
+  importer.config.hedera.mirror.importer.downloader.cloudProvider:
     type: string
-    default: password
-    x-google-marketplace:
-      type: MASKED_FIELD
-  postgresql.postgresql.repmgrPassword:
+    default: S3
+  importer.config.hedera.mirror.importer.downloader.secretKey:
+    default: ""
     type: string
-    default: password
-    x-google-marketplace:
-      type: MASKED_FIELD
+  importer.config.hedera.mirror.importer.network:
+    default: "DEMO"
+    type: string
