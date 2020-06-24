@@ -18,6 +18,7 @@
     <properties>
         <jmeter.test>E2E_Subscribe_Only.jmx</jmeter.test>
         <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
+        <jmeter.propertiesDirectory>${project.basedir}/src/test/jmeter</jmeter.propertiesDirectory>
         <cucumber.version>5.7.0</cucumber.version>
         <cucumber-reporting.version>4.0.52</cucumber-reporting.version>
         <skipTests>true</skipTests>
@@ -151,7 +152,9 @@
                                     <replacement>https://asm.ow2.io/license.html</replacement>
                                 </licenseUrlReplacement>
                                 <licenseUrlReplacement>
-                                    <regexp>\Qhttp://jtidy.svn.sourceforge.net/viewvc/jtidy/trunk/jtidy/LICENSE.txt?revision=95\E</regexp>
+                                    <regexp>
+                                        \Qhttp://jtidy.svn.sourceforge.net/viewvc/jtidy/trunk/jtidy/LICENSE.txt?revision=95\E
+                                    </regexp>
                                     <replacement>http://jtidy.sourceforge.net/license.html</replacement>
                                 </licenseUrlReplacement>
                             </licenseUrlReplacements>
@@ -171,9 +174,6 @@
                             <build>
                                 <contextDir>${maven.multiModuleProjectDirectory}</contextDir>
                                 <dockerFile>${project.basedir}/src/main/resources/Dockerfile</dockerFile>
-                                <args>
-                                    <tag>${docker.tag.version}</tag>
-                                </args>
                             </build>
                         </image>
                     </images>
@@ -259,6 +259,7 @@
                                 <subscribeThreadCount>${jmeter.subscribeThreadCount}</subscribeThreadCount>
                             </propertiesUser>
                             <skipTests>false</skipTests>
+                            <propertiesFilesDirectory>${jmeter.propertiesDirectory}</propertiesFilesDirectory>
                         </configuration>
                     </plugin>
                 </plugins>

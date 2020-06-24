@@ -370,6 +370,7 @@
                                 <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
                                 <include>*/pom.xml</include>
                                 <include>pom.xml</include>
+                                <include>hedera-mirror-test/src/test/resources/k8s/*.yml</include>
                             </includes>
                             <replacements>
                                 <replacement>
@@ -392,7 +393,7 @@
                                 </replacement>
                                 <replacement>
                                     <token>
-                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|rest):)[0-9a-z.-]+]]></token>
+                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|rest|test):)[0-9a-z.-]+]]></token>
                                     <value>${release.version}</value>
                                 </replacement>
                             </replacements>
