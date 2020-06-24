@@ -4,9 +4,9 @@ applicationResource:
   partnerName: ""
   solutionId: ""
 
-fullnameOverride: mirror
-
 global:
+  db:
+    host: RELEASE-NAME-db-pgpool # RELEASE-NAME will be replaced with actual release by children charts
   namespaceOverride: ""
   rbac:
     pspEnabled: false
@@ -20,7 +20,6 @@ grpc:
       mirror:
         grpc:
           db:
-            host: postgresql-pgpool
             password: mirror_grpc_pass
             username: mirror_grpc
   enabled: true
@@ -37,7 +36,6 @@ importer:
       mirror:
         importer:
           db:
-            host: postgresql-pgpool
             name: mirror_node
             password: mirror_node_pass
             username: mirror_node
@@ -55,7 +53,6 @@ loki:
       table_manager:
         retention_deletes_enabled: true
         retention_period: 2184h
-    fullnameOverride: loki
     networkPolicy:
       enabled: true
     persistence:
@@ -72,9 +69,6 @@ loki:
     serviceMonitor:
       enabled: true
   promtail:
-    fullnameOverride: promtail
-    loki:
-      serviceName: loki
     rbac:
       pspEnabled: false
     resources:
@@ -103,11 +97,11 @@ postgresql:
         memory: 25Mi
     serviceMonitor:
       enabled: true
-  fullnameOverride: postgresql
+  nameOverride: db
   networkPolicy:
     enabled: false
   persistence:
-    size: 750Gi
+    size: 500Gi
   pgpool:
     adminPassword: password
     affinity:
@@ -119,7 +113,7 @@ postgresql:
               labelSelector:
                 matchLabels:
                   app.kubernetes.io/component: pgpool
-    initdbScriptsSecret: pgpool-init
+    initdbScriptsSecret: '{{ printf "%s-pgpool-init" .Release.Name }}'
     podLabels:
       role: db
     pdb:
@@ -147,7 +141,7 @@ postgresql:
               labelSelector:
                 matchLabels:
                   app.kubernetes.io/component: postgresql
-    initdbScriptsSecret: postgresql-init
+    initdbScriptsSecret: '{{ printf "%s-postgresql-init" .Release.Name }}'
     podLabels:
       role: db
     password: password
@@ -167,7 +161,6 @@ priorityClass:
 
 prometheus-adapter:
   enabled: true
-  fullnameOverride: prometheus-adapter
   priorityClassName: low
   prometheus:
     url: http://prometheus-prometheus
@@ -220,24 +213,22 @@ prometheus:
           memory: 30Mi
     enabled: false
   enabled: true
-  fullnameOverride: prometheus
   grafana:
     additionalDataSources:
       - name: Loki
         type: loki
         access: proxy
-        url: http://loki:3100
+        url: http://{{ .Release.Name }}-loki:3100
         jsonData:
           maxLines: 500
     adminPassword: password
     defaultDashboardsEnabled: true
-    fullnameOverride: grafana
     grafana.ini:
       server:
         root_url: "%(protocol)s://%(domain)s/grafana/"
     ingress:
       annotations:
-        traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror.namespace" . }}-grafana@kubernetescrd'
+        traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror.namespace" . }}-{{ .Release.Name }}-grafana@kubernetescrd'
       enabled: true
       hosts: [""]
       middleware:
@@ -261,7 +252,6 @@ prometheus:
         cpu: 75m
         memory: 30Mi
   kube-state-metrics:
-    fullnameOverride: prometheus-kube-state-metrics
     podSecurityPolicy:
       enabled: false
     resources:
@@ -272,7 +262,6 @@ prometheus:
         cpu: 5m
         memory: 16Mi
   prometheus-node-exporter:
-    fullnameOverride: prometheus-node-exporter
     hostNetwork: false
     rbac:
       pspEnabled: false
@@ -294,16 +283,19 @@ prometheus:
           matchLabels:
             app.kubernetes.io/name: traefik
     prometheusSpec:
+      image:
+        tag: v2.19.0
       podMonitorSelectorNilUsesHelmValues: false
       priorityClassName: low
       resources:
         limits:
-          cpu: 400m
-          memory: 500Mi
+          cpu: 500m
+          memory: 750Mi
         requests:
-          cpu: 200m
-          memory: 200Mi
-      retention: 90d
+          cpu: 250m
+          memory: 250Mi
+      retention: 30d
+      scrapeInterval: 30s
       serviceMonitorSelectorNilUsesHelmValues: false
       storageSpec:
         volumeClaimTemplate:
@@ -311,6 +303,7 @@ prometheus:
             resources:
               requests:
                 storage: 50Gi
+      walCompression: true
   prometheusOperator:
     namespaces:
       additional: []
@@ -325,12 +318,6 @@ prometheus:
 
 rest:
   enabled: true
-  config:
-    hedera:
-      mirror:
-        rest:
-          db:
-            host: postgresql-pgpool
   ingress:
     middleware:
       enabled: true
@@ -339,6 +326,11 @@ rest:
     enabled: true
 
 traefik:
+  additionalArguments:
+    - "--accesslog=true"
+    - "--entrypoints.websecure.http.tls=true"
+    - "--entrypoints.grpc.address=:5600"
+    - "--metrics.prometheus=true"
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -351,13 +343,17 @@ traefik:
   deployment:
     replicas: 2
   enabled: true
-  fullnameOverride: traefik
   globalArguments: []
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
   ports:
     grpc:
       port: 5600
       expose: true
   priorityClassName: critical
+  rbac:
+    namespaced: true
   resources:
     requests:
       cpu: 100m
@@ -368,7 +364,3 @@ traefik:
   service:
     spec:
       externalTrafficPolicy: Local
-  volumes:
-    - name: traefik
-      mountPath: /etc/traefik/
-      type: configMap

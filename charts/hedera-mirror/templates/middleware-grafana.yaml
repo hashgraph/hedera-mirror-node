@@ -1,5 +1,5 @@
 {{ $ingress := .Values.prometheus.grafana.ingress }}
-{{ $name := .Values.prometheus.grafana.fullnameOverride }}
+{{ $name := printf "%s-grafana" .Release.Name }}
 {{ $namespace := include "hedera-mirror.namespace" . }}
 
 {{- if and .Values.prometheus.enabled .Values.prometheus.grafana.enabled $ingress.middleware.enabled -}}
