@@ -8,7 +8,7 @@ set_acceptance_configs() {
 }
 
 set_perf_configs() {
-    testoptions="-Djmeter.subscribeThreadCount=$subscribeThreadCount -Djmeter.test=$jmeterTestPlan -Djmeter.propertiesDirectory=$jmeterPropsDirectory"
+    testoptions="-Djmeter.subscribeThreadCount=$subscribeThreadCount -Djmeter.test=$jmeterTestPlan -Djmeter.propertiesDirectory=$jmeterPropsDirectory -Djmeter.publishThreadCount=$publishThreadCount"
 }
 
 handle_mode() {
