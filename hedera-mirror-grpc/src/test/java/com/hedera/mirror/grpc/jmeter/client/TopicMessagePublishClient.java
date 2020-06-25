@@ -22,6 +22,7 @@ package com.hedera.mirror.grpc.jmeter.client;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -101,9 +102,9 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                 .operatorPrivateKey(operatorPrivateKey)
                 .build();
 
-        try {
-            ScheduledExecutorService executor = Executors.newScheduledThreadPool(clientList.size());
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(clientList.size());
 
+        try {
             log.info("Schedule runnable publishInterval: {} ms", publishInterval);
             clientList.forEach(x -> {
                 executor.scheduleAtFixedRate(
@@ -133,6 +134,20 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
             result.sampleEnd();
             result.setResponseData(topicMessagePublisher.toString().getBytes());
             result.setSuccessful(success);
+
+            if (!executor.isShutdown()) {
+                log.info("Executor didn't shutdown, applying some needed pressure");
+                executor.shutdownNow();
+            }
+
+            // close clients
+            clientList.forEach(x -> {
+                try {
+                    x.close();
+                } catch (InterruptedException e) {
+                    log.debug("Error closing client: {}", e.getMessage());
+                }
+            });
         }
 
         return result;
@@ -168,9 +183,8 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
             this.operatorId = operatorId;
             this.operatorPrivateKey = operatorPrivateKey;
 
-            client = null;
-//            client = new Client(Map.of(nodeInfo.nodeId, nodeInfo.getNodeAddress()));
-//            client.setOperator(operatorId, operatorPrivateKey);
+            client = new Client(Map.of(nodeInfo.nodeId, nodeInfo.getNodeAddress()));
+            client.setOperator(operatorId, operatorPrivateKey);
         }
 
         public void close() throws InterruptedException {
@@ -178,7 +192,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
 
             try {
                 if (client != null) {
-                    client.close(10, TimeUnit.SECONDS);
+                    client.close(5, TimeUnit.SECONDS);
                 }
             } catch (TimeoutException tex) {
                 log.debug("Exception on client close: {}", tex.getMessage());

@@ -21,9 +21,6 @@ package com.hedera.mirror.grpc.jmeter.sampler;
  */
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
@@ -39,22 +36,15 @@ import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublisher;
 @RequiredArgsConstructor
 public class TopicMessagesPublishSampler {
     private final TopicMessagePublisher topicMessagePublisher;
-    //    private final Ed25519PublicKey operatorKey;
     private final TopicMessagePublishClient.SDKClient sdkClient;
 
-    //    private final Ed25519PrivateKey submitKey;
-
-    //    @Override
     @SneakyThrows
     public void run() {
         // publish MessagesPerBatchCount number of messages to the noted topic id
         log.info("Running message publish, topicMessagePublisher: {}", topicMessagePublisher);
         Transaction transaction;
-        TopicMessagePublishClient.NodeInfo nodeInfo = sdkClient.getNodeInfo();
-        Client client = new Client(Map.of(nodeInfo.getNodeId(), nodeInfo.getNodeAddress()));
-        client.setOperator(topicMessagePublisher.getOperatorId(), topicMessagePublisher.getOperatorPrivateKey());
+        Client client = sdkClient.getClient();
         for (int i = 0; i < topicMessagePublisher.getMessagesPerBatchCount(); i++) {
-//            Client client = sdkClient.getClient();
             transaction = new ConsensusMessageSubmitTransaction()
                     .setTopicId(topicMessagePublisher.getConsensusTopicId())
                     .setMessage(topicMessagePublisher.getMessage())
@@ -68,16 +58,8 @@ public class TopicMessagesPublishSampler {
 //                transaction.sign(submitKey);
 //            }
 
-//            log.info("Signed transaction: {}. Next execute it", submitKey != null);
-
             TransactionId transactionId = transaction.execute(client, Duration.ofSeconds(2));
             log.info("Published a message w transactionId: {}", transactionId);
-        }
-
-        try {
-            client.close(5, TimeUnit.SECONDS);
-        } catch (TimeoutException e) {
-            log.debug("Error closing client: {}", e.getMessage());
         }
     }
 }
