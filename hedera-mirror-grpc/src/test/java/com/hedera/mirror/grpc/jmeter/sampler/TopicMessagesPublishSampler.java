@@ -21,13 +21,18 @@ package com.hedera.mirror.grpc.jmeter.sampler;
  */
 
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.HederaStatusException;
+import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.mirror.grpc.jmeter.client.TopicMessagePublishClient;
 import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublisher;
@@ -40,10 +45,10 @@ public class TopicMessagesPublishSampler {
     private final TopicMessagePublishClient.SDKClient sdkClient;
 
     @SneakyThrows
-    public int run() {
+    public int submitConsensusMessageTransactions() {
         // publish MessagesPerBatchCount number of messages to the noted topic id
         Client client = sdkClient.getClient();
-        log.debug("Submit transaction to {}, topicMessagePublisher: {}", sdkClient
+        log.trace("Submit transaction to {}, topicMessagePublisher: {}", sdkClient
                 .getNodeInfo(), topicMessagePublisher);
         Transaction transaction;
         TransactionSubmissionResult result = new TransactionSubmissionResult();
@@ -54,17 +59,32 @@ public class TopicMessagesPublishSampler {
                     .setMessage(topicMessagePublisher.getMessage())
                     .build(client);
 
-//            if (submitKey != null) {
-//                // The transaction is automatically signed by the payer.
-//                // Due to the topic having a submitKey requirement, additionally sign the transaction with that key.
-//                transaction.sign(submitKey);
-//            }
-
             TransactionId transactionId = transaction.execute(client, Duration.ofSeconds(2));
             result.onNext(transactionId);
         }
 
-        result.onComplete();
-        return result.getCounter().get();
+        // verify transactions and
+        List<TransactionId> transactionIds = result.onComplete();
+        return getValidTransactionsCount(transactionIds, client);
+    }
+
+    private int getValidTransactionsCount(List<TransactionId> transactionIds, Client client) {
+        log.debug("Verify Transactions {}", transactionIds.size());
+        AtomicInteger counter = new AtomicInteger(0);
+        transactionIds.forEach(x -> {
+            TransactionReceipt receipt = null;
+            try {
+                receipt = x.getReceipt(client);
+            } catch (HederaStatusException e) {
+                log.debug("Error pulling {} receipt {}", x, e.getMessage());
+            }
+            if (receipt.status == Status.Success) {
+                counter.incrementAndGet();
+            } else {
+                log.warn("Transaction {} had an unexpected status of {}", x, receipt.status);
+            }
+        });
+
+        return counter.get();
     }
 }

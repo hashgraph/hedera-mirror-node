@@ -103,7 +103,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                 .operatorPrivateKey(operatorPrivateKey)
                 .build();
 
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(clientList.size());
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(clientList.size() * 4);
         ScheduledExecutorService loggerScheduler = Executors.newSingleThreadScheduledExecutor();
 
         try {
@@ -115,7 +115,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                         () -> {
                             TopicMessagesPublishSampler topicMessagesPublishSampler =
                                     new TopicMessagesPublishSampler(topicMessagePublisher, x);
-                            counter.addAndGet(topicMessagesPublishSampler.run());
+                            counter.addAndGet(topicMessagesPublishSampler.submitConsensusMessageTransactions());
                         },
                         0,
                         publishInterval,

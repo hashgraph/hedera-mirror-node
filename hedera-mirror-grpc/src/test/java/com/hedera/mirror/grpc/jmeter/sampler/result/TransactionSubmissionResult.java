@@ -1,6 +1,8 @@
 package com.hedera.mirror.grpc.jmeter.sampler.result;
 
 import com.google.common.base.Stopwatch;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Data;
@@ -34,17 +36,20 @@ public class TransactionSubmissionResult {
 
     private AtomicInteger counter = new AtomicInteger(0);
     private final Stopwatch totalStopwatch = Stopwatch.createStarted();
+    List<TransactionId> transactionIdList = new ArrayList<>();
 
     public void onNext(TransactionId transactionId) {
+        transactionIdList.add(transactionId);
         counter.incrementAndGet();
-
-        log.debug("Published a message w transactionId: {}", transactionId);
+        log.trace("Published a message w transactionId: {}", transactionId);
     }
 
-    public void onComplete() {
+    public List<TransactionId> onComplete() {
         totalStopwatch.stop();
 
         printProgress();
+
+        return transactionIdList;
     }
 
     public static double getTransactionSubmissionRate(long transactionCount, long milliSeconds) {
