@@ -43,6 +43,7 @@ import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 public class TopicMessagesPublishSampler {
     private final TopicMessagePublisher topicMessagePublisher;
     private final TopicMessagePublishClient.SDKClient sdkClient;
+    private final boolean verifyTransactions;
 
     @SneakyThrows
     public int submitConsensusMessageTransactions() {
@@ -63,9 +64,13 @@ public class TopicMessagesPublishSampler {
             result.onNext(transactionId);
         }
 
-        // verify transactions and
-        List<TransactionId> transactionIds = result.onComplete();
-        return getValidTransactionsCount(transactionIds, client);
+        int transactionCount = result.getCounter().get();
+        if (verifyTransactions) {
+            List<TransactionId> transactionIds = result.onComplete();
+            transactionCount = getValidTransactionsCount(transactionIds, client);
+        }
+
+        return transactionCount;
     }
 
     private int getValidTransactionsCount(List<TransactionId> transactionIds, Client client) {

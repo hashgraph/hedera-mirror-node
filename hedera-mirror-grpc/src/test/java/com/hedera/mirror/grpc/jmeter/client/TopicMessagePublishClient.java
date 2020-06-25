@@ -58,6 +58,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
     private Ed25519PrivateKey operatorPrivateKey;
     private long publishTimeout;
     private long publishInterval;
+    private boolean verifyTransactions;
 
     @Override
     public void setupTest(JavaSamplerContext javaSamplerContext) {
@@ -71,6 +72,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
         messageByteSize = propHandler.getIntClientTestParam("MessagesByteSize", 0);
         operatorId = AccountId.fromString(propHandler.getClientTestParam("OperatorId", 0));
         operatorPrivateKey = Ed25519PrivateKey.fromString(propHandler.getClientTestParam("OperatorKey", 0));
+        verifyTransactions = Boolean.valueOf(propHandler.getClientTestParam("VerifyTransactions", 0, "true"));
 
         // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_IP>
         String[] nodeList = propHandler.getClientTestParam("NetworkNodes", 0).split(",");
@@ -114,7 +116,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                 executor.scheduleAtFixedRate(
                         () -> {
                             TopicMessagesPublishSampler topicMessagesPublishSampler =
-                                    new TopicMessagesPublishSampler(topicMessagePublisher, x);
+                                    new TopicMessagesPublishSampler(topicMessagePublisher, x, verifyTransactions);
                             counter.addAndGet(topicMessagesPublishSampler.submitConsensusMessageTransactions());
                         },
                         0,
