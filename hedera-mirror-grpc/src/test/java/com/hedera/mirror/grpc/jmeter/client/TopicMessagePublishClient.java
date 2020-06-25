@@ -105,7 +105,6 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                 .operatorPrivateKey(operatorPrivateKey)
                 .build();
 
-
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(clientList.size() * 4);
         ScheduledExecutorService loggerScheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -125,7 +124,6 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                         TimeUnit.MILLISECONDS);
             });
 
-            // log progress every minute
             loggerScheduler.scheduleAtFixedRate(() -> {
                 printStatus(counter.get(), totalStopwatch);
             }, 0, 1, TimeUnit.MINUTES);
