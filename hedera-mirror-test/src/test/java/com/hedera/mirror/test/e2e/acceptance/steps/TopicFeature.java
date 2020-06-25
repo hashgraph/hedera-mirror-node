@@ -228,46 +228,12 @@ public class TopicFeature {
     public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException,
             HederaStatusException {
 
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
-
-        try {
-            scheduler.scheduleAtFixedRate(() -> {
-                try {
-                    for (int i = 0; i < numGroups; i++) {
-                        publishTopicMessages(messageCount);
-                        log.trace("Emitted {} message(s) in batch {} of {} potential batches. Will sleep {} ms until " +
-                                "next batch", messageCount, i + 1, numGroups, milliSleep);
-                    }
-                } catch (HederaStatusException | InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }, 0, milliSleep, TimeUnit.MILLISECONDS);
-
-            scheduler.scheduleAtFixedRate(() -> {
-                try {
-                    for (int i = 0; i < numGroups; i++) {
-                        publishTopicMessages(messageCount);
-                        log.trace("Emitted {} message(s) in batch {} of {} potential batches. Will sleep {} ms until " +
-                                "next batch", messageCount, i + 1, numGroups, milliSleep);
-                    }
-                } catch (HederaStatusException | InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }, 0, milliSleep, TimeUnit.MILLISECONDS);
-
-            scheduler.awaitTermination(15, TimeUnit.SECONDS);
-        } finally {
-            if (scheduler != null) {
-                scheduler.shutdownNow();
-            }
+        for (int i = 0; i < numGroups; i++) {
+            Thread.sleep(milliSleep, 0);
+            publishTopicMessages(messageCount);
+            log.trace("Emitted {} message(s) in batch {} of {} potential batches. Will sleep {} ms until " +
+                    "next batch", messageCount, i + 1, numGroups, milliSleep);
         }
-
-//        for (int i = 0; i < numGroups; i++) {
-//            Thread.sleep(milliSleep, 0);
-//            publishTopicMessages(messageCount);
-//            log.trace("Emitted {} message(s) in batch {} of {} potential batches. Will sleep {} ms until " +
-//                    "next batch", messageCount, i + 1, numGroups, milliSleep);
-//        }
 
         messageSubscribeCount = numGroups * messageCount;
     }
