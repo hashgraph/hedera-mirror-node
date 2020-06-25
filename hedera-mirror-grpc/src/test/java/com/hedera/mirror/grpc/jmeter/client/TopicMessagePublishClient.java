@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc.jmeter.client;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -43,6 +45,7 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
 import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublisher;
 import com.hedera.mirror.grpc.jmeter.sampler.TopicMessagesPublishSampler;
+import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
 @Log4j2
 public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
@@ -103,25 +106,32 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                 .build();
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(clientList.size());
+        ScheduledExecutorService loggerScheduler = Executors.newSingleThreadScheduledExecutor();
 
         try {
-            log.info("Schedule runnable publishInterval: {} ms", publishInterval);
+            log.info("Schedule client tasks for publishInterval: {} ms", publishInterval);
+            AtomicInteger counter = new AtomicInteger(0);
+            Stopwatch totalStopwatch = Stopwatch.createStarted();
             clientList.forEach(x -> {
                 executor.scheduleAtFixedRate(
                         () -> {
                             TopicMessagesPublishSampler topicMessagesPublishSampler =
                                     new TopicMessagesPublishSampler(topicMessagePublisher, x);
-                            topicMessagesPublishSampler.run();
+                            counter.addAndGet(topicMessagesPublishSampler.run());
                         },
                         0,
                         publishInterval,
                         TimeUnit.MILLISECONDS);
             });
 
-            log.info("Executor await termination publishTimeout: {} secs", publishTimeout);
+            loggerScheduler.scheduleAtFixedRate(() -> {
+                printStatus(counter.get(), totalStopwatch);
+            }, 0, 1, TimeUnit.MINUTES);
 
+            log.info("Executor await termination publishTimeout: {} secs", publishTimeout);
             log.info("Awaiting....");
             executor.awaitTermination(publishTimeout, TimeUnit.SECONDS);
+            printStatus(counter.get(), totalStopwatch);
             log.info("Awaited!!!!!");
             success = true;
             result.setResponseMessage("Successful publish");
@@ -140,6 +150,8 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                 executor.shutdownNow();
             }
 
+            loggerScheduler.shutdownNow();
+
             // close clients
             clientList.forEach(x -> {
                 try {
@@ -151,6 +163,14 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
         }
 
         return result;
+    }
+
+    private void printStatus(int totalCount, Stopwatch totalStopwatch) {
+        double rate = TransactionSubmissionResult
+                .getTransactionSubmissionRate(totalCount, totalStopwatch
+                        .elapsed(TimeUnit.MILLISECONDS));
+        log.info("Published {} total transactions in {} s ({}/s)", totalCount, totalStopwatch
+                .elapsed(TimeUnit.SECONDS), rate);
     }
 
     @Value
@@ -185,6 +205,8 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
 
             client = new Client(Map.of(nodeInfo.nodeId, nodeInfo.getNodeAddress()));
             client.setOperator(operatorId, operatorPrivateKey);
+
+            log.info("Create client for {}", nodeInfo);
         }
 
         public void close() throws InterruptedException {

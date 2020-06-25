@@ -31,6 +31,7 @@ import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.mirror.grpc.jmeter.client.TopicMessagePublishClient;
 import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublisher;
+import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
 @Log4j2
 @RequiredArgsConstructor
@@ -39,18 +40,19 @@ public class TopicMessagesPublishSampler {
     private final TopicMessagePublishClient.SDKClient sdkClient;
 
     @SneakyThrows
-    public void run() {
+    public int run() {
         // publish MessagesPerBatchCount number of messages to the noted topic id
-        log.info("Running message publish, topicMessagePublisher: {}", topicMessagePublisher);
-        Transaction transaction;
         Client client = sdkClient.getClient();
+        log.debug("Submit transaction to {}, topicMessagePublisher: {}", sdkClient
+                .getNodeInfo(), topicMessagePublisher);
+        Transaction transaction;
+        TransactionSubmissionResult result = new TransactionSubmissionResult();
+
         for (int i = 0; i < topicMessagePublisher.getMessagesPerBatchCount(); i++) {
             transaction = new ConsensusMessageSubmitTransaction()
                     .setTopicId(topicMessagePublisher.getConsensusTopicId())
                     .setMessage(topicMessagePublisher.getMessage())
                     .build(client);
-
-            log.info("Created transaction: {}", transaction);
 
 //            if (submitKey != null) {
 //                // The transaction is automatically signed by the payer.
@@ -59,7 +61,10 @@ public class TopicMessagesPublishSampler {
 //            }
 
             TransactionId transactionId = transaction.execute(client, Duration.ofSeconds(2));
-            log.info("Published a message w transactionId: {}", transactionId);
+            result.onNext(transactionId);
         }
+
+        result.onComplete();
+        return result.getCounter().get();
     }
 }
