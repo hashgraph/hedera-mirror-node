@@ -124,6 +124,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                         TimeUnit.MILLISECONDS);
             });
 
+            // log progress every minute
             loggerScheduler.scheduleAtFixedRate(() -> {
                 printStatus(counter.get(), totalStopwatch);
             }, 0, 1, TimeUnit.MINUTES);
@@ -202,6 +203,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
 
             client = new Client(Map.of(nodeInfo.nodeId, nodeInfo.getNodeAddress()));
             client.setOperator(operatorId, operatorPrivateKey);
+
 
             log.trace("Created client for {}", nodeInfo);
         }
