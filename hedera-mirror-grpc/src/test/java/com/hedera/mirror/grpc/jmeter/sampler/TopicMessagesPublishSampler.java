@@ -64,7 +64,6 @@ public class TopicMessagesPublishSampler {
             result.onNext(transactionId);
         }
 
-
         int transactionCount = result.getCounter().get();
         if (verifyTransactions) {
             List<TransactionId> transactionIds = result.onComplete();
