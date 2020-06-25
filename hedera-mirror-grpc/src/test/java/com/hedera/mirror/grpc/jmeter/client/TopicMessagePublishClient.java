@@ -41,7 +41,6 @@ import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
-import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PublicKey;
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
 import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublisher;
 import com.hedera.mirror.grpc.jmeter.sampler.TopicMessagesPublishSampler;
@@ -56,7 +55,6 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
     private int messagesPerBatchCount;
     private int messageByteSize;
     private AccountId operatorId;
-    private Ed25519PublicKey operatorKey;
     private Ed25519PrivateKey operatorPrivateKey;
     private long publishTimeout;
     private long publishInterval;
@@ -73,8 +71,8 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
         messageByteSize = propHandler.getIntClientTestParam("MessagesByteSize", 0);
         operatorId = AccountId.fromString(propHandler.getClientTestParam("OperatorId", 0));
         operatorPrivateKey = Ed25519PrivateKey.fromString(propHandler.getClientTestParam("OperatorKey", 0));
-        operatorKey = operatorPrivateKey.publicKey;
 
+        // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_IP>
         String[] nodeList = propHandler.getClientTestParam("NetworkNodes", 0).split(",");
         clientList = Arrays.asList(nodeList).stream()
                 .map(x -> new SDKClient(x, operatorId, operatorPrivateKey))
@@ -109,7 +107,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
         ScheduledExecutorService loggerScheduler = Executors.newSingleThreadScheduledExecutor();
 
         try {
-            log.info("Schedule client tasks for publishInterval: {} ms", publishInterval);
+            log.info("Schedule client tasks every publishInterval: {} ms", publishInterval);
             AtomicInteger counter = new AtomicInteger(0);
             Stopwatch totalStopwatch = Stopwatch.createStarted();
             clientList.forEach(x -> {
@@ -124,15 +122,14 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                         TimeUnit.MILLISECONDS);
             });
 
+            // log progress every minute
             loggerScheduler.scheduleAtFixedRate(() -> {
                 printStatus(counter.get(), totalStopwatch);
             }, 0, 1, TimeUnit.MINUTES);
 
             log.info("Executor await termination publishTimeout: {} secs", publishTimeout);
-            log.info("Awaiting....");
             executor.awaitTermination(publishTimeout, TimeUnit.SECONDS);
             printStatus(counter.get(), totalStopwatch);
-            log.info("Awaited!!!!!");
             success = true;
             result.setResponseMessage("Successful publish");
             result.setResponseCodeOK();
@@ -146,7 +143,6 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
             result.setSuccessful(success);
 
             if (!executor.isShutdown()) {
-                log.info("Executor didn't shutdown, applying some needed pressure");
                 executor.shutdownNow();
             }
 
@@ -206,7 +202,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
             client = new Client(Map.of(nodeInfo.nodeId, nodeInfo.getNodeAddress()));
             client.setOperator(operatorId, operatorPrivateKey);
 
-            log.info("Create client for {}", nodeInfo);
+            log.info("Created client for {}", nodeInfo);
         }
 
         public void close() throws InterruptedException {
