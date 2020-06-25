@@ -1,0 +1,83 @@
+package com.hedera.mirror.grpc.jmeter.sampler;
+
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j2;
+
+import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.Transaction;
+import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
+import com.hedera.mirror.grpc.jmeter.client.TopicMessagePublishClient;
+import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublisher;
+
+@Log4j2
+@RequiredArgsConstructor
+public class TopicMessagesPublishSampler {
+    private final TopicMessagePublisher topicMessagePublisher;
+    //    private final Ed25519PublicKey operatorKey;
+    private final TopicMessagePublishClient.SDKClient sdkClient;
+
+    //    private final Ed25519PrivateKey submitKey;
+
+    //    @Override
+    @SneakyThrows
+    public void run() {
+        // publish MessagesPerBatchCount number of messages to the noted topic id
+        log.info("Running message publish, topicMessagePublisher: {}", topicMessagePublisher);
+        Transaction transaction;
+        TopicMessagePublishClient.NodeInfo nodeInfo = sdkClient.getNodeInfo();
+        Client client = new Client(Map.of(nodeInfo.getNodeId(), nodeInfo.getNodeAddress()));
+        client.setOperator(topicMessagePublisher.getOperatorId(), topicMessagePublisher.getOperatorPrivateKey());
+        for (int i = 0; i < topicMessagePublisher.getMessagesPerBatchCount(); i++) {
+//            Client client = sdkClient.getClient();
+            transaction = new ConsensusMessageSubmitTransaction()
+                    .setTopicId(topicMessagePublisher.getConsensusTopicId())
+                    .setMessage(topicMessagePublisher.getMessage())
+                    .build(client);
+
+            log.info("Created transaction: {}", transaction);
+
+//            if (submitKey != null) {
+//                // The transaction is automatically signed by the payer.
+//                // Due to the topic having a submitKey requirement, additionally sign the transaction with that key.
+//                transaction.sign(submitKey);
+//            }
+
+//            log.info("Signed transaction: {}. Next execute it", submitKey != null);
+
+            TransactionId transactionId = transaction.execute(client, Duration.ofSeconds(2));
+            log.info("Published a message w transactionId: {}", transactionId);
+        }
+
+        try {
+            client.close(5, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            log.debug("Error closing client: {}", e.getMessage());
+        }
+    }
+}
