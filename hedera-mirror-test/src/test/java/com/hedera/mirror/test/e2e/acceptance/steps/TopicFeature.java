@@ -227,7 +227,6 @@ public class TopicFeature {
     @When("I publish {int} batches of {int} messages every {long} milliseconds")
     public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException,
             HederaStatusException {
-
         for (int i = 0; i < numGroups; i++) {
             Thread.sleep(milliSleep, 0);
             publishTopicMessages(messageCount);

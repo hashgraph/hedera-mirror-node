@@ -204,7 +204,6 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
             client = new Client(Map.of(nodeInfo.nodeId, nodeInfo.getNodeAddress()));
             client.setOperator(operatorId, operatorPrivateKey);
 
-
             log.trace("Created client for {}", nodeInfo);
         }
 
