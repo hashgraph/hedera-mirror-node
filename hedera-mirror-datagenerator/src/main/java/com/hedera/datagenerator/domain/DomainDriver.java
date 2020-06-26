@@ -20,9 +20,6 @@ package com.hedera.datagenerator.domain;
  */
 
 import com.google.common.base.Stopwatch;
-
-import com.hedera.mirror.importer.domain.EntityId;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +35,7 @@ import com.hedera.datagenerator.domain.generators.transaction.DomainTransactionG
 import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.RandomDistributionFromRange;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
@@ -62,6 +60,7 @@ public class DomainDriver implements ApplicationRunner {
         consensusNanoAdjustmentsDistribution = new RandomDistributionFromRange(0, 1000000000);
     }
 
+    // TODO: Run to confirm it's working
     /**
      * Top level runner for generating test data. Iterates from start time (from configuration) to end time and
      * generates transactions for intermediate seconds based on transactions-per-second configuration.
@@ -97,13 +96,16 @@ public class DomainDriver implements ApplicationRunner {
         }
         log.info("Generated {} transactions in {}", numTransactionsGenerated, stopwatch);
         new EntityGenerator().generateAndWriteEntities(entityManager, domainWriter);
+        domainWriter.flush();
         log.info("Total time taken: {}", stopwatch);
     }
 
     // Writes account balances stream
     private void writeBalances(long consensusNs) {
         for (Map.Entry<EntityId, Long> entry : entityManager.getBalances().entrySet()) {
-            domainWriter.addAccountBalances(consensusNs, entry.getValue(), entry.getKey());
+            var entity = entry.getKey();
+            domainWriter.onAccountBalance(new AccountBalance(consensusNs, entity.getRealmNum().intValue(),
+                    entity.getEntityNum().intValue(), entry.getValue()));
         }
         log.debug("Wrote balances data at {}", consensusNs);
     }

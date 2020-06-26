@@ -31,12 +31,12 @@ import lombok.extern.log4j.Log4j2;
 import com.hedera.datagenerator.common.EntityManager;
 import com.hedera.datagenerator.common.TopicTransactionProperties;
 import com.hedera.datagenerator.common.TransactionGenerator;
-import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.FrequencyDistribution;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 /**
  * Generates topic transactions (CONSENSUSCREATETOPIC, CONSENSUSUPDATETOPIC, CONSENSUSDELETETOPIC,
@@ -53,8 +53,8 @@ public class TopicTransactionGenerator extends TransactionGenerator {
     private final Map<EntityId, Integer> topicToNextSequenceNumber;
 
     public TopicTransactionGenerator(
-            TopicTransactionProperties properties, EntityManager entityManager, DomainWriter domainWriter) {
-        super(entityManager, domainWriter, properties.getNumSeedTopics());
+            TopicTransactionProperties properties, EntityManager entityManager, EntityListener entityListener) {
+        super(entityManager, entityListener, properties.getNumSeedTopics());
         this.properties = properties;
         transactionDistribution = new FrequencyDistribution<>(Map.of(
                 this::createTopic, this.properties.getCreatesFrequency(),
@@ -119,6 +119,6 @@ public class TopicTransactionGenerator extends TransactionGenerator {
         byte[] messageBytes = new byte[(int) messageSize];
         new Random().nextBytes(messageBytes);
         topicMessage.setMessage(messageBytes);
-        domainWriter.addTopicMessage(topicMessage);
+        entityListener.onTopicMessage(topicMessage);
     }
 }

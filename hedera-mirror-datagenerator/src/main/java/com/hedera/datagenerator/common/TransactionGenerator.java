@@ -21,9 +21,9 @@ package com.hedera.datagenerator.common;
 
 import java.util.function.Consumer;
 
-import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 public abstract class TransactionGenerator {
 
@@ -31,13 +31,13 @@ public abstract class TransactionGenerator {
     private static final byte[] MEMO = new byte[] {0b0, 0b1, 0b01, 0b10, 0b11};
 
     protected final EntityManager entityManager;
-    protected final DomainWriter domainWriter;
+    protected final EntityListener entityListener;
     private final int numSeedEntities;
     private int numTransactionsGenerated;
 
-    protected TransactionGenerator(EntityManager entityManager, DomainWriter domainWriter, int numSeedEntities) {
+    protected TransactionGenerator(EntityManager entityManager, EntityListener entityListener, int numSeedEntities) {
         this.entityManager = entityManager;
-        this.domainWriter = domainWriter;
+        this.entityListener = entityListener;
         this.numSeedEntities = numSeedEntities;
         numTransactionsGenerated = 0;
     }
@@ -62,7 +62,7 @@ public abstract class TransactionGenerator {
         } else {
             getTransactionDistribution().sample().accept(transaction);
         }
-        domainWriter.addTransaction(transaction);
+        entityListener.onTransaction(transaction);
         numTransactionsGenerated++;
     }
 

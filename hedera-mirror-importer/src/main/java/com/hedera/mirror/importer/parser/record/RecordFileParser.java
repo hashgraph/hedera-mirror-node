@@ -164,7 +164,6 @@ public class RecordFileParser implements FileParser {
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
             recordParserLatencyMetric(recordFile);
             success = true;
-            log.info("Total time to parse file: {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         } finally {
             var elapsedTimeMillis = Duration.between(startTime, Instant.now()).toMillis();
             var rate = elapsedTimeMillis > 0 ? (int) (1000.0 * counter.get() / elapsedTimeMillis) : 0;

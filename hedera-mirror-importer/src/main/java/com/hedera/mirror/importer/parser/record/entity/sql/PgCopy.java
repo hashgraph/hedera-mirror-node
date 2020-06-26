@@ -76,7 +76,8 @@ public class PgCopy<T> implements Closeable {
             long rowsCount = copyManager.copyIn(
                     String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv),
                     new StringReader(getCsvData(items)));
-            log.debug("Inserted {} rows in {}ms", rowsCount, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            log.info("Copied {} rows to {} table in {}ms",
+                    rowsCount, tableName, stopwatch.elapsed(TimeUnit.MILLISECONDS));
         } catch (IOException | SQLException e) {
             throw new ParserException(e);
         }

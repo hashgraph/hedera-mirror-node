@@ -1,4 +1,5 @@
-package com.hedera.datagenerator.domain.writer;
+package com.hedera.datagenerator.domain;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -19,13 +20,17 @@ package com.hedera.datagenerator.domain.writer;
  * ‍
  */
 
-import java.io.Closeable;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
-import com.hedera.datagenerator.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.Entities;
+@Data
+@RequiredArgsConstructor
+public class AccountBalance {
+    private final long consensusTimestamp;
 
-public interface DomainWriter extends Closeable {
-    void onEntity(Entities entity);
-    void onAccountBalance(AccountBalance accountBalance);
-    void flush();
+    private final int accountRealmNum;
+
+    private final int accountNum;
+
+    private final long balance;
 }
