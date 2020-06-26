@@ -133,7 +133,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
             executor.awaitTermination(publishTimeout, TimeUnit.SECONDS);
             printStatus(counter.get(), totalStopwatch);
             success = true;
-            result.setResponseMessage("Successful publish");
+            result.setResponseMessage(counter.get());
             result.setResponseCodeOK();
         } catch (Exception e) {
             e.printStackTrace();
@@ -204,7 +204,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
             client = new Client(Map.of(nodeInfo.nodeId, nodeInfo.getNodeAddress()));
             client.setOperator(operatorId, operatorPrivateKey);
 
-            log.info("Created client for {}", nodeInfo);
+            log.trace("Created client for {}", nodeInfo);
         }
 
         public void close() throws InterruptedException {
