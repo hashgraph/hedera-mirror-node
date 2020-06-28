@@ -6,7 +6,7 @@ affinity:
           topologyKey: kubernetes.io/hostname
           labelSelector:
             matchLabels:
-              app.kubernetes.io/name: importer
+              app.kubernetes.io/component: importer
 
 annotations: {}
 
@@ -29,8 +29,7 @@ image:
 
 imagePullSecrets: []
 
-labels:
-  role: app
+labels: {}
 
 livenessProbe:
   httpGet:
