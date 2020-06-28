@@ -3,10 +3,12 @@ applicationResource:
   partnerId: mirror-node-public
   partnerName: mirror-node-public
   solutionId: hedera-mirror-node
+  version: ''
 
 global:
   db:
-    host: RELEASE-NAME-db-postgresql
+    host: RELEASE-NAME-postgres-postgresql
+  useReleaseForNameLabel: true
 
 grpc:
   hpa:

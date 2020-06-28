@@ -6,7 +6,7 @@ affinity:
           topologyKey: kubernetes.io/hostname
           labelSelector:
             matchLabels:
-              app.kubernetes.io/name: grpc
+              app.kubernetes.io/component: grpc
 
 annotations: {}
 
@@ -56,9 +56,7 @@ ingress:
     enabled: false
     secretName: ""
 
-labels:
-  role: app
-  tier: api
+labels: {}
 
 livenessProbe:
   httpGet:
