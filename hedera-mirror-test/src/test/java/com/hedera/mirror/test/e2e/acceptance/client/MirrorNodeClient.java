@@ -22,11 +22,13 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.common.base.Stopwatch;
 import io.grpc.StatusRuntimeException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -76,13 +78,13 @@ public class MirrorNodeClient {
         CountDownLatch messageLatch = new CountDownLatch(numMessages);
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         Stopwatch stopwatch = Stopwatch.createStarted();
-        List<MirrorConsensusTopicResponse> messages = new ArrayList<>();
+        List<MirrorHCSResponse> messages = new ArrayList<>();
 
         MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
                 .subscribe(mirrorClient, resp -> {
                             // add expected messages only to messages list
                             if (messages.size() < numMessages) {
-                                messages.add(resp);
+                                messages.add(new MirrorHCSResponse(resp, Instant.now()));
                             }
                             messageLatch.countDown();
                         },
@@ -150,5 +152,11 @@ public class MirrorNodeClient {
                         long latency) throws InterruptedException {
         log.error("Subscription w retry failure: {}", t.getMessage());
         throw t;
+    }
+
+    @Data
+    public class MirrorHCSResponse {
+        private final MirrorConsensusTopicResponse mirrorConsensusTopicResponse;
+        private final Instant receivedInstant;
     }
 }

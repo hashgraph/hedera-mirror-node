@@ -69,6 +69,7 @@ public class MultiTopicHCSClient extends AbstractJavaSamplerClient {
                     .subscribeTimeoutSeconds(propHandler.getIntClientTestParam("SubscribeTimeoutSeconds", i))
                     .milliSecWaitBefore(propHandler.getLongClientTestParam("MilliSecWaitBefore", i))
                     .useMAPI(Boolean.valueOf(propHandler.getClientTestParam("UseMAPI", i)))
+                    .statusPrintIntervalMinutes(propHandler.getIntClientTestParam("StatusPrintIntervalMinutes", i))
                     .build();
 
             log.debug("Created TopicSubscription : {}", topicSubscription);

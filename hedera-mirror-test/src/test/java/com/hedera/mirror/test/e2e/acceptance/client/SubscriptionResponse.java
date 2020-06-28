@@ -22,6 +22,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.common.base.Stopwatch;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
@@ -33,7 +34,7 @@ import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 @Log4j2
 public class SubscriptionResponse {
     private MirrorSubscriptionHandle subscription;
-    private List<MirrorConsensusTopicResponse> messages;
+    private List<MirrorNodeClient.MirrorHCSResponse> messages;
     private Stopwatch elapsedTime;
     private Throwable responseError;
 
@@ -56,11 +57,21 @@ public class SubscriptionResponse {
     public void validateReceivedMessages() throws Exception {
         int invalidMessages = 0;
         MirrorConsensusTopicResponse lastMirrorConsensusTopicResponse = null;
-        for (MirrorConsensusTopicResponse mirrorConsensusTopicResponse : messages) {
+        for (MirrorNodeClient.MirrorHCSResponse mirrorHCSResponseResponse : messages) {
+            MirrorConsensusTopicResponse mirrorConsensusTopicResponse = mirrorHCSResponseResponse
+                    .getMirrorConsensusTopicResponse();
             String messageAsString = new String(mirrorConsensusTopicResponse.message, StandardCharsets.UTF_8);
-            log.trace("Observed message: {}, consensus timestamp: {}, topic sequence number: {}",
-                    messageAsString, mirrorConsensusTopicResponse.consensusTimestamp,
-                    mirrorConsensusTopicResponse.sequenceNumber);
+            String[] messageSplit = messageAsString.split("_");
+
+            long publishSeconds = Instant.parse(messageSplit[1]).getEpochSecond();
+            long consensusSeconds = mirrorConsensusTopicResponse.consensusTimestamp.getEpochSecond();
+            long receiptSeconds = mirrorHCSResponseResponse.getReceivedInstant().getEpochSecond();
+            long e2eSeconds = receiptSeconds - publishSeconds;
+            long consensusToDelivery = receiptSeconds - consensusSeconds;
+            log.info("Observed message,e2eSeconds: {}s, consensusToDelivery: {}s, publish timestamp: {}, " +
+                            "consensus timestamp: {}, receipt time: {}, topic sequence number: {}",
+                    e2eSeconds, consensusToDelivery, messageSplit[1], mirrorConsensusTopicResponse.consensusTimestamp,
+                    mirrorHCSResponseResponse.getReceivedInstant(), mirrorConsensusTopicResponse.sequenceNumber);
 
             if (!validateResponse(lastMirrorConsensusTopicResponse, mirrorConsensusTopicResponse)) {
                 invalidMessages++;

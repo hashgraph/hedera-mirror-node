@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -91,7 +92,7 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
 
             @Override
             public void onNext(ConsensusTopicResponse response) {
-                result.onNext(response);
+                result.onNext(response, Instant.now());
 
                 if (result.isHistorical()) {
                     historicMessagesLatch.countDown();

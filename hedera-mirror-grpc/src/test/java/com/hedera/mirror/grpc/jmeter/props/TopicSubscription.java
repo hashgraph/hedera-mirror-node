@@ -36,4 +36,5 @@ public class TopicSubscription {
     private final int subscribeTimeoutSeconds;
     private final long milliSecWaitBefore;
     private final boolean useMAPI;
+    private final int statusPrintIntervalMinutes;
 }
