@@ -111,7 +111,6 @@ public abstract class HCSSamplerResult<T> {
     }
 
     public void onComplete() {
-        printProgress();
         printTotalStats();
     }
 
@@ -154,7 +153,7 @@ public abstract class HCSSamplerResult<T> {
                 historicalMessageCount, historicalStopwatch, historicRate, incomingMessageCount, incomingStopwatch,
                 incomingRate);
 
-        printIntervalStats();
+        printStats();
     }
 
     public Instant getMessagePublishInstant(T currentResponse) {
@@ -215,10 +214,15 @@ public abstract class HCSSamplerResult<T> {
         total.addValue(latency);
     }
 
+    private void printStats() {
+        printIntervalStats();
+        printTotalStats();
+    }
+
     private void printIntervalStats() {
-        printIndividualStat(e2eLatencyStats, "E2E Latency");
-        printIndividualStat(publishToConsensusLatencyStats, "PublishToConsensus Latency");
-        printIndividualStat(consensusToDeliveryLatencyStats, "ConsensusToDelivery Latency");
+        printIndividualStat(e2eLatencyStats, "Interval E2E Latency");
+        printIndividualStat(publishToConsensusLatencyStats, "Interval PublishToConsensus Latency");
+        printIndividualStat(consensusToDeliveryLatencyStats, "Interval ConsensusToDelivery Latency");
     }
 
     private void printTotalStats() {
