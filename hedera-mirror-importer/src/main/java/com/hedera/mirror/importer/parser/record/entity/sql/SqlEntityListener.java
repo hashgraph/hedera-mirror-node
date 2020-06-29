@@ -83,7 +83,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final MeterRegistry meterRegistry;
     private Timer.Builder batchInsertMetric;
     private Timer.Builder consensusToDBInsertMetric;
-    private Long firstBatchTransactionValidStartTime;
+    private int validStartTimeOfFirstTransactionInBatch = Instant.now().getNano();
 
     @Override
     public void onStart(StreamFileData streamFileData) {
@@ -227,8 +227,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         consensusToDBInsertMetric.tag("entity", "transactions")
                 .register(meterRegistry)
                 .record((Instant.now()
-                                .get(ChronoField.NANO_OF_SECOND) - firstBatchTransactionValidStartTime) / 1000,
-                        TimeUnit.MILLISECONDS.MILLISECONDS);
+                                .get(ChronoField.NANO_OF_SECOND) - validStartTimeOfFirstTransactionInBatch) / 1000,
+                        TimeUnit.MILLISECONDS);
 
         return executeResult;
     }
@@ -272,7 +272,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             } else {
                 batch_count += 1;
                 if (batch_count == 0) {
-                    firstBatchTransactionValidStartTime = transaction.getValidStartNs();
+                    validStartTimeOfFirstTransactionInBatch = transaction.getValidStartNs().intValue();
                 }
             }
         } catch (SQLException e) {
