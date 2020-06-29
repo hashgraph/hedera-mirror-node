@@ -83,7 +83,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final MeterRegistry meterRegistry;
     private Timer.Builder batchInsertMetric;
     private Timer.Builder consensusToDBInsertMetric;
-    private Long firstBatchTransactionConsensusLongTime;
+    private Long firstBatchTransactionValidStartTime;
 
     @Override
     public void onStart(StreamFileData streamFileData) {
@@ -98,9 +98,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                         "transactions");
 
         consensusToDBInsertMetric = Timer.builder("hedera.mirror.transaction.insert.latency")
-                .description("The difference in ms between the time consensus was achieved and the " +
-                        "mirror node " +
-                        "db insertion time");
+                .description("The difference in ms between the valid start time and the mirror node db insertion time");
 
         try {
             initConnectionAndStatements();
@@ -229,7 +227,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         consensusToDBInsertMetric.tag("entity", "transactions")
                 .register(meterRegistry)
                 .record((Instant.now()
-                                .get(ChronoField.NANO_OF_SECOND) - firstBatchTransactionConsensusLongTime) / 1000,
+                                .get(ChronoField.NANO_OF_SECOND) - firstBatchTransactionValidStartTime) / 1000,
                         TimeUnit.MILLISECONDS.MILLISECONDS);
 
         return executeResult;
@@ -274,7 +272,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             } else {
                 batch_count += 1;
                 if (batch_count == 0) {
-                    firstBatchTransactionConsensusLongTime = transaction.getConsensusNs();
+                    firstBatchTransactionValidStartTime = transaction.getValidStartNs();
                 }
             }
         } catch (SQLException e) {
