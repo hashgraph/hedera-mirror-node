@@ -82,7 +82,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // Metrics
     private final MeterRegistry meterRegistry;
     private Timer.Builder batchInsertMetric;
-    private Timer.Builder consensusToDBInsertMetric;
+    private Timer.Builder validStartTimeToDBInsertMetric;
     private int validStartTimeOfFirstTransactionInBatch = Instant.now().getNano();
 
     @Override
@@ -97,7 +97,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                 .description("The duration in milliseconds it took to insert a batch of" + properties.getBatchSize() +
                         "transactions");
 
-        consensusToDBInsertMetric = Timer.builder("hedera.mirror.transaction.insert.latency")
+        validStartTimeToDBInsertMetric = Timer.builder("hedera.mirror.transaction.insert.latency")
                 .description("The difference in ms between the valid start time and the mirror node db insertion time");
 
         try {
@@ -224,7 +224,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private ExecuteBatchResult executeTransactionInsertBatch(PreparedStatement ps) throws SQLException {
         var executeResult = executeBatch(ps);
 
-        consensusToDBInsertMetric.tag("entity", "transactions")
+        validStartTimeToDBInsertMetric.tag("entity", "transactions")
                 .register(meterRegistry)
                 .record((Instant.now()
                                 .get(ChronoField.NANO_OF_SECOND) - validStartTimeOfFirstTransactionInBatch) / 1000,
