@@ -21,6 +21,9 @@ package com.hedera.mirror.grpc.service;
  */
 
 import com.google.common.base.Stopwatch;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,6 +56,10 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     private final TopicListener topicListener;
     private final EntityRepository entityRepository;
     private final TopicMessageRetriever topicMessageRetriever;
+    private final MeterRegistry meterRegistry;
+    private final Timer.Builder consensusToPublishMetric = Timer.builder("hedera.mirror.message.latency")
+            .description("The difference in ms between the time consensus was achieved and the mirror node " +
+                    "published the topic message");
 
     @Override
     public Flux<TopicMessage> subscribeTopic(TopicMessageFilter filter) {
@@ -207,6 +214,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             }
 
             lastTopicMessage = topicMessage;
+            consensusToPublishMetric
+                    .register(meterRegistry)
+                    .record(Duration.between(topicMessage.getConsensusTimestampInstant(), Instant.now()));
             count.incrementAndGet();
             log.trace("[{}] Topic {} received message #{}: {}", filter.getSubscriberId(), topicId, count, topicMessage);
         }

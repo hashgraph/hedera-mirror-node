@@ -74,6 +74,7 @@ public class RecordFileParser implements FileParser {
     private final Map<Integer, DistributionSummary> sizeMetrics;
     private final Timer unknownLatencyMetric;
     private final DistributionSummary unknownSizeMetric;
+    private final Timer.Builder parserFallBehindMetric;
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
                             RecordParserProperties parserProperties, MeterRegistry meterRegistry,
@@ -88,6 +89,10 @@ public class RecordFileParser implements FileParser {
         parseDurationMetric = Timer.builder("hedera.mirror.parse.duration")
                 .description("The duration in seconds it took to parse the file and store it in the database")
                 .tag("type", parserProperties.getStreamType().toString());
+
+        parserFallBehindMetric = Timer.builder("hedera.mirror.file.age")
+                .description("The difference in ms between the serialization of the file and when the mirror node " +
+                        "processed it");
 
         ImmutableMap.Builder<Integer, Timer> latencyMetricsBuilder = ImmutableMap.builder();
         ImmutableMap.Builder<Integer, DistributionSummary> sizeMetricsBuilder = ImmutableMap.builder();
@@ -108,6 +113,7 @@ public class RecordFileParser implements FileParser {
             sizeMetricsBuilder.put(type.getProtoId(), distributionSummary);
         }
 
+
         latencyMetrics = latencyMetricsBuilder.build();
         sizeMetrics = sizeMetricsBuilder.build();
         unknownLatencyMetric = latencyMetrics.get(TransactionTypeEnum.UNKNOWN);
@@ -121,6 +127,8 @@ public class RecordFileParser implements FileParser {
      */
     public void loadRecordFile(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
+        pushParserFallBehindMetric(streamFileData.getFilename(), startTime);
+
         recordStreamFileListener.onStart(streamFileData);
         String expectedPrevFileHash =
                 applicationStatusRepository.findByStatusCode(ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH);
@@ -202,6 +210,19 @@ public class RecordFileParser implements FileParser {
                     return;
                 }
             }
+        }
+    }
+
+    private void pushParserFallBehindMetric(String filePath, Instant startTime) {
+        try {
+            String fileName = Utility.getFileName(filePath);
+            String fileTimeStamp = fileName.replace(".rcd", "").replace('_', ':');
+            Instant fileCreateTime = Instant.parse(fileTimeStamp);
+            parserFallBehindMetric
+                    .register(meterRegistry)
+                    .record(Duration.between(fileCreateTime, startTime).getSeconds(), TimeUnit.SECONDS);
+        } catch (Exception ex) {
+            log.trace("Error parsing file time stamp from file '{}'", filePath);
         }
     }
 

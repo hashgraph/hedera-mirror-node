@@ -21,9 +21,13 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import com.google.common.base.Stopwatch;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.temporal.ChronoField;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
@@ -75,6 +79,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private PreparedStatement sqlInsertTopicMessage;
     private Connection connection;
 
+    // Metrics
+    private final MeterRegistry meterRegistry;
+    private Timer.Builder batchInsertMetric;
+    private Timer.Builder consensusToDBInsertMetric;
+    private Long firstBatchTransactionConsensusLongTime;
+
     @Override
     public void onStart(StreamFileData streamFileData) {
         String fileName = streamFileData.getFilename();
@@ -82,6 +92,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         if (recordFileRepository.findByName(fileName).size() > 0) {
             throw new DuplicateFileException("File already exists in the database: " + fileName);
         }
+
+        batchInsertMetric = Timer.builder("hedera.mirror.db.batch.insert")
+                .description("The duration in milliseconds it took to insert a batch of" + properties.getBatchSize() +
+                        "transactions");
+
+        consensusToDBInsertMetric = Timer.builder("hedera.mirror.transaction.insert.latency")
+                .description("The difference in ms between the time consensus was achieved and the " +
+                        "mirror node " +
+                        "db insertion time");
+
         try {
             initConnectionAndStatements();
         } catch (Exception e) {
@@ -181,7 +201,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void executeBatches() {
         try {
-            var transactions = executeBatch(sqlInsertTransaction);
+            var transactions = executeTransactionInsertBatch(sqlInsertTransaction);
             var entityIds = executeBatch(sqlInsertEntityId);
             var transferLists = executeBatch(sqlInsertTransferList);
             var nonFeeTransfers = executeBatch(sqlInsertNonFeeTransfers);
@@ -193,11 +213,26 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                             "claims: {}, topic messages: {}, non-fee transfers: {}",
                     transactions, entityIds, transferLists, fileData, contractResult, liveHashes, topicMessages,
                     nonFeeTransfers);
+            batchInsertMetric.tag("entity", "transactions")
+                    .register(meterRegistry)
+                    .record(transactions.timeTakenInMs, TimeUnit.MILLISECONDS);
         } catch (SQLException e) {
             log.error("Error committing sql insert batch ", e);
             throw new ParserSQLException(e);
         }
         batch_count = 0;
+    }
+
+    private ExecuteBatchResult executeTransactionInsertBatch(PreparedStatement ps) throws SQLException {
+        var executeResult = executeBatch(ps);
+
+        consensusToDBInsertMetric.tag("entity", "transactions")
+                .register(meterRegistry)
+                .record((Instant.now()
+                                .get(ChronoField.NANO_OF_SECOND) - firstBatchTransactionConsensusLongTime) / 1000,
+                        TimeUnit.MILLISECONDS.MILLISECONDS);
+
+        return executeResult;
     }
 
     private ExecuteBatchResult executeBatch(PreparedStatement ps) throws SQLException {
@@ -238,6 +273,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                 executeBatches();
             } else {
                 batch_count += 1;
+                if (batch_count == 0) {
+                    firstBatchTransactionConsensusLongTime = transaction.getConsensusNs();
+                }
             }
         } catch (SQLException e) {
             throw new ParserSQLException(e);

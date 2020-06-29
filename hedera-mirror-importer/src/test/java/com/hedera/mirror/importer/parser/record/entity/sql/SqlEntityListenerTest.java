@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
@@ -251,7 +252,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         DataSource dataSource = mock(DataSource.class);
         when(dataSource.getConnection()).thenReturn(connection);
         SqlEntityListener sqlEntityListener2 =
-                new SqlEntityListener(sqlProperties, dataSource, recordFileRepository);
+                new SqlEntityListener(sqlProperties, dataSource, recordFileRepository, new SimpleMeterRegistry());
         sqlEntityListener2.onStart(new StreamFileData(UUID.randomUUID().toString(), null)); // setup connection
 
         // when
