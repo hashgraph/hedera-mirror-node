@@ -79,6 +79,7 @@ public class PgCopy<T> implements Closeable {
             log.info("Copied {} rows to {} table in {}ms",
                     rowsCount, tableName, stopwatch.elapsed(TimeUnit.MILLISECONDS));
         } catch (IOException | SQLException e) {
+            log.error(e);
             throw new ParserException(e);
         }
     }

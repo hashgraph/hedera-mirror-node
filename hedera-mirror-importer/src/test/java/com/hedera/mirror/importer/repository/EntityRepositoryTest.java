@@ -20,19 +20,26 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class EntityRepositoryCustomImpl implements EntityRepositoryCustom {
-    @Autowired
-    @Lazy
-    EntityRepository entityRepository;
+public class EntityRepositoryTest extends AbstractRepositoryTest {
+    @Test
+    void insertEntityIdDoNothingOnConflictTest() {
+        // given
+        EntityId entityId = EntityId.of(10L, 20L, 30L, EntityTypeEnum.ACCOUNT);
+        entityRepository.insertEntityIdDoNothingOnConflict(entityId);
 
-    @Override
-    public void insertEntityIdDoNothingOnConflict(EntityId entityId) {
-        entityRepository.insertEntityIdDoNothingOnConflict(entityId.getId(), entityId.getShardNum(),
-                entityId.getRealmNum(), entityId.getEntityNum(), entityId.getType());
+        // when
+        entityRepository.insertEntityIdDoNothingOnConflict(entityId); // insert again to test for conflict
+
+        assertThat(entityRepository.count()).isEqualTo(1);
+        assertThat(entityRepository.findById(entityId.getId()))
+                .get()
+                .isEqualTo(entityId.toEntity());
     }
 }

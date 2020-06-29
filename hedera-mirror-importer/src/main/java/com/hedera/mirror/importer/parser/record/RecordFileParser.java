@@ -216,7 +216,7 @@ public class RecordFileParser implements FileParser {
             } catch (FileNotFoundException e) {
                 log.warn("File does not exist {}", name);
                 return;
-            } catch (Exception e) {  // TODO: no catch and retry
+            } catch (Exception e) {
                 log.error("Error parsing file {}", name, e);
                 recordStreamFileListener.onError();
                 if (!(e instanceof DuplicateFileException)) { // if DuplicateFileException, continue with other

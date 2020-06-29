@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Optional;
@@ -256,18 +257,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onError() { // TODO: test needed?
-        // when
-        sqlEntityListener.onNonFeeTransfer(new NonFeeTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT)));
-        sqlEntityListener.onCryptoTransfer(new CryptoTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT)));
-        sqlEntityListener.onError();
-
-        // then
-        assertEquals(0, nonFeeTransferRepository.count());
-        assertEquals(0, cryptoTransferRepository.count());
-    }
-
-    @Test
     void onDuplicateFileReturnEmpty() {
         // given: file processed once
         completeFileAndCommit();
@@ -276,11 +265,18 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertThrows(DuplicateFileException.class, () -> {
             sqlEntityListener.onStart(new StreamFileData(fileName, null));
         });
-
-        sqlEntityListener.onError();  // close connection
     }
 
-    // TODO: add test to check contents of recordFileRepo
+    @Test
+    void testRecordFile() {
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.count()).isEqualTo(1);
+        assertThat(recordFileRepository.findByName(fileName)).hasSize(1);
+    }
+
     // TODO: add test to ensure exception from PgCopy propagates up
 
     static <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
