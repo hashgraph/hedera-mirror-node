@@ -47,6 +47,7 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 public class EntityId implements Serializable {
 
     private static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
+    private static final long serialVersionUID = 1427649605832330197L;
 
     // Ignored so not included in json serialization of PubSubMessage
     @JsonIgnore
@@ -58,26 +59,11 @@ public class EntityId implements Serializable {
     private Integer type;
 
     public EntityId(Long shardNum, Long realmNum, Long entityNum, Integer type) {
-        this.id = EntityIdEndec.encode(shardNum, realmNum, entityNum);
+        id = EntityIdEndec.encode(shardNum, realmNum, entityNum);
         this.shardNum = shardNum;
         this.realmNum = realmNum;
         this.entityNum = entityNum;
         this.type = type;
-    }
-
-    public Entities toEntity() {
-        Entities entity = new Entities();
-        entity.setId(id);
-        entity.setEntityShard(shardNum);
-        entity.setEntityRealm(realmNum);
-        entity.setEntityNum(entityNum);
-        entity.setEntityTypeId(type);
-        return entity;
-    }
-
-    @JsonIgnore
-    public String getDisplayId() {
-        return String.format("%d.%d.%d", shardNum, realmNum, entityNum);
     }
 
     public static EntityId of(AccountID accountID) {
@@ -115,5 +101,15 @@ public class EntityId implements Serializable {
             return null;
         }
         return new EntityId(entityShard, entityRealm, entityNum, type.getId());
+    }
+
+    public Entities toEntity() {
+        Entities entity = new Entities();
+        entity.setId(id);
+        entity.setEntityShard(shardNum);
+        entity.setEntityRealm(realmNum);
+        entity.setEntityNum(entityNum);
+        entity.setEntityTypeId(type);
+        return entity;
     }
 }

@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.util;
 
 import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 
+import com.google.common.primitives.Ints;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
@@ -29,12 +30,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -128,12 +129,12 @@ public class Utility {
      * @return byte array of hash value of null if calculating has failed
      */
     public static RecordFile parseRecordFile(String filePath, String expectedPrevFileHash, Instant verifyHashAfter,
-            Consumer<RecordItem> recordItemConsumer) {
+                                             Consumer<RecordItem> recordItemConsumer) {
         RecordFile recordFile = new RecordFile();
         recordFile.setName(filePath);
         String fileName = Utility.getFileName(filePath);
 
-        try (DataInputStream dis = new DataInputStream(new FileInputStream(filePath))) {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)))) {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
             MessageDigest mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
 
@@ -142,8 +143,8 @@ public class Utility {
             log.info("Loading record format version {} from record file: {}", recordFormatVersion, fileName);
             recordFile.setRecordFormatVersion(recordFormatVersion);
 
-            md.update(Utility.integerToBytes(recordFormatVersion));
-            md.update(Utility.integerToBytes(version));
+            md.update(Ints.toByteArray(recordFormatVersion));
+            md.update(Ints.toByteArray(version));
 
             log.debug("Calculating hash for version {} record file: {}", recordFormatVersion, fileName);
 
@@ -173,13 +174,13 @@ public class Utility {
                         byte[] transactionRawBytes = new byte[byteLength];
                         dis.readFully(transactionRawBytes);
                         messageDigest.update(typeDelimiter);
-                        messageDigest.update(Utility.integerToBytes(byteLength));
+                        messageDigest.update(Ints.toByteArray(byteLength));
                         messageDigest.update(transactionRawBytes);
                         // Read TransactionRecord
                         byteLength = dis.readInt();
                         byte[] recordRawBytes = new byte[byteLength];
                         dis.readFully(recordRawBytes);
-                        messageDigest.update(Utility.integerToBytes(byteLength));
+                        messageDigest.update(Ints.toByteArray(byteLength));
                         messageDigest.update(recordRawBytes);
                         if (recordItemConsumer != null) {
                             RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);
@@ -215,12 +216,6 @@ public class Utility {
         } catch (Exception e) {
             throw new IllegalArgumentException("Error parsing bad record file " + fileName, e);
         }
-    }
-
-    public static byte[] integerToBytes(int number) {
-        ByteBuffer b = ByteBuffer.allocate(4);
-        b.putInt(number);
-        return b.array();
     }
 
     /**
@@ -436,8 +431,8 @@ public class Utility {
      *
      * @param actualPrevFileHash   prevFileHash as read from current file
      * @param expectedPrevFileHash hash of last file from application state
-     * @param verifyHashAfter Only the files created after (not including) this point of time are verified
-     *                             for hash chaining.
+     * @param verifyHashAfter      Only the files created after (not including) this point of time are verified for hash
+     *                             chaining.
      * @param fileName             name of current stream file being verified
      * @return true if verification succeeds, else false
      */

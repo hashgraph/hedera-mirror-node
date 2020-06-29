@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import com.google.common.collect.ImmutableMap;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -33,6 +34,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -68,8 +70,10 @@ public class RecordFileParser implements FileParser {
 
     // Metrics
     private final Timer.Builder parseDurationMetric;
-    private final Timer.Builder transactionLatencyMetric;
-    private final DistributionSummary.Builder transactionSizeMetric;
+    private final Map<Integer, Timer> latencyMetrics;
+    private final Map<Integer, DistributionSummary> sizeMetrics;
+    private final Timer unknownLatencyMetric;
+    private final DistributionSummary unknownSizeMetric;
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
                             RecordParserProperties parserProperties, MeterRegistry meterRegistry,
@@ -85,13 +89,29 @@ public class RecordFileParser implements FileParser {
                 .description("The duration in seconds it took to parse the file and store it in the database")
                 .tag("type", parserProperties.getStreamType().toString());
 
-        transactionSizeMetric = DistributionSummary.builder("hedera.mirror.transaction.size")
-                .description("The size of the transaction in bytes")
-                .baseUnit("bytes");
+        ImmutableMap.Builder<Integer, Timer> latencyMetricsBuilder = ImmutableMap.builder();
+        ImmutableMap.Builder<Integer, DistributionSummary> sizeMetricsBuilder = ImmutableMap.builder();
 
-        transactionLatencyMetric = Timer.builder("hedera.mirror.transaction.latency")
-                .description("The difference in ms between the time consensus was achieved and the mirror node " +
-                        "processed the transaction");
+        for (TransactionTypeEnum type : TransactionTypeEnum.values()) {
+            Timer timer = Timer.builder("hedera.mirror.transaction.latency")
+                    .description("The difference in ms between the time consensus was achieved and the mirror node " +
+                            "processed the transaction")
+                    .tag("type", type.toString())
+                    .register(meterRegistry);
+            latencyMetricsBuilder.put(type.getProtoId(), timer);
+
+            DistributionSummary distributionSummary = DistributionSummary.builder("hedera.mirror.transaction.size")
+                    .description("The size of the transaction in bytes")
+                    .baseUnit("bytes")
+                    .tag("type", type.toString())
+                    .register(meterRegistry);
+            sizeMetricsBuilder.put(type.getProtoId(), distributionSummary);
+        }
+
+        latencyMetrics = latencyMetricsBuilder.build();
+        sizeMetrics = sizeMetricsBuilder.build();
+        unknownLatencyMetric = latencyMetrics.get(TransactionTypeEnum.UNKNOWN);
+        unknownSizeMetric = sizeMetrics.get(TransactionTypeEnum.UNKNOWN);
     }
 
     /**
@@ -141,15 +161,11 @@ public class RecordFileParser implements FileParser {
         }
         recordItemListener.onItem(recordItem);
 
-        String type = TransactionTypeEnum.of(recordItem.getTransactionType()).toString();
-        transactionSizeMetric.tag("type", type)
-                .register(meterRegistry)
+        sizeMetrics.getOrDefault(recordItem.getTransactionType(), unknownSizeMetric)
                 .record(recordItem.getTransactionBytes().length);
 
-        Instant consensusTimestamp = Utility.convertToInstant(
-                recordItem.getRecord().getConsensusTimestamp());
-        transactionLatencyMetric.tag("type", type)
-                .register(meterRegistry)
+        Instant consensusTimestamp = Utility.convertToInstant(recordItem.getRecord().getConsensusTimestamp());
+        latencyMetrics.getOrDefault(recordItem.getTransactionType(), unknownLatencyMetric)
                 .record(Duration.between(consensusTimestamp, Instant.now()));
     }
 
@@ -181,7 +197,8 @@ public class RecordFileParser implements FileParser {
             } catch (Exception e) {
                 log.error("Error parsing file {}", name, e);
                 recordStreamFileListener.onError();
-                if (!(e instanceof DuplicateFileException)) { // if DuplicateFileException, continue with other files
+                if (!(e instanceof DuplicateFileException)) { // if DuplicateFileException, continue with other
+                    // files
                     return;
                 }
             }

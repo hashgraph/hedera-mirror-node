@@ -1,18 +1,15 @@
 # Creates image to be used as an executable container that performs a pg_restore against an already existing database
-# docker build -f hedera-mirror-importer/src/test/resources/scripts/restore-client/Dockerfile \
-#   ./hedera-mirror-importer/src/test/resources/scripts/  \
-#   --build-arg dumpfile=<pgdump.gz>  --build-arg jsonkeyfile=bucket-download-key.json
-#   -t gcr.io/mirrornode/hedera-mirror-node/postgres-restore-client:latest
+# docker build -f hedera-mirror-importer/src/test/resources/scripts/restore-client/Dockerfile ./hedera-mirror-importer/src/test/resources/scripts/ --build-arg dumpfile=testnet_100k_pgdump.gz --build-arg jsonkeyfile=bucket-download-key.json -t gcr.io/mirrornode/hedera-mirror-node/postgres-restore-client:latest
 FROM alpine:latest AS build
-
-ARG dumpfile
-ARG jsonkeyfile
 
 # install gcloud tools
 RUN apk --update add curl python3
 RUN curl https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz > /tmp/google-cloud-sdk.tar.gz
 RUN tar -C /usr/local/ -xvf /tmp/google-cloud-sdk.tar.gz
 RUN /usr/local/google-cloud-sdk/install.sh
+
+ARG dumpfile
+ARG jsonkeyfile
 
 # pull in key file and set up account
 COPY ./$jsonkeyfile /tmp/config.json
