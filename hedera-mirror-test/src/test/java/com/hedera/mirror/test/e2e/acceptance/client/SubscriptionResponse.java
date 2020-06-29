@@ -21,8 +21,10 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import com.google.common.base.Stopwatch;
+import com.google.common.primitives.Longs;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
@@ -60,17 +62,17 @@ public class SubscriptionResponse {
         for (MirrorNodeClient.MirrorHCSResponse mirrorHCSResponseResponse : messages) {
             MirrorConsensusTopicResponse mirrorConsensusTopicResponse = mirrorHCSResponseResponse
                     .getMirrorConsensusTopicResponse();
-            String messageAsString = new String(mirrorConsensusTopicResponse.message, StandardCharsets.UTF_8);
-            String[] messageSplit = messageAsString.split("_");
 
-            long publishSeconds = Instant.parse(messageSplit[1]).getEpochSecond();
+            Long publishMillis = Longs.fromByteArray(Arrays.copyOfRange(mirrorConsensusTopicResponse.message, 0, 8));
+            Instant publishInstant = Instant.ofEpochMilli(publishMillis);
+            long publishSeconds = publishInstant.getEpochSecond();
             long consensusSeconds = mirrorConsensusTopicResponse.consensusTimestamp.getEpochSecond();
             long receiptSeconds = mirrorHCSResponseResponse.getReceivedInstant().getEpochSecond();
             long e2eSeconds = receiptSeconds - publishSeconds;
             long consensusToDelivery = receiptSeconds - consensusSeconds;
-            log.info("Observed message,e2eSeconds: {}s, consensusToDelivery: {}s, publish timestamp: {}, " +
+            log.info("Observed message, e2eSeconds: {}s, consensusToDelivery: {}s, publish timestamp: {}, " +
                             "consensus timestamp: {}, receipt time: {}, topic sequence number: {}",
-                    e2eSeconds, consensusToDelivery, messageSplit[1], mirrorConsensusTopicResponse.consensusTimestamp,
+                    e2eSeconds, consensusToDelivery, publishInstant, mirrorConsensusTopicResponse.consensusTimestamp,
                     mirrorHCSResponseResponse.getReceivedInstant(), mirrorConsensusTopicResponse.sequenceNumber);
 
             if (!validateResponse(lastMirrorConsensusTopicResponse, mirrorConsensusTopicResponse)) {
