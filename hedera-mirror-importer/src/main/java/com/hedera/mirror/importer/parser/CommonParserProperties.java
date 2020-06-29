@@ -71,7 +71,7 @@ public class CommonParserProperties {
     public static class TransactionFilter {
 
         @NotNull
-        private Collection<String> entity = new LinkedHashSet<>();
+        private Collection<EntityId> entity = new LinkedHashSet<>();
 
         @NotNull
         private Collection<TransactionTypeEnum> transaction = new LinkedHashSet<>();
@@ -93,7 +93,7 @@ public class CommonParserProperties {
                 return true;
             }
 
-            return e != null && entity.contains(e.getDisplayId());
+            return e != null && entity.contains(e);
         }
     }
 }

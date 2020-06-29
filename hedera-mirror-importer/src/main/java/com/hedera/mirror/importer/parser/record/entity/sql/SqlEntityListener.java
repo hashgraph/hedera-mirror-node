@@ -93,9 +93,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onEnd(RecordFile recordFile) {
         executeBatches();
         try {
-            recordFileRepository.save(recordFile);
-            // commit the changes to the database
             connection.commit();
+            recordFileRepository.save(recordFile);
             closeConnectionAndStatements();
         } catch (SQLException e) {
             throw new ParserSQLException(e);
@@ -105,8 +104,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onError() {
         try {
-            connection.rollback();
-            closeConnectionAndStatements();
+            if (connection != null) {
+                connection.rollback();
+                closeConnectionAndStatements();
+            }
         } catch (SQLException e) {
             log.error("Exception while rolling transaction back", e);
         }
@@ -280,7 +281,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.CONSENSUS_TIMESTAMP.ordinal(),
                     nonFeeTransfer.getConsensusTimestamp());
             sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.AMOUNT.ordinal(), nonFeeTransfer.getAmount());
-            sqlInsertNonFeeTransfers.setLong(F_NONFEETRANSFER.ENTITY_ID.ordinal(), nonFeeTransfer.getEntityId().getId());
+            sqlInsertNonFeeTransfers
+                    .setLong(F_NONFEETRANSFER.ENTITY_ID.ordinal(), nonFeeTransfer.getEntityId().getId());
             sqlInsertNonFeeTransfers.addBatch();
         } catch (SQLException e) {
             throw new ParserSQLException(e);
@@ -344,18 +346,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
     }
 
-    @Data
-    @AllArgsConstructor
-    private static class ExecuteBatchResult {
-        int numRows;
-        long timeTakenInMs;
-
-        @Override
-        public String toString() {
-            return numRows + " (" + timeTakenInMs + "ms)";
-        }
-    }
-
     enum F_TRANSACTION {
         ZERO, // column indices start at 1, this creates the necessary offset
         NODE_ACCOUNT_ID, MEMO, VALID_START_NS, TYPE, PAYER_ACCOUNT_ID,
@@ -393,5 +383,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     enum F_LIVEHASHES {
         ZERO, CONSENSUS_TIMESTAMP, LIVEHASH
+    }
+
+    @Data
+    @AllArgsConstructor
+    private static class ExecuteBatchResult {
+        int numRows;
+        long timeTakenInMs;
+
+        @Override
+        public String toString() {
+            return numRows + " (" + timeTakenInMs + "ms)";
+        }
     }
 }

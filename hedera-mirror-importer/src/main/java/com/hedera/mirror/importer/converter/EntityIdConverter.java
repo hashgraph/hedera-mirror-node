@@ -22,14 +22,17 @@ package com.hedera.mirror.importer.converter;
 
 import javax.inject.Named;
 import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
+import org.springframework.core.convert.converter.Converter;
 
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @Named
-@Converter
-public class EntityIdConverter implements AttributeConverter<EntityId, Long> {
+@javax.persistence.Converter
+@ConfigurationPropertiesBinding
+public class EntityIdConverter implements AttributeConverter<EntityId, Long>, Converter<String, EntityId> {
     @Override
     public Long convertToDatabaseColumn(EntityId entityId) {
         if (entityId == null) {
@@ -44,5 +47,10 @@ public class EntityIdConverter implements AttributeConverter<EntityId, Long> {
             return null;
         }
         return EntityIdEndec.decode(encodedId);
+    }
+
+    @Override
+    public EntityId convert(String source) {
+        return EntityId.of(source, EntityTypeEnum.ACCOUNT); // We just use for config properties and don't need type
     }
 }

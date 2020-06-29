@@ -21,10 +21,7 @@ package com.hedera.mirror.importer.parser.record;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.google.common.base.Splitter;
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -133,19 +130,14 @@ public class CommonParserPropertiesTest {
             return null;
         }
 
-        List<Long> parts = Splitter.on('.')
-                .splitToList(entityId)
-                .stream()
-                .map(Long::valueOf)
-                .collect(Collectors.toList());
-        return EntityId.of(parts.get(0), parts.get(1), parts.get(2), EntityTypeEnum.ACCOUNT);
+        return EntityId.of(entityId, EntityTypeEnum.ACCOUNT);
     }
 
     private TransactionFilter filter(String entity, TransactionTypeEnum type) {
         TransactionFilter transactionFilter = new TransactionFilter();
 
         if (StringUtils.isNotBlank(entity)) {
-            transactionFilter.setEntity(Arrays.asList(entity));
+            transactionFilter.setEntity(Arrays.asList(EntityId.of(entity, EntityTypeEnum.ACCOUNT)));
         }
 
         if (type != null) {

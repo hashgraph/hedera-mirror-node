@@ -1,10 +1,5 @@
 package com.hedera.mirror.importer.parser.record.entity;
 
-import javax.validation.constraints.NotNull;
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.validation.annotation.Validated;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -24,8 +19,12 @@ import org.springframework.validation.annotation.Validated;
  * limitations under the License.
  * ‍
  */
+
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 @Data
-@Validated
 @ConditionOnEntityRecordParser
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity")
 public class EntityProperties {
