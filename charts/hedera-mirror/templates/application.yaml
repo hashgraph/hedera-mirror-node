@@ -7,7 +7,6 @@ metadata:
     marketplace.cloud.google.com/deploy-info: '{ "partner_id": "{{.Values.applicationResource.partnerId}}", "partner_name": "{{.Values.applicationResource.partnerName}}", "product_id": "{{.Values.applicationResource.solutionId}}" }'
   labels:
     {{- include "hedera-mirror.labels" . | nindent 4 }}
-    app.kubernetes.io/name: {{ .Release.Name }}
   name: {{ .Release.Name }}
   namespace: {{ include "hedera-mirror.namespace" . }}
 spec:
@@ -58,12 +57,16 @@ spec:
         email: mirrornode@hedera.com
     notes: |
       To access the GRPC API:
+
         GRPC_IP=$(kubectl get service/{{ .Release.Name }}-grpc -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
         grpcurl -plaintext "${GRPC_IP}:5600" list
 
       To access the REST API:
+
         REST_IP=$(kubectl get service/{{ .Release.Name }}-rest -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
         curl -s "http://${REST_IP}/api/v1/transactions?limit=1"
     type: hedera-mirror-node
-    version: {{ .Chart.AppVersion | quote }}
+    version: {{ default .Chart.AppVersion .Values.applicationResource.version | quote }}
 {{- end }}
