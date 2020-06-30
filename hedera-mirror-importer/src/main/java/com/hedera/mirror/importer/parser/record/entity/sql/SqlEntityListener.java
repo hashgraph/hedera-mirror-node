@@ -82,7 +82,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         if (recordFileRepository.findByName(fileName).size() > 0) {
             throw new DuplicateFileException("File already exists in the database: " + fileName);
         }
-
         try {
             initConnectionAndStatements();
         } catch (Exception e) {
