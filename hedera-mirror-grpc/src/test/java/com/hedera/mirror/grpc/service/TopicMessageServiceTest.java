@@ -22,7 +22,6 @@ package com.hedera.mirror.grpc.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -477,7 +476,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         EntityRepository entityRepository = Mockito.mock(EntityRepository.class);
         TopicMessageRetriever topicMessageRetriever = Mockito.mock(TopicMessageRetriever.class);
         topicMessageService = new TopicMessageServiceImpl(new GrpcProperties(), topicListener, entityRepository,
-                topicMessageRetriever, new SimpleMeterRegistry());
+                topicMessageRetriever);
 
         TopicMessageFilter retrieverFilter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -513,7 +512,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         EntityRepository entityRepository = Mockito.mock(EntityRepository.class);
         TopicMessageRetriever topicMessageRetriever = Mockito.mock(TopicMessageRetriever.class);
         topicMessageService = new TopicMessageServiceImpl(new GrpcProperties(), topicListener, entityRepository,
-                topicMessageRetriever, new SimpleMeterRegistry());
+                topicMessageRetriever);
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -598,7 +597,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         EntityRepository entityRepository = Mockito.mock(EntityRepository.class);
         TopicMessageRetriever topicMessageRetriever = Mockito.mock(TopicMessageRetriever.class);
         topicMessageService = new TopicMessageServiceImpl(new GrpcProperties(), topicListener, entityRepository,
-                topicMessageRetriever, new SimpleMeterRegistry());
+                topicMessageRetriever);
 
         TopicMessageFilter retrieverFilter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -649,7 +648,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         EntityRepository entityRepository = Mockito.mock(EntityRepository.class);
         TopicMessageRetriever topicMessageRetriever = Mockito.mock(TopicMessageRetriever.class);
         topicMessageService = new TopicMessageServiceImpl(new GrpcProperties(), topicListener, entityRepository,
-                topicMessageRetriever, new SimpleMeterRegistry());
+                topicMessageRetriever);
 
         // historic messages
         TopicMessage retrieved1 = topicMessage(1);

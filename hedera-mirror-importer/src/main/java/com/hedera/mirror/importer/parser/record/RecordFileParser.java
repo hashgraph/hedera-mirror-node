@@ -69,12 +69,12 @@ public class RecordFileParser implements FileParser {
     private final RecordStreamFileListener recordStreamFileListener;
 
     // Metrics
-    private final Timer.Builder parseDurationMetric;
+    private final Map<Boolean, Timer> parseDurationMetrics;
     private final Map<Integer, Timer> latencyMetrics;
     private final Map<Integer, DistributionSummary> sizeMetrics;
     private final Timer unknownLatencyMetric;
     private final DistributionSummary unknownSizeMetric;
-    private final Timer.Builder parserFallBehindMetric;
+    private final Timer parseDelayMetric;
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
                             RecordParserProperties parserProperties, MeterRegistry meterRegistry,
@@ -86,14 +86,27 @@ public class RecordFileParser implements FileParser {
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
 
-        parseDurationMetric = Timer.builder("hedera.mirror.parse.duration")
+        // build parse metrics
+        ImmutableMap.Builder<Boolean, Timer> parseDurationMetricsBuilder = ImmutableMap.builder();
+        Timer.Builder parseDurationTimerBuilder = Timer.builder("hedera.mirror.parse.duration")
                 .description("The duration in seconds it took to parse the file and store it in the database")
                 .tag("type", parserProperties.getStreamType().toString());
 
-        parserFallBehindMetric = Timer.builder("hedera.mirror.file.age")
-                .description("The difference in ms between the serialization of the file and when the mirror node " +
-                        "processed it");
+        parseDurationMetricsBuilder.put(true, parseDurationTimerBuilder
+                .tag("success", "true")
+                .register(meterRegistry));
 
+        parseDurationMetricsBuilder.put(false, parseDurationTimerBuilder
+                .tag("success", "false")
+                .register(meterRegistry));
+        parseDurationMetrics = parseDurationMetricsBuilder.build();
+
+        parseDelayMetric = Timer.builder("hedera.mirror.parse.delay")
+                .description("The difference in ms between the consensus time of the last transaction in the record " +
+                        "file and when the mirror node processes teh record file")
+                .register(meterRegistry);
+
+        // build transaction latency metrics
         ImmutableMap.Builder<Integer, Timer> latencyMetricsBuilder = ImmutableMap.builder();
         ImmutableMap.Builder<Integer, DistributionSummary> sizeMetricsBuilder = ImmutableMap.builder();
 
@@ -113,7 +126,6 @@ public class RecordFileParser implements FileParser {
             sizeMetricsBuilder.put(type.getProtoId(), distributionSummary);
         }
 
-
         latencyMetrics = latencyMetricsBuilder.build();
         sizeMetrics = sizeMetricsBuilder.build();
         unknownLatencyMetric = latencyMetrics.get(TransactionTypeEnum.UNKNOWN);
@@ -127,7 +139,6 @@ public class RecordFileParser implements FileParser {
      */
     public void loadRecordFile(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
-        pushParserFallBehindMetric(streamFileData.getFilename(), startTime);
 
         recordStreamFileListener.onStart(streamFileData);
         String expectedPrevFileHash =
@@ -147,15 +158,14 @@ public class RecordFileParser implements FileParser {
             recordStreamFileListener.onEnd(recordFile);
             applicationStatusRepository.updateStatusValue(
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
+            recordParserFallBehindMetric(recordFile);
             success = true;
         } finally {
             var elapsedTimeMillis = Duration.between(startTime, Instant.now()).toMillis();
             var rate = elapsedTimeMillis > 0 ? (int) (1000.0 * counter.get() / elapsedTimeMillis) : 0;
             log.info("Finished parsing {} transactions from record file {} in {}ms ({}/s)",
                     counter, streamFileData.getFilename(), elapsedTimeMillis, rate);
-            parseDurationMetric.tag("success", String.valueOf(success))
-                    .register(meterRegistry)
-                    .record(elapsedTimeMillis, TimeUnit.MILLISECONDS);
+            parseDurationMetrics.get(success).record(elapsedTimeMillis, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -213,16 +223,15 @@ public class RecordFileParser implements FileParser {
         }
     }
 
-    private void pushParserFallBehindMetric(String filePath, Instant startTime) {
+    private void recordParserFallBehindMetric(RecordFile recordFile) {
         try {
-            String fileName = Utility.getFileName(filePath);
-            String fileTimeStamp = fileName.replace(".rcd", "").replace('_', ':');
-            Instant fileCreateTime = Instant.parse(fileTimeStamp);
-            parserFallBehindMetric
-                    .register(meterRegistry)
-                    .record(Duration.between(fileCreateTime, startTime).getSeconds(), TimeUnit.SECONDS);
+            long recordFileLoadEndMillis = recordFile.getLoadEnd() * 1_000; // s -> ms
+            long consensusEndMillis = recordFile.getConsensusEnd() / 1_000_000; // ns -> ms
+            parseDelayMetric
+                    .record(recordFileLoadEndMillis - consensusEndMillis, TimeUnit.MILLISECONDS);
         } catch (Exception ex) {
-            log.trace("Error parsing file time stamp from file '{}'", filePath);
+            log.trace("Error calculating duration between recordFileLoadEnd: '{}' and recordFileConsensusEnd: {}",
+                    recordFile.getLoadEnd(), recordFile.getConsensusEnd());
         }
     }
 
