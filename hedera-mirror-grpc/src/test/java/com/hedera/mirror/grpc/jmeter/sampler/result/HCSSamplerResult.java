@@ -205,10 +205,8 @@ public abstract class HCSSamplerResult<T> {
     }
 
     private void updateE2ELatencyStats(DescriptiveStatistics interval, DescriptiveStatistics total, double latency) {
-        if (interval != null) {
-            // update interval stats
-            interval.addValue(latency);
-        }
+        // update interval stats
+        interval.addValue(latency);
 
         // update total stats
         total.addValue(latency);

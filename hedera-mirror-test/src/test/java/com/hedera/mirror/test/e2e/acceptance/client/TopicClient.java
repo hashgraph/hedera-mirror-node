@@ -21,7 +21,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -124,8 +123,9 @@ public class TopicClient {
         log.debug("Publishing {} message(s) to topicId : {}.", numMessages, topicId);
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
-            String refInstant = new String(ByteBuffer.allocate(8).putLong(Instant.now().toEpochMilli())
-                    .array(), StandardCharsets.UTF_8);
+            Instant instantRef = Instant.now();
+            byte[] byteArray = ByteBuffer.allocate(8).putLong(instantRef.toEpochMilli()).array();
+            String refInstant = new String(byteArray);
             String message = refInstant + "_" + baseMessage + "_" + i + 1;
 
             if (verify) {

@@ -36,7 +36,7 @@ import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 @Log4j2
 public class SubscriptionResponse {
     private MirrorSubscriptionHandle subscription;
-    private List<MirrorNodeClient.MirrorHCSResponse> messages;
+    private List<MirrorHCSResponse> messages;
     private Stopwatch elapsedTime;
     private Throwable responseError;
 
@@ -59,7 +59,7 @@ public class SubscriptionResponse {
     public void validateReceivedMessages() throws Exception {
         int invalidMessages = 0;
         MirrorConsensusTopicResponse lastMirrorConsensusTopicResponse = null;
-        for (MirrorNodeClient.MirrorHCSResponse mirrorHCSResponseResponse : messages) {
+        for (MirrorHCSResponse mirrorHCSResponseResponse : messages) {
             MirrorConsensusTopicResponse mirrorConsensusTopicResponse = mirrorHCSResponseResponse
                     .getMirrorConsensusTopicResponse();
 
@@ -108,5 +108,11 @@ public class SubscriptionResponse {
         }
 
         return validResponse;
+    }
+
+    @Data
+    public static class MirrorHCSResponse {
+        private final MirrorConsensusTopicResponse mirrorConsensusTopicResponse;
+        private final Instant receivedInstant;
     }
 }
