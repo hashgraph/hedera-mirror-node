@@ -36,12 +36,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.output.StringBuilderWriter;
+import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
-import org.postgresql.jdbc.PgConnection;
 
 import com.hedera.mirror.importer.exception.ParserException;
 
-// TODO: unit tests
 /**
  * Stateless writer to insert rows into Postgres table using COPY.
  * @param <T> domain object
@@ -56,7 +55,7 @@ public class PgCopy<T> implements Closeable {
 
     public PgCopy(Connection connection, Class<T> tClass) throws SQLException {
         this.connection = connection;
-        this.copyManager = connection.unwrap(PgConnection.class).getCopyAPI();
+        this.copyManager = connection.unwrap(PGConnection.class).getCopyAPI();
         this.tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, tClass.getSimpleName());
         var mapper = new CsvMapper();
         var schema = mapper.schemaFor(tClass);
@@ -68,7 +67,7 @@ public class PgCopy<T> implements Closeable {
     }
 
     public void copy(List<T> items) {
-        if (items.size() == 0) {
+        if (items == null || items.size() == 0) {
             return;
         }
         try {
@@ -93,7 +92,7 @@ public class PgCopy<T> implements Closeable {
         }
     }
 
-    public String getCsvData(List<T> items) throws IOException {
+    private String getCsvData(List<T> items) throws IOException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         var stringBuilderWriter = new StringBuilderWriter();
         writer.writeValues(stringBuilderWriter).writeAll(items);

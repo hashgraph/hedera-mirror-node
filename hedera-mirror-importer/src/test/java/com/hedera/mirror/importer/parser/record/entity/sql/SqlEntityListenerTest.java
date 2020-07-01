@@ -22,14 +22,26 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
+import java.io.Reader;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import javax.annotation.Resource;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyManager;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -44,6 +56,7 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -277,7 +290,34 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertThat(recordFileRepository.findByName(fileName)).hasSize(1);
     }
 
-    // TODO: add test to ensure exception from PgCopy propagates up
+    @Test
+    void testExceptionInCopyPropagatesUp() throws Exception {
+        // given
+        SQLException exception = new SQLException("test exception");
+        CopyManager copyManager = mock(CopyManager.class);
+        doThrow(exception).when(copyManager).copyIn(any(), (Reader) any());
+        PGConnection pgConnection = mock(PGConnection.class);
+        doReturn(copyManager).when(pgConnection).getCopyAPI();
+        Connection conn = mock(Connection.class);
+        doReturn(pgConnection).when(conn).unwrap(any());
+        DataSource dataSource = mock(DataSource.class);
+        doReturn(conn).when(dataSource).getConnection();
+        var sqlEntityListener2 = new SqlEntityListener(
+                sqlProperties, dataSource, recordFileRepository, entityRepository);
+        sqlEntityListener2.onStart(new StreamFileData(fileName, null));
+        sqlEntityListener2.onTransaction(makeTransaction());
+
+        // when, then
+        assertThatThrownBy(() -> sqlEntityListener2.onEnd(
+                new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", 0)))
+                .isInstanceOf(ParserException.class)
+                .extracting(Throwable::getCause)
+                .isInstanceOf(ExecutionException.class)
+                .extracting(Throwable::getCause)
+                .isInstanceOf(ParserException.class)
+                .extracting(Throwable::getCause)
+                .isSameAs(exception);
+    }
 
     static <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
         Optional<T> actual = repository.findById(id);
