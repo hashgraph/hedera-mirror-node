@@ -72,6 +72,7 @@ public class PgCopy<T> implements Closeable {
         }
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
+            log.debug("Copying {} rows to {} table", items.size(), tableName);
             long rowsCount = copyManager.copyIn(
                     String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv),
                     new StringReader(getCsvData(items)));
@@ -97,7 +98,8 @@ public class PgCopy<T> implements Closeable {
         var stringBuilderWriter = new StringBuilderWriter();
         writer.writeValues(stringBuilderWriter).writeAll(items);
         var csvData = stringBuilderWriter.getBuilder().toString();
-        log.debug("csv string length={} time={}ms", csvData.length(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        log.trace("{} table: csv string length={} time={}ms", tableName, csvData.length(),
+                stopwatch.elapsed(TimeUnit.MILLISECONDS));
         return csvData;
     }
 }

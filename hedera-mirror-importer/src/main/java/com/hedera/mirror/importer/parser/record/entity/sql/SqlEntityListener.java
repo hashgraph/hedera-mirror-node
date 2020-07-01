@@ -154,6 +154,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractResultPgCopy.close();
         liveHashPgCopy.close();
         topicMessagePgCopy.close();
+        executorService.shutdown();
     }
 
     @Override

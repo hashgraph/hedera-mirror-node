@@ -31,6 +31,7 @@ import com.hedera.datagenerator.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.record.entity.sql.PgCopy;
+import com.hedera.mirror.importer.repository.EntityRepository;
 
 /**
  * Loads entities to Postgres using COPY.
@@ -40,29 +41,29 @@ import com.hedera.mirror.importer.parser.record.entity.sql.PgCopy;
 public class DomainWriterImpl implements DomainWriter {
     private final DataSource dataSource;
 
-    private final PgCopy<Entities> entitiesPgCopy;
+    private final EntityRepository entityRepository;
     private final PgCopy<AccountBalance> accountBalancePgCopy;
 
     private List<AccountBalance> accountBalances;
     private List<Entities> entities;
 
-    public DomainWriterImpl(DataSource dataSource) throws SQLException {
+    public DomainWriterImpl(DataSource dataSource, EntityRepository entityRepository) throws SQLException {
         this.dataSource = dataSource;
+        this.entityRepository = entityRepository;
         accountBalancePgCopy = new PgCopy<>(getConnection(), AccountBalance.class);
-        entitiesPgCopy = new PgCopy<>(getConnection(), Entities.class);
         accountBalances = new ArrayList<>();
         entities = new ArrayList<>();
     }
 
     @Override
     public void flush() {
-        entitiesPgCopy.copy(entities);
         accountBalancePgCopy.copy(accountBalances);
+        log.info("Saving {} entities", entities.size());
+        entityRepository.saveAll(entities);
     }
 
     @Override
     public void close() {
-        entitiesPgCopy.close();
         accountBalancePgCopy.close();
     }
 

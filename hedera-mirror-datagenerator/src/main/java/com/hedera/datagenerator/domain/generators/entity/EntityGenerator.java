@@ -69,7 +69,7 @@ public class EntityGenerator {
             count++;
             domainWriter.onEntity(entity);
         }
-        log.info("Wrote {} entities, containing {} marked deleted", count, deleted);
+        log.info("Generated {} entities, containing {} marked deleted", count, deleted);
     }
 
     /**

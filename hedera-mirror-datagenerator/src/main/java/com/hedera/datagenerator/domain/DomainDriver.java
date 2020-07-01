@@ -36,6 +36,9 @@ import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.RandomDistributionFromRange;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.entity.sql.SqlEntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
@@ -45,6 +48,7 @@ public class DomainDriver implements ApplicationRunner {
     private final DomainTransactionGenerator domainTransactionGenerator;
     private final EntityManager entityManager;
     private final DomainWriter domainWriter;
+    private final SqlEntityListener sqlEntityListener;
 
     /**
      * Generates nanos part of the timestamp
@@ -52,15 +56,17 @@ public class DomainDriver implements ApplicationRunner {
     private final Distribution<Long> consensusNanoAdjustmentsDistribution;
 
     public DomainDriver(DataGeneratorProperties properties, DomainTransactionGenerator domainTransactionGenerator,
-                        EntityManager entityManager, DomainWriter domainWriter) {
+                        EntityManager entityManager, DomainWriter domainWriter,
+                        SqlEntityListener sqlEntityListener) {
         this.properties = properties;
         this.domainTransactionGenerator = domainTransactionGenerator;
         this.entityManager = entityManager;
         this.domainWriter = domainWriter;
+        this.sqlEntityListener = sqlEntityListener;
+        sqlEntityListener.onStart(new StreamFileData("", null));
         consensusNanoAdjustmentsDistribution = new RandomDistributionFromRange(0, 1000000000);
     }
 
-    // TODO: Run to confirm it's working
     /**
      * Top level runner for generating test data. Iterates from start time (from configuration) to end time and
      * generates transactions for intermediate seconds based on transactions-per-second configuration.
@@ -96,7 +102,10 @@ public class DomainDriver implements ApplicationRunner {
         }
         log.info("Generated {} transactions in {}", numTransactionsGenerated, stopwatch);
         new EntityGenerator().generateAndWriteEntities(entityManager, domainWriter);
-        domainWriter.flush();
+        log.info("Writing data to db");
+        sqlEntityListener.onEnd(new RecordFile(0L, 1L, 1L, "", 0L, 1L, "", "", 0)); // writes data to db
+        sqlEntityListener.close();
+        domainWriter.flush(); // writes data to db
         log.info("Total time taken: {}", stopwatch);
     }
 
