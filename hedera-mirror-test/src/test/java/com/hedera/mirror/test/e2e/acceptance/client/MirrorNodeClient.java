@@ -22,6 +22,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.common.base.Stopwatch;
 import io.grpc.StatusRuntimeException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -33,7 +34,6 @@ import org.springframework.retry.annotation.Retryable;
 
 import com.hedera.hashgraph.sdk.mirror.MirrorClient;
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicQuery;
-import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 
@@ -76,13 +76,13 @@ public class MirrorNodeClient {
         CountDownLatch messageLatch = new CountDownLatch(numMessages);
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         Stopwatch stopwatch = Stopwatch.createStarted();
-        List<MirrorConsensusTopicResponse> messages = new ArrayList<>();
+        List<SubscriptionResponse.MirrorHCSResponse> messages = new ArrayList<>();
 
         MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
                 .subscribe(mirrorClient, resp -> {
                             // add expected messages only to messages list
                             if (messages.size() < numMessages) {
-                                messages.add(resp);
+                                messages.add(new SubscriptionResponse.MirrorHCSResponse(resp, Instant.now()));
                             }
                             messageLatch.countDown();
                         },

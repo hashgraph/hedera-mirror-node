@@ -135,6 +135,7 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
                     .historicMessagesCount(propHandler.getIntClientTestParam("HistoricMessagesCount", 0, "0"))
                     .futureMessagesCount(propHandler.getIntClientTestParam("IncomingMessageCount", 0, "0"))
                     .messagesLatchWaitSeconds(propHandler.getIntClientTestParam("SubscribeTimeoutSeconds", 0, "60"))
+                    .statusPrintIntervalMinutes(propHandler.getIntClientTestParam("StatusPrintIntervalMinutes", 0, "1"))
                     .build();
 
             response = hcsTopicSampler.subscribeTopic(listener);

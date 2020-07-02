@@ -47,4 +47,9 @@ public class HCSMAPISamplerResult extends HCSSamplerResult<MirrorConsensusTopicR
     String getMessage(MirrorConsensusTopicResponse response) {
         return new String(response.message, StandardCharsets.UTF_8);
     }
+
+    @Override
+    byte[] getMessageByteArray(MirrorConsensusTopicResponse response) {
+        return response.message;
+    }
 }
