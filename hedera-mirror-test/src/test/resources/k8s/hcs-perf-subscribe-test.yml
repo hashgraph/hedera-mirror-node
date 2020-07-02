@@ -18,6 +18,7 @@ data:
     hedera.mirror.test.performance.clientSubscribeTimeoutSeconds[0]=60
     hedera.mirror.test.performance.clientMilliSecWaitBefore[0]=0
     hedera.mirror.test.performance.clientUseMAPI[0]=true
+    hedera.mirror.test.performance.clientStatusPrintIntervalMinutes[0]=1
 ---
 apiVersion: batch/v1
 kind: Job

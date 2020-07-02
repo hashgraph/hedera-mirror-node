@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -120,10 +121,12 @@ public class TopicClient {
                                                            int numMessages, boolean verify) throws HederaStatusException
             , InterruptedException {
         log.debug("Publishing {} message(s) to topicId : {}.", numMessages, topicId);
-        Instant refInstant = Instant.now();
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
-            String message = baseMessage + "_" + refInstant + "_" + i + 1;
+            Instant instantRef = Instant.now();
+            byte[] byteArray = ByteBuffer.allocate(8).putLong(instantRef.toEpochMilli()).array();
+            String refInstant = new String(byteArray);
+            String message = refInstant + "_" + baseMessage + "_" + i + 1;
 
             if (verify) {
                 transactionReceiptList.add(publishMessageToTopicAndVerify(topicId, message, submitKey));

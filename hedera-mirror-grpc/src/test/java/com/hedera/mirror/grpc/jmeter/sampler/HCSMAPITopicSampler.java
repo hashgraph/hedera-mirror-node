@@ -22,6 +22,7 @@ package com.hedera.mirror.grpc.jmeter.sampler;
 
 import com.google.protobuf.TextFormat;
 import com.hederahashgraph.api.proto.java.TopicID;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -94,7 +95,7 @@ public class HCSMAPITopicSampler implements HCSTopicSampler {
             subscription = mirrorConsensusTopicQuery
                     .subscribe(mirrorClient,
                             resp -> {
-                                result.onNext(resp);
+                                result.onNext(resp, Instant.now());
                                 if (result.isHistorical()) {
                                     historicMessagesLatch.countDown();
                                 } else {

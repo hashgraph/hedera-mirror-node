@@ -53,4 +53,9 @@ public class HCSDirectStubSamplerResult extends HCSSamplerResult<ConsensusTopicR
     private Instant toInstant(Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
+
+    @Override
+    byte[] getMessageByteArray(ConsensusTopicResponse response) {
+        return response.toByteArray();
+    }
 }
