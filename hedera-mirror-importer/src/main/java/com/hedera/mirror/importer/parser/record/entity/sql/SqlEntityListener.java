@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -75,6 +78,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<LiveHash> liveHashPgCopy;
     private final PgCopy<TopicMessage> topicMessagePgCopy;
 
+    private final Timer insertDuration;
+
     private List<Transaction> transactions;
     private List<CryptoTransfer> cryptoTransfers;
     private List<NonFeeTransfer> nonFeeTransfers;
@@ -85,22 +90,26 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private List<EntityId> entityIds;
 
     public SqlEntityListener(SqlProperties properties, DataSource dataSource,
-                             RecordFileRepository recordFileRepository, EntityRepository entityRepository) {
+                             RecordFileRepository recordFileRepository, EntityRepository entityRepository,
+                             MeterRegistry meterRegistry) {
         this.dataSource = dataSource;
         this.recordFileRepository = recordFileRepository;
         this.entityRepository = entityRepository;
         this.executorService = Executors.newFixedThreadPool(properties.getThreads());
         try {
-            transactionPgCopy = new PgCopy<>(getConnection(), Transaction.class);
-            cryptoTransferPgCopy = new PgCopy<>(getConnection(), CryptoTransfer.class);
-            nonFeeTransferPgCopy = new PgCopy<>(getConnection(), NonFeeTransfer.class);
-            fileDataPgCopy = new PgCopy<>(getConnection(), FileData.class);
-            contractResultPgCopy = new PgCopy<>(getConnection(), ContractResult.class);
-            liveHashPgCopy = new PgCopy<>(getConnection(), LiveHash.class);
-            topicMessagePgCopy = new PgCopy<>(getConnection(), TopicMessage.class);
+            transactionPgCopy = new PgCopy<>(getConnection(), Transaction.class, meterRegistry);
+            cryptoTransferPgCopy = new PgCopy<>(getConnection(), CryptoTransfer.class, meterRegistry);
+            nonFeeTransferPgCopy = new PgCopy<>(getConnection(), NonFeeTransfer.class, meterRegistry);
+            fileDataPgCopy = new PgCopy<>(getConnection(), FileData.class, meterRegistry);
+            contractResultPgCopy = new PgCopy<>(getConnection(), ContractResult.class, meterRegistry);
+            liveHashPgCopy = new PgCopy<>(getConnection(), LiveHash.class, meterRegistry);
+            topicMessagePgCopy = new PgCopy<>(getConnection(), TopicMessage.class, meterRegistry);
         } catch (SQLException e) {
             throw new ParserException("Error setting up postgres copier", e);
         }
+        insertDuration = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.insert")
+                .description("Time to insert all entities into database")
+                .register(meterRegistry);
     }
 
     @Override
@@ -121,6 +130,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEnd(RecordFile recordFile) {
+        Stopwatch stopwatch = Stopwatch.createStarted();
         try {
             CompletableFuture.allOf(
                     CompletableFuture.runAsync(() -> transactionPgCopy.copy(transactions), executorService),
@@ -138,6 +148,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             throw new ParserException(e);
         }
         recordFileRepository.save(recordFile);
+        insertDuration.record(stopwatch.elapsed());
     }
 
     @Override

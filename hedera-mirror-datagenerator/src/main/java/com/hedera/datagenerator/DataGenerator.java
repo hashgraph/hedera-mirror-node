@@ -23,8 +23,6 @@ package com.hedera.datagenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-//@ConfigurationPropertiesScan(basePackages = "com.hedera.datagenerator", basePackageClasses = {SqlProperties.class})
-//@SpringBootApplication(scanBasePackages = "com.hedera.datagenerator", scanBasePackageClasses = {SqlEntityListener.class})
 @SpringBootApplication
 public class DataGenerator {
 

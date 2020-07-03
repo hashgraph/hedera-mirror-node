@@ -29,6 +29,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.Reader;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -37,7 +38,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
@@ -109,11 +109,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
     final void beforeEach() {
         fileName = UUID.randomUUID().toString();
         sqlEntityListener.onStart(new StreamFileData(fileName, null));
-    }
-
-    @AfterEach
-    final void afterEach() {
-        sqlEntityListener.close();
     }
 
     void completeFileAndCommit() {
@@ -303,7 +298,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         DataSource dataSource = mock(DataSource.class);
         doReturn(conn).when(dataSource).getConnection();
         var sqlEntityListener2 = new SqlEntityListener(
-                sqlProperties, dataSource, recordFileRepository, entityRepository);
+                sqlProperties, dataSource, recordFileRepository, entityRepository, new SimpleMeterRegistry());
         sqlEntityListener2.onStart(new StreamFileData(fileName, null));
         sqlEntityListener2.onTransaction(makeTransaction());
 

@@ -26,6 +26,8 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringReader;
@@ -52,8 +54,10 @@ public class PgCopy<T> implements Closeable {
     private final String columnsCsv;
     private final ObjectWriter writer;
     private final CopyManager copyManager;
+    private final Timer buildCsvDurationMetric;
+    private final Timer copyDurationMetric;
 
-    public PgCopy(Connection connection, Class<T> tClass) throws SQLException {
+    public PgCopy(Connection connection, Class<T> tClass, MeterRegistry meterRegistry) throws SQLException {
         this.connection = connection;
         this.copyManager = connection.unwrap(PGConnection.class).getCopyAPI();
         this.tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, tClass.getSimpleName());
@@ -64,6 +68,14 @@ public class PgCopy<T> implements Closeable {
                 .map(CsvSchema.Column::getName)
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
+        buildCsvDurationMetric = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.pgcopy.csv")
+                .description("Time to build csv string")
+                .tag("table", tableName)
+                .register(meterRegistry);
+        copyDurationMetric = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.pgcopy.copy")
+                .description("Time to insert transactions into table")
+                .tag("table", tableName)
+                .register(meterRegistry);
     }
 
     public void copy(List<T> items) {
@@ -72,10 +84,15 @@ public class PgCopy<T> implements Closeable {
         }
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
+            var csv = buildCsv(items);
+            var csvDuration = stopwatch.elapsed();
+            buildCsvDurationMetric.record(csvDuration);
+
             log.debug("Copying {} rows to {} table", items.size(), tableName);
             long rowsCount = copyManager.copyIn(
                     String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv),
-                    new StringReader(getCsvData(items)));
+                    new StringReader(csv));
+            copyDurationMetric.record(stopwatch.elapsed().minus(csvDuration));
             log.info("Copied {} rows to {} table in {}ms",
                     rowsCount, tableName, stopwatch.elapsed(TimeUnit.MILLISECONDS));
         } catch (IOException | SQLException e) {
@@ -93,7 +110,7 @@ public class PgCopy<T> implements Closeable {
         }
     }
 
-    private String getCsvData(List<T> items) throws IOException {
+    private String buildCsv(List<T> items) throws IOException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         var stringBuilderWriter = new StringBuilderWriter();
         writer.writeValues(stringBuilderWriter).writeAll(items);

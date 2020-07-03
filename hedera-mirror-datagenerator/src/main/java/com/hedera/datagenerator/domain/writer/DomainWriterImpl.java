@@ -19,6 +19,7 @@ package com.hedera.datagenerator.domain.writer;
  * ‍
  */
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -50,7 +51,7 @@ public class DomainWriterImpl implements DomainWriter {
     public DomainWriterImpl(DataSource dataSource, EntityRepository entityRepository) throws SQLException {
         this.dataSource = dataSource;
         this.entityRepository = entityRepository;
-        accountBalancePgCopy = new PgCopy<>(getConnection(), AccountBalance.class);
+        accountBalancePgCopy = new PgCopy<>(getConnection(), AccountBalance.class, new SimpleMeterRegistry());
         accountBalances = new ArrayList<>();
         entities = new ArrayList<>();
     }

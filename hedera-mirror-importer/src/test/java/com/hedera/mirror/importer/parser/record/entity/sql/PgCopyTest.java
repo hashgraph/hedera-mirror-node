@@ -27,6 +27,8 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.Reader;
 import java.sql.Connection;
@@ -49,6 +51,8 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 
 class PgCopyTest extends IntegrationTest {
 
+    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
     @Resource
     private DataSource dataSource;
     @Resource
@@ -58,7 +62,7 @@ class PgCopyTest extends IntegrationTest {
 
     @BeforeEach
     void beforeEach() throws Exception {
-        cryptoTransferPgCopy = new PgCopy<>(dataSource.getConnection(), CryptoTransfer.class);
+        cryptoTransferPgCopy = new PgCopy<>(dataSource.getConnection(), CryptoTransfer.class, meterRegistry);
     }
 
     @AfterEach
@@ -84,7 +88,7 @@ class PgCopyTest extends IntegrationTest {
         doReturn(copyManager).when(pgConnection).getCopyAPI();
         Connection conn = mock(Connection.class);
         doReturn(pgConnection).when(conn).unwrap(any());
-        var cryptoTransferPgCopy2 = new PgCopy<>(conn, CryptoTransfer.class);
+        var cryptoTransferPgCopy2 = new PgCopy<>(conn, CryptoTransfer.class, meterRegistry);
 
         // when
         assertThatThrownBy(() -> cryptoTransferPgCopy2.copy(List.of(cryptoTransfer(1))))
