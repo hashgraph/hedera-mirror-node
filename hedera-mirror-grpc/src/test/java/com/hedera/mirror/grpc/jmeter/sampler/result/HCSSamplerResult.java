@@ -205,11 +205,13 @@ public abstract class HCSSamplerResult<T> {
     }
 
     private void updateE2ELatencyStats(DescriptiveStatistics interval, DescriptiveStatistics total, double latency) {
-        // update interval stats
-        interval.addValue(latency);
+        if (latency > 0) {
+            // update interval stats
+            interval.addValue(latency);
 
-        // update total stats
-        total.addValue(latency);
+            // update total stats
+            total.addValue(latency);
+        }
     }
 
     private void printStats() {

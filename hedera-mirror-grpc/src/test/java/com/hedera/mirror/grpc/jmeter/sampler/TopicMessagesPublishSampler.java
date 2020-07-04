@@ -29,6 +29,8 @@ import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.HederaNetworkException;
+import com.hedera.hashgraph.sdk.HederaPrecheckStatusException;
 import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.Transaction;
@@ -55,17 +57,31 @@ public class TopicMessagesPublishSampler {
         Transaction transaction;
         TransactionSubmissionResult result = new TransactionSubmissionResult();
         Stopwatch totalStopwatch = Stopwatch.createStarted();
+        AtomicInteger preCheckFailures = new AtomicInteger();
+        AtomicInteger networkFailures = new AtomicInteger();
+        AtomicInteger unknownFailures = new AtomicInteger();
         for (int i = 0; i < topicMessagePublisher.getMessagesPerBatchCount(); i++) {
             transaction = new ConsensusMessageSubmitTransaction()
                     .setTopicId(topicMessagePublisher.getConsensusTopicId())
                     .setMessage(topicMessagePublisher.getMessage())
                     .build(client);
 
-            TransactionId transactionId = transaction.execute(client, Duration.ofSeconds(2));
-            result.onNext(transactionId);
+            try {
+                TransactionId transactionId = transaction.execute(client, Duration.ofSeconds(2));
+                result.onNext(transactionId);
+            } catch (HederaPrecheckStatusException preEx) {
+                preCheckFailures.incrementAndGet();
+            } catch (HederaNetworkException preEx) {
+                networkFailures.incrementAndGet();
+            } catch (Exception ex) {
+                unknownFailures.incrementAndGet();
+                log.error("Exception publishing message {} to {}: {}", i, sdkClient.getNodeInfo().getNodeId(), ex);
+            }
         }
 
-        log.info("Submitted {} messages in {}", topicMessagePublisher.getMessagesPerBatchCount(), totalStopwatch);
+        log.info("Submitted {} messages in {} to {}. {} preCheckErrors, {} networkErrors, {} unknown errors",
+                topicMessagePublisher.getMessagesPerBatchCount(), totalStopwatch, sdkClient.getNodeInfo().getNodeId(),
+                preCheckFailures.get(), networkFailures.get(), unknownFailures.get());
         int transactionCount = result.getCounter().get();
         if (verifyTransactions) {
             List<TransactionId> transactionIds = result.onComplete();

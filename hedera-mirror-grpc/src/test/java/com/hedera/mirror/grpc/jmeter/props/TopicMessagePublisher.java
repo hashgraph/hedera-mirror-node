@@ -20,7 +20,9 @@ package com.hedera.mirror.grpc.jmeter.props;
  * ‍
  */
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.Random;
 import lombok.Builder;
 import lombok.Data;
@@ -47,14 +49,25 @@ public class TopicMessagePublisher {
     @ToString.Exclude
     private String message;
 
+    private byte[] additionalChars;
+
     public String getMessage() {
-        if (message == null) {
-            // bound length by messageByteSize
-            byte[] array = new byte[messageByteSize];
-            new Random().nextBytes(array);
-            message = new String(array, Charset.forName("UTF-8"));
+        int timeStampBytes = 8;
+        int additionalBytes = messageByteSize < timeStampBytes ? 0 : messageByteSize - 8;
+
+        // create additional random chars to fit desired message byte size array
+        if (additionalChars == null) {
+            additionalChars = new byte[additionalBytes];
+            new Random().nextBytes(additionalChars);
         }
 
+        // set current time stamp to first 8 bytes of message
+        Instant instantRef = Instant.now();
+        byte[] timeRefBytes = ByteBuffer.allocate(timeStampBytes).putLong(instantRef.toEpochMilli()).array();
+        byte[] messageBytes = new byte[timeStampBytes + additionalBytes];
+        System.arraycopy(timeRefBytes, 0, messageBytes, 0, timeRefBytes.length);
+        System.arraycopy(additionalChars, 0, messageBytes, timeRefBytes.length, additionalChars.length);
+        message = new String(messageBytes, Charset.forName("UTF-8"));
         return message;
     }
 }

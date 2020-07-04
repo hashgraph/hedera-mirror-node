@@ -105,7 +105,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                 .operatorPrivateKey(operatorPrivateKey)
                 .build();
 
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(clientList.size() * 4);
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(clientList.size() * 12);
         ScheduledExecutorService loggerScheduler = Executors.newSingleThreadScheduledExecutor();
 
         try {
