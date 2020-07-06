@@ -59,23 +59,25 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
     private long publishTimeout;
     private long publishInterval;
     private boolean verifyTransactions;
+    private long printStatusInterval;
 
     @Override
     public void setupTest(JavaSamplerContext javaSamplerContext) {
         propHandler = new PropertiesHandler(javaSamplerContext);
 
         // read in nodes list, topic id, number of messages, message size
-        topicNum = propHandler.getLongClientTestParam("TopicId", 0);
-        messagesPerBatchCount = propHandler.getIntClientTestParam("MessagesPerBatchCount", 0);
-        publishInterval = propHandler.getIntClientTestParam("PublishInterval", 0);
-        publishTimeout = propHandler.getIntClientTestParam("PublishTimeout", 0);
-        messageByteSize = propHandler.getIntClientTestParam("MessagesByteSize", 0);
-        operatorId = AccountId.fromString(propHandler.getClientTestParam("OperatorId", 0));
-        operatorPrivateKey = Ed25519PrivateKey.fromString(propHandler.getClientTestParam("OperatorKey", 0));
-        verifyTransactions = Boolean.valueOf(propHandler.getClientTestParam("VerifyTransactions", 0, "true"));
+        topicNum = propHandler.getLongTestParam("topicId", 0L);
+        messagesPerBatchCount = propHandler.getIntTestParam("messagesPerBatchCount", 0);
+        publishInterval = propHandler.getIntTestParam("publishInterval", 20000);
+        publishTimeout = propHandler.getIntTestParam("publishTimeout", 60);
+        messageByteSize = propHandler.getIntTestParam("messagesByteSize", 16);
+        verifyTransactions = Boolean.valueOf(propHandler.getTestParam("verifyTransactions", "true"));
+        printStatusInterval = propHandler.getLongTestParam("statusPrintIntervalMinutes", 1L);
+        operatorId = AccountId.fromString(propHandler.getTestParam("operatorId", "0"));
+        operatorPrivateKey = Ed25519PrivateKey.fromString(propHandler.getTestParam("operatorKey", "0"));
 
         // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_IP>
-        String[] nodeList = propHandler.getClientTestParam("NetworkNodes", 0).split(",");
+        String[] nodeList = propHandler.getTestParam("networkNodes", "localhost:0.0.3:50211").split(",");
         clientList = Arrays.asList(nodeList).stream()
                 .map(x -> new SDKClient(x, operatorId, operatorPrivateKey))
                 .collect(Collectors.toList());
@@ -105,7 +107,10 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                 .operatorPrivateKey(operatorPrivateKey)
                 .build();
 
+        // publish message executor service
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(clientList.size() * 12);
+
+        // print status executor service
         ScheduledExecutorService loggerScheduler = Executors.newSingleThreadScheduledExecutor();
 
         try {
@@ -127,7 +132,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
             // log progress every minute
             loggerScheduler.scheduleAtFixedRate(() -> {
                 printStatus(counter.get(), totalStopwatch);
-            }, 0, 1, TimeUnit.MINUTES);
+            }, 0, printStatusInterval, TimeUnit.MINUTES);
 
             log.info("Executor await termination publishTimeout: {} secs", publishTimeout);
             executor.awaitTermination(publishTimeout, TimeUnit.SECONDS);

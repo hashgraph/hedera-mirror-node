@@ -4,15 +4,16 @@ metadata:
   name: hcs-perf-message-submit-secret
 stringData:
   user.properties: |-
-    hedera.mirror.test.performance.clientTopicId[0]=
-    hedera.mirror.test.performance.clientNetworkNodes[0]=
-    hedera.mirror.test.performance.clientPublishInterval[0]=10000
-    hedera.mirror.test.performance.clientPublishTimeout[0]=900
-    hedera.mirror.test.performance.clientMessagesPerBatchCount[0]=100
-    hedera.mirror.test.performance.clientMessagesByteSize[0]=5
-    hedera.mirror.test.performance.clientOperatorId[0]=
-    hedera.mirror.test.performance.clientOperatorKey[0]=
-    hedera.mirror.test.performance.clientVerifyTransactions[0]=true
+    hedera.mirror.test.performance.topicId=
+    hedera.mirror.test.performance.networkNodes=localhost:0.0.3:50211
+    hedera.mirror.test.performance.publishInterval=20000
+    hedera.mirror.test.performance.publishTimeout=60
+    hedera.mirror.test.performance.messagesPerBatchCount=5
+    hedera.mirror.test.performance.messagesByteSize=5
+    hedera.mirror.test.performance.operatorId=
+    hedera.mirror.test.performance.operatorKey=
+    hedera.mirror.test.performance.statusPrintIntervalMinutes=1
+    hedera.mirror.test.performance.verifyTransactions=false
 ---
 apiVersion: batch/v1
 kind: Job
@@ -21,8 +22,8 @@ metadata:
   labels:
     app.kubernetes.io/name: test
 spec:
-  completions: 5
-  parallelism: 5
+  completions: 1
+  parallelism: 1
   template:
     metadata:
       name: hcs-perf-message-submit
@@ -40,7 +41,7 @@ spec:
                     app.kubernetes.io/name: test
       restartPolicy: Never
       containers:
-        - image: gcr.io/mirrornode/hedera-mirror-test:0.13.2
+        - image: gcr.io/mirrornode/hedera-mirror-test:0.14.1
           name: test
           env:
             - name: testProfile
@@ -50,7 +51,7 @@ spec:
             - name: jmeterPropsDirectory
               value: "/usr/etc/hedera-mirror-test"
             - name: publishThreadCount
-              value: "100"
+              value: "1"
           volumeMounts:
             - name: message-submit-config-volume
               mountPath: /usr/etc/hedera-mirror-test

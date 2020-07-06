@@ -44,12 +44,10 @@ public class TransactionSubmissionResult {
         log.trace("Published a message w transactionId: {}", transactionId);
     }
 
-    public List<TransactionId> onComplete() {
+    public void onComplete() {
         totalStopwatch.stop();
 
         printProgress();
-
-        return transactionIdList;
     }
 
     public static double getTransactionSubmissionRate(long transactionCount, long milliSeconds) {

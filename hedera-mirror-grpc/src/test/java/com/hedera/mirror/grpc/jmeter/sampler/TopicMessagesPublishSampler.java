@@ -50,16 +50,18 @@ public class TopicMessagesPublishSampler {
 
     @SneakyThrows
     public int submitConsensusMessageTransactions() {
-        // publish MessagesPerBatchCount number of messages to the noted topic id
-        Client client = sdkClient.getClient();
-        log.trace("Submit transaction to {}, topicMessagePublisher: {}", sdkClient
-                .getNodeInfo(), topicMessagePublisher);
         Transaction transaction;
         TransactionSubmissionResult result = new TransactionSubmissionResult();
         Stopwatch totalStopwatch = Stopwatch.createStarted();
         AtomicInteger preCheckFailures = new AtomicInteger();
         AtomicInteger networkFailures = new AtomicInteger();
         AtomicInteger unknownFailures = new AtomicInteger();
+
+        // publish MessagesPerBatchCount number of messages to the noted topic id
+        Client client = sdkClient.getClient();
+        log.trace("Submit transaction to {}, topicMessagePublisher: {}", sdkClient
+                .getNodeInfo(), topicMessagePublisher);
+
         for (int i = 0; i < topicMessagePublisher.getMessagesPerBatchCount(); i++) {
             transaction = new ConsensusMessageSubmitTransaction()
                     .setTopicId(topicMessagePublisher.getConsensusTopicId())
@@ -75,7 +77,8 @@ public class TopicMessagesPublishSampler {
                 networkFailures.incrementAndGet();
             } catch (Exception ex) {
                 unknownFailures.incrementAndGet();
-                log.error("Exception publishing message {} to {}: {}", i, sdkClient.getNodeInfo().getNodeId(), ex);
+                log.error("Unexpected exception publishing message {} to {}: {}", i,
+                        sdkClient.getNodeInfo().getNodeId(), ex);
             }
         }
 
@@ -83,9 +86,11 @@ public class TopicMessagesPublishSampler {
                 topicMessagePublisher.getMessagesPerBatchCount(), totalStopwatch, sdkClient.getNodeInfo().getNodeId(),
                 preCheckFailures.get(), networkFailures.get(), unknownFailures.get());
         int transactionCount = result.getCounter().get();
+        result.onComplete();
+
+        // verify transactions
         if (verifyTransactions) {
-            List<TransactionId> transactionIds = result.onComplete();
-            transactionCount = getValidTransactionsCount(transactionIds, client);
+            transactionCount = getValidTransactionsCount(result.getTransactionIdList(), client);
         }
 
         return transactionCount;
@@ -108,6 +113,7 @@ public class TopicMessagesPublishSampler {
             }
         });
 
+        log.debug("{} out of {} transactions returned a Success status", counter.get(), transactionIds.size());
         return counter.get();
     }
 }

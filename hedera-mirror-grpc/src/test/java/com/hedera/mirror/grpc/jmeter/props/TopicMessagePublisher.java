@@ -20,7 +20,7 @@ package com.hedera.mirror.grpc.jmeter.props;
  * ‍
  */
 
-import java.nio.ByteBuffer;
+import com.google.common.primitives.Longs;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.Random;
@@ -53,20 +53,24 @@ public class TopicMessagePublisher {
 
     public String getMessage() {
         int timeStampBytes = 8;
-        int additionalBytes = messageByteSize < timeStampBytes ? 0 : messageByteSize - 8;
+        int additionalBytes = messageByteSize <= timeStampBytes ? 0 : messageByteSize - 8;
 
-        // create additional random chars to fit desired message byte size array
+        // cache additional random bytes once to fit desired message byte array size
         if (additionalChars == null) {
             additionalChars = new byte[additionalBytes];
             new Random().nextBytes(additionalChars);
         }
 
         // set current time stamp to first 8 bytes of message
-        Instant instantRef = Instant.now();
-        byte[] timeRefBytes = ByteBuffer.allocate(timeStampBytes).putLong(instantRef.toEpochMilli()).array();
+        byte[] timeRefBytes = Longs.toByteArray(Instant.now().toEpochMilli());
         byte[] messageBytes = new byte[timeStampBytes + additionalBytes];
         System.arraycopy(timeRefBytes, 0, messageBytes, 0, timeRefBytes.length);
-        System.arraycopy(additionalChars, 0, messageBytes, timeRefBytes.length, additionalChars.length);
+
+        // set additional bytes where relevant
+        if (additionalBytes > 0) {
+            System.arraycopy(additionalChars, 0, messageBytes, timeRefBytes.length, additionalChars.length);
+        }
+
         message = new String(messageBytes, Charset.forName("UTF-8"));
         return message;
     }
