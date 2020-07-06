@@ -24,10 +24,12 @@ import com.google.common.base.Stopwatch;
 import com.google.common.primitives.Longs;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Base64;
 
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
@@ -36,11 +38,12 @@ import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 @Log4j2
 public class SubscriptionResponse {
     private MirrorSubscriptionHandle subscription;
-    private List<MirrorHCSResponse> messages;
+    private List<MirrorHCSResponse> messages = new ArrayList<>();
     private Stopwatch elapsedTime;
     private Throwable responseError;
 
     public void handleMirrorConsensusTopicResponse(MirrorConsensusTopicResponse topicResponse) {
+        messages.add(new SubscriptionResponse.MirrorHCSResponse(topicResponse, Instant.now()));
         String messageAsString = new String(topicResponse.message, StandardCharsets.UTF_8);
         log.trace("Received message: " + messageAsString
                 + " consensus timestamp: " + topicResponse.consensusTimestamp
@@ -63,8 +66,9 @@ public class SubscriptionResponse {
             MirrorConsensusTopicResponse mirrorConsensusTopicResponse = mirrorHCSResponseResponse
                     .getMirrorConsensusTopicResponse();
 
-            Long publishMillis = Longs.fromByteArray(Arrays.copyOfRange(mirrorConsensusTopicResponse.message, 0, 8));
-            Instant publishInstant = Instant.ofEpochMilli(publishMillis);
+            byte[] retrievedBytes = Arrays.copyOfRange(Base64.decodeBase64(mirrorConsensusTopicResponse.message), 0, 8);
+            Instant publishInstant = Instant.ofEpochMilli(Longs.fromByteArray(retrievedBytes));
+
             long publishSeconds = publishInstant.getEpochSecond();
             long consensusSeconds = mirrorConsensusTopicResponse.consensusTimestamp.getEpochSecond();
             long receiptSeconds = mirrorHCSResponseResponse.getReceivedInstant().getEpochSecond();

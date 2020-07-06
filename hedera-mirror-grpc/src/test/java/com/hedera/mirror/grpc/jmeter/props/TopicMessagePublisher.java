@@ -21,12 +21,12 @@ package com.hedera.mirror.grpc.jmeter.props;
  */
 
 import com.google.common.primitives.Longs;
-import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.Random;
 import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
+import org.apache.commons.codec.binary.Base64;
 
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
@@ -45,9 +45,6 @@ public class TopicMessagePublisher {
 
     @ToString.Exclude
     private Ed25519PrivateKey operatorPrivateKey;
-
-    @ToString.Exclude
-    private String message;
 
     private byte[] additionalChars;
 
@@ -71,7 +68,6 @@ public class TopicMessagePublisher {
             System.arraycopy(additionalChars, 0, messageBytes, timeRefBytes.length, additionalChars.length);
         }
 
-        message = new String(messageBytes, Charset.forName("UTF-8"));
-        return message;
+        return Base64.encodeBase64String(messageBytes);
     }
 }

@@ -76,7 +76,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
         operatorId = AccountId.fromString(propHandler.getTestParam("operatorId", "0"));
         operatorPrivateKey = Ed25519PrivateKey.fromString(propHandler.getTestParam("operatorKey", "0"));
 
-        // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_IP>
+        // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_port>
         String[] nodeList = propHandler.getTestParam("networkNodes", "localhost:0.0.3:50211").split(",");
         clientList = Arrays.asList(nodeList).stream()
                 .map(x -> new SDKClient(x, operatorId, operatorPrivateKey))
