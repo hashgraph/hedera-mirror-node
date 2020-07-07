@@ -21,7 +21,10 @@ package com.hedera.mirror.grpc.domain;
  */
 
 import com.google.protobuf.UnsafeByteOperations;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.util.Comparator;
 import javax.persistence.Entity;
@@ -37,6 +40,7 @@ import lombok.experimental.NonFinal;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
+import com.hedera.mirror.grpc.converter.EncodedIdToEntityIdConverter;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 
@@ -72,6 +76,24 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
 
     private int topicNum;
 
+    @ToString.Exclude
+    private Long payerEncodedId;
+
+    @Getter(lazy = true)
+    @Transient
+    private com.hedera.mirror.grpc.domain.Entity payerAccountId = EncodedIdToEntityIdConverter.INSTANCE
+            .convert(payerEncodedId);
+
+    private Long validStartNs;
+
+    @Getter(lazy = true)
+    @Transient
+    private Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(validStartNs);
+
+    private int chunkTotal;
+
+    private int chunkNum;
+
     @NonFinal
     @Transient
     private volatile ConsensusTopicResponse response = null;
@@ -88,6 +110,21 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
                     .setRunningHash(UnsafeByteOperations.unsafeWrap(runningHash))
                     .setRunningHashVersion(runningHashVersion)
                     .setSequenceNumber(sequenceNumber)
+                    .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
+                            .setInitialTransactionID(TransactionID.newBuilder()
+                                    .setAccountID(AccountID.newBuilder()
+                                            .setShardNum(getPayerAccountId().getEntityShard())
+                                            .setRealmNum(getPayerAccountId().getEntityRealm())
+                                            .setAccountNum(getPayerAccountId().getEntityNum())
+                                            .build())
+                                    .setTransactionValidStart(Timestamp.newBuilder()
+                                            .setSeconds(getValidStartInstant().getEpochSecond())
+                                            .setNanos(getValidStartInstant().getNano())
+                                            .build())
+                                    .build())
+                            .setNumber(getChunkNum())
+                            .setTotal(getChunkTotal())
+                            .build())
                     .build();
         }
         return response;
@@ -111,6 +148,11 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     public static class TopicMessageBuilder {
         public TopicMessageBuilder consensusTimestamp(Instant consensusTimestamp) {
             this.consensusTimestamp = InstantToLongConverter.INSTANCE.convert(consensusTimestamp);
+            return this;
+        }
+
+        public TopicMessageBuilder validStartTimestamp(Instant validStartTimestamp) {
+            validStartNs = InstantToLongConverter.INSTANCE.convert(validStartTimestamp);
             return this;
         }
     }

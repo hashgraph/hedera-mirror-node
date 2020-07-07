@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -29,6 +30,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.function.Predicate;
@@ -223,11 +225,30 @@ public class EntityRecordItemListener implements RecordItemListener {
         var topicId = transactionBody.getTopicID();
         int runningHashVersion = receipt.getTopicRunningHashVersion() == 0 ? 1 : (int) receipt
                 .getTopicRunningHashVersion();
+
+        EntityId payerAccountId = null;
+        Long validStartNs = null;
+        int chunkTotal = 1;
+        int chunkNum = 1;
+
+        // handle fragmented topic message
+        if (transactionBody.hasChunkInfo()) {
+            ConsensusMessageChunkInfo chunkInfo = transactionBody.getChunkInfo();
+            chunkNum = chunkInfo.getNumber();
+            chunkTotal = chunkInfo.getTotal();
+
+            if (chunkInfo.hasInitialTransactionID()) {
+                TransactionID transactionID = chunkInfo.getInitialTransactionID();
+                payerAccountId = EntityId.of(transactionID.getAccountID());
+                validStartNs = Utility.timeStampInNanos(transactionID.getTransactionValidStart());
+            }
+        }
+
         TopicMessage topicMessage = new TopicMessage(
                 Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()),
                 transactionBody.getMessage().toByteArray(), (int) topicId.getRealmNum(),
                 receipt.getTopicRunningHash().toByteArray(), receipt.getTopicSequenceNumber(),
-                (int) topicId.getTopicNum(), runningHashVersion);
+                (int) topicId.getTopicNum(), runningHashVersion, chunkNum, chunkTotal, payerAccountId, validStartNs);
         entityListener.onTopicMessage(topicMessage);
     }
 
