@@ -34,9 +34,9 @@ import com.hedera.hashgraph.sdk.TransactionId;
 @Log4j2
 public class TransactionSubmissionResult {
 
-    private AtomicInteger counter = new AtomicInteger(0);
+    private final AtomicInteger counter = new AtomicInteger(0);
     private final Stopwatch totalStopwatch = Stopwatch.createStarted();
-    List<TransactionId> transactionIdList = new ArrayList<>();
+    private final List<TransactionId> transactionIdList = new ArrayList<>();
 
     public void onNext(TransactionId transactionId) {
         transactionIdList.add(transactionId);

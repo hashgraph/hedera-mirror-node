@@ -22,11 +22,12 @@ package com.hedera.mirror.grpc.jmeter.props;
 
 import com.google.common.primitives.Longs;
 import java.time.Instant;
-import java.util.Random;
 import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Base64;
+import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
@@ -34,7 +35,8 @@ import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 
 @Data
 @Builder
-public class TopicMessagePublisher {
+@Log4j2
+public class TopicMessagePublishRequest {
     private final ConsensusTopicId consensusTopicId;
     private final int messagesPerBatchCount;
     private final int messageByteSize;
@@ -46,28 +48,18 @@ public class TopicMessagePublisher {
     @ToString.Exclude
     private Ed25519PrivateKey operatorPrivateKey;
 
-    private byte[] additionalChars;
+    private String randomAlphanumeric;
 
     public String getMessage() {
         int timeStampBytes = 8;
-        int additionalBytes = messageByteSize <= timeStampBytes ? 0 : messageByteSize - 8;
-
-        // cache additional random bytes once to fit desired message byte array size
-        if (additionalChars == null) {
-            additionalChars = new byte[additionalBytes];
-            new Random().nextBytes(additionalChars);
+        if (randomAlphanumeric == null) {
+            int additionalBytes = messageByteSize <= timeStampBytes ? 0 : messageByteSize - 8;
+            randomAlphanumeric = RandomStringUtils.randomAlphanumeric(additionalBytes);
         }
 
         // set current time stamp to first 8 bytes of message
         byte[] timeRefBytes = Longs.toByteArray(Instant.now().toEpochMilli());
-        byte[] messageBytes = new byte[timeStampBytes + additionalBytes];
-        System.arraycopy(timeRefBytes, 0, messageBytes, 0, timeRefBytes.length);
 
-        // set additional bytes where relevant
-        if (additionalBytes > 0) {
-            System.arraycopy(additionalChars, 0, messageBytes, timeRefBytes.length, additionalChars.length);
-        }
-
-        return Base64.encodeBase64String(messageBytes);
+        return Base64.encodeBase64String(timeRefBytes) + randomAlphanumeric;
     }
 }

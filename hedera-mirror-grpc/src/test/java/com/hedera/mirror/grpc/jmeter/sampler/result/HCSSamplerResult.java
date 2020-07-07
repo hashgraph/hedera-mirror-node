@@ -159,25 +159,23 @@ public abstract class HCSSamplerResult<T> {
     }
 
     public Instant getMessagePublishInstant(T currentResponse) {
-        Long publishMillis;
         Instant publishInstant;
 
         byte[] message = getMessageByteArray(currentResponse);
         try {
             byte[] decodedMessage = Base64.decodeBase64(message);
             publishInstant = retrieveInstantFromArray(decodedMessage);
-
             if (isInstantOutOfRange(publishInstant)) {
                 publishInstant = retrieveInstantFromArray(message);
 
                 // support non encoded version
                 if (isInstantOutOfRange(publishInstant)) {
-                    log.info("publishInstant is out of range: {}", publishInstant);
+                    log.debug("publishInstant is out of range: {}", publishInstant);
                     publishInstant = null;
                 }
             }
         } catch (Exception ex) {
-            log.info("response message contains invalid publish millisecond value: {}", message);
+            log.debug("response message contains invalid publish millisecond value: {}", message);
             publishInstant = null;
         }
 

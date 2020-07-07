@@ -42,7 +42,7 @@ import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
-import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublisher;
+import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublishRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.TopicMessagesPublishSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
@@ -97,7 +97,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
         result.sampleStart();
 
         // kick off batched message publish
-        TopicMessagePublisher topicMessagePublisher = TopicMessagePublisher.builder()
+        TopicMessagePublishRequest topicMessagePublishRequest = TopicMessagePublishRequest.builder()
                 .consensusTopicId(new ConsensusTopicId(0, 0, topicNum))
                 .messageByteSize(messageByteSize)
                 .publishInterval(publishInterval)
@@ -108,7 +108,8 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                 .build();
 
         // publish message executor service
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(clientList.size() * 12);
+        ScheduledExecutorService executor = Executors
+                .newScheduledThreadPool(clientList.size() * Runtime.getRuntime().availableProcessors());
 
         // print status executor service
         ScheduledExecutorService loggerScheduler = Executors.newSingleThreadScheduledExecutor();
@@ -121,7 +122,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                 executor.scheduleAtFixedRate(
                         () -> {
                             TopicMessagesPublishSampler topicMessagesPublishSampler =
-                                    new TopicMessagesPublishSampler(topicMessagePublisher, x, verifyTransactions);
+                                    new TopicMessagesPublishSampler(topicMessagePublishRequest, x, verifyTransactions);
                             counter.addAndGet(topicMessagesPublishSampler.submitConsensusMessageTransactions());
                         },
                         0,
@@ -141,12 +142,12 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
             result.setResponseMessage(String.valueOf(counter.get()));
             result.setResponseCodeOK();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error publishing HCS messages", e);
             result.setResponseMessage("Exception: " + e);
             result.setResponseCode("500");
         } finally {
             result.sampleEnd();
-            result.setResponseData(topicMessagePublisher.toString().getBytes());
+            result.setResponseData(topicMessagePublishRequest.toString().getBytes());
             result.setSuccessful(success);
 
             if (!executor.isShutdown()) {

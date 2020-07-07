@@ -38,13 +38,13 @@ import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
 import com.hedera.mirror.grpc.jmeter.client.TopicMessagePublishClient;
-import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublisher;
+import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublishRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
 @Log4j2
 @RequiredArgsConstructor
 public class TopicMessagesPublishSampler {
-    private final TopicMessagePublisher topicMessagePublisher;
+    private final TopicMessagePublishRequest topicMessagePublishRequest;
     private final TopicMessagePublishClient.SDKClient sdkClient;
     private final boolean verifyTransactions;
 
@@ -60,12 +60,12 @@ public class TopicMessagesPublishSampler {
         // publish MessagesPerBatchCount number of messages to the noted topic id
         Client client = sdkClient.getClient();
         log.trace("Submit transaction to {}, topicMessagePublisher: {}", sdkClient
-                .getNodeInfo(), topicMessagePublisher);
+                .getNodeInfo(), topicMessagePublishRequest);
 
-        for (int i = 0; i < topicMessagePublisher.getMessagesPerBatchCount(); i++) {
+        for (int i = 0; i < topicMessagePublishRequest.getMessagesPerBatchCount(); i++) {
             transaction = new ConsensusMessageSubmitTransaction()
-                    .setTopicId(topicMessagePublisher.getConsensusTopicId())
-                    .setMessage(topicMessagePublisher.getMessage())
+                    .setTopicId(topicMessagePublishRequest.getConsensusTopicId())
+                    .setMessage(topicMessagePublishRequest.getMessage())
                     .build(client);
 
             try {
@@ -82,8 +82,9 @@ public class TopicMessagesPublishSampler {
             }
         }
 
-        log.info("Submitted {} messages in {} to {}. {} preCheckErrors, {} networkErrors, {} unknown errors",
-                topicMessagePublisher.getMessagesPerBatchCount(), totalStopwatch, sdkClient.getNodeInfo().getNodeId(),
+        log.info("Submitted {} messages in {} to topic {} on node {}. {} preCheckErrors, {} networkErrors, " +
+                        "{} unknown errors", topicMessagePublishRequest.getMessagesPerBatchCount(), totalStopwatch,
+                topicMessagePublishRequest.getConsensusTopicId(), sdkClient.getNodeInfo().getNodeId(),
                 preCheckFailures.get(), networkFailures.get(), unknownFailures.get());
         int transactionCount = result.getCounter().get();
         result.onComplete();
