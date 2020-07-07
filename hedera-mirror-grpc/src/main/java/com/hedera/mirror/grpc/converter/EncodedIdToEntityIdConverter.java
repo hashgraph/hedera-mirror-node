@@ -39,7 +39,7 @@ public class EncodedIdToEntityIdConverter implements Converter<Long, Entity> {
 
     @Override
     public Entity convert(Long encodedId) {
-        if (encodedId < 0) {
+        if (encodedId == null || encodedId < 0) {
             return null;
         }
 

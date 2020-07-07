@@ -76,23 +76,23 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
 
     private int topicNum;
 
+    private Integer chunkNum;
+
+    private Integer chunkTotal;
+
     @ToString.Exclude
-    private Long payerEncodedId;
+    private Long payerAccountId;
 
     @Getter(lazy = true)
     @Transient
-    private com.hedera.mirror.grpc.domain.Entity payerAccountId = EncodedIdToEntityIdConverter.INSTANCE
-            .convert(payerEncodedId);
+    private com.hedera.mirror.grpc.domain.Entity payerDecodedAccountId = EncodedIdToEntityIdConverter.INSTANCE
+            .convert(payerAccountId);
 
     private Long validStartNs;
 
     @Getter(lazy = true)
     @Transient
     private Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(validStartNs);
-
-    private int chunkTotal;
-
-    private int chunkNum;
 
     @NonFinal
     @Transient
@@ -101,7 +101,7 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     // Cache this to avoid paying the conversion penalty for multiple subscribers to the same topic
     public ConsensusTopicResponse toResponse() {
         if (response == null) {
-            response = ConsensusTopicResponse.newBuilder()
+            var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
                     .setConsensusTimestamp(Timestamp.newBuilder()
                             .setSeconds(getConsensusTimestampInstant().getEpochSecond())
                             .setNanos(getConsensusTimestampInstant().getNano())
@@ -109,23 +109,28 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
                     .setMessage(UnsafeByteOperations.unsafeWrap(message))
                     .setRunningHash(UnsafeByteOperations.unsafeWrap(runningHash))
                     .setRunningHashVersion(runningHashVersion)
-                    .setSequenceNumber(sequenceNumber)
-                    .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
-                            .setInitialTransactionID(TransactionID.newBuilder()
-                                    .setAccountID(AccountID.newBuilder()
-                                            .setShardNum(getPayerAccountId().getEntityShard())
-                                            .setRealmNum(getPayerAccountId().getEntityRealm())
-                                            .setAccountNum(getPayerAccountId().getEntityNum())
-                                            .build())
-                                    .setTransactionValidStart(Timestamp.newBuilder()
-                                            .setSeconds(getValidStartInstant().getEpochSecond())
-                                            .setNanos(getValidStartInstant().getNano())
-                                            .build())
-                                    .build())
-                            .setNumber(getChunkNum())
-                            .setTotal(getChunkTotal())
-                            .build())
-                    .build();
+                    .setSequenceNumber(sequenceNumber);
+
+            if (getChunkNum() != null) {
+                consensusTopicResponseBuilder
+                        .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
+                                .setInitialTransactionID(TransactionID.newBuilder()
+                                        .setAccountID(AccountID.newBuilder()
+                                                .setShardNum(getPayerDecodedAccountId().getEntityShard())
+                                                .setRealmNum(getPayerDecodedAccountId().getEntityRealm())
+                                                .setAccountNum(getPayerDecodedAccountId().getEntityNum())
+                                                .build())
+                                        .setTransactionValidStart(Timestamp.newBuilder()
+                                                .setSeconds(getValidStartInstant().getEpochSecond())
+                                                .setNanos(getValidStartInstant().getNano())
+                                                .build())
+                                        .build())
+                                .setNumber(getChunkNum())
+                                .setTotal(getChunkTotal())
+                                .build());
+            }
+
+            response = consensusTopicResponseBuilder.build();
         }
         return response;
     }

@@ -94,7 +94,7 @@ public class DomainBuilder {
                 .sequenceNumber(++sequenceNumber)
                 .topicNum(0)
                 .runningHashVersion(2)
-                .payerEncodedId(1L)
+                .payerAccountId(1L)
                 .validStartTimestamp(now)
                 .chunkTotal(1)
                 .chunkNum(1);
