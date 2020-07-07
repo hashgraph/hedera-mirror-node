@@ -228,8 +228,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         EntityId payerAccountId = null;
         Long validStartNs = null;
-        int chunkTotal = 1;
-        int chunkNum = 1;
+        Integer chunkTotal = null;
+        Integer chunkNum = null;
 
         // handle fragmented topic message
         if (transactionBody.hasChunkInfo()) {

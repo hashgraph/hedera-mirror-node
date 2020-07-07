@@ -372,8 +372,8 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.9000, test-message0, 9000000, runninghash, 1, 1, null, null, null, null",
-            "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 1, 1, null, null",
+            "0.0.9000, test-message0, 9000000, runninghash, 1, 1, , , , ",
+            "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 1, 1, 7, 89999999",
             "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 2, 4, 7, 89999999",
             "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 4, 4, 7, 89999999",
     })
@@ -581,7 +581,6 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     private TopicMessage createTopicMessage(TopicID topicId, String message, long sequenceNumber, String runningHash,
                                             long consensusTimestamp, int runningHashVersion, Integer chunkNum,
                                             Integer chunkTotal, Long payerAccountIdNum, Long validStartNs) {
-        AccountID payerAccountId = AccountID.newBuilder().setAccountNum(payerAccountIdNum).build();
 
         var topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusTimestamp);
@@ -593,8 +592,12 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setChunkNum(chunkNum);
         topicMessage.setChunkTotal(chunkTotal);
-        topicMessage.setPayerAccountId(EntityId.of(payerAccountId));
         topicMessage.setValidStartNs(validStartNs);
+
+        EntityId payerAccountEntityId = payerAccountIdNum == null ? null : EntityId
+                .of(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build());
+        topicMessage.setPayerAccountId(payerAccountEntityId);
+
         return topicMessage;
     }
 
@@ -637,17 +640,23 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     private com.hederahashgraph.api.proto.java.Transaction createSubmitMessageTransaction(
             TopicID topicId, String message, Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum,
             Long validStartNs) {
-        var innerBody = ConsensusSubmitMessageTransactionBody.newBuilder()
+        var submitMessageTransactionBodyBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .setTopicID(topicId)
-                .setMessage(ByteString.copyFrom(message.getBytes()))
-                .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
-                        .setNumber(chunkNum)
-                        .setTotal(chunkTotal)
-                        .setInitialTransactionID(TransactionID.newBuilder()
-                                .setAccountID(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build())
-                                .setTransactionValidStart(TestUtils.toTimestamp(validStartNs))
-                                .build())
-                        .build());
+                .setMessage(ByteString.copyFrom(message.getBytes()));
+
+        if (chunkNum != null) {
+            submitMessageTransactionBodyBuilder
+                    .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
+                            .setNumber(chunkNum)
+                            .setTotal(chunkTotal)
+                            .setInitialTransactionID(TransactionID.newBuilder()
+                                    .setAccountID(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build())
+                                    .setTransactionValidStart(TestUtils.toTimestamp(validStartNs))
+                                    .build()));
+        }
+
+        var innerBody = submitMessageTransactionBodyBuilder.build();
+
         var body = createTransactionBody().setConsensusSubmitMessage(innerBody).build();
         return com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
                 .build();
