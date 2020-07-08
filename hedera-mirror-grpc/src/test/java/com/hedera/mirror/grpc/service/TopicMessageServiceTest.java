@@ -718,8 +718,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                         .topicMessage(t -> t.sequenceNumber(7).chunkNum(3).chunkTotal(3).validStartNs(1L)
                                 .payerAccountId(1L).consensusTimestamp(future.plusNanos(3))),
                 domainBuilder
-                        .topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(future.plusNanos(4))),
-                domainBuilder.topicMessage(t -> t.sequenceNumber(11))
+                        .topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(future.plusNanos(4)))
         );
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
