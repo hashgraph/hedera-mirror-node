@@ -49,7 +49,6 @@ import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
-import com.hedera.mirror.importer.domain.HederaNetwork;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -111,7 +110,7 @@ public abstract class AbstractDownloaderTest {
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(getTestDataDir())
-                .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
+                .to(mirrorProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
 
         validPath = downloaderProperties.getValidPath();
 
@@ -127,10 +126,9 @@ public abstract class AbstractDownloaderTest {
     private void initProperties() {
         mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
-        mirrorProperties.setNetwork(HederaNetwork.TESTNET);
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
 
         commonDownloaderProperties = new CommonDownloaderProperties();
-        commonDownloaderProperties.setBucketName("test");
         commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_MOCK_PORT);
         commonDownloaderProperties.setAccessKey("x"); // https://github.com/findify/s3mock/issues/147
         commonDownloaderProperties.setSecretKey("x");

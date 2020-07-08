@@ -26,10 +26,11 @@ import java.time.Instant;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.importer.domain.HederaNetwork;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
@@ -62,5 +63,22 @@ public class MirrorProperties {
     public void setDataPath(Path dataPath) {
         Utility.ensureDirectory(dataPath);
         this.dataPath = dataPath;
+    }
+
+    private String bucketName = "";
+
+    public String getBucketName() {
+        return network == HederaNetwork.OTHER ? bucketName : network.getBucketName();
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum HederaNetwork {
+        DEMO("hedera-demo-streams"),
+        MAINNET("hedera-stable-mainnet-streams"),
+        TESTNET("hedera-stable-testnet-streams"),
+        OTHER(""); // Pre-prod or ad hoc environments
+
+        private final String bucketName;
     }
 }

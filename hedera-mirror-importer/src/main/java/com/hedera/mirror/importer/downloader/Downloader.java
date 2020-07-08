@@ -64,7 +64,6 @@ import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.domain.HederaNetwork;
 import com.hedera.mirror.importer.domain.NodeAddress;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
@@ -79,6 +78,7 @@ public abstract class Downloader {
     private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
     protected final ApplicationStatusRepository applicationStatusRepository;
     protected final DownloaderProperties downloaderProperties;
+    protected final MirrorProperties mirrorProperties;
 
     // Metrics
     private final MeterRegistry meterRegistry;
@@ -110,6 +110,8 @@ public abstract class Downloader {
                         "and the time at which the file was downloaded and verified")
                 .tag("type", downloaderProperties.getStreamType().toString())
                 .register(meterRegistry);
+                
+        mirrorProperties = downloaderProperties.getMirrorProperties();
     }
 
     protected void downloadNextBatch() {
@@ -124,8 +126,7 @@ public abstract class Downloader {
             var sigFilesMap = downloadSigFiles();
 
             // Following is a cost optimization to not unnecessarily list the public demo bucket once complete
-            MirrorProperties mirrorProperties = downloaderProperties.getMirrorProperties();
-            if (sigFilesMap.isEmpty() && mirrorProperties.getNetwork() == HederaNetwork.DEMO) {
+            if (sigFilesMap.isEmpty() && mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.DEMO) {
                 downloaderProperties.setEnabled(false);
                 log.warn("Disabled polling after downloading all files in demo bucket");
             }
@@ -180,7 +181,7 @@ public abstract class Downloader {
                     var listSize = (downloaderProperties.getBatchSize() * 2);
                     // Not using ListObjectsV2Request because it does not work with GCP.
                     ListObjectsRequest listRequest = ListObjectsRequest.builder()
-                            .bucket(downloaderProperties.getCommon().getBucketName())
+                            .bucket(mirrorProperties.getBucketName())
                             .prefix(s3Prefix)
                             .delimiter("/")
                             .marker(s3Prefix + lastValidSigFileName)
@@ -267,7 +268,7 @@ public abstract class Downloader {
             }
         }
         var future = s3Client.getObject(
-                GetObjectRequest.builder().bucket(downloaderProperties.getCommon().getBucketName()).key(s3ObjectKey)
+                GetObjectRequest.builder().bucket(mirrorProperties.getBucketName()).key(s3ObjectKey)
                         .requestPayer(RequestPayer.REQUESTER)
                         .build(),
                 AsyncResponseTransformer.toFile(file));

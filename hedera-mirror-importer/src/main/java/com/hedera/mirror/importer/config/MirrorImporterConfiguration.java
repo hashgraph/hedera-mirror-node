@@ -49,7 +49,6 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.HederaNetwork;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.leader.LeaderAspect;
 
@@ -73,7 +72,7 @@ public class MirrorImporterConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "hedera.mirror.importer.downloader", name = "cloudProvider", havingValue = "GCP")
     public S3AsyncClient gcpCloudStorageClient() {
-        log.info("Configured to download from GCP with bucket name '{}'", downloaderProperties.getBucketName());
+        log.info("Configured to download from GCP with bucket name '{}'", mirrorProperties.getBucketName());
         // Any valid region for aws client. Ignored by GCP.
         S3AsyncClientBuilder clientBuilder = asyncClientBuilder("us-east-1")
                 .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()));
@@ -96,7 +95,7 @@ public class MirrorImporterConfiguration {
             matchIfMissing = true)
     public S3AsyncClient s3CloudStorageClient() {
         log.info("Configured to download from S3 in region {} with bucket name '{}'",
-                downloaderProperties.getRegion(), downloaderProperties.getBucketName());
+                downloaderProperties.getRegion(), mirrorProperties.getBucketName());
         S3AsyncClientBuilder clientBuilder = asyncClientBuilder(downloaderProperties.getRegion());
         String endpointOverride = downloaderProperties.getEndpointOverride();
         if (endpointOverride != null) {
@@ -135,7 +134,7 @@ public class MirrorImporterConfiguration {
         return configuration -> {
             Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
             if (timestamp == null) {
-                if (mirrorProperties.getNetwork() == HederaNetwork.MAINNET) {
+                if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.MAINNET) {
                     timestamp = 1592499600000000000L;
                 } else {
                     timestamp = 1588706343553042000L;

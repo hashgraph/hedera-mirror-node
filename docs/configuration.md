@@ -4,10 +4,8 @@ The three components of the Hedera Mirror Node, Importer, REST API and GRPC API,
 from an `application.yml` file or via the environment.
 
 Most configuration settings have appropriate defaults and can be left unchanged. One of the important settings that
-should be changed is `hedera.mirror.importer.downloader.bucketName` since it refers to a demo bucket. The real bucket name
-is not publicly available at this time. Another important property that should be adjusted is `hedera.mirror.importer.network` as
-it controls which Hedera network to mirror. Additionally, the password properties have a default, but it is recommended
-they be changed from the default.
+should be changed is `hedera.mirror.importer.network` as it controls which Hedera network to mirror.
+Additionally, the password properties have a default, but it is recommended they be changed from the default.
 
 ## Importer
 
@@ -21,6 +19,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 
 | Name                                                                 | Default                 | Description                                                                                    |
 | -------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `hedera.mirror.importer.bucketName`                                  | ""                      | The cloud storage bucket name to download streamed files. Must be set if `hedera.mirror.importer.network` is 'OTHER'|
 | `hedera.mirror.importer.dataPath`                                    | ./data                  | The data directory used to store downloaded files and other application state                  |
 | `hedera.mirror.importer.db.restPassword`                             | mirror_api_pass         | The database password the API uses to connect. **Should be changed from default**              |
 | `hedera.mirror.importer.db.restUsername`                             | mirror_api              | The username the API uses to connect to the database                                           |
@@ -36,7 +35,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.balance.keepSignatures`           | false                   | Whether to keep balance signature files after successful verification. If false, files are deleted. |
 | `hedera.mirror.importer.downloader.balance.prefix`                   | accountBalances/balance | The prefix to search cloud storage for balance files                                           |
 | `hedera.mirror.importer.downloader.balance.threads`                  | 13                      | The number of threads to search for new files to download                                      |
-| `hedera.mirror.importer.downloader.bucketName`                       | "hedera-demo-streams"   | The cloud storage bucket name to download streamed files                                       |
 | `hedera.mirror.importer.downloader.cloudProvider`                    | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                       |
 | `hedera.mirror.importer.downloader.endpointOverride`                 |                         | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible |
 | `hedera.mirror.importer.downloader.gcpProjectId`                     |                         | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.            |
