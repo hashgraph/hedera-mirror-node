@@ -94,10 +94,10 @@ public class DomainBuilder {
                 .sequenceNumber(++sequenceNumber)
                 .topicNum(0)
                 .runningHashVersion(2)
-                .payerAccountId(1L)
-                .validStartTimestamp(now)
-                .chunkTotal(1)
-                .chunkNum(1);
+                .payerAccountId(null)
+                .validStartTimestamp(null)
+                .chunkTotal(null)
+                .chunkNum(null);
 
         customizer.accept(builder);
         TopicMessage topicMessage = builder.build();

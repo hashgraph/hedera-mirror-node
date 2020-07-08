@@ -25,6 +25,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import javax.annotation.Resource;
 import javax.validation.ConstraintViolationException;
@@ -643,6 +645,98 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .verify(Duration.ofMillis(700));
     }
 
+    @Test
+    void fragmentedMessages() {
+        TopicListener topicListener = Mockito.mock(TopicListener.class);
+        EntityRepository entityRepository = Mockito.mock(EntityRepository.class);
+        TopicMessageRetriever topicMessageRetriever = Mockito.mock(TopicMessageRetriever.class);
+        topicMessageService = new TopicMessageServiceImpl(new GrpcProperties(), topicListener, entityRepository,
+                topicMessageRetriever);
+
+        TopicMessageFilter retrieverFilter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        Mockito.when(entityRepository
+                .findByCompositeKey(0, retrieverFilter.getRealmNum(), retrieverFilter.getTopicNum()))
+                .thenReturn(Optional
+                        .of(Entity.builder().entityTypeId(EntityType.TOPIC).build()));
+
+        List<TopicMessage> fragmentedHistoricMessages = fragmentedTopicMessages(2, 2);
+
+        Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers
+                .any()))
+                .thenReturn(Flux
+                        .just(topicMessage(1, Instant.EPOCH),
+                                fragmentedHistoricMessages.get(0),
+                                fragmentedHistoricMessages.get(1)));
+
+        List<TopicMessage> fragmentedIncomingMessages = fragmentedTopicMessages(5, 3);
+        Mockito.when(topicListener.listen(ArgumentMatchers
+                .any())).thenReturn(Flux.just(
+                topicMessage(4, Instant.EPOCH.plus(4, ChronoUnit.NANOS)),
+                fragmentedIncomingMessages.get(0),
+                fragmentedIncomingMessages.get(1),
+                fragmentedIncomingMessages.get(2)));
+
+        topicMessageService.subscribeTopic(retrieverFilter)
+                .map(TopicMessage::getSequenceNumber)
+                .as(StepVerifier::create)
+                .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 7L)
+                .expectComplete()
+                .verify(Duration.ofMillis(700));
+
+        topicMessageService.subscribeTopic(retrieverFilter)
+                // mapper doesn't handle null values so replace with 0's
+                .map(x -> x.getChunkNum() == null ? 0 : x.getChunkNum())
+                .as(StepVerifier::create)
+                .expectNext(0, 1, 2, 0, 1, 2, 3)
+                .expectComplete()
+                .verify(Duration.ofMillis(700));
+    }
+
+    @Test
+    void fragmentedMessagesGroupAcrossHistoricAndIncoming() {
+        domainBuilder.topicMessage(t -> t.sequenceNumber(1)).block();
+        domainBuilder
+                .topicMessage(t -> t.sequenceNumber(2).chunkNum(1).chunkTotal(2).validStartNs(1L).payerAccountId(1L))
+                .block();
+        domainBuilder
+                .topicMessage(t -> t.sequenceNumber(3).chunkNum(2).chunkTotal(2).validStartNs(1L).payerAccountId(1L))
+                .block();
+        domainBuilder.topicMessage(t -> t.sequenceNumber(4)).block();
+        domainBuilder
+                .topicMessage(t -> t.sequenceNumber(5).chunkNum(1).chunkTotal(3).validStartNs(1L).payerAccountId(1L))
+                .block();
+
+        // fragment message split across historic and incoming
+        Flux<TopicMessage> generator = Flux.concat(
+                domainBuilder
+                        .topicMessage(t -> t.sequenceNumber(6).chunkNum(2).chunkTotal(3).validStartNs(1L)
+                                .payerAccountId(1L).consensusTimestamp(future.plusNanos(2))),
+                domainBuilder
+                        .topicMessage(t -> t.sequenceNumber(7).chunkNum(3).chunkTotal(3).validStartNs(1L)
+                                .payerAccountId(1L).consensusTimestamp(future.plusNanos(3))),
+                domainBuilder
+                        .topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(future.plusNanos(4))),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(11))
+        );
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        topicMessageService.subscribeTopic(filter)
+                // mapper doesn't handle null values so replace with 0's
+                .map(x -> x.getChunkNum() == null ? 0 : x.getChunkNum())
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(100))
+                .then(generator::blockLast)
+                .expectNext(0, 1, 2, 0, 1, 2, 3, 0)
+                .thenCancel()
+                .verify(Duration.ofMillis(500));
+    }
+
     private void missingMessagesFromListenerTest(TopicMessageFilter filter, Flux<TopicMessage> missingMessages) {
         TopicListener topicListener = Mockito.mock(TopicListener.class);
         EntityRepository entityRepository = Mockito.mock(EntityRepository.class);
@@ -684,19 +778,45 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .thenReturn(missingMessages);
     }
 
+    private List<TopicMessage> fragmentedTopicMessages(long sequenceNumberStart, int fragmentCount) {
+        List<TopicMessage> topicMessages = new ArrayList<>();
+        for (int i = 0; i < fragmentCount; i++) {
+            long sequenceNumber = sequenceNumberStart + i;
+            topicMessages.add(topicMessage(sequenceNumber, i + 1, fragmentCount,
+                    Instant.EPOCH.plus(sequenceNumber, ChronoUnit.NANOS), 3L));
+        }
+
+        return topicMessages;
+    }
+
     private TopicMessage topicMessage(long sequenceNumber) {
-        return TopicMessage.builder()
-                .consensusTimestamp(Instant.EPOCH.plus(sequenceNumber, ChronoUnit.NANOS))
-                .realmNum(0)
-                .sequenceNumber(sequenceNumber)
-                .build();
+        return topicMessage(sequenceNumber, Instant.EPOCH.plus(sequenceNumber, ChronoUnit.NANOS));
+    }
+
+    private TopicMessage topicMessage(long sequenceNumber, Integer chunkNum, Integer chunkTotal,
+                                      Instant validStartNs, Long payerAccountId) {
+        return topicMessage(sequenceNumber, Instant.EPOCH.plus(sequenceNumber, ChronoUnit.NANOS), chunkNum, chunkTotal,
+                validStartNs, payerAccountId);
     }
 
     private TopicMessage topicMessage(long sequenceNumber, Instant consensusTimestamp) {
+        return topicMessage(sequenceNumber, consensusTimestamp, null, null, null, null);
+    }
+
+    private TopicMessage topicMessage(long sequenceNumber, Instant consensusTimestamp, Integer chunkNum,
+                                      Integer chunkTotal, Instant validStartNs, Long payerAccountId) {
         return TopicMessage.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .realmNum(0)
                 .sequenceNumber(sequenceNumber)
+                .message(new byte[] {0, 1, 2})
+                .runningHash(new byte[] {3, 4, 5})
+                .topicNum(0)
+                .runningHashVersion(2)
+                .payerAccountId(payerAccountId)
+                .validStartTimestamp(validStartNs)
+                .chunkTotal(chunkTotal)
+                .chunkNum(chunkNum)
                 .build();
     }
 }
