@@ -12,6 +12,7 @@ ENV cucumberFlags "@BalanceCheck"
 ENV subscribeThreadCount 30
 ENV jmeterTestPlan E2E_Subscribe_Only.jmx
 ENV jmeterPropsDirectory "/usr/etc/hedera-mirror-test"
+ENV publishThreadCount 1
 
 # ensure all maven dependecies are placed ahead of test run
 RUN ./mvnw install -DskipTests -Djib.skip -Ddocker.skip --no-transfer-progress \

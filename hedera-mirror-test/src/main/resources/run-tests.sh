@@ -8,7 +8,7 @@ set_acceptance_configs() {
 }
 
 set_perf_configs() {
-    testoptions="-Djmeter.subscribeThreadCount=$subscribeThreadCount -Djmeter.test=$jmeterTestPlan -Djmeter.propertiesDirectory=$jmeterPropsDirectory"
+    testoptions="-Djmeter.subscribeThreadCount=$subscribeThreadCount -Djmeter.test=$jmeterTestPlan -Djmeter.propertiesDirectory=$jmeterPropsDirectory -Djmeter.publishThreadCount=$publishThreadCount"
 }
 
 handle_mode() {
@@ -31,7 +31,7 @@ handle_mode() {
 
 run_test() {
     handle_mode
-    ./mvnw clean integration-test -pl hedera-mirror-test -P=$testProfile $testoptions
+    ./mvnw clean integration-test -pl hedera-mirror-test -P=$testProfile $testoptions -e
 }
 
 run_test

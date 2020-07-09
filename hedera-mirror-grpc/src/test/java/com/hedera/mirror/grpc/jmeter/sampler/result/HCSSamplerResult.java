@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 @SuperBuilder
@@ -115,19 +116,20 @@ public abstract class HCSSamplerResult<T> {
     }
 
     public void onError(Throwable err) {
-        subscribeError = err;
+        if (err.getMessage().contains("CANCELLED: unsubscribed")) {
+            subscribeError = err;
+        }
     }
 
     public void validateResponse(T currentResponse) {
 
+        Instant currentConsensusInstant = getConsensusInstant(currentResponse);
+        long currentSequenceNumber = getSequenceNumber(currentResponse);
+        log.trace("Observed message: {}, consensus timestamp: {}, topic sequence number: {}",
+                getMessage(currentResponse), currentConsensusInstant, currentSequenceNumber);
         if (last != null) {
             Instant lastConsensusInstant = getConsensusInstant(last);
-            Instant currentConsensusInstant = getConsensusInstant(currentResponse);
             long lastSequenceNumber = getSequenceNumber(last);
-            long currentSequenceNumber = getSequenceNumber(currentResponse);
-
-            log.trace("Observed message: {}, consensus timestamp: {}, topic sequence number: {}",
-                    getMessage(currentResponse), currentConsensusInstant, currentSequenceNumber);
 
             if (currentSequenceNumber != lastSequenceNumber + 1) {
                 log.error("Out of order message sequence. Last : {}, current : {}", last, currentResponse);
@@ -157,24 +159,36 @@ public abstract class HCSSamplerResult<T> {
     }
 
     public Instant getMessagePublishInstant(T currentResponse) {
-        Long publishMillis;
         Instant publishInstant;
+
         byte[] message = getMessageByteArray(currentResponse);
-
         try {
-            publishMillis = Longs.fromByteArray(Arrays.copyOfRange(message, 0, 8));
-            publishInstant = Instant.ofEpochMilli(publishMillis);
+            byte[] decodedMessage = Base64.decodeBase64(message);
+            publishInstant = retrieveInstantFromArray(decodedMessage);
+            if (isInstantOutOfRange(publishInstant)) {
+                publishInstant = retrieveInstantFromArray(message);
 
-            if (publishInstant.isBefore(Instant.EPOCH) || publishInstant.isAfter(Instant.now())) {
-                log.trace("publishInstant is out of range: {}", publishInstant);
-                publishInstant = null;
+                // support non encoded version
+                if (isInstantOutOfRange(publishInstant)) {
+                    log.debug("publishInstant is out of range: {}", publishInstant);
+                    publishInstant = null;
+                }
             }
         } catch (Exception ex) {
-            log.trace("response message contains invalid publish millisecond value");
+            log.debug("response message contains invalid publish millisecond value: {}", message);
             publishInstant = null;
         }
 
         return publishInstant;
+    }
+
+    private Instant retrieveInstantFromArray(byte[] message) {
+        Long publishMillis = Longs.fromByteArray(Arrays.copyOfRange(message, 0, 8));
+        return Instant.ofEpochMilli(publishMillis);
+    }
+
+    private boolean isInstantOutOfRange(Instant publishInstant) {
+        return publishInstant.isBefore(Instant.EPOCH) || publishInstant.isAfter(Instant.now());
     }
 
     private void calculateLatencies(T currentResponse, Instant received) {
@@ -205,11 +219,13 @@ public abstract class HCSSamplerResult<T> {
     }
 
     private void updateE2ELatencyStats(DescriptiveStatistics interval, DescriptiveStatistics total, double latency) {
-        // update interval stats
-        interval.addValue(latency);
+        if (latency > 0) {
+            // update interval stats
+            interval.addValue(latency);
 
-        // update total stats
-        total.addValue(latency);
+            // update total stats
+            total.addValue(latency);
+        }
     }
 
     private void printStats() {

@@ -18,6 +18,7 @@
     <properties>
         <jmeter.test>E2E_Subscribe_Only.jmx</jmeter.test>
         <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
+        <jmeter.publishThreadCount></jmeter.publishThreadCount>
         <jmeter.propertiesDirectory>${project.basedir}/src/test/jmeter</jmeter.propertiesDirectory>
         <cucumber.version>5.7.0</cucumber.version>
         <cucumber-reporting.version>4.0.52</cucumber-reporting.version>
@@ -245,6 +246,7 @@
                                 <jmeterExtension>com.hedera:hedera-mirror-grpc:${project.version}</jmeterExtension>
                                 <jmeterExtension>com.hedera:hedera-mirror-grpc:jar:tests:${project.version}
                                 </jmeterExtension>
+                                <jmeterExtension>com.google.guava:guava:29.0-jre</jmeterExtension>
                             </jmeterExtensions>
                             <jMeterProcessJVMSettings>
                                 <arguments>
@@ -257,6 +259,7 @@
                             <testFilesIncluded>${jmeter.test}</testFilesIncluded>
                             <propertiesUser>
                                 <subscribeThreadCount>${jmeter.subscribeThreadCount}</subscribeThreadCount>
+                                <publishThreadCount>${jmeter.publishThreadCount}</publishThreadCount>
                             </propertiesUser>
                             <skipTests>false</skipTests>
                             <propertiesFilesDirectory>${jmeter.propertiesDirectory}</propertiesFilesDirectory>

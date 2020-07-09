@@ -22,7 +22,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.common.base.Stopwatch;
 import io.grpc.StatusRuntimeException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -81,8 +80,8 @@ public class MirrorNodeClient {
         MirrorSubscriptionHandle subscription = mirrorConsensusTopicQuery
                 .subscribe(mirrorClient, resp -> {
                             // add expected messages only to messages list
-                            if (messages.size() < numMessages) {
-                                messages.add(new SubscriptionResponse.MirrorHCSResponse(resp, Instant.now()));
+                            if (subscriptionResponse.getMessages().size() < numMessages) {
+                                subscriptionResponse.handleMirrorConsensusTopicResponse(resp);
                             }
                             messageLatch.countDown();
                         },
@@ -101,7 +100,6 @@ public class MirrorNodeClient {
         }
 
         subscriptionResponse.setElapsedTime(stopwatch);
-        subscriptionResponse.setMessages(messages);
 
         if (subscriptionResponse.errorEncountered()) {
             throw subscriptionResponse.getResponseError();
