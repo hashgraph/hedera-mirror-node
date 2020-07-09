@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.downloader.record;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.time.Duration;
+import java.time.Instant;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
@@ -78,6 +80,9 @@ public class RecordFileDownloader extends Downloader {
             if (!recordFile.getFileHash().contentEquals(Hex.encodeHexString(verifiedHash))) {
                 return false;
             }
+
+            Instant consensusEnd = Instant.ofEpochSecond(0, recordFile.getConsensusEnd());
+            downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
         } catch (HashMismatchException e) {
             log.error(e);
             return false;

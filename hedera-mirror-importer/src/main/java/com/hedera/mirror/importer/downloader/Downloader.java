@@ -84,6 +84,7 @@ public abstract class Downloader {
     private final MeterRegistry meterRegistry;
     private final Counter.Builder signatureVerificationMetric;
     private final Timer.Builder streamVerificationMetric;
+    protected final Timer downloadLatencyMetric;
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
                       NetworkAddressBook networkAddressBook, DownloaderProperties downloaderProperties,
@@ -96,13 +97,19 @@ public abstract class Downloader {
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
 
-        signatureVerificationMetric = Counter.builder("hedera.mirror.signature.verification")
+        signatureVerificationMetric = Counter.builder("hedera.mirror.download.signature.verification")
                 .description("The number of signatures verified from a particular node")
                 .tag("type", downloaderProperties.getStreamType().toString());
 
-        streamVerificationMetric = Timer.builder("hedera.mirror.stream.verification")
+        streamVerificationMetric = Timer.builder("hedera.mirror.download.stream.verification")
                 .description("The duration in seconds it took to verify consensus and hash chain of a stream file")
                 .tag("type", downloaderProperties.getStreamType().toString());
+
+        downloadLatencyMetric = Timer.builder("hedera.mirror.download.latency")
+                .description("The difference in ms between the consensus time of the last transaction in the file " +
+                        "and the time at which the file was downloaded and verified")
+                .tag("type", downloaderProperties.getStreamType().toString())
+                .register(meterRegistry);
     }
 
     protected void downloadNextBatch() {

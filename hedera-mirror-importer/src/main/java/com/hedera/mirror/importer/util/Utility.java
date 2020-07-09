@@ -182,23 +182,26 @@ public class Utility {
                         dis.readFully(recordRawBytes);
                         messageDigest.update(Ints.toByteArray(byteLength));
                         messageDigest.update(recordRawBytes);
-                        if (recordItemConsumer != null) {
+                        boolean isFirstTransaction = recordFile.getConsensusStart() == null;
+                        boolean isLastTransaction = dis.available() == 0;
+
+                        // We need the first and last transaction timestamps for metrics
+                        if (recordItemConsumer != null || isFirstTransaction || isLastTransaction) {
                             RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);
-                            recordItemConsumer.accept(recordItem);
-                            if (recordFile.getConsensusStart() == null) {
+
+                            if (recordItemConsumer != null) {
+                                recordItemConsumer.accept(recordItem);
+                            }
+
+                            if (isFirstTransaction) {
                                 recordFile.setConsensusStart(recordItem.getConsensusTimestamp());
                             }
-                            recordFile.setConsensusEnd(recordItem.getConsensusTimestamp());
+
+                            if (isLastTransaction) {
+                                recordFile.setConsensusEnd(recordItem.getConsensusTimestamp());
+                            }
                         }
                         break;
-
-                    case FileDelimiter.RECORD_TYPE_SIGNATURE:
-                        int sigLength = dis.readInt();
-                        byte[] sigBytes = new byte[sigLength];
-                        dis.readFully(sigBytes);
-                        log.trace("File {} has signature {}", fileName, Hex.encodeHexString(sigBytes));
-                        break;
-
                     default:
                         throw new IllegalArgumentException(String.format(
                                 "Unknown record file delimiter %s for file %s", typeDelimiter, fileName));
