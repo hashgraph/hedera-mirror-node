@@ -24,6 +24,7 @@ import com.google.common.base.Stopwatch;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
@@ -155,8 +156,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             sqlInsertTopicMessage = connection.prepareStatement("insert into topic_message"
                     + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number" +
-                    ", running_hash_version)"
-                    + " values (?, ?, ?, ?, ?, ?, ?)");
+                    ", running_hash_version, chunk_num, chunk_total, payer_account_id, valid_start_timestamp)"
+                    + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         } catch (SQLException e) {
             throw new ParserSQLException("Unable to prepare SQL statements", e);
         }
@@ -301,6 +302,23 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             sqlInsertTopicMessage.setLong(F_TOPICMESSAGE.SEQUENCE_NUMBER.ordinal(), topicMessage.getSequenceNumber());
             sqlInsertTopicMessage
                     .setInt(F_TOPICMESSAGE.RUNNING_HASH_VERSION.ordinal(), topicMessage.getRunningHashVersion());
+
+            // handle nullable chunk info columns
+            if (topicMessage.getChunkNum() != null) {
+                sqlInsertTopicMessage.setInt(F_TOPICMESSAGE.CHUNK_NUM.ordinal(), topicMessage.getChunkNum());
+                sqlInsertTopicMessage.setInt(F_TOPICMESSAGE.CHUNK_TOTAL.ordinal(), topicMessage.getChunkTotal());
+                sqlInsertTopicMessage
+                        .setLong(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), topicMessage.getPayerAccountId().getId());
+                sqlInsertTopicMessage
+                        .setLong(F_TOPICMESSAGE.VALID_START_TIMESTAMP.ordinal(), topicMessage.getValidStartTimestamp());
+            } else {
+                sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.CHUNK_NUM.ordinal(), Types.SMALLINT);
+                sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.CHUNK_TOTAL.ordinal(), Types.SMALLINT);
+                sqlInsertTopicMessage
+                        .setObject(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), null);
+                sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.VALID_START_TIMESTAMP.ordinal(), Types.BIGINT);
+            }
+
             sqlInsertTopicMessage.addBatch();
         } catch (SQLException e) {
             throw new ParserSQLException(e);
@@ -370,7 +388,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     enum F_TOPICMESSAGE {
         ZERO // column indices start at 1, this creates the necessary offset
-        , CONSENSUS_TIMESTAMP, REALM_NUM, TOPIC_NUM, MESSAGE, RUNNING_HASH, SEQUENCE_NUMBER, RUNNING_HASH_VERSION
+        , CONSENSUS_TIMESTAMP, REALM_NUM, TOPIC_NUM, MESSAGE, RUNNING_HASH, SEQUENCE_NUMBER, RUNNING_HASH_VERSION,
+        CHUNK_NUM, CHUNK_TOTAL, PAYER_ACCOUNT_ID, VALID_START_TIMESTAMP
     }
 
     enum F_FILE_DATA {

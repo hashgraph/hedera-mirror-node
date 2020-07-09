@@ -685,11 +685,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     }
 
     private TopicMessage topicMessage(long sequenceNumber) {
-        return TopicMessage.builder()
-                .consensusTimestamp(Instant.EPOCH.plus(sequenceNumber, ChronoUnit.NANOS))
-                .realmNum(0)
-                .sequenceNumber(sequenceNumber)
-                .build();
+        return topicMessage(sequenceNumber, Instant.EPOCH.plus(sequenceNumber, ChronoUnit.NANOS));
     }
 
     private TopicMessage topicMessage(long sequenceNumber, Instant consensusTimestamp) {
@@ -697,6 +693,10 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .consensusTimestamp(consensusTimestamp)
                 .realmNum(0)
                 .sequenceNumber(sequenceNumber)
+                .message(new byte[] {0, 1, 2})
+                .runningHash(new byte[] {3, 4, 5})
+                .topicNum(0)
+                .runningHashVersion(2)
                 .build();
     }
 }

@@ -149,7 +149,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // given
         byte[] message = Strings.toByteArray("test message");
         byte[] runningHash = Strings.toByteArray("running hash");
-        TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash, 10L, 1001, 1);
+        TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash,
+                10L, 1001, 1, 2, 3, EntityId.of(0L, 0L, 3L, ACCOUNT), 4L);
 
         // when
         sqlEntityListener.onTopicMessage(expectedTopicMessage);
