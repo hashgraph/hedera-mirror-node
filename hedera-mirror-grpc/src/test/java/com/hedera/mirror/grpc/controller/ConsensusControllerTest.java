@@ -225,27 +225,21 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     void fragmentedMessagesGroupAcrossHistoricAndIncoming() {
         Instant now = Instant.now();
         domainBuilder.topicMessage(t -> t.sequenceNumber(1)).block();
-        domainBuilder
-                .topicMessage(t -> t.sequenceNumber(2).chunkNum(1).chunkTotal(2).validStartNs(1L).payerAccountId(1L)
-                        .consensusTimestamp(now)).block();
-        domainBuilder
-                .topicMessage(t -> t.sequenceNumber(3).chunkNum(2).chunkTotal(2).validStartNs(1L).payerAccountId(1L)
-                        .consensusTimestamp(now.plusNanos(1))).block();
+        domainBuilder.topicMessage(t -> t.sequenceNumber(2).chunkNum(1).chunkTotal(2)
+                .validStartTimestamp(now.minusNanos(1)).payerAccountId(1L).consensusTimestamp(now)).block();
+        domainBuilder.topicMessage(t -> t.sequenceNumber(3).chunkNum(2).chunkTotal(2).validStartTimestamp(now)
+                .payerAccountId(1L).consensusTimestamp(now.plusNanos(1))).block();
         domainBuilder.topicMessage(t -> t.sequenceNumber(4).consensusTimestamp(now.plusNanos(2))).block();
-        domainBuilder
-                .topicMessage(t -> t.sequenceNumber(5).chunkNum(1).chunkTotal(3).validStartNs(1L).payerAccountId(1L)
-                        .consensusTimestamp(now.plusNanos(3))).block();
+        domainBuilder.topicMessage(t -> t.sequenceNumber(5).chunkNum(1).chunkTotal(3)
+                .validStartTimestamp(now.plusNanos(2)).payerAccountId(1L).consensusTimestamp(now.plusNanos(3))).block();
 
         // fragment message split across historic and incoming
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder
-                        .topicMessage(t -> t.sequenceNumber(6).chunkNum(2).chunkTotal(3).validStartNs(1L)
-                                .payerAccountId(1L).consensusTimestamp(now.plusNanos(4))),
-                domainBuilder
-                        .topicMessage(t -> t.sequenceNumber(7).chunkNum(3).chunkTotal(3).validStartNs(1L)
-                                .payerAccountId(1L).consensusTimestamp(now.plusNanos(5))),
-                domainBuilder
-                        .topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(now.plusNanos(6)))
+                domainBuilder.topicMessage(t -> t.sequenceNumber(6).chunkNum(2).chunkTotal(3)
+                        .validStartTimestamp(now.plusNanos(3)).payerAccountId(1L).consensusTimestamp(now.plusNanos(4))),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(7).chunkNum(3).chunkTotal(3)
+                        .validStartTimestamp(now.plusNanos(4)).payerAccountId(1L).consensusTimestamp(now.plusNanos(5))),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(now.plusNanos(6)))
         );
 
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()

@@ -88,11 +88,11 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     private com.hedera.mirror.grpc.domain.Entity payerAccountEntity = EncodedIdToEntityConverter.INSTANCE
             .convert(payerAccountId);
 
-    private Long validStartNs;
+    private Long validStartTimestamp;
 
     @Getter(lazy = true)
     @Transient
-    private Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(validStartNs);
+    private Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(validStartTimestamp);
 
     @NonFinal
     @Transient
@@ -157,7 +157,7 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
         }
 
         public TopicMessageBuilder validStartTimestamp(Instant validStartTimestamp) {
-            validStartNs = InstantToLongConverter.INSTANCE.convert(validStartTimestamp);
+            this.validStartTimestamp = InstantToLongConverter.INSTANCE.convert(validStartTimestamp);
             return this;
         }
     }
