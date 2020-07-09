@@ -63,6 +63,5 @@ message ConsensusTopicResponse {
 // HCS Topic via a specific (possibly open-ended) time range.
 //
 service ConsensusService {
-    rpc subscribeTopic (ConsensusTopicQuery) returns (stream
-    ConsensusTopicResponse);
+    rpc subscribeTopic (ConsensusTopicQuery) returns (stream ConsensusTopicResponse);
 }

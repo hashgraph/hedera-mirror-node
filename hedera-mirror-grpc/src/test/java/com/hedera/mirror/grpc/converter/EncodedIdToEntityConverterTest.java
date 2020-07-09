@@ -30,8 +30,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import com.hedera.mirror.grpc.domain.Entity;
 import com.hedera.mirror.grpc.domain.EntityType;
 
-public class EncodedIdToEntityIdConverterTest {
-    private final EncodedIdToEntityIdConverter converter = new EncodedIdToEntityIdConverter();
+public class EncodedIdToEntityConverterTest {
+    private final EncodedIdToEntityConverter converter = new EncodedIdToEntityConverter();
 
     @DisplayName("Convert Instant to Long")
     @ParameterizedTest(name = "with input {0} and output {1}")

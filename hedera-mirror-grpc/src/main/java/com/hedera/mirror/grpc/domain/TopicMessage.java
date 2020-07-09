@@ -40,7 +40,7 @@ import lombok.experimental.NonFinal;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
-import com.hedera.mirror.grpc.converter.EncodedIdToEntityIdConverter;
+import com.hedera.mirror.grpc.converter.EncodedIdToEntityConverter;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 
@@ -85,7 +85,7 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
 
     @Getter(lazy = true)
     @Transient
-    private com.hedera.mirror.grpc.domain.Entity payerDecodedAccountId = EncodedIdToEntityIdConverter.INSTANCE
+    private com.hedera.mirror.grpc.domain.Entity payerAccountEntity = EncodedIdToEntityConverter.INSTANCE
             .convert(payerAccountId);
 
     private Long validStartNs;
@@ -116,9 +116,9 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
                         .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
                                 .setInitialTransactionID(TransactionID.newBuilder()
                                         .setAccountID(AccountID.newBuilder()
-                                                .setShardNum(getPayerDecodedAccountId().getEntityShard())
-                                                .setRealmNum(getPayerDecodedAccountId().getEntityRealm())
-                                                .setAccountNum(getPayerDecodedAccountId().getEntityNum())
+                                                .setShardNum(getPayerAccountEntity().getEntityShard())
+                                                .setRealmNum(getPayerAccountEntity().getEntityRealm())
+                                                .setAccountNum(getPayerAccountEntity().getEntityNum())
                                                 .build())
                                         .setTransactionValidStart(Timestamp.newBuilder()
                                                 .setSeconds(getValidStartInstant().getEpochSecond())

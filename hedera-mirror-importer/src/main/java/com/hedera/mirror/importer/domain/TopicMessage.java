@@ -57,5 +57,5 @@ public class TopicMessage {
     @Convert(converter = EntityIdConverter.class)
     private EntityId payerAccountId;
 
-    private Long validStartNs;
+    private Long validStartTimestamp;
 }

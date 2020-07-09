@@ -93,11 +93,7 @@ public class DomainBuilder {
                 .runningHash(new byte[] {3, 4, 5})
                 .sequenceNumber(++sequenceNumber)
                 .topicNum(0)
-                .runningHashVersion(2)
-                .payerAccountId(null)
-                .validStartTimestamp(null)
-                .chunkTotal(null)
-                .chunkNum(null);
+                .runningHashVersion(2);
 
         customizer.accept(builder);
         TopicMessage topicMessage = builder.build();

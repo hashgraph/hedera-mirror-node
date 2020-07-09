@@ -29,8 +29,8 @@ import com.hedera.mirror.grpc.domain.EntityType;
 
 @Named
 @WritingConverter
-public class EncodedIdToEntityIdConverter implements Converter<Long, Entity> {
-    public static final EncodedIdToEntityIdConverter INSTANCE = new EncodedIdToEntityIdConverter();
+public class EncodedIdToEntityConverter implements Converter<Long, Entity> {
+    public static final EncodedIdToEntityConverter INSTANCE = new EncodedIdToEntityConverter();
 
     static final int REALM_BITS = 16;
     static final int NUM_BITS = 32; // bits for entity num

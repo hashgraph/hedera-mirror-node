@@ -592,7 +592,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setChunkNum(chunkNum);
         topicMessage.setChunkTotal(chunkTotal);
-        topicMessage.setValidStartNs(validStartNs);
+        topicMessage.setValidStartTimestamp(validStartNs);
 
         EntityId payerAccountEntityId = payerAccountIdNum == null ? null : EntityId
                 .of(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build());
