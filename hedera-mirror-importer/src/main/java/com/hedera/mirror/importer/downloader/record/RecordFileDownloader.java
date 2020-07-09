@@ -21,9 +21,11 @@ package com.hedera.mirror.importer.downloader.record;
  */
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
@@ -43,11 +45,19 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 public class RecordFileDownloader extends Downloader {
 
+    private final Timer streamCloseMetric;
+
     public RecordFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             NetworkAddressBook networkAddressBook, RecordDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry) {
         super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties, meterRegistry);
+
+        streamCloseMetric = Timer.builder("hedera.mirror.stream.close.latency")
+                .description("The difference between the consensus time of the last and first transaction in the " +
+                        "record file")
+                .tag("type", downloaderProperties.getStreamType().toString())
+                .register(meterRegistry);
     }
 
     @Leader
@@ -83,6 +93,9 @@ public class RecordFileDownloader extends Downloader {
 
             Instant consensusEnd = Instant.ofEpochSecond(0, recordFile.getConsensusEnd());
             downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
+
+            long streamClose = recordFile.getConsensusEnd() - recordFile.getConsensusStart();
+            streamCloseMetric.record(streamClose, TimeUnit.NANOSECONDS);
         } catch (HashMismatchException e) {
             log.error(e);
             return false;
