@@ -48,10 +48,10 @@ public class CompositeTopicListener implements TopicListener {
 
     @PostConstruct
     public void registerMetrics() {
-        Timer.Builder consensusToPublishMetric = Timer.builder("hedera.mirror.topicmessage.latency")
+        consensusToPublishTimer = Timer.builder("hedera.mirror.publish.latency")
                 .description("The difference in ms between the time consensus was achieved and the mirror node " +
-                        "published the topic message");
-        consensusToPublishTimer = consensusToPublishMetric
+                        "published the entity")
+                .tag("type", TopicMessage.class.getSimpleName())
                 .register(meterRegistry);
     }
 
@@ -62,7 +62,7 @@ public class CompositeTopicListener implements TopicListener {
         }
 
         return getTopicListener().listen(filter)
-                .doOnNext(this::onNext);
+                .doOnNext(this::recordMetric);
     }
 
     private TopicListener getTopicListener() {
@@ -78,10 +78,8 @@ public class CompositeTopicListener implements TopicListener {
         }
     }
 
-    private void onNext(TopicMessage topicMessage) {
-        // record consensus to topic message publish time
-        consensusToPublishTimer
-                .record(System.currentTimeMillis() - topicMessage.getConsensusTimestampInstant().toEpochMilli(),
-                        TimeUnit.MILLISECONDS);
+    private void recordMetric(TopicMessage topicMessage) {
+        long latency = System.currentTimeMillis() - topicMessage.getConsensusTimestampInstant().toEpochMilli();
+        consensusToPublishTimer.record(latency, TimeUnit.MILLISECONDS);
     }
 }

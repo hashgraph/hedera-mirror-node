@@ -62,7 +62,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.include.entity`                       | []                      | A list of entity IDs to store in shard.realm.num (e.g. 0.0.3) format                           |
 | `hedera.mirror.importer.parser.include.transaction`                  | []                      | A list of transaction types to store. See `TransactionTypeEnum.java` for possible values       |
 | `hedera.mirror.importer.parser.record.enabled`                       | true                    | Whether to enable record file parsing                                                          |
-| `hedera.mirror.importer.parser.record.frequency`                     | 500ms                   | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
+| `hedera.mirror.importer.parser.record.frequency`                     | 100ms                   | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
 | `hedera.mirror.importer.parser.record.keepFiles`                     | false                   | Whether to keep parsed files after successful parsing. If false, files are deleted.            |
 | `hedera.mirror.importer.parser.record.entity.persist.claims`                | false                   | Persist claim data to the database                                                             |
 | `hedera.mirror.importer.parser.record.entity.persist.contracts`             | true                    | Persist contract data to the database                                                          |
