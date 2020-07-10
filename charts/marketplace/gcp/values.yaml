@@ -24,6 +24,13 @@ grpc:
     enabled: false
 
 importer:
+  config:
+    hedera:
+      mirror:
+        importer:
+          downloader:
+            cloudProvider: GCP
+          topicRunningHashV2AddedTimestamp: 1592499600000000000
   podMonitor:
     enabled: false
   priorityClassName: ""

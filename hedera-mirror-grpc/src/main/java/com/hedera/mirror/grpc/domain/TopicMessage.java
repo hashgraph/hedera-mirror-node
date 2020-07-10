@@ -20,32 +20,47 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
+import com.google.protobuf.UnsafeByteOperations;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.util.Comparator;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.springframework.data.domain.Persistable;
 
+import com.hedera.mirror.api.proto.ConsensusTopicResponse;
+import com.hedera.mirror.grpc.converter.EncodedIdToEntityConverter;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 
-@Data
-@Entity
-@Builder
 @AllArgsConstructor
-@NoArgsConstructor
+@NoArgsConstructor(force = true)
+@Builder
+@Entity
+@Value
 public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long> {
 
-    private static final InstantToLongConverter instantToLongConverter = new InstantToLongConverter();
-    private static final LongToInstantConverter longToInstantConverter = new LongToInstantConverter();
+    private static final Comparator<TopicMessage> COMPARATOR = Comparator
+            .nullsFirst(Comparator.comparingLong(TopicMessage::getSequenceNumber));
 
     @Id
+    @ToString.Exclude
     private Long consensusTimestamp;
+
+    @Getter(lazy = true)
+    @Transient
+    private Instant consensusTimestampInstant = LongToInstantConverter.INSTANCE.convert(consensusTimestamp);
 
     @ToString.Exclude
     private byte[] message;
@@ -55,19 +70,74 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     @ToString.Exclude
     private byte[] runningHash;
 
+    private int runningHashVersion;
+
     private long sequenceNumber;
 
     private int topicNum;
 
-    private int runningHashVersion;
+    private Integer chunkNum;
+
+    private Integer chunkTotal;
+
+    @ToString.Exclude
+    private Long payerAccountId;
+
+    @Getter(lazy = true)
+    @Transient
+    private com.hedera.mirror.grpc.domain.Entity payerAccountEntity = EncodedIdToEntityConverter.INSTANCE
+            .convert(payerAccountId);
+
+    private Long validStartTimestamp;
+
+    @Getter(lazy = true)
+    @Transient
+    private Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(validStartTimestamp);
+
+    @NonFinal
+    @Transient
+    private volatile ConsensusTopicResponse response = null;
+
+    // Cache this to avoid paying the conversion penalty for multiple subscribers to the same topic
+    public ConsensusTopicResponse toResponse() {
+        if (response == null) {
+            var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
+                    .setConsensusTimestamp(Timestamp.newBuilder()
+                            .setSeconds(getConsensusTimestampInstant().getEpochSecond())
+                            .setNanos(getConsensusTimestampInstant().getNano())
+                            .build())
+                    .setMessage(UnsafeByteOperations.unsafeWrap(message))
+                    .setRunningHash(UnsafeByteOperations.unsafeWrap(runningHash))
+                    .setRunningHashVersion(runningHashVersion)
+                    .setSequenceNumber(sequenceNumber);
+
+            if (getChunkNum() != null) {
+                consensusTopicResponseBuilder
+                        .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
+                                .setInitialTransactionID(TransactionID.newBuilder()
+                                        .setAccountID(AccountID.newBuilder()
+                                                .setShardNum(getPayerAccountEntity().getEntityShard())
+                                                .setRealmNum(getPayerAccountEntity().getEntityRealm())
+                                                .setAccountNum(getPayerAccountEntity().getEntityNum())
+                                                .build())
+                                        .setTransactionValidStart(Timestamp.newBuilder()
+                                                .setSeconds(getValidStartInstant().getEpochSecond())
+                                                .setNanos(getValidStartInstant().getNano())
+                                                .build())
+                                        .build())
+                                .setNumber(getChunkNum())
+                                .setTotal(getChunkTotal())
+                                .build());
+            }
+
+            response = consensusTopicResponseBuilder.build();
+        }
+        return response;
+    }
 
     @Override
     public int compareTo(TopicMessage other) {
-        return Comparator.nullsFirst(Comparator.comparingLong(TopicMessage::getSequenceNumber)).compare(this, other);
-    }
-
-    public Instant getConsensusTimestampInstant() {
-        return longToInstantConverter.convert(consensusTimestamp);
+        return COMPARATOR.compare(this, other);
     }
 
     @Override
@@ -81,16 +151,14 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     }
 
     public static class TopicMessageBuilder {
-        private long consensusTimestamp;
-
         public TopicMessageBuilder consensusTimestamp(Instant consensusTimestamp) {
-            this.consensusTimestamp = instantToLongConverter.convert(consensusTimestamp);
+            this.consensusTimestamp = InstantToLongConverter.INSTANCE.convert(consensusTimestamp);
             return this;
         }
 
-        public TopicMessage build() {
-            return new TopicMessage(consensusTimestamp, message, realmNum, runningHash, sequenceNumber, topicNum,
-                    runningHashVersion);
+        public TopicMessageBuilder validStartTimestamp(Instant validStartTimestamp) {
+            this.validStartTimestamp = InstantToLongConverter.INSTANCE.convert(validStartTimestamp);
+            return this;
         }
     }
 }

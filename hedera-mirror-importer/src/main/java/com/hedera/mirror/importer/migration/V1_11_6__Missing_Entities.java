@@ -129,7 +129,7 @@ public class V1_11_6__Missing_Entities extends BaseJavaMigration {
             // Persist if doesn't exist
             entityRepository.findById(proxyAccountEntityId.getId())
                     .orElseGet(() -> entityRepository.save(proxyAccountEntityId.toEntity()));
-            entity.setProxyAccountId(proxyAccountEntityId.getId());
+            entity.setProxyAccountId(proxyAccountEntityId);
         }
 
         if (accountInfo.getDeleted()) {

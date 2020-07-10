@@ -24,10 +24,13 @@ import java.time.Instant;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.ToString;
 import lombok.Value;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.validation.annotation.Validated;
 
+import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.validation.EndTime;
 import com.hedera.mirror.grpc.validation.StartTime;
 
@@ -49,6 +52,10 @@ public class TopicMessageFilter {
     @NotNull
     @Builder.Default
     private Instant startTime = Instant.now();
+
+    @Getter(lazy = true)
+    @ToString.Exclude
+    private Long startTimeLong = InstantToLongConverter.INSTANCE.convert(startTime);
 
     @Builder.Default
     private String subscriberId = RandomStringUtils.randomAlphanumeric(8);

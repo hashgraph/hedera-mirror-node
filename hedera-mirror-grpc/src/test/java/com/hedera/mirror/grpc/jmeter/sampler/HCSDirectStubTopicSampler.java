@@ -25,7 +25,10 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
@@ -89,7 +92,7 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
 
             @Override
             public void onNext(ConsensusTopicResponse response) {
-                result.onNext(response);
+                result.onNext(response, Instant.now());
 
                 if (result.isHistorical()) {
                     historicMessagesLatch.countDown();
@@ -109,18 +112,20 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
                 result.onComplete();
             }
         };
+        ScheduledExecutorService scheduler = null;
 
         try {
             asyncStub.subscribeTopic(request, responseObserver);
+            scheduler = Executors.newSingleThreadScheduledExecutor();
+            scheduler.scheduleAtFixedRate(() -> {
+                result.printProgress();
+            }, 0, 1, TimeUnit.MINUTES);
 
             // await some new messages
             if (!historicMessagesLatch.await(messageListener.getMessagesLatchWaitSeconds(), TimeUnit.SECONDS)) {
                 log.error("Historic messages latch count is {}, did not reach zero", historicMessagesLatch.getCount());
                 result.setSuccess(false);
             }
-
-            log.trace("{} Historic messages obtained in {} ({}/s)", result.getHistoricalMessageCount(), result
-                    .getStopwatch(), result.getMessageRate());
 
             if (historicMessagesLatch.getCount() == 0 && !incomingMessagesLatch
                     .await(messageListener.getMessagesLatchWaitSeconds(), TimeUnit.SECONDS)) {
@@ -136,6 +141,8 @@ public class HCSDirectStubTopicSampler implements HCSTopicSampler {
             if (canShutdownChannel) {
                 shutdown();
             }
+
+            scheduler.shutdownNow();
 
             return result;
         }

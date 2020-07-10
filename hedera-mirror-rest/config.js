@@ -64,25 +64,28 @@ function loadEnvironment() {
 }
 
 /*
- * Sets a config property from an environment variable by converting HEDERA_MYFOO_BAR to an object path notation hedera.myFoo.bar
- * using a case insensitive search. If more than one property matches with a different case, it will choose the first.
+ * Sets a config property from an environment variable by converting HEDERA_MIRROR_REST_FOO_BAR to an object path
+ * notation hedera.mirror.rest.foo.bar using a case insensitive search. If more than one property matches with a
+ * different case, it will choose the first.
  */
 function setConfigValue(propertyPath, value) {
   let current = config;
   let properties = propertyPath.toLowerCase().split('_');
 
-  // Ignore properties that don't start with HEDERA_
-  if (properties.length <= 1 || properties[0] !== 'hedera') {
+  // Ignore properties that don't start with HEDERA_MIRROR_REST
+  if (properties.length < 4 || properties[0] !== 'hedera' || properties[1] !== 'mirror' || properties[2] !== 'rest') {
     return;
   }
 
   for (let i in properties) {
     let property = properties[i];
+    let found = false;
 
     for (let [k, v] of Object.entries(current)) {
       if (property === k.toLowerCase()) {
         if (i < properties.length - 1) {
           current = v;
+          found = true;
           break;
         } else {
           current[k] = convertType(value);
@@ -90,6 +93,10 @@ function setConfigValue(propertyPath, value) {
           return;
         }
       }
+    }
+
+    if (!found) {
+      return;
     }
   }
 }

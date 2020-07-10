@@ -39,21 +39,12 @@ public class BalanceFileParser extends FileWatcher {
         super(parserProperties);
     }
 
-    @Override
-    public void onCreate() {
-        parse();
-    }
-
-    @Override
-    protected boolean isEnabled() {
-        return parserProperties.isEnabled();
-    }
-
     /**
      * List the verified balance files and parse them. We can process them in any order, but we choose to process the
      * latest balance first since most clients will want to query for the latest data.
      */
-    private void parse() {
+    @Override
+    public void parse() {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         try {

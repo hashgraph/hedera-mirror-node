@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -43,7 +44,6 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
@@ -113,8 +113,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onCryptoTransferList() throws Exception {
         // given
-        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, 0L, 1L);
-        CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, 0L, 2L);
+        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
+        CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT));
 
         // when
         sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
@@ -130,8 +130,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onNonFeeTransfer() throws Exception {
         // given
-        NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, 1L, 0L, 1L);
-        NonFeeTransfer nonFeeTransfer2 = new NonFeeTransfer(2L, -2L, 0L, 2L);
+        NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
+        NonFeeTransfer nonFeeTransfer2 = new NonFeeTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT));
 
         // when
         sqlEntityListener.onNonFeeTransfer(nonFeeTransfer1);
@@ -149,7 +149,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // given
         byte[] message = Strings.toByteArray("test message");
         byte[] runningHash = Strings.toByteArray("running hash");
-        TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash, 10L, 1001, 1);
+        TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash,
+                10L, 1001, 1, 2, 3, EntityId.of(0L, 0L, 3L, ACCOUNT), 4L);
 
         // when
         sqlEntityListener.onTopicMessage(expectedTopicMessage);
@@ -206,8 +207,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTransaction() throws Exception {
         // given
-        Transaction expectedTransaction = new Transaction(101L, 0L, Strings.toByteArray("memo"), 0, 0, 1L,
-                1L, 1L, null, 1L, 1L, 1L, Strings.toByteArray("transactionHash"), null);
+        var expectedTransaction = makeTransaction();
 
         // when
         sqlEntityListener.onTransaction(expectedTransaction);
@@ -221,7 +221,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onEntityId() throws Exception {
         // given
-        EntityId entityId = EntityId.of(0L, 0L, 10L, EntityTypeEnum.ACCOUNT);
+        EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
 
         // when
         sqlEntityListener.onEntityId(entityId);
@@ -257,7 +257,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         for (int i = 0; i < batchSize; i++) {
-            sqlEntityListener2.onTransaction(mock(Transaction.class));
+            sqlEntityListener2.onTransaction(makeTransaction());
         }
 
         // then
@@ -271,8 +271,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onError() {
         // when
-        sqlEntityListener.onNonFeeTransfer(new NonFeeTransfer(1L, 1L, 0L, 1L));
-        sqlEntityListener.onCryptoTransfer(new CryptoTransfer(2L, -2L, 0L, 2L));
+        sqlEntityListener.onNonFeeTransfer(new NonFeeTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT)));
+        sqlEntityListener.onCryptoTransfer(new CryptoTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT)));
         sqlEntityListener.onError();
 
         // then
@@ -299,5 +299,24 @@ public class SqlEntityListenerTest extends IntegrationTest {
         Optional<T> actual = repository.findById(id);
         assertTrue(actual.isPresent());
         assertEquals(expected, actual.get());
+    }
+
+    private Transaction makeTransaction() {
+        EntityId entityId = EntityId.of(10, 10, 10, ACCOUNT);
+        Transaction transaction = new Transaction();
+        transaction.setConsensusNs(101L);
+        transaction.setEntityId(entityId);
+        transaction.setNodeAccountId(entityId);
+        transaction.setMemo(Strings.toByteArray("memo"));
+        transaction.setType(14);
+        transaction.setResult(22);
+        transaction.setTransactionHash(Strings.toByteArray("transactionHash"));
+        transaction.setPayerAccountId(entityId);
+        transaction.setValidStartNs(1L);
+        transaction.setValidDurationSeconds(1L);
+        transaction.setMaxFee(1L);
+        transaction.setChargedTxFee(1L);
+        transaction.setInitialBalance(0L);
+        return transaction;
     }
 }

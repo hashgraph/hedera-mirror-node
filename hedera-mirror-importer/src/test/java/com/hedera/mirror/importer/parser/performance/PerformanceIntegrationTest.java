@@ -127,10 +127,10 @@ public abstract class PerformanceIntegrationTest {
 
     void checkSeededTablesArePresent() throws SQLException {
         String[] tables = new String[] {"account_balance_sets", "account_balances", "flyway_schema_history",
-                "non_fee_transfers", "t_application_status", "t_contract_result", "t_cryptotransferlists",
+                "non_fee_transfer", "t_application_status", "t_contract_result", "crypto_transfer",
                 "t_entities", "t_entity_types", "t_file_data", "t_livehashes", "t_record_files",
                 "t_transaction_results",
-                "t_transaction_types", "t_transactions", "topic_message"
+                "t_transaction_types", "transaction", "topic_message"
         };
         List<String> discoveredTables = new ArrayList<>();
 
@@ -153,7 +153,7 @@ public abstract class PerformanceIntegrationTest {
         verifyTableSize(entityRepository, "t_entities");
         verifyTableSize(accountBalanceRepository, "account_balances");
         verifyTableSize(topicMessageRepository, "topicmessages");
-        verifyTableSize(transactionRepository, "t_transactions");
+        verifyTableSize(transactionRepository, "transaction");
     }
 
     void verifyTableSize(CrudRepository<?, ?> repository, String label) throws SQLException {

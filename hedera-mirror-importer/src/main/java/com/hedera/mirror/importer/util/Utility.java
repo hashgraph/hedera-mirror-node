@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.util;
 
 import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 
+import com.google.common.primitives.Ints;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
@@ -29,12 +30,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -133,12 +134,12 @@ public class Utility {
      * @return parsed record file
      */
     public static RecordFile parseRecordFile(String filePath, String expectedPrevFileHash, Instant verifyHashAfter,
-            Consumer<RecordItem> recordItemConsumer) {
+                                             Consumer<RecordItem> recordItemConsumer) {
         RecordFile recordFile = new RecordFile();
         recordFile.setName(filePath);
         String fileName = Utility.getFileName(filePath);
 
-        try (DataInputStream dis = new DataInputStream(new FileInputStream(filePath))) {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)))) {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
             MessageDigest mdForContent = md;
 
@@ -162,10 +163,9 @@ public class Utility {
                         dis.read(readFileHash);
                         recordFile.setPreviousHash(Hex.encodeHexString(readFileHash));
                         md.update(readFileHash);
-                        Instant fileInstant = Instant.parse(fileName.replaceAll(".rcd", "").replaceAll("_", ":"));
 
                         if (!Utility.verifyHashChain(recordFile.getPreviousHash(), expectedPrevFileHash,
-                                verifyHashAfter, fileInstant)) {
+                                verifyHashAfter, fileName)) {
                             throw new HashMismatchException("Hash mismatch for file " + fileName);
                         }
                         break;
@@ -177,21 +177,20 @@ public class Utility {
 
                         if (recordItemConsumer != null) {
                             RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);
-                            recordItemConsumer.accept(recordItem);
-                            if (recordFile.getConsensusStart() == null) {
+
+                            if (recordItemConsumer != null) {
+                                recordItemConsumer.accept(recordItem);
+                            }
+
+                            if (isFirstTransaction) {
                                 recordFile.setConsensusStart(recordItem.getConsensusTimestamp());
                             }
-                            recordFile.setConsensusEnd(recordItem.getConsensusTimestamp());
+
+                            if (isLastTransaction) {
+                                recordFile.setConsensusEnd(recordItem.getConsensusTimestamp());
+                            }
                         }
                         break;
-
-                    case FileDelimiter.RECORD_TYPE_SIGNATURE:
-                        int sigLength = dis.readInt();
-                        byte[] sigBytes = new byte[sigLength];
-                        dis.readFully(sigBytes);
-                        log.trace("File {} has signature {}", fileName, Hex.encodeHexString(sigBytes));
-                        break;
-
                     default:
                         throw new IllegalArgumentException(String.format(
                                 "Unknown record file delimiter %s for file %s", typeDelimiter, fileName));
@@ -445,13 +444,14 @@ public class Utility {
      *
      * @param actualPrevFileHash   prevFileHash as read from current file
      * @param expectedPrevFileHash hash of last file from application state
-     * @param verifyHashAfter Only the files created after (not including) this point of time are verified
-     *                             for hash chaining.
-     * @param fileInstant          instant corresponding to name of the file being verified
+     * @param verifyHashAfter      Only the files created after (not including) this point of time are verified for hash
+     *                             chaining.
+     * @param fileName             name of current stream file being verified
      * @return true if verification succeeds, else false
      */
     public static boolean verifyHashChain(
-            String actualPrevFileHash, String expectedPrevFileHash, Instant verifyHashAfter, Instant fileInstant) {
+            String actualPrevFileHash, String expectedPrevFileHash, Instant verifyHashAfter, String fileName) {
+        var fileInstant = Instant.parse(fileName.replaceAll(".rcd", "").replaceAll("_", ":"));
         if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;
         }
@@ -463,7 +463,8 @@ public class Utility {
         if (actualPrevFileHash.contentEquals(expectedPrevFileHash)) {
             return true;
         }
-        log.error("Hash mismatch. Expected = {}, Actual = {}", expectedPrevFileHash, actualPrevFileHash);
+        log.error("Hash mismatch for file {}. Expected = {}, Actual = {}", fileName, expectedPrevFileHash,
+                actualPrevFileHash);
         return false;
     }
 }

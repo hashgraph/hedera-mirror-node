@@ -21,10 +21,14 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import com.google.common.base.Stopwatch;
+import com.google.common.primitives.Longs;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Base64;
 
 import com.hedera.hashgraph.sdk.mirror.MirrorConsensusTopicResponse;
 import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
@@ -33,11 +37,12 @@ import com.hedera.hashgraph.sdk.mirror.MirrorSubscriptionHandle;
 @Log4j2
 public class SubscriptionResponse {
     private MirrorSubscriptionHandle subscription;
-    private List<MirrorConsensusTopicResponse> messages;
+    private List<MirrorHCSResponse> messages = new ArrayList<>();
     private Stopwatch elapsedTime;
     private Throwable responseError;
 
     public void handleMirrorConsensusTopicResponse(MirrorConsensusTopicResponse topicResponse) {
+        messages.add(new SubscriptionResponse.MirrorHCSResponse(topicResponse, Instant.now()));
         String messageAsString = new String(topicResponse.message, StandardCharsets.UTF_8);
         log.trace("Received message: " + messageAsString
                 + " consensus timestamp: " + topicResponse.consensusTimestamp
@@ -56,11 +61,22 @@ public class SubscriptionResponse {
     public void validateReceivedMessages() throws Exception {
         int invalidMessages = 0;
         MirrorConsensusTopicResponse lastMirrorConsensusTopicResponse = null;
-        for (MirrorConsensusTopicResponse mirrorConsensusTopicResponse : messages) {
-            String messageAsString = new String(mirrorConsensusTopicResponse.message, StandardCharsets.UTF_8);
-            log.trace("Observed message: {}, consensus timestamp: {}, topic sequence number: {}",
-                    messageAsString, mirrorConsensusTopicResponse.consensusTimestamp,
-                    mirrorConsensusTopicResponse.sequenceNumber);
+        for (MirrorHCSResponse mirrorHCSResponseResponse : messages) {
+            MirrorConsensusTopicResponse mirrorConsensusTopicResponse = mirrorHCSResponseResponse
+                    .getMirrorConsensusTopicResponse();
+
+            Instant publishInstant = Instant
+                    .ofEpochMilli(Longs.fromByteArray(Base64.decodeBase64(mirrorConsensusTopicResponse.message)));
+
+            long publishSeconds = publishInstant.getEpochSecond();
+            long consensusSeconds = mirrorConsensusTopicResponse.consensusTimestamp.getEpochSecond();
+            long receiptSeconds = mirrorHCSResponseResponse.getReceivedInstant().getEpochSecond();
+            long e2eSeconds = receiptSeconds - publishSeconds;
+            long consensusToDelivery = receiptSeconds - consensusSeconds;
+            log.trace("Observed message, e2eSeconds: {}s, consensusToDelivery: {}s, publish timestamp: {}, " +
+                            "consensus timestamp: {}, receipt time: {}, topic sequence number: {}",
+                    e2eSeconds, consensusToDelivery, publishInstant, mirrorConsensusTopicResponse.consensusTimestamp,
+                    mirrorHCSResponseResponse.getReceivedInstant(), mirrorConsensusTopicResponse.sequenceNumber);
 
             if (!validateResponse(lastMirrorConsensusTopicResponse, mirrorConsensusTopicResponse)) {
                 invalidMessages++;
@@ -95,5 +111,11 @@ public class SubscriptionResponse {
         }
 
         return validResponse;
+    }
+
+    @Data
+    public static class MirrorHCSResponse {
+        private final MirrorConsensusTopicResponse mirrorConsensusTopicResponse;
+        private final Instant receivedInstant;
     }
 }

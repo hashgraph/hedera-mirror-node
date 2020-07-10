@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import com.google.common.primitives.Longs;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Base64;
 
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaStatusException;
@@ -120,10 +122,10 @@ public class TopicClient {
                                                            int numMessages, boolean verify) throws HederaStatusException
             , InterruptedException {
         log.debug("Publishing {} message(s) to topicId : {}.", numMessages, topicId);
-        Instant refInstant = Instant.now();
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
-            String message = baseMessage + "_" + refInstant + "_" + i + 1;
+            byte[] byteArray = Longs.toByteArray(Instant.now().toEpochMilli());
+            String message = Base64.encodeBase64String(byteArray) + "_" + baseMessage + "_" + i + 1;
 
             if (verify) {
                 transactionReceiptList.add(publishMessageToTopicAndVerify(topicId, message, submitKey));

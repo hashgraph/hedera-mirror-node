@@ -192,9 +192,9 @@ rest:
 EOF
 ```
 
-Edit the `custom-values.yaml` with any other value you want to change. See the wrapper chart's [values.yaml](../hedera-mirror/values.yaml)
+Edit the `custom-values.yaml` with any other value you want to change. See the wrapper chart's [values.yaml](/charts/hedera-mirror/values.yaml)
 for additional configuration options. You can pass any application configuration option listed in
-[docs/configuration.md](docs/configuration.md) via `grpc.config`, `importer.config` and `rest.config`.
+[docs/configuration.md](/docs/configuration.md) via `grpc.config`, `importer.config` and `rest.config`.
 
 ### Perform the install
 
@@ -366,7 +366,7 @@ that contains the mirror node git repository then:
 git checkout tags/v0.12.0 # Change version appropriately
 ```
 
-The command to upgrade is the same to install. Make any necessaary changes to the previously constructed
+The command to upgrade is the same to install. Make any necessary changes to the previously constructed
 `custom-values.yaml` first, then run:
 
 ```shell

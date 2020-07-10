@@ -42,11 +42,11 @@ public class TransactionRepositoryTest extends AbstractRepositoryTest {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
         transaction.setConsensusNs(10L);
-        transaction.setEntity(insertAccountEntity());
+        transaction.setEntityId(insertAccountEntity());
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
-        transaction.setNodeAccount(insertAccountEntity());
-        transaction.setPayerAccount(insertAccountEntity());
+        transaction.setNodeAccountId(insertAccountEntity());
+        transaction.setPayerAccountId(insertAccountEntity());
         transaction.setResult(ResponseCodeEnum.SUCCESS.getNumber());
         transaction.setType(TransactionBody.DataCase.CRYPTOCREATEACCOUNT.getNumber());
         transaction.setValidStartNs(20L);

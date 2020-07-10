@@ -1,3 +1,12 @@
+form:
+  - widget: help
+    description: |
+      Hedera Mirror Node retrieves transaction data from Google Cloud Stroage. The Mirror Node operator is
+      responsible for the operational costs of reading and retrieving data from the Google Cloud bucket. See our
+      <a href="https://docs.hedera.com/guides/mainnet/nodes/mirror-nodes#1-obtain-google-cloud-platform-requester-pay-information">documentation</a>
+      for information on how to obtain a GCP account and use it to populate the importer access key, secret key and
+      billing project ID.
+
 x-google-marketplace:
   schemaVersion: v2
   applicationApiVersion: v1beta1
@@ -66,7 +75,10 @@ properties:
     description: The password used by the gRPC API to connect to the database
     title: gRPC API database password
     x-google-marketplace:
-      type: MASKED_FIELD
+      type: GENERATED_PASSWORD
+      generatedPassword:
+        length: 24
+        base64: False
   grpc.replicas:
     type: integer
     default: 1
@@ -96,7 +108,36 @@ properties:
     description: The password used by the importer to connect to the database
     title: Importer database password
     x-google-marketplace:
-      type: MASKED_FIELD
+      type: GENERATED_PASSWORD
+      generatedPassword:
+        length: 24
+        base64: False
+  importer.config.hedera.mirror.importer.downloader.accessKey:
+    type: string
+    description: The Google Cloud access key used to pay for downloaded streamed files
+    title: Importer GCP access key
+  importer.config.hedera.mirror.importer.downloader.bucketName:
+    type: string
+    description: The Google Cloud Storage bucket name to download streamed files
+    title: Importer GCS bucket name
+  importer.config.hedera.mirror.importer.downloader.gcpProjectId:
+    type: string
+    description: GCP project id to bill for requests to GCS bucket with requester pays enabled
+    title: Importer GCP billing project ID
+  importer.config.hedera.mirror.importer.downloader.secretKey:
+    type: string
+    description: The Google Cloud secret key used to pay for downloaded streamed files
+    title: Importer GCP secret key
+  importer.config.hedera.mirror.importer.network:
+    default: MAINNET
+    type: string
+    description: Which Hedera network to use. Can be either DEMO (free), TESTNET or MAINNET.
+    title: Importer Hedera network
+    enum:
+      - MAINNET
+      - TESTNET
+      - DEMO
+      - OTHER
   importer.persistence.size:
     default: 10Gi
     description: The storage size for the importer persistent volume
@@ -129,19 +170,28 @@ properties:
     description: The password for the 'postgres' superuser
     title: PostgreSQL admin password
     x-google-marketplace:
-      type: MASKED_FIELD
+      type: GENERATED_PASSWORD
+      generatedPassword:
+        length: 24
+        base64: False
   postgresql.postgresql.repmgrPassword:
     type: string
     description: The password used by the PostgreSQL Replication Manager to connect to the database
     title: PostgreSQL Repmgr password
     x-google-marketplace:
-      type: MASKED_FIELD
+      type: GENERATED_PASSWORD
+      generatedPassword:
+        length: 24
+        base64: False
   global.rest.password:
     type: string
     description: The password used by the REST API to connect to the database
     title: REST API database password
     x-google-marketplace:
-      type: MASKED_FIELD
+      type: GENERATED_PASSWORD
+      generatedPassword:
+        length: 24
+        base64: False
   rest.replicas:
     type: integer
     default: 1
@@ -158,6 +208,10 @@ required:
   - grpc.replicas
   - grpc.serviceAccount.name
   - importer.config.hedera.mirror.importer.db.password
+  - importer.config.hedera.mirror.importer.downloader.accessKey
+  - importer.config.hedera.mirror.importer.downloader.bucketName
+  - importer.config.hedera.mirror.importer.downloader.secretKey
+  - importer.config.hedera.mirror.importer.network
   - importer.persistence.size
   - importer.serviceAccount.name
   - postgresql.persistence.size

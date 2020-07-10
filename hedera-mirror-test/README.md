@@ -21,7 +21,7 @@ Further details may be explored at https://cucumber.io/. Additionally, cucumbers
 
 -   Java (JDK 11 and above recommended), can follow https://sdkman.io/install for instructions
 
-### Test Execution
+### Acceptance Test Execution
 
 Tests can be compiled and run by running the following command from the root folder
 
@@ -128,7 +128,7 @@ Then using the [JMeter Maven Plugin](https://github.com/jmeter-maven-plugin/jmet
 
 -   Save test JMX file to `hedera-mirror-test/src/test/jmeter`
 
-## Test Execution
+## Performance Test Execution
 
 -   Ensure desired JMX file(s) are under `hedera-mirror-test/src/test/jmeter/`
 -   Startup database and module, either through Docker Compose or through Spring Boot:
@@ -139,17 +139,45 @@ Then using the [JMeter Maven Plugin](https://github.com/jmeter-maven-plugin/jmet
 
     `./mvnw clean integration-test -P=performance-tests --projects hedera-mirror-test`
 
-    Optional properties follow the 'Modifying Properties' logic (https://github.com/jmeter-maven-plugin/jmeter-maven-plugin/wiki/Modifying-Properties) and include the following
 
-    -   jmeter.test e.g. `-Djmeter.test="E2E_200_TPS_All_Messages.jmx"`
-    -   jmeter.subscribeThreadCount e.g.`-Djmeter.subscribeThreadCount=17`
 
 ## Test Configuration
 
 Using the initial basic test plan, load tests can be configured to achieve many number of scenarios concerned with historical, future messages and their combination within a given topic ID.
-Historical messages are populated, and incoming future messages are simulated over times whiles a connection is established to the gRPC server to subscribe to a topic.
+Historical messages are populated, and incoming future messages are simulated over time whiles a connection is established to the gRPC server to subscribe to a topic.
+A specified number of threads per client perform a subscription to HCS and messages are observed and verified for validity of order.
 At the end the db is cleared to ensure each test can run independently and the db state is not altered.
 
+For Subscribe Only tests no db operations are performed.
+
+### JMeter Configurations
+
+Optional properties follow the 'Modifying Properties' logic (https://github.com/jmeter-maven-plugin/jmeter-maven-plugin/wiki/Modifying-Properties) and include the following that should be set at maven command line
+
+- jmeter.test - The Test plan to run e.g. `-Djmeter.test="E2E_200_TPS_All_Messages.jmx"`
+- jmeter.subscribeThreadCount - The number of threads JMeter should kick off e.g.`-Djmeter.subscribeThreadCount=17`
+
+
+### Client Configurations
+The test properties file is located at `hedera-mirror-test/src/test/jmeter/user.properties` and contains properties for the client regarding topic, subscribe details and wait logic. The following configurations should be set
+
+- `hedera.mirror.test.performance.host` - This is the address of the mirror node grpc server e.g. `localhost` or `hcs.testnet.mirrornode.hedera.com`
+- `hedera.mirror.test.performance.port` - This is the port of the mirror node grpc server e.g. 5600
+- `hedera.mirror.test.performance.clientCount` - When running multiple clients this is the number of clients desired. This is not the same as the number of threads JMeter creates. JMeter will create the specified number of threads for each client.
+- `hedera.mirror.test.performance.sharedChannel` - Whether the HCS subscription should share a grpc channel or not
+- `hedera.mirror.test.performance.clientTopicId[x]` - The desired Topic num to subscribe to
+- `hedera.mirror.test.performance.clientStartTime[x]` - The start time to subscribe from in seconds from EPOCH. Leaving this empty will start subscription from now. Relative subscribe times in units of seconds can be used e.g. setting `-60` will start the subscription from 60 seconds ago
+- `hedera.mirror.test.performance.clientEndTime[x]` - The end time to subscribe up to in seconds from EPOCH.
+- `hedera.mirror.test.performance.clientLimit[x]` - The limit to the number of messages a client would like to receive
+- `hedera.mirror.test.performance.clientRealmNum[x]` - The realm number for the desired topic
+- `hedera.mirror.test.performance.clientHistoricMessagesCount[x]` - The desired number of historical messages a client expects to receive
+- `hedera.mirror.test.performance.clientIncomingMessageCount[x]` - The desired number of incoming messages a client expects to receive
+- `hedera.mirror.test.performance.clientSubscribeTimeoutSeconds[x]` - The wait time a client will hold on for to receive expected message counts
+- `hedera.mirror.test.performance.clientUseMAPI[x]` - Toggle to use the Mirror API (MAPI) endpoints under the [Hedera Java SDK](https://github.com/hashgraph/hedera-sdk-java)
+
+> **_Note:_** currently only the `E2E_Multi_Client_Subscribe_Only.jmx` test plan uses multiple clients. All others use a single client. So in most cases only hedera.mirror.test.performance.clientProperty[0]
+
+## JMX Test Plan Structure
 The initial jmx test plan files under `hedera-mirror-test/src/test/jmeter/` follow the below structure
 
 1.  DB_Setup_Sampler - Populates historic data into the db
@@ -180,3 +208,79 @@ The initial jmx test plan files under `hedera-mirror-test/src/test/jmeter/` foll
     -   messagesLatchWaitSeconds
 4.  DB_Cleanup_Sampler - Cleans up the db
     -   (See DB_Setup_Sampler options)
+
+> **_Note:_** Subscribe_Only tests only cover section 3. No db operations are carried out.
+
+
+# 3 Containerized Run
+
+The hedera-mirror-test module offers a containerized distribution of the [acceptance](#acceptance-test-execution) and [performance](#performance-test-execution) tests.
+
+## Kubernetes Cluster Run
+
+The repo provides 2 pre-configured Kubernetes [Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/) specs : `hedera-mirror-test/src/test/resources/k8s/hcs-perf-publish-test.yml` and `hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml`
+These utilize [ConfigMaps](https://kubernetes.io/docs/concepts/configuration/configmap/) and [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/) to hold the configuration values
+
+### HCS Performance Publish
+The `hedera-mirror-test/src/test/resources/k8s/hcs-perf-publish-test.yml` provides a mostly pre-configured Job and Secret to run the acceptance tests `@PublishOnly` test
+
+    kubectl apply -f hedera-mirror-test/src/test/resources/k8s/hcs-perf-publish-test.yml
+
+The following properties must be specified prior to deploying this specs
+
+- `operatorid` - as described in [acceptance tests section](#acceptance-test-execution)
+- `operatorkey` - as described in [acceptance tests section](#acceptance-test-execution)
+- `existingTopicNum` - as described in [acceptance tests section](#acceptance-test-execution)
+
+### HCS Performance Subscribe
+The `hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml` provides a mostly pre-configured Job and ConfigsMap to run the performance tests `E2E_Subscribe_Only.jmx` test plan.
+
+    kubectl apply -f hedera-mirror-test/src/test/resources/k8s/hcs-perf-subscribe-test.yml
+
+- Job `spec.template.spec.containers.env.subscribeThreadCount` - Sets the jmeter.subscribeThreadCount variable which dictates the number of threads JMeter creates
+- ConfigMap `data` section
+    - `hedera.mirror.test.performance.host` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.port` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientCount` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.sharedChannel` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientTopicId[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientStartTime[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientEndTime[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientLimit[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientRealmNum[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientHistoricMessagesCount[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientIncomingMessageCount[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientSubscribeTimeoutSeconds[x]` - as described in [performance](#performance-test-execution)
+    - `hedera.mirror.test.performance.clientUseMAPI[x]` - as described in [performance](#performance-test-execution)
+
+
+> **_Note_** based on your test case you may need to specify more than one environment variable under `spec.template.spec.containers.env`
+
+Refer to the [acceptance tests section](#acceptance-test-execution) and [performance](#performance-test-execution) for more details on configuration options
+
+
+
+## Local run
+
+The hedera-mirror-test image is deployed and available in the `gcr.io/mirrornode` repository. However, in the case of localized changes need to be tests you can build and run the tests as follows
+### Image creation
+
+    docker build -f scripts/test-container/Dockerfile . -t gcr.io/mirrornode/hedera-mirror-test:<project-version>
+
+Run the following commands to configure a docker container to run tests
+
+### Image run (Acceptance tests)
+
+    docker run -d -e testProfile=acceptance -e cucumberFlags="@SubscribeOnly" \
+        -v <host-application-yml>:/usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/application-default.yml \
+        gcr.io/mirrornode/hedera-mirror-test:<project-version>
+
+Refer to the [acceptance tests section](#acceptance-test-execution) for more details on configuration
+
+### Image run (Performance tests)
+
+    docker run -d -e testProfile=performance --e subscribeThreadCount=30 -e jmeter.test=E2E_Subscribe_Only.jmx \
+        #-v <host-user.properties>:/usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/jmeter/user.properties \
+        #gcr.io/mirrornode/hedera-mirror-test:<project-version>
+
+Refer to the [performance](#performance-test-execution) for more details on configuration

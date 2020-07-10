@@ -20,6 +20,7 @@
 'use strict';
 const config = require('./config.js');
 const constants = require('./constants.js');
+const EntityId = require('./entityId');
 const utils = require('./utils.js');
 const transactions = require('./transactions.js');
 const {NotFoundError} = require('./errors/notFoundError');
@@ -78,44 +79,22 @@ const getAccounts = async (req, res) => {
 
   // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we
   // need to look  for the given account.id in both account_balances and t_entities table and combine with an 'or'
-  const [accountQueryForAccountBalances, accountParamsForAccountBalances] = utils.parseParams(
-    req,
-    'account.id',
-    [{shard: config.shard, realm: 'ab.account_realm_num', num: 'ab.account_num'}],
-    'entityId'
+  const [balancesAccountQuery, balancesAccountParams] = utils.parseAccountIdQueryParam(
+    req.query,
+    'ab.account_realm_num',
+    'ab.account_num'
   );
-  const [accountQueryForEntity, accountParamsForEntity] = utils.parseParams(
-    req,
-    'account.id',
-    [{shard: config.shard, realm: 'e.entity_realm', num: ' e.entity_num'}],
-    'entityId'
+  const [entityAccountQuery, entityAccountParams] = utils.parseAccountIdQueryParam(
+    req.query,
+    'e.entity_realm',
+    ' e.entity_num'
   );
   const accountQuery =
-    accountQueryForAccountBalances === ''
+    balancesAccountQuery === ''
       ? ''
-      : '(\n' +
-        '    ' +
-        accountQueryForAccountBalances +
-        '\n' +
-        '    or (' +
-        accountQueryForEntity +
-        ' and e.fk_entity_type_id < ' +
-        utils.ENTITY_TYPE_FILE +
-        ')\n' +
-        ')\n';
-
-  const [balanceQuery, balanceParams] = utils.parseParams(req, 'account.balance', ['ab.balance'], 'balance');
-
-  let [pubKeyQuery, pubKeyParams] = utils.parseParams(
-    req,
-    'account.publickey',
-    ['e.ed25519_public_key_hex'],
-    'publickey',
-    (s) => {
-      return s.toLowerCase();
-    }
-  );
-
+      : `(${balancesAccountQuery} or (${entityAccountQuery} and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}))`;
+  const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
+  let [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.ed25519_public_key_hex');
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, 'asc');
 
   const entitySql =
@@ -127,8 +106,8 @@ const getAccounts = async (req, res) => {
     '\n' +
     query;
 
-  const entityParams = accountParamsForAccountBalances
-    .concat(accountParamsForEntity)
+  const entityParams = balancesAccountParams
+    .concat(entityAccountParams)
     .concat(balanceParams)
     .concat(pubKeyParams)
     .concat(params);
@@ -187,9 +166,7 @@ const getOneAccount = async (req, res) => {
   if (acc.num === 0) {
     throw InvalidArgumentError.forParams('account.id');
   }
-
-  const [tsQuery, tsParams] = utils.parseParams(req, 'timestamp', ['t.consensus_ns'], 'timestamp_ns');
-
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 't.consensus_ns');
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
@@ -219,19 +196,16 @@ const getOneAccount = async (req, res) => {
   // Execute query & get a promise
   const entityPromise = pool.query(pgEntityQuery, entityParams);
 
-  // Now, query the transactions for this entity
-
-  const creditDebit = utils.parseCreditDebitParams(req);
-
-  const accountQuery = 'realm_num = ? and entity_num = ?';
-  const accountParams = [acc.realm, acc.num];
+  const [creditDebitQuery] = utils.parseCreditDebitParams(req.query, 'ctl.amount');
+  const accountQuery = 'ctl.entity_id = ?';
+  const accountParams = [EntityId.of(config.shard, acc.realm, acc.num).getEncodedId()];
 
   let innerQuery = transactions.getTransactionsInnerQuery(
     accountQuery,
     tsQuery,
     resultTypeQuery,
     query,
-    creditDebit,
+    creditDebitQuery,
     order
   );
 
@@ -277,7 +251,7 @@ const getOneAccount = async (req, res) => {
         ret.entitySqlQuery = entityResults.sqlQuery;
       }
 
-      // Process the results of t_transactions query
+      // Process the results of transaction query
       const transferList = transactions.createTransferLists(transactionsResults.rows);
       ret.transactions = transferList.transactions;
       let anchorSecNs = transferList.anchorSecNs;

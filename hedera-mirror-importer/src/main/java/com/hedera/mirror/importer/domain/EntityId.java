@@ -26,9 +26,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 import com.hedera.mirror.importer.util.EntityIdEndec;
@@ -41,12 +43,15 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
  * of(..) functions, null is returned.
  */
 @Value
-public class EntityId {
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+public class EntityId implements Serializable {
 
     private static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
+    private static final long serialVersionUID = 1427649605832330197L;
 
     // Ignored so not included in json serialization of PubSubMessage
     @JsonIgnore
+    @EqualsAndHashCode.Include
     private Long id;
     private Long shardNum;
     private Long realmNum;
@@ -54,26 +59,11 @@ public class EntityId {
     private Integer type;
 
     public EntityId(Long shardNum, Long realmNum, Long entityNum, Integer type) {
-        this.id = EntityIdEndec.encode(shardNum, realmNum, entityNum);
+        id = EntityIdEndec.encode(shardNum, realmNum, entityNum);
         this.shardNum = shardNum;
         this.realmNum = realmNum;
         this.entityNum = entityNum;
         this.type = type;
-    }
-
-    public Entities toEntity() {
-        Entities entity = new Entities();
-        entity.setId(id);
-        entity.setEntityShard(shardNum);
-        entity.setEntityRealm(realmNum);
-        entity.setEntityNum(entityNum);
-        entity.setEntityTypeId(type);
-        return entity;
-    }
-
-    @JsonIgnore
-    public String getDisplayId() {
-        return String.format("%d.%d.%d", shardNum, realmNum, entityNum);
     }
 
     public static EntityId of(AccountID accountID) {
@@ -111,5 +101,15 @@ public class EntityId {
             return null;
         }
         return new EntityId(entityShard, entityRealm, entityNum, type.getId());
+    }
+
+    public Entities toEntity() {
+        Entities entity = new Entities();
+        entity.setId(id);
+        entity.setEntityShard(shardNum);
+        entity.setEntityRealm(realmNum);
+        entity.setEntityNum(entityNum);
+        entity.setEntityTypeId(type);
+        return entity;
     }
 }

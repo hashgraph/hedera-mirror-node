@@ -23,12 +23,10 @@ package com.hedera.mirror.importer.util;
 public class FileDelimiter {
     public static final String HASH_ALGORITHM = "SHA-384";
 
-    public static final byte RECORD_TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 or previous files
+    public static final byte RECORD_TYPE_PREV_HASH = 1; // next 48 bytes are hash384 or previous files
     public static final int RECORD_FORMAT_VERSION = 2;
-    public static final byte RECORD_TYPE_RECORD = 2;          // next data type is transaction and its record
-    public static final byte RECORD_TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
+    public static final byte RECORD_TYPE_RECORD = 2; // next data type is transaction and its record
 
-    public static final byte SIGNATURE_TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
-    public static final byte SIGNATURE_TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of
-    // corresponding RecordFile
+    public static final byte SIGNATURE_TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
+    public static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file
 }

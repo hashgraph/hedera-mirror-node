@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
@@ -48,6 +47,8 @@ import org.junit.jupiter.api.TestInfo;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -57,7 +58,6 @@ import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.EntityTypeRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
@@ -84,8 +84,6 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected LiveHashRepository liveHashRepository;
     @Resource
     protected FileDataRepository fileDataRepository;
-    @Resource
-    protected EntityTypeRepository entityTypeRepository;
     @Resource
     protected TopicMessageRepository topicMessageRepository;
     @Resource
@@ -140,7 +138,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                 .extracting(AccountID::getShardNum, AccountID::getRealmNum, AccountID::getAccountNum)
                 .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
         assertThat(dbEntity.getEntityTypeId())
-                .isEqualTo(entityTypeRepository.findByName("account").get().getId());
+                .isEqualTo(EntityTypeEnum.ACCOUNT.getId());
     }
 
     protected final void assertFile(FileID fileId, Entities dbEntity) {
@@ -149,7 +147,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                 .extracting(FileID::getShardNum, FileID::getRealmNum, FileID::getFileNum)
                 .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
         assertThat(dbEntity.getEntityTypeId())
-                .isEqualTo(entityTypeRepository.findByName("file").get().getId());
+                .isEqualTo(EntityTypeEnum.FILE.getId());
     }
 
     protected final void assertContract(ContractID contractId, Entities dbEntity) {
@@ -158,7 +156,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                 .extracting(ContractID::getShardNum, ContractID::getRealmNum, ContractID::getContractNum)
                 .containsExactly(dbEntity.getEntityShard(), dbEntity.getEntityRealm(), dbEntity.getEntityNum());
         assertThat(dbEntity.getEntityTypeId())
-                .isEqualTo(entityTypeRepository.findByName("contract").get().getId());
+                .isEqualTo(EntityTypeEnum.CONTRACT.getId());
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
@@ -175,9 +173,9 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         if (entityProperties.getPersist().isCryptoTransferAmounts()) {
             TransferList transferList = record.getTransferList();
             for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
-                AccountID account = accountAmount.getAccountID();
-                assertThat(cryptoTransferRepository.findByConsensusTimestampAndEntityNumAndAmount(
-                        consensusTimestamp, account.getAccountNum(), accountAmount.getAmount())).isPresent();
+                assertThat(cryptoTransferRepository.findByConsensusTimestampAndEntityIdAndAmount(
+                        consensusTimestamp, EntityId.of(accountAmount.getAccountID()), accountAmount.getAmount()))
+                        .isPresent();
             }
         } else {
             assertTrue(cryptoTransferRepository.findById(consensusTimestamp).isEmpty());
@@ -193,8 +191,6 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     private void assertRecord(TransactionRecord record, Transaction dbTransaction) {
         // record inputs
         assertEquals(record.getTransactionFee(), dbTransaction.getChargedTxFee());
-        // payer
-        Entities dbPayerEntity = entityRepository.findById(dbTransaction.getPayerAccountId()).get();
         // transaction id
         assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()),
                 dbTransaction.getValidStartNs());
@@ -284,8 +280,12 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         return entityRepository.findById(entityId).get();
     }
 
-    protected Optional<Entities> getEntity(long shard, long realm, long num) {
-        return entityRepository.findById(EntityIdEndec.encode(shard, realm, num));
+    protected Entities getEntity(EntityId entityId) {
+        return getEntity(entityId.getId());
+    }
+
+    protected Entities getEntity(long shard, long realm, long num) {
+        return getEntity(EntityIdEndec.encode(shard, realm, num));
     }
 
     protected AccountAmount.Builder accountAmount(long accountNum, long amount) {

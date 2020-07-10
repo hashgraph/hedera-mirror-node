@@ -153,7 +153,7 @@ class Pool {
     // Adjust the low/high values based on the SQL query parameters
     for (const param of parsedparams) {
       switch (param.field) {
-        case 'entity_num':
+        case 'entity_id':
           accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
           break;
         case 'consensus_ns':
@@ -185,9 +185,11 @@ class Pool {
       row.type = 14;
       row.name = 'CRYPTOTRANSFER';
       row.node_account_id = EntityId.of(0, 0, i % this.NUM_NODES).getEncodedId();
-      row.account_realm = 0;
-      row.account_num =
-        Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low));
+      row.ctl_entity_id = EntityId.of(
+        0,
+        0,
+        Number(accountNum.low) + (accountNum.high == accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
+      ).getEncodedId();
       row.amount = i * 1000;
       row.charged_tx_fee = 100 + i;
       row.transaction_hash = '';

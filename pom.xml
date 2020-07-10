@@ -4,7 +4,7 @@
 
     <groupId>com.hedera</groupId>
     <artifactId>hedera-mirror-node</artifactId>
-    <version>0.13.0-rc1</version>
+    <version>0.14.1</version>
     <description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
     <inceptionYear>2019</inceptionYear>
     <modelVersion>4.0.0</modelVersion>
@@ -60,16 +60,17 @@
         <docker.skip.deployer>true</docker.skip.deployer>
         <docker.tag.version>${project.version}</docker.tag.version>
         <grpc.version>1.29.0</grpc.version>
-        <hedera-protobuf.version>0.4.2</hedera-protobuf.version>
+        <hedera-protobuf.version>0.6.0-alpha1</hedera-protobuf.version>
         <hedera-sdk.version>1.1.5</hedera-sdk.version>
         <jacoco.version>0.8.5</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
         <jib.version>2.2.0</jib.version>
+        <jmeter.version>5.2.1</jmeter.version>
         <micrometer-jvm-extras.version>0.2.0</micrometer-jvm-extras.version>
         <protobuf.version>3.11.1</protobuf.version>
         <release.version>${project.version}</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.1.0</release.chartVersion>
+        <release.chartVersion>0.3.0</release.chartVersion>
         <embedded.testcontainers.version>1.62</embedded.testcontainers.version>
     </properties>
 
@@ -264,7 +265,6 @@
                                 <goal>download-licenses</goal>
                             </goals>
                             <configuration>
-                                <excludedScopes>test</excludedScopes>
                                 <licensesOutputDirectory>${docker.resources}/third_party/licenses
                                 </licensesOutputDirectory>
                                 <licenseUrlReplacements>
@@ -370,6 +370,7 @@
                                 <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
                                 <include>*/pom.xml</include>
                                 <include>pom.xml</include>
+                                <include>hedera-mirror-test/src/test/resources/k8s/*.yml</include>
                             </includes>
                             <replacements>
                                 <replacement>
@@ -391,7 +392,8 @@
                                     <value>${release.chartVersion}</value>
                                 </replacement>
                                 <replacement>
-                                    <token><![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|rest):)[0-9a-z.-]+]]></token>
+                                    <token>
+                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|rest|test):)[0-9a-z.-]+]]></token>
                                     <value>${release.version}</value>
                                 </replacement>
                             </replacements>

@@ -20,26 +20,26 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import javax.persistence.Convert;
+import javax.persistence.Entity;
+import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+
+import com.hedera.mirror.importer.converter.EntityIdConverter;
 
 @Data
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "non_fee_transfers")
 public class NonFeeTransfer {
-    // There is not actually a pk on non_fee_transfers.
+    // There is not actually a pk on non_fee_transfer.
     @Id
     private Long consensusTimestamp;
 
-    private Long realmNum;
-
-    private Long entityNum;
-
     private Long amount;
+
+    @Convert(converter = EntityIdConverter.class)
+    private EntityId entityId;
 }

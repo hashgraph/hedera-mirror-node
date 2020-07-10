@@ -23,10 +23,8 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 import javax.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.validation.annotation.Validated;
 
 @Data
-@Validated
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.sql")
 public class SqlProperties {
     /**

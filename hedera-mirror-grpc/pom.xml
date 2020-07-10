@@ -11,12 +11,11 @@
     <parent>
         <groupId>com.hedera</groupId>
         <artifactId>hedera-mirror-node</artifactId>
-        <version>0.13.0-rc1</version>
+        <version>0.14.1</version>
     </parent>
 
     <properties>
         <grpc-spring-boot.version>2.7.0.RELEASE</grpc-spring-boot.version>
-        <jmeter.version>5.2.1</jmeter.version>
     </properties>
 
     <dependencies>
@@ -212,6 +211,9 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <excludedScopes>test</excludedScopes>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>com.google.cloud.tools</groupId>

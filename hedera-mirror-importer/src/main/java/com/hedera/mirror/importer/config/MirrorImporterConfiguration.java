@@ -78,7 +78,7 @@ public class MirrorImporterConfiguration {
         S3AsyncClientBuilder clientBuilder = asyncClientBuilder("us-east-1")
                 .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()));
         String projectId = downloaderProperties.getGcpProjectId();
-        if (projectId != null) {
+        if (StringUtils.isNotBlank(projectId)) {
             clientBuilder.overrideConfiguration(builder -> builder.addExecutionInterceptor(new ExecutionInterceptor() {
                 @Override
                 public SdkHttpRequest modifyHttpRequest(
@@ -136,7 +136,7 @@ public class MirrorImporterConfiguration {
             Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
             if (timestamp == null) {
                 if (mirrorProperties.getNetwork() == HederaNetwork.MAINNET) {
-                    throw new IllegalArgumentException("topicRunningHashV2AddedTimestamp must be set for mainnet");
+                    timestamp = 1592499600000000000L;
                 } else {
                     timestamp = 1588706343553042000L;
                 }

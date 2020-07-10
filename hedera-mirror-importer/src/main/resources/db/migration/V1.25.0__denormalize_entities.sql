@@ -3,7 +3,8 @@ create domain entity_id as bigint;
 create function encodeEntityId(shard bigint, realm bigint, num bigint)
 returns entity_id as $$
 begin
-    -- Encoding: 16 bits for shard, followed by 16 bits for realm, followed by 32 bits for num
+    -- Encoding: 15 bits for shard (mask = 0x7fff = 32767), followed by 16 bits for realm (mask = 0xffff = 65535),
+    -- followed by 32 bits for num (max = 0xffffffff = 4294967295)
     return (num & 4294967295) | ((realm & 65535) << 32) | ((shard & 32767) << 48);
 end
 $$ language plpgsql;
@@ -37,10 +38,10 @@ where e.fk_prox_acc_id = e2.id
   and e.fk_prox_acc_id is not null;
 
 -------------------
--- t_transactions table
+-- transaction table
 -------------------
 
-create table if not exists t_transactions_new (
+create table if not exists transaction (
   consensus_ns bigint not null,
   type smallint not null,
   result smallint not null,
@@ -59,7 +60,7 @@ create table if not exists t_transactions_new (
 
 -- Migrate data
 
-insert into t_transactions_new
+insert into transaction
     (consensus_ns, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id,
      initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes)
 select
@@ -74,14 +75,13 @@ left join t_entities e on t_transactions.fk_cud_entity_id = e.id;
 
 drop index if exists idx_t_transactions_node_account; -- drop explicitly for history since it is not re-created
 drop table if exists t_transactions;
-alter table if exists t_transactions_new rename to t_transactions;
 
-alter table if exists t_transactions
+alter table transaction
     add primary key (consensus_ns);
-create index if not exists t_transactions__transaction_id
-    on t_transactions (valid_start_ns, payer_account_id);
-create index if not exists t_transactions__payer_account_id
-    on t_transactions (payer_account_id);
+create index transaction__transaction_id
+    on transaction (valid_start_ns, payer_account_id);
+create index transaction__payer_account_id
+    on transaction (payer_account_id);
 
 -------------------
 -- t_entities table

@@ -29,4 +29,5 @@ public class MessageListener {
     private final int historicMessagesCount;
     private final int futureMessagesCount;
     private final int messagesLatchWaitSeconds;
+    private final int statusPrintIntervalMinutes;
 }

@@ -20,11 +20,14 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
 
 public class CryptoTransferRepositoryTest extends AbstractRepositoryTest {
@@ -33,16 +36,17 @@ public class CryptoTransferRepositoryTest extends AbstractRepositoryTest {
         Transaction transaction = insertTransaction("CRYPTOTRANSFER");
 
         long consensusNs = transaction.getConsensusNs();
-        long accountNum = 2;
+        EntityId entity = EntityId.of(0L, 1L, 2L, ACCOUNT);
+        long amount = 40L;
         CryptoTransfer cryptoTransfer = new CryptoTransfer();
         cryptoTransfer.setConsensusTimestamp(consensusNs);
-        cryptoTransfer.setRealmNum(1L);
-        cryptoTransfer.setEntityNum(accountNum);
-        cryptoTransfer.setAmount(40L);
+        cryptoTransfer.setEntityId(entity);
+        cryptoTransfer.setAmount(amount);
 
         cryptoTransfer = cryptoTransferRepository.save(cryptoTransfer);
 
-        assertThat(cryptoTransferRepository.findByConsensusTimestampAndEntityNum(consensusNs, accountNum).get())
+        assertThat(
+                cryptoTransferRepository.findByConsensusTimestampAndEntityIdAndAmount(consensusNs, entity, amount).get())
                 .isNotNull()
                 .isEqualTo(cryptoTransfer);
     }

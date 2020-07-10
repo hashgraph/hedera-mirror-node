@@ -29,6 +29,7 @@ import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -36,6 +37,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Test;
@@ -110,7 +112,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     // https://github.com/hashgraph/hedera-mirror-node/issues/501
     @Test
     void createTopicTestExistingAutoRenewAccount() throws Exception {
-        Long autoRenewAccountId =  100L;
+        Long autoRenewAccountId = 100L;
         var consensusTimestamp = 2_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
         var transaction = createCreateTopicTransaction(null, null, null, autoRenewAccountId, null);
@@ -127,7 +129,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 .returns("", from(Entities::getMemo))
                 .returns(false, from(Entities::isDeleted))
                 .returns(EntityTypeEnum.TOPIC.getId(), from(Entities::getEntityTypeId))
-                .returns(autoRenewAccountId, from(Entities::getAutoRenewAccountId));
+                .returns(autoRenewAccountId, e -> e.getAutoRenewAccountId().getId());
     }
 
     @Test
@@ -221,7 +223,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
     @Test
     void updateTopicTestTopicNotFound() throws Exception {
-        var adminKey =  keyFromString("updated-admin-key");
+        var adminKey = keyFromString("updated-admin-key");
         var submitKey = keyFromString("updated-submit-key");
         var consensusTimestamp = 6_000_000L;
         var responseCode = ResponseCodeEnum.SUCCESS;
@@ -259,7 +261,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                                        Integer updatedExpirationTimeNanos,
                                        @ConvertWith(KeyConverter.class) Key updatedAdminKey,
                                        @ConvertWith(KeyConverter.class) Key updatedSubmitKey, String updatedMemo,
-                                       Long autoRenewAccountNum, Long autoRenewPeriod, Long updatedAutoRenewAccount,
+                                       Long autoRenewAccountNum, Long autoRenewPeriod, Long updatedAutoRenewAccountNum,
                                        Long updatedAutoRenewPeriod) {
         // Store topic to be updated.
         var topic = createTopicEntity(topicId, expirationTimeSeconds, expirationTimeNanos, adminKey, submitKey, memo,
@@ -284,7 +286,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
         var responseCode = ResponseCodeEnum.SUCCESS;
         var transaction = createUpdateTopicTransaction(topicId, updatedExpirationTimeSeconds,
-                updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedMemo, updatedAutoRenewAccount,
+                updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedMemo, updatedAutoRenewAccountNum,
                 updatedAutoRenewPeriod);
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
@@ -294,9 +296,9 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         if (autoRenewAccountNum != null) {
             ++entityCount;
         }
-        if (updatedAutoRenewAccount != null) {
+        if (updatedAutoRenewAccountNum != null) {
             ++entityCount;
-            topic.setAutoRenewAccountId(updatedAutoRenewAccount);
+            topic.setAutoRenewAccountId(EntityId.of(0L, 0L, updatedAutoRenewAccountNum, EntityTypeEnum.ACCOUNT));
         }
         var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
@@ -370,20 +372,23 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.9000, test-message0, 9000000, runninghash, 1, 1",
-            "0.0.9001, '', 9000001, '', 9223372036854775807, 2"
+            "0.0.9000, test-message0, 9000000, runninghash, 1, 1, , , , ",
+            "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 1, 1, 7, 89999999",
+            "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 2, 4, 7, 89999999",
+            "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 4, 4, 7, 89999999",
     })
     void submitMessageTest(@ConvertWith(TopicIdConverter.class) TopicID topicId, String message,
-                           long consensusTimestamp, String runningHash,
-                           long sequenceNumber, int runningHashVersion) throws Exception {
+                           long consensusTimestamp, String runningHash, long sequenceNumber, int runningHashVersion,
+                           Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum, Long validStartNs) throws Exception {
         var responseCode = ResponseCodeEnum.SUCCESS;
 
         var topic = createTopicEntity(topicId, 10L, 20, null, null, null, null, null);
         entityRepository.save(topic);
 
         var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
-                runningHashVersion);
-        var transaction = createSubmitMessageTransaction(topicId, message);
+                runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
+        var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
+                validStartNs);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -405,13 +410,18 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var sequenceNumber = 10_000L;
         var runningHash = "running-hash";
         var runningHashVersion = 2;
+        var chunkNum = 3;
+        var chunkTotal = 5;
+        var payerAccountIdNum = 6L;
+        var validStartNs = 7L;
 
         var topic = createTopicEntity(TOPIC_ID, null, null, null, null, null, null, null);
         // Topic NOT saved in the repository.
 
         var topicMessage = createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
-                runningHashVersion);
-        var transaction = createSubmitMessageTransaction(TOPIC_ID, message);
+                runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
+        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, payerAccountIdNum,
+                validStartNs);
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -436,8 +446,13 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var sequenceNumber = 10_000L;
         var runningHash = "running-hash";
         var runningHashVersion = 1;
+        var chunkNum = 3;
+        var chunkTotal = 5;
+        var payerAccountIdNum = 6L;
+        var validStartNs = 7L;
 
-        var transaction = createSubmitMessageTransaction(topicId, message);
+        var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
+                validStartNs);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -458,11 +473,16 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var sequenceNumber = 11_000L;
         var runningHash = "running-hash";
         var runningHashVersion = 2;
+        var chunkNum = 3;
+        var chunkTotal = 5;
+        var payerAccountIdNum = 6L;
+        var validStartNs = 7L;
 
         var topic = createTopicEntity(TOPIC_ID, 10L, 20, null, null, null, null, null);
         entityRepository.save(topic);
 
-        var transaction = createSubmitMessageTransaction(TOPIC_ID, message);
+        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, payerAccountIdNum,
+                validStartNs);
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash.getBytes(),
                 runningHashVersion, consensusTimestamp, responseCode);
 
@@ -536,9 +556,10 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                                        Long autoRenewPeriod) {
         var topic = EntityId.of(topicId).toEntity();
         if (autoRenewAccountNum != null) {
-            var autoRenewAccount = EntityId.of(0L, 0L, autoRenewAccountNum, EntityTypeEnum.ACCOUNT).toEntity();
-            entityRepository.findById(autoRenewAccount.getId()).orElse(entityRepository.save(autoRenewAccount));
-            topic.setAutoRenewAccountId(autoRenewAccount.getId());
+            var autoRenewAccount = EntityId.of(0L, 0L, autoRenewAccountNum, EntityTypeEnum.ACCOUNT);
+            entityRepository.findById(autoRenewAccount.getId())
+                    .orElse(entityRepository.save(autoRenewAccount.toEntity()));
+            topic.setAutoRenewAccountId(autoRenewAccount);
         }
         if (autoRenewPeriod != null) {
             topic.setAutoRenewPeriod(autoRenewPeriod);
@@ -558,7 +579,9 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     }
 
     private TopicMessage createTopicMessage(TopicID topicId, String message, long sequenceNumber, String runningHash,
-                                            long consensusTimestamp, int runningHashVersion) {
+                                            long consensusTimestamp, int runningHashVersion, Integer chunkNum,
+                                            Integer chunkTotal, Long payerAccountIdNum, Long validStartNs) {
+
         var topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusTimestamp);
         topicMessage.setRealmNum((int) topicId.getRealmNum());
@@ -567,6 +590,14 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         topicMessage.setSequenceNumber(sequenceNumber);
         topicMessage.setRunningHash(runningHash.getBytes());
         topicMessage.setRunningHashVersion(runningHashVersion);
+        topicMessage.setChunkNum(chunkNum);
+        topicMessage.setChunkTotal(chunkTotal);
+        topicMessage.setValidStartTimestamp(validStartNs);
+
+        EntityId payerAccountEntityId = payerAccountIdNum == null ? null : EntityId
+                .of(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build());
+        topicMessage.setPayerAccountId(payerAccountEntityId);
+
         return topicMessage;
     }
 
@@ -606,11 +637,26 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 .build();
     }
 
-    private com.hederahashgraph.api.proto.java.Transaction createSubmitMessageTransaction(TopicID topicId,
-                                                                                          String message) {
-        var innerBody = ConsensusSubmitMessageTransactionBody.newBuilder()
+    private com.hederahashgraph.api.proto.java.Transaction createSubmitMessageTransaction(
+            TopicID topicId, String message, Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum,
+            Long validStartNs) {
+        var submitMessageTransactionBodyBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .setTopicID(topicId)
                 .setMessage(ByteString.copyFrom(message.getBytes()));
+
+        if (chunkNum != null) {
+            submitMessageTransactionBodyBuilder
+                    .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
+                            .setNumber(chunkNum)
+                            .setTotal(chunkTotal)
+                            .setInitialTransactionID(TransactionID.newBuilder()
+                                    .setAccountID(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build())
+                                    .setTransactionValidStart(TestUtils.toTimestamp(validStartNs))
+                                    .build()));
+        }
+
+        var innerBody = submitMessageTransactionBodyBuilder.build();
+
         var body = createTransactionBody().setConsensusSubmitMessage(innerBody).build();
         return com.hederahashgraph.api.proto.java.Transaction.newBuilder().setBodyBytes(body.toByteString())
                 .build();
@@ -624,7 +670,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 .returns(TRANSACTION_MEMO.getBytes(), from(Transaction::getMemo));
         if (entityId != null) {
             assertThat(transaction)
-                    .returns(entityId, from(Transaction::getEntityId));
+                    .returns(entityId, t -> t.getEntityId().getId());
         }
     }
 

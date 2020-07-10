@@ -27,6 +27,7 @@ import io.grpc.ManagedChannelBuilder;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import lombok.extern.log4j.Log4j2;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
@@ -65,10 +66,12 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
         Long startTime = propHandler.getLongClientTestParam("StartTime", 0, null);
         int nanoStartTime = 0;
 
-        // allow for subscribe from now
-        if (startTime == null) {
+        // allow for subscribe x seconds from now.
+        // Null value will take current time, negative will subtracts x seconds now and positive will add
+        boolean nullStartTime = startTime == null;
+        if (nullStartTime || startTime < 0) {
             Instant now = Instant.now();
-            startTime = now.getEpochSecond();
+            startTime = nullStartTime ? now.getEpochSecond() : now.plus(startTime, ChronoUnit.SECONDS).getEpochSecond();
             nanoStartTime = now.getNano();
         }
 
@@ -132,6 +135,7 @@ public class SingleTopicHCSClient extends AbstractJavaSamplerClient {
                     .historicMessagesCount(propHandler.getIntClientTestParam("HistoricMessagesCount", 0, "0"))
                     .futureMessagesCount(propHandler.getIntClientTestParam("IncomingMessageCount", 0, "0"))
                     .messagesLatchWaitSeconds(propHandler.getIntClientTestParam("SubscribeTimeoutSeconds", 0, "60"))
+                    .statusPrintIntervalMinutes(propHandler.getIntClientTestParam("StatusPrintIntervalMinutes", 0, "1"))
                     .build();
 
             response = hcsTopicSampler.subscribeTopic(listener);

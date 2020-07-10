@@ -133,6 +133,14 @@ public class NetworkAddressBookTest {
     }
 
     @Test
+    void startupWithOtherNetwork() throws Exception {
+        Files.deleteIfExists(addressBookPath);
+        mirrorProperties.setNetwork(HederaNetwork.OTHER);
+        assertThatThrownBy(() -> new NetworkAddressBook(mirrorProperties))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void updateCompleteFile() throws Exception {
         byte[] addressBookBytes = UPDATED.toByteArray();
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties);

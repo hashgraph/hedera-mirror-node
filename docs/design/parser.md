@@ -116,7 +116,7 @@ public interface EntityListener {
         - For micro-benchmarking parser performance
 
 Note that there are no function for `onEntity`. Updating entities in batch in not possible right now since
-`t_transactions` table uses foreign keys. For entities, first, schema changes are needed to remove entity ids,
+`transaction` table uses foreign keys. For entities, first, schema changes are needed to remove entity ids,
 then `onEntity` and `onEntityUpdate` functions will be added to insert/update entities in bulk. For the purpose of
 immediate refactor, we can leave entities in `EntityRecordItemListener` (until perf optimizations via schema change in
 milestone 2).
@@ -178,7 +178,7 @@ public class RecordFileReader extends FileWatcher {
 
 1. Does Spring Data repository has support for Postgres COPY command? Couldn't find sources that suggest it does. If
    that indeed turns out to be the case, then I see at least two possibilities:
-    - Use manual connection(s) to COPY to t_transactions, t_cryptotransferlists, topic_message, other write heavy tables.
+    - Use manual connection(s) to COPY to transaction, crypto_transfer, topic_message, other write heavy tables.
       And use Spring Repositories for other tables. However, that raises the question of consistency of data across multiple
       transactions (since there are multiple connections).
     - Use COPY and PreparedStatement over single connection
@@ -208,7 +208,7 @@ All top level tasks can be done in parallel.
     1. Hook up `SqlEntityListener` with `data-generator` to test db insert performance and
        establish baseline ([#569](https://github.com/hashgraph/hedera-mirror-node/issues/569))
     1. Optimize `SqlEntityListener` ([#570](https://github.com/hashgraph/hedera-mirror-node/issues/570))
-        - Schema changes to remove entity ids (while at it, remove `fildId` from `t_transactions`)
+        - Schema changes to remove entity ids (while at it, remove `fildId` from `transaction`)
         - Get rid of all `SELECT` queries in parser
         - Use of `COPY`
         - Concurrency using multiple jdbc connections

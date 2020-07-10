@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.function.Predicate;
@@ -49,6 +50,7 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.exception.InvalidEntityException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
@@ -95,7 +97,13 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionHandler transactionHandler = transactionHandlerFactory.create(body);
 
         long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
-        EntityId entityId = transactionHandler.getEntity(recordItem);
+        EntityId entityId;
+        try {
+            entityId = transactionHandler.getEntity(recordItem);
+        } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
+            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusNs, e.getMessage());
+            entityId = null;
+        }
         TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(recordItem.getTransactionType());
         log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusNs, entityId);
 
@@ -110,7 +118,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         Transaction tx = buildTransaction(consensusNs, recordItem);
         transactionHandler.updateTransaction(tx, recordItem);
         if (entityId != null) {
-            tx.setEntity(entityId);
+            tx.setEntityId(entityId);
             // Irrespective of transaction failure/success, if entityId is not null, it will be inserted into repo since
             // it is guaranteed to be valid entity on network (validated to exist in pre-consensus checks).
             entityListener.onEntityId(entityId);
@@ -171,7 +179,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionRecord txRecord = recordItem.getRecord();
         tx.setChargedTxFee(txRecord.getTransactionFee());
         tx.setConsensusNs(consensusTimestamp);
-        tx.setMemo(body.getMemo().getBytes());
+        tx.setMemo(body.getMemoBytes().toByteArray());
         tx.setMaxFee(body.getTransactionFee());
         tx.setResult(txRecord.getReceipt().getStatusValue());
         tx.setType(recordItem.getTransactionType());
@@ -182,11 +190,12 @@ public class EntityRecordItemListener implements RecordItemListener {
                 body.getTransactionValidDuration().getSeconds() : null;
         tx.setValidDurationSeconds(validDurationSeconds);
         tx.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
+        // transactions in stream always have valid node account id and payer account id.
         var nodeAccount = EntityId.of(body.getNodeAccountID());
-        tx.setNodeAccount(nodeAccount);
+        tx.setNodeAccountId(nodeAccount);
         entityListener.onEntityId(nodeAccount);
         var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
-        tx.setPayerAccount(payerAccount);
+        tx.setPayerAccountId(payerAccount);
         entityListener.onEntityId(payerAccount);
         tx.setInitialBalance(0L);
         return tx;
@@ -205,8 +214,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
                 entityListener.onNonFeeTransfer(
-                        new NonFeeTransfer(consensusTimestamp, aa.getAccountID().getRealmNum(),
-                                aa.getAccountID().getAccountNum(), aa.getAmount()));
+                        new NonFeeTransfer(consensusTimestamp, aa.getAmount(), EntityId.of(aa.getAccountID())));
             }
         }
     }
@@ -217,11 +225,30 @@ public class EntityRecordItemListener implements RecordItemListener {
         var topicId = transactionBody.getTopicID();
         int runningHashVersion = receipt.getTopicRunningHashVersion() == 0 ? 1 : (int) receipt
                 .getTopicRunningHashVersion();
+
+        EntityId payerAccountId = null;
+        Long validStartNs = null;
+        Integer chunkTotal = null;
+        Integer chunkNum = null;
+
+        // handle fragmented topic message
+        if (transactionBody.hasChunkInfo()) {
+            ConsensusMessageChunkInfo chunkInfo = transactionBody.getChunkInfo();
+            chunkNum = chunkInfo.getNumber();
+            chunkTotal = chunkInfo.getTotal();
+
+            if (chunkInfo.hasInitialTransactionID()) {
+                TransactionID transactionID = chunkInfo.getInitialTransactionID();
+                payerAccountId = EntityId.of(transactionID.getAccountID());
+                validStartNs = Utility.timeStampInNanos(transactionID.getTransactionValidStart());
+            }
+        }
+
         TopicMessage topicMessage = new TopicMessage(
                 Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()),
                 transactionBody.getMessage().toByteArray(), (int) topicId.getRealmNum(),
                 receipt.getTopicRunningHash().toByteArray(), receipt.getTopicSequenceNumber(),
-                (int) topicId.getTopicNum(), runningHashVersion);
+                (int) topicId.getTopicNum(), runningHashVersion, chunkNum, chunkTotal, payerAccountId, validStartNs);
         entityListener.onTopicMessage(topicMessage);
     }
 
@@ -272,10 +299,9 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTransferList(long consensusTimestamp, TransferList transferList) {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
-            entityListener.onEntityId(EntityId.of(aa.getAccountID()));
-            var accountId = aa.getAccountID();
-            addCryptoTransferList(consensusTimestamp, accountId.getRealmNum(), accountId.getAccountNum(),
-                    aa.getAmount());
+            var account = EntityId.of(aa.getAccountID());
+            entityListener.onEntityId(account);
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
         }
     }
 
@@ -296,31 +322,24 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransferList transferList = txRecord.getTransferList();
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
-            var accountId = aa.getAccountID();
-            entityListener.onEntityId(EntityId.of(accountId));
-            long accountNum = accountId.getAccountNum();
-            addCryptoTransferList(consensusTimestamp, accountId.getRealmNum(), accountNum, aa.getAmount());
+            var account = EntityId.of(aa.getAccountID());
+            entityListener.onEntityId(account);
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
 
-            if (addInitialBalance && (initialBalance == aa.getAmount()) && (accountNum == createdAccountNum)) {
+            if (addInitialBalance && (initialBalance == aa.getAmount())
+                    && (account.getEntityNum() == createdAccountNum)) {
                 addInitialBalance = false;
             }
         }
 
         if (addInitialBalance) {
-            AccountID payerAccountId = body.getTransactionID().getAccountID();
-            AccountID createdAccountId = txRecord.getReceipt().getAccountID();
-            entityListener.onEntityId(EntityId.of(payerAccountId));
-            entityListener.onEntityId(EntityId.of(createdAccountId));
-            addCryptoTransferList(consensusTimestamp, payerAccountId.getRealmNum(), payerAccountId
-                    .getAccountNum(), -initialBalance);
-            addCryptoTransferList(consensusTimestamp, createdAccountId
-                    .getRealmNum(), createdAccountNum, initialBalance);
+            var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
+            var createdAccount = EntityId.of(txRecord.getReceipt().getAccountID());
+            entityListener.onEntityId(payerAccount);
+            entityListener.onEntityId(createdAccount);
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccount));
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount));
         }
-    }
-
-    private void addCryptoTransferList(long consensusTimestamp, long realmNum, long accountNum, long amount) {
-        entityListener
-                .onCryptoTransfer(new CryptoTransfer(consensusTimestamp, amount, realmNum, accountNum));
     }
 
     private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody) {
@@ -348,14 +367,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         EntityId autoRenewAccount = transactionHandler.getAutoRenewAccount(recordItem);
         if (autoRenewAccount != null) {
             entityListener.onEntityId(autoRenewAccount);
-            entity.setAutoRenewAccount(autoRenewAccount);
+            entity.setAutoRenewAccountId(autoRenewAccount);
         }
         // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
         // so no need to persist it to repo.
         EntityId proxyAccount = transactionHandler.getProxyAccount(recordItem);
         if (proxyAccount != null) {
             entityListener.onEntityId(proxyAccount);
-            entity.setProxyAccount(proxyAccount);
+            entity.setProxyAccountId(proxyAccount);
         }
         entityRepository.save(entity);
     }

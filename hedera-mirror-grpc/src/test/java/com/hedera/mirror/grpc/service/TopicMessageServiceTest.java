@@ -45,13 +45,15 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.listener.ListenerProperties;
-import com.hedera.mirror.grpc.listener.SharedPollingTopicListener;
 import com.hedera.mirror.grpc.listener.TopicListener;
 import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.retriever.RetrieverProperties;
 import com.hedera.mirror.grpc.retriever.TopicMessageRetriever;
 
 public class TopicMessageServiceTest extends GrpcIntegrationTest {
+
+    private final Instant now = Instant.now();
+    private final Instant future = now.plusSeconds(30L);
 
     @Resource
     private TopicMessageService topicMessageService;
@@ -68,13 +70,9 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Resource
     private RetrieverProperties retrieverProperties;
 
-    @Resource
-    private SharedPollingTopicListener sharedPollingTopicListener;
-
     @BeforeEach
     void setup() {
         listenerProperties.setEnabled(true);
-        sharedPollingTopicListener.init(); // Clear the buffer between runs
         domainBuilder.entity().block();
     }
 
@@ -103,8 +101,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void endTimeBeforeStartTime() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.now())
-                .endTime(Instant.now().minus(1, ChronoUnit.DAYS))
+                .startTime(now)
+                .endTime(now.minus(1, ChronoUnit.DAYS))
                 .build();
 
         assertThatThrownBy(() -> topicMessageService.subscribeTopic(filter))
@@ -114,7 +112,6 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void endTimeEqualsStartTime() {
-        Instant now = Instant.now();
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(now)
                 .endTime(now)
@@ -127,9 +124,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void startTimeAfterNow() {
-        Instant now = Instant.now();
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(now.plusSeconds(10L))
+                .startTime(future)
                 .build();
 
         assertThatThrownBy(() -> topicMessageService.subscribeTopic(filter))
@@ -209,10 +205,10 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void noMessagesWithFutureEndTime() {
-        Instant endTime = Instant.now().plusMillis(250);
+        Instant endTime = now.plusMillis(250);
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.now())
+                .startTime(now)
                 .endTime(endTime)
                 .build();
 
@@ -333,7 +329,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> domainBuilder.topicMessages(3).blockLast())
+                .then(() -> domainBuilder.topicMessages(3, future).blockLast())
                 .expectNext(1L, 2L, 3L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -350,7 +346,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> domainBuilder.topicMessages(3).blockLast())
+                .then(() -> domainBuilder.topicMessages(3, future).blockLast())
                 .expectNext(1L, 2L)
                 .expectComplete()
                 .verify(Duration.ofMillis(500));
@@ -358,11 +354,8 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void incomingMessagesWithEndTimeBefore() {
-        Instant endTime = Instant.now().plusMillis(500);
-        Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.consensusTimestamp(endTime.minusNanos(2))),
-                domainBuilder.topicMessage(t -> t.consensusTimestamp(endTime.minusNanos(1)))
-        );
+        Instant endTime = now.plusMillis(250);
+        Flux<TopicMessage> generator = domainBuilder.topicMessages(2, endTime.minusNanos(2));
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
@@ -381,16 +374,11 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void incomingMessagesWithEndTimeEquals() {
-        Instant endTime = Instant.now().plusSeconds(10);
-        Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.consensusTimestamp(endTime.minusNanos(2))),
-                domainBuilder.topicMessage(t -> t.consensusTimestamp(endTime.minusNanos(1))),
-                domainBuilder.topicMessage(t -> t.consensusTimestamp(endTime))
-        );
+        Flux<TopicMessage> generator = domainBuilder.topicMessages(3, future.minusNanos(2));
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .endTime(endTime)
+                .endTime(future)
                 .build();
 
         topicMessageService.subscribeTopic(filter)
@@ -405,9 +393,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void bothMessages() {
-        domainBuilder.topicMessage().block();
-        domainBuilder.topicMessage().block();
-        domainBuilder.topicMessage().block();
+        domainBuilder.topicMessages(3, now).blockLast();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(5)
@@ -418,7 +404,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(100))
-                .then(() -> domainBuilder.topicMessages(3).blockLast())
+                .then(() -> domainBuilder.topicMessages(3, future).blockLast())
                 .expectNext(1L, 2L, 3L, 4L, 5L)
                 .expectComplete()
                 .verify(Duration.ofMillis(500));
@@ -432,9 +418,11 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(1)).block();
 
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.topicNum(0).sequenceNumber(2)),
-                domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(2)),
-                domainBuilder.topicMessage(t -> t.topicNum(2).sequenceNumber(1))
+                domainBuilder
+                        .topicMessage(t -> t.topicNum(0).sequenceNumber(2).consensusTimestamp(future.plusNanos(1))),
+                domainBuilder
+                        .topicMessage(t -> t.topicNum(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2))),
+                domainBuilder.topicMessage(t -> t.topicNum(2).sequenceNumber(1).consensusTimestamp(future.plusNanos(3)))
         );
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
@@ -460,9 +448,11 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
         domainBuilder.topicMessage(t -> t.realmNum(1).sequenceNumber(1)).block();
 
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.realmNum(0).sequenceNumber(2)),
-                domainBuilder.topicMessage(t -> t.realmNum(1).sequenceNumber(2)),
-                domainBuilder.topicMessage(t -> t.realmNum(2).sequenceNumber(1))
+                domainBuilder
+                        .topicMessage(t -> t.realmNum(0).sequenceNumber(2).consensusTimestamp(future.plusNanos(1))),
+                domainBuilder
+                        .topicMessage(t -> t.realmNum(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2))),
+                domainBuilder.topicMessage(t -> t.realmNum(2).sequenceNumber(1).consensusTimestamp(future.plusNanos(3)))
         );
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
@@ -601,7 +591,6 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .verify(Duration.ofMillis(700));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void missingMessagesFromRetrieverAndListener() {
         TopicListener topicListener = Mockito.mock(TopicListener.class);
@@ -696,11 +685,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     }
 
     private TopicMessage topicMessage(long sequenceNumber) {
-        return TopicMessage.builder()
-                .consensusTimestamp(Instant.EPOCH.plus(sequenceNumber, ChronoUnit.NANOS))
-                .realmNum(0)
-                .sequenceNumber(sequenceNumber)
-                .build();
+        return topicMessage(sequenceNumber, Instant.EPOCH.plus(sequenceNumber, ChronoUnit.NANOS));
     }
 
     private TopicMessage topicMessage(long sequenceNumber, Instant consensusTimestamp) {
@@ -708,6 +693,10 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .consensusTimestamp(consensusTimestamp)
                 .realmNum(0)
                 .sequenceNumber(sequenceNumber)
+                .message(new byte[] {0, 1, 2})
+                .runningHash(new byte[] {3, 4, 5})
+                .topicNum(0)
+                .runningHashVersion(2)
                 .build();
     }
 }

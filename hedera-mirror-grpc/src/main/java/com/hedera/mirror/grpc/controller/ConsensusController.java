@@ -20,7 +20,6 @@ package com.hedera.mirror.grpc.controller;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -64,7 +63,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
     public Flux<ConsensusTopicResponse> subscribeTopic(Mono<ConsensusTopicQuery> request) {
         return request.map(this::toFilter)
                 .flatMapMany(topicMessageService::subscribeTopic)
-                .map(ConsensusController::toResponse)
+                .map(TopicMessage::toResponse)
                 .onErrorMap(ConstraintViolationException.class, e -> error(e, Status.INVALID_ARGUMENT))
                 .onErrorMap(IllegalArgumentException.class, e -> error(e, Status.INVALID_ARGUMENT))
                 .onErrorMap(NonTransientDataAccessResourceException.class, e -> error(e, Status.UNAVAILABLE, DB_ERROR))
@@ -99,17 +98,6 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         }
 
         return builder.build();
-    }
-
-    // package-private for use in tests
-    static ConsensusTopicResponse toResponse(TopicMessage topicMessage) {
-        return ConsensusTopicResponse.newBuilder()
-                .setConsensusTimestamp(ProtoUtil.toTimestamp(topicMessage.getConsensusTimestampInstant()))
-                .setMessage(ByteString.copyFrom(topicMessage.getMessage()))
-                .setSequenceNumber(topicMessage.getSequenceNumber())
-                .setRunningHash(ByteString.copyFrom(topicMessage.getRunningHash()))
-                .setRunningHashVersion(topicMessage.getRunningHashVersion())
-                .build();
     }
 
     private Throwable error(Throwable t, Status status) {

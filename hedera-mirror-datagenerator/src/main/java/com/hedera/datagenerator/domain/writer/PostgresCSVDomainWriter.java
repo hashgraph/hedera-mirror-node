@@ -47,9 +47,9 @@ import com.hedera.mirror.importer.util.Utility;
  * <p>
  * Test data for tables: <br/>
  * <ul>
- *   <li>t_transactions</li>
+ *   <li>transaction</li>
  *   <li>t_file_data</li>
- *   <li>t_cryptotransferlists</li>
+ *   <li>crypto_transfer</li>
  *   <li>t_entities</li>
  *   <li>topic_message</li>
  *   <li>account_balances</li>
@@ -104,7 +104,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
 
     private static CSVPrinter getTransactionsCSVPrinter(String outputDir) throws IOException {
         return new CSVPrinter(
-                Files.newBufferedWriter(Paths.get(outputDir, "t_transactions")),
+                Files.newBufferedWriter(Paths.get(outputDir, "transaction")),
                 CSVFormat.DEFAULT.withHeader(
                         "node_account_id", "memo", "payer_account_id", "charged_tx_fee", "initial_balance", "entity_id",
                         "valid_start_ns", "consensus_ns", "valid_duration_seconds", "max_fee", "transaction_hash",
@@ -122,8 +122,8 @@ public class PostgresCSVDomainWriter implements DomainWriter {
 
     private static CSVPrinter getCryptoTransferListsCSVPrinter(String outputDir) throws IOException {
         return new CSVPrinter(
-                Files.newBufferedWriter(Paths.get(outputDir, "t_cryptotransferlists")),
-                CSVFormat.DEFAULT.withHeader("consensus_timestamp", "realm_num", "entity_num", "amount"));
+                Files.newBufferedWriter(Paths.get(outputDir, "crypto_transfer")),
+                CSVFormat.DEFAULT.withHeader("entity_id", "consensus_timestamp", "amount"));
     }
 
     private static CSVPrinter getFileDataCSVPrinter(String outputDir) throws IOException {
@@ -167,7 +167,7 @@ public class PostgresCSVDomainWriter implements DomainWriter {
     public void addTransaction(Transaction transaction) {
         try {
             transactionsWriter.printRecord(
-                    transaction.getNodeAccountId(), toHex(transaction.getMemo()), transaction.getPayerAccountId(),
+                    transaction.getNodeAccountId(), toHex(transaction.getMemo()), transaction.getPayerAccountId().getId(),
                     transaction.getChargedTxFee(), transaction.getInitialBalance(), transaction.getEntityId(),
                     transaction.getValidStartNs(), transaction.getConsensusNs(), transaction.getValidDurationSeconds(),
                     transaction.getMaxFee(), toHex(transaction.getTransactionHash()), transaction.getResult(),
@@ -196,13 +196,12 @@ public class PostgresCSVDomainWriter implements DomainWriter {
     @Override
     public void addCryptoTransfer(CryptoTransfer cryptoTransfer) {
         try {
-            cryptoTransferListsWriter.printRecord(
-                    cryptoTransfer.getConsensusTimestamp(), cryptoTransfer.getRealmNum(), cryptoTransfer.getEntityNum(),
-                    cryptoTransfer.getAmount());
+            cryptoTransferListsWriter.printRecord(cryptoTransfer.getEntityId().getId(),
+                    cryptoTransfer.getConsensusTimestamp(), cryptoTransfer.getAmount());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        log.trace("added crypto transfer for entity_num = {}", cryptoTransfer.getEntityNum());
+        log.trace("added crypto transfer for entity_num = {}", cryptoTransfer.getEntityId());
     }
 
     @Override

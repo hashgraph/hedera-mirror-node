@@ -20,27 +20,29 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.springframework.data.domain.Persistable;
 
+import com.hedera.mirror.importer.converter.EntityIdConverter;
+
 @Data
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "t_transactions")
 @ToString(exclude = {"memo", "transactionHash", "transactionBytes"})
 public class Transaction implements Persistable<Long> {
 
     @Id
     private Long consensusNs;
 
-    private Long nodeAccountId;
+    @Convert(converter = EntityIdConverter.class)
+    private EntityId nodeAccountId;
 
     private byte[] memo;
 
@@ -48,13 +50,15 @@ public class Transaction implements Persistable<Long> {
 
     private Integer result;
 
-    private Long payerAccountId;
+    @Convert(converter = EntityIdConverter.class)
+    private EntityId payerAccountId;
 
     private Long chargedTxFee;
 
     private Long initialBalance;
 
-    private Long entityId;
+    @Convert(converter = EntityIdConverter.class)
+    private EntityId entityId;
 
     private Long validStartNs;
 
@@ -65,18 +69,6 @@ public class Transaction implements Persistable<Long> {
     private byte[] transactionHash;
 
     private byte[] transactionBytes;
-
-    public void setEntity(EntityId entity) {
-        entityId = entity.getId();
-    }
-
-    public void setNodeAccount(EntityId nodeAccount) {
-        nodeAccountId = nodeAccount.getId();
-    }
-
-    public void setPayerAccount(EntityId payerAccount) {
-        payerAccountId = payerAccount.getId();
-    }
 
     @Override
     public Long getId() {
