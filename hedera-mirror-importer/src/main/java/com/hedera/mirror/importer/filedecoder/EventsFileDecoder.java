@@ -98,10 +98,9 @@ public class EventsFileDecoder {
                         md.update(typeDelimiter);
                         byte[] readPrevFileHash = readBytes(dis, 48, md);
                         eventFile.setPreviousHash(Hex.encodeHexString(readPrevFileHash));
-                        Instant fileInstant = Instant.parse(fileName.replaceAll(".evts", "").replaceAll("_", ":"));
 
                         if (!Utility.verifyHashChain(eventFile.getPreviousHash(), expectedPrevFileHash,
-                                verifyHashAfter, fileInstant)) {
+                                verifyHashAfter, fileName)) {
                             throw new HashMismatchException("Hash mismatch for file " + fileName);
                         }
                         break;

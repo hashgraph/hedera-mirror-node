@@ -47,6 +47,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -175,7 +176,11 @@ public class Utility {
                         byte[] transactionRawBytes = readBytes(dis, readInt(dis, mdForContent), mdForContent);
                         byte[] recordRawBytes = readBytes(dis, readInt(dis, mdForContent), mdForContent);
 
-                        if (recordItemConsumer != null) {
+                        boolean isFirstTransaction = recordFile.getConsensusStart() == null;
+                        boolean isLastTransaction = dis.available() == 0;
+
+                        // We need the first and last transaction timestamps for metrics
+                        if (recordItemConsumer != null || isFirstTransaction || isLastTransaction) {
                             RecordItem recordItem = new RecordItem(transactionRawBytes, recordRawBytes);
 
                             if (recordItemConsumer != null) {
@@ -215,9 +220,7 @@ public class Utility {
      */
     public static int readInt(DataInputStream dis, MessageDigest md) throws IOException {
         int value = dis.readInt();
-        ByteBuffer b = ByteBuffer.allocate(4);
-        b.putInt(value);
-        md.update(b.array());
+        md.update(Ints.toByteArray(value));
         return value;
     }
 
@@ -451,7 +454,7 @@ public class Utility {
      */
     public static boolean verifyHashChain(
             String actualPrevFileHash, String expectedPrevFileHash, Instant verifyHashAfter, String fileName) {
-        var fileInstant = Instant.parse(fileName.replaceAll(".rcd", "").replaceAll("_", ":"));
+        var fileInstant = Instant.parse(FilenameUtils.getBaseName(fileName).replaceAll("_", ":"));
         if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;
         }
