@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import reactor.test.StepVerifier;
 
+import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 public class NotifyingTopicListenerTest extends AbstractTopicListenerTest {
@@ -40,6 +41,46 @@ public class NotifyingTopicListenerTest extends AbstractTopicListenerTest {
     @Override
     protected TopicListener getTopicListener() {
         return topicListener;
+    }
+
+    // Test deserialization from JSON to verify contract with PostgreSQL listen/notify
+    @Test
+    void json() {
+        String json = "{" +
+                "\"chunk_num\":1," +
+                "\"chunk_total\":2," +
+                "\"consensus_timestamp\":1594401417000000000," +
+                "\"message\":\"AQID\"," +
+                "\"payer_account_id\":4294968296," +
+                "\"realm_num\":0," +
+                "\"running_hash\":\"BAUG\"," +
+                "\"running_hash_version\":2," +
+                "\"sequence_number\":1," +
+                "\"topic_num\":1001," +
+                "\"valid_start_timestamp\":1594401416000000000" +
+                "}";
+
+        TopicMessage topicMessage = TopicMessage.builder().chunkNum(1)
+                .chunkTotal(2)
+                .consensusTimestamp(Instant.ofEpochSecond(1594401417))
+                .message(new byte[] {1, 2, 3})
+                .payerAccountId(4294968296L)
+                .realmNum(0)
+                .runningHash(new byte[] {4, 5, 6})
+                .runningHashVersion(2)
+                .sequenceNumber(1L)
+                .topicNum(1001)
+                .validStartTimestamp(Instant.ofEpochSecond(1594401416)).build();
+
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .startTime(Instant.EPOCH)
+                .build();
+
+        topicListener.listen(filter)
+                .as(StepVerifier::create)
+                .thenAwait(Duration.ofMillis(50))
+                .then(() -> jdbcTemplate.execute("NOTIFY topic_message, '" + json + "'"))
+                .expectNext(topicMessage);
     }
 
     @Test
