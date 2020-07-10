@@ -68,9 +68,9 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
         getTopicListener().listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .expectNextCount(0L)
-                .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .expectSubscription()
+                .expectTimeout(Duration.ofMillis(500L))
+                .verify();
     }
 
     @Test

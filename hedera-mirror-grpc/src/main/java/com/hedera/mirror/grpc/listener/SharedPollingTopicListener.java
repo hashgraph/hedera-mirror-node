@@ -59,7 +59,7 @@ public class SharedPollingTopicListener implements TopicListener {
         this.instantToLongConverter = instantToLongConverter;
 
         Scheduler scheduler = Schedulers.newSingle("shared-poll", true);
-        Duration frequency = listenerProperties.getPollingFrequency();
+        Duration frequency = listenerProperties.getFrequency();
         PollingContext context = new PollingContext();
 
         poller = Flux.defer(() -> poll(context)
@@ -131,7 +131,7 @@ public class SharedPollingTopicListener implements TopicListener {
 
         void onStart(Subscription subscription) {
             lastConsensusTimestamp = instantToLongConverter.convert(Instant.now());
-            log.info("Starting to poll every {}ms", listenerProperties.getPollingFrequency().toMillis());
+            log.info("Starting to poll every {}ms", listenerProperties.getFrequency().toMillis());
         }
     }
 }
