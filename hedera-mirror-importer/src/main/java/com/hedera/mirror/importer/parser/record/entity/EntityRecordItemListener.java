@@ -225,30 +225,28 @@ public class EntityRecordItemListener implements RecordItemListener {
         var topicId = transactionBody.getTopicID();
         int runningHashVersion = receipt.getTopicRunningHashVersion() == 0 ? 1 : (int) receipt
                 .getTopicRunningHashVersion();
+        TopicMessage topicMessage = new TopicMessage();
 
-        EntityId payerAccountId = null;
-        Long validStartNs = null;
-        Integer chunkTotal = null;
-        Integer chunkNum = null;
-
-        // handle fragmented topic message
+        // Handle optional fragmented topic message
         if (transactionBody.hasChunkInfo()) {
             ConsensusMessageChunkInfo chunkInfo = transactionBody.getChunkInfo();
-            chunkNum = chunkInfo.getNumber();
-            chunkTotal = chunkInfo.getTotal();
+            topicMessage.setChunkNum(chunkInfo.getNumber());
+            topicMessage.setChunkTotal(chunkInfo.getTotal());
 
             if (chunkInfo.hasInitialTransactionID()) {
                 TransactionID transactionID = chunkInfo.getInitialTransactionID();
-                payerAccountId = EntityId.of(transactionID.getAccountID());
-                validStartNs = Utility.timeStampInNanos(transactionID.getTransactionValidStart());
+                topicMessage.setPayerAccountId(EntityId.of(transactionID.getAccountID()));
+                topicMessage.setValidStartTimestamp(Utility.timeStampInNanos(transactionID.getTransactionValidStart()));
             }
         }
 
-        TopicMessage topicMessage = new TopicMessage(
-                Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()),
-                transactionBody.getMessage().toByteArray(), (int) topicId.getRealmNum(),
-                receipt.getTopicRunningHash().toByteArray(), receipt.getTopicSequenceNumber(),
-                (int) topicId.getTopicNum(), runningHashVersion, chunkNum, chunkTotal, payerAccountId, validStartNs);
+        topicMessage.setConsensusTimestamp(Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()));
+        topicMessage.setMessage(transactionBody.getMessage().toByteArray());
+        topicMessage.setRealmNum((int) topicId.getRealmNum());
+        topicMessage.setRunningHash(receipt.getTopicRunningHash().toByteArray());
+        topicMessage.setRunningHashVersion(runningHashVersion);
+        topicMessage.setSequenceNumber(receipt.getTopicSequenceNumber());
+        topicMessage.setTopicNum((int) topicId.getTopicNum());
         entityListener.onTopicMessage(topicMessage);
     }
 

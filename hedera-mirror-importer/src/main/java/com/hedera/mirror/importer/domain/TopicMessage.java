@@ -20,42 +20,41 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import com.hedera.mirror.importer.converter.EntityIdConverter;
+import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
 public class TopicMessage {
+
+    private Integer chunkNum;
+
+    private Integer chunkTotal;
 
     @Id
     private long consensusTimestamp;
 
     private byte[] message;
 
+    @Convert(converter = EntityIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
+    private EntityId payerAccountId;
+
     private int realmNum;
 
     private byte[] runningHash;
 
+    private int runningHashVersion;
+
     private long sequenceNumber;
 
     private int topicNum;
-
-    private int runningHashVersion;
-
-    private Integer chunkNum;
-
-    private Integer chunkTotal;
-
-    @Convert(converter = EntityIdConverter.class)
-    private EntityId payerAccountId;
 
     private Long validStartTimestamp;
 }

@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.protobuf.UnsafeByteOperations;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
@@ -27,16 +28,17 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.Value;
-import lombok.experimental.NonFinal;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
@@ -45,9 +47,10 @@ import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 
 @AllArgsConstructor
-@NoArgsConstructor(force = true)
 @Builder
 @Entity
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"consensusTimestampInstant", "response"})
+@NoArgsConstructor(force = true)
 @Value
 public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long> {
 
@@ -94,13 +97,14 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     @Transient
     private Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(validStartTimestamp);
 
-    @NonFinal
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     @Transient
-    private volatile ConsensusTopicResponse response = null;
+    private final AtomicReference<ConsensusTopicResponse> response = new AtomicReference<>();
 
     // Cache this to avoid paying the conversion penalty for multiple subscribers to the same topic
     public ConsensusTopicResponse toResponse() {
-        if (response == null) {
+        if (response.get() == null) {
             var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
                     .setConsensusTimestamp(Timestamp.newBuilder()
                             .setSeconds(getConsensusTimestampInstant().getEpochSecond())
@@ -130,9 +134,9 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
                                 .build());
             }
 
-            response = consensusTopicResponseBuilder.build();
+            response.set(consensusTopicResponseBuilder.build());
         }
-        return response;
+        return response.get();
     }
 
     @Override

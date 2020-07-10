@@ -44,6 +44,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
@@ -147,18 +148,26 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTopicMessage() throws Exception {
         // given
-        byte[] message = Strings.toByteArray("test message");
-        byte[] runningHash = Strings.toByteArray("running hash");
-        TopicMessage expectedTopicMessage = new TopicMessage(1L, message, 0, runningHash,
-                10L, 1001, 1, 2, 3, EntityId.of(0L, 0L, 3L, ACCOUNT), 4L);
+        TopicMessage topicMessage = new TopicMessage();
+        topicMessage.setChunkNum(1);
+        topicMessage.setChunkTotal(2);
+        topicMessage.setConsensusTimestamp(1L);
+        topicMessage.setMessage(Strings.toByteArray("test message"));
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
+        topicMessage.setRealmNum(0);
+        topicMessage.setRunningHash(Strings.toByteArray("running hash"));
+        topicMessage.setRunningHashVersion(2);
+        topicMessage.setSequenceNumber(1L);
+        topicMessage.setTopicNum(1001);
+        topicMessage.setValidStartTimestamp(4L);
 
         // when
-        sqlEntityListener.onTopicMessage(expectedTopicMessage);
+        sqlEntityListener.onTopicMessage(topicMessage);
         completeFileAndCommit();
 
         // then
         assertEquals(1, topicMessageRepository.count());
-        assertExistsAndEquals(topicMessageRepository, expectedTopicMessage, 1L);
+        assertExistsAndEquals(topicMessageRepository, topicMessage, 1L);
     }
 
     @Test

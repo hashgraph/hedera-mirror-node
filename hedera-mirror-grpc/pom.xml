@@ -16,6 +16,7 @@
 
     <properties>
         <grpc-spring-boot.version>2.7.0.RELEASE</grpc-spring-boot.version>
+        <vertx.version>3.9.1</vertx.version>
     </properties>
 
     <dependencies>
@@ -57,6 +58,11 @@
         <dependency>
             <groupId>io.projectreactor.addons</groupId>
             <artifactId>reactor-extra</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-pg-client</artifactId>
+            <version>${vertx.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
