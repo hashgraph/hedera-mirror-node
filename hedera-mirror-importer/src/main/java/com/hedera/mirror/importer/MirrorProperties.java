@@ -65,12 +65,6 @@ public class MirrorProperties {
         this.dataPath = dataPath;
     }
 
-    private String bucketName = "";
-
-    public String getBucketName() {
-        return network == HederaNetwork.OTHER ? bucketName : network.getBucketName();
-    }
-
     @Getter
     @RequiredArgsConstructor
     public enum HederaNetwork {

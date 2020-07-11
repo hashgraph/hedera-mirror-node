@@ -28,12 +28,23 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+import com.hedera.mirror.importer.MirrorProperties;
+
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.downloader")
 public class CommonDownloaderProperties {
 
+    private final MirrorProperties mirrorProperties;
+
     private String accessKey;
+
+    private String bucketName = "";
+
+    public String getBucketName() {
+        return mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.OTHER ? bucketName :
+                mirrorProperties.getNetwork().getBucketName();
+    }
 
     @NotNull
     private CloudProvider cloudProvider = CloudProvider.S3;

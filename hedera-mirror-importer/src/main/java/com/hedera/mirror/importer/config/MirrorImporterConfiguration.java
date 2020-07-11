@@ -72,7 +72,7 @@ public class MirrorImporterConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "hedera.mirror.importer.downloader", name = "cloudProvider", havingValue = "GCP")
     public S3AsyncClient gcpCloudStorageClient() {
-        log.info("Configured to download from GCP with bucket name '{}'", mirrorProperties.getBucketName());
+        log.info("Configured to download from GCP with bucket name '{}'", downloaderProperties.getBucketName());
         // Any valid region for aws client. Ignored by GCP.
         S3AsyncClientBuilder clientBuilder = asyncClientBuilder("us-east-1")
                 .endpointOverride(URI.create(downloaderProperties.getCloudProvider().getEndpoint()));
@@ -95,7 +95,7 @@ public class MirrorImporterConfiguration {
             matchIfMissing = true)
     public S3AsyncClient s3CloudStorageClient() {
         log.info("Configured to download from S3 in region {} with bucket name '{}'",
-                downloaderProperties.getRegion(), mirrorProperties.getBucketName());
+                downloaderProperties.getRegion(), downloaderProperties.getBucketName());
         S3AsyncClientBuilder clientBuilder = asyncClientBuilder(downloaderProperties.getRegion());
         String endpointOverride = downloaderProperties.getEndpointOverride();
         if (endpointOverride != null) {

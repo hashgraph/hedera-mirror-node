@@ -110,7 +110,7 @@ public abstract class AbstractDownloaderTest {
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(getTestDataDir())
-                .to(mirrorProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
+                .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
 
         validPath = downloaderProperties.getValidPath();
 
@@ -128,7 +128,7 @@ public abstract class AbstractDownloaderTest {
         mirrorProperties.setDataPath(dataPath);
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
 
-        commonDownloaderProperties = new CommonDownloaderProperties();
+        commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
         commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_MOCK_PORT);
         commonDownloaderProperties.setAccessKey("x"); // https://github.com/findify/s3mock/issues/147
         commonDownloaderProperties.setSecretKey("x");

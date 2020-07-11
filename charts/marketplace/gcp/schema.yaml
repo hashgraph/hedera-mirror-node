@@ -103,10 +103,6 @@ properties:
               - apiGroups: ['']
                 resources: ['pods']
                 verbs: ['get']
-  importer.config.hedera.mirror.importer.downloader.bucketName:
-    type: string
-    description: The Google Cloud Storage bucket name to download streamed files. Must be set when importer.config.hedera.mirror.importer.network is OTHER
-    title: Importer GCS bucket name
   importer.config.hedera.mirror.importer.db.password:
     type: string
     description: The password used by the importer to connect to the database
@@ -120,6 +116,10 @@ properties:
     type: string
     description: The Google Cloud access key used to pay for downloaded streamed files
     title: Importer GCP access key
+  importer.config.hedera.mirror.importer.downloader.bucketName:
+    type: string
+    description: The Google Cloud Storage bucket name to download streamed files. Must be set when importer.config.hedera.mirror.importer.network is OTHER
+    title: Importer GCS bucket name
   importer.config.hedera.mirror.importer.downloader.gcpProjectId:
     type: string
     description: GCP project id to bill for requests to GCS bucket with requester pays enabled

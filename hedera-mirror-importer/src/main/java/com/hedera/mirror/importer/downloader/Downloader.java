@@ -78,6 +78,7 @@ public abstract class Downloader {
     private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
     protected final ApplicationStatusRepository applicationStatusRepository;
     protected final DownloaderProperties downloaderProperties;
+    protected final CommonDownloaderProperties commonDownloaderProperties;
     protected final MirrorProperties mirrorProperties;
 
     // Metrics
@@ -110,7 +111,8 @@ public abstract class Downloader {
                         "and the time at which the file was downloaded and verified")
                 .tag("type", downloaderProperties.getStreamType().toString())
                 .register(meterRegistry);
-                
+
+        commonDownloaderProperties = downloaderProperties.getCommon();
         mirrorProperties = downloaderProperties.getMirrorProperties();
     }
 
@@ -181,7 +183,7 @@ public abstract class Downloader {
                     var listSize = (downloaderProperties.getBatchSize() * 2);
                     // Not using ListObjectsV2Request because it does not work with GCP.
                     ListObjectsRequest listRequest = ListObjectsRequest.builder()
-                            .bucket(mirrorProperties.getBucketName())
+                            .bucket(commonDownloaderProperties.getBucketName())
                             .prefix(s3Prefix)
                             .delimiter("/")
                             .marker(s3Prefix + lastValidSigFileName)
@@ -268,7 +270,7 @@ public abstract class Downloader {
             }
         }
         var future = s3Client.getObject(
-                GetObjectRequest.builder().bucket(mirrorProperties.getBucketName()).key(s3ObjectKey)
+                GetObjectRequest.builder().bucket(commonDownloaderProperties.getBucketName()).key(s3ObjectKey)
                         .requestPayer(RequestPayer.REQUESTER)
                         .build(),
                 AsyncResponseTransformer.toFile(file));

@@ -1,7 +1,4 @@
 properties:
-  importer.config.hedera.mirror.importer.bucketName:
-    default: ""
-    type: string
   importer.config.hedera.mirror.importer.downloader.accessKey:
     default: ""
     type: string
