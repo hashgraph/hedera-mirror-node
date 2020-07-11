@@ -78,8 +78,8 @@ public abstract class Downloader {
     private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
     protected final ApplicationStatusRepository applicationStatusRepository;
     protected final DownloaderProperties downloaderProperties;
-    protected final CommonDownloaderProperties commonDownloaderProperties;
-    protected final MirrorProperties mirrorProperties;
+    private final CommonDownloaderProperties commonDownloaderProperties;
+    private final MirrorProperties mirrorProperties;
 
     // Metrics
     private final MeterRegistry meterRegistry;
