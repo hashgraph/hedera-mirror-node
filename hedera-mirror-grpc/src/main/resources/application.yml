@@ -63,6 +63,7 @@ spring:
     properties:
       hibernate.criteria.literal_handling_mode: BIND # Ensure Criteria API queries use bind parameters and not literals
       hibernate.generate_statistics: true
+      hibernate.hbm2ddl.auto: none
   test:
     database:
       replace: NONE
