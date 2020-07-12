@@ -1,0 +1,6 @@
+chartsSyncInterval: 30s
+git:
+  pollInterval: 1m
+helm:
+  versions: v3
+

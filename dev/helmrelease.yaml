@@ -1,0 +1,34 @@
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: dev
+spec:
+  chart:
+    git: https://github.com/hashgraph/hedera-mirror-node.git
+    path: charts/hedera-mirror
+    ref: 6a43e2dc85a5ff45c6986fb09d9d29b155d8723b
+  rollback:
+    enable: true
+    force: true
+    timeout: 500
+    wait: true
+  timeout: 500
+  wait: true
+  values:
+    grpc:
+      image:
+        tag: master-6a43e2dc85a5ff45c6986fb09d9d29b155d8723b
+    importer:
+      image:
+        tag: master-6a43e2dc85a5ff45c6986fb09d9d29b155d8723b
+    prometheus-adapter:
+      rules:
+        resource: null
+    rest:
+      image:
+        tag: master-6a43e2dc85a5ff45c6986fb09d9d29b155d8723b
+  valuesFrom:
+    - secretKeyRef:
+        name: mirror
+
