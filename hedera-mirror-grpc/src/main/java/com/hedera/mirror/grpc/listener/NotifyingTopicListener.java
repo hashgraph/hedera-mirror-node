@@ -27,10 +27,12 @@ import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.pubsub.PgChannel;
 import io.vertx.pgclient.pubsub.PgSubscriber;
 import java.time.Duration;
+import java.util.Objects;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
@@ -60,7 +62,7 @@ public class NotifyingTopicListener implements TopicListener {
         PgSubscriber subscriber = PgSubscriber.subscriber(vertx, connectOptions)
                 .reconnectPolicy(retries -> {
                     log.warn("Attempting reconnect");
-                    return frequency.toMillis();
+                    return frequency.toMillis() * Math.min(retries, 4);
                 });
 
         // Connect asynchronously to avoid crashing the application on startup if the database is down
@@ -76,9 +78,9 @@ public class NotifyingTopicListener implements TopicListener {
         topicMessages = Flux.defer(() -> listen())
                 .publishOn(Schedulers.boundedElastic())
                 .map(this::toTopicMessage)
+                .filter(Objects::nonNull)
                 .name("notify")
                 .metrics()
-                .doFinally(s -> unlisten())
                 .doOnError(t -> log.error("Error listening for messages", t))
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, frequency).maxBackoff(frequency.multipliedBy(4L)))
                 .share();
@@ -98,7 +100,8 @@ public class NotifyingTopicListener implements TopicListener {
 
     private Flux<String> listen() {
         EmitterProcessor<String> emitterProcessor = EmitterProcessor.create();
-        channel.handler(json -> emitterProcessor.onNext(json));
+        FluxSink<String> sink = emitterProcessor.sink().onDispose(this::unlisten);
+        channel.handler(json -> sink.next(json));
         log.info("Listening for messages");
         return emitterProcessor;
     }
@@ -112,7 +115,9 @@ public class NotifyingTopicListener implements TopicListener {
         try {
             return objectMapper.readValue(payload, TopicMessage.class);
         } catch (Exception ex) {
-            throw new RuntimeException(ex);
+            // Discard invalid messages. No need to propagate error and cause a reconnect.
+            log.error("Error parsing message {}", payload, ex);
+            return null;
         }
     }
 }
