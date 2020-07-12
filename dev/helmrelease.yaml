@@ -23,6 +23,7 @@ spec:
       image:
         tag: master-6a43e2dc85a5ff45c6986fb09d9d29b155d8723b
     prometheus-adapter:
+      enabled: false
       rules:
         resource: null
     rest:
