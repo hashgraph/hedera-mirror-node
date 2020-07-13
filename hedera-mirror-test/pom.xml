@@ -249,10 +249,11 @@
                                 <jmeterExtension>com.google.guava:guava:29.0-jre</jmeterExtension>
                             </jmeterExtensions>
                             <jMeterProcessJVMSettings>
+                                <xms>2056</xms>
+                                <xmx>2056</xmx>
                                 <arguments>
                                     <argument>-XX:MaxMetaspaceSize=256m</argument>
-                                    <argument>-Xmx1024m</argument>
-                                    <argument>-Xms1024m</argument>
+                                    <argument>-server</argument>
                                 </arguments>
                             </jMeterProcessJVMSettings>
                             <selectedConfiguration>default</selectedConfiguration>
