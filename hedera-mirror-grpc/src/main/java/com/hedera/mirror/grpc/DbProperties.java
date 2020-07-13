@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.listener;
+package com.hedera.mirror.grpc;
 
 /*-
  * ‌
@@ -20,32 +20,28 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
-import java.time.Duration;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.grpc.listener")
-public class ListenerProperties {
+@ConfigurationProperties("hedera.mirror.grpc.db")
+public class DbProperties {
+    @NotBlank
+    private String host = "";
 
-    private boolean enabled = true;
+    @NotBlank
+    private String name = "";
 
-    @Min(32)
-    private int maxPageSize = 5000;
+    @NotBlank
+    private String password = "";
 
-    @NotNull
-    private Duration frequency = Duration.ofMillis(500L);
+    @Min(0)
+    private int port = 5432;
 
-    @NotNull
-    private ListenerType type = ListenerType.NOTIFY;
-
-    public enum ListenerType {
-        NOTIFY,
-        POLL,
-        SHARED_POLL
-    }
+    @NotBlank
+    private String username = "";
 }

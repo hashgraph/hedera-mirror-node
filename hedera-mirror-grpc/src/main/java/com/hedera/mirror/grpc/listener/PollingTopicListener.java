@@ -50,7 +50,7 @@ public class PollingTopicListener implements TopicListener {
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
         PollingContext context = new PollingContext(filter);
-        Duration frequency = listenerProperties.getPollingFrequency();
+        Duration frequency = listenerProperties.getFrequency();
 
         return Flux.defer(() -> poll(context))
                 .delaySubscription(frequency, scheduler)

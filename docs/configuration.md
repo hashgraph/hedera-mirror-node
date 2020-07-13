@@ -115,9 +115,9 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.endTimeInterval`                        | 30s              | How often we should check if a subscription has gone past the end time                         |
 | `hedera.mirror.grpc.entityCacheSize`                        | 50000            | The maximum size of the cache to store entities used for existence check                       |
 | `hedera.mirror.grpc.listener.enabled`                       | true             | Whether to listen for incoming massages or not                                                 |
-| `hedera.mirror.grpc.listener.maxPageSize`                   | 10000            | The maximum number of messages the listener can return in a single call to the database        |
-| `hedera.mirror.grpc.listener.pollingFrequency`              | 1s               | How often to polling for new topic messages. Can accept duration units like `50ms`, `10s` etc. |
-| `hedera.mirror.grpc.listener.type`                          | SHARED_POLL      | The type of listener to use for incoming messages. Accepts either POLL or SHARED_POLL          |
+| `hedera.mirror.grpc.listener.maxPageSize`                   | 5000             | The maximum number of messages the listener can return in a single call to the database        |
+| `hedera.mirror.grpc.listener.frequency`                     | 500ms            | How often to poll or retry errors (varies by type). Can accept duration units like `50ms`, `10s`, etc. |
+| `hedera.mirror.grpc.listener.type`                          | NOTIFY           | The type of listener to use for incoming messages. Accepts either NOTIFY, POLL or SHARED_POLL  |
 | `hedera.mirror.grpc.netty.executorCoreThreadCount`          | 10               | The number of core threads                                                                     |
 | `hedera.mirror.grpc.netty.executorMaxThreadCount`           | 1000             | The maximum allowed number of threads                                                          |
 | `hedera.mirror.grpc.netty.flowControlWindow`                | 64 \* 1024       | The HTTP/2 flow control window                                                                 |
