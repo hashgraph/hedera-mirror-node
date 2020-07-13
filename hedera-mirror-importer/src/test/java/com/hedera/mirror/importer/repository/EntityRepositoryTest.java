@@ -32,10 +32,10 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
     void insertEntityIdDoNothingOnConflictTest() {
         // given
         EntityId entityId = EntityId.of(10L, 20L, 30L, EntityTypeEnum.ACCOUNT);
-        entityRepository.insertEntityIdDoNothingOnConflict(entityId);
+        entityRepository.insertEntityId(entityId);
 
         // when
-        entityRepository.insertEntityIdDoNothingOnConflict(entityId); // insert again to test for conflict
+        entityRepository.insertEntityId(entityId); // insert again to test for conflict
 
         assertThat(entityRepository.count()).isEqualTo(1);
         assertThat(entityRepository.findById(entityId.getId()))

@@ -66,6 +66,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final ExecutorService executorService;
     private final RecordFileRepository recordFileRepository;
     private final EntityRepository entityRepository;
+    private final SqlProperties sqlProperties;
+    private long batch_count = 0;
+
     // Keeps track of entityIds seen so far. This is for optimizing inserts into t_entities table so that insertion of
     // node and treasury ids are not tried for every transaction.
     private final Collection<EntityId> seenEntityIds = new HashSet<>();
@@ -95,7 +98,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.dataSource = dataSource;
         this.recordFileRepository = recordFileRepository;
         this.entityRepository = entityRepository;
-        this.executorService = Executors.newFixedThreadPool(properties.getThreads());
+        sqlProperties = properties;
+        executorService = Executors.newFixedThreadPool(properties.getThreads());
         try {
             transactionPgCopy = new PgCopy<>(getConnection(), Transaction.class, meterRegistry);
             cryptoTransferPgCopy = new PgCopy<>(getConnection(), CryptoTransfer.class, meterRegistry);
@@ -130,25 +134,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEnd(RecordFile recordFile) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        try {
-            CompletableFuture.allOf(
-                    CompletableFuture.runAsync(() -> transactionPgCopy.copy(transactions), executorService),
-                    CompletableFuture.runAsync(() -> cryptoTransferPgCopy.copy(cryptoTransfers), executorService),
-                    CompletableFuture.runAsync(() -> nonFeeTransferPgCopy.copy(nonFeeTransfers), executorService),
-                    CompletableFuture.runAsync(() -> fileDataPgCopy.copy(fileData), executorService),
-                    CompletableFuture.runAsync(() -> contractResultPgCopy.copy(contractResults), executorService),
-                    CompletableFuture.runAsync(() -> liveHashPgCopy.copy(liveHashes), executorService),
-                    CompletableFuture.runAsync(() -> topicMessagePgCopy.copy(topicMessages), executorService),
-                    CompletableFuture.runAsync(() ->
-                        entityIds.forEach(entityRepository::insertEntityIdDoNothingOnConflict), executorService)
-            ).get();
-        } catch (InterruptedException | ExecutionException e) {
-            log.error(e);
-            throw new ParserException(e);
-        }
+        executeBatches();
         recordFileRepository.save(recordFile);
-        insertDuration.record(stopwatch.elapsed());
     }
 
     @Override
@@ -168,9 +155,40 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         executorService.shutdown();
     }
 
+    private void executeBatches() {
+        if (transactions.size() == 0) {
+            return;
+        }
+
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        try {
+            CompletableFuture.allOf(
+                    CompletableFuture.runAsync(() -> transactionPgCopy.copy(transactions), executorService),
+                    CompletableFuture.runAsync(() -> cryptoTransferPgCopy.copy(cryptoTransfers), executorService),
+                    CompletableFuture.runAsync(() -> nonFeeTransferPgCopy.copy(nonFeeTransfers), executorService),
+                    CompletableFuture.runAsync(() -> fileDataPgCopy.copy(fileData), executorService),
+                    CompletableFuture.runAsync(() -> contractResultPgCopy.copy(contractResults), executorService),
+                    CompletableFuture.runAsync(() -> liveHashPgCopy.copy(liveHashes), executorService),
+                    CompletableFuture.runAsync(() -> topicMessagePgCopy.copy(topicMessages), executorService),
+                    CompletableFuture.runAsync(() ->
+                            entityIds.forEach(entityRepository::insertEntityId), executorService)
+            ).get();
+        } catch (InterruptedException | ExecutionException e) {
+            log.error(e);
+            throw new ParserException(e);
+        }
+        insertDuration.record(stopwatch.elapsed());
+    }
+
     @Override
     public void onTransaction(Transaction transaction) throws ImporterException {
         transactions.add(transaction);
+        if (batch_count == sqlProperties.getBatchSize() - 1) {
+            // execute any remaining batches
+            executeBatches();
+        } else {
+            batch_count += 1;
+        }
     }
 
     @Override

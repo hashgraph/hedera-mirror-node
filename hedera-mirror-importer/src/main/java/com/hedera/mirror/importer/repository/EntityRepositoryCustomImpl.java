@@ -31,8 +31,8 @@ public class EntityRepositoryCustomImpl implements EntityRepositoryCustom {
     EntityRepository entityRepository;
 
     @Override
-    public void insertEntityIdDoNothingOnConflict(EntityId entityId) {
-        entityRepository.insertEntityIdDoNothingOnConflict(entityId.getId(), entityId.getShardNum(),
+    public void insertEntityId(EntityId entityId) {
+        entityRepository.insertEntityId(entityId.getId(), entityId.getShardNum(),
                 entityId.getRealmNum(), entityId.getEntityNum(), entityId.getType());
     }
 }

@@ -29,4 +29,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class SqlProperties {
     @Min(1)
     private int threads = 10;
+
+    @Min(2000)
+    private int batchSize = Integer.MAX_VALUE;
 }

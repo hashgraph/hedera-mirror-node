@@ -23,5 +23,5 @@ package com.hedera.mirror.importer.repository;
 import com.hedera.mirror.importer.domain.EntityId;
 
 public interface EntityRepositoryCustom {
-    void insertEntityIdDoNothingOnConflict(EntityId entityId);
+    void insertEntityId(EntityId entityId);
 }

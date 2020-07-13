@@ -46,5 +46,5 @@ public interface EntityRepository extends PagingAndSortingRepository<Entities, L
     @Query(value = "insert into t_entities (id, entity_shard, entity_realm, entity_num, fk_entity_type_id) " +
             "values (?1, ?2, ?3, ?4, ?5) on conflict do nothing", nativeQuery = true)
     @Transactional
-    void insertEntityIdDoNothingOnConflict(long id, long shard, long realm, long num, long type);
+    void insertEntityId(long id, long shard, long realm, long num, long type);
 }
