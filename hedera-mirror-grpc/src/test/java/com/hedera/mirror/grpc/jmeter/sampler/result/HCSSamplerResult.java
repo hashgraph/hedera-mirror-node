@@ -206,11 +206,6 @@ public abstract class HCSSamplerResult<T> {
                         .format("%.03f", consensusToDelivery), publishInstant, currentConsensusInstant,
                 received, getSequenceNumber(currentResponse));
 
-        // clear interval stat buckets
-        e2eLatencyStats = new DescriptiveStatistics();
-        publishToConsensusLatencyStats = new DescriptiveStatistics();
-        consensusToDeliveryLatencyStats = new DescriptiveStatistics();
-
         // update interval and total stat buckets
         updateE2ELatencyStats(e2eLatencyStats, e2eLatencyTotalStats, e2eSeconds);
         updateE2ELatencyStats(publishToConsensusLatencyStats, publishToConsensusLatencyTotalStats, publishToConsensus);
@@ -237,6 +232,11 @@ public abstract class HCSSamplerResult<T> {
         printIndividualStat(e2eLatencyStats, "Interval E2E Latency");
         printIndividualStat(publishToConsensusLatencyStats, "Interval PublishToConsensus Latency");
         printIndividualStat(consensusToDeliveryLatencyStats, "Interval ConsensusToDelivery Latency");
+
+        // clear interval stat buckets
+        e2eLatencyStats = new DescriptiveStatistics();
+        publishToConsensusLatencyStats = new DescriptiveStatistics();
+        consensusToDeliveryLatencyStats = new DescriptiveStatistics();
     }
 
     private void printTotalStats() {
@@ -258,9 +258,13 @@ public abstract class HCSSamplerResult<T> {
             double max = stats.getMax();
             double mean = stats.getMean();
             double median = stats.getPercentile(50);
+            double seventyFifthPercentile = stats.getPercentile(75);
+            double ninetyFifthPercentile = stats.getPercentile(95);
 
-            log.info("{} stats, min: {}s, max: {}s, avg: {}s, median: {}s", name, String.format("%.03f", min),
-                    String.format("%.03f", max), String.format("%.03f", mean), String.format("%.03f", median));
+            log.info("{} stats, min: {}s, max: {}s, avg: {}s, median: {}s, 75th percentile: {}s, " +
+                            "95th percentile: {}s", name, String.format("%.03f", min), String.format("%.03f", max),
+                    String.format("%.03f", mean), String.format("%.03f", median),
+                    String.format("%.03f", seventyFifthPercentile), String.format("%.03f", ninetyFifthPercentile));
         }
     }
 }
