@@ -2,11 +2,11 @@ apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
   name: mirror
-  namespace: dev
+  namespace: common
 spec:
   chart:
     git: https://github.com/hashgraph/hedera-mirror-node.git
-    path: charts/hedera-mirror
+    path: charts/hedera-common
     ref: 0706af55d79e9715f2983d9463b1a498d979cf11
   rollback:
     enable: true
@@ -16,12 +16,6 @@ spec:
   timeout: 500
   wait: true
   values:
-    grpc:
-      image:
-        tag: master-6a43e2dc85a5ff45c6986fb09d9d29b155d8723b
-    importer:
-      image:
-        tag: master-6a43e2dc85a5ff45c6986fb09d9d29b155d8723b
     rest:
       image:
         tag: master-6a43e2dc85a5ff45c6986fb09d9d29b155d8723b
