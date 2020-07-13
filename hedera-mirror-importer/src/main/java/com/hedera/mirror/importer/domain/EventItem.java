@@ -20,9 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.swirlds.common.Transaction;
 import java.time.Instant;
-import java.util.List;
 import lombok.Data;
 
 import com.hedera.mirror.importer.util.Utility;
@@ -42,16 +40,15 @@ public class EventItem {
     private byte[] otherParentHash;
     private byte[] signature;
     private byte[] hash;
-    private List<Transaction> transactions;
 
     @Override
     public String toString() {
         return String.format("EventItem: consensusTimeStamp: %s, consensusOrder: %s, creatorId: %s, creatorSeq: %s, " +
                         "timeCreated: %s, otherId: %s, otherSeq: %s, selfParentGen: %s, otherParentGen: %s, " +
-                        "selfParentHash: %s, otherParentHash: %s, signature: %s, hash: %s, transactions: %s",
+                        "selfParentHash: %s, otherParentHash: %s, signature: %s, hash: %s",
                 consensusTimeStamp, consensusOrder, creatorId, creatorSeq, otherId, timeCreated, otherSeq,
                 selfParentGen, otherParentGen, Utility.bytesToHex(selfParentHash), Utility.bytesToHex(otherParentHash),
-                Utility.bytesToHex(signature), Utility.bytesToHex(hash), transactions);
+                Utility.bytesToHex(signature), Utility.bytesToHex(hash));
     }
 }
 

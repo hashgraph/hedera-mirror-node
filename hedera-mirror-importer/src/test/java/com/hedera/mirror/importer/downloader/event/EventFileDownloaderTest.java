@@ -27,12 +27,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.hedera.mirror.importer.reader.event.EventFileReaderImpl;
 
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 
-// TODO: are there v2 files in streams for real?
 @ExtendWith(MockitoExtension.class)
 public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
@@ -44,7 +44,7 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     @Override
     protected Downloader getDownloader() {
         return new EventFileDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook,
-                (EventDownloaderProperties) downloaderProperties, meterRegistry);
+                (EventDownloaderProperties) downloaderProperties, meterRegistry, new EventFileReaderImpl());
     }
 
     @Override
@@ -63,5 +63,6 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     void beforeEach() {
         file1 = "2020-04-11T00_12_00.025035Z.evts";
         file2 = "2020-04-11T00_12_05.059945Z.evts";
+        fileExtension = ".evts";
     }
 }

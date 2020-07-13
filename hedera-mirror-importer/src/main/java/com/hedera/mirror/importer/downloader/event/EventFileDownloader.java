@@ -20,20 +20,21 @@ package com.hedera.mirror.importer.downloader.event;
  * ‍
  */
 
+import com.hedera.mirror.importer.exception.ImporterException;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.scheduling.annotation.Scheduled;
+import com.hedera.mirror.importer.reader.event.EventFileReader;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.downloader.Downloader;
-import com.hedera.mirror.importer.exception.HashMismatchException;
-import com.hedera.mirror.importer.filedecoder.EventsFileDecoder;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
@@ -41,11 +42,14 @@ import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 @Named
 public class EventFileDownloader extends Downloader {
 
+    private EventFileReader eventFileReader;
+
     public EventFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
             NetworkAddressBook networkAddressBook, EventDownloaderProperties downloaderProperties,
-            MeterRegistry meterRegistry) {
+            MeterRegistry meterRegistry, EventFileReader eventFileReader) {
         super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties, meterRegistry);
+        this.eventFileReader = eventFileReader;
     }
 
     @Leader
@@ -73,12 +77,12 @@ public class EventFileDownloader extends Downloader {
     protected boolean verifyDataFile(File file, byte[] verifiedHash) {
         String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
         try {
-            EventFile eventFile = EventsFileDecoder.decode(file.getPath(), expectedPrevFileHash,
-                    downloaderProperties.getMirrorProperties().getVerifyHashAfter(), null);
+            EventFile eventFile = eventFileReader.read(file.getPath(), expectedPrevFileHash,
+                    downloaderProperties.getMirrorProperties().getVerifyHashAfter());
             if (!eventFile.getFileHash().contentEquals(Hex.encodeHexString(verifiedHash))) {
                 return false;
             }
-        } catch (HashMismatchException e) {
+        } catch (ImporterException e) {
             log.error(e);
             return false;
         }

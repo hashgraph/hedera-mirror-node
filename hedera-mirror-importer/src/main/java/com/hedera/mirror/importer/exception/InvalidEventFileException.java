@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,21 +20,15 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+public class InvalidEventFileException extends ImporterException {
 
-@Data
-@NoArgsConstructor
-public class EventFile {
-    private String name;
+    private static final long serialVersionUID = -2645790051583402799L;
 
-    private Long loadStart;
+    public InvalidEventFileException(String message) {
+        super(message);
+    }
 
-    private Long loadEnd;
-
-    private String fileHash;
-
-    private String previousHash;
-
-    private int fileVersion;
+    public InvalidEventFileException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

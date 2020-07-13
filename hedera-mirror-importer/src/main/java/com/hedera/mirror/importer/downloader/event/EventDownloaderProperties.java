@@ -46,10 +46,10 @@ public class EventDownloaderProperties implements DownloaderProperties {
     @Min(1)
     private int batchSize = 15;
 
-    private boolean enabled = false;
+    private boolean enabled = true;
 
     @NotNull
-    private Duration frequency = Duration.ofMillis(500L);
+    private Duration frequency = Duration.ofMillis(5000L);
 
     private boolean keepSignatures = false;
 
