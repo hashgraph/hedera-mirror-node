@@ -1,0 +1,215 @@
+global:
+  namespaceOverride: ""
+  rbac:
+    pspEnabled: false
+
+labels: {}
+
+loki:
+  enabled: true
+  loki:
+    config:
+      table_manager:
+        retention_deletes_enabled: true
+        retention_period: 2184h
+    networkPolicy:
+      enabled: true
+    persistence:
+      enabled: true
+    rbac:
+      pspEnabled: false
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+    serviceMonitor:
+      enabled: true
+  promtail:
+    rbac:
+      pspEnabled: false
+    resources:
+      limits:
+        cpu: 125m
+        memory: 100Mi
+      requests:
+        cpu: 50m
+        memory: 32Mi
+    serviceMonitor:
+      enabled: true
+
+networkPolicy:
+  enabled: false
+
+priorityClass:
+  enabled: true
+
+prometheus-adapter:
+  enabled: true
+  priorityClassName: low
+  prometheus:
+    url: http://prometheus-prometheus
+  resources:
+    limits:
+      cpu: 50m
+      memory: 100Mi
+    requests:
+      cpu: 25m
+      memory: 50Mi
+  rules:
+    default: false
+
+prometheus:
+  alertmanager:
+    alertmanagerSpec:
+      priorityClassName: low
+      resources:
+        limits:
+          cpu: 50m
+          memory: 80Mi
+        requests:
+          cpu: 30m
+          memory: 30Mi
+    enabled: false
+  enabled: true
+  grafana:
+    additionalDataSources:
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://{{ .Release.Name }}-loki:3100
+        jsonData:
+          maxLines: 500
+    adminPassword: password
+    defaultDashboardsEnabled: true
+    grafana.ini:
+      server:
+        root_url: "%(protocol)s://%(domain)s/grafana/"
+    ingress:
+      annotations:
+        traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-common.namespace" . }}-{{ .Release.Name }}-grafana@kubernetescrd'
+      enabled: true
+      hosts: [""]
+      middleware:
+        circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+        connectionsPerIP: 10
+        enabled: true
+        ipWhitelist:
+          - 0.0.0.0/0
+        rateLimit:
+          average: 50
+          burst: 100
+      path: "/grafana"
+    rbac:
+      pspEnabled: false
+    resources:
+      limits:
+        cpu: 300m
+        memory: 300Mi
+      requests:
+        cpu: 150m
+        memory: 75Mi
+  kube-state-metrics:
+    podSecurityPolicy:
+      enabled: false
+    resources:
+      limits:
+        cpu: 10m
+        memory: 64Mi
+      requests:
+        cpu: 5m
+        memory: 16Mi
+  prometheus-node-exporter:
+    hostNetwork: false
+    rbac:
+      pspEnabled: false
+    resources:
+      limits:
+        cpu: 50m
+        memory: 30Mi
+      requests:
+        cpu: 20m
+        memory: 10Mi
+  prometheus:
+    additionalPodMonitors:
+      - name: traefik
+        podMetricsEndpoints:
+          - port: traefik
+            path: /metrics
+            interval: 15s
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: traefik
+    prometheusSpec:
+      image:
+        tag: v2.19.0
+      podMonitorSelectorNilUsesHelmValues: false
+      priorityClassName: low
+      resources:
+        limits:
+          cpu: 750m
+          memory: 1Gi
+        requests:
+          cpu: 250m
+          memory: 250Mi
+      retention: 30d
+      scrapeInterval: 30s
+      serviceMonitorSelectorNilUsesHelmValues: false
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            resources:
+              requests:
+                storage: 50Gi
+      walCompression: true
+  prometheusOperator:
+    namespaces:
+      additional: []
+      releaseNamespace: true
+    resources:
+      limits:
+        cpu: 100m
+        memory: 100Mi
+      requests:
+        cpu: 50m
+        memory: 50Mi
+
+traefik:
+  additionalArguments:
+    - "--accesslog=true"
+    - "--entrypoints.websecure.http.tls=true"
+    - "--entrypoints.grpc.address=:5600"
+    - "--metrics.prometheus=true"
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: traefik
+  deployment:
+    replicas: 3
+  enabled: true
+  globalArguments: []
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  ports:
+    grpc:
+      port: 5600
+      expose: true
+  priorityClassName: critical
+  resources:
+    requests:
+      cpu: 100m
+      memory: 50Mi
+    limits:
+      cpu: 500m
+      memory: 300Mi
+  service:
+    spec:
+      externalTrafficPolicy: Local

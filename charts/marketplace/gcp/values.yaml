@@ -30,7 +30,6 @@ importer:
         importer:
           downloader:
             cloudProvider: GCP
-          topicRunningHashV2AddedTimestamp: 1592499600000000000
   podMonitor:
     enabled: false
   priorityClassName: ""
@@ -40,9 +39,6 @@ importer:
   serviceAccount:
     create: false
 
-loki:
-  enabled: false
-
 postgresql:
   metrics:
     enabled: false
@@ -51,15 +47,6 @@ postgresql:
   postgresql:
     priorityClassName: ""
     replicaCount: 1
-
-priorityClass:
-  enabled: false
-
-prometheus-adapter:
-  enabled: false
-
-prometheus:
-  enabled: false
 
 rest:
   config:
@@ -82,6 +69,3 @@ rest:
     enabled: false
   service:
     type: LoadBalancer
-
-traefik:
-  enabled: false

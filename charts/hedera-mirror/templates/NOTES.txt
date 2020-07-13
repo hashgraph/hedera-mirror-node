@@ -1,28 +1,19 @@
 Hedera Mirror Node {{ .Chart.AppVersion }} successfully installed.
 
-{{ if .Values.traefik.enabled -}}
-To get the load balancer IP:
-  export SERVICE_IP=$(kubectl get svc -n {{ include "hedera-mirror.namespace" . }} {{ printf "%s-traefik" .Release.Name }} -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
-
-To access the GRPC API:
-  grpcurl -plaintext ${SERVICE_IP}:{{ .Values.traefik.ports.web.exposedPort }} list
-
-To access the REST API:
-  curl -s "http://${SERVICE_IP}:{{ .Values.traefik.ports.web.exposedPort }}/api/v1/transactions?limit=1"
-
-{{ if and .Values.prometheus.enabled .Values.prometheus.grafana.enabled -}}
-To view the Grafana dashboard:
-  open "http://${SERVICE_IP}:{{ .Values.traefik.ports.web.exposedPort }}/grafana"
-{{- end -}}
-
-{{- else -}}
-
-To access the GRPC API:
+To access the gRPC API:
+{{- if contains "LoadBalancer" .Values.grpc.service.type }}
   GRPC_IP="$(kubectl get "service/{{ .Release.Name }}-grpc" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+{{- else if contains "ClusterIP" .Values.grpc.service.type }}
+  kubectl port-forward "service/{{ .Release.Name }}-grpc" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.grpc.service.port }}:5600 &
+  GRPC_IP="127.0.0.1"
+{{- end }}
   grpcurl -plaintext "${GRPC_IP}:5600" list
 
 To access the REST API:
+{{- if contains "LoadBalancer" .Values.rest.service.type }}
   REST_IP="$(kubectl get "service/{{ .Release.Name }}-rest" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+{{- else if contains "ClusterIP" .Values.rest.service.type }}
+  kubectl port-forward "service/{{ .Release.Name }}-rest" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.rest.service.port }}:80 &
+  REST_IP="127.0.0.1"
+{{- end }}
   curl -s "http://${REST_IP}/api/v1/transactions?limit=1"
-
-{{- end -}}
