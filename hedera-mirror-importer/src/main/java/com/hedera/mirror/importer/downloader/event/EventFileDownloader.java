@@ -77,7 +77,7 @@ public class EventFileDownloader extends Downloader {
     protected boolean verifyDataFile(File file, byte[] verifiedHash) {
         String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
         try {
-            EventFile eventFile = eventFileReader.read(file.getPath(), expectedPrevFileHash,
+            EventFile eventFile = eventFileReader.read(file, expectedPrevFileHash,
                     downloaderProperties.getMirrorProperties().getVerifyHashAfter());
             if (!eventFile.getFileHash().contentEquals(Hex.encodeHexString(verifiedHash))) {
                 return false;

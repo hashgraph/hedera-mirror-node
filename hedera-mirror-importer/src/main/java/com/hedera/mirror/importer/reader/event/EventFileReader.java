@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.reader.event;
  * ‍
  */
 
+import java.io.File;
 import java.time.Instant;
 
 import com.hedera.mirror.importer.domain.EventFile;
@@ -31,11 +32,11 @@ public interface EventFileReader {
      * Read event file. Throws {@link HashMismatchException} on previous file hash mismatch; Throws
      * {@link InvalidEventFileException} on other errors.
      *
-     * @param filePath path to event file
+     * @param file event file object
      * @param expectedPrevFileHash expected previous event file's hash in current file. Throws {@link HashMismatchException}
      *                             on mismatch
      * @param verifyHashAfter previous file's hash mismatch is ignored if file is from before this time
      * @return {@link EventFile} object
      */
-    EventFile read(String filePath, String expectedPrevFileHash, Instant verifyHashAfter);
+    EventFile read(File file, String expectedPrevFileHash, Instant verifyHashAfter);
 }

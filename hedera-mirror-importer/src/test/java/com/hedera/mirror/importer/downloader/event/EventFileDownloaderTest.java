@@ -38,7 +38,9 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
-        return new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        var eventDownloaderProperties =  new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        eventDownloaderProperties.setEnabled(true);
+        return eventDownloaderProperties;
     }
 
     @Override

@@ -25,15 +25,11 @@ import static com.hedera.mirror.importer.util.Utility.verifyHashChain;
 import com.google.common.primitives.Ints;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.reader.event.EventFileConstants;
-
-import com.hedera.mirror.importer.reader.event.EventFileReader;
-
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 
@@ -45,11 +41,11 @@ import com.hedera.mirror.importer.exception.InvalidEventFileException;
 public class EventFileReaderImpl implements EventFileReader {
 
     @Override
-    public EventFile read(String filePath, String expectedPrevFileHash, Instant verifyHashAfter) {
+    public EventFile read(File file, String expectedPrevFileHash, Instant verifyHashAfter) {
         EventFile eventFile = new EventFile();
-        String fileName = FilenameUtils.getName(filePath);
+        String fileName = FilenameUtils.getName(file.getPath());
 
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)))) {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
             // MessageDigest for getting the file Hash
             // suppose file[i] = p[i] || h[i] || c[i];
             // p[i] denotes the bytes before previousFileHash;
@@ -89,7 +85,7 @@ public class EventFileReaderImpl implements EventFileReader {
                 md.update(mdForEventData.digest(remaining));
             }
 
-            eventFile.setName(filePath);
+            eventFile.setName(file.getPath());
             eventFile.setFileHash(Hex.encodeHexString(md.digest()));
             eventFile.setPreviousHash(prevFileHashInHex);
             eventFile.setFileVersion(fileVersion);
