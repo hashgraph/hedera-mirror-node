@@ -31,7 +31,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.EnableCaching;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -39,7 +38,6 @@ import com.hedera.mirror.importer.domain.StreamType;
 
 @Log4j2
 @Tag("performance")
-@EnableCaching
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class RecordFileParserPerformanceTest extends IntegrationTest {
 
@@ -71,7 +69,7 @@ public class RecordFileParserPerformanceTest extends IntegrationTest {
         parserProperties.init();
     }
 
-    @Timeout(15)
+    @Timeout(30)
     @Test
     void parseAndIngestMultipleFiles60000Transactions() throws Exception {
         parse("*.rcd");

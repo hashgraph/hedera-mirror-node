@@ -36,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.io.output.StringBuilderWriter;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 
@@ -107,9 +106,7 @@ public class PgCopy<T> {
 
     private String buildCsv(List<T> items) throws IOException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        var stringBuilderWriter = new StringBuilderWriter();
-        writer.writeValues(stringBuilderWriter).writeAll(items);
-        var csvData = stringBuilderWriter.getBuilder().toString();
+        var csvData = writer.writeValueAsString(items);
         log.trace("{} table: csv string length={} time={}ms", tableName, csvData.length(),
                 stopwatch.elapsed(TimeUnit.MILLISECONDS));
         return csvData;
