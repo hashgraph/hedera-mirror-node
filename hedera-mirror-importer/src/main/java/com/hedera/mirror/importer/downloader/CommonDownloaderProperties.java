@@ -39,11 +39,10 @@ public class CommonDownloaderProperties {
 
     private String accessKey;
 
-    private String bucketName = "";
+    private String bucketName;
 
     public String getBucketName() {
-        return mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.OTHER ? bucketName :
-                mirrorProperties.getNetwork().getBucketName();
+        return bucketName == null ? mirrorProperties.getNetwork().getBucketName() : bucketName;
     }
 
     @NotNull
