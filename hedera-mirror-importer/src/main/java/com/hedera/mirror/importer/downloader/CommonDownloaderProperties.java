@@ -25,6 +25,7 @@ import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -42,7 +43,7 @@ public class CommonDownloaderProperties {
     private String bucketName;
 
     public String getBucketName() {
-        return bucketName == null ? mirrorProperties.getNetwork().getBucketName() : bucketName;
+        return StringUtils.isNotBlank(bucketName) ? bucketName : mirrorProperties.getNetwork().getBucketName();
     }
 
     @NotNull
