@@ -50,10 +50,10 @@ public class TopicMessageTest {
                 "\"chunk_num\":1," +
                 "\"chunk_total\":2," +
                 "\"consensus_timestamp\":1594401417000000000," +
-                "\"message\":\"AQID\"," +
+                "\"message\":\"\\\\x010203\"," +
                 "\"payer_account_id\":4294968296," +
                 "\"realm_num\":0," +
-                "\"running_hash\":\"BAUG\"," +
+                "\"running_hash\":\"\\\\x040506\"," +
                 "\"running_hash_version\":2," +
                 "\"sequence_number\":1," +
                 "\"topic_num\":1001," +

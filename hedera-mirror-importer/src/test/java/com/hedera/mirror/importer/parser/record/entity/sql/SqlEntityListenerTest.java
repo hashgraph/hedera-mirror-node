@@ -42,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.repository.CrudRepository;
 import org.testcontainers.shaded.org.bouncycastle.util.Strings;
 
@@ -298,8 +299,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
         doReturn(pgConnection).when(conn).unwrap(any());
         DataSource dataSource = mock(DataSource.class);
         doReturn(conn).when(dataSource).getConnection();
+        CacheManager cacheManager = mock(CacheManager.class);
         var sqlEntityListener2 = new SqlEntityListener(
-                sqlProperties, dataSource, recordFileRepository, entityRepository, new SimpleMeterRegistry());
+                sqlProperties, dataSource, recordFileRepository, entityRepository, new SimpleMeterRegistry(),
+                cacheManager);
         sqlEntityListener2.onStart(new StreamFileData(fileName, null));
         sqlEntityListener2.onTransaction(makeTransaction());
 

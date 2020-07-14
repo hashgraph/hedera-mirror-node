@@ -28,14 +28,13 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringReader;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.postgresql.PGConnection;
@@ -45,26 +44,26 @@ import com.hedera.mirror.importer.exception.ParserException;
 
 /**
  * Stateless writer to insert rows into Postgres table using COPY.
+ *
  * @param <T> domain object
  */
 @Log4j2
-public class PgCopy<T> implements Closeable {
-    private final Connection connection;
+public class PgCopy<T> {
+    private final DataSource dataSource;
     private final String tableName;
     private final String columnsCsv;
     private final ObjectWriter writer;
-    private final CopyManager copyManager;
     private final Timer buildCsvDurationMetric;
     private final Timer copyDurationMetric;
+    private CopyManager copyManager;
 
-    public PgCopy(Connection connection, Class<T> tClass, MeterRegistry meterRegistry) throws SQLException {
-        this.connection = connection;
-        this.copyManager = connection.unwrap(PGConnection.class).getCopyAPI();
-        this.tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, tClass.getSimpleName());
+    public PgCopy(DataSource dataSource, Class<T> tClass, MeterRegistry meterRegistry) {
+        this.dataSource = dataSource;
+        tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, tClass.getSimpleName());
         var mapper = new CsvMapper();
         var schema = mapper.schemaFor(tClass);
-        this.writer = mapper.writer(schema);
-        this.columnsCsv = Lists.newArrayList(schema.iterator()).stream()
+        writer = mapper.writer(schema);
+        columnsCsv = Lists.newArrayList(schema.iterator()).stream()
                 .map(CsvSchema.Column::getName)
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
@@ -79,10 +78,15 @@ public class PgCopy<T> implements Closeable {
     }
 
     public void copy(List<T> items) {
+
         if (items == null || items.size() == 0) {
             return;
         }
         try {
+            if (copyManager == null) {
+                copyManager = dataSource.getConnection().unwrap(PGConnection.class).getCopyAPI();
+            }
+
             Stopwatch stopwatch = Stopwatch.createStarted();
             var csv = buildCsv(items);
             var csvDuration = stopwatch.elapsed();
@@ -98,15 +102,6 @@ public class PgCopy<T> implements Closeable {
         } catch (IOException | SQLException e) {
             log.error(e);
             throw new ParserException(e);
-        }
-    }
-
-    @Override
-    public void close() {
-        try {
-            connection.close();
-        } catch (SQLException e) {
-            log.error("Exception closing connection", e);
         }
     }
 

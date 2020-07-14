@@ -19,13 +19,13 @@ package com.hedera.datagenerator.domain.writer;
  * ‍
  */
 
-import java.io.Closeable;
-
 import com.hedera.datagenerator.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.Entities;
 
-public interface DomainWriter extends Closeable {
+public interface DomainWriter {
     void onEntity(Entities entity);
+
     void onAccountBalance(AccountBalance accountBalance);
+
     void flush();
 }

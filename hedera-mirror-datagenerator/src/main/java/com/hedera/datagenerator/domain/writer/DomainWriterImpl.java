@@ -45,13 +45,13 @@ public class DomainWriterImpl implements DomainWriter {
     private final EntityRepository entityRepository;
     private final PgCopy<AccountBalance> accountBalancePgCopy;
 
-    private List<AccountBalance> accountBalances;
-    private List<Entities> entities;
+    private final List<AccountBalance> accountBalances;
+    private final List<Entities> entities;
 
     public DomainWriterImpl(DataSource dataSource, EntityRepository entityRepository) throws SQLException {
         this.dataSource = dataSource;
         this.entityRepository = entityRepository;
-        accountBalancePgCopy = new PgCopy<>(getConnection(), AccountBalance.class, new SimpleMeterRegistry());
+        accountBalancePgCopy = new PgCopy<>(dataSource, AccountBalance.class, new SimpleMeterRegistry());
         accountBalances = new ArrayList<>();
         entities = new ArrayList<>();
     }
@@ -61,11 +61,6 @@ public class DomainWriterImpl implements DomainWriter {
         accountBalancePgCopy.copy(accountBalances);
         log.info("Saving {} entities", entities.size());
         entityRepository.saveAll(entities);
-    }
-
-    @Override
-    public void close() {
-        accountBalancePgCopy.close();
     }
 
     @Override

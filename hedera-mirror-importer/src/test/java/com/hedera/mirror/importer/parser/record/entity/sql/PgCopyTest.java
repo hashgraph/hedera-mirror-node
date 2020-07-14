@@ -36,7 +36,6 @@ import java.sql.SQLException;
 import java.util.List;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
@@ -62,12 +61,7 @@ class PgCopyTest extends IntegrationTest {
 
     @BeforeEach
     void beforeEach() throws Exception {
-        cryptoTransferPgCopy = new PgCopy<>(dataSource.getConnection(), CryptoTransfer.class, meterRegistry);
-    }
-
-    @AfterEach
-    void afterEach() {
-        cryptoTransferPgCopy.close();
+        cryptoTransferPgCopy = new PgCopy<>(dataSource, CryptoTransfer.class, meterRegistry);
     }
 
     @Test
@@ -86,9 +80,11 @@ class PgCopyTest extends IntegrationTest {
         doThrow(SQLException.class).when(copyManager).copyIn(any(), (Reader) any());
         PGConnection pgConnection = mock(PGConnection.class);
         doReturn(copyManager).when(pgConnection).getCopyAPI();
+        DataSource dataSource = mock(DataSource.class);
         Connection conn = mock(Connection.class);
+        doReturn(conn).when(dataSource).getConnection();
         doReturn(pgConnection).when(conn).unwrap(any());
-        var cryptoTransferPgCopy2 = new PgCopy<>(conn, CryptoTransfer.class, meterRegistry);
+        var cryptoTransferPgCopy2 = new PgCopy<>(dataSource, CryptoTransfer.class, meterRegistry);
 
         // when
         assertThatThrownBy(() -> cryptoTransferPgCopy2.copy(List.of(cryptoTransfer(1))))

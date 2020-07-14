@@ -24,8 +24,6 @@ import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.io.Closeable;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -37,10 +35,9 @@ import java.util.concurrent.Executors;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
-import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -53,7 +50,6 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.ConditionalOnRecordParser;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
@@ -63,7 +59,6 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Log4j2
 @Named
-@CacheConfig(cacheNames = "seenEntityIds", cacheManager = CacheConfiguration.EXPIRE_AFTER_30M)
 @ConditionalOnRecordParser
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener, Closeable {
     private final DataSource dataSource;
@@ -71,6 +66,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final RecordFileRepository recordFileRepository;
     private final EntityRepository entityRepository;
     private final SqlProperties sqlProperties;
+    private final CacheManager cacheManager;
     private long batch_count;
 
     // Keeps track of entityIds seen so far. This is for optimizing inserts into t_entities table so that insertion of
@@ -95,29 +91,31 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private List<LiveHash> liveHashes;
     private List<TopicMessage> topicMessages;
     private List<EntityId> entityIds;
+    private final Cache entityCache;
 
     public SqlEntityListener(SqlProperties properties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, EntityRepository entityRepository,
-                             MeterRegistry meterRegistry) {
+                             MeterRegistry meterRegistry, CacheManager cacheManager) {
         this.dataSource = dataSource;
         this.recordFileRepository = recordFileRepository;
         this.entityRepository = entityRepository;
         sqlProperties = properties;
         executorService = Executors.newFixedThreadPool(properties.getThreads());
-        try {
-            transactionPgCopy = new PgCopy<>(getConnection(), Transaction.class, meterRegistry);
-            cryptoTransferPgCopy = new PgCopy<>(getConnection(), CryptoTransfer.class, meterRegistry);
-            nonFeeTransferPgCopy = new PgCopy<>(getConnection(), NonFeeTransfer.class, meterRegistry);
-            fileDataPgCopy = new PgCopy<>(getConnection(), FileData.class, meterRegistry);
-            contractResultPgCopy = new PgCopy<>(getConnection(), ContractResult.class, meterRegistry);
-            liveHashPgCopy = new PgCopy<>(getConnection(), LiveHash.class, meterRegistry);
-            topicMessagePgCopy = new PgCopy<>(getConnection(), TopicMessage.class, meterRegistry);
-        } catch (SQLException e) {
-            throw new ParserException("Error setting up postgres copier", e);
-        }
+        this.cacheManager = cacheManager;
+
+        transactionPgCopy = new PgCopy<>(dataSource, Transaction.class, meterRegistry);
+        cryptoTransferPgCopy = new PgCopy<>(dataSource, CryptoTransfer.class, meterRegistry);
+        nonFeeTransferPgCopy = new PgCopy<>(dataSource, NonFeeTransfer.class, meterRegistry);
+        fileDataPgCopy = new PgCopy<>(dataSource, FileData.class, meterRegistry);
+        contractResultPgCopy = new PgCopy<>(dataSource, ContractResult.class, meterRegistry);
+        liveHashPgCopy = new PgCopy<>(dataSource, LiveHash.class, meterRegistry);
+        topicMessagePgCopy = new PgCopy<>(dataSource, TopicMessage.class, meterRegistry);
+
         insertDuration = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.insert")
                 .description("Time to insert all entities into database")
                 .register(meterRegistry);
+
+        entityCache = cacheManager.getCache("seen_entities");
     }
 
     @Override
@@ -150,13 +148,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void close() {
-        transactionPgCopy.close();
-        cryptoTransferPgCopy.close();
-        nonFeeTransferPgCopy.close();
-        fileDataPgCopy.close();
-        contractResultPgCopy.close();
-        liveHashPgCopy.close();
-        topicMessagePgCopy.close();
         executorService.shutdown();
     }
 
@@ -171,8 +162,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     CompletableFuture.runAsync(() -> contractResultPgCopy.copy(contractResults), executorService),
                     CompletableFuture.runAsync(() -> liveHashPgCopy.copy(liveHashes), executorService),
                     CompletableFuture.runAsync(() -> topicMessagePgCopy.copy(topicMessages), executorService),
-                    CompletableFuture.runAsync(() ->
-                            entityIds.forEach(entityRepository::insertEntityId), executorService)
+                    CompletableFuture
+                            .runAsync(() -> entityIds.forEach(entityRepository::insertEntityId), executorService)
             ).get();
         } catch (InterruptedException | ExecutionException e) {
             log.error(e);
@@ -194,7 +185,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
-        collectNewEntities(entityId);
+        // add entities not found in cache to list of entities to be persisted
+        if (entityCache.get(entityId.getId()) == null) {
+            entityIds.add(entityId);
+            entityCache.put(entityId.getId(), entityId);
+        }
     }
 
     @Override
@@ -225,20 +220,5 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
         liveHashes.add(liveHash);
-    }
-
-    @Cacheable(key = "#entityId.entityNum", cacheManager = CacheConfiguration.EXPIRE_AFTER_30M)
-    public void collectNewEntities(EntityId entityId) {
-        // add entities not in cache to list of entities to be persisted
-        entityIds.add(entityId);
-    }
-
-    private Connection getConnection() {
-        try {
-            return dataSource.getConnection();
-        } catch (SQLException e) {
-            log.error("Error getting connection ", e);
-            throw new ParserSQLException(e);
-        }
     }
 }
