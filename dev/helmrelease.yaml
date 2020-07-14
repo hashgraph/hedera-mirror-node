@@ -29,6 +29,8 @@ spec:
               network: TESTNET
       image:
         tag: master-6a43e2dc85a5ff45c6986fb09d9d29b155d8723b
+    postgresql:
+      enabled: false
     rest:
       image:
         tag: master-6a43e2dc85a5ff45c6986fb09d9d29b155d8723b
