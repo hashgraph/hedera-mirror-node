@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.springframework.data.repository.CrudRepository;
+import org.testcontainers.shaded.org.bouncycastle.util.Strings;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.ContractResult;

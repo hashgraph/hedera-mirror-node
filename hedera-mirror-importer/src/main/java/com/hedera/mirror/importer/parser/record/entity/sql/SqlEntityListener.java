@@ -37,7 +37,10 @@ import java.util.concurrent.Executors;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -60,6 +63,7 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Log4j2
 @Named
+@CacheConfig(cacheNames = "seenEntityIds", cacheManager = CacheConfiguration.EXPIRE_AFTER_30M)
 @ConditionalOnRecordParser
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener, Closeable {
     private final DataSource dataSource;
@@ -67,7 +71,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final RecordFileRepository recordFileRepository;
     private final EntityRepository entityRepository;
     private final SqlProperties sqlProperties;
-    private long batch_count = 0;
+    private long batch_count;
 
     // Keeps track of entityIds seen so far. This is for optimizing inserts into t_entities table so that insertion of
     // node and treasury ids are not tried for every transaction.
@@ -130,6 +134,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         liveHashes = new ArrayList<>();
         entityIds = new ArrayList<>();
         topicMessages = new ArrayList<>();
+        batch_count = 0;
     }
 
     @Override
@@ -156,10 +161,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void executeBatches() {
-        if (transactions.size() == 0) {
-            return;
-        }
-
         Stopwatch stopwatch = Stopwatch.createStarted();
         try {
             CompletableFuture.allOf(
@@ -193,10 +194,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
-        if (!seenEntityIds.contains(entityId)) {
-            entityIds.add(entityId);
-            seenEntityIds.add(entityId);
-        }
+        collectNewEntities(entityId);
     }
 
     @Override
@@ -227,6 +225,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
         liveHashes.add(liveHash);
+    }
+
+    @Cacheable(key = "#entityId.entityNum", cacheManager = CacheConfiguration.EXPIRE_AFTER_30M)
+    public void collectNewEntities(EntityId entityId) {
+        // add entities not in cache to list of entities to be persisted
+        entityIds.add(entityId);
     }
 
     private Connection getConnection() {
