@@ -22,11 +22,14 @@ package com.hedera.mirror.importer.downloader.event;
 
 import com.hedera.mirror.importer.exception.ImporterException;
 
+import com.hedera.mirror.importer.util.Utility;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -37,6 +40,8 @@ import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
+
+import static com.hedera.mirror.importer.util.Utility.verifyHashChain;
 
 @Log4j2
 @Named
@@ -76,10 +81,19 @@ public class EventFileDownloader extends Downloader {
     @Override
     protected boolean verifyDataFile(File file, byte[] verifiedHash) {
         String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
+        String fileName = FilenameUtils.getName(file.getPath());
+
         try {
-            EventFile eventFile = eventFileReader.read(file, expectedPrevFileHash,
-                    downloaderProperties.getMirrorProperties().getVerifyHashAfter());
+            EventFile eventFile = eventFileReader.read(file);
+
+            if (!verifyHashChain(eventFile.getPreviousHash(), expectedPrevFileHash,
+                    downloaderProperties.getMirrorProperties().getVerifyHashAfter(), fileName)) {
+                log.error("PreviousHash in file {} does not match expected previous hash", file.getPath());
+                return false;
+            }
+
             if (!eventFile.getFileHash().contentEquals(Hex.encodeHexString(verifiedHash))) {
+                log.error("File {}'s hash does not match the hash in sig file", fileName);
                 return false;
             }
         } catch (ImporterException e) {

@@ -29,14 +29,10 @@ import com.hedera.mirror.importer.exception.InvalidEventFileException;
 
 public interface EventFileReader {
     /**
-     * Read event file. Throws {@link HashMismatchException} on previous file hash mismatch; Throws
-     * {@link InvalidEventFileException} on other errors.
+     * Read event file. Throws {@link InvalidEventFileException} if file is malformatted.
      *
      * @param file event file object
-     * @param expectedPrevFileHash expected previous event file's hash in current file. Throws {@link HashMismatchException}
-     *                             on mismatch
-     * @param verifyHashAfter previous file's hash mismatch is ignored if file is from before this time
      * @return {@link EventFile} object
      */
-    EventFile read(File file, String expectedPrevFileHash, Instant verifyHashAfter);
+    EventFile read(File file);
 }

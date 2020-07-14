@@ -20,28 +20,24 @@ package com.hedera.mirror.importer.reader.event;
  * ‍
  */
 
-import static com.hedera.mirror.importer.util.Utility.verifyHashChain;
-
 import com.google.common.primitives.Ints;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.MessageDigest;
-import java.time.Instant;
 import javax.inject.Named;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.EventFile;
-import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
 
 @Named
 public class EventFileReaderImpl implements EventFileReader {
 
     @Override
-    public EventFile read(File file, String expectedPrevFileHash, Instant verifyHashAfter) {
+    public EventFile read(File file) {
         EventFile eventFile = new EventFile();
         String fileName = FilenameUtils.getName(file.getPath());
 
@@ -72,10 +68,6 @@ public class EventFileReaderImpl implements EventFileReader {
             byte[] prevFileHash = new byte[EventFileConstants.EVENT_PREV_HASH_LENGTH];
             dis.readFully(prevFileHash);
             md.update(prevFileHash);
-            String prevFileHashInHex = Hex.encodeHexString(prevFileHash);
-            if (!verifyHashChain(prevFileHashInHex, expectedPrevFileHash, verifyHashAfter, fileName)) {
-                throw new HashMismatchException("PrevFileHash mismatch for file " + fileName);
-            }
 
             byte[] remaining = dis.readAllBytes();
             if (fileVersion == EventFileConstants.EVENT_STREAM_FILE_VERSION_2) {
@@ -86,9 +78,9 @@ public class EventFileReaderImpl implements EventFileReader {
             }
 
             eventFile.setName(file.getPath());
-            eventFile.setFileHash(Hex.encodeHexString(md.digest()));
-            eventFile.setPreviousHash(prevFileHashInHex);
             eventFile.setFileVersion(fileVersion);
+            eventFile.setPreviousHash(Hex.encodeHexString(prevFileHash));
+            eventFile.setFileHash(Hex.encodeHexString(md.digest()));
         } catch (Exception e) {
             throw new InvalidEventFileException("Error reading bad event file " + fileName, e);
         }
