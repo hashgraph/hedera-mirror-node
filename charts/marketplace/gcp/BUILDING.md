@@ -61,7 +61,6 @@ file must be specified via the parameters flag.
     mpdev install --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG} --parameters='{"name": "'${NAME}'",
         "namespace": "'${NAMESPACE}'",
         "importer.config.hedera.mirror.importer.downloader.accessKey": "GOOG1...",
-        "importer.config.hedera.mirror.importer.downloader.bucketName": "...",
         "importer.config.hedera.mirror.importer.downloader.secretKey": "...",
         "importer.config.hedera.mirror.importer.network": "MAINNET"}'
 

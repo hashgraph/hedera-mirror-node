@@ -237,10 +237,12 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
         // fragment message split across historic and incoming
         Flux<TopicMessage> generator = Flux.concat(
                 domainBuilder.topicMessage(t -> t.sequenceNumber(6).chunkNum(2).chunkTotal(3)
-                        .validStartTimestamp(now.plusNanos(4)).payerAccountId(1L).consensusTimestamp(now.plusNanos(5))),
+                        .validStartTimestamp(now.plusNanos(4)).payerAccountId(1L)
+                        .consensusTimestamp(now.plusSeconds(5))),
                 domainBuilder.topicMessage(t -> t.sequenceNumber(7).chunkNum(3).chunkTotal(3)
-                        .validStartTimestamp(now.plusNanos(5)).payerAccountId(1L).consensusTimestamp(now.plusNanos(6))),
-                domainBuilder.topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(now.plusNanos(7)))
+                        .validStartTimestamp(now.plusNanos(5)).payerAccountId(1L)
+                        .consensusTimestamp(now.plusSeconds(6))),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(now.plusSeconds(7)))
         );
 
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
