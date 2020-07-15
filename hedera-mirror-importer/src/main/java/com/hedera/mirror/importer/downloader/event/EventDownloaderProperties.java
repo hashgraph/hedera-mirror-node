@@ -44,7 +44,7 @@ public class EventDownloaderProperties implements DownloaderProperties {
     private final CommonDownloaderProperties common;
 
     @Min(1)
-    private int batchSize = 15;
+    private int batchSize = 100;
 
     private boolean enabled = false;
 

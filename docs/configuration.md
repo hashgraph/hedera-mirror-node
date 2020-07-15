@@ -39,7 +39,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.bucketName`                       | "hedera-demo-streams"   | The cloud storage bucket name to download streamed files                                       |
 | `hedera.mirror.importer.downloader.cloudProvider`                    | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                       |
 | `hedera.mirror.importer.downloader.endpointOverride`                 |                         | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible |
-| `hedera.mirror.importer.downloader.event.batchSize`                  | 15                      | The number of signature files to download per node before downloading the signed files         |
+| `hedera.mirror.importer.downloader.event.batchSize`                  | 100                     | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.importer.downloader.event.enabled`                    | false                   | Whether to enable event file downloads                                                         |
 | `hedera.mirror.importer.downloader.event.frequency`                  | 1m                      | The fixed period between invocations. Can accept duration units like `50ms`, `10s` etc.        |
 | `hedera.mirror.importer.downloader.event.keepSignatures`             | false                   | Whether to keep event signature files after successful verification. If false, files are deleted. |
