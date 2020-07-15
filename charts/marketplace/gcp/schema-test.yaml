@@ -2,9 +2,6 @@ properties:
   importer.config.hedera.mirror.importer.downloader.accessKey:
     default: ""
     type: string
-  importer.config.hedera.mirror.importer.downloader.bucketName:
-    default: hedera-demo-streams
-    type: string
   importer.config.hedera.mirror.importer.downloader.cloudProvider:
     type: string
     default: S3
