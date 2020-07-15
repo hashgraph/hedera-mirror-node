@@ -32,4 +32,7 @@ public class SqlProperties {
      */
     @Min(1)
     private int batchSize = 2000;
+
+    // Not documenting this for now since it may be temporary pending further refactorings
+    private boolean notifyTopicMessage = true;
 }

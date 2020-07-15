@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.google.common.base.Stopwatch;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -59,6 +61,10 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 @RequiredArgsConstructor
 @ConditionOnEntityRecordParser
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
+
+    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+
     private final SqlProperties properties;
     private final DataSource dataSource;
     private final RecordFileRepository recordFileRepository;
@@ -74,6 +80,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private PreparedStatement sqlInsertContractResult;
     private PreparedStatement sqlInsertLiveHashes;
     private PreparedStatement sqlInsertTopicMessage;
+    private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
 
     @Override
@@ -158,6 +165,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number" +
                     ", running_hash_version, chunk_num, chunk_total, payer_account_id, valid_start_timestamp)"
                     + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            sqlNotifyTopicMessage = connection.prepareStatement("select pg_notify('topic_message', ?)");
         } catch (SQLException e) {
             throw new ParserSQLException("Unable to prepare SQL statements", e);
         }
@@ -173,7 +182,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             sqlInsertContractResult.close();
             sqlInsertLiveHashes.close();
             sqlInsertTopicMessage.close();
-
+            sqlNotifyTopicMessage.close();
             connection.close();
         } catch (SQLException e) {
             throw new ParserSQLException("Error closing connection", e);
@@ -190,10 +199,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             var contractResult = executeBatch(sqlInsertContractResult);
             var liveHashes = executeBatch(sqlInsertLiveHashes);
             var topicMessages = executeBatch(sqlInsertTopicMessage);
+            var topicMessageNotifications = executeBatch(sqlNotifyTopicMessage);
             log.info("Inserted transactions: {}, entities: {}, transfer lists: {}, files: {}, contracts: {}, " +
-                            "claims: {}, topic messages: {}, non-fee transfers: {}",
+                            "claims: {}, topic messages: {}+({}ms), non-fee transfers: {}",
                     transactions, entityIds, transferLists, fileData, contractResult, liveHashes, topicMessages,
-                    nonFeeTransfers);
+                    topicMessageNotifications.getTimeTakenInMs(), nonFeeTransfers);
         } catch (SQLException e) {
             log.error("Error committing sql insert batch ", e);
             throw new ParserSQLException(e);
@@ -322,6 +332,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             sqlInsertTopicMessage.addBatch();
         } catch (SQLException e) {
             throw new ParserSQLException(e);
+        }
+
+        try {
+            if (properties.isNotifyTopicMessage()) {
+                String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
+                sqlNotifyTopicMessage.setString(1, json);
+                sqlNotifyTopicMessage.addBatch();
+            }
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        } catch (Exception e) {
+            throw new ParserException(e);
         }
     }
 
