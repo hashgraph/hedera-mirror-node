@@ -23,6 +23,8 @@ package com.hedera.mirror.grpc.listener;
 import java.time.Duration;
 import java.time.Instant;
 import javax.annotation.Resource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import reactor.test.StepVerifier;
@@ -41,6 +43,22 @@ public class NotifyingTopicListenerTest extends AbstractTopicListenerTest {
     @Override
     protected TopicListener getTopicListener() {
         return topicListener;
+    }
+
+    // Since importer manually calls pg_notify, we simulate that here with a rule that invokes pg_notify on insert
+    @BeforeEach
+    void createRule() {
+        jdbcTemplate.execute("create rule topic_message_rule " +
+                "as on insert to topic_message do also " +
+                "select pg_notify('topic_message', (select row_to_json(payload)::text from (select NEW.chunk_num,NEW" +
+                ".chunk_total,NEW.consensus_timestamp,encode(NEW.message, 'base64') as message,NEW.payer_account_id," +
+                "NEW.realm_num,encode(NEW.running_hash, 'base64') as running_hash,NEW.running_hash_version,NEW" +
+                ".sequence_number,NEW.topic_num,NEW.valid_start_timestamp) payload)) payload2");
+    }
+
+    @AfterEach
+    void dropRule() {
+        jdbcTemplate.execute("drop rule if exists topic_message_rule on topic_message");
     }
 
     // Test deserialization from JSON to verify contract with PostgreSQL listen/notify
