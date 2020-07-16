@@ -116,22 +116,25 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
                     .setSequenceNumber(sequenceNumber);
 
             if (getChunkNum() != null) {
-                consensusTopicResponseBuilder
-                        .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
-                                .setInitialTransactionID(TransactionID.newBuilder()
-                                        .setAccountID(AccountID.newBuilder()
-                                                .setShardNum(getPayerAccountEntity().getEntityShard())
-                                                .setRealmNum(getPayerAccountEntity().getEntityRealm())
-                                                .setAccountNum(getPayerAccountEntity().getEntityNum())
-                                                .build())
-                                        .setTransactionValidStart(Timestamp.newBuilder()
-                                                .setSeconds(getValidStartInstant().getEpochSecond())
-                                                .setNanos(getValidStartInstant().getNano())
-                                                .build())
-                                        .build())
-                                .setNumber(getChunkNum())
-                                .setTotal(getChunkTotal())
-                                .build());
+                ConsensusMessageChunkInfo.Builder chunkBuilder = ConsensusMessageChunkInfo.newBuilder()
+                        .setNumber(getChunkNum())
+                        .setTotal(getChunkTotal());
+
+                if (getPayerAccountEntity() != null && getValidStartTimestamp() != null) {
+                    chunkBuilder.setInitialTransactionID(TransactionID.newBuilder()
+                            .setAccountID(AccountID.newBuilder()
+                                    .setShardNum(getPayerAccountEntity().getEntityShard())
+                                    .setRealmNum(getPayerAccountEntity().getEntityRealm())
+                                    .setAccountNum(getPayerAccountEntity().getEntityNum())
+                                    .build())
+                            .setTransactionValidStart(Timestamp.newBuilder()
+                                    .setSeconds(getValidStartInstant().getEpochSecond())
+                                    .setNanos(getValidStartInstant().getNano())
+                                    .build())
+                            .build());
+                }
+
+                consensusTopicResponseBuilder.setChunkInfo(chunkBuilder.build());
             }
 
             response.set(consensusTopicResponseBuilder.build());
