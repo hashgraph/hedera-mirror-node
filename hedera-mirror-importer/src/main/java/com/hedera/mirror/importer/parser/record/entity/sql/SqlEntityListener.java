@@ -204,7 +204,40 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
-        topicMessages.add(topicMessage);
+        try {
+            sqlInsertTopicMessage.setLong(F_TOPICMESSAGE.CONSENSUS_TIMESTAMP.ordinal(),
+                    topicMessage.getConsensusTimestamp());
+            sqlInsertTopicMessage.setShort(F_TOPICMESSAGE.REALM_NUM.ordinal(), (short) topicMessage.getRealmNum());
+            sqlInsertTopicMessage.setInt(F_TOPICMESSAGE.TOPIC_NUM.ordinal(), topicMessage.getTopicNum());
+            sqlInsertTopicMessage.setBytes(F_TOPICMESSAGE.MESSAGE.ordinal(), topicMessage.getMessage());
+            sqlInsertTopicMessage.setBytes(F_TOPICMESSAGE.RUNNING_HASH.ordinal(), topicMessage.getRunningHash());
+            sqlInsertTopicMessage.setLong(F_TOPICMESSAGE.SEQUENCE_NUMBER.ordinal(), topicMessage.getSequenceNumber());
+            sqlInsertTopicMessage
+                    .setInt(F_TOPICMESSAGE.RUNNING_HASH_VERSION.ordinal(), topicMessage.getRunningHashVersion());
+
+            // handle nullable chunk info columns
+            if (topicMessage.getChunkNum() != null) {
+                sqlInsertTopicMessage.setInt(F_TOPICMESSAGE.CHUNK_NUM.ordinal(), topicMessage.getChunkNum());
+                sqlInsertTopicMessage.setInt(F_TOPICMESSAGE.CHUNK_TOTAL.ordinal(), topicMessage.getChunkTotal());
+                if (topicMessage.getPayerAccountId() != null) {
+                    sqlInsertTopicMessage.setLong(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(),
+                            topicMessage.getPayerAccountId().getId());
+                } else {
+                    sqlInsertTopicMessage.setObject(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), null);
+                }
+                sqlInsertTopicMessage
+                        .setLong(F_TOPICMESSAGE.VALID_START_TIMESTAMP.ordinal(), topicMessage.getValidStartTimestamp());
+            } else {
+                sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.CHUNK_NUM.ordinal(), Types.SMALLINT);
+                sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.CHUNK_TOTAL.ordinal(), Types.SMALLINT);
+                sqlInsertTopicMessage.setObject(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), null);
+                sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.VALID_START_TIMESTAMP.ordinal(), Types.BIGINT);
+            }
+
+            sqlInsertTopicMessage.addBatch();
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        }
     }
 
     @Override

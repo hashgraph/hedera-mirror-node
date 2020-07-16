@@ -42,6 +42,7 @@ Common labels
 {{- define "hedera-mirror-importer.labels" -}}
 {{ include "hedera-mirror-importer.selectorLabels" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/part-of: hedera-mirror-node
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 helm.sh/chart: {{ include "hedera-mirror-importer.chart" . }}
 {{- if .Values.labels }}
@@ -53,7 +54,11 @@ helm.sh/chart: {{ include "hedera-mirror-importer.chart" . }}
 Expand the name of the chart.
 */}}
 {{- define "hedera-mirror-importer.name" -}}
+{{- if .Values.global.useReleaseForNameLabel -}}
+{{- .Release.Name -}}
+{{- else -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -67,6 +72,7 @@ Namespace
 Selector labels
 */}}
 {{- define "hedera-mirror-importer.selectorLabels" -}}
+app.kubernetes.io/component: importer
 app.kubernetes.io/name: {{ include "hedera-mirror-importer.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
@@ -81,4 +87,3 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name -}}
 {{- end -}}
 {{- end -}}
-

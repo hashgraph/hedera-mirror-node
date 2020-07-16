@@ -41,7 +41,6 @@ import org.springframework.core.io.Resource;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.HederaNetwork;
 import com.hedera.mirror.importer.domain.NodeAddress;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.util.Utility;
@@ -98,7 +97,7 @@ public class NetworkAddressBook {
                     addressBookBytes = Files.readAllBytes(initialAddressBook);
                     log.info("Loading bootstrap address book from {}", initialAddressBook);
                 } else {
-                    HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
+                    MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
                     String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
                     Resource resource = new ClassPathResource(resourcePath, getClass());
                     addressBookBytes = IOUtils.toByteArray(resource.getInputStream());
