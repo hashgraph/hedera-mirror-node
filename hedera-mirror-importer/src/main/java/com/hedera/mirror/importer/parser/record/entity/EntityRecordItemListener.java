@@ -236,7 +236,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (chunkInfo.hasInitialTransactionID()) {
                 TransactionID transactionID = chunkInfo.getInitialTransactionID();
                 topicMessage.setPayerAccountId(EntityId.of(transactionID.getAccountID()));
-                topicMessage.setValidStartTimestamp(Utility.timeStampInNanos(transactionID.getTransactionValidStart()));
+                topicMessage
+                        .setValidStartTimestamp(Utility.timestampInNanosMax(transactionID.getTransactionValidStart()));
             }
         }
 
