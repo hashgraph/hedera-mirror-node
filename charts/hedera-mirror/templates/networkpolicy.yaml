@@ -9,14 +9,14 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      role: db
+      app.kubernetes.io/component: pgpool
   policyTypes:
     - Ingress
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              role: app
+              app.kubernetes.io/part-of: hedera-mirror-node
       ports:
         - protocol: TCP
           port: 5432

@@ -34,12 +34,14 @@ This solution currently extends `gcr.io/cloud-marketplace-tools/k8s/deployer_hel
 is specified in the [Dockerfile](Dockerfile).
 
 Additionally, GCP Marketplace restricts applications to images pulled from the Marketplace registry. Since the Mirror
-Node uses some third party images like PostgreSQL, we need to re-publish these images to our registry and keep them up
-to date. Run the below commands to re-tag:
+Node uses some third party images like PostgreSQL, we need to re-publish these images to our staging registry and keep
+them up to date.
 
-    git checkout "tags/v${TAG}"
+Run the below commands to re-tag an existing image for testing with Marketplace:
+
+    SRC_TAG="x.y.z"
     cd charts/marketplace/gcp
-    ./release.sh "${TAG}"
+    ./release.sh "${SRC_TAG}" ${TAG}"
 
 # Testing
 
@@ -75,3 +77,11 @@ Or you can simply delete the entire namespace if you created it during the insta
 
     kubectl delete namespace "${NAMESPACE}"
 
+# Releasing
+
+Once all local testing is completed succesfully and the images are tagged, run the below commands to republish the images
+to the staging registry:
+
+    git checkout "tags/v${TAG}"
+    cd charts/marketplace/gcp
+    ./release.sh "${TAG}"
