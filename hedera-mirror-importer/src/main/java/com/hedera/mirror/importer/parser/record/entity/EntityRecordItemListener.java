@@ -189,7 +189,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         Long validDurationSeconds = body.hasTransactionValidDuration() ?
                 body.getTransactionValidDuration().getSeconds() : null;
         tx.setValidDurationSeconds(validDurationSeconds);
-        tx.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
+        tx.setValidStartNs(Utility.timestampInNanosMax(body.getTransactionID().getTransactionValidStart()));
         // transactions in stream always have valid node account id and payer account id.
         var nodeAccount = EntityId.of(body.getNodeAccountID());
         tx.setNodeAccountId(nodeAccount);
@@ -236,7 +236,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (chunkInfo.hasInitialTransactionID()) {
                 TransactionID transactionID = chunkInfo.getInitialTransactionID();
                 topicMessage.setPayerAccountId(EntityId.of(transactionID.getAccountID()));
-                topicMessage.setValidStartTimestamp(Utility.timeStampInNanos(transactionID.getTransactionValidStart()));
+                topicMessage
+                        .setValidStartTimestamp(Utility.timestampInNanosMax(transactionID.getTransactionValidStart()));
             }
         }
 
