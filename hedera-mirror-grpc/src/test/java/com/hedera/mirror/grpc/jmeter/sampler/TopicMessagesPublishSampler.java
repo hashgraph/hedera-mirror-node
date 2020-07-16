@@ -21,25 +21,21 @@ package com.hedera.mirror.grpc.jmeter.sampler;
  */
 
 import com.google.common.base.Stopwatch;
-import java.time.Duration;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
-import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.HederaNetworkException;
 import com.hedera.hashgraph.sdk.HederaPrecheckStatusException;
-import com.hedera.hashgraph.sdk.HederaStatusException;
 import com.hedera.hashgraph.sdk.Status;
-import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.hashgraph.sdk.TransactionReceipt;
-import com.hedera.hashgraph.sdk.consensus.ConsensusMessageSubmitTransaction;
-import com.hedera.mirror.grpc.jmeter.client.TopicMessagePublishClient;
+import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
 import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublishRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 
@@ -47,39 +43,34 @@ import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 @RequiredArgsConstructor
 public class TopicMessagesPublishSampler {
     private final TopicMessagePublishRequest topicMessagePublishRequest;
-    private final TopicMessagePublishClient.SDKClient sdkClient;
+    private final SDKClientHandler sdkClient;
     private final boolean verifyTransactions;
     private final DescriptiveStatistics publishToConsensusLatencyStats = new DescriptiveStatistics();
     private Stopwatch publishStopwatch;
 
     @SneakyThrows
     public int submitConsensusMessageTransactions() {
-        Transaction transaction;
         TransactionSubmissionResult result = new TransactionSubmissionResult();
         Stopwatch totalStopwatch = Stopwatch.createStarted();
-        AtomicInteger preCheckFailures = new AtomicInteger();
         AtomicInteger networkFailures = new AtomicInteger();
         AtomicInteger unknownFailures = new AtomicInteger();
+        Map<Status, Integer> hederaResponseCodeEx = new HashMap<>();
 
         // publish MessagesPerBatchCount number of messages to the noted topic id
-        Client client = sdkClient.getClient();
         log.trace("Submit transaction to {}, topicMessagePublisher: {}", sdkClient
                 .getNodeInfo(), topicMessagePublishRequest);
 
         for (int i = 0; i < topicMessagePublishRequest.getMessagesPerBatchCount(); i++) {
 
-            transaction = new ConsensusMessageSubmitTransaction()
-                    .setTopicId(topicMessagePublishRequest.getConsensusTopicId())
-                    .setMessage(topicMessagePublishRequest.getMessage())
-                    .build(client);
-
             try {
                 publishStopwatch = Stopwatch.createStarted();
-                TransactionId transactionId = transaction.execute(client, Duration.ofSeconds(2));
+                TransactionId transactionId = sdkClient.submitTopicMessage(
+                        topicMessagePublishRequest.getConsensusTopicId(),
+                        topicMessagePublishRequest.getMessage());
                 publishToConsensusLatencyStats.addValue(publishStopwatch.elapsed(TimeUnit.MILLISECONDS));
                 result.onNext(transactionId);
             } catch (HederaPrecheckStatusException preEx) {
-                preCheckFailures.incrementAndGet();
+                hederaResponseCodeEx.compute(preEx.status, (key, val) -> (val == null) ? 1 : val + 1);
             } catch (HederaNetworkException preEx) {
                 networkFailures.incrementAndGet();
             } catch (Exception ex) {
@@ -92,7 +83,7 @@ public class TopicMessagesPublishSampler {
         log.info("Submitted {} messages in {} to topic {} on node {}. {} preCheckErrors, {} networkErrors, " +
                         "{} unknown errors", topicMessagePublishRequest.getMessagesPerBatchCount(), totalStopwatch,
                 topicMessagePublishRequest.getConsensusTopicId(), sdkClient.getNodeInfo().getNodeId(),
-                preCheckFailures.get(), networkFailures.get(), unknownFailures.get());
+                StringUtils.join(hederaResponseCodeEx), networkFailures.get(), unknownFailures.get());
         printPublishStats();
 
         int transactionCount = result.getCounter().get();
@@ -100,31 +91,10 @@ public class TopicMessagesPublishSampler {
 
         // verify transactions
         if (verifyTransactions) {
-            transactionCount = getValidTransactionsCount(result.getTransactionIdList(), client);
+            transactionCount = sdkClient.getValidTransactionsCount(result.getTransactionIdList());
         }
 
         return transactionCount;
-    }
-
-    private int getValidTransactionsCount(List<TransactionId> transactionIds, Client client) {
-        log.debug("Verify Transactions {}", transactionIds.size());
-        AtomicInteger counter = new AtomicInteger(0);
-        transactionIds.forEach(x -> {
-            TransactionReceipt receipt = null;
-            try {
-                receipt = x.getReceipt(client);
-            } catch (HederaStatusException e) {
-                log.debug("Error pulling {} receipt {}", x, e.getMessage());
-            }
-            if (receipt.status == Status.Success) {
-                counter.incrementAndGet();
-            } else {
-                log.warn("Transaction {} had an unexpected status of {}", x, receipt.status);
-            }
-        });
-
-        log.debug("{} out of {} transactions returned a Success status", counter.get(), transactionIds.size());
-        return counter.get();
     }
 
     private void printPublishStats() {
@@ -136,8 +106,8 @@ public class TopicMessagesPublishSampler {
         double seventyFifthPercentile = publishToConsensusLatencyStats.getPercentile(75);
         double ninetyFifthPercentile = publishToConsensusLatencyStats.getPercentile(95);
 
-        log.info("Publish2Consensus stats, min: {}s, max: {}s, avg: {}s, median: {}s, 75th percentile: {}s, " +
-                        "95th percentile: {}s", String.format("%.03f", min), String.format("%.03f", max),
+        log.info("Publish2Consensus stats, min: {} ms, max: {} ms, avg: {} ms, median: {} ms, 75th percentile: {} ms," +
+                        " 95th percentile: {} ms", String.format("%.03f", min), String.format("%.03f", max),
                 String.format("%.03f", mean), String.format("%.03f", median),
                 String.format("%.03f", seventyFifthPercentile), String.format("%.03f", ninetyFifthPercentile));
     }
