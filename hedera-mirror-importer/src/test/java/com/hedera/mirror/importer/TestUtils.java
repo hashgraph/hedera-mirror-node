@@ -20,13 +20,13 @@ package com.hedera.mirror.importer;
  * ‍
  */
 
-import com.hedera.mirror.importer.util.Utility;
-
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
+
+import com.hedera.mirror.importer.util.Utility;
 
 public final class TestUtils {
     public static AccountID toAccountId(String accountId) {
@@ -41,7 +41,10 @@ public final class TestUtils {
                 .setTransactionValidStart(toTimestamp(Long.valueOf(parts[1]))).build();
     }
 
-    public static Timestamp toTimestamp(long nanosecondsSinceEpoch) {
+    public static Timestamp toTimestamp(Long nanosecondsSinceEpoch) {
+        if (nanosecondsSinceEpoch == null) {
+            return null;
+        }
         return Utility.instantToTimestamp(Instant.ofEpochSecond(0, nanosecondsSinceEpoch));
     }
 
