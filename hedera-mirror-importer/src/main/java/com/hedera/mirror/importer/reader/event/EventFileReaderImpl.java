@@ -70,6 +70,10 @@ public class EventFileReaderImpl implements EventFileReader {
             md.update(prevFileHash);
 
             byte[] remaining = dis.readAllBytes();
+            if (remaining.length == 0) {
+                throw new InvalidEventFileException("No content found in event stream file " + fileName);
+            }
+
             if (fileVersion == EventFileConstants.EVENT_STREAM_FILE_VERSION_2) {
                 md.update(remaining);
             } else {

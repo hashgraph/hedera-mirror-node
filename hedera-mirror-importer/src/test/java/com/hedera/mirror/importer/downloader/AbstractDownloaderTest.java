@@ -33,6 +33,8 @@ import io.findify.s3mock.S3Mock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -84,6 +86,23 @@ public abstract class AbstractDownloaderTest {
             File file = p.toFile();
             if (file.isFile()) {
                 FileUtils.writeStringToFile(file, "corrupt", "UTF-8", true);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void truncateFile(Path p) {
+        try {
+            File file = p.toFile();
+            if (file.isFile()) {
+                FileChannel outChan = new FileOutputStream(file, true).getChannel();
+                if (outChan.size() <= 48) {
+                    outChan.truncate(outChan.size() / 2);
+                } else {
+                    outChan.truncate(48);
+                }
+                outChan.close();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -232,10 +251,19 @@ public abstract class AbstractDownloaderTest {
     }
 
     @Test
-    @DisplayName("Invalid or incomplete file")
-    void invalidFile() throws Exception {
+    @DisplayName("Invalid or incomplete file with garbage data appended")
+    void invalidFileWithGarbageAppended() throws Exception {
         fileCopier.copy();
         Files.walk(s3Path).filter(file -> !isSigFile(file)).forEach(AbstractDownloaderTest::corruptFile);
+        downloader.download();
+        assertNoFilesinValidPath();
+    }
+
+    @Test
+    @DisplayName("Invalid or incomplete file with data truncated")
+    void invalidFileWithDataTruncated() throws Exception {
+        fileCopier.copy();
+        Files.walk(s3Path).filter(file -> !isSigFile(file)).forEach(AbstractDownloaderTest::truncateFile);
         downloader.download();
         assertNoFilesinValidPath();
     }
