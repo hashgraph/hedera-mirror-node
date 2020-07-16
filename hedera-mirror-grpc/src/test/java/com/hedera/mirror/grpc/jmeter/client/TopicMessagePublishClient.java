@@ -23,25 +23,22 @@ package com.hedera.mirror.grpc.jmeter.client;
 import com.google.common.base.Stopwatch;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
 
-import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.account.AccountId;
 import com.hedera.hashgraph.sdk.consensus.ConsensusTopicId;
 import com.hedera.hashgraph.sdk.crypto.ed25519.Ed25519PrivateKey;
 import com.hedera.mirror.grpc.jmeter.handler.PropertiesHandler;
+import com.hedera.mirror.grpc.jmeter.handler.SDKClientHandler;
 import com.hedera.mirror.grpc.jmeter.props.TopicMessagePublishRequest;
 import com.hedera.mirror.grpc.jmeter.sampler.TopicMessagesPublishSampler;
 import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
@@ -50,7 +47,7 @@ import com.hedera.mirror.grpc.jmeter.sampler.result.TransactionSubmissionResult;
 public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
 
     private PropertiesHandler propHandler;
-    private List<SDKClient> clientList;
+    private List<SDKClientHandler> clientList;
     private Long topicNum;
     private int messagesPerBatchCount;
     private int messageByteSize;
@@ -79,7 +76,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
         // node info expected in comma separated list of <node_IP>:<node_accountId>:<node_port>
         String[] nodeList = propHandler.getTestParam("networkNodes", "localhost:0.0.3:50211").split(",");
         clientList = Arrays.asList(nodeList).stream()
-                .map(x -> new SDKClient(x, operatorId, operatorPrivateKey))
+                .map(x -> new SDKClientHandler(x, operatorId, operatorPrivateKey))
                 .collect(Collectors.toList());
     }
 
@@ -98,7 +95,7 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
 
         // kick off batched message publish
         TopicMessagePublishRequest topicMessagePublishRequest = TopicMessagePublishRequest.builder()
-                .consensusTopicId(new ConsensusTopicId(0, 0, topicNum))
+                .consensusTopicId(topicNum == 0L ? null : new ConsensusTopicId(0, 0, topicNum))
                 .messageByteSize(messageByteSize)
                 .publishInterval(publishInterval)
                 .publishTimeout(publishTimeout)
@@ -123,7 +120,8 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                         () -> {
                             TopicMessagesPublishSampler topicMessagesPublishSampler =
                                     new TopicMessagesPublishSampler(topicMessagePublishRequest, x, verifyTransactions);
-                            counter.addAndGet(topicMessagesPublishSampler.submitConsensusMessageTransactions());
+                            counter.addAndGet(topicMessagesPublishSampler
+                                    .submitConsensusMessageTransactions());
                         },
                         0,
                         publishInterval,
@@ -175,54 +173,5 @@ public class TopicMessagePublishClient extends AbstractJavaSamplerClient {
                         .elapsed(TimeUnit.MILLISECONDS));
         log.info("Published {} total transactions in {} s ({}/s)", totalCount, totalStopwatch
                 .elapsed(TimeUnit.SECONDS), rate);
-    }
-
-    @Value
-    public class NodeInfo {
-        private final AccountId nodeId;
-        private final String nodeHost;
-        private final String nodePort;
-
-        public NodeInfo(String nodeInfo) {
-            String[] nodeParts = nodeInfo.split(":");
-            nodeHost = nodeParts[0];
-            nodeId = AccountId.fromString(nodeParts[1]);
-            nodePort = nodeParts[2];
-        }
-
-        public String getNodeAddress() {
-            return nodeHost + ":" + nodePort;
-        }
-    }
-
-    @Value
-    public class SDKClient {
-        private final NodeInfo nodeInfo;
-        private final AccountId operatorId;
-        private final Ed25519PrivateKey operatorPrivateKey;
-        private final Client client;
-
-        public SDKClient(String nodeParts, AccountId operatorId, Ed25519PrivateKey operatorPrivateKey) {
-            nodeInfo = new NodeInfo(nodeParts);
-            this.operatorId = operatorId;
-            this.operatorPrivateKey = operatorPrivateKey;
-
-            client = new Client(Map.of(nodeInfo.nodeId, nodeInfo.getNodeAddress()));
-            client.setOperator(operatorId, operatorPrivateKey);
-
-            log.trace("Created client for {}", nodeInfo);
-        }
-
-        public void close() throws InterruptedException {
-            log.debug("Closing SDK client, waits up to 10 s for valid close");
-
-            try {
-                if (client != null) {
-                    client.close(5, TimeUnit.SECONDS);
-                }
-            } catch (TimeoutException tex) {
-                log.debug("Exception on client close: {}", tex.getMessage());
-            }
-        }
     }
 }
