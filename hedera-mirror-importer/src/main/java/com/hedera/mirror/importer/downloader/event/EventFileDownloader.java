@@ -59,7 +59,7 @@ public class EventFileDownloader extends Downloader {
 
     @Leader
     @Override
-    @Scheduled(fixedRateString = "${hedera.mirror.downloader.event.frequency:500}")
+    @Scheduled(fixedRateString = "${hedera.mirror.downloader.event.frequency:5000}")
     public void download() {
         downloadNextBatch();
     }
@@ -88,12 +88,15 @@ public class EventFileDownloader extends Downloader {
 
             if (!verifyHashChain(eventFile.getPreviousHash(), expectedPrevFileHash,
                     downloaderProperties.getMirrorProperties().getVerifyHashAfter(), fileName)) {
-                log.error("PreviousHash in file {} does not match expected previous hash", file.getPath());
+                log.error("PreviousHash mismatch for file {}. Expected = {}, Actual = {}", fileName,
+                        expectedPrevFileHash, eventFile.getPreviousHash());
                 return false;
             }
 
-            if (!eventFile.getFileHash().contentEquals(Hex.encodeHexString(verifiedHash))) {
-                log.error("File {}'s hash does not match the hash in sig file", fileName);
+            String expectedFileHash = Hex.encodeHexString(verifiedHash);
+            if (!eventFile.getFileHash().contentEquals(expectedFileHash)) {
+                log.error("File {}'s hash mismatch. Expected = {}, Actual = {}", fileName, expectedFileHash,
+                        eventFile.getFileHash());
                 return false;
             }
         } catch (ImporterException e) {

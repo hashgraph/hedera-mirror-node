@@ -222,7 +222,6 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
                 .verify(Duration.ofMillis(1000));
     }
 
-    @Disabled("Temporarily disable it since it fails randomly")
     @Test
     void fragmentedMessagesGroupAcrossHistoricAndIncoming() {
         Instant now = Instant.now();

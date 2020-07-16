@@ -36,6 +36,12 @@ import com.hedera.mirror.importer.exception.InvalidEventFileException;
 @Named
 public class EventFileReaderImpl implements EventFileReader {
 
+    public static final String HASH_ALGORITHM = "SHA-384";
+    public static final byte EVENT_TYPE_PREV_HASH = 1; // next 48 bytes are SHA-384 hash of previous files
+    public static final int  EVENT_PREV_HASH_LENGTH = 48; // SHA-384 - 48 bytes
+    public static final byte EVENT_STREAM_FILE_VERSION_2 = 2;
+    public static final byte EVENT_STREAM_FILE_VERSION_3 = 3;
+
     @Override
     public EventFile read(File file) {
         EventFile eventFile = new EventFile();
@@ -50,35 +56,33 @@ public class EventFileReaderImpl implements EventFileReader {
             // '||' means concatenation
             // for Version2, h[i + 1] = hash(p[i] || h[i] || c[i]);
             // for Version3, h[i + 1] = hash(p[i] || h[i] || hash(c[i]))
-            MessageDigest md = MessageDigest.getInstance(EventFileConstants.HASH_ALGORITHM);
+            MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
 
             int fileVersion = dis.readInt();
             md.update(Ints.toByteArray(fileVersion));
-            if (fileVersion < EventFileConstants.EVENT_STREAM_FILE_VERSION_2 ||
-                    fileVersion > EventFileConstants.EVENT_STREAM_FILE_VERSION_3) {
+            if (fileVersion < EVENT_STREAM_FILE_VERSION_2 ||
+                    fileVersion > EVENT_STREAM_FILE_VERSION_3) {
                 throw new InvalidEventFileException("Invalid event stream file version " + fileVersion);
             }
 
             byte typePrevHash = dis.readByte();
             md.update(typePrevHash);
-            if (typePrevHash != EventFileConstants.EVENT_TYPE_PREV_HASH) {
+            if (typePrevHash != EVENT_TYPE_PREV_HASH) {
                 throw new InvalidEventFileException("Expect EVENT_TYPE_PREV_HASH marker, got " + typePrevHash);
             }
 
-            byte[] prevFileHash = new byte[EventFileConstants.EVENT_PREV_HASH_LENGTH];
+            byte[] prevFileHash = new byte[EVENT_PREV_HASH_LENGTH];
             dis.readFully(prevFileHash);
             md.update(prevFileHash);
 
             byte[] remaining = dis.readAllBytes();
-            if (remaining.length == 0) {
-                throw new InvalidEventFileException("No content found in event stream file " + fileName);
-            }
-
-            if (fileVersion == EventFileConstants.EVENT_STREAM_FILE_VERSION_2) {
-                md.update(remaining);
-            } else {
-                MessageDigest mdForEventData = MessageDigest.getInstance(EventFileConstants.HASH_ALGORITHM);
-                md.update(mdForEventData.digest(remaining));
+            if (remaining.length != 0) {
+                if (fileVersion == EVENT_STREAM_FILE_VERSION_2) {
+                    md.update(remaining);
+                } else {
+                    MessageDigest mdForEventData = MessageDigest.getInstance(HASH_ALGORITHM);
+                    md.update(mdForEventData.digest(remaining));
+                }
             }
 
             eventFile.setName(file.getPath());
