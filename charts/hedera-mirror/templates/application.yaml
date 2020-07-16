@@ -12,7 +12,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      {{- include "hedera-mirror.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/name: {{ include "hedera-mirror.name" . }}
   addOwnerRef: true
   componentKinds:
     - group: v1
