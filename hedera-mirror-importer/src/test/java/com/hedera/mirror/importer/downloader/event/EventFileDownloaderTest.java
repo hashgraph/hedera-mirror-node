@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.downloader.balance;
+package com.hedera.mirror.importer.downloader.event;
 
 /*-
  * ‌
@@ -21,45 +21,50 @@ package com.hedera.mirror.importer.downloader.balance;
  */
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.hedera.mirror.importer.reader.event.EventFileReaderImpl;
 
-import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
+import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 
 @ExtendWith(MockitoExtension.class)
-public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
+public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
-       return new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        var eventDownloaderProperties =  new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        eventDownloaderProperties.setEnabled(true);
+        return eventDownloaderProperties;
     }
 
     @Override
     protected Downloader getDownloader() {
-        return new AccountBalancesDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook,
-                (BalanceDownloaderProperties) downloaderProperties, meterRegistry);
+        return new EventFileDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook,
+                (EventDownloaderProperties) downloaderProperties, meterRegistry, new EventFileReaderImpl());
     }
 
     @Override
     protected Path getTestDataDir() {
-        return Path.of("accountBalances");
-    }
-
-    @BeforeEach
-    void beforeEach() {
-        file1 = "2019-08-30T18_15_00.016002001Z_Balances.csv";
-        file2 = "2019-08-30T18_30_00.010147001Z_Balances.csv";
+        return Paths.get("eventsStreams", "v3");
     }
 
     @Test
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {
-        ((BalanceDownloaderProperties) downloaderProperties).setBatchSize(1);
+        ((EventDownloaderProperties) downloaderProperties).setBatchSize(1);
         testMaxDownloadItemsReached(file1);
+    }
+
+    @BeforeEach
+    void beforeEach() {
+        file1 = "2020-04-11T00_12_00.025035Z.evts";
+        file2 = "2020-04-11T00_12_05.059945Z.evts";
+        fileExtension = ".evts";
     }
 }

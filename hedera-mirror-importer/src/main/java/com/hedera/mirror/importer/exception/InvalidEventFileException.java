@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,12 +20,15 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-public enum ApplicationStatusCode {
-    LAST_VALID_DOWNLOADED_RECORD_FILE,
-    LAST_VALID_DOWNLOADED_RECORD_FILE_HASH,
-    LAST_VALID_DOWNLOADED_BALANCE_FILE,
-    LAST_PROCESSED_RECORD_HASH,
-    LAST_VALID_DOWNLOADED_EVENT_FILE,
-    LAST_VALID_DOWNLOADED_EVENT_FILE_HASH,
-    LAST_PROCESSED_EVENT_HASH,
+public class InvalidEventFileException extends ImporterException {
+
+    private static final long serialVersionUID = -2645790051583402799L;
+
+    public InvalidEventFileException(String message) {
+        super(message);
+    }
+
+    public InvalidEventFileException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

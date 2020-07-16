@@ -28,7 +28,8 @@ import lombok.RequiredArgsConstructor;
 public enum StreamType {
 
     BALANCE("accountBalances"),
-    RECORD("recordstreams");
+    RECORD("recordstreams"),
+    EVENT("eventsStreams");
 
     private static final String PARSED = "parsed";
     private static final String SIGNATURES = "signatures";

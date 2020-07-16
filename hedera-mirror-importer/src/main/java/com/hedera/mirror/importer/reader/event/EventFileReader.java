@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.reader.event;
 
 /*-
  * ‌
@@ -20,12 +20,19 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-public enum ApplicationStatusCode {
-    LAST_VALID_DOWNLOADED_RECORD_FILE,
-    LAST_VALID_DOWNLOADED_RECORD_FILE_HASH,
-    LAST_VALID_DOWNLOADED_BALANCE_FILE,
-    LAST_PROCESSED_RECORD_HASH,
-    LAST_VALID_DOWNLOADED_EVENT_FILE,
-    LAST_VALID_DOWNLOADED_EVENT_FILE_HASH,
-    LAST_PROCESSED_EVENT_HASH,
+import java.io.File;
+import java.time.Instant;
+
+import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.importer.exception.HashMismatchException;
+import com.hedera.mirror.importer.exception.InvalidEventFileException;
+
+public interface EventFileReader {
+    /**
+     * Read event file. Throws {@link InvalidEventFileException} if file is malformatted.
+     *
+     * @param file event file object
+     * @return {@link EventFile} object
+     */
+    EventFile read(File file);
 }

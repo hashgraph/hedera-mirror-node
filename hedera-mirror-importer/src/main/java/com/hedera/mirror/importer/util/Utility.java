@@ -47,6 +47,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -124,9 +125,14 @@ public class Utility {
     }
 
     /**
-     * Calculate SHA384 hash of a record file
-     *
-     * @return byte array of hash value of null if calculating has failed
+     * Parses record stream file.
+
+     * @param filePath path to record file
+     * @param expectedPrevFileHash expected previous file's hash in current file. Throws {@link HashMismatchException}
+     *                             on mismatch
+     * @param verifyHashAfter previous file's hash mismatch is ignored if file is from before this time
+     * @param recordItemConsumer if not null, consumer is invoked for each transaction in the record file
+     * @return parsed record file
      */
     public static RecordFile parseRecordFile(String filePath, String expectedPrevFileHash, Instant verifyHashAfter,
                                              Consumer<RecordItem> recordItemConsumer) {
@@ -136,15 +142,16 @@ public class Utility {
 
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)))) {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
-            MessageDigest mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+            MessageDigest mdForContent = md;
 
-            int recordFormatVersion = dis.readInt();
-            int version = dis.readInt();
+            int recordFormatVersion = readInt(dis, md);
+            if (recordFormatVersion >= FileDelimiter.RECORD_FORMAT_VERSION) {
+                mdForContent = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
+            }
+
+            readInt(dis, md); // version
             log.info("Loading record format version {} from record file: {}", recordFormatVersion, fileName);
             recordFile.setRecordFormatVersion(recordFormatVersion);
-
-            md.update(Ints.toByteArray(recordFormatVersion));
-            md.update(Ints.toByteArray(version));
 
             log.debug("Calculating hash for version {} record file: {}", recordFormatVersion, fileName);
 
@@ -165,23 +172,10 @@ public class Utility {
                         break;
 
                     case FileDelimiter.RECORD_TYPE_RECORD:
-                        MessageDigest messageDigest = md;
-                        if (recordFormatVersion >= FileDelimiter.RECORD_FORMAT_VERSION) {
-                            messageDigest = mdForContent;
-                        }
-                        // Read Transaction
-                        int byteLength = dis.readInt();
-                        byte[] transactionRawBytes = new byte[byteLength];
-                        dis.readFully(transactionRawBytes);
-                        messageDigest.update(typeDelimiter);
-                        messageDigest.update(Ints.toByteArray(byteLength));
-                        messageDigest.update(transactionRawBytes);
-                        // Read TransactionRecord
-                        byteLength = dis.readInt();
-                        byte[] recordRawBytes = new byte[byteLength];
-                        dis.readFully(recordRawBytes);
-                        messageDigest.update(Ints.toByteArray(byteLength));
-                        messageDigest.update(recordRawBytes);
+                        mdForContent.update(typeDelimiter);
+                        byte[] transactionRawBytes = readBytes(dis, readInt(dis, mdForContent), mdForContent);
+                        byte[] recordRawBytes = readBytes(dis, readInt(dis, mdForContent), mdForContent);
+
                         boolean isFirstTransaction = recordFile.getConsensusStart() == null;
                         boolean isLastTransaction = dis.available() == 0;
 
@@ -219,6 +213,25 @@ public class Utility {
         } catch (Exception e) {
             throw new IllegalArgumentException("Error parsing bad record file " + fileName, e);
         }
+    }
+
+    /**
+     * Reads int from the input stream and updates the digest.
+     */
+    public static int readInt(DataInputStream dis, MessageDigest md) throws IOException {
+        int value = dis.readInt();
+        md.update(Ints.toByteArray(value));
+        return value;
+    }
+
+    /**
+     * Reads given number of bytes from the input stream and updates the digest.
+     */
+    public static byte[] readBytes(DataInputStream dis, int len, MessageDigest md) throws IOException {
+        byte[] bytes = new byte[len];
+        dis.readFully(bytes);
+        md.update(bytes);
+        return bytes;
     }
 
     /**
@@ -441,7 +454,7 @@ public class Utility {
      */
     public static boolean verifyHashChain(
             String actualPrevFileHash, String expectedPrevFileHash, Instant verifyHashAfter, String fileName) {
-        var fileInstant = Instant.parse(fileName.replaceAll(".rcd", "").replaceAll("_", ":"));
+        var fileInstant = Instant.parse(FilenameUtils.getBaseName(fileName).replaceAll("_", ":"));
         if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;
         }

@@ -20,12 +20,21 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-public enum ApplicationStatusCode {
-    LAST_VALID_DOWNLOADED_RECORD_FILE,
-    LAST_VALID_DOWNLOADED_RECORD_FILE_HASH,
-    LAST_VALID_DOWNLOADED_BALANCE_FILE,
-    LAST_PROCESSED_RECORD_HASH,
-    LAST_VALID_DOWNLOADED_EVENT_FILE,
-    LAST_VALID_DOWNLOADED_EVENT_FILE_HASH,
-    LAST_PROCESSED_EVENT_HASH,
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+public class EventFile {
+    private String name;
+
+    private Long loadStart;
+
+    private Long loadEnd;
+
+    private String fileHash;
+
+    private String previousHash;
+
+    private int fileVersion;
 }
