@@ -251,7 +251,7 @@ curl -s "http://${REST_IP}/api/v1/transactions?limit=1"
 ## Access PostgreSQL
 
 ```shell
-kubectl exec -it -n "${NAMESPACE}" "${APP_NAME}-db-postgresql-0" -c postgresql -- psql -d mirror_node -U postgres
+kubectl exec -it -n "${NAMESPACE}" "${APP_NAME}-postgres-postgresql-0" -c postgresql -- psql -d mirror_node -U postgres
 ```
 
 # Backup and Restore
@@ -275,7 +275,7 @@ To backup PostgreSQL, you can use a similar technique with gcloud snapshots or y
 Replace the value of `PGPASSWORD` below with the password for the `postgres` superuser:
 
 ```shell script
-kubectl exec -t -n "${NAMESPACE}" "${APP_NAME}-db-postgresql-0" -c postgresql -- \
+kubectl exec -t -n "${NAMESPACE}" "${APP_NAME}-postgres-postgresql-0" -c postgresql -- \
   bash -c 'PGPASSWORD="password" pg_dumpall -c -l mirror_node -U postgres' > postgresql-backup.sql
 ```
 
@@ -347,7 +347,7 @@ Then use `psql` inside the container to restore. Replace `PGPASSWORD` below with
 
 ```shell
 cat postgresql-backup.sql | \
-  kubectl exec -it -n "${NAMESPACE}" "${APP_NAME}-db-postgresql-0" -c postgresql -- \
+  kubectl exec -it -n "${NAMESPACE}" "${APP_NAME}-postgres-postgresql-0" -c postgresql -- \
     bash -c 'PGPASSWORD="password" psql -U postgres'
 ```
 

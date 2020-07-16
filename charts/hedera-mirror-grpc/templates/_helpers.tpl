@@ -42,6 +42,7 @@ Common labels
 {{- define "hedera-mirror-grpc.labels" -}}
 {{ include "hedera-mirror-grpc.selectorLabels" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/part-of: hedera-mirror-node
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 helm.sh/chart: {{ include "hedera-mirror-grpc.chart" . }}
 {{- if .Values.labels }}
@@ -53,7 +54,11 @@ helm.sh/chart: {{ include "hedera-mirror-grpc.chart" . }}
 Expand the name of the chart.
 */}}
 {{- define "hedera-mirror-grpc.name" -}}
+{{- if .Values.global.useReleaseForNameLabel -}}
+{{- .Release.Name -}}
+{{- else -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -67,6 +72,7 @@ Namespace
 Selector labels
 */}}
 {{- define "hedera-mirror-grpc.selectorLabels" -}}
+app.kubernetes.io/component: grpc
 app.kubernetes.io/name: {{ include "hedera-mirror-grpc.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}

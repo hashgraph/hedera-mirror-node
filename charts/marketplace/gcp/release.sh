@@ -6,12 +6,23 @@ if [[ "$#" -lt 1 ]]; then
   exit 1
 fi
 
-tag="${1#v}" # Strip v prefix if present
-tag_minor="${tag%\.*}"
-source_tag="${tag}"
+# Same source and target tags
+if [[ "$#" -eq 1 ]]; then
+  source_tag="${1}"
+  target_tag="${source_tag}"
+fi
+
+# Different source and target tags. Useful for testing chart changes with existing tags.
+if [[ "$#" -eq 2 ]]; then
+  source_tag="${1}"
+  target_tag="${2}"
+fi
+
+target_tag="${target_tag#v}" # Strip v prefix if present
+target_tag_minor="${target_tag%\.*}"
 bats_tag="v1.1.0"
 postgresql_tag="12.3.0-debian-10-r35"
-registry="${2:-gcr.io/mirror-node-public/hedera-mirror-node}"
+registry="gcr.io/mirror-node-public/hedera-mirror-node"
 
 function retag() {
   local source=${1}
@@ -24,24 +35,32 @@ function retag() {
   fi
 
   docker pull "${source}"
-  docker tag "${source}" "${target}:${tag}"
-  docker tag "${source}" "${target}:${tag_minor}"
-  docker push "${target}:${tag}"
-  docker push "${target}:${tag_minor}"
+  docker tag "${source}" "${target}:${target_tag}"
+  docker push "${target}:${target_tag}"
+
+  # Don't update minor tag for pre-release tags
+  if [[ ! "${target_tag}" =~ .*-.* ]]; then
+    docker tag "${source}" "${target}:${target_tag_minor}"
+    docker push "${target}:${target_tag_minor}"
+  fi
 }
 
+# Ensure chart app version matches schema.yaml version
+sed -i .bak "s/version: .*/version: ${target_tag}/" values.yaml
+
 # Build Marketplace deployer image
-docker build -f ./Dockerfile -t "${registry}/deployer:${tag}" -t "${registry}/deployer:${tag_minor}" --build-arg tag=${tag} ../..
-docker push "${registry}/deployer:${tag}"
-docker push "${registry}/deployer:${tag_minor}"
+docker build -f ./Dockerfile -t "${registry}/deployer:${target_tag}" --build-arg tag=${target_tag} ../..
+docker push "${registry}/deployer:${target_tag}"
 
 # Retag other images
+retag "${registry}/deployer:${target_tag}" "deployer"
 retag "gcr.io/mirrornode/hedera-mirror-importer:${source_tag}" ""
 retag "gcr.io/mirrornode/hedera-mirror-grpc:${source_tag}" "grpc"
 retag "gcr.io/mirrornode/hedera-mirror-rest:${source_tag}" "rest"
 retag "bats/bats:${bats_tag}" "test"
 retag "bitnami/postgresql-repmgr:${postgresql_tag}" "postgresql-repmgr"
 
+mv values.yaml.bak values.yaml
 echo "Successfully pushed all images"
 exit 0
 

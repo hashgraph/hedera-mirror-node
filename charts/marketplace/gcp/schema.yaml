@@ -203,17 +203,12 @@ properties:
 required:
   - name
   - namespace
-  - global.rest.password
-  - grpc.config.hedera.mirror.grpc.db.password
   - grpc.replicas
   - grpc.serviceAccount.name
-  - importer.config.hedera.mirror.importer.db.password
   - importer.config.hedera.mirror.importer.downloader.accessKey
   - importer.config.hedera.mirror.importer.downloader.secretKey
   - importer.config.hedera.mirror.importer.network
   - importer.persistence.size
   - importer.serviceAccount.name
   - postgresql.persistence.size
-  - postgresql.postgresql.password
-  - postgresql.postgresql.repmgrPassword
   - rest.replicas
