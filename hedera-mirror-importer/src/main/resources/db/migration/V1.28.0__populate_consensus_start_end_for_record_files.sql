@@ -11,6 +11,8 @@ declare
 	nsecsStr varchar;
 	nsecs    bigint;
 begin
+    -- get the basename from the file path, note the file extension is stripped
+    -- it's a variant of the default Java Instant string, e.g., '2019-08-30T18_10_00.419072Z'
 	basename := regexp_replace(filePath, '^.*/([^/]*?)(\.[^/.]+)?$', '\1');
 
 	secsStr := split_part(basename, '.', 1);
@@ -27,6 +29,7 @@ $$ language plpgsql;
 
 drop function if exists getLastConsensusNsInRange(bigint, bigint);
 -- get the last consensus_ns from table transaction where consensus_ns is in the range [startNs, endNs)
+-- will throw exception if no such last consensus_ns found
 create function getLastConsensusNsInRange(startNs bigint, endNs bigint) returns bigint as
 $$
 declare
@@ -59,7 +62,7 @@ begin
 	return nextConsensusStart;
 exception
 	when NO_DATA_FOUND then
-		-- no record file after consensus_start, use bigint max
+		-- no record file with consensus_start after ns found, use bigint max
 		return 9223372036854775807;
 end;
 $$ language plpgsql;
