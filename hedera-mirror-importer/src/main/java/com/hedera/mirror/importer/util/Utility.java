@@ -155,12 +155,12 @@ public class Utility {
                         md.update(typeDelimiter);
                         byte[] readFileHash = new byte[48];
                         dis.read(readFileHash);
-                        recordFile.setPreviousHash(Hex.encodeHexString(readFileHash));
+                        String previousHash = Hex.encodeHexString(readFileHash);
+                        recordFile.setPreviousHash(previousHash);
                         md.update(readFileHash);
 
-                        if (!Utility.verifyHashChain(recordFile.getPreviousHash(), expectedPrevFileHash,
-                                verifyHashAfter, fileName)) {
-                            throw new HashMismatchException("Hash mismatch for file " + fileName);
+                        if (!Utility.verifyHashChain(previousHash, expectedPrevFileHash, verifyHashAfter, fileName)) {
+                            throw new HashMismatchException(fileName, expectedPrevFileHash, previousHash);
                         }
                         break;
 
@@ -453,8 +453,6 @@ public class Utility {
         if (actualPrevFileHash.contentEquals(expectedPrevFileHash)) {
             return true;
         }
-        log.error("Hash mismatch for file {}. Expected = {}, Actual = {}", fileName, expectedPrevFileHash,
-                actualPrevFileHash);
         return false;
     }
 }
