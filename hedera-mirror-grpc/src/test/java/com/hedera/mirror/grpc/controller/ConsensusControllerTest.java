@@ -28,6 +28,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -233,10 +234,12 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
         // fragment message split across historic and incoming
         Flux<TopicMessage> generator = Flux.concat(
                 domainBuilder.topicMessage(t -> t.sequenceNumber(6).chunkNum(2).chunkTotal(3)
-                        .validStartTimestamp(now.plusNanos(4)).payerAccountId(1L).consensusTimestamp(now.plusNanos(5))),
+                        .validStartTimestamp(now.plusNanos(4)).payerAccountId(1L)
+                        .consensusTimestamp(now.plus(5, ChronoUnit.MINUTES))),
                 domainBuilder.topicMessage(t -> t.sequenceNumber(7).chunkNum(3).chunkTotal(3)
-                        .validStartTimestamp(now.plusNanos(5)).payerAccountId(1L).consensusTimestamp(now.plusNanos(6))),
-                domainBuilder.topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(now.plusNanos(7)))
+                        .validStartTimestamp(now.plusNanos(5)).payerAccountId(1L)
+                        .consensusTimestamp(now.plus(6, ChronoUnit.MINUTES))),
+                domainBuilder.topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(now.plus(7, ChronoUnit.MINUTES)))
         );
 
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
