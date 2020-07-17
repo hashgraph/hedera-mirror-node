@@ -12,7 +12,7 @@
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
-    "@awaitjs/express": "^0.5.1",
+    "@awaitjs/express": "^0.6.1",
     "asn1js": "^2.0.26",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
