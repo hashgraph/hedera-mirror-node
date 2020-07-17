@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -66,7 +67,7 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
     void beforeEach() {
         file1 = "2019-08-30T18_10_00.419072Z.rcd";
         file2 = "2019-08-30T18_10_05.249678Z.rcd";
-        fileExtension = ".rcd";
+        downloaderProperties.setCloseInterval(Duration.ofSeconds(5)); // Test rcd files use older 5s interval
     }
 
     @Test

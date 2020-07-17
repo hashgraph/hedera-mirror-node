@@ -27,16 +27,24 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum StreamType {
 
-    BALANCE("accountBalances"),
-    RECORD("recordstreams"),
-    EVENT("eventsStreams");
+    BALANCE("accountBalances", "balance", "_Balances", ".csv"),
+    EVENT("eventsStreams", "events_", "", ".evts"),
+    RECORD("recordstreams", "record", "", ".rcd");
 
     private static final String PARSED = "parsed";
     private static final String SIGNATURES = "signatures";
     private static final String TEMP = "tmp";
     private static final String VALID = "valid";
+    private static final String SIGNATURE_EXTENSION = "_sig";
 
     private final String path;
+    private final String nodePrefix;
+    private final String suffix;
+    private final String extension;
+
+    public String getSignatureExtension() {
+        return extension + SIGNATURE_EXTENSION;
+    }
 
     public String getParsed() {
         return PARSED;

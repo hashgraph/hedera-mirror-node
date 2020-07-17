@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import java.nio.file.Path;
+import java.time.Duration;
 import javax.annotation.PostConstruct;
 
 import com.hedera.mirror.importer.MirrorProperties;
@@ -30,6 +31,10 @@ import com.hedera.mirror.importer.util.Utility;
 public interface DownloaderProperties {
 
     int getBatchSize();
+
+    Duration getCloseInterval();
+
+    void setCloseInterval(Duration closeInterval);
 
     CommonDownloaderProperties getCommon();
 

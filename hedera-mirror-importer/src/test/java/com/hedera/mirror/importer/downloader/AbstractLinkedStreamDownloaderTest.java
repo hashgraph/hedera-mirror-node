@@ -33,12 +33,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloaderTest {
 
-    protected String fileExtension;
-
     @Test
     @DisplayName("Doesn't match last valid hash")
     void hashMismatchWithPrevious() throws Exception {
-        doReturn("2019-01-01T01:00:00.000000Z" + fileExtension).when(applicationStatusRepository)
+        doReturn("2019-01-01T01_00_00.000000Z" + downloaderProperties.getStreamType().getExtension())
+                .when(applicationStatusRepository)
                 .findByStatusCode(downloader.getLastValidDownloadedFileKey());
         doReturn("123").when(applicationStatusRepository)
                 .findByStatusCode(downloader.getLastValidDownloadedFileHashKey());
@@ -50,7 +49,8 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
     @Test
     @DisplayName("Bypass previous hash mismatch")
     void hashMismatchWithBypass() throws Exception {
-        doReturn("2019-01-01T14:12:00.000000Z" + fileExtension).when(applicationStatusRepository)
+        doReturn("2019-01-01T14_12_00.000000Z" + downloaderProperties.getStreamType().getExtension())
+                .when(applicationStatusRepository)
                 .findByStatusCode(downloader.getLastValidDownloadedFileKey());
         doReturn("123").when(applicationStatusRepository)
                 .findByStatusCode(downloader.getLastValidDownloadedFileHashKey());
