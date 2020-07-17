@@ -317,15 +317,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             if (topicMessage.getChunkNum() != null) {
                 sqlInsertTopicMessage.setInt(F_TOPICMESSAGE.CHUNK_NUM.ordinal(), topicMessage.getChunkNum());
                 sqlInsertTopicMessage.setInt(F_TOPICMESSAGE.CHUNK_TOTAL.ordinal(), topicMessage.getChunkTotal());
-                sqlInsertTopicMessage
-                        .setLong(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), topicMessage.getPayerAccountId().getId());
+                if (topicMessage.getPayerAccountId() != null) {
+                    sqlInsertTopicMessage.setLong(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(),
+                            topicMessage.getPayerAccountId().getId());
+                } else {
+                    sqlInsertTopicMessage.setObject(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), null);
+                }
                 sqlInsertTopicMessage
                         .setLong(F_TOPICMESSAGE.VALID_START_TIMESTAMP.ordinal(), topicMessage.getValidStartTimestamp());
             } else {
                 sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.CHUNK_NUM.ordinal(), Types.SMALLINT);
                 sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.CHUNK_TOTAL.ordinal(), Types.SMALLINT);
-                sqlInsertTopicMessage
-                        .setObject(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), null);
+                sqlInsertTopicMessage.setObject(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), null);
                 sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.VALID_START_TIMESTAMP.ordinal(), Types.BIGINT);
             }
 
