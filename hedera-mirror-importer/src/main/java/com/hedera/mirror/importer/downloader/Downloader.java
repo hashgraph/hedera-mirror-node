@@ -372,11 +372,12 @@ public abstract class Downloader {
                             break;
                         }
                     } else {
-                        log.warn("Verification of data file failed. Will try to download a file with same timestamp " +
-                                "from other nodes and check the hash: {}", signedDataFile);
+                        log.warn("Verification of data file {} from node {} failed. Will retry another node",
+                                signedDataFile.getName(), signature.getNode());
                     }
                 } catch (Exception e) {
-                    log.error("Error downloading data file corresponding to {}", sigFileName, e);
+                    log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
+                            signature.getNode(), sigFileName, e);
                 }
             }
 
