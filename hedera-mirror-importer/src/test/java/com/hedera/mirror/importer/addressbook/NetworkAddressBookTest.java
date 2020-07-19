@@ -65,6 +65,11 @@ public class NetworkAddressBookTest {
     @Resource
     protected NodeAddressRepository nodeAddressRepository;
 
+    @Resource
+    protected AddressBookRepository addressBookRepository;
+    @Resource
+    protected NodeAddressRepository nodeAddressRepository;
+
     private static NodeAddressBook addressBook(int size) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < size; ++i) {

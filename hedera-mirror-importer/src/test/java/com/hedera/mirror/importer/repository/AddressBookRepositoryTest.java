@@ -42,22 +42,22 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
         AddressBook addressBook1 = addressBookRepository.save(addressBook(ab -> ab.startConsensusTimestamp(1L)
                 .consensusTimestamp(2L)));
         AddressBook addressBook2 = addressBookRepository
-                .save(addressBook(ab -> ab.startConsensusTimestamp(3L)
+                .save(addressBook(ab -> ab.operationType(AddressBook.FileOperation.UPDATE).startConsensusTimestamp(3L)
                         .consensusTimestamp(4L)));
         AddressBook addressBook3 = addressBookRepository
-                .save(addressBook(ab -> ab.startConsensusTimestamp(5L)
+                .save(addressBook(ab -> ab.operationType(AddressBook.FileOperation.APPEND).startConsensusTimestamp(5L)
                         .consensusTimestamp(6L)));
         addressBookRepository
-                .save(addressBook(ab -> ab.isComplete(false)
+                .save(addressBook(ab -> ab.isComplete(false).operationType(AddressBook.FileOperation.UPDATE)
                         .startConsensusTimestamp(7L).consensusTimestamp(8L).endConsensusTimestamp(null)));
         addressBookRepository
-                .save(addressBook(ab -> ab.isComplete(false)
+                .save(addressBook(ab -> ab.isComplete(false).operationType(AddressBook.FileOperation.APPEND)
                         .startConsensusTimestamp(9L).consensusTimestamp(10L).endConsensusTimestamp(null)));
         AddressBook addressBook4 = addressBookRepository
-                .save(addressBook(ab -> ab.startConsensusTimestamp(11L)
+                .save(addressBook(ab -> ab.operationType(AddressBook.FileOperation.APPEND).startConsensusTimestamp(11L)
                         .consensusTimestamp(12L)));
         AddressBook addressBook5 = addressBookRepository
-                .save(addressBook(ab -> ab.startConsensusTimestamp(13L)
+                .save(addressBook(ab -> ab.operationType(AddressBook.FileOperation.UPDATE).startConsensusTimestamp(13L)
                         .consensusTimestamp(14L)));
 
         assertThat(addressBookRepository
@@ -76,6 +76,7 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
                 .fileData("address book memo".getBytes())
                 .isComplete(true)
                 .nodeCount(12)
+                .operationType(AddressBook.FileOperation.CREATE)
                 .fileId(addressBookEntityId102);
 
         if (addressBookCustomizer != null) {

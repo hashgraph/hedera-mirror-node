@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.addressbook;
  */
 
 import com.google.common.collect.ImmutableList;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.io.File;
 import java.nio.file.Files;
