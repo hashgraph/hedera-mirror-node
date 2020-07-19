@@ -11,12 +11,11 @@ create table if not exists address_book
     file_id                     entity_id       not null,
     node_count                  smallint        null,
     file_data                   bytea           not null,
-    is_complete                 boolean         not null default false,
-    operation_type              smallint        not null
+    is_complete                 boolean         not null default false
 );
 
-create index if not exists address_book__fileId_isComplete_operationType
-    on address_book (file_id, is_complete, operation_type);
+create index if not exists address_book__fileId_isComplete
+    on address_book (file_id, is_complete);
 
 -- add node address table
 create table if not exists node_address

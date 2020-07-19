@@ -64,12 +64,7 @@ public class NetworkAddressBookTest {
     protected AddressBookRepository addressBookRepository;
     @Resource
     protected NodeAddressRepository nodeAddressRepository;
-
-    @Resource
-    protected AddressBookRepository addressBookRepository;
-    @Resource
-    protected NodeAddressRepository nodeAddressRepository;
-
+    
     private static NodeAddressBook addressBook(int size) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < size; ++i) {
@@ -382,5 +377,34 @@ public class NetworkAddressBookTest {
 
         assertEquals(INITIAL.getNodeAddressCount() * 2 + UPDATED.getNodeAddressCount(), nodeAddressRepository.count());
         assertEquals(5, addressBookRepository.count());
+    }
+
+    @Test
+    void isAddressBook() {
+
+    }
+
+    @Test
+    void verifyPreviousAddressBookEndTimeUpdate() {
+
+    }
+
+    @Test
+    void verifyAddressBookUpdateAcrossSessions() {
+        // create network book, perform an update and append
+
+        // create net address book and submit another append to complete file
+
+        // verify valid address book and repository update
+    }
+
+    @Test
+    void verifyRepositoryUpdates() {
+        // add repository verifications for scenarios
+        // first importer start
+        // importer start after first start
+        // address book after single update
+        // address book after update and append
+        // [stretch] address book across fileID's
     }
 }
