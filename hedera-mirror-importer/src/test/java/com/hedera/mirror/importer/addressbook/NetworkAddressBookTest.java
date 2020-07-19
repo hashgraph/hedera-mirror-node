@@ -49,7 +49,8 @@ public class NetworkAddressBookTest {
 
     private static final NodeAddressBook INITIAL = addressBook(5);
     private static final NodeAddressBook UPDATED = addressBook(10);
-    private static final FileID fileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build();
+    private static final FileID FILE_ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build();
+    private static final int CLASSPATH_BYTE_SIZE = 3428;
 
     @TempDir
     Path dataPath;
@@ -78,7 +79,7 @@ public class NetworkAddressBookTest {
                                 .build())
                         .build(),
                 Instant.now().getEpochSecond(),
-                fileId);
+                FILE_ID);
     }
 
     private static void append(NetworkAddressBook networkAddressBook, byte[] contents) {
@@ -88,7 +89,7 @@ public class NetworkAddressBookTest {
                                 .build())
                         .build(),
                 Instant.now().getEpochSecond(),
-                fileId);
+                FILE_ID);
     }
 
     @BeforeEach
@@ -111,8 +112,8 @@ public class NetworkAddressBookTest {
         assertThat(networkAddressBook.getAddresses())
                 .describedAs("Loads default address book from classpath")
                 .hasSize(4);
-        assertThat(addressBookPath).exists();
-        assertThat(tempPath).doesNotExist();
+        assertThat(networkAddressBook.getCurrentAddressBook().getFileData()).isNotEmpty()
+                .hasSize(CLASSPATH_BYTE_SIZE);
     }
 
     @Test
@@ -127,10 +128,9 @@ public class NetworkAddressBookTest {
         assertThat(networkAddressBook.getAddresses())
                 .describedAs("Loads default address book from filesystem")
                 .hasSize(UPDATED.getNodeAddressCount());
-        assertThat(addressBookPath).exists()
-                .hasBinaryContent(UPDATED.toByteArray())
-                .hasSameContentAs(initialAddressBook);
-        assertThat(tempPath).doesNotExist();
+
+        assertThat(networkAddressBook.getCurrentAddressBook().getFileData()).isNotEmpty()
+                .hasSize(UPDATED.toByteArray().length);
     }
 
     @Test
@@ -171,8 +171,8 @@ public class NetworkAddressBookTest {
         update(networkAddressBook, addressBookBytes);
 
         assertThat(networkAddressBook.getAddresses()).hasSize(UPDATED.getNodeAddressCount());
-        assertThat(tempPath).doesNotExist();
-        assertThat(addressBookPath).exists().hasBinaryContent(addressBookBytes);
+        assertThat(networkAddressBook.getCurrentAddressBook().getFileData()).isNotEmpty()
+                .hasSize(addressBookBytes.length);
     }
 
     @Test
@@ -186,8 +186,8 @@ public class NetworkAddressBookTest {
         update(networkAddressBook, addressBookPartial);
 
         assertThat(networkAddressBook.getAddresses()).hasSize(INITIAL.getNodeAddressCount());
-        assertThat(addressBookPath).exists().hasBinaryContent(INITIAL.toByteArray());
-        assertThat(tempPath).exists().hasBinaryContent(addressBookPartial);
+        assertThat(networkAddressBook.getPartialAddressBook().getFileData()).isNotEmpty()
+                .hasSize(index);
     }
 
     @Test
@@ -202,9 +202,9 @@ public class NetworkAddressBookTest {
         update(networkAddressBook, addressBookBytes1);
         append(networkAddressBook, addressBookBytes2);
 
-        assertThat(networkAddressBook.getAddresses()).hasSize(UPDATED.getNodeAddressCount());
-        assertThat(addressBookPath).exists().hasBinaryContent(UPDATED.toByteArray());
-        assertThat(tempPath).doesNotExist();
+        assertThat(networkAddressBook.getAddresses()).hasSize(UPDATED.getNodeAddressCount() / 2);
+        assertThat(networkAddressBook.getPartialAddressBook().getFileData()).isNotEmpty()
+                .hasSize(index);
     }
 
     @Test
@@ -217,5 +217,34 @@ public class NetworkAddressBookTest {
         assertThat(networkAddressBook.getAddresses()).hasSize(INITIAL.getNodeAddressCount());
         assertThat(addressBookPath).exists().hasBinaryContent(INITIAL.toByteArray());
         assertThat(tempPath).doesNotExist();
+    }
+
+    @Test
+    void isAddressBook() {
+
+    }
+
+    @Test
+    void verifyPreviousAddressBookEndTimeUpdate() {
+
+    }
+
+    @Test
+    void verifyAddressBookUpdateAcrossSessions() {
+        // create network book, perform an update and append
+
+        // create net address book and submit another append to complete file
+
+        // verify valid address book and repository update
+    }
+
+    @Test
+    void verifyRepositoryUpdates() {
+        // add repository verifications for scenarios
+        // first importer start
+        // importer start after first start
+        // address book after single update
+        // address book after update and append
+        // [stretch] address book across fileID's
     }
 }

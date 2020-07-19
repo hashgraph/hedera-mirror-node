@@ -22,8 +22,6 @@ package com.hedera.mirror.importer.domain;
 
 import javax.persistence.Convert;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -55,16 +53,7 @@ public class AddressBook {
     // complete address books fileData will contain valid NodeAddress protos
     private boolean isComplete;
 
-    @Enumerated(EnumType.ORDINAL)
-    private FileOperation operationType;
-
 //    public EntityId toEntityId() {
 //        return EntityId.of(fileId.getShardNum(), fileId.getRealmNum(), fileId.getEntityNum(), EntityTypeEnum.FILE);
 //    }
-
-    public enum FileOperation {
-        CREATE,
-        UPDATE,
-        APPEND
-    }
 }

@@ -168,7 +168,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         entityListener.onTransaction(tx);
         log.debug("Storing transaction: {}", tx);
 
-        if (NetworkAddressBook.isAddressBook(entityId)) {
+        if (networkAddressBook.isAddressBook(entityId)) {
             networkAddressBook.updateFrom(body, consensusNs, txRecord.getReceipt().getFileID());
         }
     }

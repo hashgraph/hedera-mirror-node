@@ -73,7 +73,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
             throw new ParserException("Error sending transaction to pubsub", e);
         }
         log.debug("Published transaction : {}", consensusTimestamp);
-        if (NetworkAddressBook.isAddressBook(entity)) {
+        if (networkAddressBook.isAddressBook(entity)) {
             networkAddressBook.updateFrom(body, consensusTimestamp, txRecord.getReceipt().getFileID());
         }
     }
