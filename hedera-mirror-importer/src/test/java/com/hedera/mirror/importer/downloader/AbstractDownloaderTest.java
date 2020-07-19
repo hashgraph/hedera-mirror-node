@@ -29,6 +29,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Bytes;
+import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import io.findify.s3mock.S3Mock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
@@ -60,6 +64,7 @@ import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
+import com.hedera.mirror.importer.repository.NodeAddressRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public abstract class AbstractDownloaderTest {
@@ -67,6 +72,10 @@ public abstract class AbstractDownloaderTest {
 
     @Mock(answer = Answers.RETURNS_SMART_NULLS)
     protected ApplicationStatusRepository applicationStatusRepository;
+    @Mock(answer = Answers.RETURNS_SMART_NULLS)
+    protected AddressBookRepository addressBookRepository;
+    @Mock(answer = Answers.RETURNS_SMART_NULLS)
+    protected NodeAddressRepository nodeAddressRepository;
     @TempDir
     protected Path s3Path;
     protected S3Mock s3;
@@ -136,7 +145,7 @@ public abstract class AbstractDownloaderTest {
         s3AsyncClient = new MirrorImporterConfiguration(
                 mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry))
                 .s3CloudStorageClient();
-        networkAddressBook = new NetworkAddressBook(mirrorProperties);
+        networkAddressBook = new NetworkAddressBook(mirrorProperties, addressBookRepository, nodeAddressRepository);
         downloader = getDownloader();
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
@@ -215,7 +224,13 @@ public abstract class AbstractDownloaderTest {
         byte[] addressBook = Files.readAllBytes(mirrorProperties.getAddressBookPath());
         int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
         addressBook = Arrays.copyOfRange(addressBook, 0, index);
-        networkAddressBook.update(addressBook);
+        networkAddressBook.updateFrom(TransactionBody.newBuilder()
+                        .setFileUpdate(FileUpdateTransactionBody.newBuilder()
+                                .setContents(ByteString.copyFrom(addressBook))
+                                .build())
+                        .build(),
+                Instant.now().getEpochSecond(),
+                FileID.newBuilder().setFileNum(102).build());
 
         fileCopier.filterDirectories("*0.0.3").copy();
         downloader.download();

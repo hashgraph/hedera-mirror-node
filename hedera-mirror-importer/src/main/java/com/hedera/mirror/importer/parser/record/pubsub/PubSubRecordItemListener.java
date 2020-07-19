@@ -74,7 +74,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
         }
         log.debug("Published transaction : {}", consensusTimestamp);
         if (NetworkAddressBook.isAddressBook(entity)) {
-            networkAddressBook.updateFrom(body);
+            networkAddressBook.updateFrom(body, consensusTimestamp, txRecord.getReceipt().getFileID());
         }
     }
 

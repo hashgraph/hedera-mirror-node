@@ -202,7 +202,9 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()));
+        verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()),
+                Instant.now().getEpochSecond(),
+                ADDRESS_BOOK_FILE_ID);
     }
 
     @Test
@@ -220,7 +222,9 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()));
+        verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()),
+                Instant.now().getEpochSecond(),
+                ADDRESS_BOOK_FILE_ID);
     }
 
     private PubSubMessage assertPubSubMessage(Transaction expectedTransaction, int numSendTries) throws Exception {

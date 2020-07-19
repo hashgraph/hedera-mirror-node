@@ -24,23 +24,50 @@ import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-
+import javax.persistence.Convert;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
 
-@Builder
-@Value
+import com.hedera.mirror.importer.converter.EntityIdConverter;
+import com.hedera.mirror.importer.converter.StringToByteArrayConverter;
+
+@Builder(toBuilder = true)
+@Data
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
 public class NodeAddress {
 
-    private String id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long consensusTimestamp;
+
+    @Convert(converter = StringToByteArrayConverter.class)
+    private String memo;
 
     private String ip;
 
     @Builder.Default
     private int port = 50211;
 
+    @Convert(converter = StringToByteArrayConverter.class)
     private String publicKey;
+
+    private long nodeId;
+
+    @Convert(converter = EntityIdConverter.class)
+    private EntityId nodeAccountId;
+
+    private byte[] nodeCertHash;
 
     public PublicKey getPublicKeyAsObject() {
         try {

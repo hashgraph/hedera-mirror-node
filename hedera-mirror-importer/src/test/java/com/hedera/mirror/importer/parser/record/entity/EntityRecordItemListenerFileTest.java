@@ -54,6 +54,8 @@ import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.repository.AddressBookRepository;
+import com.hedera.mirror.importer.repository.NodeAddressRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
@@ -74,6 +76,11 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
     @Value("classpath:addressbook/testnet")
     private File addressBookSmall;
+
+    @Resource
+    protected AddressBookRepository addressBookRepository;
+    @Resource
+    protected NodeAddressRepository nodeAddressRepository;
 
     @BeforeEach
     void before() throws Exception {
@@ -527,7 +534,13 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileUpdateAddressBookPartial() throws Exception {
         byte[] addressBookPrevious = FileUtils.readFileToByteArray(addressBookLarge);
-        networkAddressBook.update(addressBookPrevious);
+        networkAddressBook.updateFrom(TransactionBody.newBuilder()
+                        .setFileUpdate(FileUpdateTransactionBody.newBuilder()
+                                .setContents(ByteString.copyFrom(addressBookPrevious))
+                                .build())
+                        .build(),
+                Instant.now().getEpochSecond(),
+                FileID.newBuilder().setFileNum(102).build());
         byte[] addressBook = FileUtils.readFileToByteArray(addressBookSmall);
         byte[] addressBookUpdate = Arrays.copyOf(addressBook, 6144);
         Transaction transaction = fileUpdateAllTransaction(
@@ -717,7 +730,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     private void assertFileEntity(FileCreateTransactionBody expected, Timestamp consensusTimestamp) {
         Entities actualFile = getTransactionEntity(consensusTimestamp);
         assertAll(
-                () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile.getExpiryTimeNs()),
+                () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile
+                        .getExpiryTimeNs()),
                 () -> assertArrayEquals(expected.getKeys().toByteArray(), actualFile.getKey()),
                 () -> assertNull(actualFile.getAutoRenewPeriod()),
                 () -> assertNull(actualFile.getProxyAccountId())
@@ -732,7 +746,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     private void assertFileEntity(FileUpdateTransactionBody expected, Timestamp consensusTimestamp) {
         Entities actualFile = getTransactionEntity(consensusTimestamp);
         assertAll(
-                () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile.getExpiryTimeNs()),
+                () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile
+                        .getExpiryTimeNs()),
                 () -> assertArrayEquals(expected.getKeys().toByteArray(), actualFile.getKey()),
                 () -> assertNull(actualFile.getAutoRenewPeriod()),
                 () -> assertNull(actualFile.getProxyAccountId())
@@ -858,8 +873,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
     private Transaction fileUpdateKeysTransaction() {
         return buildTransaction(builder -> builder.getFileUpdateBuilder()
-                    .setFileID(fileId)
-                    .getKeysBuilder().addKeys(keyFromString(KEY)));
+                .setFileID(fileId)
+                .getKeysBuilder().addKeys(keyFromString(KEY)));
     }
 
     private Transaction fileDeleteTransaction() {

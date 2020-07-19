@@ -169,7 +169,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         log.debug("Storing transaction: {}", tx);
 
         if (NetworkAddressBook.isAddressBook(entityId)) {
-            networkAddressBook.updateFrom(body);
+            networkAddressBook.updateFrom(body, consensusNs, txRecord.getReceipt().getFileID());
         }
     }
 
@@ -263,6 +263,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         insertFileData(consensusTimestamp, contents, transactionBody.getFileID());
     }
 
+    private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody) {
+        FileID fileId = transactionBody.getFileID();
+        byte[] contents = transactionBody.getContents().toByteArray();
+        insertFileData(consensusTimestamp, contents, fileId);
+    }
+
     private void insertCryptoAddLiveHash(long consensusTimestamp,
                                          CryptoAddLiveHashTransactionBody transactionBody) {
         if (entityProperties.getPersist().isClaims()) {
@@ -339,12 +345,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccount));
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount));
         }
-    }
-
-    private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody) {
-        FileID fileId = transactionBody.getFileID();
-        byte[] contents = transactionBody.getContents().toByteArray();
-        insertFileData(consensusTimestamp, contents, fileId);
     }
 
     private void insertContractResults(

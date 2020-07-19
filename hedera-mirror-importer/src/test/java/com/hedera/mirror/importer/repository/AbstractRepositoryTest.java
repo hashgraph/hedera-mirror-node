@@ -53,6 +53,10 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
     protected TransactionTypeRepository transactionTypeRepository;
     @Resource
     protected EntityTypeRepository entityTypeRepository;
+    @Resource
+    protected AddressBookRepository addressBookRepository;
+    @Resource
+    protected NodeAddressRepository nodeAddressRepository;
 
     private Entities insertEntity(EntityTypeEnum entityType) {
         Random rand = new Random();

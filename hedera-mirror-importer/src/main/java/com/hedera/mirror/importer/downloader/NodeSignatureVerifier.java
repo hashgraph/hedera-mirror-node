@@ -50,7 +50,7 @@ public class NodeSignatureVerifier {
         nodeIDPubKeyMap = networkAddressBook
                 .getAddresses()
                 .stream()
-                .collect(Collectors.toMap(NodeAddress::getId, NodeAddress::getPublicKeyAsObject));
+                .collect(Collectors.toMap(NodeAddress::getMemo, NodeAddress::getPublicKeyAsObject));
     }
 
     private static boolean consensusReached(long actualNodes, long expectedNodes) {

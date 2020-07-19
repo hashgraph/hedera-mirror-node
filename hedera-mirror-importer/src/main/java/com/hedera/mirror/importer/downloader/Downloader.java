@@ -164,7 +164,7 @@ public abstract class Downloader {
                 .synchronizedSortedSetMultimap(TreeMultimap.create());
         Set<String> nodeAccountIds = networkAddressBook.getAddresses()
                 .stream()
-                .map(NodeAddress::getId)
+                .map(NodeAddress::getMemo)
                 .collect(Collectors.toSet());
         List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
         var totalDownloads = new AtomicInteger();
