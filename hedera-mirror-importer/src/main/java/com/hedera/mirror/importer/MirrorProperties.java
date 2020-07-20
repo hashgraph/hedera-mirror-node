@@ -56,7 +56,7 @@ public class MirrorProperties {
 
     private Long topicRunningHashV2AddedTimestamp;
 
-    private Long addressBookFileId = 102L;
+    private Long addressBookFileIdEntityNum = 102L;
 
     public Path getAddressBookPath() {
         return dataPath.resolve(ADDRESS_BOOK_FILE);

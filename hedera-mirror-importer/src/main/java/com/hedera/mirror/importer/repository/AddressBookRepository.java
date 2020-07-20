@@ -26,10 +26,12 @@ import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 
+@Transactional
 public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
     @Query("from AddressBook where consensusTimestamp <= ?1 and fileId = ?2 and isComplete = true order by " +
             "consensusTimestamp asc")
@@ -40,7 +42,7 @@ public interface AddressBookRepository extends CrudRepository<AddressBook, Long>
     Optional<AddressBook> findTopByFileIdAndIsCompleteIsFalseOrderByConsensusTimestampDesc(EntityId fileId);
 
     @Modifying
-    @Transactional
-    @Query("update AddressBook set endConsensusTimestamp = ?1 where consensusTimestamp = ?2")
-    void updateEndConsensusTimestamp(long consensusTimestamp, long endConsensusTimestamp);
+    @Query("update AddressBook set endConsensusTimestamp = :end where consensusTimestamp = :timestamp")
+    void updateEndConsensusTimestamp(@Param("timestamp") long consensusTimestamp,
+                                     @Param("end") long endConsensusTimestamp);
 }

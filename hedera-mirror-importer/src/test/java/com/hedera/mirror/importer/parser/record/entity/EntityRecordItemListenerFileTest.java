@@ -51,11 +51,10 @@ import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.repository.AddressBookRepository;
-import com.hedera.mirror.importer.repository.NodeAddressRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
@@ -76,11 +75,6 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
     @Value("classpath:addressbook/testnet")
     private File addressBookSmall;
-
-    @Resource
-    protected AddressBookRepository addressBookRepository;
-    @Resource
-    protected NodeAddressRepository nodeAddressRepository;
 
     @BeforeEach
     void before() throws Exception {
@@ -322,7 +316,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         parseRecordItemAndCommit(new RecordItem(transactionAppend, recordAppend));
 
         assertThat(networkAddressBook.getAddresses())
-                .describedAs("Should overwite address book with complete update")
+                .describedAs("Should overwrite address book with complete update")
                 .hasSize(13);
 
         assertAll(
@@ -331,8 +325,9 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 , () -> assertFileTransaction(transactionBodyAppend, recordAppend, false)
                 , () -> assertFileData(fileAppendTransactionBody.getContents(), recordAppend.getConsensusTimestamp())
                 , () -> assertFileData(fileUpdateTransactionBody.getContents(), recordUpdate.getConsensusTimestamp())
-                , () -> assertArrayEquals(addressBook,
-                        FileUtils.readFileToByteArray(mirrorProperties.getAddressBookPath().toFile()))
+                , () -> assertAddressBookData(addressBook, true)
+                , () -> assertEquals(13, nodeAddressRepository.count())
+                , () -> assertEquals(2, addressBookRepository.count()) // update and append
         );
     }
 
@@ -563,9 +558,9 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 () -> assertRowCountOnSuccess(),
                 () -> assertFileTransaction(transactionBody, record, false),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertArrayEquals(addressBookPrevious,
-                        FileUtils.readFileToByteArray(mirrorProperties.getAddressBookPath().toFile())
-                )
+                () -> assertAddressBookData(addressBookUpdate, false)
+                , () -> assertEquals(13, nodeAddressRepository.count())
+                , () -> assertEquals(2, addressBookRepository.count()) // initial and 2 updates
         );
     }
 
@@ -592,8 +587,9 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 () -> assertRowCountOnSuccess(),
                 () -> assertFileTransaction(transactionBody, record, false),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertArrayEquals(fileUpdateTransactionBody.getContents().toByteArray(),
-                        FileUtils.readFileToByteArray(mirrorProperties.getAddressBookPath().toFile()))
+                () -> assertAddressBookData(addressBook, true)
+                , () -> assertEquals(4, nodeAddressRepository.count())
+                , () -> assertEquals(1, addressBookRepository.count()) // initial and new
         );
     }
 
@@ -762,6 +758,12 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     private void assertFileData(ByteString expected, Timestamp consensusTimestamp) {
         FileData actualFileData = fileDataRepository.findById(Utility.timeStampInNanos(consensusTimestamp)).get();
         assertArrayEquals(expected.toByteArray(), actualFileData.getFileData());
+    }
+
+    private void assertAddressBookData(byte[] expected, boolean complete) {
+        AddressBook actualAddressBook = complete ? networkAddressBook.getCurrentAddressBook() :
+                networkAddressBook.getPartialAddressBook();
+        assertArrayEquals(expected, actualAddressBook.getFileData());
     }
 
     private void assertFileEntityHasNullFields(Timestamp consensusTimestamp) {

@@ -55,11 +55,13 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
+import com.hedera.mirror.importer.repository.NodeAddressRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -88,6 +90,10 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected TopicMessageRepository topicMessageRepository;
     @Resource
     protected NonFeeTransferRepository nonFeeTransferRepository;
+    @Resource
+    protected AddressBookRepository addressBookRepository;
+    @Resource
+    protected NodeAddressRepository nodeAddressRepository;
 
     @Resource
     protected EntityRecordItemListener entityRecordItemListener;

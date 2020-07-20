@@ -52,8 +52,4 @@ public class AddressBook {
 
     // complete address books fileData will contain valid NodeAddress protos
     private boolean isComplete;
-
-//    public EntityId toEntityId() {
-//        return EntityId.of(fileId.getShardNum(), fileId.getRealmNum(), fileId.getEntityNum(), EntityTypeEnum.FILE);
-//    }
 }

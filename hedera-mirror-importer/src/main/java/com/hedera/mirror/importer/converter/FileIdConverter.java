@@ -46,7 +46,9 @@ public class FileIdConverter implements AttributeConverter<EntityId, Long>, Conv
         if (encodedId == null) {
             return null;
         }
-        return EntityIdEndec.decode(encodedId);
+        EntityId entityId = EntityIdEndec.decode(encodedId);
+        return EntityId
+                .of(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), EntityTypeEnum.FILE);
     }
 
     @Override
