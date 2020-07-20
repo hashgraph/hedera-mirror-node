@@ -55,8 +55,6 @@ import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.repository.AddressBookRepository;
-import com.hedera.mirror.importer.repository.NodeAddressRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
@@ -77,11 +75,6 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
     @Value("classpath:addressbook/testnet")
     private File addressBookSmall;
-
-    @Resource
-    protected AddressBookRepository addressBookRepository;
-    @Resource
-    protected NodeAddressRepository nodeAddressRepository;
 
     @BeforeEach
     void before() throws Exception {

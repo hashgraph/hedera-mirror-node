@@ -108,14 +108,6 @@ public class NetworkAddressBook {
         return mirrorProperties.getAddressBookFileIdEntityNum() == entityNum;
     }
 
-    public AddressBook getCurrentAddressBook() {
-        return currentAddressBook;
-    }
-
-    public AddressBook getPartialAddressBook() {
-        return incomingAddressBook;
-    }
-
     private void init() {
         // load most recent addressBook
         loadAddressBookFromDB();
