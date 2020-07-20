@@ -20,34 +20,30 @@ package com.hedera.mirror.importer.downloader.event;
  * ‍
  */
 
-import com.hedera.mirror.importer.exception.ImporterException;
-
-import com.hedera.mirror.importer.util.Utility;
+import static com.hedera.mirror.importer.util.Utility.verifyHashChain;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.scheduling.annotation.Scheduled;
-import com.hedera.mirror.importer.reader.event.EventFileReader;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.downloader.Downloader;
+import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.leader.Leader;
+import com.hedera.mirror.importer.reader.event.EventFileReader;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
-
-import static com.hedera.mirror.importer.util.Utility.verifyHashChain;
 
 @Log4j2
 @Named
 public class EventFileDownloader extends Downloader {
 
-    private EventFileReader eventFileReader;
+    private final EventFileReader eventFileReader;
 
     public EventFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
@@ -81,7 +77,7 @@ public class EventFileDownloader extends Downloader {
     @Override
     protected boolean verifyDataFile(File file, byte[] verifiedHash) {
         String expectedPrevFileHash = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileHashKey());
-        String fileName = FilenameUtils.getName(file.getPath());
+        String fileName = file.getName();
 
         try {
             EventFile eventFile = eventFileReader.read(file);
