@@ -121,13 +121,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         executorService = Executors.newFixedThreadPool(properties.getThreads());
         this.cacheManager = cacheManager;
 
-        transactionPgCopy = new PgCopy<>(dataSource, Transaction.class, meterRegistry);
-        cryptoTransferPgCopy = new PgCopy<>(dataSource, CryptoTransfer.class, meterRegistry);
-        nonFeeTransferPgCopy = new PgCopy<>(dataSource, NonFeeTransfer.class, meterRegistry);
-        fileDataPgCopy = new PgCopy<>(dataSource, FileData.class, meterRegistry);
-        contractResultPgCopy = new PgCopy<>(dataSource, ContractResult.class, meterRegistry);
-        liveHashPgCopy = new PgCopy<>(dataSource, LiveHash.class, meterRegistry);
-        topicMessagePgCopy = new PgCopy<>(dataSource, TopicMessage.class, meterRegistry);
+        transactionPgCopy = new PgCopy<>(dataSource, Transaction.class, meterRegistry, sqlProperties.getBatchSize());
+        cryptoTransferPgCopy = new PgCopy<>(dataSource, CryptoTransfer.class, meterRegistry, sqlProperties
+                .getBatchSize());
+        nonFeeTransferPgCopy = new PgCopy<>(dataSource, NonFeeTransfer.class, meterRegistry, sqlProperties
+                .getBatchSize());
+        fileDataPgCopy = new PgCopy<>(dataSource, FileData.class, meterRegistry, sqlProperties.getBatchSize());
+        contractResultPgCopy = new PgCopy<>(dataSource, ContractResult.class, meterRegistry, sqlProperties
+                .getBatchSize());
+        liveHashPgCopy = new PgCopy<>(dataSource, LiveHash.class, meterRegistry, sqlProperties.getBatchSize());
+        topicMessagePgCopy = new PgCopy<>(dataSource, TopicMessage.class, meterRegistry, sqlProperties.getBatchSize());
 
         insertDuration = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.insert")
                 .description("Time to insert all entities into database")
@@ -189,7 +192,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private ExecuteBatchResult executeBatch(PreparedStatement ps) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         var executeResult = ps.executeBatch();
-        return new ExecuteBatchResult(executeResult.length, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        return new ExecuteBatchResult(executeResult == null ? 0 : executeResult.length, stopwatch
+                .elapsed(TimeUnit.MILLISECONDS));
     }
 
     private void closeConnectionAndStatements() {

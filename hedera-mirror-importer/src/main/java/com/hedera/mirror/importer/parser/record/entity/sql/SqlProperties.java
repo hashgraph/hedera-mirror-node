@@ -34,7 +34,7 @@ public class SqlProperties {
     private int threads = 10;
 
     @Min(2000)
-    private int batchSize = Integer.MAX_VALUE;
+    private int batchSize = 1_00_000_000;
 
     // Not documenting this for now since it may be temporary pending further refactorings
     private boolean notifyTopicMessage = true;

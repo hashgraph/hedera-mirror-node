@@ -55,9 +55,11 @@ public class PgCopy<T> {
     private final Timer buildCsvDurationMetric;
     private final Timer copyDurationMetric;
     private final Timer insertDurationMetric;
+    private final int bufferSize;
 
-    public PgCopy(DataSource dataSource, Class<T> tClass, MeterRegistry meterRegistry) {
+    public PgCopy(DataSource dataSource, Class<T> tClass, MeterRegistry meterRegistry, int bufferSize) {
         this.dataSource = dataSource;
+        this.bufferSize = bufferSize;
         tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, tClass.getSimpleName());
         var mapper = new CsvMapper();
         var schema = mapper.schemaFor(tClass);
@@ -90,11 +92,12 @@ public class PgCopy<T> {
             var csv = buildCsv(items);
             var csvBuildDuration = stopwatch.elapsed();
 
-            log.debug("Copying {} rows to {} table", items.size(), tableName);
+            log.debug("Copying {} rows from buffer of size {} to {} table.", items.size(), bufferSize, tableName);
             CopyManager copyManager = connection.unwrap(PGConnection.class).getCopyAPI();
             long rowsCount = copyManager.copyIn(
                     String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv),
-                    new StringReader(csv));
+                    new StringReader(csv),
+                    bufferSize);
 
             var copyDuration = stopwatch.elapsed();
             insertDurationMetric.record(copyDuration.minus(csvBuildDuration));

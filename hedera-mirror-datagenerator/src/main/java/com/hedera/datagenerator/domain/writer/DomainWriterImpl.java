@@ -31,6 +31,7 @@ import com.hedera.datagenerator.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.record.entity.sql.PgCopy;
+import com.hedera.mirror.importer.parser.record.entity.sql.SqlProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 
 /**
@@ -43,16 +44,19 @@ public class DomainWriterImpl implements DomainWriter {
 
     private final EntityRepository entityRepository;
     private final PgCopy<AccountBalance> accountBalancePgCopy;
+    private final SqlProperties sqlProperties;
 
     private final HashSet<AccountBalance> accountBalances;
     private final HashSet<Entities> entities;
 
-    public DomainWriterImpl(DataSource dataSource, EntityRepository entityRepository) throws SQLException {
+    public DomainWriterImpl(DataSource dataSource, EntityRepository entityRepository, SqlProperties sqlProperties) throws SQLException {
         this.dataSource = dataSource;
         this.entityRepository = entityRepository;
-        accountBalancePgCopy = new PgCopy<>(dataSource, AccountBalance.class, new SimpleMeterRegistry());
+        accountBalancePgCopy = new PgCopy<>(dataSource, AccountBalance.class, new SimpleMeterRegistry(), sqlProperties
+                .getBatchSize());
         accountBalances = new HashSet<>();
         entities = new HashSet<>();
+        this.sqlProperties = sqlProperties;
     }
 
     @Override
