@@ -340,6 +340,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         try {
             if (properties.isNotifyTopicMessage()) {
                 String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
+                if (json.length() >= 8000) {
+                    log.warn("Unable to notify large payload of size {}B: {}", json.length(), topicMessage);
+                    return;
+                }
                 sqlNotifyTopicMessage.setString(1, json);
                 sqlNotifyTopicMessage.addBatch();
             }
