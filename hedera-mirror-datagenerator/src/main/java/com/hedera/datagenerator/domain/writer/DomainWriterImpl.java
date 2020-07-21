@@ -22,8 +22,7 @@ package com.hedera.datagenerator.domain.writer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -45,15 +44,15 @@ public class DomainWriterImpl implements DomainWriter {
     private final EntityRepository entityRepository;
     private final PgCopy<AccountBalance> accountBalancePgCopy;
 
-    private final List<AccountBalance> accountBalances;
-    private final List<Entities> entities;
+    private final HashSet<AccountBalance> accountBalances;
+    private final HashSet<Entities> entities;
 
     public DomainWriterImpl(DataSource dataSource, EntityRepository entityRepository) throws SQLException {
         this.dataSource = dataSource;
         this.entityRepository = entityRepository;
         accountBalancePgCopy = new PgCopy<>(dataSource, AccountBalance.class, new SimpleMeterRegistry());
-        accountBalances = new ArrayList<>();
-        entities = new ArrayList<>();
+        accountBalances = new HashSet<>();
+        entities = new HashSet<>();
     }
 
     @Override
