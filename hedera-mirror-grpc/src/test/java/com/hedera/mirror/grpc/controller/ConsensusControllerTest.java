@@ -33,6 +33,7 @@ import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -46,7 +47,6 @@ import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.listener.ListenerProperties;
-import com.hedera.mirror.grpc.listener.SharedPollingTopicListener;
 
 @Log4j2
 public class ConsensusControllerTest extends GrpcIntegrationTest {
@@ -61,9 +61,6 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
 
     @Resource
     private ListenerProperties listenerProperties;
-
-    @Resource
-    private SharedPollingTopicListener sharedPollingTopicListener;
 
     @BeforeEach
     void setup() {
@@ -100,7 +97,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void subscribeTopicReactive() throws Exception {
+    void subscribeTopicReactive() {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
@@ -126,7 +123,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void subscribeTopicBlocking() throws Exception {
+    void subscribeTopicBlocking() {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
@@ -143,7 +140,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void subscribeTopicQueryPreEpochStartTime() throws Exception {
+    void subscribeTopicQueryPreEpochStartTime() {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
@@ -169,7 +166,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void subscribeTopicQueryLongOverflowEndTime() throws Exception {
+    void subscribeTopicQueryLongOverflowEndTime() {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
@@ -197,7 +194,7 @@ public class ConsensusControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void subscribeVerifySequence() throws Exception {
+    void subscribeVerifySequence() {
         domainBuilder.topicMessage().block();
         domainBuilder.topicMessage().block();
         domainBuilder.topicMessage().block();

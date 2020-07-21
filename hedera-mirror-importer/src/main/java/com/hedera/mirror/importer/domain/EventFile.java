@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,12 +20,21 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class HashMismatchException extends ImporterException {
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-    private static final String MESSAGE = "Hash mismatch for file {}. Expected = {}, Actual = {}";
-    private static final long serialVersionUID = -1093315700008851731L;
+@Data
+@NoArgsConstructor
+public class EventFile {
+    private String name;
 
-    public HashMismatchException(String filename, String expectedHash, String actualHash) {
-        super(String.format(MESSAGE, filename, expectedHash, actualHash));
-    }
+    private Long loadStart;
+
+    private Long loadEnd;
+
+    private String fileHash;
+
+    private String previousHash;
+
+    private int fileVersion;
 }

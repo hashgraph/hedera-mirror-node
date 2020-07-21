@@ -20,12 +20,15 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class HashMismatchException extends ImporterException {
+public class InvalidEventFileException extends ImporterException {
 
-    private static final String MESSAGE = "Hash mismatch for file {}. Expected = {}, Actual = {}";
-    private static final long serialVersionUID = -1093315700008851731L;
+    private static final long serialVersionUID = -2645790051583402799L;
 
-    public HashMismatchException(String filename, String expectedHash, String actualHash) {
-        super(String.format(MESSAGE, filename, expectedHash, actualHash));
+    public InvalidEventFileException(String message) {
+        super(message);
+    }
+
+    public InvalidEventFileException(String message, Throwable throwable) {
+        super(message, throwable);
     }
 }

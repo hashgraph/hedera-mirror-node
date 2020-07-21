@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.importer.reader.event;
 
 /*-
  * ‌
@@ -20,12 +20,19 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class HashMismatchException extends ImporterException {
+import java.io.File;
+import java.time.Instant;
 
-    private static final String MESSAGE = "Hash mismatch for file {}. Expected = {}, Actual = {}";
-    private static final long serialVersionUID = -1093315700008851731L;
+import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.importer.exception.HashMismatchException;
+import com.hedera.mirror.importer.exception.InvalidEventFileException;
 
-    public HashMismatchException(String filename, String expectedHash, String actualHash) {
-        super(String.format(MESSAGE, filename, expectedHash, actualHash));
-    }
+public interface EventFileReader {
+    /**
+     * Read event file. Throws {@link InvalidEventFileException} if file is malformatted.
+     *
+     * @param file event file object
+     * @return {@link EventFile} object
+     */
+    EventFile read(File file);
 }

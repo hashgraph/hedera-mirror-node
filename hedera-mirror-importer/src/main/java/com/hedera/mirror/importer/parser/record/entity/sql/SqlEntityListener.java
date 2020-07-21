@@ -20,18 +20,26 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.io.Closeable;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.sql.DataSource;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
@@ -49,6 +57,7 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
@@ -59,7 +68,12 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 @Log4j2
 @Named
 @ConditionOnEntityRecordParser
+
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener, Closeable {
+
+    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+
     private final DataSource dataSource;
     private final ExecutorService executorService;
     private final RecordFileRepository recordFileRepository;
@@ -92,6 +106,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private HashSet<TopicMessage> topicMessages;
     private HashSet<EntityId> entityIds;
     private final Cache entityCache;
+
+    private PreparedStatement sqlNotifyTopicMessage;
+    private Connection connection;
 
     public SqlEntityListener(SqlProperties properties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, EntityRepository entityRepository,
@@ -133,12 +150,29 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         entityIds = new HashSet<>();
         topicMessages = new HashSet<>();
         batchCount = 0;
+
+        try {
+            connection = dataSource.getConnection();
+            connection.setAutoCommit(false); // do not auto-commit
+            connection.setClientInfo("ApplicationName", getClass().getSimpleName());
+
+            sqlNotifyTopicMessage = connection.prepareStatement("select pg_notify('topic_message', ?)");
+        } catch (SQLException e) {
+            throw new ParserSQLException("Error setting up connection to database", e);
+        }
     }
 
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
-        recordFileRepository.save(recordFile);
+
+        try {
+            connection.commit();
+            recordFileRepository.save(recordFile);
+            closeConnectionAndStatements();
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        }
     }
 
     @Override
@@ -149,6 +183,21 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void close() {
         executorService.shutdown();
+    }
+
+    private ExecuteBatchResult executeBatch(PreparedStatement ps) throws SQLException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        var executeResult = ps.executeBatch();
+        return new ExecuteBatchResult(executeResult.length, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    private void closeConnectionAndStatements() {
+        try {
+            sqlNotifyTopicMessage.close();
+            connection.close();
+        } catch (SQLException e) {
+            throw new ParserSQLException("Error closing connection", e);
+        }
     }
 
     private void executeBatches() {
@@ -169,6 +218,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                                     entityCache.put(entityId.getId(), null);
                                 }
                             }), executorService)
+                    ,
+                    CompletableFuture.runAsync(() -> {
+                        try {
+                            var topicMessageNotifications = executeBatch(sqlNotifyTopicMessage);
+                            log.info("Inserted {} topic notifications", topicMessageNotifications);
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    }, executorService)
             ).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new ParserException(e);
@@ -206,6 +264,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
         topicMessages.add(topicMessage);
+
+        try {
+            if (sqlProperties.isNotifyTopicMessage()) {
+                String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
+                sqlNotifyTopicMessage.setString(1, json);
+                sqlNotifyTopicMessage.addBatch();
+            }
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        } catch (Exception e) {
+            throw new ParserException(e);
+        }
     }
 
     @Override
@@ -221,5 +291,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
         liveHashes.add(liveHash);
+    }
+
+    @Data
+    @AllArgsConstructor
+    private static class ExecuteBatchResult {
+        int numRows;
+        long timeTakenInMs;
+
+        @Override
+        public String toString() {
+            return numRows + " (" + timeTakenInMs + "ms)";
+        }
     }
 }

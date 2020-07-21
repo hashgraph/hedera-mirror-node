@@ -39,10 +39,13 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import org.apache.commons.codec.binary.Base64;
+import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
+import org.postgresql.PGNotification;
 import org.postgresql.copy.CopyManager;
+import org.postgresql.jdbc.PgConnection;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.repository.CrudRepository;
 
@@ -105,6 +108,9 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Resource
     protected SqlProperties sqlProperties;
 
+    @Resource
+    private DataSource dataSource;
+
     private String fileName;
 
     @BeforeEach
@@ -153,6 +159,33 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onTopicMessage() throws Exception {
+        sqlProperties.setNotifyTopicMessage(false);
+        // given
+        TopicMessage topicMessage = new TopicMessage();
+        topicMessage.setChunkNum(1);
+        topicMessage.setChunkTotal(2);
+        topicMessage.setConsensusTimestamp(1L);
+        topicMessage.setMessage(Strings.toByteArray("test message"));
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
+        topicMessage.setRealmNum(0);
+        topicMessage.setRunningHash(Strings.toByteArray("running hash"));
+        topicMessage.setRunningHashVersion(2);
+        topicMessage.setSequenceNumber(1L);
+        topicMessage.setTopicNum(1001);
+        topicMessage.setValidStartTimestamp(4L);
+
+        // when
+        sqlEntityListener.onTopicMessage(topicMessage);
+        completeFileAndCommit();
+
+        // then
+        assertEquals(1, topicMessageRepository.count());
+        assertExistsAndEquals(topicMessageRepository, topicMessage, topicMessage.getConsensusTimestamp());
+        sqlProperties.setNotifyTopicMessage(true);
+    }
+
+    @Test
+    void onTopicMessageNotify() throws Exception {
         // given
         TopicMessage topicMessage = new TopicMessage();
         topicMessage.setChunkNum(1);
@@ -167,13 +200,24 @@ public class SqlEntityListenerTest extends IntegrationTest {
         topicMessage.setTopicNum(1001);
         topicMessage.setValidStartTimestamp(4L);
 
+        String json = SqlEntityListener.OBJECT_MAPPER.writeValueAsString(topicMessage);
+        PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class);
+        connection.execSQLUpdate("listen topic_message");
+
         // when
         sqlEntityListener.onTopicMessage(topicMessage);
         completeFileAndCommit();
+        PGNotification[] notifications = connection.getNotifications(500);
 
         // then
         assertEquals(1, topicMessageRepository.count());
-        assertExistsAndEquals(topicMessageRepository, topicMessage, 1L);
+        assertExistsAndEquals(topicMessageRepository, topicMessage, topicMessage.getConsensusTimestamp());
+        assertEquals(1, notifications.length);
+        assertThat(notifications)
+                .extracting(PGNotification::getParameter)
+                .first()
+                .isEqualTo(json);
+        connection.close();
     }
 
     @Test
