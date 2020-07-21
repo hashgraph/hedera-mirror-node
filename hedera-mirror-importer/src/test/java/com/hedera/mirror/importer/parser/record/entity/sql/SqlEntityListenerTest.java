@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGNotification;
@@ -211,6 +212,37 @@ public class SqlEntityListenerTest extends IntegrationTest {
                 .extracting(PGNotification::getParameter)
                 .first()
                 .isEqualTo(json);
+        connection.close();
+    }
+
+    @Test
+    void onTopicMessageNotifyPayloadTooLong() throws Exception {
+        // given
+        TopicMessage topicMessage = new TopicMessage();
+        topicMessage.setChunkNum(1);
+        topicMessage.setChunkTotal(2);
+        topicMessage.setConsensusTimestamp(1L);
+        topicMessage.setMessage(RandomUtils.nextBytes(5824)); // Just exceeds 8000B
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
+        topicMessage.setRealmNum(0);
+        topicMessage.setRunningHash(Strings.toByteArray("running hash"));
+        topicMessage.setRunningHashVersion(2);
+        topicMessage.setSequenceNumber(1L);
+        topicMessage.setTopicNum(1001);
+        topicMessage.setValidStartTimestamp(4L);
+
+        PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class);
+        connection.execSQLUpdate("listen topic_message");
+
+        // when
+        sqlEntityListener.onTopicMessage(topicMessage);
+        completeFileAndCommit();
+        PGNotification[] notifications = connection.getNotifications(500);
+
+        // then
+        assertThat(topicMessageRepository.count()).isEqualTo(1);
+        assertExistsAndEquals(topicMessageRepository, topicMessage, topicMessage.getConsensusTimestamp());
+        assertThat(notifications).isNull();
         connection.close();
     }
 
