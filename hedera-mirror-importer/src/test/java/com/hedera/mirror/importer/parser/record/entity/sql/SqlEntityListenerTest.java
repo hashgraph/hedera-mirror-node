@@ -38,8 +38,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
-import org.apache.commons.codec.binary.Base64;
-import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
@@ -161,18 +159,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     void onTopicMessage() throws Exception {
         sqlProperties.setNotifyTopicMessage(false);
         // given
-        TopicMessage topicMessage = new TopicMessage();
-        topicMessage.setChunkNum(1);
-        topicMessage.setChunkTotal(2);
-        topicMessage.setConsensusTimestamp(1L);
-        topicMessage.setMessage(Strings.toByteArray("test message"));
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
-        topicMessage.setRealmNum(0);
-        topicMessage.setRunningHash(Strings.toByteArray("running hash"));
-        topicMessage.setRunningHashVersion(2);
-        topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicNum(1001);
-        topicMessage.setValidStartTimestamp(4L);
+        TopicMessage topicMessage = getTopicMessage();
 
         // when
         sqlEntityListener.onTopicMessage(topicMessage);
@@ -187,18 +174,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTopicMessageNotify() throws Exception {
         // given
-        TopicMessage topicMessage = new TopicMessage();
-        topicMessage.setChunkNum(1);
-        topicMessage.setChunkTotal(2);
-        topicMessage.setConsensusTimestamp(1L);
-        topicMessage.setMessage(Base64.encodeBase64("test message".getBytes()));
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
-        topicMessage.setRealmNum(0);
-        topicMessage.setRunningHash(Base64.encodeBase64("running hash".getBytes()));
-        topicMessage.setRunningHashVersion(2);
-        topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicNum(1001);
-        topicMessage.setValidStartTimestamp(4L);
+        TopicMessage topicMessage = getTopicMessage();
 
         String json = SqlEntityListener.OBJECT_MAPPER.writeValueAsString(topicMessage);
         PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class);
@@ -386,5 +362,22 @@ public class SqlEntityListenerTest extends IntegrationTest {
         transaction.setChargedTxFee(1L);
         transaction.setInitialBalance(0L);
         return transaction;
+    }
+
+    private TopicMessage getTopicMessage() {
+        TopicMessage topicMessage = new TopicMessage();
+        topicMessage.setChunkNum(1);
+        topicMessage.setChunkTotal(2);
+        topicMessage.setConsensusTimestamp(1L);
+        topicMessage.setMessage("test message".getBytes());
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
+        topicMessage.setRealmNum(0);
+        topicMessage.setRunningHash("running hash".getBytes());
+        topicMessage.setRunningHashVersion(2);
+        topicMessage.setSequenceNumber(1L);
+        topicMessage.setTopicNum(1001);
+        topicMessage.setValidStartTimestamp(4L);
+
+        return topicMessage;
     }
 }

@@ -79,6 +79,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final RecordFileRepository recordFileRepository;
     private final EntityRepository entityRepository;
     private final SqlProperties sqlProperties;
+
     @Qualifier(value = "sessionCache")
     private final CacheManager cacheManager;
     private long batchCount;

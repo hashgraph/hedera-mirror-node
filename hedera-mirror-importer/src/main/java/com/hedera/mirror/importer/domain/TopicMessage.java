@@ -26,6 +26,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import lombok.Data;
 
+import com.hedera.mirror.importer.converter.ByteArrayBase64Converter;
 import com.hedera.mirror.importer.converter.EntityIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
@@ -40,6 +41,7 @@ public class TopicMessage {
     @Id
     private long consensusTimestamp;
 
+    @Convert(converter = ByteArrayBase64Converter.class)
     private byte[] message;
 
     @Convert(converter = EntityIdConverter.class)
@@ -48,6 +50,7 @@ public class TopicMessage {
 
     private int realmNum;
 
+    @Convert(converter = ByteArrayBase64Converter.class)
     private byte[] runningHash;
 
     private int runningHashVersion;
