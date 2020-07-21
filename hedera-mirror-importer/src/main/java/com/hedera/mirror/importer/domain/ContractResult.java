@@ -20,14 +20,14 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
+import com.hedera.mirror.importer.converter.ByteArrayBase64Converter;
 
 @Data
 @Entity
@@ -38,12 +38,12 @@ public class ContractResult {
     @Id
     private Long consensusTimestamp;
 
-    @JsonSerialize(using = ByteArrayToHexSerializer.class)
+    @Convert(converter = ByteArrayBase64Converter.class)
     private byte[] functionParameters;
 
     private Long gasSupplied;
 
-    @JsonSerialize(using = ByteArrayToHexSerializer.class)
+    @Convert(converter = ByteArrayBase64Converter.class)
     private byte[] callResult;
 
     private Long gasUsed;
