@@ -28,7 +28,6 @@ import java.io.FileInputStream;
 import java.security.MessageDigest;
 import javax.inject.Named;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
@@ -45,7 +44,7 @@ public class EventFileReaderImpl implements EventFileReader {
     @Override
     public EventFile read(File file) {
         EventFile eventFile = new EventFile();
-        String fileName = FilenameUtils.getName(file.getPath());
+        String fileName = file.getName();
 
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
             // MessageDigest for getting the file Hash
@@ -85,7 +84,7 @@ public class EventFileReaderImpl implements EventFileReader {
                 }
             }
 
-            eventFile.setName(file.getPath());
+            eventFile.setName(fileName);
             eventFile.setFileVersion(fileVersion);
             eventFile.setPreviousHash(Hex.encodeHexString(prevFileHash));
             eventFile.setFileHash(Hex.encodeHexString(md.digest()));
