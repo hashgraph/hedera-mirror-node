@@ -28,7 +28,7 @@ import javax.inject.Named;
 import org.apache.commons.codec.binary.Hex;
 
 @Named
-public class ByteArraySerializer extends JsonSerializer<byte[]> {
+public class ByteArrayToHexSerializer extends JsonSerializer<byte[]> {
     @Override
     public void serialize(byte[] value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         if (value != null) {

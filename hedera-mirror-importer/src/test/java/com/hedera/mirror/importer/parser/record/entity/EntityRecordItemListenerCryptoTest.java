@@ -513,7 +513,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEquals(5, entityRepository.count())
-                , () -> assertEquals(6, cryptoTransferRepository.count())
+                , () -> assertEquals(5, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(0, liveHashRepository.count())
                 , () -> assertEquals(0, fileDataRepository.count())
@@ -628,7 +628,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
                 .setInitialBalance(INITIAL_BALANCE)
                 .setKey(keyFromString("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
-                .setNewRealmAdminKey(keyFromString("0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
+                .setNewRealmAdminKey(keyFromString(
+                        "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
                 .setProxyAccountID(AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3))
                 .setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build())
                 .setShardID(ShardID.newBuilder().setShardNum(0))
@@ -687,7 +688,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         return buildTransaction(builder -> {
             for (int i = 0; i < additionalTransfers.length; i++) {
                 builder.getCryptoTransferBuilder().getTransfersBuilder()
-                        .addAccountAmounts(accountAmount(additionalTransfers[i],additionalTransferAmounts[i]));
+                        .addAccountAmounts(accountAmount(additionalTransfers[i], additionalTransferAmounts[i]));
             }
         });
     }

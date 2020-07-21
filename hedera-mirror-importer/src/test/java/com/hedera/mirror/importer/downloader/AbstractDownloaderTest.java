@@ -32,6 +32,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import javax.sql.DataSource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,6 +70,8 @@ public abstract class AbstractDownloaderTest {
     protected Downloader downloader;
     protected Path validPath;
     protected MeterRegistry meterRegistry = new LoggingMeterRegistry();
+    @Mock(answer = Answers.RETURNS_SMART_NULLS)
+    protected DataSource dataSource;
 
     @TempDir
     Path dataPath;
@@ -103,7 +106,8 @@ public abstract class AbstractDownloaderTest {
 
         initProperties();
         s3AsyncClient = new MirrorImporterConfiguration(
-                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry))
+                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
+                dataSource)
                 .s3CloudStorageClient();
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
         downloader = getDownloader();

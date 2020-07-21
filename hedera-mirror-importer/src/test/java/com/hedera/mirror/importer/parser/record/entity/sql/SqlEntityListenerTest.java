@@ -38,13 +38,13 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.repository.CrudRepository;
-import org.testcontainers.shaded.org.bouncycastle.util.Strings;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.ContractResult;
@@ -158,10 +158,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
         topicMessage.setChunkNum(1);
         topicMessage.setChunkTotal(2);
         topicMessage.setConsensusTimestamp(1L);
-        topicMessage.setMessage(Strings.toByteArray("test message"));
+        topicMessage.setMessage(Base64.encodeBase64("test message".getBytes()));
         topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
         topicMessage.setRealmNum(0);
-        topicMessage.setRunningHash(Strings.toByteArray("running hash"));
+        topicMessage.setRunningHash(Base64.encodeBase64("running hash".getBytes()));
         topicMessage.setRunningHashVersion(2);
         topicMessage.setSequenceNumber(1L);
         topicMessage.setTopicNum(1001);

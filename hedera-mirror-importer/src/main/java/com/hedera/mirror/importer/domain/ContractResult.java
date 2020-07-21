@@ -27,7 +27,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import com.hedera.mirror.importer.converter.ByteArraySerializer;
+import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 
 @Data
 @Entity
@@ -38,12 +38,12 @@ public class ContractResult {
     @Id
     private Long consensusTimestamp;
 
-    @JsonSerialize(using = ByteArraySerializer.class)
+    @JsonSerialize(using = ByteArrayToHexSerializer.class)
     private byte[] functionParameters;
 
     private Long gasSupplied;
 
-    @JsonSerialize(using = ByteArraySerializer.class)
+    @JsonSerialize(using = ByteArrayToHexSerializer.class)
     private byte[] callResult;
 
     private Long gasUsed;

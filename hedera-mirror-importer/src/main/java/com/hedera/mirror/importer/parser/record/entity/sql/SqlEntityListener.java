@@ -24,10 +24,8 @@ import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.io.Closeable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -35,6 +33,7 @@ import java.util.concurrent.Executors;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
@@ -66,8 +65,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final RecordFileRepository recordFileRepository;
     private final EntityRepository entityRepository;
     private final SqlProperties sqlProperties;
+    @Qualifier(value = "sessionCache")
     private final CacheManager cacheManager;
-    private long batch_count;
+    private long batchCount;
 
     // Keeps track of entityIds seen so far. This is for optimizing inserts into t_entities table so that insertion of
     // node and treasury ids are not tried for every transaction.
@@ -83,14 +83,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private final Timer insertDuration;
 
-    private List<Transaction> transactions;
-    private List<CryptoTransfer> cryptoTransfers;
-    private List<NonFeeTransfer> nonFeeTransfers;
-    private List<FileData> fileData;
-    private List<ContractResult> contractResults;
-    private List<LiveHash> liveHashes;
-    private List<TopicMessage> topicMessages;
-    private List<EntityId> entityIds;
+    private HashSet<Transaction> transactions;
+    private HashSet<CryptoTransfer> cryptoTransfers;
+    private HashSet<NonFeeTransfer> nonFeeTransfers;
+    private HashSet<FileData> fileData;
+    private HashSet<ContractResult> contractResults;
+    private HashSet<LiveHash> liveHashes;
+    private HashSet<TopicMessage> topicMessages;
+    private HashSet<EntityId> entityIds;
     private final Cache entityCache;
 
     public SqlEntityListener(SqlProperties properties, DataSource dataSource,
@@ -124,15 +124,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         if (recordFileRepository.findByName(fileName).size() > 0) {
             throw new DuplicateFileException("File already exists in the database: " + fileName);
         }
-        transactions = new ArrayList<>();
-        cryptoTransfers = new ArrayList<>();
-        nonFeeTransfers = new ArrayList<>();
-        fileData = new ArrayList<>();
-        contractResults = new ArrayList<>();
-        liveHashes = new ArrayList<>();
-        entityIds = new ArrayList<>();
-        topicMessages = new ArrayList<>();
-        batch_count = 0;
+        transactions = new HashSet<>();
+        cryptoTransfers = new HashSet<>();
+        nonFeeTransfers = new HashSet<>();
+        fileData = new HashSet<>();
+        contractResults = new HashSet<>();
+        liveHashes = new HashSet<>();
+        entityIds = new HashSet<>();
+        topicMessages = new HashSet<>();
+        batchCount = 0;
     }
 
     @Override
@@ -163,10 +163,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     CompletableFuture.runAsync(() -> liveHashPgCopy.copy(liveHashes), executorService),
                     CompletableFuture.runAsync(() -> topicMessagePgCopy.copy(topicMessages), executorService),
                     CompletableFuture
-                            .runAsync(() -> entityIds.forEach(entityRepository::insertEntityId), executorService)
+                            .runAsync(() -> entityIds.forEach(entityId -> {
+                                if (entityCache.get(entityId.getId()) == null) {
+                                    entityRepository.insertEntityId(entityId);
+                                    entityCache.put(entityId.getId(), null);
+                                }
+                            }), executorService)
             ).get();
         } catch (InterruptedException | ExecutionException e) {
-            log.error(e);
             throw new ParserException(e);
         }
         insertDuration.record(stopwatch.elapsed());
@@ -175,21 +179,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onTransaction(Transaction transaction) throws ImporterException {
         transactions.add(transaction);
-        if (batch_count == sqlProperties.getBatchSize() - 1) {
+        if (batchCount == sqlProperties.getBatchSize() - 1) {
             // execute any remaining batches
             executeBatches();
         } else {
-            batch_count += 1;
+            batchCount += 1;
         }
     }
 
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
         // add entities not found in cache to list of entities to be persisted
-        if (entityCache.get(entityId.getId()) == null) {
-            entityIds.add(entityId);
-            entityCache.put(entityId.getId(), entityId);
-        }
+        entityIds.add(entityId);
     }
 
     @Override

@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.HashSet;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +66,10 @@ class PgCopyTest extends IntegrationTest {
 
     @Test
     void testCopy() {
-        var cryptoTransfers = List.of(cryptoTransfer(1), cryptoTransfer(2), cryptoTransfer(3));
+        var cryptoTransfers = new HashSet<CryptoTransfer>();
+        cryptoTransfers.add(cryptoTransfer(1));
+        cryptoTransfers.add(cryptoTransfer(2));
+        cryptoTransfers.add(cryptoTransfer(3));
 
         cryptoTransferPgCopy.copy(cryptoTransfers);
 
@@ -85,9 +88,10 @@ class PgCopyTest extends IntegrationTest {
         doReturn(conn).when(dataSource).getConnection();
         doReturn(pgConnection).when(conn).unwrap(any());
         var cryptoTransferPgCopy2 = new PgCopy<>(dataSource, CryptoTransfer.class, meterRegistry);
-
+        var cryptoTransfers = new HashSet<CryptoTransfer>();
+        cryptoTransfers.add(cryptoTransfer(1));
         // when
-        assertThatThrownBy(() -> cryptoTransferPgCopy2.copy(List.of(cryptoTransfer(1))))
+        assertThatThrownBy(() -> cryptoTransferPgCopy2.copy(cryptoTransfers))
                 .isInstanceOf(ParserException.class);
     }
 

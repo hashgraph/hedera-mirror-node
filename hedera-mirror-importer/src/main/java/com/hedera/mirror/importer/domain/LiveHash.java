@@ -27,7 +27,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import com.hedera.mirror.importer.converter.ByteArraySerializer;
+import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 
 @Data
 @Entity
@@ -38,6 +38,6 @@ public class LiveHash {
     @Id
     private Long consensusTimestamp;
 
-    @JsonSerialize(using = ByteArraySerializer.class)
+    @JsonSerialize(using = ByteArrayToHexSerializer.class)
     private byte[] livehash;
 }

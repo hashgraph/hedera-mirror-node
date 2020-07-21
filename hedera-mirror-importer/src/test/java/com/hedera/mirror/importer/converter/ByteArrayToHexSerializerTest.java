@@ -30,14 +30,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ByteArraySerializerTest {
+class ByteArrayToHexSerializerTest {
     @Mock
     JsonGenerator jsonGenerator;
 
     @Test
     void testNullBytes() throws Exception {
         // when
-        new ByteArraySerializer().serialize(null, jsonGenerator, null);
+        new ByteArrayToHexSerializer().serialize(null, jsonGenerator, null);
 
         // then
         verifyNoInteractions(jsonGenerator);
@@ -46,7 +46,7 @@ class ByteArraySerializerTest {
     @Test
     void testEmptyBytes() throws Exception {
         // when
-        new ByteArraySerializer().serialize(new byte[0], jsonGenerator, null);
+        new ByteArrayToHexSerializer().serialize(new byte[0], jsonGenerator, null);
 
         // then
         verify(jsonGenerator).writeString("\\x");
@@ -55,7 +55,7 @@ class ByteArraySerializerTest {
     @Test
     void testBytes() throws Exception {
         // when
-        new ByteArraySerializer().serialize(new byte[]{0b0, 0b1, 0b10, 0b01111111}, jsonGenerator, null);
+        new ByteArrayToHexSerializer().serialize(new byte[] {0b0, 0b1, 0b10, 0b01111111}, jsonGenerator, null);
 
         // then
         verify(jsonGenerator).writeString("\\x0001027f");

@@ -29,7 +29,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import com.hedera.mirror.importer.converter.ByteArraySerializer;
+import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.converter.EntityIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
@@ -47,7 +47,7 @@ public class Transaction {
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId nodeAccountId;
 
-    @JsonSerialize(using = ByteArraySerializer.class)
+    @JsonSerialize(using = ByteArrayToHexSerializer.class)
     private byte[] memo;
 
     private Integer type;
@@ -72,9 +72,9 @@ public class Transaction {
 
     private Long maxFee;
 
-    @JsonSerialize(using = ByteArraySerializer.class)
+    @JsonSerialize(using = ByteArrayToHexSerializer.class)
     private byte[] transactionHash;
 
-    @JsonSerialize(using = ByteArraySerializer.class)
+    @JsonSerialize(using = ByteArrayToHexSerializer.class)
     private byte[] transactionBytes;
 }

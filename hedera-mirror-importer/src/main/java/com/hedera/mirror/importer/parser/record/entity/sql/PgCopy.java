@@ -30,9 +30,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.io.StringReader;
+import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -54,7 +54,7 @@ public class PgCopy<T> {
     private final ObjectWriter writer;
     private final Timer buildCsvDurationMetric;
     private final Timer copyDurationMetric;
-    private CopyManager copyManager;
+    private final Timer insertDurationMetric;
 
     public PgCopy(DataSource dataSource, Class<T> tClass, MeterRegistry meterRegistry) {
         this.dataSource = dataSource;
@@ -70,45 +70,50 @@ public class PgCopy<T> {
                 .description("Time to build csv string")
                 .tag("table", tableName)
                 .register(meterRegistry);
-        copyDurationMetric = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.pgcopy.copy")
+        insertDurationMetric = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.pgcopy.insert")
                 .description("Time to insert transactions into table")
+                .tag("table", tableName)
+                .register(meterRegistry);
+        copyDurationMetric = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.pgcopy.copy")
+                .description("Time to copy transactions (build and insert) into table")
                 .tag("table", tableName)
                 .register(meterRegistry);
     }
 
-    public void copy(List<T> items) {
+    public void copy(HashSet<T> items) {
 
         if (items == null || items.size() == 0) {
             return;
         }
-        try {
-            if (copyManager == null) {
-                copyManager = dataSource.getConnection().unwrap(PGConnection.class).getCopyAPI();
-            }
-
+        try (Connection connection = dataSource.getConnection()) {
             Stopwatch stopwatch = Stopwatch.createStarted();
             var csv = buildCsv(items);
-            var csvDuration = stopwatch.elapsed();
-            buildCsvDurationMetric.record(csvDuration);
+            var csvBuildDuration = stopwatch.elapsed();
 
             log.debug("Copying {} rows to {} table", items.size(), tableName);
+            CopyManager copyManager = connection.unwrap(PGConnection.class).getCopyAPI();
             long rowsCount = copyManager.copyIn(
                     String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv),
                     new StringReader(csv));
-            copyDurationMetric.record(stopwatch.elapsed().minus(csvDuration));
+
+            var copyDuration = stopwatch.elapsed();
+            insertDurationMetric.record(copyDuration.minus(csvBuildDuration));
+            copyDurationMetric.record(stopwatch.elapsed().minus(copyDuration));
             log.info("Copied {} rows to {} table in {}ms",
-                    rowsCount, tableName, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                    rowsCount, tableName, copyDuration.toMillis());
         } catch (IOException | SQLException e) {
             log.error(e);
             throw new ParserException(e);
         }
     }
 
-    private String buildCsv(List<T> items) throws IOException {
+    private String buildCsv(HashSet<T> items) throws IOException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         var csvData = writer.writeValueAsString(items);
+        var csvBuildDuration = stopwatch.elapsed();
+        buildCsvDurationMetric.record(csvBuildDuration);
         log.trace("{} table: csv string length={} time={}ms", tableName, csvData.length(),
-                stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                csvBuildDuration.toMillis());
         return csvData;
     }
 }

@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
@@ -374,9 +375,9 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     @ParameterizedTest
     @CsvSource({
             "0.0.9000, test-message0, 9000000, runninghash, 1, 1, , , , ",
-            "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 1, 1, 7, 89999999",
-            "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 2, 4, 7, 89999999",
-            "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 4, 4, 7, 89999999",
+            "0.0.9001, test-message1, 9000001, runninghash1, 9223372036854775807, 2, 1, 1, 7, 89999999",
+            "0.0.9001, test-message2, 9000001, runninghash2, 9223372036854775807, 2, 2, 4, 7, 89999999",
+            "0.0.9001, test-message3, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 7, 89999999",
     })
     void submitMessageTest(@ConvertWith(TopicIdConverter.class) TopicID topicId, String message,
                            long consensusTimestamp, String runningHash, long sequenceNumber, int runningHashVersion,
@@ -609,9 +610,9 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         topicMessage.setConsensusTimestamp(consensusTimestamp);
         topicMessage.setRealmNum((int) topicId.getRealmNum());
         topicMessage.setTopicNum((int) topicId.getTopicNum());
-        topicMessage.setMessage(message.getBytes());
+        topicMessage.setMessage(Base64.encodeBase64(message.getBytes()));
         topicMessage.setSequenceNumber(sequenceNumber);
-        topicMessage.setRunningHash(runningHash.getBytes());
+        topicMessage.setRunningHash(Base64.encodeBase64(runningHash.getBytes()));
         topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setChunkNum(chunkNum);
         topicMessage.setChunkTotal(chunkTotal);
