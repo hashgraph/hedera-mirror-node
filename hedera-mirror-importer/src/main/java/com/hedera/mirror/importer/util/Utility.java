@@ -47,6 +47,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -137,8 +138,8 @@ public class Utility {
     public static RecordFile parseRecordFile(String filePath, String expectedPrevFileHash, Instant verifyHashAfter,
                                              Consumer<RecordItem> recordItemConsumer) {
         RecordFile recordFile = new RecordFile();
-        recordFile.setName(filePath);
-        String fileName = Utility.getFileName(filePath);
+        String fileName = FilenameUtils.getName(filePath);
+        recordFile.setName(fileName);
 
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)))) {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
@@ -274,14 +275,6 @@ public class Utility {
             return null;
         }
         return Hex.encodeHexString(bytes);
-    }
-
-    public static String getFileName(String path) {
-        int lastIndexOf = path.lastIndexOf("/");
-        if (lastIndexOf == -1) {
-            return ""; // empty extension
-        }
-        return path.substring(lastIndexOf + 1);
     }
 
     /**

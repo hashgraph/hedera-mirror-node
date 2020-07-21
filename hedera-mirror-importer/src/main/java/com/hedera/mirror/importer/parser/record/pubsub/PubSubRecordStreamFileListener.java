@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
@@ -38,7 +39,7 @@ public class PubSubRecordStreamFileListener implements RecordStreamFileListener 
 
     @Override
     public void onStart(StreamFileData streamFileData) throws ImporterException {
-        String fileName = streamFileData.getFilename();
+        String fileName = FilenameUtils.getName(streamFileData.getFilename());
         if (recordFileRepository.findByName(fileName).size() > 0) {
             throw new DuplicateFileException("File already exists in the database: " + fileName);
         }

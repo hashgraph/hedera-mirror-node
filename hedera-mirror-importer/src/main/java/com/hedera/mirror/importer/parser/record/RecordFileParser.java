@@ -196,17 +196,17 @@ public class RecordFileParser implements FileParser {
      *
      * @throws Exception
      */
-    private void loadRecordFiles(List<String> fileNames) {
-        Collections.sort(fileNames);
-        for (String name : fileNames) {
+    private void loadRecordFiles(List<String> filePaths) {
+        Collections.sort(filePaths);
+        for (String filePath : filePaths) {
             if (ShutdownHelper.isStopping()) {
                 return;
             }
 
-            File file = new File(name);
+            File file = new File(filePath);
 
             try (InputStream fileInputStream = new FileInputStream(file)) {
-                loadRecordFile(new StreamFileData(name, fileInputStream));
+                loadRecordFile(new StreamFileData(filePath, fileInputStream));
 
                 if (parserProperties.isKeepFiles()) {
                     Utility.archiveFile(file, parserProperties.getParsedPath());
@@ -214,10 +214,10 @@ public class RecordFileParser implements FileParser {
                     FileUtils.deleteQuietly(file);
                 }
             } catch (FileNotFoundException e) {
-                log.warn("File does not exist {}", name);
+                log.warn("File does not exist {}", filePath);
                 return;
             } catch (Exception e) {
-                log.error("Error parsing file {}", name, e);
+                log.error("Error parsing file {}", filePath, e);
                 recordStreamFileListener.onError();
                 if (!(e instanceof DuplicateFileException)) { // if DuplicateFileException, continue with other
                     // files
