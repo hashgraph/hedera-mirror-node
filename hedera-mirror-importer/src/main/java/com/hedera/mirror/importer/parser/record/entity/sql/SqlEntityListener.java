@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.AllArgsConstructor;
@@ -230,7 +231,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } catch (InterruptedException | ExecutionException e) {
             throw new ParserException(e);
         }
-        log.info("Completed batch inserts in {}", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        log.info("Completed batch inserts in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     @Override
@@ -298,13 +299,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void persistEntities() {
         Stopwatch stopwatch = Stopwatch.createStarted();
+        AtomicInteger entityInsertCount = new AtomicInteger(0);
         entityIds.forEach(entityId -> {
             if (entityCache.get(entityId.getId()) == null) {
                 entityRepository.insertEntityId(entityId);
                 entityCache.put(entityId.getId(), null);
+                entityInsertCount.incrementAndGet();
             }
         });
-        log.info("Inserted {} entities in {} ms", entityIds.size(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        log.info("Inserted {} entities in {} ms", entityInsertCount.get(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     private void notifyTopicMessages() {
