@@ -24,11 +24,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
@@ -41,11 +41,12 @@ import javax.sql.DataSource;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.apache.commons.io.FilenameUtils;
 
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -69,7 +70,6 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 @Log4j2
 @Named
 @ConditionOnEntityRecordParser
-
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener, Closeable {
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
@@ -81,13 +81,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityRepository entityRepository;
     private final SqlProperties sqlProperties;
 
-    @Qualifier(value = "sessionCache")
+    @Qualifier(value = CacheConfiguration.NEVER_EXPIRE_LARGE)
     private final CacheManager cacheManager;
     private long batchCount;
 
     // Keeps track of entityIds seen so far. This is for optimizing inserts into t_entities table so that insertion of
     // node and treasury ids are not tried for every transaction.
-    private final Collection<EntityId> seenEntityIds = new HashSet<>();
     // init connections, schemas, writers, etc once per process
     private final PgCopy<Transaction> transactionPgCopy;
     private final PgCopy<CryptoTransfer> cryptoTransferPgCopy;
@@ -97,16 +96,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<LiveHash> liveHashPgCopy;
     private final PgCopy<TopicMessage> topicMessagePgCopy;
 
-    private final Timer insertDuration;
-
-    private HashSet<Transaction> transactions;
-    private HashSet<CryptoTransfer> cryptoTransfers;
-    private HashSet<NonFeeTransfer> nonFeeTransfers;
-    private HashSet<FileData> fileData;
-    private HashSet<ContractResult> contractResults;
-    private HashSet<LiveHash> liveHashes;
-    private HashSet<TopicMessage> topicMessages;
-    private HashSet<EntityId> entityIds;
+    private Collection<Transaction> transactions;
+    private Collection<CryptoTransfer> cryptoTransfers;
+    private Collection<NonFeeTransfer> nonFeeTransfers;
+    private Collection<FileData> fileData;
+    private Collection<ContractResult> contractResults;
+    private Collection<LiveHash> liveHashes;
+    private Collection<TopicMessage> topicMessages;
+    private Collection<EntityId> entityIds;
     private final Cache entityCache;
 
     private PreparedStatement sqlNotifyTopicMessage;
@@ -133,11 +130,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         liveHashPgCopy = new PgCopy<>(dataSource, LiveHash.class, meterRegistry, sqlProperties.getBatchSize());
         topicMessagePgCopy = new PgCopy<>(dataSource, TopicMessage.class, meterRegistry, sqlProperties.getBatchSize());
 
-        insertDuration = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.insert")
-                .description("Time to insert all entities into database")
-                .register(meterRegistry);
-
-        entityCache = cacheManager.getCache("seen_entities");
+        entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
     }
 
     @Override
@@ -147,14 +140,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         if (recordFileRepository.findByName(fileName).size() > 0) {
             throw new DuplicateFileException("File already exists in the database: " + fileName);
         }
-        transactions = new HashSet<>();
-        cryptoTransfers = new HashSet<>();
-        nonFeeTransfers = new HashSet<>();
-        fileData = new HashSet<>();
-        contractResults = new HashSet<>();
-        liveHashes = new HashSet<>();
+        transactions = new ArrayList<>();
+        cryptoTransfers = new ArrayList<>();
+        nonFeeTransfers = new ArrayList<>();
+        fileData = new ArrayList<>();
+        contractResults = new ArrayList<>();
+        liveHashes = new ArrayList<>();
         entityIds = new HashSet<>();
-        topicMessages = new HashSet<>();
+        topicMessages = new ArrayList<>();
         batchCount = 0;
 
         try {
@@ -183,7 +176,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onError() {
-        // no error handling
+        try {
+            if (connection != null) {
+                connection.rollback();
+                closeConnectionAndStatements();
+            }
+        } catch (SQLException e) {
+            log.error("Exception while rolling transaction back", e);
+        }
     }
 
     @Override
@@ -218,27 +218,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     CompletableFuture.runAsync(() -> contractResultPgCopy.copy(contractResults), executorService),
                     CompletableFuture.runAsync(() -> liveHashPgCopy.copy(liveHashes), executorService),
                     CompletableFuture.runAsync(() -> topicMessagePgCopy.copy(topicMessages), executorService),
-                    CompletableFuture
-                            .runAsync(() -> entityIds.forEach(entityId -> {
-                                if (entityCache.get(entityId.getId()) == null) {
-                                    entityRepository.insertEntityId(entityId);
-                                    entityCache.put(entityId.getId(), null);
-                                }
-                            }), executorService)
-                    ,
-                    CompletableFuture.runAsync(() -> {
-                        try {
-                            var topicMessageNotifications = executeBatch(sqlNotifyTopicMessage);
-                            log.info("Inserted {} topic notifications", topicMessageNotifications);
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                        }
-                    }, executorService)
+                    CompletableFuture.runAsync(() -> persistEntities(), executorService),
+                    CompletableFuture.runAsync(() -> notifyTopicMessages(), executorService)
             ).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new ParserException(e);
         }
-        insertDuration.record(stopwatch.elapsed());
     }
 
     @Override
@@ -298,6 +283,26 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
         liveHashes.add(liveHash);
+    }
+
+    private void persistEntities() {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        entityIds.forEach(entityId -> {
+            if (entityCache.get(entityId.getId()) == null) {
+                entityRepository.insertEntityId(entityId);
+                entityCache.put(entityId.getId(), null);
+            }
+        });
+        log.info("Inserted {} entities in {}", entityIds.size(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    private void notifyTopicMessages() {
+        try {
+            var topicMessageNotifications = executeBatch(sqlNotifyTopicMessage);
+            log.info("Inserted {} topic notifications", topicMessageNotifications);
+        } catch (SQLException e) {
+            throw new ParserException(e);
+        }
     }
 
     @Data

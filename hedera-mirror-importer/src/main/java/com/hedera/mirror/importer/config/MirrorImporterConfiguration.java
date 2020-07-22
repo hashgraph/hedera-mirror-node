@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.config;
 
 import java.net.URI;
 import java.time.Duration;
-import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -63,7 +62,6 @@ public class MirrorImporterConfiguration {
     private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties downloaderProperties;
     private final MetricsExecutionInterceptor metricsExecutionInterceptor;
-    private final DataSource dataSource;
 
     @Bean
     @Profile("kubernetes")

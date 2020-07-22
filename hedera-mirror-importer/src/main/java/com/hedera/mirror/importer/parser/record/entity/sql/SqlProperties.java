@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -33,8 +34,9 @@ public class SqlProperties {
     @Min(1)
     private int threads = 10;
 
-    @Min(2000)
-    private int batchSize = 1_00_000_000;
+    @Min(1)
+    @Max(100000000)
+    private int batchSize = 100_000_000;
 
     // Not documenting this for now since it may be temporary pending further refactorings
     private boolean notifyTopicMessage = true;

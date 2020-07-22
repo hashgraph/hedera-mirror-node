@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.base.CaseFormat;
@@ -32,13 +33,14 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 
+import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.exception.ParserException;
 
 /**
@@ -53,7 +55,6 @@ public class PgCopy<T> {
     private final String columnsCsv;
     private final ObjectWriter writer;
     private final Timer buildCsvDurationMetric;
-    private final Timer copyDurationMetric;
     private final Timer insertDurationMetric;
     private final int bufferSize;
 
@@ -62,27 +63,26 @@ public class PgCopy<T> {
         this.bufferSize = bufferSize;
         tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, tClass.getSimpleName());
         var mapper = new CsvMapper();
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(byte[].class, new ByteArrayToHexSerializer());
+        mapper.registerModule(module);
         var schema = mapper.schemaFor(tClass);
         writer = mapper.writer(schema);
         columnsCsv = Lists.newArrayList(schema.iterator()).stream()
                 .map(CsvSchema.Column::getName)
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
-        buildCsvDurationMetric = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.pgcopy.csv")
+        buildCsvDurationMetric = Timer.builder("hedera.mirror.importer.parse.csv")
                 .description("Time to build csv string")
                 .tag("table", tableName)
                 .register(meterRegistry);
-        insertDurationMetric = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.pgcopy.insert")
+        insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into table")
-                .tag("table", tableName)
-                .register(meterRegistry);
-        copyDurationMetric = Timer.builder("hedera.mirror.importer.parser.record.entity.sql.pgcopy.copy")
-                .description("Time to copy transactions (build and insert) into table")
                 .tag("table", tableName)
                 .register(meterRegistry);
     }
 
-    public void copy(HashSet<T> items) {
+    public void copy(Collection<T> items) {
 
         if (items == null || items.size() == 0) {
             return;
@@ -101,16 +101,14 @@ public class PgCopy<T> {
 
             var copyDuration = stopwatch.elapsed();
             insertDurationMetric.record(copyDuration.minus(csvBuildDuration));
-            copyDurationMetric.record(stopwatch.elapsed().minus(copyDuration));
             log.info("Copied {} rows to {} table in {}ms",
                     rowsCount, tableName, copyDuration.toMillis());
         } catch (IOException | SQLException e) {
-            log.error(e);
             throw new ParserException(e);
         }
     }
 
-    private String buildCsv(HashSet<T> items) throws IOException {
+    private String buildCsv(Collection<T> items) throws IOException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         var csvData = writer.writeValueAsString(items);
         var csvBuildDuration = stopwatch.elapsed();

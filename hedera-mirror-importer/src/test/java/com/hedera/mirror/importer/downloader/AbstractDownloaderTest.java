@@ -131,8 +131,7 @@ public abstract class AbstractDownloaderTest {
 
         initProperties();
         s3AsyncClient = new MirrorImporterConfiguration(
-                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
-                dataSource)
+                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry))
                 .s3CloudStorageClient();
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
         downloader = getDownloader();

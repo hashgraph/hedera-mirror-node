@@ -29,7 +29,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import com.hedera.mirror.importer.converter.ByteArrayBase64Converter;
 import com.hedera.mirror.importer.converter.EntityIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
@@ -47,7 +46,6 @@ public class Transaction {
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId nodeAccountId;
 
-    @Convert(converter = ByteArrayBase64Converter.class)
     private byte[] memo;
 
     private Integer type;
@@ -72,9 +70,7 @@ public class Transaction {
 
     private Long maxFee;
 
-    @Convert(converter = ByteArrayBase64Converter.class)
     private byte[] transactionHash;
 
-    @Convert(converter = ByteArrayBase64Converter.class)
     private byte[] transactionBytes;
 }

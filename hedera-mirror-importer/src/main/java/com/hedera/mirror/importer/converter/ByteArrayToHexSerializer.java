@@ -20,28 +20,19 @@ package com.hedera.mirror.importer.converter;
  * ‍
  */
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import java.io.IOException;
 import javax.inject.Named;
-import javax.persistence.AttributeConverter;
-import org.apache.commons.codec.binary.Base64;
-import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
+import org.apache.commons.codec.binary.Hex;
 
 @Named
-@javax.persistence.Converter
-@ConfigurationPropertiesBinding
-public class ByteArrayBase64Converter implements AttributeConverter<byte[], byte[]> {
+public class ByteArrayToHexSerializer extends JsonSerializer<byte[]> {
     @Override
-    public byte[] convertToDatabaseColumn(byte[] array) {
-        if (array == null) {
-            return null;
+    public void serialize(byte[] value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        if (value != null) {
+            gen.writeString("\\x" + Hex.encodeHexString(value));
         }
-        return Base64.encodeBase64(array); // Added for consistency since PgCopy will base64 encode
-    }
-
-    @Override
-    public byte[] convertToEntityAttribute(byte[] array) {
-        if (array == null) {
-            return null;
-        }
-        return Base64.decodeBase64(array);
     }
 }
