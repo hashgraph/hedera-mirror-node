@@ -33,6 +33,7 @@ const transactions = require('./transactions.js');
 const balances = require('./balances.js');
 const accounts = require('./accounts.js');
 const topicmessage = require('./topicmessage.js');
+const stateproof = require('./stateproof');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {metricsHandler} = require('./middleware/metricsHandler');
@@ -56,7 +57,7 @@ log4js.configure({
 global.logger = log4js.getLogger();
 
 let port = config.port;
-if (process.env.NODE_ENV == 'test') {
+if (process.env.NODE_ENV === 'test') {
   port = 3000; // Use a dummy port for jest unit tests
 }
 if (port === undefined || isNaN(Number(port))) {
@@ -115,6 +116,17 @@ app.getAsync(apiPrefix + '/balances', balances.getBalances);
 // transactions routes
 app.getAsync(apiPrefix + '/transactions', transactions.getTransactions);
 app.getAsync(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
+
+try {
+  if (config.stateproof.enabled) {
+    logger.info('stateproof REST API is enabled, install handler');
+    app.getAsync(apiPrefix + '/transactions/:id/stateproof', stateproof.getStateProofForTransaction);
+  } else {
+    logger.info('stateproof REST API is disabled');
+  }
+} catch (err) {
+  logger.warn(`stateproof REST API is not enabled: ${err.message}`);
+}
 
 // topics routes
 app.getAsync(apiPrefix + '/topics/:id/messages', topicmessage.getTopicMessages);

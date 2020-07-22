@@ -21,3 +21,13 @@ hedera:
           username: metrics
           uriPath: '/swagger'
       shard: 0
+      stateproof:
+        enabled: false
+        streams:
+          cloudProvider: 's3'
+          region: 'us-east-1'
+          accessKey:
+          secretKey:
+          bucketName:
+          record:
+            prefix: 'recordstreams/record'
