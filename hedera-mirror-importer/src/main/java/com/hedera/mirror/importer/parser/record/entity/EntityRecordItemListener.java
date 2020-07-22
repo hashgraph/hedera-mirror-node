@@ -150,18 +150,27 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertContractCreateInstance(consensusNs, body.getContractCreateInstance(), txRecord);
         }
 
+        FileID fileID = null;
+        byte[] fileBytes = null;
+        boolean isAppendOperation = false;
         if (isSuccessful) {
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
             } else if (body.hasCryptoAddLiveHash()) {
                 insertCryptoAddLiveHash(consensusNs, body.getCryptoAddLiveHash());
             } else if (body.hasFileAppend()) {
-                insertFileAppend(consensusNs, body.getFileAppend());
+                fileID = body.getFileAppend().getFileID();
+                fileBytes = body.getFileAppend().getContents().toByteArray();
+                isAppendOperation = true;
+                insertFileData(consensusNs, fileBytes, fileID);
             } else if (body.hasFileCreate()) {
-                insertFileData(consensusNs, body.getFileCreate().getContents().toByteArray(),
-                        txRecord.getReceipt().getFileID());
+                fileID = txRecord.getReceipt().getFileID();
+                fileBytes = body.getFileCreate().getContents().toByteArray();
+                insertFileData(consensusNs, fileBytes, fileID);
             } else if (body.hasFileUpdate()) {
-                insertFileUpdate(consensusNs, body.getFileUpdate());
+                fileID = body.getFileUpdate().getFileID();
+                fileBytes = body.getFileUpdate().getContents().toByteArray();
+                insertFileData(consensusNs, fileBytes, fileID);
             }
         }
 
@@ -169,7 +178,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         log.debug("Storing transaction: {}", tx);
 
         if (networkAddressBook.isAddressBook(entityId)) {
-            networkAddressBook.updateFrom(body, consensusNs, txRecord.getReceipt().getFileID());
+            networkAddressBook.updateFrom(consensusNs, fileBytes, fileID, isAppendOperation);
         }
     }
 

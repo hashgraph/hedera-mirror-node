@@ -37,6 +37,8 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeAddress;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -46,11 +48,14 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -58,6 +63,7 @@ import org.springframework.integration.MessageTimeoutException;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -67,6 +73,8 @@ import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategyImpl;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.repository.AddressBookRepository;
+import com.hedera.mirror.importer.repository.NodeAddressRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
@@ -81,8 +89,15 @@ class PubSubRecordItemListenerTest {
     private static final NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy =
             new NonFeeTransferExtractionStrategyImpl();
 
+    private static final NodeAddressBook UPDATED = addressBook(9);
+
     @Mock
     private MessageChannel messageChannel;
+    @Mock(answer = Answers.RETURNS_SMART_NULLS)
+    protected AddressBookRepository addressBookRepository;
+    @Mock(answer = Answers.RETURNS_SMART_NULLS)
+    protected NodeAddressRepository nodeAddressRepository;
+    protected MirrorProperties mirrorProperties;
     @Mock
     private NetworkAddressBook networkAddressBook;
     @Mock
@@ -95,6 +110,12 @@ class PubSubRecordItemListenerTest {
         TransactionHandlerFactory transactionHandlerFactory = mock(TransactionHandlerFactory.class);
         pubSubProperties = new PubSubProperties();
         when(transactionHandlerFactory.create(any())).thenReturn(transactionHandler);
+//        when(networkAddressBook.isAddressBook(eq(EntityId.of(ADDRESS_BOOK_FILE_ID)))).thenReturn(true);
+//        doReturn(true).when(networkAddressBook).isAddressBook(EntityId.of(ADDRESS_BOOK_FILE_ID));
+        doReturn(Optional.empty()).when(addressBookRepository)
+                .findTopByFileIdAndIsCompleteIsTrueOrderByConsensusTimestampDesc(EntityId.of(ADDRESS_BOOK_FILE_ID));
+        networkAddressBook = new NetworkAddressBook(new MirrorProperties(), addressBookRepository,
+                nodeAddressRepository);
         pubSubRecordItemListener = new PubSubRecordItemListener(pubSubProperties, messageChannel, networkAddressBook,
                 nonFeeTransferExtractionStrategy, transactionHandlerFactory);
     }
@@ -189,28 +210,46 @@ class PubSubRecordItemListenerTest {
     @Test
     void testNetworkAddressBookAppend() throws Exception {
         // given
-        byte[] fileContents = new byte[] {0b0, 0b1, 0b10};
-        Transaction transaction = buildTransaction(builder -> {
+        byte[] addressBookBytes = UPDATED.toByteArray();
+        int index = addressBookBytes.length / 3;
+        byte[] addressBookBytes1 = Arrays.copyOfRange(addressBookBytes, 0, index);
+        byte[] addressBookBytes2 = Arrays.copyOfRange(addressBookBytes, index, index * 2);
+        byte[] addressBookBytesPartial = Arrays.copyOfRange(addressBookBytes, 0, index * 2);
+        Transaction transaction1 = buildTransaction(builder -> {
+            builder.setFileUpdate(FileUpdateTransactionBody.newBuilder()
+                    .setFileID(ADDRESS_BOOK_FILE_ID)
+                    .setContents(ByteString.copyFrom(addressBookBytes1))
+                    .build());
+        });
+
+        TransactionRecord record2 = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Utility.instantToTimestamp(Instant.ofEpochSecond(0L, 200L)))
+                .setReceipt(TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS).build())
+                .build();
+
+        Transaction transaction2 = buildTransaction(builder -> {
             builder.setFileAppend(FileAppendTransactionBody.newBuilder()
                     .setFileID(ADDRESS_BOOK_FILE_ID)
-                    .setContents(ByteString.copyFrom(fileContents))
+                    .setContents(ByteString.copyFrom(addressBookBytes2))
                     .build());
         });
 
         // when
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(new RecordItem(transaction1.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(new RecordItem(transaction2.toByteArray(), record2.toByteArray()));
 
         // then
-        verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()),
-                Instant.now().getEpochSecond(),
-                ADDRESS_BOOK_FILE_ID);
+        assertThat(networkAddressBook.getAddresses())
+                .hasSize(6);
+
+        assertThat(addressBookBytesPartial).isEqualTo(networkAddressBook.getPartialAddressBook().getFileData());
     }
 
     @Test
     void testNetworkAddressBookUpdate() throws Exception {
         // given
-        byte[] fileContents = new byte[] {0b0, 0b1, 0b10};
+        byte[] fileContents = UPDATED.toByteArray();
         var fileUpdate = FileUpdateTransactionBody.newBuilder()
                 .setFileID(ADDRESS_BOOK_FILE_ID)
                 .setContents(ByteString.copyFrom(fileContents))
@@ -222,9 +261,14 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()),
-                Instant.now().getEpochSecond(),
-                ADDRESS_BOOK_FILE_ID);
+//        verify(networkAddressBook).updateFrom(TransactionBody.parseFrom(transaction.getBodyBytes()),
+//                Instant.now().getEpochSecond(),
+//                ADDRESS_BOOK_FILE_ID);
+        assertThat(networkAddressBook.getAddresses())
+                .hasSize(9);
+
+//        assertArrayEquals(fileContents, networkAddressBook.getPartialAddressBook().getFileData());
+        assertThat(fileContents).isEqualTo(networkAddressBook.getPartialAddressBook().getFileData());
     }
 
     private PubSubMessage assertPubSubMessage(Transaction expectedTransaction, int numSendTries) throws Exception {
@@ -256,5 +300,13 @@ class PubSubRecordItemListenerTest {
         return Transaction.newBuilder()
                 .setBodyBytes(transactionBodyBuilder.build().toByteString())
                 .build();
+    }
+
+    private static NodeAddressBook addressBook(int size) {
+        NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
+        for (int i = 0; i < size; ++i) {
+            builder.addNodeAddress(NodeAddress.newBuilder().setPortno(i).build());
+        }
+        return builder.build();
     }
 }

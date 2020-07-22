@@ -529,13 +529,11 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     @Test
     void fileUpdateAddressBookPartial() throws Exception {
         byte[] addressBookPrevious = FileUtils.readFileToByteArray(addressBookLarge);
-        networkAddressBook.updateFrom(TransactionBody.newBuilder()
-                        .setFileUpdate(FileUpdateTransactionBody.newBuilder()
-                                .setContents(ByteString.copyFrom(addressBookPrevious))
-                                .build())
-                        .build(),
+        networkAddressBook.updateFrom(
                 Instant.now().getEpochSecond(),
-                FileID.newBuilder().setFileNum(102).build());
+                addressBookPrevious,
+                FileID.newBuilder().setFileNum(102).build(),
+                false);
         byte[] addressBook = FileUtils.readFileToByteArray(addressBookSmall);
         byte[] addressBookUpdate = Arrays.copyOf(addressBook, 6144);
         Transaction transaction = fileUpdateAllTransaction(

@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.addressbook;
 import com.google.common.collect.ImmutableList;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,7 +47,6 @@ import com.hedera.mirror.importer.repository.NodeAddressRepository;
 @Log4j2
 @Named
 public class NetworkAddressBook {
-
     private final MirrorProperties mirrorProperties;
     private final AddressBookRepository addressBookRepository;
     private final NodeAddressRepository nodeAddressRepository;
@@ -79,19 +77,7 @@ public class NetworkAddressBook {
                 && entityId.getShardNum() == 0 && entityId.getRealmNum() == 0;
     }
 
-    public void updateFrom(TransactionBody transactionBody, long consensusTimeStamp, FileID fileID) {
-        byte[] contents = null;
-        boolean isAppendOperation = false;
-
-        if (transactionBody.hasFileAppend()) {
-            contents = transactionBody.getFileAppend().getContents().toByteArray();
-            isAppendOperation = true;
-        } else if (transactionBody.hasFileUpdate()) {
-            contents = transactionBody.getFileUpdate().getContents().toByteArray();
-        } else if (transactionBody.hasFileCreate()) {
-            contents = transactionBody.getFileCreate().getContents().toByteArray();
-        }
-
+    public void updateFrom(long consensusTimeStamp, byte[] contents, FileID fileID, boolean isAppendOperation) {
         if (contents == null || contents.length == 0) {
             log.warn("Byte array contents were empty. Skipping processing ...");
             return;
@@ -155,8 +141,8 @@ public class NetworkAddressBook {
                     addressBookBytes = Files.readAllBytes(addressBookPath);
                 }
             } catch (Exception e) {
-                log.error("Unable to copy address book from {} to {}", mirrorProperties
-                        .getNetwork(), addressBookPath, e);
+                throw new IllegalStateException(String
+                        .format("Unable to load valid address book from %s", addressBookPath));
             }
 
             try {
@@ -165,7 +151,7 @@ public class NetworkAddressBook {
                         .setFileNum(mirrorProperties.getAddressBookFileIdEntityNum()).build(), false);
                 persistAddressBookToDB(0);
             } catch (Exception e) {
-                log.error("Unable to parse address book: {}", e.getMessage());
+                throw new IllegalStateException("Unable to parse address book: ", e);
             }
         } else {
             // addressBook loaded from db
@@ -175,7 +161,7 @@ public class NetworkAddressBook {
         }
 
         if (getAddresses().isEmpty()) {
-            throw new IllegalStateException("Unable to load a valid address book");
+            throw new IllegalStateException("Unable to load a valid address book with node addresses");
         }
     }
 
@@ -183,11 +169,9 @@ public class NetworkAddressBook {
         byte[] addressBookBytes = null;
         if (append) {
             // concatenate bytes for impartial address books
-            Optional<AddressBook> optionalAddressBook = addressBookRepository
-                    .findTopByFileIdAndIsCompleteIsFalseOrderByConsensusTimestampDesc(EntityId.of(fileID));
+            AddressBook addressBook = getPreviousAddressBookToAppendTo(fileID);
 
-            if (optionalAddressBook.isPresent()) {
-                AddressBook addressBook = optionalAddressBook.get();
+            if (addressBook != null) {
                 byte[] incompleteBytes = addressBook.getFileData();
                 byte[] combinedBytes = new byte[incompleteBytes.length + contents.length];
                 System.arraycopy(incompleteBytes, 0, combinedBytes, 0, incompleteBytes.length);
@@ -206,6 +190,18 @@ public class NetworkAddressBook {
         retrieveAddressBook(addressBookBytes, consensusTimestamp, fileID);
     }
 
+    private AddressBook getPreviousAddressBookToAppendTo(FileID fileID) {
+        // if incomingAddressBook is a match use it if not retrieve last address book for given file from Db
+        if (incomingAddressBook != null && incomingAddressBook.getFileId().getEntityNum() == fileID.getFileNum()) {
+            return incomingAddressBook;
+        }
+
+        Optional<AddressBook> optionalAddressBook = addressBookRepository
+                .findTopByFileIdOrderByConsensusTimestampDesc(EntityId.of(fileID));
+
+        return optionalAddressBook.isPresent() ? optionalAddressBook.get() : null;
+    }
+
     private void retrieveAddressBook(byte[] addressBookBytes, long consensusTimestamp, FileID fileID) {
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
                 .fileData(addressBookBytes)
@@ -215,7 +211,7 @@ public class NetworkAddressBook {
         try {
             NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);
             if (nodeAddressBook != null) {
-                builder = builder
+                builder
                         .isComplete(true)
                         .nodeCount(nodeAddressBook.getNodeAddressCount())
                         .startConsensusTimestamp(consensusTimestamp);
@@ -261,21 +257,26 @@ public class NetworkAddressBook {
     }
 
     private void saveAddressBook(long consensusTimestamp) {
-        // if address book is complete update end time of previous address book and start time of this
-        if (incomingAddressBook != null && incomingAddressBook.isComplete()) {
-            // retrieve last complete address book for fileID and update endConsensusTimestamp
-            Optional<AddressBook> addressBook = addressBookRepository
-                    .findTopByFileIdAndIsCompleteIsTrueOrderByConsensusTimestampDesc(incomingAddressBook.getFileId());
-            if (addressBook.isPresent()) {
-                addressBookRepository
-                        .updateEndConsensusTimestamp(addressBook.get().getConsensusTimestamp(), consensusTimestamp - 1);
-            }
-        }
+        if (incomingAddressBook != null) {
 
-        // store address book.
-        // Potential to also remove incomplete address books entries in the db table
-        addressBookRepository.save(incomingAddressBook);
-        log.info("Saved new address book to db: {}", incomingAddressBook);
+            // if address book is complete update end time of previous address book and start time of this
+            if (incomingAddressBook.isComplete()) {
+                // retrieve last complete address book for fileID and update endConsensusTimestamp
+                Optional<AddressBook> addressBook = addressBookRepository
+                        .findTopByFileIdAndIsCompleteIsTrueOrderByConsensusTimestampDesc(incomingAddressBook
+                                .getFileId());
+                if (addressBook.isPresent()) {
+                    addressBookRepository
+                            .updateEndConsensusTimestamp(addressBook.get()
+                                    .getConsensusTimestamp(), consensusTimestamp - 1);
+                }
+            }
+
+            // store address book.
+            // Potential to also remove incomplete address books entries in the db table
+            addressBookRepository.save(incomingAddressBook);
+            log.info("Saved new address book to db: {}", incomingAddressBook);
+        }
     }
 
     private void saveNodeAddresses(long consensusTimestamp) {
@@ -294,13 +295,12 @@ public class NetworkAddressBook {
             if (isSupportedAddressBookEntityNum(incomingAddressBook.getFileId().getEntityNum())) {
                 if (currentAddressBook == null || currentAddressBook.getFileId().getId() == incomingAddressBook
                         .getFileId().getId()) {
+
                     // update current and reset incoming
+                    log.info("Updating address book in use from {} to {}", currentAddressBook, incomingAddressBook);
                     currentNodeAddresses = new ArrayList(incomingNodeAddresses);
                     currentAddressBook = incomingAddressBook.toBuilder().build();
                 }
-
-//                incomingNodeAddresses = Collections.emptyList();
-//                incomingAddressBook = null;
             }
         }
     }

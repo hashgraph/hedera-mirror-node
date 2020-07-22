@@ -37,6 +37,8 @@ public interface AddressBookRepository extends CrudRepository<AddressBook, Long>
             "consensusTimestamp asc")
     List<AddressBook> findCompleteAddressBooks(long consensusTimestamp, EntityId fileId);
 
+    Optional<AddressBook> findTopByFileIdOrderByConsensusTimestampDesc(EntityId fileId);
+
     Optional<AddressBook> findTopByFileIdAndIsCompleteIsTrueOrderByConsensusTimestampDesc(EntityId fileId);
 
     Optional<AddressBook> findTopByFileIdAndIsCompleteIsFalseOrderByConsensusTimestampDesc(EntityId fileId);

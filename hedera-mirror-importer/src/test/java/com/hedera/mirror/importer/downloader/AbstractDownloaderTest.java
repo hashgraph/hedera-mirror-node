@@ -29,10 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Bytes;
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import io.findify.s3mock.S3Mock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
@@ -47,6 +44,7 @@ import java.util.Arrays;
 import java.util.List;
 import javax.sql.DataSource;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,6 +53,8 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Answers;
 import org.mockito.Mock;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.FileCopier;
@@ -221,16 +221,17 @@ public abstract class AbstractDownloaderTest {
     @DisplayName("Exactly 1/3 consensus")
     void oneThirdConsensus() throws Exception {
         // Remove last node from current 4 node address book
-        byte[] addressBook = Files.readAllBytes(mirrorProperties.getAddressBookPath());
+        MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
+        String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
+        Resource resource = new ClassPathResource(resourcePath, getClass());
+        byte[] addressBook = IOUtils.toByteArray(resource.getInputStream());
         int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
         addressBook = Arrays.copyOfRange(addressBook, 0, index);
-        networkAddressBook.updateFrom(TransactionBody.newBuilder()
-                        .setFileUpdate(FileUpdateTransactionBody.newBuilder()
-                                .setContents(ByteString.copyFrom(addressBook))
-                                .build())
-                        .build(),
+        networkAddressBook.updateFrom(
                 Instant.now().getEpochSecond(),
-                FileID.newBuilder().setFileNum(102).build());
+                addressBook,
+                FileID.newBuilder().setFileNum(102).build(),
+                false);
 
         fileCopier.filterDirectories("*0.0.3").copy();
         downloader.download();

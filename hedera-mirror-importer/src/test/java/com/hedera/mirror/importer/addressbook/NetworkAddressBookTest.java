@@ -24,13 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -53,6 +49,7 @@ public class NetworkAddressBookTest {
 
     private static final NodeAddressBook INITIAL = addressBook(5);
     private static final NodeAddressBook UPDATED = addressBook(10);
+    private static final NodeAddressBook FINAL = addressBook(15);
     private static final FileID FILE_ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build();
     private static final int CLASSPATH_BYTE_SIZE = 3428;
 
@@ -75,24 +72,20 @@ public class NetworkAddressBookTest {
         return builder.build();
     }
 
-    private static void update(NetworkAddressBook networkAddressBook, byte[] contents) {
-        networkAddressBook.updateFrom(TransactionBody.newBuilder()
-                        .setFileUpdate(FileUpdateTransactionBody.newBuilder()
-                                .setContents(ByteString.copyFrom(contents))
-                                .build())
-                        .build(),
-                Instant.now().getEpochSecond(),
-                FILE_ID);
+    private static void update(NetworkAddressBook networkAddressBook, byte[] contents, long consensusTimeStamp) {
+        networkAddressBook.updateFrom(
+                consensusTimeStamp,
+                contents,
+                FILE_ID,
+                false);
     }
 
-    private static void append(NetworkAddressBook networkAddressBook, byte[] contents) {
-        networkAddressBook.updateFrom(TransactionBody.newBuilder()
-                        .setFileAppend(FileAppendTransactionBody.newBuilder()
-                                .setContents(ByteString.copyFrom(contents))
-                                .build())
-                        .build(),
-                Instant.now().getEpochSecond(),
-                FILE_ID);
+    private static void append(NetworkAddressBook networkAddressBook, byte[] contents, long consensusTimeStamp) {
+        networkAddressBook.updateFrom(
+                consensusTimeStamp,
+                contents,
+                FILE_ID,
+                true);
     }
 
     @BeforeEach
@@ -171,8 +164,7 @@ public class NetworkAddressBookTest {
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties, addressBookRepository,
                 nodeAddressRepository);
         assertThat(networkAddressBook.getCurrentAddressBook().getEndConsensusTimestamp()).isNull();
-        long timeStamp = Instant.now().getEpochSecond();
-        update(networkAddressBook, addressBookBytes);
+        update(networkAddressBook, addressBookBytes, 2L);
 
         assertThat(networkAddressBook.getAddresses()).hasSize(UPDATED.getNodeAddressCount());
         assertArrayEquals(addressBookBytes, networkAddressBook.getCurrentAddressBook().getFileData());
@@ -181,7 +173,7 @@ public class NetworkAddressBookTest {
         List<AddressBook> addressBookList = addressBookRepository
                 .findCompleteAddressBooks(Instant.now().getEpochSecond(), EntityId.of(FILE_ID));
         assertThat(addressBookList).isNotEmpty().hasSize(2);
-        assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0).isLessThan(timeStamp);
+        assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0).isLessThan(2L);
         assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0)
                 .isLessThan(addressBookList.get(1).getConsensusTimestamp());
     }
@@ -194,7 +186,7 @@ public class NetworkAddressBookTest {
 
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties, addressBookRepository,
                 nodeAddressRepository);
-        update(networkAddressBook, addressBookPartial);
+        update(networkAddressBook, addressBookPartial, 1L);
 
         assertThat(networkAddressBook.getAddresses()).hasSize(INITIAL.getNodeAddressCount());
         assertArrayEquals(addressBookPartial, networkAddressBook.getPartialAddressBook().getFileData());
@@ -202,17 +194,25 @@ public class NetworkAddressBookTest {
 
     @Test
     void appendCompleteFile() throws Exception {
-        byte[] addressBookBytes = UPDATED.toByteArray();
-        int index = addressBookBytes.length / 2;
+        byte[] addressBookBytes = FINAL.toByteArray();
+        int index = addressBookBytes.length / 3;
         byte[] addressBookBytes1 = Arrays.copyOfRange(addressBookBytes, 0, index);
-        byte[] addressBookBytes2 = Arrays.copyOfRange(addressBookBytes, index, addressBookBytes.length);
+        byte[] addressBookBytes2 = Arrays.copyOfRange(addressBookBytes, index, index * 2);
+        byte[] addressBookBytes2Partial = Arrays.copyOfRange(addressBookBytes, 0, index * 2);
+        byte[] addressBookBytes3 = Arrays.copyOfRange(addressBookBytes, index * 2, addressBookBytes.length);
 
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties, addressBookRepository,
                 nodeAddressRepository);
-        update(networkAddressBook, addressBookBytes1);
-        append(networkAddressBook, addressBookBytes2);
+        update(networkAddressBook, addressBookBytes1, 1L);
+        assertThat(networkAddressBook.getAddresses()).hasSize(INITIAL.getNodeAddressCount());
+        assertArrayEquals(addressBookBytes1, networkAddressBook.getPartialAddressBook().getFileData());
 
-        assertThat(networkAddressBook.getAddresses()).hasSize(UPDATED.getNodeAddressCount());
+        append(networkAddressBook, addressBookBytes2, 2L);
+        assertThat(networkAddressBook.getAddresses()).hasSize((FINAL.getNodeAddressCount() / 3) * 2);
+        assertArrayEquals(addressBookBytes2Partial, networkAddressBook.getPartialAddressBook().getFileData());
+
+        append(networkAddressBook, addressBookBytes3, 3L);
+        assertThat(networkAddressBook.getAddresses()).hasSize(FINAL.getNodeAddressCount());
         assertArrayEquals(addressBookBytes, networkAddressBook.getCurrentAddressBook().getFileData());
     }
 
@@ -224,7 +224,7 @@ public class NetworkAddressBookTest {
 
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties, addressBookRepository,
                 nodeAddressRepository);
-        update(networkAddressBook, addressBookBytes1);
+        update(networkAddressBook, addressBookBytes1, 1L);
 
         assertThat(networkAddressBook.getAddresses()).hasSize(INITIAL.getNodeAddressCount());
         assertArrayEquals(addressBookBytes1, networkAddressBook.getPartialAddressBook().getFileData());
@@ -234,8 +234,8 @@ public class NetworkAddressBookTest {
     void ignoreEmptyByteArray() throws Exception {
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties, addressBookRepository,
                 nodeAddressRepository);
-        update(networkAddressBook, new byte[] {});
-        append(networkAddressBook, new byte[] {});
+        update(networkAddressBook, new byte[] {}, 1L);
+        append(networkAddressBook, new byte[] {}, 2L);
 
         assertThat(networkAddressBook.getAddresses()).hasSize(INITIAL.getNodeAddressCount());
         assertArrayEquals(INITIAL.toByteArray(), networkAddressBook.getCurrentAddressBook().getFileData());
@@ -276,14 +276,13 @@ public class NetworkAddressBookTest {
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties, addressBookRepository,
                 nodeAddressRepository);
         assertThat(networkAddressBook.getCurrentAddressBook().getEndConsensusTimestamp()).isNull();
-        long timeStamp = Instant.now().getEpochSecond();
-        update(networkAddressBook, addressBookBytes);
+        update(networkAddressBook, addressBookBytes, 2L);
 
         // verify previous address book end date was updated
         List<AddressBook> addressBookList = addressBookRepository
-                .findCompleteAddressBooks(Instant.now().getEpochSecond(), EntityId.of(FILE_ID));
+                .findCompleteAddressBooks(3L, EntityId.of(FILE_ID));
         assertThat(addressBookList).isNotEmpty().hasSize(2);
-        assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0).isLessThan(timeStamp);
+        assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0).isLessThan(2L);
         assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0)
                 .isLessThan(addressBookList.get(1).getConsensusTimestamp());
     }
@@ -298,7 +297,7 @@ public class NetworkAddressBookTest {
 
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties, addressBookRepository,
                 nodeAddressRepository);
-        update(networkAddressBook, addressBookBytes1);
+        update(networkAddressBook, addressBookBytes1, 1L);
 
         // create net address book and submit another append to complete file
         networkAddressBook = new NetworkAddressBook(mirrorProperties, addressBookRepository,
@@ -307,7 +306,7 @@ public class NetworkAddressBookTest {
         assertArrayEquals(INITIAL.toByteArray(), networkAddressBook.getCurrentAddressBook().getFileData());
         assertArrayEquals(addressBookBytes1, networkAddressBook.getPartialAddressBook().getFileData());
 
-        append(networkAddressBook, addressBookBytes2);
+        append(networkAddressBook, addressBookBytes2, 2L);
 
         // verify valid address book and repository update
         assertThat(networkAddressBook.getAddresses()).hasSize(UPDATED.getNodeAddressCount());
@@ -316,56 +315,62 @@ public class NetworkAddressBookTest {
 
     @Test
     void appendCompleteFileAcrossFileIds() throws Exception {
+        // file 102 update contents to be split over 1 update and 1 append operation
         byte[] addressBookBytes = UPDATED.toByteArray();
         int index = addressBookBytes.length / 2;
         byte[] addressBookBytes1 = Arrays.copyOfRange(addressBookBytes, 0, index);
         byte[] addressBookBytes2 = Arrays.copyOfRange(addressBookBytes, index, addressBookBytes.length);
 
+        // file 101 update contents to be split over 1 update and 1 append operation
         byte[] addressBook101Bytes = INITIAL.toByteArray();
         int index101 = addressBook101Bytes.length / 2;
         byte[] addressBook101Bytes1 = Arrays.copyOfRange(addressBook101Bytes, 0, index101);
         byte[] addressBook101Bytes2 = Arrays.copyOfRange(addressBook101Bytes, index101, addressBook101Bytes.length);
 
+        // init address book and verify initial state
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties, addressBookRepository,
                 nodeAddressRepository);
         assertEquals(INITIAL.getNodeAddressCount(), nodeAddressRepository.count());
         assertEquals(1, addressBookRepository.count());
 
-        update(networkAddressBook, addressBookBytes1); // fileID 102
+        // perform file 102 first update and confirm no change to current address book and nodes addresses
+        update(networkAddressBook, addressBookBytes1, 1L); // fileID 102
         assertEquals(INITIAL.getNodeAddressCount(), nodeAddressRepository.count());
-        assertEquals(2, addressBookRepository.count());
+        assertEquals(2, addressBookRepository.count()); // initial and 102 update
 
         assertThat(networkAddressBook.getAddresses()).hasSize(INITIAL.getNodeAddressCount());
         assertArrayEquals(addressBookBytes1, networkAddressBook.getPartialAddressBook().getFileData());
 
+        // perform file 101 update and verify only partial address book is changed
         FileID file101ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(101).build();
-        networkAddressBook.updateFrom(TransactionBody.newBuilder()
-                        .setFileUpdate(FileUpdateTransactionBody.newBuilder()
-                                .setContents(ByteString.copyFrom(addressBook101Bytes1))
-                                .build())
-                        .build(),
-                Instant.now().getEpochSecond(),
-                file101ID);
+        networkAddressBook.updateFrom(
+                2L,
+                addressBook101Bytes1,
+                file101ID,
+                false);
 
-        networkAddressBook.updateFrom(TransactionBody.newBuilder()
-                        .setFileAppend(FileAppendTransactionBody.newBuilder()
-                                .setContents(ByteString.copyFrom(addressBook101Bytes2))
-                                .build())
-                        .build(),
-                Instant.now().getEpochSecond(),
-                file101ID);
+        assertArrayEquals(addressBook101Bytes1, networkAddressBook.getPartialAddressBook().getFileData());
 
+        // perform file 101 append
+        networkAddressBook.updateFrom(
+                3L,
+                addressBook101Bytes2,
+                file101ID,
+                true);
+
+        // verify current address book bytes still match original load and not 101 update and append
         assertEquals(INITIAL.getNodeAddressCount() * 2, nodeAddressRepository.count());
         assertEquals(4, addressBookRepository.count());
-
-        // verify partial bytes still match those for 102 UPDATE and not 101
         assertArrayEquals(INITIAL.toByteArray(), networkAddressBook.getCurrentAddressBook().getFileData());
 
+        // verify partial bytes match 101 complete address book update
         assertThat(networkAddressBook.getAddresses()).hasSize(INITIAL.getNodeAddressCount());
         assertArrayEquals(addressBook101Bytes, networkAddressBook.getPartialAddressBook().getFileData());
 
-        append(networkAddressBook, addressBookBytes2); // fileID 102
+        // perform file 102 append
+        append(networkAddressBook, addressBookBytes2, 4L);
 
+        // verify address book and node addresses are updated
         assertThat(networkAddressBook.getAddresses()).hasSize(UPDATED.getNodeAddressCount());
         assertArrayEquals(addressBookBytes, networkAddressBook.getCurrentAddressBook().getFileData());
 

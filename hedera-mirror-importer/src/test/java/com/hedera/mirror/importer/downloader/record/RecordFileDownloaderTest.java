@@ -25,10 +25,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -79,10 +76,11 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
     @DisplayName("Download and verify V1 files")
     void downloadV1() throws Exception {
         Path addressBook = ResourceUtils.getFile("classpath:addressbook/test-v1").toPath();
-        networkAddressBook.updateFrom(TransactionBody.newBuilder().setFileUpdate(FileUpdateTransactionBody.newBuilder()
-                        .setContents(ByteString.copyFrom(Files.readAllBytes(addressBook))).build()).build(),
+        networkAddressBook.updateFrom(
                 Instant.now().getEpochSecond(),
-                FileID.newBuilder().setFileNum(102).build());
+                Files.readAllBytes(addressBook),
+                FileID.newBuilder().setFileNum(102).build(),
+                false);
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());

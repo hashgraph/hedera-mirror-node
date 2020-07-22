@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  */
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -73,8 +74,25 @@ public class PubSubRecordItemListener implements RecordItemListener {
             throw new ParserException("Error sending transaction to pubsub", e);
         }
         log.debug("Published transaction : {}", consensusTimestamp);
+
+        FileID fileID = null;
+        byte[] fileBytes = null;
+        boolean isAppendOperation = false;
+
+        if (body.hasFileAppend()) {
+            fileID = body.getFileAppend().getFileID();
+            fileBytes = body.getFileAppend().getContents().toByteArray();
+            isAppendOperation = true;
+        } else if (body.hasFileCreate()) {
+            fileID = txRecord.getReceipt().getFileID();
+            fileBytes = body.getFileCreate().getContents().toByteArray();
+        } else if (body.hasFileUpdate()) {
+            fileID = body.getFileUpdate().getFileID();
+            fileBytes = body.getFileUpdate().getContents().toByteArray();
+        }
+
         if (networkAddressBook.isAddressBook(entity)) {
-            networkAddressBook.updateFrom(body, consensusTimestamp, txRecord.getReceipt().getFileID());
+            networkAddressBook.updateFrom(consensusTimestamp, fileBytes, fileID, isAppendOperation);
         }
     }
 
