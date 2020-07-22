@@ -5,7 +5,7 @@
 -- add address book table
 create table if not exists address_book
 (
-    consensus_timestamp         nanos_timestamp primary key not null,
+    consensus_timestamp         nanos_timestamp primary key,
     start_consensus_timestamp   nanos_timestamp null,
     end_consensus_timestamp     nanos_timestamp null,
     file_id                     entity_id       not null,
