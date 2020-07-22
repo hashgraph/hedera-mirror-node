@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.google.common.base.Stopwatch;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -34,6 +36,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
@@ -59,6 +62,10 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 @RequiredArgsConstructor
 @ConditionOnEntityRecordParser
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
+
+    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+
     private final SqlProperties properties;
     private final DataSource dataSource;
     private final RecordFileRepository recordFileRepository;
@@ -74,11 +81,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private PreparedStatement sqlInsertContractResult;
     private PreparedStatement sqlInsertLiveHashes;
     private PreparedStatement sqlInsertTopicMessage;
+    private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
 
     @Override
     public void onStart(StreamFileData streamFileData) {
-        String fileName = streamFileData.getFilename();
+        String fileName = FilenameUtils.getName(streamFileData.getFilename());
         entityIds = new HashSet<>();
         if (recordFileRepository.findByName(fileName).size() > 0) {
             throw new DuplicateFileException("File already exists in the database: " + fileName);
@@ -158,6 +166,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     + " (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number" +
                     ", running_hash_version, chunk_num, chunk_total, payer_account_id, valid_start_timestamp)"
                     + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            sqlNotifyTopicMessage = connection.prepareStatement("select pg_notify('topic_message', ?)");
         } catch (SQLException e) {
             throw new ParserSQLException("Unable to prepare SQL statements", e);
         }
@@ -173,7 +183,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             sqlInsertContractResult.close();
             sqlInsertLiveHashes.close();
             sqlInsertTopicMessage.close();
-
+            sqlNotifyTopicMessage.close();
             connection.close();
         } catch (SQLException e) {
             throw new ParserSQLException("Error closing connection", e);
@@ -190,10 +200,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             var contractResult = executeBatch(sqlInsertContractResult);
             var liveHashes = executeBatch(sqlInsertLiveHashes);
             var topicMessages = executeBatch(sqlInsertTopicMessage);
+            var topicMessageNotifications = executeBatch(sqlNotifyTopicMessage);
             log.info("Inserted transactions: {}, entities: {}, transfer lists: {}, files: {}, contracts: {}, " +
-                            "claims: {}, topic messages: {}, non-fee transfers: {}",
+                            "claims: {}, topic messages: {}, topic notifications: {}, non-fee transfers: {}",
                     transactions, entityIds, transferLists, fileData, contractResult, liveHashes, topicMessages,
-                    nonFeeTransfers);
+                    topicMessageNotifications, nonFeeTransfers);
         } catch (SQLException e) {
             log.error("Error committing sql insert batch ", e);
             throw new ParserSQLException(e);
@@ -307,21 +318,40 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             if (topicMessage.getChunkNum() != null) {
                 sqlInsertTopicMessage.setInt(F_TOPICMESSAGE.CHUNK_NUM.ordinal(), topicMessage.getChunkNum());
                 sqlInsertTopicMessage.setInt(F_TOPICMESSAGE.CHUNK_TOTAL.ordinal(), topicMessage.getChunkTotal());
-                sqlInsertTopicMessage
-                        .setLong(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), topicMessage.getPayerAccountId().getId());
+                if (topicMessage.getPayerAccountId() != null) {
+                    sqlInsertTopicMessage.setLong(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(),
+                            topicMessage.getPayerAccountId().getId());
+                } else {
+                    sqlInsertTopicMessage.setObject(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), null);
+                }
                 sqlInsertTopicMessage
                         .setLong(F_TOPICMESSAGE.VALID_START_TIMESTAMP.ordinal(), topicMessage.getValidStartTimestamp());
             } else {
                 sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.CHUNK_NUM.ordinal(), Types.SMALLINT);
                 sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.CHUNK_TOTAL.ordinal(), Types.SMALLINT);
-                sqlInsertTopicMessage
-                        .setObject(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), null);
+                sqlInsertTopicMessage.setObject(F_TOPICMESSAGE.PAYER_ACCOUNT_ID.ordinal(), null);
                 sqlInsertTopicMessage.setNull(F_TOPICMESSAGE.VALID_START_TIMESTAMP.ordinal(), Types.BIGINT);
             }
 
             sqlInsertTopicMessage.addBatch();
         } catch (SQLException e) {
             throw new ParserSQLException(e);
+        }
+
+        try {
+            if (properties.isNotifyTopicMessage()) {
+                String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
+                if (json.length() >= 8000) {
+                    log.warn("Unable to notify large payload of size {}B: {}", json.length(), topicMessage);
+                    return;
+                }
+                sqlNotifyTopicMessage.setString(1, json);
+                sqlNotifyTopicMessage.addBatch();
+            }
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        } catch (Exception e) {
+            throw new ParserException(e);
         }
     }
 

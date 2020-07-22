@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -388,7 +389,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
                 runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
         var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
-                validStartNs);
+                TestUtils.toTimestamp(validStartNs));
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -421,7 +422,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var topicMessage = createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
                 runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
         var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, payerAccountIdNum,
-                validStartNs);
+                TestUtils.toTimestamp(validStartNs));
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -452,7 +453,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var validStartNs = 7L;
 
         var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
-                validStartNs);
+                TestUtils.toTimestamp(validStartNs));
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -463,6 +464,28 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         // if the transaction is filtered out, nothing in it should affect the state
         assertEquals(0L, entityRepository.count());
         assertEquals(0L, topicMessageRepository.count());
+    }
+
+    @Test
+    void submitMessageTestInvalidChunkInfo() throws Exception {
+        // given
+        var id = 10_000_000L;
+        var topicId = TopicID.newBuilder().setTopicNum(9000).build();
+        var transaction = createSubmitMessageTransaction(topicId, "message", 3, 5, null,
+                TestUtils.toTimestamp(Long.MAX_VALUE, Integer.MAX_VALUE));
+        var transactionRecord = createTransactionRecord(topicId, 10_000L, "running-hash"
+                .getBytes(), 2, id, ResponseCodeEnum.SUCCESS);
+
+        // when
+        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
+
+        // then
+        assertEquals(3L, entityRepository.count());
+        assertEquals(1L, topicMessageRepository.count());
+        assertThat(topicMessageRepository.findById(id))
+                .get()
+                .extracting(TopicMessage::getValidStartTimestamp, TopicMessage::getPayerAccountId)
+                .containsExactly(Long.MAX_VALUE, null);
     }
 
     @Test
@@ -482,7 +505,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         entityRepository.save(topic);
 
         var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, payerAccountIdNum,
-                validStartNs);
+                TestUtils.toTimestamp(validStartNs));
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash.getBytes(),
                 runningHashVersion, consensusTimestamp, responseCode);
 
@@ -639,20 +662,24 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
     private com.hederahashgraph.api.proto.java.Transaction createSubmitMessageTransaction(
             TopicID topicId, String message, Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum,
-            Long validStartNs) {
+            Timestamp validStartNs) {
         var submitMessageTransactionBodyBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .setTopicID(topicId)
                 .setMessage(ByteString.copyFrom(message.getBytes()));
 
         if (chunkNum != null) {
+            TransactionID.Builder transactionId = TransactionID.newBuilder();
+            if (payerAccountIdNum != null) {
+                transactionId.setAccountID(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build());
+            }
+            if (validStartNs != null) {
+                transactionId.setTransactionValidStart(validStartNs);
+            }
             submitMessageTransactionBodyBuilder
                     .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
                             .setNumber(chunkNum)
                             .setTotal(chunkTotal)
-                            .setInitialTransactionID(TransactionID.newBuilder()
-                                    .setAccountID(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build())
-                                    .setTransactionValidStart(TestUtils.toTimestamp(validStartNs))
-                                    .build()));
+                            .setInitialTransactionID(transactionId));
         }
 
         var innerBody = submitMessageTransactionBodyBuilder.build();

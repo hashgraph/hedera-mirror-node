@@ -22,9 +22,10 @@ package com.hedera.mirror.importer.exception;
 
 public class HashMismatchException extends ImporterException {
 
+    private static final String MESSAGE = "Hash mismatch for file {}. Expected = {}, Actual = {}";
     private static final long serialVersionUID = -1093315700008851731L;
 
-    public HashMismatchException(String message) {
-        super(message);
+    public HashMismatchException(String filename, String expectedHash, String actualHash) {
+        super(String.format(MESSAGE, filename, expectedHash, actualHash));
     }
 }

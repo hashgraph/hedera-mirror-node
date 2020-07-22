@@ -25,12 +25,14 @@ import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import lombok.Data;
+import lombok.ToString;
 
 import com.hedera.mirror.importer.converter.EntityIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
 @Entity
+@ToString(exclude = {"message", "runningHash"})
 public class TopicMessage {
 
     private Integer chunkNum;

@@ -21,23 +21,30 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
+
+import com.hedera.mirror.importer.MirrorProperties;
 
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.downloader")
 public class CommonDownloaderProperties {
 
+    private final MirrorProperties mirrorProperties;
+
     private String accessKey;
 
-    @NotBlank
-    private String bucketName = "hedera-demo-streams";
+    private String bucketName;
+
+    public String getBucketName() {
+        return StringUtils.isNotBlank(bucketName) ? bucketName : mirrorProperties.getNetwork().getBucketName();
+    }
 
     @NotNull
     private CloudProvider cloudProvider = CloudProvider.S3;

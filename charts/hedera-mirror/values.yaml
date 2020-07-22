@@ -6,11 +6,12 @@ applicationResource:
 
 global:
   db:
-    host: RELEASE-NAME-db-pgpool # RELEASE-NAME will be replaced with actual release by children charts
+    host: RELEASE-NAME-postgres-pgpool # RELEASE-NAME will be replaced with actual release by children charts
   namespaceOverride: ""
   rest:
     username: mirror_api
     password: mirror_api_pass
+  useReleaseForNameLabel: false # Set the name label to the release name for Marketplace
 
 grpc:
   config:
@@ -60,7 +61,7 @@ postgresql:
         memory: 25Mi
     serviceMonitor:
       enabled: true
-  nameOverride: db
+  nameOverride: postgres
   networkPolicy:
     enabled: false
   persistence:
@@ -105,8 +106,6 @@ postgresql:
                 matchLabels:
                   app.kubernetes.io/component: postgresql
     initdbScriptsSecret: '{{ printf "%s-postgresql-init" .Release.Name }}'
-    podLabels:
-      role: db
     password: password
     priorityClassName: critical
     repmgrPassword: password

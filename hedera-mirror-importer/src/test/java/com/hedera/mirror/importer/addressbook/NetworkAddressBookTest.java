@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.HederaNetwork;
 
 public class NetworkAddressBookTest {
 
@@ -115,7 +114,7 @@ public class NetworkAddressBookTest {
 
     @Test
     void startupWithExisting() throws Exception {
-        mirrorProperties.setNetwork(HederaNetwork.MAINNET);
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
         NetworkAddressBook networkAddressBook = new NetworkAddressBook(mirrorProperties);
 
         assertThat(networkAddressBook.getAddresses())
@@ -135,7 +134,7 @@ public class NetworkAddressBookTest {
     @Test
     void startupWithOtherNetwork() throws Exception {
         Files.deleteIfExists(addressBookPath);
-        mirrorProperties.setNetwork(HederaNetwork.OTHER);
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
         assertThatThrownBy(() -> new NetworkAddressBook(mirrorProperties))
                 .isInstanceOf(IllegalStateException.class);
     }

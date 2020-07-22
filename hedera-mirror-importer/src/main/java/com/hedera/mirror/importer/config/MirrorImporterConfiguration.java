@@ -49,7 +49,6 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.HederaNetwork;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.leader.LeaderAspect;
 
@@ -135,7 +134,7 @@ public class MirrorImporterConfiguration {
         return configuration -> {
             Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
             if (timestamp == null) {
-                if (mirrorProperties.getNetwork() == HederaNetwork.MAINNET) {
+                if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.MAINNET) {
                     timestamp = 1592499600000000000L;
                 } else {
                     timestamp = 1588706343553042000L;

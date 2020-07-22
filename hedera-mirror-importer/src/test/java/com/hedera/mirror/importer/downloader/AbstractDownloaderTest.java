@@ -21,16 +21,23 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.primitives.Bytes;
 import io.findify.s3mock.S3Mock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -48,8 +55,6 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
-import com.hedera.mirror.importer.domain.HederaNetwork;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -70,6 +75,8 @@ public abstract class AbstractDownloaderTest {
     protected Downloader downloader;
     protected Path validPath;
     protected MeterRegistry meterRegistry = new LoggingMeterRegistry();
+    protected String file1;
+    protected String file2;
 
     @TempDir
     Path dataPath;
@@ -79,6 +86,23 @@ public abstract class AbstractDownloaderTest {
             File file = p.toFile();
             if (file.isFile()) {
                 FileUtils.writeStringToFile(file, "corrupt", "UTF-8", true);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void truncateFile(Path p) {
+        try {
+            File file = p.toFile();
+            if (file.isFile()) {
+                FileChannel outChan = new FileOutputStream(file, true).getChannel();
+                if (outChan.size() <= 48) {
+                    outChan.truncate(outChan.size() / 2);
+                } else {
+                    outChan.truncate(48);
+                }
+                outChan.close();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -104,7 +128,7 @@ public abstract class AbstractDownloaderTest {
 
         initProperties();
         s3AsyncClient = new MirrorImporterConfiguration(
-                null, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry))
+                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry))
                 .s3CloudStorageClient();
         networkAddressBook = new NetworkAddressBook(mirrorProperties);
         downloader = getDownloader();
@@ -127,15 +151,15 @@ public abstract class AbstractDownloaderTest {
     private void initProperties() {
         mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
-        mirrorProperties.setNetwork(HederaNetwork.TESTNET);
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
 
-        commonDownloaderProperties = new CommonDownloaderProperties();
-        commonDownloaderProperties.setBucketName("test");
+        commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
         commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_MOCK_PORT);
         commonDownloaderProperties.setAccessKey("x"); // https://github.com/findify/s3mock/issues/147
         commonDownloaderProperties.setSecretKey("x");
 
         downloaderProperties = getDownloaderProperties();
+        downloaderProperties.init();
     }
 
     protected void assertNoFilesinValidPath() throws Exception {
@@ -153,31 +177,44 @@ public abstract class AbstractDownloaderTest {
                 .containsAll(filenames);
     }
 
-    protected void overwriteOnDownloadHelper(String fileName1, String fileName2, ApplicationStatusCode key)
-            throws Exception {
-        fileCopier.copy();
-        downloader.download();
-        verify(applicationStatusRepository).updateStatusValue(key, fileName1);
-        verify(applicationStatusRepository).updateStatusValue(key, fileName2);
-        assertValidFiles(List.of(fileName1, fileName2));
-
-        reset(applicationStatusRepository);
-        // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
-        Files.walk(downloaderProperties.getSignaturesPath()).filter(this::isSigFile)
-                .forEach(AbstractDownloaderTest::corruptFile);
-        // fileName1 will be used to calculate marker for list request. mockS3 also returns back the marker in the
-        // results. This is unlike AWS S3 which does not return back the marker.
-        doReturn(fileName1).when(applicationStatusRepository).findByStatusCode(key);
-        downloader.download();
-        verify(applicationStatusRepository).updateStatusValue(key, fileName1);
-        verify(applicationStatusRepository).updateStatusValue(key, fileName2);
-        assertValidFiles(List.of(fileName1, fileName2));
-    }
-
     protected void testMaxDownloadItemsReached(String filename) throws Exception {
         fileCopier.copy();
         downloader.download();
         assertValidFiles(List.of(filename));
+    }
+
+    @Test
+    @DisplayName("Download and verify files")
+    void download() throws Exception {
+        fileCopier.copy();
+        downloader.download();
+
+        verifyForSuccess();
+        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
+    }
+
+    @Test
+    @DisplayName("Non-unanimous consensus reached")
+    void partialConsensus() throws Exception {
+        fileCopier.filterDirectories("*0.0.3").filterDirectories("*0.0.4").filterDirectories("*0.0.5").copy();
+        downloader.download();
+
+        verifyForSuccess();
+    }
+
+    @Test
+    @DisplayName("Exactly 1/3 consensus")
+    void oneThirdConsensus() throws Exception {
+        // Remove last node from current 4 node address book
+        byte[] addressBook = Files.readAllBytes(mirrorProperties.getAddressBookPath());
+        int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
+        addressBook = Arrays.copyOfRange(addressBook, 0, index);
+        networkAddressBook.update(addressBook);
+
+        fileCopier.filterDirectories("*0.0.3").copy();
+        downloader.download();
+
+        verifyForSuccess();
     }
 
     @Test
@@ -214,10 +251,19 @@ public abstract class AbstractDownloaderTest {
     }
 
     @Test
-    @DisplayName("Invalid or incomplete file")
-    void invalidFile() throws Exception {
+    @DisplayName("Invalid or incomplete file with garbage data appended")
+    void invalidFileWithGarbageAppended() throws Exception {
         fileCopier.copy();
         Files.walk(s3Path).filter(file -> !isSigFile(file)).forEach(AbstractDownloaderTest::corruptFile);
+        downloader.download();
+        assertNoFilesinValidPath();
+    }
+
+    @Test
+    @DisplayName("Invalid or incomplete file with data truncated")
+    void invalidFileWithDataTruncated() throws Exception {
+        fileCopier.copy();
+        Files.walk(s3Path).filter(file -> !isSigFile(file)).forEach(AbstractDownloaderTest::truncateFile);
         downloader.download();
         assertNoFilesinValidPath();
     }
@@ -241,5 +287,34 @@ public abstract class AbstractDownloaderTest {
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSizeGreaterThan(0)
                 .allMatch(p -> isSigFile(p));
+    }
+
+    @Test
+    @DisplayName("overwrite on download")
+    void overwriteOnDownload() throws Exception {
+        downloaderProperties.setKeepSignatures(true);
+        fileCopier.copy();
+        downloader.download();
+        verifyForSuccess();
+
+        reset(applicationStatusRepository);
+        // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
+        Files.walk(downloaderProperties.getSignaturesPath()).filter(this::isSigFile)
+                .forEach(AbstractDownloaderTest::corruptFile);
+        // fileName1 will be used to calculate marker for list request. mockS3 also returns back the marker in the
+        // results. This is unlike AWS S3 which does not return back the marker.
+        doReturn(file1).when(applicationStatusRepository).findByStatusCode(downloader.getLastValidDownloadedFileKey());
+        downloader.download();
+        verifyForSuccess();
+    }
+
+    private void verifyForSuccess() throws Exception {
+        verify(applicationStatusRepository).updateStatusValue(downloader.getLastValidDownloadedFileKey(), file1);
+        verify(applicationStatusRepository).updateStatusValue(downloader.getLastValidDownloadedFileKey(), file2);
+        if (downloader.getLastValidDownloadedFileHashKey() != null) {
+            verify(applicationStatusRepository, times(2))
+                    .updateStatusValue(eq(downloader.getLastValidDownloadedFileHashKey()), any());
+        }
+        assertValidFiles(List.of(file2, file1));
     }
 }

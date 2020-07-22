@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,10 +20,15 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-public enum HederaNetwork {
+public class InvalidEventFileException extends ImporterException {
 
-    DEMO,
-    MAINNET,
-    TESTNET,
-    OTHER // Pre-prod or ad hoc environments
+    private static final long serialVersionUID = -2645790051583402799L;
+
+    public InvalidEventFileException(String message) {
+        super(message);
+    }
+
+    public InvalidEventFileException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

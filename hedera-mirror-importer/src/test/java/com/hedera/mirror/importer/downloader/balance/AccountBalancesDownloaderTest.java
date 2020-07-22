@@ -20,20 +20,13 @@ package com.hedera.mirror.importer.downloader.balance;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-
-import com.google.common.primitives.Bytes;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -43,9 +36,7 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
-        DownloaderProperties properties = new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
-        properties.init();
-        return properties;
+       return new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
     }
 
     @Override
@@ -59,62 +50,16 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         return Path.of("accountBalances");
     }
 
-    @Test
-    @DisplayName("Download and verify signatures")
-    void downloadAndVerify() throws Exception {
-        fileCopier.copy();
-        downloader.download();
-        verify(applicationStatusRepository).updateStatusValue(
-                ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, "2019-08-30T18_30_00.010147001Z_Balances" +
-                        ".csv");
-        assertValidFiles(List
-                .of("2019-08-30T18_15_00.016002001Z_Balances.csv", "2019-08-30T18_30_00.010147001Z_Balances.csv"));
-        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
-    }
-
-    @Test
-    @DisplayName("Non-unanimous consensus reached")
-    void partialConsensus() throws Exception {
-        fileCopier.filterDirectories("*0.0.3").filterDirectories("*0.0.4").filterDirectories("*0.0.5").copy();
-        downloader.download();
-        verify(applicationStatusRepository).updateStatusValue(
-                ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, "2019-08-30T18_30_00.010147001Z_Balances" +
-                        ".csv");
-        assertValidFiles(List
-                .of("2019-08-30T18_15_00.016002001Z_Balances.csv", "2019-08-30T18_30_00.010147001Z_Balances.csv"));
-    }
-
-    @Test
-    @DisplayName("Exactly 1/3 consensus")
-    void oneThirdConsensus() throws Exception {
-        // Remove last node from current 4 node address book
-        byte[] addressBook = Files.readAllBytes(mirrorProperties.getAddressBookPath());
-        int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
-        addressBook = Arrays.copyOfRange(addressBook, 0, index);
-        networkAddressBook.update(addressBook);
-
-        fileCopier.filterDirectories("*0.0.3").copy();
-        downloader.download();
-        verify(applicationStatusRepository).updateStatusValue(
-                ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE, "2019-08-30T18_30_00.010147001Z_Balances" +
-                        ".csv");
-        assertValidFiles(List
-                .of("2019-08-30T18_15_00.016002001Z_Balances.csv", "2019-08-30T18_30_00.010147001Z_Balances.csv"));
+    @BeforeEach
+    void beforeEach() {
+        file1 = "2019-08-30T18_15_00.016002001Z_Balances.csv";
+        file2 = "2019-08-30T18_30_00.010147001Z_Balances.csv";
     }
 
     @Test
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {
         ((BalanceDownloaderProperties) downloaderProperties).setBatchSize(1);
-        testMaxDownloadItemsReached("2019-08-30T18_15_00.016002001Z_Balances.csv");
-    }
-
-    @Test
-    @DisplayName("overwrite on download")
-    void overwriteOnDownload() throws Exception {
-        downloaderProperties.setKeepSignatures(true);
-        overwriteOnDownloadHelper(
-                "2019-08-30T18_15_00.016002001Z_Balances.csv", "2019-08-30T18_30_00.010147001Z_Balances.csv",
-                ApplicationStatusCode.LAST_VALID_DOWNLOADED_BALANCE_FILE);
+        testMaxDownloadItemsReached(file1);
     }
 }
