@@ -166,7 +166,7 @@ prometheus:
       walCompression: true
   prometheusOperator:
     namespaces:
-      additional: []
+      additional: ["dev"]
       releaseNamespace: true
     resources:
       limits:
