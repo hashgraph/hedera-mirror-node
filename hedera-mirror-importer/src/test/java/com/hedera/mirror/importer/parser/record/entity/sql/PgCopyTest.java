@@ -78,26 +78,26 @@ class PgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void testCopy() {
+    void testCopy() throws SQLException {
         var cryptoTransfers = new HashSet<CryptoTransfer>();
         cryptoTransfers.add(cryptoTransfer(1));
         cryptoTransfers.add(cryptoTransfer(2));
         cryptoTransfers.add(cryptoTransfer(3));
 
-        cryptoTransferPgCopy.copy(cryptoTransfers);
+        cryptoTransferPgCopy.copy(cryptoTransfers, dataSource.getConnection());
 
         assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(cryptoTransfers);
     }
 
     @Test
-    void testCopyDuplicates() {
+    void testCopyDuplicates() throws SQLException {
         var transactions = new HashSet<Transaction>();
         transactions.add(transaction(1));
         transactions.add(transaction(2));
         transactions.add(transaction(2));// duplicate transaction to be ignored with no error on attempted copy
         transactions.add(transaction(3));
 
-        transactionPgCopy.copy(transactions);
+        transactionPgCopy.copy(transactions, dataSource.getConnection());
 
         assertThat(transactionRepository.findAll()).hasSize(3).containsExactlyInAnyOrderElementsOf(transactions);
     }
@@ -118,13 +118,13 @@ class PgCopyTest extends IntegrationTest {
         var cryptoTransfers = new HashSet<CryptoTransfer>();
         cryptoTransfers.add(cryptoTransfer(1));
         // when
-        assertThatThrownBy(() -> cryptoTransferPgCopy2.copy(cryptoTransfers))
+        assertThatThrownBy(() -> cryptoTransferPgCopy2.copy(cryptoTransfers, dataSource.getConnection()))
                 .isInstanceOf(ParserException.class);
     }
 
     @Test
-    void testNullItems() {
-        cryptoTransferPgCopy.copy(null);
+    void testNullItems() throws SQLException {
+        cryptoTransferPgCopy.copy(null, dataSource.getConnection());
         assertThat(cryptoTransferRepository.count()).isEqualTo(0);
     }
 

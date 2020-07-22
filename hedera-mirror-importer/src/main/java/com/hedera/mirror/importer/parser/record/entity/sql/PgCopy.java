@@ -82,12 +82,12 @@ public class PgCopy<T> {
                 .register(meterRegistry);
     }
 
-    public void copy(Collection<T> items) {
+    public void copy(Collection<T> items, Connection connection) {
 
         if (items == null || items.size() == 0) {
             return;
         }
-        try (Connection connection = dataSource.getConnection()) {
+        try {
             Stopwatch stopwatch = Stopwatch.createStarted();
             var csv = buildCsv(items);
             var csvBuildDuration = stopwatch.elapsed();

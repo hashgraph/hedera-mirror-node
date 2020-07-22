@@ -40,4 +40,6 @@ public class SqlProperties {
 
     // Not documenting this for now since it may be temporary pending further refactorings
     private boolean notifyTopicMessage = true;
+
+    private int maxJsonPayloadSize = 8000;
 }

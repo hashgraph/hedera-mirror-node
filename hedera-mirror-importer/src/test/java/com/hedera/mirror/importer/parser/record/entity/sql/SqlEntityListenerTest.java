@@ -41,6 +41,7 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.RandomUtils;
+import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
@@ -228,6 +229,40 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertExistsAndEquals(topicMessageRepository, topicMessage, topicMessage.getConsensusTimestamp());
         assertThat(notifications).isNull();
         connection.close();
+    }
+
+    @Test
+    void verifyRollback() throws Exception {
+//        sqlProperties.setBatchSize(Integer.MAX_VALUE);
+        sqlProperties.setMaxJsonPayloadSize(Integer.MAX_VALUE);
+        // given
+        TopicMessage topicMessage = getTopicMessage();
+
+        TopicMessage topicMessage2 = getTopicMessage();
+        topicMessage2.setMessage(RandomUtils.nextBytes(10000)); // Just exceeds 8000B
+
+        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
+
+        EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
+
+        // when
+        sqlEntityListener.onTopicMessage(topicMessage);
+        sqlEntityListener.onTopicMessage(topicMessage2); // error causing submission
+        sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
+        sqlEntityListener.onEntityId(entityId);
+
+        boolean rollback = false;
+        try {
+            completeFileAndCommit();
+        } catch (Exception ex) {
+            sqlEntityListener.onError();
+            rollback = true;
+        }
+
+        assertThat(rollback).isTrue();
+        assertEquals(0, topicMessageRepository.count());
+        assertEquals(0, cryptoTransferRepository.count());
+        assertEquals(0, entityRepository.count());
     }
 
     @Test

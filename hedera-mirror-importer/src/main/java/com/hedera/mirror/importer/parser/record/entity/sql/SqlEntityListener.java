@@ -45,6 +45,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
@@ -81,7 +82,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityRepository entityRepository;
     private final SqlProperties sqlProperties;
 
-    @Qualifier(value = CacheConfiguration.NEVER_EXPIRE_LARGE)
     private final CacheManager cacheManager;
     private long batchCount;
 
@@ -111,7 +111,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     public SqlEntityListener(SqlProperties properties, DataSource dataSource,
                              RecordFileRepository recordFileRepository, EntityRepository entityRepository,
-                             MeterRegistry meterRegistry, CacheManager cacheManager) {
+                             MeterRegistry meterRegistry,
+                             @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager) {
         this.dataSource = dataSource;
         this.recordFileRepository = recordFileRepository;
         this.entityRepository = entityRepository;
@@ -207,23 +208,29 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
     }
 
-    private void executeBatches() {
+    @Transactional(rollbackFor = {ParserException.class})
+    public void executeBatches() {
         Stopwatch stopwatch = Stopwatch.createStarted();
         try {
             CompletableFuture.allOf(
-                    CompletableFuture.runAsync(() -> transactionPgCopy.copy(transactions), executorService),
-                    CompletableFuture.runAsync(() -> cryptoTransferPgCopy.copy(cryptoTransfers), executorService),
-                    CompletableFuture.runAsync(() -> nonFeeTransferPgCopy.copy(nonFeeTransfers), executorService),
-                    CompletableFuture.runAsync(() -> fileDataPgCopy.copy(fileData), executorService),
-                    CompletableFuture.runAsync(() -> contractResultPgCopy.copy(contractResults), executorService),
-                    CompletableFuture.runAsync(() -> liveHashPgCopy.copy(liveHashes), executorService),
-                    CompletableFuture.runAsync(() -> topicMessagePgCopy.copy(topicMessages), executorService),
+                    CompletableFuture.runAsync(() -> transactionPgCopy.copy(transactions, connection), executorService),
+                    CompletableFuture
+                            .runAsync(() -> cryptoTransferPgCopy.copy(cryptoTransfers, connection), executorService),
+                    CompletableFuture
+                            .runAsync(() -> nonFeeTransferPgCopy.copy(nonFeeTransfers, connection), executorService),
+                    CompletableFuture.runAsync(() -> fileDataPgCopy.copy(fileData, connection), executorService),
+                    CompletableFuture
+                            .runAsync(() -> contractResultPgCopy.copy(contractResults, connection), executorService),
+                    CompletableFuture.runAsync(() -> liveHashPgCopy.copy(liveHashes, connection), executorService),
+                    CompletableFuture
+                            .runAsync(() -> topicMessagePgCopy.copy(topicMessages, connection), executorService),
                     CompletableFuture.runAsync(() -> persistEntities(), executorService),
                     CompletableFuture.runAsync(() -> notifyTopicMessages(), executorService)
             ).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new ParserException(e);
         }
+        log.info("Completed batch inserts in {}", stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     @Override
@@ -260,7 +267,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         try {
             if (sqlProperties.isNotifyTopicMessage()) {
                 String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
-                if (json.length() >= 8000) {
+                if (json.length() >= sqlProperties.getMaxJsonPayloadSize()) {
                     log.warn("Unable to notify large payload of size {}B: {}", json.length(), topicMessage);
                     return;
                 }
@@ -297,7 +304,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                 entityCache.put(entityId.getId(), null);
             }
         });
-        log.info("Inserted {} entities in {}", entityIds.size(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        log.info("Inserted {} entities in {} ms", entityIds.size(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     private void notifyTopicMessages() {

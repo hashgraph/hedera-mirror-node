@@ -61,9 +61,13 @@ public class DomainWriterImpl implements DomainWriter {
 
     @Override
     public void flush() {
-        accountBalancePgCopy.copy(accountBalances);
-        log.info("Saving {} entities", entities.size());
-        entityRepository.saveAll(entities);
+        try {
+            accountBalancePgCopy.copy(accountBalances, dataSource.getConnection());
+            log.info("Saving {} entities", entities.size());
+            entityRepository.saveAll(entities);
+        } catch (SQLException sqlex) {
+            log.error(sqlex);
+        }
     }
 
     @Override
