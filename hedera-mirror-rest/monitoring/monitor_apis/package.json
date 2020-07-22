@@ -18,12 +18,12 @@
     "dotenv": "^8.0.0",
     "express": "^4.17.1",
     "log4js": "^4.3.1",
-    "mathjs": "^6.6.2",
-    "shelljs": "^0.8.3"
+    "mathjs": "^7.1.0",
+    "shelljs": "^0.8.4"
   },
   "devDependencies": {
     "jest": "^26.1.0",
-    "nodemon": "^2.0.2",
+    "nodemon": "^2.0.4",
     "supertest": "^4.0.2"
   }
 }
