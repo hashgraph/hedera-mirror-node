@@ -80,12 +80,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final RecordFileRepository recordFileRepository;
     private final EntityRepository entityRepository;
     private final SqlProperties sqlProperties;
-
-    private final CacheManager cacheManager;
     private long batchCount;
 
-    // Keeps track of entityIds seen so far. This is for optimizing inserts into t_entities table so that insertion of
-    // node and treasury ids are not tried for every transaction.
     // init connections, schemas, writers, etc once per process
     private final PgCopy<Transaction> transactionPgCopy;
     private final PgCopy<CryptoTransfer> cryptoTransferPgCopy;
@@ -103,7 +99,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Collection<LiveHash> liveHashes;
     private Collection<TopicMessage> topicMessages;
     private Collection<EntityId> entityIds;
+
+    // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
     private final Cache entityCache;
+    private final CacheManager cacheManager;
 
     private PreparedStatement sqlInsertEntityId;
     private PreparedStatement sqlNotifyTopicMessage;

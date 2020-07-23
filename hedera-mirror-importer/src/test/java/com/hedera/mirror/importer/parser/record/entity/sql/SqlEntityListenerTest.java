@@ -232,8 +232,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void verifyRollback() throws Exception {
-//        sqlProperties.setBatchSize(Integer.MAX_VALUE);
+    void verifyRollback() {
         sqlProperties.setMaxJsonPayloadSize(Integer.MAX_VALUE);
         // given
         TopicMessage topicMessage = getTopicMessage();
