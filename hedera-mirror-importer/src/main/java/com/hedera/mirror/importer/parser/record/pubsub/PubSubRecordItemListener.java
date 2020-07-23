@@ -92,7 +92,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
         }
 
         if (networkAddressBook.isAddressBook(entity)) {
-            networkAddressBook.updateFrom(consensusTimestamp, fileBytes, fileID, isAppendOperation);
+            networkAddressBook.updateFrom(consensusTimestamp, fileBytes, EntityId.of(fileID), isAppendOperation);
         }
     }
 

@@ -29,7 +29,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Bytes;
-import com.hederahashgraph.api.proto.java.FileID;
 import io.findify.s3mock.S3Mock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
@@ -230,7 +229,7 @@ public abstract class AbstractDownloaderTest {
         networkAddressBook.updateFrom(
                 Instant.now().getEpochSecond(),
                 addressBook,
-                FileID.newBuilder().setFileNum(102).build(),
+                EntityId.of(0, 0, 102, EntityTypeEnum.FILE),
                 false);
 
         fileCopier.filterDirectories("*0.0.3").copy();

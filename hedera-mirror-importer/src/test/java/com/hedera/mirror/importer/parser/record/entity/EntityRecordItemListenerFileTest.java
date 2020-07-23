@@ -53,6 +53,8 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.Entities;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
@@ -532,7 +534,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         networkAddressBook.updateFrom(
                 Instant.now().getEpochSecond(),
                 addressBookPrevious,
-                FileID.newBuilder().setFileNum(102).build(),
+                EntityId.of(0, 0, 102, EntityTypeEnum.FILE),
                 false);
         byte[] addressBook = FileUtils.readFileToByteArray(addressBookSmall);
         byte[] addressBookUpdate = Arrays.copyOf(addressBook, 6144);

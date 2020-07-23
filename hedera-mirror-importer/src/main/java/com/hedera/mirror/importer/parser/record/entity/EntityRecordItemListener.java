@@ -25,9 +25,7 @@ import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
-import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -162,15 +160,15 @@ public class EntityRecordItemListener implements RecordItemListener {
                 fileID = body.getFileAppend().getFileID();
                 fileBytes = body.getFileAppend().getContents().toByteArray();
                 isAppendOperation = true;
-                insertFileData(consensusNs, fileBytes, fileID);
+                insertFileData(consensusNs, fileBytes, fileID, recordItem.getTransactionType());
             } else if (body.hasFileCreate()) {
                 fileID = txRecord.getReceipt().getFileID();
                 fileBytes = body.getFileCreate().getContents().toByteArray();
-                insertFileData(consensusNs, fileBytes, fileID);
+                insertFileData(consensusNs, fileBytes, fileID, recordItem.getTransactionType());
             } else if (body.hasFileUpdate()) {
                 fileID = body.getFileUpdate().getFileID();
                 fileBytes = body.getFileUpdate().getContents().toByteArray();
-                insertFileData(consensusNs, fileBytes, fileID);
+                insertFileData(consensusNs, fileBytes, fileID, recordItem.getTransactionType());
             }
         }
 
@@ -178,7 +176,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         log.debug("Storing transaction: {}", tx);
 
         if (networkAddressBook.isAddressBook(entityId)) {
-            networkAddressBook.updateFrom(consensusNs, fileBytes, fileID, isAppendOperation);
+            networkAddressBook.updateFrom(consensusNs, fileBytes, EntityId.of(fileID), isAppendOperation);
         }
     }
 
@@ -260,22 +258,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         entityListener.onTopicMessage(topicMessage);
     }
 
-    private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID) {
+    private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID, int transactionTypeEnum) {
         if (entityProperties.getPersist().isFiles() ||
                 (entityProperties.getPersist().isSystemFiles() && fileID.getFileNum() < 1000)) {
-            entityListener.onFileData(new FileData(consensusTimestamp, contents));
+            entityListener
+                    .onFileData(new FileData(consensusTimestamp, contents, EntityId.of(fileID), transactionTypeEnum));
         }
-    }
-
-    private void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody) {
-        byte[] contents = transactionBody.getContents().toByteArray();
-        insertFileData(consensusTimestamp, contents, transactionBody.getFileID());
-    }
-
-    private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody) {
-        FileID fileId = transactionBody.getFileID();
-        byte[] contents = transactionBody.getContents().toByteArray();
-        insertFileData(consensusTimestamp, contents, fileId);
     }
 
     private void insertCryptoAddLiveHash(long consensusTimestamp,

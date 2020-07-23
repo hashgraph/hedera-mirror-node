@@ -25,7 +25,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hederahashgraph.api.proto.java.FileID;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,6 +40,8 @@ import org.springframework.util.ResourceUtils;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -79,7 +80,7 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
         networkAddressBook.updateFrom(
                 Instant.now().getEpochSecond(),
                 Files.readAllBytes(addressBook),
-                FileID.newBuilder().setFileNum(102).build(),
+                EntityId.of(0, 0, 102, EntityTypeEnum.FILE),
                 false);
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath(), "v1")

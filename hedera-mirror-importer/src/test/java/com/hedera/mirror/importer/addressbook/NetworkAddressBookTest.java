@@ -172,7 +172,7 @@ public class NetworkAddressBookTest {
 
         // verify previous address book end date was updated
         List<AddressBook> addressBookList = addressBookRepository
-                .findCompleteAddressBooks(Instant.now().getEpochSecond(), EntityId.of(FILE_ENTITY_ID));
+                .findCompleteAddressBooks(Instant.now().getEpochSecond(), FILE_ENTITY_ID);
         assertThat(addressBookList).isNotEmpty().hasSize(2);
         assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0).isLessThan(2L);
         assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0)
@@ -248,7 +248,7 @@ public class NetworkAddressBookTest {
                 nodeAddressRepository);
 
         // verify 102
-        boolean isAddressBook = networkAddressBook.isAddressBook(EntityId.of(FILE_ENTITY_ID));
+        boolean isAddressBook = networkAddressBook.isAddressBook(FILE_ENTITY_ID);
         assertThat(isAddressBook).isTrue();
 
         // verify 101
@@ -281,7 +281,7 @@ public class NetworkAddressBookTest {
 
         // verify previous address book end date was updated
         List<AddressBook> addressBookList = addressBookRepository
-                .findCompleteAddressBooks(3L, EntityId.of(FILE_ENTITY_ID));
+                .findCompleteAddressBooks(3L, FILE_ENTITY_ID);
         assertThat(addressBookList).isNotEmpty().hasSize(2);
         assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0).isLessThan(2L);
         assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0)
