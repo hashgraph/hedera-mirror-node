@@ -6,8 +6,8 @@ metadata:
 spec:
   chart:
     git: https://github.com/hashgraph/hedera-mirror-node.git
-    path: charts/hedera-common
-    ref: 6fe87a52e98c01e43b21ad2d9fe3957e38446adc
+    path: charts/hedera-mirror-common
+    ref: 098d3f8360c9a651e1ac94fa029b11b4b57d7481
   rollback:
     enable: true
     force: true
@@ -16,9 +16,10 @@ spec:
   timeout: 500
   wait: true
   values:
-    rest:
-      image:
-        tag: master-6a43e2dc85a5ff45c6986fb09d9d29b155d8723b
+    prometheus:
+      prometheusOperator:
+        namespaces:
+          additional: ["kube-system", "common", "dev"]
   valuesFrom:
     - secretKeyRef:
         name: mirror
