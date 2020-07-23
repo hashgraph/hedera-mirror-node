@@ -20,9 +20,16 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import java.util.List;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.FileData;
 
 public interface FileDataRepository extends CrudRepository<FileData, Long> {
+    @Transactional(readOnly = true)
+    @Query("from FileData where consensusTimestamp > ?1 order by consensusTimestamp asc")
+    List<FileData> findLatest(long consensusTimestamp, Pageable pageable);
 }

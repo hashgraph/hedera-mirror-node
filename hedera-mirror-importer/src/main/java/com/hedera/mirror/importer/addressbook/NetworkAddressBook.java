@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.addressbook;
  */
 
 import com.google.common.collect.ImmutableList;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.io.File;
 import java.nio.file.Files;
@@ -77,7 +76,7 @@ public class NetworkAddressBook {
                 && entityId.getShardNum() == 0 && entityId.getRealmNum() == 0;
     }
 
-    public void updateFrom(long consensusTimeStamp, byte[] contents, FileID fileID, boolean isAppendOperation) {
+    public void updateFrom(long consensusTimeStamp, byte[] contents, EntityId fileID, boolean isAppendOperation) {
         if (contents == null || contents.length == 0) {
             log.warn("Byte array contents were empty. Skipping processing ...");
             return;
@@ -146,9 +145,8 @@ public class NetworkAddressBook {
             }
 
             try {
-                parse(addressBookBytes, 0L, FileID.newBuilder()
-                        .setShardNum(mirrorProperties.getShard()).setRealmNum(0)
-                        .setFileNum(mirrorProperties.getAddressBookFileIdEntityNum()).build(), false);
+                parse(addressBookBytes, 0L, EntityId.of(mirrorProperties.getShard(), 0, mirrorProperties
+                        .getAddressBookFileIdEntityNum(), EntityTypeEnum.FILE), false);
                 persistAddressBookToDB(0);
             } catch (Exception e) {
                 throw new IllegalStateException("Unable to parse address book: ", e);
@@ -165,7 +163,7 @@ public class NetworkAddressBook {
         }
     }
 
-    private void parse(byte[] contents, Long consensusTimestamp, FileID fileID, boolean append) throws Exception {
+    private void parse(byte[] contents, Long consensusTimestamp, EntityId fileID, boolean append) throws Exception {
         byte[] addressBookBytes = null;
         if (append) {
             // concatenate bytes for impartial address books
@@ -190,23 +188,23 @@ public class NetworkAddressBook {
         retrieveAddressBook(addressBookBytes, consensusTimestamp, fileID);
     }
 
-    private AddressBook getPreviousAddressBookToAppendTo(FileID fileID) {
+    private AddressBook getPreviousAddressBookToAppendTo(EntityId fileID) {
         // if incomingAddressBook is a match use it if not retrieve last address book for given file from Db
-        if (incomingAddressBook != null && incomingAddressBook.getFileId().getEntityNum() == fileID.getFileNum()) {
+        if (incomingAddressBook != null && incomingAddressBook.getFileId().getEntityNum() == fileID.getEntityNum()) {
             return incomingAddressBook;
         }
 
         Optional<AddressBook> optionalAddressBook = addressBookRepository
-                .findTopByFileIdOrderByConsensusTimestampDesc(EntityId.of(fileID));
+                .findTopByFileIdOrderByConsensusTimestampDesc(fileID);
 
         return optionalAddressBook.isPresent() ? optionalAddressBook.get() : null;
     }
 
-    private void retrieveAddressBook(byte[] addressBookBytes, long consensusTimestamp, FileID fileID) {
+    private void retrieveAddressBook(byte[] addressBookBytes, long consensusTimestamp, EntityId fileID) {
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
                 .fileData(addressBookBytes)
                 .consensusTimestamp(consensusTimestamp)
-                .fileId(EntityId.of(fileID));
+                .fileId(fileID);
 
         try {
             NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(addressBookBytes);

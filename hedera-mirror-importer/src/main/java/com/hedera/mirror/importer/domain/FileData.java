@@ -20,11 +20,14 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import com.hedera.mirror.importer.converter.FileIdConverter;
 
 @Data
 @Entity
@@ -36,4 +39,9 @@ public class FileData {
     private Long consensusTimestamp;
 
     private byte[] fileData;
+
+    @Convert(converter = FileIdConverter.class)
+    private EntityId fileId;
+
+    private Integer transactionType;
 }

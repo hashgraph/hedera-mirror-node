@@ -41,6 +41,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.NodeAddressRepository;
 
@@ -50,7 +51,7 @@ public class NetworkAddressBookTest {
     private static final NodeAddressBook INITIAL = addressBook(5);
     private static final NodeAddressBook UPDATED = addressBook(10);
     private static final NodeAddressBook FINAL = addressBook(15);
-    private static final FileID FILE_ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build();
+    private static final EntityId FILE_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
     private static final int CLASSPATH_BYTE_SIZE = 3428;
 
     @TempDir
@@ -76,7 +77,7 @@ public class NetworkAddressBookTest {
         networkAddressBook.updateFrom(
                 consensusTimeStamp,
                 contents,
-                FILE_ID,
+                FILE_ENTITY_ID,
                 false);
     }
 
@@ -84,7 +85,7 @@ public class NetworkAddressBookTest {
         networkAddressBook.updateFrom(
                 consensusTimeStamp,
                 contents,
-                FILE_ID,
+                FILE_ENTITY_ID,
                 true);
     }
 
@@ -171,7 +172,7 @@ public class NetworkAddressBookTest {
 
         // verify previous address book end date was updated
         List<AddressBook> addressBookList = addressBookRepository
-                .findCompleteAddressBooks(Instant.now().getEpochSecond(), EntityId.of(FILE_ID));
+                .findCompleteAddressBooks(Instant.now().getEpochSecond(), EntityId.of(FILE_ENTITY_ID));
         assertThat(addressBookList).isNotEmpty().hasSize(2);
         assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0).isLessThan(2L);
         assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0)
@@ -247,7 +248,7 @@ public class NetworkAddressBookTest {
                 nodeAddressRepository);
 
         // verify 102
-        boolean isAddressBook = networkAddressBook.isAddressBook(EntityId.of(FILE_ID));
+        boolean isAddressBook = networkAddressBook.isAddressBook(EntityId.of(FILE_ENTITY_ID));
         assertThat(isAddressBook).isTrue();
 
         // verify 101
@@ -280,7 +281,7 @@ public class NetworkAddressBookTest {
 
         // verify previous address book end date was updated
         List<AddressBook> addressBookList = addressBookRepository
-                .findCompleteAddressBooks(3L, EntityId.of(FILE_ID));
+                .findCompleteAddressBooks(3L, EntityId.of(FILE_ENTITY_ID));
         assertThat(addressBookList).isNotEmpty().hasSize(2);
         assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0).isLessThan(2L);
         assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0)
@@ -342,7 +343,7 @@ public class NetworkAddressBookTest {
         assertArrayEquals(addressBookBytes1, networkAddressBook.getPartialAddressBook().getFileData());
 
         // perform file 101 update and verify only partial address book is changed
-        FileID file101ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(101).build();
+        EntityId file101ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
         networkAddressBook.updateFrom(
                 2L,
                 addressBook101Bytes1,
