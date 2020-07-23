@@ -22,14 +22,15 @@ package com.hedera.mirror.importer.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.io.FilenameUtils;
 
 @Getter
 @RequiredArgsConstructor
 public enum StreamType {
 
-    BALANCE("accountBalances", "balance", "_Balances", ".csv"),
-    EVENT("eventsStreams", "events_", "", ".evts"),
-    RECORD("recordstreams", "record", "", ".rcd");
+    BALANCE("accountBalances", "balance", "_Balances", "csv"),
+    EVENT("eventsStreams", "events_", "", "evts"),
+    RECORD("recordstreams", "record", "", "rcd");
 
     private static final String PARSED = "parsed";
     private static final String SIGNATURES = "signatures";
@@ -60,5 +61,17 @@ public enum StreamType {
 
     public String getValid() {
         return VALID;
+    }
+
+    public static StreamType fromFilename(String filename) {
+        String extension = FilenameUtils.getExtension(filename);
+
+        for (StreamType streamType : values()) {
+            if (streamType.getExtension().equals(extension) || streamType.getSignatureExtension().equals(extension)) {
+                return streamType;
+            }
+        }
+
+        return null;
     }
 }

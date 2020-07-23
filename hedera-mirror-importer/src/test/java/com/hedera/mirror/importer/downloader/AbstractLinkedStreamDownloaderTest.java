@@ -36,7 +36,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
     @Test
     @DisplayName("Doesn't match last valid hash")
     void hashMismatchWithPrevious() throws Exception {
-        doReturn("2019-01-01T01_00_00.000000Z" + downloaderProperties.getStreamType().getExtension())
+        doReturn("2019-01-01T01_00_00.000000Z." + downloaderProperties.getStreamType().getExtension())
                 .when(applicationStatusRepository)
                 .findByStatusCode(downloader.getLastValidDownloadedFileKey());
         doReturn("123").when(applicationStatusRepository)
@@ -49,7 +49,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
     @Test
     @DisplayName("Bypass previous hash mismatch")
     void hashMismatchWithBypass() throws Exception {
-        doReturn("2019-01-01T14_12_00.000000Z" + downloaderProperties.getStreamType().getExtension())
+        doReturn("2019-01-01T14_12_00.000000Z." + downloaderProperties.getStreamType().getExtension())
                 .when(applicationStatusRepository)
                 .findByStatusCode(downloader.getLastValidDownloadedFileKey());
         doReturn("123").when(applicationStatusRepository)

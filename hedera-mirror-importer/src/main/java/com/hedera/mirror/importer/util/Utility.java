@@ -408,8 +408,14 @@ public class Utility {
             return 0L;
         }
 
-        String nameWithoutExtension = FilenameUtils.removeExtension(filename);
-        String date = StringUtils.removeEnd(nameWithoutExtension, StreamType.BALANCE.getSuffix()).replace('_', ':');
+        StreamType streamType = StreamType.fromFilename(filename);
+        String date = FilenameUtils.removeExtension(filename);
+
+        if (streamType != null) {
+            date = StringUtils.removeEnd(date, streamType.getSuffix());
+        }
+
+        date = date.replace('_', ':');
         Instant instant = Instant.parse(date);
         return Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
     }

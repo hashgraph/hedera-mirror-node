@@ -223,23 +223,14 @@ public abstract class Downloader {
                                 FileStreamSignature fileStreamSignature = new FileStreamSignature();
                                 fileStreamSignature.setFile(sigFile);
                                 fileStreamSignature.setNode(nodeAccountId);
-                                long currentTimestamp = Utility.getTimestampFromFilename(sigFile.getName());
+                                long groupTimestamp = getGroupTimestamp(lastValidTimestamp, closeInterval,
+                                        fileStreamSignature);
 
-                                // Initial file has no previous so we can't calculate offset from that
-                                if (lastValidTimestamp <= 0) {
-                                    sigFilesMap.put(currentTimestamp, fileStreamSignature);
+                                if (groupTimestamp > 0) {
+                                    sigFilesMap.put(groupTimestamp, fileStreamSignature);
                                 } else {
-                                    double interval = (double) (currentTimestamp - lastValidTimestamp);
-                                    long bucket = Math.round(interval / closeInterval);
-                                    long groupTimestamp = lastValidTimestamp + bucket * closeInterval +
-                                            closeInterval / 2;
-
-                                    if (bucket > 0) {
-                                        sigFilesMap.put(groupTimestamp, fileStreamSignature);
-                                    } else {
-                                        log.warn("Ignoring signature file {} from node {} associated with the " +
-                                                "previous close interval", sigFile.getName(), nodeAccountId);
-                                    }
+                                    log.warn("Ignoring signature associated with the previously processed stream " +
+                                            "file: {}", fileStreamSignature);
                                 }
                             }
                         } catch (InterruptedException ex) {
@@ -265,6 +256,35 @@ public abstract class Downloader {
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
         }
         return sigFilesMap;
+    }
+
+    /**
+     * Partitions signature files into a time range [T + I/2, T + I * 3/2) where T is the last valid timestamp and I is
+     * the stream close interval. Calculates the start time of the nearest range that includes the timestamp of the
+     * current file.
+     *
+     * @param lastValidTimestamp the last timestamp of the signature that was successfully verified
+     * @param closeInterval      how often the file closes
+     * @param signature          domain object
+     * @return a timestamp representing the start time of the bucket this signature should be associated with
+     */
+    private long getGroupTimestamp(long lastValidTimestamp, long closeInterval, FileStreamSignature signature) {
+        long currentTimestamp = Utility.getTimestampFromFilename(signature.getFile().getName());
+        long groupTimestamp = 0;
+
+        // Initial file has no previous so we can't calculate offset from that
+        if (lastValidTimestamp <= 0) {
+            groupTimestamp = currentTimestamp;
+        } else {
+            double interval = (double) (currentTimestamp - lastValidTimestamp);
+            long bucket = Math.round(interval / closeInterval);
+
+            if (bucket > 0) {
+                groupTimestamp = lastValidTimestamp + bucket * closeInterval + closeInterval / 2;
+            }
+        }
+
+        return groupTimestamp;
     }
 
     /**

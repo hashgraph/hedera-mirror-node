@@ -341,21 +341,27 @@ public abstract class AbstractDownloaderTest {
     }
 
     private void differentFilenames(Duration offset) throws Exception {
-        fileCopier.filterFiles(file2 + "*").copy();
+        // Copy all files and modify only node 0.0.3's files to have a different timestamp
         StreamType type = downloaderProperties.getStreamType();
+        fileCopier.filterFiles(file2 + "*").copy();
         Path basePath = fileCopier.getTo().resolve(type.getNodePrefix() + "0.0.3");
+
+        // Construct a new filename with the offset added to the last valid file
         long nanoOffset = downloaderProperties.getCloseInterval().plus(offset).toNanos();
         long timestamp = Utility.getTimestampFromFilename(file1) + nanoOffset;
-        String baseFilename = Instant.ofEpochSecond(0, timestamp).toString().replace(':', '_') + type.getSuffix();
+        String baseFilename = Instant.ofEpochSecond(0, timestamp).toString().replace(':', '_') + type.getSuffix() + ".";
+
+        // Rename the good files to have a bad timestamp
         String signature = baseFilename + type.getSignatureExtension();
         String signed = baseFilename + type.getExtension();
-        Files.move(basePath.resolve(file2), basePath.resolve(signed));
         Files.move(basePath.resolve(file2 + "_sig"), basePath.resolve(signature));
-        doReturn(file1).when(applicationStatusRepository)
-                .findByStatusCode(downloader.getLastValidDownloadedFileKey());
+        Files.move(basePath.resolve(file2), basePath.resolve(signed));
+
+        doReturn(file1).when(applicationStatusRepository).findByStatusCode(downloader.getLastValidDownloadedFileKey());
 
         downloader.download();
 
+        // The file with the different timestamp than all other nodes should not be processed
         verify(applicationStatusRepository).updateStatusValue(downloader.getLastValidDownloadedFileKey(), file2);
         assertValidFiles(List.of(file2));
     }
