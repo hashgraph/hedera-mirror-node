@@ -3,7 +3,7 @@
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "hedera-common.chart" -}}
+{{- define "hedera-mirror-common.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -12,7 +12,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "hedera-common.fullname" -}}
+{{- define "hedera-mirror-common.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -28,11 +28,11 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Common labels
 */}}
-{{- define "hedera-common.labels" -}}
-{{ include "hedera-common.selectorLabels" . }}
+{{- define "hedera-mirror-common.labels" -}}
+{{ include "hedera-mirror-common.selectorLabels" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-helm.sh/chart: {{ include "hedera-common.chart" . }}
+helm.sh/chart: {{ include "hedera-mirror-common.chart" . }}
 {{- if .Values.labels }}
 {{ toYaml .Values.labels }}
 {{- end }}
@@ -41,31 +41,31 @@ helm.sh/chart: {{ include "hedera-common.chart" . }}
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "hedera-common.name" -}}
+{{- define "hedera-mirror-common.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Namespace
 */}}
-{{- define "hedera-common.namespace" -}}
+{{- define "hedera-mirror-common.namespace" -}}
 {{- default .Release.Namespace .Values.global.namespaceOverride -}}
 {{- end -}}
 
 {{/*
 Selector labels
 */}}
-{{- define "hedera-common.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "hedera-common.name" . }}
+{{- define "hedera-mirror-common.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "hedera-mirror-common.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "hedera-common.serviceAccountName" -}}
+{{- define "hedera-mirror-common.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}
-{{- default (include "hedera-common.fullname" .) .Values.serviceAccount.name -}}
+{{- default (include "hedera-mirror-common.fullname" .) .Values.serviceAccount.name -}}
 {{- else -}}
 {{- default "default" .Values.serviceAccount.name -}}
 {{- end -}}

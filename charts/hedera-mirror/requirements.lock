@@ -7,9 +7,9 @@ dependencies:
   version: 0.3.0
 - name: postgresql-ha
   repository: https://charts.bitnami.com/bitnami
-  version: 3.2.10
+  version: 3.4.3
 - name: hedera-mirror-rest
   repository: file://../hedera-mirror-rest
   version: 0.3.0
-digest: sha256:1cea74f329b62c102e078342448e0821121158887359a48b6499b409e6fd90c3
-generated: "2020-07-12T17:15:23.206039-05:00"
+digest: sha256:a2551c7c62bff8db3d1360e559fff333e3ce0c63dcf67fdd8b3132b7162ce6f3
+generated: "2020-07-22T20:14:23.382574-05:00"

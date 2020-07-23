@@ -89,7 +89,7 @@ prometheus:
         root_url: "%(protocol)s://%(domain)s/grafana/"
     ingress:
       annotations:
-        traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-common.namespace" . }}-{{ .Release.Name }}-grafana@kubernetescrd'
+        traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-common.namespace" . }}-{{ .Release.Name }}-grafana@kubernetescrd'
       enabled: true
       hosts: [""]
       middleware:
@@ -144,7 +144,7 @@ prometheus:
             app.kubernetes.io/name: traefik
     prometheusSpec:
       image:
-        tag: v2.19.0
+        tag: v2.20.0
       podMonitorSelectorNilUsesHelmValues: false
       priorityClassName: low
       resources:
@@ -166,7 +166,7 @@ prometheus:
       walCompression: true
   prometheusOperator:
     namespaces:
-      additional: ["dev"]
+      additional: []
       releaseNamespace: true
     resources:
       limits:

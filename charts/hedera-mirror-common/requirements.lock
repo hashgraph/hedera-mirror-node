@@ -1,15 +1,15 @@
 dependencies:
 - name: loki-stack
   repository: https://grafana.github.io/loki/charts
-  version: 0.38.1
+  version: 0.38.2
 - name: prometheus-adapter
   repository: https://kubernetes-charts.storage.googleapis.com/
-  version: 2.4.0
+  version: 2.5.0
 - name: prometheus-operator
   repository: https://kubernetes-charts.storage.googleapis.com
-  version: 8.16.1
+  version: 9.2.1
 - name: traefik
   repository: https://containous.github.io/traefik-helm-chart
-  version: 8.9.0
-digest: sha256:0fef0ff2c7e22ecba114241e6b9df381dbb9461fbb71ee87d3c66afe29856e90
-generated: "2020-07-12T18:14:49.06559-05:00"
+  version: 8.9.1
+digest: sha256:97d964196c3b4901186c6bc4d2fb9994eb53abb8fbd75fad557c15e3a31eac57
+generated: "2020-07-22T20:14:54.481087-05:00"

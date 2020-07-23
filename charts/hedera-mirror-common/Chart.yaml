@@ -2,7 +2,7 @@ apiVersion: v1
 appVersion: 0.15.0-rc2
 description: Hedera Mirror Node common components installed globally for use across namespaces
 home: https://github.com/hashgraph/hedera-mirror-node
-name: hedera-common
+name: hedera-mirror-common
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
 version: 0.3.0

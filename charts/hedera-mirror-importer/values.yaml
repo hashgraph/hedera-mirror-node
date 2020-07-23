@@ -31,13 +31,13 @@ imagePullSecrets: []
 
 labels: {}
 
-livenessProbe:
-  httpGet:
-    path: /actuator/health
-    port: http
-  initialDelaySeconds: 60
-  periodSeconds: 30
-  timeoutSeconds: 2
+livenessProbe: {}
+#  httpGet:
+#    path: /actuator/health
+#    port: http
+#  initialDelaySeconds: 60
+#  periodSeconds: 30
+#  timeoutSeconds: 2
 
 nameOverride: ""
 
