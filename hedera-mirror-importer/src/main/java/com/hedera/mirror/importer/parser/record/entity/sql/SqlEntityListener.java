@@ -36,7 +36,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.AllArgsConstructor;
@@ -46,7 +45,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
@@ -107,6 +105,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Collection<EntityId> entityIds;
     private final Cache entityCache;
 
+    private PreparedStatement sqlInsertEntityId;
     private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
 
@@ -157,6 +156,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             connection.setAutoCommit(false); // do not auto-commit
             connection.setClientInfo("ApplicationName", getClass().getSimpleName());
 
+            sqlInsertEntityId = connection.prepareStatement("INSERT INTO t_entities " +
+                    "(id, entity_shard, entity_realm, entity_num, fk_entity_type_id) " +
+                    "VALUES (?, ?, ?, ?, ?) " +
+                    "ON CONFLICT DO NOTHING");
             sqlNotifyTopicMessage = connection.prepareStatement("select pg_notify('topic_message', ?)");
         } catch (SQLException e) {
             throw new ParserSQLException("Error setting up connection to database", e);
@@ -202,6 +205,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void closeConnectionAndStatements() {
         try {
+            sqlInsertEntityId.close();
             sqlNotifyTopicMessage.close();
             connection.close();
         } catch (SQLException e) {
@@ -209,8 +213,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
     }
 
-    @Transactional(rollbackFor = {ParserException.class})
-    public void executeBatches() {
+    private void executeBatches() {
         Stopwatch stopwatch = Stopwatch.createStarted();
         try {
             CompletableFuture.allOf(
@@ -248,6 +251,21 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
         // add entities not found in cache to list of entities to be persisted
+        if (entityCache.get(entityId.getId()) != null) {
+            return;
+        }
+
+        try {
+            sqlInsertEntityId.setLong(F_ENTITY_ID.ID.ordinal(), entityId.getId());
+            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_SHARD.ordinal(), entityId.getShardNum());
+            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_REALM.ordinal(), entityId.getRealmNum());
+            sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_NUM.ordinal(), entityId.getEntityNum());
+            sqlInsertEntityId.setLong(F_ENTITY_ID.TYPE.ordinal(), entityId.getType());
+            sqlInsertEntityId.addBatch();
+        } catch (SQLException e) {
+            throw new ParserSQLException(e);
+        }
+
         entityIds.add(entityId);
     }
 
@@ -298,16 +316,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void persistEntities() {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        AtomicInteger entityInsertCount = new AtomicInteger(0);
-        entityIds.forEach(entityId -> {
-            if (entityCache.get(entityId.getId()) == null) {
-                entityRepository.insertEntityId(entityId);
-                entityCache.put(entityId.getId(), null);
-                entityInsertCount.incrementAndGet();
-            }
-        });
-        log.info("Inserted {} entities in {} ms", entityInsertCount.get(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        try {
+            var entityBatchResult = executeBatch(sqlInsertEntityId);
+            entityIds.forEach(entityId -> entityCache.put(entityId.getId(), null));
+            log.info("Inserted {} entities", entityBatchResult);
+        } catch (SQLException e) {
+            throw new ParserException(e);
+        }
     }
 
     private void notifyTopicMessages() {
@@ -329,5 +344,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         public String toString() {
             return numRows + " (" + timeTakenInMs + "ms)";
         }
+    }
+
+    enum F_ENTITY_ID {
+        ZERO, // column indices start at 1, this creates the necessary offset
+        ID, ENTITY_SHARD, ENTITY_REALM, ENTITY_NUM, TYPE
     }
 }
