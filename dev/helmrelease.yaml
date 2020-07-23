@@ -16,6 +16,9 @@ spec:
   timeout: 500
   wait: false
   values:
+    grpc:
+      image:
+        tag: 0.15.3
     importer:
       config:
         hedera:
@@ -24,8 +27,13 @@ spec:
               downloader:
                 cloudProvider: GCP
               network: TESTNET
+      image:
+        tag: 0.15.3
     postgresql:
       enabled: false
+    rest:
+      image:
+        tag: 0.15.3
   valuesFrom:
     - secretKeyRef:
         name: mirror
