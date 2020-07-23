@@ -27,18 +27,18 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import com.hedera.mirror.importer.reader.event.EventFileReaderImpl;
 
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
+import com.hedera.mirror.importer.reader.event.EventFileReaderImpl;
 
 @ExtendWith(MockitoExtension.class)
 public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
-        var eventDownloaderProperties =  new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        var eventDownloaderProperties = new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
         eventDownloaderProperties.setEnabled(true);
         return eventDownloaderProperties;
     }
@@ -65,6 +65,5 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
     void beforeEach() {
         file1 = "2020-04-11T00_12_00.025035Z.evts";
         file2 = "2020-04-11T00_12_05.059945Z.evts";
-        fileExtension = ".evts";
     }
 }

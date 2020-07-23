@@ -22,10 +22,12 @@ package com.hedera.mirror.importer.domain;
 
 import java.io.File;
 import lombok.Data;
+import lombok.ToString;
 
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
+@ToString(exclude = {"hash", "signature"})
 public class FileStreamSignature implements Comparable<FileStreamSignature> {
 
     private File file;
