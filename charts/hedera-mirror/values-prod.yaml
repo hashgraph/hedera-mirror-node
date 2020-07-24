@@ -1,0 +1,31 @@
+# These values are production values used in combination with the hedera-mirror-common chart
+grpc:
+  ingress:
+    middleware:
+      enabled: true
+  priorityClassName: medium
+  serviceMonitor:
+    enabled: true
+
+importer:
+  podMonitor:
+    enabled: true
+  priorityClassName: high
+
+postgresql:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  pgpool:
+    priorityClassName: critical
+  postgresql:
+    priorityClassName: critical
+
+rest:
+  ingress:
+    middleware:
+      enabled: true
+  priorityClassName: medium
+  serviceMonitor:
+    enabled: true

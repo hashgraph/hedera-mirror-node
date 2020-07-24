@@ -1,5 +1,6 @@
 Hedera Mirror Node {{ .Chart.AppVersion }} successfully installed.
 
+{{- if and .Values.grpc.enabled .Values.grpc.service }}
 To access the gRPC API:
 {{- if contains "LoadBalancer" .Values.grpc.service.type }}
   GRPC_IP="$(kubectl get "service/{{ .Release.Name }}-grpc" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
@@ -8,7 +9,9 @@ To access the gRPC API:
   GRPC_IP="127.0.0.1"
 {{- end }}
   grpcurl -plaintext "${GRPC_IP}:5600" list
+{{- end }}
 
+{{- if and .Values.rest.enabled .Values.rest.service }}
 To access the REST API:
 {{- if contains "LoadBalancer" .Values.rest.service.type }}
   REST_IP="$(kubectl get "service/{{ .Release.Name }}-rest" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
@@ -17,3 +20,4 @@ To access the REST API:
   REST_IP="127.0.0.1"
 {{- end }}
   curl -s "http://${REST_IP}/api/v1/transactions?limit=1"
+{{- end }}

@@ -3,12 +3,12 @@ dependencies:
     condition: grpc.enabled
     name: hedera-mirror-grpc
     repository: file://../hedera-mirror-grpc
-    version: ^0.3.0
+    version: ^0.4.0
   - alias: importer
     condition: importer.enabled
     name: hedera-mirror-importer
     repository: file://../hedera-mirror-importer
-    version: ^0.3.0
+    version: ^0.4.0
   - alias: postgresql
     condition: postgresql.enabled
     name: postgresql-ha
@@ -18,4 +18,4 @@ dependencies:
     condition: rest.enabled
     name: hedera-mirror-rest
     repository: file://../hedera-mirror-rest
-    version: ^0.3.0
+    version: ^0.4.0

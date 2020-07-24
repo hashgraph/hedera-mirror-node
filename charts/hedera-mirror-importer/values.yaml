@@ -25,7 +25,7 @@ global:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-importer
-  tag: "" # Default to the chart's app version
+  tag: ""  # Default to the chart's app version
 
 imagePullSecrets: []
 

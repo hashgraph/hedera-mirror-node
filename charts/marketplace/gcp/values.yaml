@@ -15,15 +15,12 @@ grpc:
     enabled: false
   ingress:
     enabled: false
-  priorityClassName: ""
   rbac:
     enabled: false
   service:
     type: LoadBalancer
   serviceAccount:
     create: false
-  serviceMonitor:
-    enabled: false
 
 importer:
   config:
@@ -32,9 +29,6 @@ importer:
         importer:
           downloader:
             cloudProvider: GCP
-  podMonitor:
-    enabled: false
-  priorityClassName: ""
   rbac:
     enabled: false
   replicas: 1
@@ -42,12 +36,9 @@ importer:
     create: false
 
 postgresql:
-  metrics:
-    enabled: false
   pgpool:
     replicaCount: 0
   postgresql:
-    priorityClassName: ""
     replicaCount: 1
 
 rest:
@@ -58,7 +49,6 @@ rest:
           metrics:
             config:
               enabled: false
-  priorityClassName: ""
   hpa:
     enabled: false
   ingress:
@@ -67,7 +57,5 @@ rest:
     enabled: false
   serviceAccount:
     create: false
-  serviceMonitor:
-    enabled: false
   service:
     type: LoadBalancer

@@ -6,12 +6,12 @@ applicationResource:
 
 global:
   db:
-    host: RELEASE-NAME-postgres-pgpool # RELEASE-NAME will be replaced with actual release by children charts
+    host: RELEASE-NAME-postgres-pgpool  # RELEASE-NAME will be replaced with actual release by children charts
   namespaceOverride: ""
   rest:
     username: mirror_api
     password: mirror_api_pass
-  useReleaseForNameLabel: false # Set the name label to the release name for Marketplace
+  useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
 
 grpc:
   config:
@@ -22,12 +22,6 @@ grpc:
             password: mirror_grpc_pass
             username: mirror_grpc
   enabled: true
-  ingress:
-    middleware:
-      enabled: true
-  priorityClassName: medium
-  serviceMonitor:
-    enabled: true
 
 importer:
   config:
@@ -39,9 +33,6 @@ importer:
             password: mirror_node_pass
             username: mirror_node
   enabled: true
-  podMonitor:
-    enabled: true
-  priorityClassName: high
 
 labels: {}
 
@@ -51,7 +42,7 @@ networkPolicy:
 postgresql:
   enabled: true
   metrics:
-    enabled: true
+    enabled: false
     resources:
       limits:
         cpu: 50m
@@ -59,8 +50,6 @@ postgresql:
       requests:
         cpu: 20m
         memory: 25Mi
-    serviceMonitor:
-      enabled: true
   nameOverride: postgres
   networkPolicy:
     enabled: false
@@ -82,7 +71,6 @@ postgresql:
       role: db
     pdb:
       create: true
-    priorityClassName: critical
     replicaCount: 2
     resources:
       limits:
@@ -108,7 +96,6 @@ postgresql:
                   app.kubernetes.io/component: postgresql
     initdbScriptsSecret: '{{ printf "%s-postgresql-init" .Release.Name }}'
     password: password
-    priorityClassName: critical
     repmgrPassword: password
     resources:
       limits:
@@ -121,9 +108,3 @@ postgresql:
 
 rest:
   enabled: true
-  ingress:
-    middleware:
-      enabled: true
-  priorityClassName: medium
-  serviceMonitor:
-    enabled: true
