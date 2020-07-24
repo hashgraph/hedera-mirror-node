@@ -117,15 +117,12 @@ app.getAsync(apiPrefix + '/balances', balances.getBalances);
 app.getAsync(apiPrefix + '/transactions', transactions.getTransactions);
 app.getAsync(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
 
-try {
-  if (config.stateproof.enabled) {
-    logger.info('stateproof REST API is enabled, install handler');
-    app.getAsync(apiPrefix + '/transactions/:id/stateproof', stateproof.getStateProofForTransaction);
-  } else {
-    logger.info('stateproof REST API is disabled');
-  }
-} catch (err) {
-  logger.warn(`stateproof REST API is not enabled: ${err.message}`);
+// stateproof route
+if (config.stateproof.enabled) {
+  logger.info('stateproof REST API is enabled, install handler');
+  app.getAsync(apiPrefix + '/transactions/:id/stateproof', stateproof.getStateProofForTransaction);
+} else {
+  logger.info('stateproof REST API is disabled');
 }
 
 // topics routes
