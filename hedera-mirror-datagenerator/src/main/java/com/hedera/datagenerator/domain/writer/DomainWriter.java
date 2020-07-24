@@ -19,25 +19,13 @@ package com.hedera.datagenerator.domain.writer;
  * ‍
  */
 
-import java.io.Closeable;
-
-import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.datagenerator.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TopicMessage;
-import com.hedera.mirror.importer.domain.Transaction;
 
-public interface DomainWriter extends Closeable {
-    void addTransaction(Transaction transaction);
+public interface DomainWriter {
+    void onEntity(Entities entity);
 
-    void addEntity(Entities entity);
+    void onAccountBalance(AccountBalance accountBalance);
 
-    void addCryptoTransfer(CryptoTransfer cryptoTransfer);
-
-    void addFileData(FileData fileData);
-
-    void addTopicMessage(TopicMessage topicMessage);
-
-    void addAccountBalances(long consensusNs, long balance, EntityId account);
+    void flush();
 }

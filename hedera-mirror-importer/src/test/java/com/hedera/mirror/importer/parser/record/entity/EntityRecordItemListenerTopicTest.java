@@ -374,9 +374,9 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     @ParameterizedTest
     @CsvSource({
             "0.0.9000, test-message0, 9000000, runninghash, 1, 1, , , , ",
-            "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 1, 1, 7, 89999999",
-            "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 2, 4, 7, 89999999",
-            "0.0.9001, '', 9000001, '', 9223372036854775807, 2, 4, 4, 7, 89999999",
+            "0.0.9001, test-message1, 9000001, runninghash1, 9223372036854775807, 2, 1, 1, 7, 89999999",
+            "0.0.9001, test-message2, 9000001, runninghash2, 9223372036854775807, 2, 2, 4, 7, 89999999",
+            "0.0.9001, test-message3, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 7, 89999999",
     })
     void submitMessageTest(@ConvertWith(TopicIdConverter.class) TopicID topicId, String message,
                            long consensusTimestamp, String runningHash, long sequenceNumber, int runningHashVersion,

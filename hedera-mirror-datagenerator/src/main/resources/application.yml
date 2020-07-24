@@ -1,7 +1,15 @@
 hedera:
   mirror:
     datagenerator:
-      totalDuration: 1d
+      db:
+        host: 127.0.0.1
+        name: mirror_node
+        password: mirror_node_pass
+        port: 5432
+        restPassword: mirror_api_pass
+        restUsername: mirror_api
+        username: mirror_node
+      totalDuration: 1h
       transactionsPerSecond: # 3-8 txns per second
         rangeMin: 3
         rangeMax: 8
@@ -40,7 +48,10 @@ hedera:
 logging:
   level:
     root: warn
-    com.hedera.datagenerator: info
+    com:
+      hedera:
+        datagenerator: info
+        mirror.importer.parser.record.entity.sql: debug
     org.flywaydb.core.internal.command.DbMigrate: info
 
 spring:

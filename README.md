@@ -146,7 +146,7 @@ If psql is not available you can `docker exec -it <CONTAINER ID> bash` into the 
 Some useful basic queries to help view database contents and data include
 
     \du
-    select * from account_balances limit 5;
+    select * from account_balance limit 5;
     select * from transactions limit 5;
     select * from topic_message limit 5;
 

@@ -53,7 +53,7 @@ public class EntityManager {
     private EntityId portalEntity;  // Used to create crypto accounts
 
     public EntityManager() {
-        accounts = new EntitySet(0L);  // Account entities start from 0
+        accounts = new EntitySet(1L);  // Account entities start from 1
         files = new EntitySet(100_000_000L);
         topics = new EntitySet(200_000_000L);
         balances = new HashMap<>();

@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -27,21 +28,22 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.EntityIdConverter;
+import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(exclude = {"memo", "transactionHash", "transactionBytes"})
-public class Transaction implements Persistable<Long> {
+public class Transaction {
 
     @Id
     private Long consensusNs;
 
     @Convert(converter = EntityIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId nodeAccountId;
 
     private byte[] memo;
@@ -51,6 +53,7 @@ public class Transaction implements Persistable<Long> {
     private Integer result;
 
     @Convert(converter = EntityIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
 
     private Long chargedTxFee;
@@ -58,6 +61,7 @@ public class Transaction implements Persistable<Long> {
     private Long initialBalance;
 
     @Convert(converter = EntityIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 
     private Long validStartNs;
@@ -69,14 +73,4 @@ public class Transaction implements Persistable<Long> {
     private byte[] transactionHash;
 
     private byte[] transactionBytes;
-
-    @Override
-    public Long getId() {
-        return getConsensusNs();
-    }
-
-    @Override
-    public boolean isNew() {
-        return true; // Since we never update transactions and use a natural ID, avoid Hibernate querying before insert
-    }
 }

@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -28,6 +29,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import com.hedera.mirror.importer.converter.EntityIdConverter;
+import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
 @Entity
@@ -40,5 +42,6 @@ public class CryptoTransfer {
     private Long amount;
 
     @Convert(converter = EntityIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 }

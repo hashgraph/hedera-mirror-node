@@ -34,7 +34,10 @@ import org.springframework.test.context.ActiveProfiles;
 import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
 
 @ActiveProfiles("pubsub")
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.cloud.gcp.pubsub.enabled=true",
+        "hedera.mirror.importer.parser.record.entity.enabled=false",
+        "hedera.mirror.importer.parser.record.pubsub.enabled=true"})
 public class PubSubIntegrationTest extends IntegrationTest {
     private static final String SUBSCRIPTION = "testSubscription";
 

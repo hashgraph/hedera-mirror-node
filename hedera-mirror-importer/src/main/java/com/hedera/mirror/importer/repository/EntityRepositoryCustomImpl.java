@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,26 +20,19 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 
-@Data
-@Entity
-@NoArgsConstructor
-@AllArgsConstructor
-public class ContractResult {
+import com.hedera.mirror.importer.domain.EntityId;
 
-    @Id
-    private Long consensusTimestamp;
+public class EntityRepositoryCustomImpl implements EntityRepositoryCustom {
+    @Autowired
+    @Lazy
+    EntityRepository entityRepository;
 
-    private byte[] functionParameters;
-
-    private Long gasSupplied;
-
-    private byte[] callResult;
-
-    private Long gasUsed;
+    @Override
+    public void insertEntityId(EntityId entityId) {
+        entityRepository.insertEntityId(entityId.getId(), entityId.getShardNum(),
+                entityId.getRealmNum(), entityId.getEntityNum(), entityId.getType());
+    }
 }

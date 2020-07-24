@@ -169,7 +169,7 @@ public final class AccountBalancesFileLoader implements AutoCloseable {
 
         //
         // 1) insert row into account_balance_sets.
-        // 2) stream insert all the account_balances records.
+        // 2) stream insert all the account_balance records.
         // 3) update/close the account_balance_set.
         //
         var stopwatch = Stopwatch.createStarted();
@@ -180,7 +180,7 @@ public final class AccountBalancesFileLoader implements AutoCloseable {
                     "insert into account_balance_sets (consensus_timestamp) values (?) on conflict do nothing " +
                             "returning is_complete, processing_start_timestamp;");
             var insertBalance = conn.prepareStatement(
-                    "insert into account_balances (consensus_timestamp, account_realm_num, account_num, balance) " +
+                    "insert into account_balance (consensus_timestamp, account_realm_num, account_num, balance) " +
                             "values (?, ?, ?, ?) on conflict do nothing;");
             var updateSet = conn.prepareStatement(
                     "update account_balance_sets set is_complete = true, processing_end_timestamp = now() at time " +

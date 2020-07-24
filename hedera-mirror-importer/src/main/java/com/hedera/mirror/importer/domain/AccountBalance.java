@@ -30,7 +30,6 @@ import org.springframework.data.domain.Persistable;
 
 @Data
 @Entity
-@Table(name = "account_balances")
 public class AccountBalance implements Persistable<AccountBalance.AccountBalanceId> {
 
     private long balance;

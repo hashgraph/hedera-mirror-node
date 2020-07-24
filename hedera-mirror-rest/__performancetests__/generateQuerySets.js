@@ -67,11 +67,11 @@ const sampleConsensusTimestamps = (n) => {
 };
 
 /**
- * Gets 'n' randomly sampled balances from account_balances table.
+ * Gets 'n' randomly sampled balances from account_balance table.
  */
 const sampleBalanceValues = (n) => {
   return pool
-    .query(`select balance as value from account_balances order by RANDOM() limit ${n};`, null)
+    .query(`select balance as value from account_balance order by RANDOM() limit ${n};`, null)
     .then((result) => {
       return result.rows.map(getRowValueAsInt);
     });
