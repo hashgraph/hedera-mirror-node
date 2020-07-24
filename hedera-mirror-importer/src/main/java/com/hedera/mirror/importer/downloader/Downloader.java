@@ -86,6 +86,7 @@ public abstract class Downloader {
     private final Counter.Builder signatureVerificationMetric;
     private final Timer.Builder streamVerificationMetric;
     protected final Timer downloadLatencyMetric;
+    protected final Timer streamCloseMetric;
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
                       NetworkAddressBook networkAddressBook, DownloaderProperties downloaderProperties,
@@ -97,7 +98,10 @@ public abstract class Downloader {
         this.meterRegistry = meterRegistry;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
+        commonDownloaderProperties = downloaderProperties.getCommon();
+        mirrorProperties = downloaderProperties.getMirrorProperties();
 
+        // Metrics
         signatureVerificationMetric = Counter.builder("hedera.mirror.download.signature.verification")
                 .description("The number of signatures verified from a particular node")
                 .tag("type", downloaderProperties.getStreamType().toString());
@@ -112,8 +116,11 @@ public abstract class Downloader {
                 .tag("type", downloaderProperties.getStreamType().toString())
                 .register(meterRegistry);
 
-        commonDownloaderProperties = downloaderProperties.getCommon();
-        mirrorProperties = downloaderProperties.getMirrorProperties();
+        streamCloseMetric = Timer.builder("hedera.mirror.stream.close.latency")
+                .description("The difference between the consensus time of the last and first transaction in the " +
+                        "stream file")
+                .tag("type", downloaderProperties.getStreamType().toString())
+                .register(meterRegistry);
     }
 
     protected void downloadNextBatch() {
@@ -143,26 +150,27 @@ public abstract class Downloader {
     }
 
     /**
-     * Download all sig files (*.rcd_sig for records, *_Balances.csv_sig for balances) with timestamp later than
-     * lastValid<Type>FileName Validate each file with corresponding node's PubKey. Put valid files into HashMap<String,
-     * List<File>>
+     * Download all signature files with a timestamp later than the last valid file. Put signature files into a
+     * multi-map sorted and grouped by the expected closing interval.
      *
-     * @return key: sig file name value: a list of sig files with the same name and from different nodes folder;
+     * @return a multi-map of expected close interval to signature file objects from different nodes
      */
-    private Multimap<String, FileStreamSignature> downloadSigFiles() throws InterruptedException {
+    private Multimap<Long, FileStreamSignature> downloadSigFiles() throws InterruptedException {
         String lastValidFileName = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
         // foo.rcd < foo.rcd_sig. If we read foo.rcd from application stats, we have to start listing from
         // next to 'foo.rcd_sig'.
         String lastValidSigFileName = lastValidFileName.isEmpty() ? "" : lastValidFileName + "_sig";
-        Multimap<String, FileStreamSignature> sigFilesMap = Multimaps
+        Multimap<Long, FileStreamSignature> sigFilesMap = Multimaps
                 .synchronizedSortedSetMultimap(TreeMultimap.create());
-
         Set<String> nodeAccountIds = networkAddressBook.getAddresses()
                 .stream()
                 .map(NodeAddress::getId)
                 .collect(Collectors.toSet());
         List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
         var totalDownloads = new AtomicInteger();
+        long closeInterval = downloaderProperties.getCloseInterval().toNanos();
+        long lastValidTimestamp = Utility.getTimestampFromFilename(lastValidFileName);
+        log.info("Downloading signature files created after file: {}", lastValidSigFileName);
 
         /**
          * For each node, create a thread that will make S3 ListObject requests as many times as necessary to
@@ -170,8 +178,6 @@ public abstract class Downloader {
          */
         for (String nodeAccountId : nodeAccountIds) {
             tasks.add(Executors.callable(() -> {
-                log.debug("Downloading signature files for node {} created after file {}", nodeAccountId,
-                        lastValidSigFileName);
                 Stopwatch stopwatch = Stopwatch.createStarted();
                 // Get a list of objects in the bucket, 100 at a time
                 String s3Prefix = downloaderProperties.getPrefix() + nodeAccountId + "/";
@@ -192,10 +198,8 @@ public abstract class Downloader {
                             .build();
                     CompletableFuture<ListObjectsResponse> response = s3Client.listObjects(listRequest);
                     Collection<PendingDownload> pendingDownloads = new ArrayList<>(downloaderProperties.getBatchSize());
+
                     // Loop through the list of remote files beginning a download for each relevant sig file
-                    // Note:
-                    // lastValidSigFileName specified as marker above is not returned in these results by AWS S3.
-                    // However, it is returned by mockS3 implementation we use in our tests.
                     for (S3Object content : response.get().contents()) {
                         String s3ObjectKey = content.key();
                         if (s3ObjectKey.endsWith("_sig")) {
@@ -211,18 +215,27 @@ public abstract class Downloader {
                      * of downloaded signature files.
                      */
                     AtomicLong count = new AtomicLong();
-                    pendingDownloads.forEach((pd) -> {
+                    pendingDownloads.forEach(pendingDownload -> {
                         try {
-                            if (pd.waitForCompletion()) {
+                            if (pendingDownload.waitForCompletion()) {
                                 count.incrementAndGet();
-                                File sigFile = pd.getFile();
+                                File sigFile = pendingDownload.getFile();
                                 FileStreamSignature fileStreamSignature = new FileStreamSignature();
                                 fileStreamSignature.setFile(sigFile);
                                 fileStreamSignature.setNode(nodeAccountId);
-                                sigFilesMap.put(sigFile.getName(), fileStreamSignature);
+                                long groupTimestamp = getGroupTimestamp(lastValidTimestamp, closeInterval,
+                                        fileStreamSignature);
+
+                                if (groupTimestamp > 0) {
+                                    sigFilesMap.put(groupTimestamp, fileStreamSignature);
+                                } else {
+                                    log.warn("Ignoring signature associated with the previously processed stream " +
+                                            "file: {}", fileStreamSignature);
+                                }
                             }
                         } catch (InterruptedException ex) {
-                            log.warn("Failed downloading {} in {}", pd.getS3key(), pd.getStopwatch(), ex);
+                            log.warn("Failed downloading {} in {}", pendingDownload.getS3key(),
+                                    pendingDownload.getStopwatch(), ex);
                         }
                     });
                     if (count.get() > 0) {
@@ -243,6 +256,35 @@ public abstract class Downloader {
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
         }
         return sigFilesMap;
+    }
+
+    /**
+     * Partitions signature files into a time range [T + I/2, T + I * 3/2) where T is the last valid timestamp and I is
+     * the stream close interval. Calculates the start time of the nearest range that includes the timestamp of the
+     * current file.
+     *
+     * @param lastValidTimestamp the last timestamp of the signature that was successfully verified
+     * @param closeInterval      how often the file closes
+     * @param signature          domain object
+     * @return a timestamp representing the start time of the bucket this signature should be associated with
+     */
+    private long getGroupTimestamp(long lastValidTimestamp, long closeInterval, FileStreamSignature signature) {
+        long currentTimestamp = Utility.getTimestampFromFilename(signature.getFile().getName());
+        long groupTimestamp = 0;
+
+        // Initial file has no previous so we can't calculate offset from that
+        if (lastValidTimestamp <= 0) {
+            groupTimestamp = currentTimestamp;
+        } else {
+            double interval = (double) (currentTimestamp - lastValidTimestamp);
+            long bucket = Math.round(interval / closeInterval);
+
+            if (bucket > 0) {
+                groupTimestamp = lastValidTimestamp + bucket * closeInterval + closeInterval / 2;
+            }
+        }
+
+        return groupTimestamp;
     }
 
     /**
@@ -269,11 +311,13 @@ public abstract class Downloader {
                         file);
             }
         }
-        var future = s3Client.getObject(
-                GetObjectRequest.builder().bucket(commonDownloaderProperties.getBucketName()).key(s3ObjectKey)
-                        .requestPayer(RequestPayer.REQUESTER)
-                        .build(),
-                AsyncResponseTransformer.toFile(file));
+
+        var request = GetObjectRequest.builder()
+                .bucket(commonDownloaderProperties.getBucketName())
+                .key(s3ObjectKey)
+                .requestPayer(RequestPayer.REQUESTER)
+                .build();
+        var future = s3Client.getObject(request, AsyncResponseTransformer.toFile(localFile));
         return new PendingDownload(future, file, s3ObjectKey);
     }
 
@@ -314,18 +358,17 @@ public abstract class Downloader {
      * the data file into `valid` directory; else download the data file from other valid node folder and compare the
      * hash until we find a match.
      */
-    private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
-        // reload address book and keys in case it has been updated by RecordItemParser
+    private void verifySigsAndDownloadDataFiles(Multimap<Long, FileStreamSignature> sigFilesMap) {
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(networkAddressBook);
         Path validPath = downloaderProperties.getValidPath();
 
-        for (String sigFileName : sigFilesMap.keySet()) {
+        for (Long groupId : sigFilesMap.keySet()) {
             if (ShutdownHelper.isStopping()) {
                 return;
             }
 
             Instant startTime = Instant.now();
-            Collection<FileStreamSignature> signatures = sigFilesMap.get(sigFileName);
+            Collection<FileStreamSignature> signatures = sigFilesMap.get(groupId);
             boolean valid = false;
 
             try {
@@ -377,12 +420,12 @@ public abstract class Downloader {
                     }
                 } catch (Exception e) {
                     log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
-                            signature.getNode(), sigFileName, e);
+                            signature.getNode(), signature.getFile().getName(), e);
                 }
             }
 
             if (!valid) {
-                log.error("File could not be verified by at least 1/3 of nodes: {}", sigFileName);
+                log.error("File could not be verified by at least 1/3 of nodes: {}", signatures);
             }
 
             streamVerificationMetric.tag("success", String.valueOf(valid))

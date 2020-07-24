@@ -12,7 +12,7 @@
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
-    "@awaitjs/express": "^0.5.1",
+    "@awaitjs/express": "^0.6.1",
     "asn1js": "^2.0.26",
     "aws-sdk": "^2.717.0",
     "body-parser": "^1.19.0",
@@ -23,7 +23,7 @@
     "js-yaml": "^3.13.1",
     "lodash": "^4.17.19",
     "log4js": "^4.3.1",
-    "mathjs": "^6.6.2",
+    "mathjs": "^7.1.0",
     "node-cache": "^5.1.0",
     "node-fetch": "^2.6.0",
     "pg": "~7.11.0",
@@ -50,11 +50,13 @@
     "swagger-stats"
   ],
   "devDependencies": {
+    "codecov": "^3.7.1",
     "aws-sdk-mock": "^5.1.0",
     "codecov": "^3.7.0",
     "husky": "^4.2.5",
     "jest": "^26.1.0",
     "jest-junit": "^11.0.1",
+    "node-flywaydb": "^3.0.3",
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.2",
     "nodemon": "^2.0.4",

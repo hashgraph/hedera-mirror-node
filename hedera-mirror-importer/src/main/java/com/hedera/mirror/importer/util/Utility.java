@@ -45,6 +45,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
+import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
@@ -52,10 +53,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Log4j2
+@UtilityClass
 public class Utility {
 
     private static final Long SCALAR = 1_000_000_000L;
@@ -126,19 +129,19 @@ public class Utility {
 
     /**
      * Parses record stream file.
-
-     * @param filePath path to record file
+     *
+     * @param filePath             path to record file
      * @param expectedPrevFileHash expected previous file's hash in current file. Throws {@link HashMismatchException}
      *                             on mismatch
-     * @param verifyHashAfter previous file's hash mismatch is ignored if file is from before this time
-     * @param recordItemConsumer if not null, consumer is invoked for each transaction in the record file
+     * @param verifyHashAfter      previous file's hash mismatch is ignored if file is from before this time
+     * @param recordItemConsumer   if not null, consumer is invoked for each transaction in the record file
      * @return parsed record file
      */
     public static RecordFile parseRecordFile(String filePath, String expectedPrevFileHash, Instant verifyHashAfter,
                                              Consumer<RecordItem> recordItemConsumer) {
         RecordFile recordFile = new RecordFile();
-        recordFile.setName(filePath);
-        String fileName = Utility.getFileName(filePath);
+        String fileName = FilenameUtils.getName(filePath);
+        recordFile.setName(fileName);
 
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)))) {
             MessageDigest md = MessageDigest.getInstance(FileDelimiter.HASH_ALGORITHM);
@@ -276,14 +279,6 @@ public class Utility {
         return Hex.encodeHexString(bytes);
     }
 
-    public static String getFileName(String path) {
-        int lastIndexOf = path.lastIndexOf("/");
-        if (lastIndexOf == -1) {
-            return ""; // empty extension
-        }
-        return path.substring(lastIndexOf + 1);
-    }
-
     /**
      * Converts time in (second, nanos) to time in only nanos.
      */
@@ -406,6 +401,23 @@ public class Utility {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static final long getTimestampFromFilename(String filename) {
+        if (StringUtils.isBlank(filename)) {
+            return 0L;
+        }
+
+        StreamType streamType = StreamType.fromFilename(filename);
+        String date = FilenameUtils.removeExtension(filename);
+
+        if (streamType != null) {
+            date = StringUtils.removeEnd(date, streamType.getSuffix());
+        }
+
+        date = date.replace('_', ':');
+        Instant instant = Instant.parse(date);
+        return Utility.convertToNanosMax(instant.getEpochSecond(), instant.getNano());
     }
 
     /**

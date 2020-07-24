@@ -46,6 +46,9 @@ public class EventDownloaderProperties implements DownloaderProperties {
     @Min(1)
     private int batchSize = 100;
 
+    @NotNull
+    private Duration closeInterval = Duration.ofSeconds(5L);
+
     private boolean enabled = false;
 
     @NotNull

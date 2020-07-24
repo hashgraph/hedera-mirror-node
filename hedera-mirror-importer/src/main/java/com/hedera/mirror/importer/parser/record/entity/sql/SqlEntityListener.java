@@ -36,6 +36,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.FilenameUtils;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
@@ -85,7 +86,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onStart(StreamFileData streamFileData) {
-        String fileName = streamFileData.getFilename();
+        String fileName = FilenameUtils.getName(streamFileData.getFilename());
         entityIds = new HashSet<>();
         if (recordFileRepository.findByName(fileName).size() > 0) {
             throw new DuplicateFileException("File already exists in the database: " + fileName);
@@ -340,6 +341,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         try {
             if (properties.isNotifyTopicMessage()) {
                 String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
+                if (json.length() >= 8000) {
+                    log.warn("Unable to notify large payload of size {}B: {}", json.length(), topicMessage);
+                    return;
+                }
                 sqlNotifyTopicMessage.setString(1, json);
                 sqlNotifyTopicMessage.addBatch();
             }
