@@ -28,7 +28,7 @@ const AWSMock = require('aws-sdk-mock');
 global.logger = log4js.getLogger();
 
 const defaultValidStreamsConfig = {
-  cloudProvider: 's3',
+  cloudProvider: 'S3',
   region: 'us-east-3',
   accessKey: 'testAccessKey',
   secretKey: 'testSecretKey',
@@ -69,10 +69,14 @@ describe('createS3Client with valid config', () => {
     expect(s3Client).toBeTruthy();
 
     const s3Config = s3Client.getConfig();
-    if (streamsConfig.cloudProvider.toLowerCase() === 's3') {
-      expect(s3Config.endpoint).toEqual('https://s3.amazonaws.com')
+    if (streamsConfig.endpointOverride) {
+      expect(s3Config.endpoint).toEqual(streamsConfig.endpointOverride);
     } else {
-      expect(s3Config.endpoint).toEqual('https://storage.googleapis.com')
+      if (streamsConfig.cloudProvider === 'S3') {
+        expect(s3Config.endpoint).toEqual('https://s3.amazonaws.com')
+      } else {
+        expect(s3Config.endpoint).toEqual('https://storage.googleapis.com')
+      }
     }
 
     if (streamsConfig.region) {
@@ -97,20 +101,26 @@ describe('createS3Client with valid config', () => {
     verifyForSuccess(config.stateproof.streams, s3Client);
   });
 
-  test('valid config with cloudProvider "S3', () => {
+  test('valid config with cloudProvider S3', () => {
     setStreamsConfigAttribute('cloudProvider', 'S3');
     const s3Client = createS3Client();
     verifyForSuccess(config.stateproof.streams, s3Client);
   });
 
-  test('valid config with cloudProvider "gcp"', () => {
-    setStreamsConfigAttribute('cloudProvider', 'gcp');
+  test('valid config with cloudProvider gcp', () => {
+    setStreamsConfigAttribute('cloudProvider', 'GCP');
     const s3Client = createS3Client();
     verifyForSuccess(config.stateproof.streams, s3Client);
   });
 
   test('valid config with region "us-west-1"', () => {
     setStreamsConfigAttribute('region', 'us-west-1');
+    const s3Client = createS3Client();
+    verifyForSuccess(config.stateproof.streams, s3Client);
+  });
+
+  test('valid config with endpointOverride', () => {
+    setStreamsConfigAttribute('endpointOverride', 'us-south-north-1');
     const s3Client = createS3Client();
     verifyForSuccess(config.stateproof.streams, s3Client);
   });

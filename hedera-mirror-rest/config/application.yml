@@ -24,7 +24,9 @@ hedera:
       stateproof:
         enabled: false
         streams:
-          cloudProvider: 's3'
+          network: 'DEMO'
+          cloudProvider: 'S3'
+          endpointOverride:
           region: 'us-east-1'
           accessKey:
           secretKey:

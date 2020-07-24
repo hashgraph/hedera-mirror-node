@@ -327,30 +327,6 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     // const filteredPartialFilePaths = _.reject(partialFilePaths, p => p.startsWith('0.0.3'));
     verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, partialFilePaths, ['0.0.3']);
   });
-
-  test('with null streamsConfig', async () => {
-    config.stateproof.streams = null;
-    await expect(stateproof.downloadRecordStreamFilesFromObjectStorage('0.0.3/sample.rcd'))
-      .rejects.toThrowError(InvalidConfigError);
-  });
-
-  test('with empty bucketName', async () => {
-    setStreamsConfigAttribute('bucketName', '');
-    await expect(stateproof.downloadRecordStreamFilesFromObjectStorage('0.0.3/sample.rcd'))
-      .rejects.toThrowError(InvalidConfigError);
-  });
-
-  test('with null record', async () => {
-    setStreamsConfigAttribute('record', null);
-    await expect(stateproof.downloadRecordStreamFilesFromObjectStorage('0.0.3/sample.rcd'))
-      .rejects.toThrowError(InvalidConfigError);
-  });
-
-  test('with empty record.prefix', async () => {
-    setStreamsConfigAttribute('record', {prefix: ''});
-    await expect(stateproof.downloadRecordStreamFilesFromObjectStorage('0.0.3/sample.rcd'))
-      .rejects.toThrowError(InvalidConfigError);
-  });
 });
 
 describe('getStateProofForTransaction', () => {

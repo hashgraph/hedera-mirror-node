@@ -22,6 +22,7 @@ const extend = require('extend');
 const fs = require('fs');
 const yaml = require('js-yaml');
 const path = require('path');
+const {InvalidConfigError} = require('./errors/invalidConfigError');
 
 let configName = 'application';
 if (process.env.CONFIG_NAME) {
@@ -113,12 +114,84 @@ function convertType(value) {
   return parsedValue;
 }
 
+function getConfig() {
+  return config.hedera && config.hedera.mirror ? config.hedera.mirror.rest : config;
+}
+
+function parseStateProofStreamsConfig() {
+  const config = getConfig();
+  if (!config.stateproof) {
+    config.stateproof = {
+      enabled: false
+    }
+  } else if (!config.stateproof.streams || !config.stateproof.streams.network) {
+    config.stateproof.streams = Object.assign({
+      network: 'DEMO',
+    }, config.stateproof.streams);
+  }
+
+  const stateProofConfig = config.stateproof;
+  const streamsConfig = stateProofConfig.streams;
+
+  if (!stateProofConfig.enabled) {
+    return;
+  }
+
+  // set default bucketName depending on network
+  switch (streamsConfig.network) {
+    case 'DEMO':
+      if (!streamsConfig.bucketName) {
+        streamsConfig.bucketName = 'hedera-demo-streams';
+      }
+      break;
+    case 'MAINNET':
+      if (!streamsConfig.bucketName) {
+        streamsConfig.bucketName = 'hedera-stable-mainnet-streams';
+      }
+      break;
+    case 'TESTNET':
+      if (!streamsConfig.bucketName) {
+        streamsConfig.bucketName = 'hedera-stable-testnet-streams';
+      }
+      break;
+    case 'OTHER':
+      break;
+    default:
+      const message = `unknown network ${streamsConfig.network}`;
+      console.log(message);
+      throw new InvalidConfigError(message);
+  }
+
+  if (!streamsConfig.cloudProvider) {
+    streamsConfig.cloudProvider = 'S3';
+  }
+
+  if (!streamsConfig.region) {
+    streamsConfig.region = 'us-east-1';
+  }
+
+  if (!streamsConfig.record || !streamsConfig.record.prefix) {
+    streamsConfig.record = {
+      prefix: 'recordstreams/record'
+    };
+  }
+
+  if (!streamsConfig.bucketName) {
+    throw new InvalidConfigError('stateproof.streams.bucketName must be set');
+  }
+
+  if (streamsConfig.cloudProvider !== 'S3' && streamsConfig.cloudProvider !== 'GCP') {
+    throw new InvalidConfigError(`unsupported object storage service provider ${streamsConfig.cloudProvider}`);
+  }
+}
+
 if (!loaded) {
   load(path.join(__dirname, 'config'));
   load(__dirname);
   load(process.env.CONFIG_PATH);
   loadEnvironment();
+  parseStateProofStreamsConfig();
   loaded = true;
 }
 
-module.exports = config.hedera && config.hedera.mirror ? config.hedera.mirror.rest : config;
+module.exports = getConfig();

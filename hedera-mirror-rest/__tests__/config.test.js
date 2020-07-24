@@ -137,14 +137,176 @@ describe('Load environment configuration:', () => {
 });
 
 describe('Custom CONFIG_NAME:', () => {
-  test('${CONFIG_PATH}/${CONFIG_NAME}.yml', () => {
+  const loadConfigFromCustomObject = (custom) => {
     fs.writeFileSync(path.join(tempDir, 'config.yml'), yaml.safeDump(custom));
     process.env = {CONFIG_NAME: 'config', CONFIG_PATH: tempDir};
-    const config = require('../config');
+    return require('../config');
+  }
+
+  test('${CONFIG_PATH}/${CONFIG_NAME}.yml', () => {
+    const config = loadConfigFromCustomObject(custom);
 
     expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
     expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
     expect(config.log).toBeUndefined();
+  });
+
+  const getDefaultStreamsConfigWithOptionalOverrideByNetwork = (network, override) => {
+    let streamsConfig = {
+      network,
+      cloudProvider: 'S3',
+      region: 'us-east-1',
+      record: {
+        prefix: 'recordstreams/record'
+      }
+    };
+
+    let invalidNetwork = false;
+    switch (network) {
+      case 'DEMO':
+        streamsConfig.bucketName = 'hedera-demo-streams';
+        break;
+      case 'MAINNET':
+        streamsConfig.bucketName = 'hedera-stable-mainnet-streams';
+        break;
+      case 'TESTNET':
+        streamsConfig.bucketName = 'hedera-stable-testnet-streams';
+        break;
+      case 'OTHER':
+        streamsConfig.network = network;
+        break;
+      default:
+        invalidNetwork = true;
+        break;
+    }
+
+    if (!invalidNetwork) {
+      return Object.assign(streamsConfig, override);
+    }
+  };
+
+  describe('custom stateproof configuration', () => {
+    test('when no stateproof section the default (disabled) should be populated', ()=> {
+      const config = loadConfigFromCustomObject(custom);
+      expect(config.stateproof.enabled).toBeFalsy();
+    });
+
+    test('when stateproof enabled with no streams section the default should be populated', () => {
+      let localCustom = Object.assign({}, custom);
+      localCustom.hedera.mirror.rest.stateproof = {
+        enabled: true
+      };
+      const config = loadConfigFromCustomObject(localCustom);
+
+      expect(config.stateproof.enabled).toBeTruthy();
+      expect(config.stateproof.streams).toEqual(getDefaultStreamsConfigWithOptionalOverrideByNetwork('DEMO'));
+    });
+
+    ['DEMO', 'MAINNET', 'TESTNET'].forEach(network => {
+      test(`when stateproof enabled with just streams network set to ${network} other fields should get default`, () => {
+        let localCustom = Object.assign({}, custom);
+        localCustom.hedera.mirror.rest.stateproof = {
+          enabled: true,
+          streams: {
+            network,
+          }
+        };
+
+        const config = loadConfigFromCustomObject(localCustom);
+
+        expect(config.stateproof.enabled).toBeTruthy();
+        expect(config.stateproof.streams).toEqual(getDefaultStreamsConfigWithOptionalOverrideByNetwork(network));
+      });
+    });
+
+    test('when override all allowed fields', () => {
+      const network = 'DEMO';
+      const localCustom = Object.assign({}, custom);
+      localCustom.hedera.mirror.rest.stateproof = {
+        enabled: true,
+        streams: {
+          network
+        }
+      };
+      const override = {
+        cloudProvider: 'GCP',
+        endpointOverride: 'https://alternative.object.storage.service',
+        region: 'us-east-west-3',
+        accessKey: 'FJHGRY',
+        secretKey: 'IRPLKGJUIEOR=FweGR',
+        bucketName: 'override-alternative-streams',
+        record: {
+          prefix: 'recordstreamsv2/record'
+        }
+      };
+      Object.assign(localCustom.hedera.mirror.rest.stateproof.streams, override);
+
+      const config = loadConfigFromCustomObject(localCustom);
+
+      expect(config.stateproof.enabled).toBeTruthy();
+      expect(config.stateproof.streams).toEqual(getDefaultStreamsConfigWithOptionalOverrideByNetwork(network, override));
+    });
+
+    test('when network is OTHER and bucketName is set', () => {
+      const network = 'OTHER';
+      const localCustom = Object.assign({}, custom);
+      localCustom.hedera.mirror.rest.stateproof = {
+        enabled: true,
+        streams: {
+          network,
+          bucketName: 'other-streams'
+        }
+      };
+
+      const config = loadConfigFromCustomObject(localCustom);
+
+      expect(config.stateproof.enabled).toBeTruthy();
+      expect(config.stateproof.streams).toEqual(getDefaultStreamsConfigWithOptionalOverrideByNetwork(network, {
+        bucketName: 'other-streams'
+      }));
+    });
+
+    test('with unknown network', () => {
+      const localCustom = Object.assign({}, custom);
+      localCustom.hedera.mirror.rest.stateproof = {
+        enabled: true,
+        streams: {
+          network: 'BROKEN'
+        }
+      };
+
+      expect(() => {
+        loadConfigFromCustomObject(localCustom);
+      }).toThrow();
+    });
+
+    test('with invalid cloudProvider', () => {
+      const localCustom = Object.assign({}, custom);
+      localCustom.hedera.mirror.rest.stateproof = {
+        enabled: true,
+        streams: {
+          cloudProvider: 'S88',
+        }
+      };
+
+      expect(() => {
+        loadConfigFromCustomObject(localCustom);
+      }).toThrow();
+    });
+
+    test('with OTHER network but no bucketName', () => {
+      const localCustom = Object.assign({}, custom);
+      localCustom.hedera.mirror.rest.stateproof = {
+        enabled: true,
+        streams: {
+          network: 'OTHER'
+        }
+      };
+
+      expect(() => {
+        loadConfigFromCustomObject(localCustom);
+      }).toThrow();
+    })
   });
 });
 

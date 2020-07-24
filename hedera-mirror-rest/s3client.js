@@ -44,49 +44,49 @@ class S3Client {
   getHasCredentials = () => {
     return this.hasCredentials;
   }
-
 }
 
+const buildS3ConfigFromStreamsConfig = () => {
+  const streamsConfig = config.stateproof.streams;
+
+  let endpoint;
+  if (streamsConfig.endpointOverride) {
+    endpoint = streamsConfig.endpointOverride;
+  } else {
+    if (streamsConfig.cloudProvider === 'S3') {
+      endpoint = 'https://s3.amazonaws.com';
+    } else if (streamsConfig.cloudProvider === 'GCP') {
+      endpoint = 'https://storage.googleapis.com';
+    }
+  }
+
+  if (!endpoint) {
+    throw new InvalidConfigError("Empty endpoint, can't build s3Config");
+  }
+
+  const s3Config = {
+    endpoint: endpoint,
+    region: streamsConfig.region
+  };
+
+  if (!!streamsConfig.accessKey && !!streamsConfig.secretKey) {
+    logger.info('Building s3Config with provided access/secret key');
+    s3Config.accessKeyId = streamsConfig.accessKey;
+    s3Config.secretAccessKey = streamsConfig.secretKey;
+  } else {
+    logger.info('Building s3Config with no credentials');
+  }
+
+  return s3Config;
+};
+
 /**
- * Create a S3 client with configuration from config object. Throws InvalidConfigError if failed.
+ * Create a S3 client with configuration from config object.
  * @returns {S3Client}
  */
 const createS3Client = () => {
-  try {
-    const streamsConfig = config.stateproof.streams;
-    const cloudProvider = streamsConfig.cloudProvider.toLowerCase();
-    let endpoint = undefined;
-    if (cloudProvider === 's3') {
-      endpoint = 'https://s3.amazonaws.com';
-    } else if (cloudProvider === 'gcp') {
-      endpoint = 'https://storage.googleapis.com';
-    } else {
-      throw new InvalidConfigError(`Invalid cloudProvider ${cloudProvider}`);
-    }
-
-    const s3Config = {
-      endpoint: endpoint,
-      region: streamsConfig.region ? streamsConfig.region : 'us-east-1'
-    };
-
-    if (!!streamsConfig.accessKey && !!streamsConfig.secretKey) {
-      logger.info('Configuring s3Client with provided access/secret key');
-      s3Config.accessKeyId = streamsConfig.accessKey;
-      s3Config.secretAccessKey = streamsConfig.secretKey;
-    } else {
-      logger.info('Configuring s3Client with anonymous credentials');
-    }
-
-    return new S3Client(new AWS.S3(s3Config), !!s3Config.accessKeyId);
-    // return new S3Client(new S3(s3Config), !!s3Config.accessKeyId);
-  } catch (err) {
-    logger.error(`Unable to create S3 client: ${err.message}`);
-
-    if (err instanceof InvalidConfigError) {
-      throw err;
-    }
-    throw new InvalidConfigError(`Invalid config, cannot create s3 client: ${err.message}`);
-  }
+  const s3Config = buildS3ConfigFromStreamsConfig();
+  return new S3Client(new AWS.S3(s3Config), !!s3Config.accessKeyId);
 };
 
 module.exports = {

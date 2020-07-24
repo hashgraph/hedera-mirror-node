@@ -29,7 +29,6 @@ const s3client = require('./s3client');
 const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 const {FileDownloadError} = require('./errors/fileDownloadError');
-const {InvalidConfigError} = require("./errors/invalidConfigError");
 
 /**
  * Handler function for /transactions/:transaction_id/stateproof API.
@@ -220,13 +219,6 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
  */
 let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => {
   const streamsConfig = config.stateproof.streams;
-  if (!streamsConfig ||
-    !streamsConfig.bucketName ||
-    !streamsConfig.record ||
-    !streamsConfig.record.prefix) {
-    throw new InvalidConfigError("Invalid config, can't download file");
-  }
-
   const s3Client = s3client.createS3Client();
 
   const fileObjects = await Promise.all(_.map(partialFilePaths, async partialFilePath => {
