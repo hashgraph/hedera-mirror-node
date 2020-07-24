@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,26 +20,8 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.hedera.mirror.importer.domain.EntityId;
 
-@Data
-@Entity
-@NoArgsConstructor
-@AllArgsConstructor
-public class ContractResult {
-
-    @Id
-    private Long consensusTimestamp;
-
-    private byte[] functionParameters;
-
-    private Long gasSupplied;
-
-    private byte[] callResult;
-
-    private Long gasUsed;
+public interface EntityRepositoryCustom {
+    void insertEntityId(EntityId entityId);
 }

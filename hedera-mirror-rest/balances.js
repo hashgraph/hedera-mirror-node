@@ -65,7 +65,7 @@ const getBalances = async (req, res) => {
 
   // Use the inner query to find the latest snapshot timestamp from the balance history table
   let innerQuery =
-    'select consensus_timestamp from account_balances ab\n' +
+    'select consensus_timestamp from account_balance ab\n' +
     ' where\n' +
     (tsQuery === '' ? '1=1' : tsQuery) +
     '\n' +
@@ -74,7 +74,7 @@ const getBalances = async (req, res) => {
   let sqlQuery =
     'select ab.consensus_timestamp,\n' +
     'ab.account_realm_num as realm_num, ab.account_num as entity_num, ab.balance\n' +
-    ' from account_balances ab\n';
+    ' from account_balance ab\n';
   if (joinEntities) {
     sqlQuery +=
       ' join t_entities e\n' +

@@ -10,27 +10,8 @@ Currently, it can generate following kinds of data:
     -   Topic: CONSENSUSCREATETOPIC, CONSENSUSUPDATETOPIC, CONSENSUSDELETETOPIC, CONSENSUSSUBMITMESSAGE
 -   Account balances
 
-Generating and loading data into PostgreSQL is a two step process.
-
-1. Generate and write data to CSV files.
-2. Load CSV files into Postgres using COPY command.
-
-![Data Generator: Generating and loading data](data-generator.png)
-
-## Running
-
-```bash
-cd hedera-mirror-datagenerator
-./run.sh
-```
-
-Using custom Postgres:
-
-```bash
-./run.sh -pgh HOST -pgp PORT -pgu USERNAME -pgw PASSWORD -pgd DBNAME
-```
-
-To import pre-generated data, add `--import-dir DIR` arg.
+Data is loaded into PostgreSQL using both SqlEntityListener (for Transaction, CryptoTranasfer, etc) and DomainWriter
+(for Entities and AccountBalance).
 
 ## Configuration
 
@@ -116,6 +97,12 @@ Configurations will be of one of the following types:
 | `hedera.mirror.datagenerator.transaction.topic.updatesFrequency`       | int                | 1                                | Relative frequency of CONSENSUSUPDATETOPIC transactions w.r.t all topic transactions                                                                                                                                                  |
 | `hedera.mirror.datagenerator.transaction.topic.submitMessageFrequency` | int                | 997                              | Relative frequency of CONSENSUSSUBMITMESSAGE transactions w.r.t all topic transactions                                                                                                                                                |
 
+## Running
+
+```bash
+java -jar path/to/hedera-mirror-datagenerator.jar
+```
+
 ## Java package hierarchy
 
 Data generation logic lives in `src/main/java/com/hedera/datagenerator`. \
@@ -125,9 +112,6 @@ Package structure is as follows:
     loaded into Postgres database.
     -   `DomainDriver.run()` contains top-level control logic.
     -   `com.hedera.datagenerator.domain.generators`: Generators for transactions and entities.
-    -   `com.hedera.datagenerator.domain.writer`: `DomainWriter` interface to output generated data. `PostgresCSVDomainWriter`
-        implementations of it writes the data into CSV files. If needed in future, one can implement a writer to directly
-        load data into Postgres tables.
 -   `com.hedera.datagenerator.common`: Code independent of `com.hedera.mirror.domain` so that it can be shared in future with
     streams data generator which will be at abstraction of `com.hederahashgraph.api.proto.java`.
 -   `com.hedera.datagenerator.sampling`: Various sampling distributions to help mimic real world data better.

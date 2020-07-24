@@ -29,12 +29,12 @@ import lombok.extern.log4j.Log4j2;
 import com.hedera.datagenerator.common.EntityManager;
 import com.hedera.datagenerator.common.FileTransactionProperties;
 import com.hedera.datagenerator.common.TransactionGenerator;
-import com.hedera.datagenerator.domain.writer.DomainWriter;
 import com.hedera.datagenerator.sampling.Distribution;
 import com.hedera.datagenerator.sampling.FrequencyDistribution;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 /**
  * Generates file transactions (FILECREATE, FILEAPPEND, FILEUPDATE, FILEDELETE).
@@ -48,8 +48,8 @@ public class FileTransactionGenerator extends TransactionGenerator {
     private final Distribution<Consumer<Transaction>> transactionDistribution;
 
     public FileTransactionGenerator(
-            FileTransactionProperties properties, EntityManager entityManager, DomainWriter domainWriter) {
-        super(entityManager, domainWriter, properties.getNumSeedFiles());
+            FileTransactionProperties properties, EntityManager entityManager, EntityListener entityListener) {
+        super(entityManager, entityListener, properties.getNumSeedFiles());
         this.properties = properties;
         transactionDistribution = new FrequencyDistribution<>(Map.of(
                 this::createFile, this.properties.getCreatesFrequency(),
@@ -103,6 +103,6 @@ public class FileTransactionGenerator extends TransactionGenerator {
         byte[] fileDataBytes = new byte[(int) fileDataSize];
         new Random().nextBytes(fileDataBytes);
         fileData.setFileData(fileDataBytes);
-        domainWriter.addFileData(fileData);
+        entityListener.onFileData(fileData);
     }
 }

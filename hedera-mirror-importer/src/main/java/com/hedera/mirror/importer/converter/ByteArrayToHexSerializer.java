@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.converter;
 
 /*-
  * ‌
@@ -20,26 +20,19 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import java.io.IOException;
+import javax.inject.Named;
+import org.apache.commons.codec.binary.Hex;
 
-@Data
-@Entity
-@NoArgsConstructor
-@AllArgsConstructor
-public class ContractResult {
-
-    @Id
-    private Long consensusTimestamp;
-
-    private byte[] functionParameters;
-
-    private Long gasSupplied;
-
-    private byte[] callResult;
-
-    private Long gasUsed;
+@Named
+public class ByteArrayToHexSerializer extends JsonSerializer<byte[]> {
+    @Override
+    public void serialize(byte[] value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        if (value != null) {
+            gen.writeString("\\x" + Hex.encodeHexString(value));
+        }
+    }
 }

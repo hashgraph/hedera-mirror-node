@@ -126,9 +126,9 @@ public abstract class PerformanceIntegrationTest {
     }
 
     void checkSeededTablesArePresent() throws SQLException {
-        String[] tables = new String[] {"account_balance_sets", "account_balances", "flyway_schema_history",
-                "non_fee_transfer", "t_application_status", "t_contract_result", "crypto_transfer",
-                "t_entities", "t_entity_types", "t_file_data", "t_livehashes", "t_record_files",
+        String[] tables = new String[] {"account_balance_sets", "account_balance", "flyway_schema_history",
+                "non_fee_transfer", "t_application_status", "contract_result", "crypto_transfer",
+                "t_entities", "t_entity_types", "file_data", "live_hash", "record_file",
                 "t_transaction_results",
                 "t_transaction_types", "transaction", "topic_message"
         };
@@ -151,7 +151,7 @@ public abstract class PerformanceIntegrationTest {
 
         // verify select tables were populated
         verifyTableSize(entityRepository, "t_entities");
-        verifyTableSize(accountBalanceRepository, "account_balances");
+        verifyTableSize(accountBalanceRepository, "account_balance");
         verifyTableSize(topicMessageRepository, "topicmessages");
         verifyTableSize(transactionRepository, "transaction");
     }

@@ -56,14 +56,14 @@ const getAccountQueryPrefix = function () {
        e.auto_renew_period,
        e.key,
        e.deleted
-    from account_balances ab
+    from account_balance ab
     full outer join t_entities e on (
         ${config.shard} = e.entity_shard
         and ab.account_realm_num = e.entity_realm
         and ab.account_num =  e.entity_num
         and e.fk_entity_type_id < ${utils.ENTITY_TYPE_FILE}
     )
-    where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balances)`;
+    where ab.consensus_timestamp = (select max(consensus_timestamp) from account_balance)`;
 };
 
 /**
@@ -77,8 +77,8 @@ const getAccounts = async (req, res) => {
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
 
-  // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we
-  // need to look  for the given account.id in both account_balances and t_entities table and combine with an 'or'
+  // Because of the outer join on the 'account_balance ab' and 't_entities e' below, we
+  // need to look  for the given account.id in both account_balance and t_entities table and combine with an 'or'
   const [balancesAccountQuery, balancesAccountParams] = utils.parseAccountIdQueryParam(
     req.query,
     'ab.account_realm_num',
@@ -174,8 +174,8 @@ const getOneAccount = async (req, res) => {
     transactions: [],
   };
 
-  // Because of the outer join on the 'account_balances ab' and 't_entities e' below, we
-  // need to look  for the given account.id in both account_balances and t_entities table and combine with an 'or'
+  // Because of the outer join on the 'account_balance ab' and 't_entities e' below, we
+  // need to look  for the given account.id in both account_balance and t_entities table and combine with an 'or'
   const entitySql =
     getAccountQueryPrefix() +
     'and (\n' +
