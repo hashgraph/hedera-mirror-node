@@ -25,5 +25,4 @@ import org.springframework.data.repository.CrudRepository;
 import com.hedera.mirror.importer.domain.TopicMessage;
 
 public interface TopicMessageRepository extends CrudRepository<TopicMessage, Long> {
-
 }

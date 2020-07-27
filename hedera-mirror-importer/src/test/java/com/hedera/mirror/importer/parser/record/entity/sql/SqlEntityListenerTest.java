@@ -22,27 +22,34 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.Reader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.RandomUtils;
+import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
+import org.postgresql.copy.CopyManager;
 import org.postgresql.jdbc.PgConnection;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.repository.CrudRepository;
-import org.testcontainers.shaded.org.bouncycastle.util.Strings;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.ContractResult;
@@ -56,6 +63,7 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -114,8 +122,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     void completeFileAndCommit() {
-        sqlEntityListener
-                .onEnd(new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", 0));
+        sqlEntityListener.onEnd(new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", 0));
     }
 
     @Test
@@ -156,18 +163,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     void onTopicMessage() throws Exception {
         sqlProperties.setNotifyTopicMessage(false);
         // given
-        TopicMessage topicMessage = new TopicMessage();
-        topicMessage.setChunkNum(1);
-        topicMessage.setChunkTotal(2);
-        topicMessage.setConsensusTimestamp(1L);
-        topicMessage.setMessage(Strings.toByteArray("test message"));
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
-        topicMessage.setRealmNum(0);
-        topicMessage.setRunningHash(Strings.toByteArray("running hash"));
-        topicMessage.setRunningHashVersion(2);
-        topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicNum(1001);
-        topicMessage.setValidStartTimestamp(4L);
+        TopicMessage topicMessage = getTopicMessage();
 
         // when
         sqlEntityListener.onTopicMessage(topicMessage);
@@ -182,18 +178,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTopicMessageNotify() throws Exception {
         // given
-        TopicMessage topicMessage = new TopicMessage();
-        topicMessage.setChunkNum(1);
-        topicMessage.setChunkTotal(2);
-        topicMessage.setConsensusTimestamp(1L);
-        topicMessage.setMessage(Strings.toByteArray("test message"));
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
-        topicMessage.setRealmNum(0);
-        topicMessage.setRunningHash(Strings.toByteArray("running hash"));
-        topicMessage.setRunningHashVersion(2);
-        topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicNum(1001);
-        topicMessage.setValidStartTimestamp(4L);
+        TopicMessage topicMessage = getTopicMessage();
 
         String json = SqlEntityListener.OBJECT_MAPPER.writeValueAsString(topicMessage);
         PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class);
@@ -247,9 +232,42 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void verifyRollback() {
+        sqlProperties.setMaxJsonPayloadSize(Integer.MAX_VALUE);
+        // given
+        TopicMessage topicMessage = getTopicMessage();
+
+        TopicMessage topicMessage2 = getTopicMessage();
+        topicMessage2.setMessage(RandomUtils.nextBytes(10000)); // Just exceeds 8000B
+
+        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
+
+        EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
+
+        // when
+        sqlEntityListener.onTopicMessage(topicMessage);
+        sqlEntityListener.onTopicMessage(topicMessage2); // error causing submission
+        sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
+        sqlEntityListener.onEntityId(entityId);
+
+        boolean rollback = false;
+        try {
+            completeFileAndCommit();
+        } catch (Exception ex) {
+            sqlEntityListener.onError();
+            rollback = true;
+        }
+
+        assertThat(rollback).isTrue();
+        assertEquals(0, topicMessageRepository.count());
+        assertEquals(0, cryptoTransferRepository.count());
+        assertEquals(0, entityRepository.count());
+    }
+
+    @Test
     void onFileData() throws Exception {
         // given
-        FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"));
+        FileData expectedFileData = new FileData(11L, "file data".getBytes());
 
         // when
         sqlEntityListener.onFileData(expectedFileData);
@@ -263,8 +281,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onContractResult() throws Exception {
         // given
-        ContractResult expectedContractResult = new ContractResult(15L, Strings.toByteArray("function parameters"),
-                10000L, Strings.toByteArray("call result"), 10000L);
+        ContractResult expectedContractResult = new ContractResult(15L, "function parameters".getBytes(),
+                10000L, "call result".getBytes(), 10000L);
 
         // when
         sqlEntityListener.onContractResult(expectedContractResult);
@@ -278,7 +296,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onLiveHash() throws Exception {
         // given
-        LiveHash expectedLiveHash = new LiveHash(20L, Strings.toByteArray("live hash"));
+        LiveHash expectedLiveHash = new LiveHash(20L, "live hash".getBytes());
 
         // when
         sqlEntityListener.onLiveHash(expectedLiveHash);
@@ -317,52 +335,23 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertExistsAndEquals(entityRepository, entityId.toEntity(), 10L);
     }
 
-    // Test that on seeing 'batchSize' number of transactions, 'executeBatch()' is called for all PreparedStatements
-    // issued by the connection.
     @Test
-    void batchSize() throws Exception {
+    void onEntityIdDuplicates() throws Exception {
         // given
-        int batchSize = 10;
-        sqlProperties.setBatchSize(batchSize);
+        EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
 
-        Connection connection = mock(Connection.class);
-        List<PreparedStatement> insertStatements = new ArrayList<>(); // tracks all PreparedStatements
-        when(connection.prepareStatement(any())).then(ignored -> {
-            PreparedStatement preparedStatement = mock(PreparedStatement.class);
-            when(preparedStatement.executeBatch()).thenReturn(new int[] {});
-            insertStatements.add(preparedStatement);
-            return preparedStatement;
-        });
-
-        DataSource dataSource = mock(DataSource.class);
-        when(dataSource.getConnection()).thenReturn(connection);
-        SqlEntityListener sqlEntityListener2 =
-                new SqlEntityListener(sqlProperties, dataSource, recordFileRepository);
-        sqlEntityListener2.onStart(new StreamFileData(UUID.randomUUID().toString(), null)); // setup connection
-
-        // when
-        for (int i = 0; i < batchSize; i++) {
-            sqlEntityListener2.onTransaction(makeTransaction());
-        }
+        // when:
+        sqlEntityListener.onEntityId(entityId);
+        sqlEntityListener.onEntityId(entityId); // duplicate within file
+        completeFileAndCommit();
+        fileName = UUID.randomUUID().toString();
+        sqlEntityListener.onStart(new StreamFileData(fileName, null));
+        sqlEntityListener.onEntityId(entityId); // duplicate across files
+        completeFileAndCommit();
 
         // then
-        for (PreparedStatement ps : insertStatements) {
-            verify(ps).executeBatch();
-        }
-
-        completeFileAndCommit();  // close connection
-    }
-
-    @Test
-    void onError() {
-        // when
-        sqlEntityListener.onNonFeeTransfer(new NonFeeTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT)));
-        sqlEntityListener.onCryptoTransfer(new CryptoTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT)));
-        sqlEntityListener.onError();
-
-        // then
-        assertEquals(0, nonFeeTransferRepository.count());
-        assertEquals(0, cryptoTransferRepository.count());
+        assertEquals(1, entityRepository.count());
+        assertExistsAndEquals(entityRepository, entityId.toEntity(), 10L);
     }
 
     @Test
@@ -374,11 +363,50 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertThrows(DuplicateFileException.class, () -> {
             sqlEntityListener.onStart(new StreamFileData(fileName, null));
         });
-
-        sqlEntityListener.onError();  // close connection
     }
 
-    // TODO: add test to check contents of recordFileRepo
+    @Test
+    void testRecordFile() {
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.count()).isEqualTo(1);
+        assertThat(recordFileRepository.findByName(fileName)).hasSize(1);
+    }
+
+    @Test
+    void testExceptionInCopyPropagatesUp() throws Exception {
+        // given
+        SQLException exception = new SQLException("test exception");
+        CopyManager copyManager = mock(CopyManager.class);
+        doThrow(exception).when(copyManager).copyIn(any(), (Reader) any(), anyInt());
+        PGConnection pgConnection = mock(PGConnection.class);
+        doReturn(copyManager).when(pgConnection).getCopyAPI();
+        Connection conn = mock(Connection.class);
+        PreparedStatement statement = mock(PreparedStatement.class);
+        doReturn(pgConnection).when(conn).unwrap(any());
+        doReturn(statement).when(conn).prepareStatement(any());
+        DataSource dataSource = mock(DataSource.class);
+        doReturn(conn).when(dataSource).getConnection();
+        CacheManager cacheManager = mock(CacheManager.class);
+        var sqlEntityListener2 = new SqlEntityListener(
+                sqlProperties, dataSource, recordFileRepository, entityRepository, new SimpleMeterRegistry(),
+                cacheManager);
+        sqlEntityListener2.onStart(new StreamFileData(fileName, null));
+        sqlEntityListener2.onTransaction(makeTransaction());
+
+        // when, then
+        assertThatThrownBy(() -> sqlEntityListener2.onEnd(
+                new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", 0)))
+                .isInstanceOf(ParserException.class)
+                .extracting(Throwable::getCause)
+                .isInstanceOf(ExecutionException.class)
+                .extracting(Throwable::getCause)
+                .isInstanceOf(ParserException.class)
+                .extracting(Throwable::getCause)
+                .isSameAs(exception);
+    }
 
     static <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
         Optional<T> actual = repository.findById(id);
@@ -392,10 +420,11 @@ public class SqlEntityListenerTest extends IntegrationTest {
         transaction.setConsensusNs(101L);
         transaction.setEntityId(entityId);
         transaction.setNodeAccountId(entityId);
-        transaction.setMemo(Strings.toByteArray("memo"));
+        transaction.setMemo("memo".getBytes());
         transaction.setType(14);
         transaction.setResult(22);
-        transaction.setTransactionHash(Strings.toByteArray("transactionHash"));
+        transaction.setTransactionHash("transaction hash".getBytes());
+        transaction.setTransactionBytes("transaction bytes".getBytes());
         transaction.setPayerAccountId(entityId);
         transaction.setValidStartNs(1L);
         transaction.setValidDurationSeconds(1L);
@@ -403,5 +432,22 @@ public class SqlEntityListenerTest extends IntegrationTest {
         transaction.setChargedTxFee(1L);
         transaction.setInitialBalance(0L);
         return transaction;
+    }
+
+    private TopicMessage getTopicMessage() {
+        TopicMessage topicMessage = new TopicMessage();
+        topicMessage.setChunkNum(1);
+        topicMessage.setChunkTotal(2);
+        topicMessage.setConsensusTimestamp(1L);
+        topicMessage.setMessage("test message".getBytes());
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
+        topicMessage.setRealmNum(0);
+        topicMessage.setRunningHash("running hash".getBytes());
+        topicMessage.setRunningHashVersion(2);
+        topicMessage.setSequenceNumber(1L);
+        topicMessage.setTopicNum(1001);
+        topicMessage.setValidStartTimestamp(4L);
+
+        return topicMessage;
     }
 }

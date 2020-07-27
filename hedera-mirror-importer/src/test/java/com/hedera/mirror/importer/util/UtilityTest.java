@@ -70,6 +70,20 @@ public class UtilityTest {
         assertThatThrownBy(() -> Utility.ensureDirectory(null)).isInstanceOf(IllegalArgumentException.class);
     }
 
+    @DisplayName("Get timestamp from filename")
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+            ", 0",
+            "1970-01-01T00_00_00.0Z.rcd, 0",
+            "2020-06-03T16_45_00.000000001Z_Balances.csv_sig, 1591202700000000001",
+            "2020-06-03T16_45_00.1Z_Balances.csv, 1591202700100000000",
+            "2020-06-03T16:45:00.000000003Z_Balances.csv, 1591202700000000003",
+            "2262-04-11T23:47:16.854775808Z.evts_sig, 9223372036854775807",
+    })
+    void getTimestampFromFilename(String filename, long timestamp) {
+        assertThat(Utility.getTimestampFromFilename(filename)).isEqualTo(timestamp);
+    }
+
     @Test
     @DisplayName("Loads resource from classpath")
     void getResource() {
@@ -77,14 +91,10 @@ public class UtilityTest {
         assertThat(Utility.getResource("log4j2-test.xml")).exists().canRead();
     }
 
-    private Utility getCut() throws SQLException {
-        return new Utility();
-    }
-
     @Test
     @DisplayName("protobufKeyToHexIfEd25519OrNull null key")
     public void protobufKeyToHexIfEd25519OrNull_Null() throws InvalidProtocolBufferException, SQLException {
-        var result = getCut().protobufKeyToHexIfEd25519OrNull(null);
+        var result = Utility.protobufKeyToHexIfEd25519OrNull(null);
 
         assertThat(result).isNull();
     }
@@ -94,7 +104,7 @@ public class UtilityTest {
     public void protobufKeyToHexIfEd25519OrNull_Valid() throws Exception {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
         var input = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build();
-        var result = getCut().protobufKeyToHexIfEd25519OrNull(input.toByteArray());
+        var result = Utility.protobufKeyToHexIfEd25519OrNull(input.toByteArray());
 
         assertThat(result).isEqualTo(instr);
     }
@@ -108,7 +118,7 @@ public class UtilityTest {
         var tk = ThresholdKey.newBuilder().setThreshold(1).setKeys(keyList).build();
         var input = Key.newBuilder().setThresholdKey(tk).build();
 
-        var result = getCut().protobufKeyToHexIfEd25519OrNull(input.toByteArray());
+        var result = Utility.protobufKeyToHexIfEd25519OrNull(input.toByteArray());
 
         assertThat(result).isNull();
     }

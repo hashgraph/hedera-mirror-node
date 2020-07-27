@@ -126,7 +126,7 @@ const addAccount = async function (account) {
 const setAccountBalance = async function (account) {
   account = Object.assign({timestamp: 0, realm_num: 0, id: null, balance: 0}, account);
   await sqlConnection.query(
-    `INSERT INTO account_balances (consensus_timestamp, account_realm_num, account_num, balance)
+    `INSERT INTO account_balance (consensus_timestamp, account_realm_num, account_num, balance)
     VALUES (\$1, \$2, \$3, \$4);`,
     [account.timestamp, account.realm_num, account.id, account.balance]
   );

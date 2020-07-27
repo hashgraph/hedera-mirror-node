@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -147,6 +148,7 @@ public class RecordFileParser implements FileParser {
         AtomicInteger counter = new AtomicInteger(0);
         boolean success = false;
         try {
+            Stopwatch stopwatch = Stopwatch.createStarted();
             RecordFile recordFile = Utility.parseRecordFile(
                     streamFileData.getFilename(), expectedPrevFileHash,
                     parserProperties.getMirrorProperties().getVerifyHashAfter(),
@@ -154,6 +156,7 @@ public class RecordFileParser implements FileParser {
                         counter.incrementAndGet();
                         processRecordItem(recordItem);
                     });
+            log.info("Time to parse record file: {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
             recordFile.setLoadStart(startTime.getEpochSecond());
             recordFile.setLoadEnd(Instant.now().getEpochSecond());
             recordStreamFileListener.onEnd(recordFile);

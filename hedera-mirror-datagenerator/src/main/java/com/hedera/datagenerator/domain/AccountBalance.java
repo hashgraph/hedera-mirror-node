@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.datagenerator.domain;
 
 /*-
  * ‌
@@ -20,26 +20,17 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 @Data
-@Entity
-@NoArgsConstructor
-@AllArgsConstructor
-public class ContractResult {
+@RequiredArgsConstructor
+public class AccountBalance {
+    private final long consensusTimestamp;
 
-    @Id
-    private Long consensusTimestamp;
+    private final int accountRealmNum;
 
-    private byte[] functionParameters;
+    private final int accountNum;
 
-    private Long gasSupplied;
-
-    private byte[] callResult;
-
-    private Long gasUsed;
+    private final long balance;
 }

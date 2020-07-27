@@ -1,6 +1,6 @@
 # Configuration
 
-The three components of the Hedera Mirror Node, Importer, REST API and GRPC API, all support loading configuration
+The three components of the Hedera Mirror Node, Importer, REST API and gRPC API, all support loading configuration
 from an `application.yml` file or via the environment.
 
 Most configuration settings have appropriate defaults and can be left unchanged. One of the important settings that
@@ -10,7 +10,7 @@ Additionally, the password properties have a default, but it is recommended they
 ## Importer
 
 The Importer component uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the application.
-As as a result, propertiy files, YAML files, environment variables and command-line arguments can all be use to configure
+As a result, property files, YAML files, environment variables and command-line arguments can all be used to configure
 the application. See the Spring Boot [documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config)
 for the location and order it loads configuration.
 
@@ -29,23 +29,26 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.db.username`                                 | mirror_node             | The username the processor uses to connect to the database                                     |
 | `hedera.mirror.importer.downloader.accessKey`                        | ""                      | The cloud storage access key                                                                   |
 | `hedera.mirror.importer.downloader.balance.batchSize`                | 15                      | The number of signature files to download per node before downloading the signed files         |
+| `hedera.mirror.importer.downloader.balance.closeInterval`            | 15m                     | The expected interval between balance files                                                    |
 | `hedera.mirror.importer.downloader.balance.enabled`                  | true                    | Whether to enable balance file downloads                                                       |
 | `hedera.mirror.importer.downloader.balance.frequency`                | 30s                     | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
 | `hedera.mirror.importer.downloader.balance.keepSignatures`           | false                   | Whether to keep balance signature files after successful verification. If false, files are deleted. |
 | `hedera.mirror.importer.downloader.balance.prefix`                   | accountBalances/balance | The prefix to search cloud storage for balance files                                           |
 | `hedera.mirror.importer.downloader.balance.threads`                  | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.importer.downloader.bucketName`                       |                         | The cloud storage bucket name to download streamed files. This value takes priority over network hardcoded bucket names regardless of `hedera.mirror.importer.network` value.|
-| `hedera.mirror.importer.downloader.cloudProvider`                    | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                       |
+| `hedera.mirror.importer.downloader.cloudProvider`                    | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                                |
 | `hedera.mirror.importer.downloader.endpointOverride`                 |                         | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible |
 | `hedera.mirror.importer.downloader.event.batchSize`                  | 100                     | The number of signature files to download per node before downloading the signed files         |
+| `hedera.mirror.importer.downloader.event.closeInterval`              | 5s                      | The expected interval between event files                                                      |
 | `hedera.mirror.importer.downloader.event.enabled`                    | false                   | Whether to enable event file downloads                                                         |
-| `hedera.mirror.importer.downloader.event.frequency`                  | 5s                      | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.        |
+| `hedera.mirror.importer.downloader.event.frequency`                  | 5s                      | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
 | `hedera.mirror.importer.downloader.event.keepSignatures`             | false                   | Whether to keep event signature files after successful verification. If false, files are deleted. |
 | `hedera.mirror.importer.downloader.event.prefix`                     | eventsStreams/events\_  | The prefix to search cloud storage for event files                                             |
-| `hedera.mirror.importer.downloader.event.threads`                    | 13                      | The number of threads to search for new files to download
+| `hedera.mirror.importer.downloader.event.threads`                    | 13                      | The number of threads to search for new files to download                                      |
 | `hedera.mirror.importer.downloader.gcpProjectId`                     |                         | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.            |
 | `hedera.mirror.importer.downloader.maxConcurrency`                   | 1000                    | The maximum number of allowed open HTTP connections. Used by AWS SDK directly.                 |
 | `hedera.mirror.importer.downloader.record.batchSize`                 | 40                      | The number of signature files to download per node before downloading the signed files         |
+| `hedera.mirror.importer.downloader.record.closeInterval`             | 2s                      | The expected interval between record files                                                     |
 | `hedera.mirror.importer.downloader.record.enabled`                   | true                    | Whether to enable record file downloads                                                        |
 | `hedera.mirror.importer.downloader.record.frequency`                 | 500ms                   | The fixed period between invocations. Can accept duration units like `10s`, `2m` etc.          |
 | `hedera.mirror.importer.downloader.record.keepSignatures`            | false                   | Whether to keep record signature files after successful verification. If false, files are deleted. |
@@ -75,7 +78,9 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
 | `hedera.mirror.importer.parser.record.entity.persist.systemFiles`           | true                    | Persist only system files (number lower than `1000`) to the database                           |
 | `hedera.mirror.importer.parser.record.entity.persist.transactionBytes`      | false                   | Persist raw transaction bytes to the database                                                  |
-| `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 2000                    | When inserting transactions into db, executeBatches() is called every these many transactions  |
+| `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 100_000_000             | When inserting transactions into db, executeBatches() is called every these many transactions  |
+| `hedera.mirror.importer.parser.record.entity.sql.maxJsonPayloadSize`        | 8000                    | Max number of bytes for json payload used in pg_notify of db inserts                           |
+| `hedera.mirror.importer.parser.record.entity.sql.threads`                   | 10                      | Number of executor threads used by sql entity listener                                         |
 | `hedera.mirror.importer.parser.record.pubsub.topicName`                     |                         | Pubsub topic to publish transactions to                                                        |
 | `hedera.mirror.importer.parser.record.pubsub.maxSendAttempts`               | 5                       | Number of attempts when sending messages to PubSub (only for retryable errors)                 |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
@@ -97,7 +102,7 @@ for more info about `spring.cloud.gcp.*` properties.
 
 ## GRPC API
 
-Similar to the [Importer](#importer), the GRPC API uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the application.
+Similar to the [Importer](#importer), the gRPC API uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the application.
 
 The following table lists the available properties along with their default values. Unless you need to set a non-default
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
@@ -133,7 +138,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 
 ## REST API
 
-The REST API supports loading configuration from YAML or environment variables. By default it loads a file named
+The REST API supports loading configuration from YAML or environment variables. By default, it loads a file named
 `application.yml` or `application.yaml` in each of the search paths (see below). The file name can be changed by setting
 the `CONFIG_NAME` environment variable. A custom location can be loaded by setting the `CONFIG_PATH` environment variable.
 The configuration is loaded in the following order with the latter configuration overwriting (technically recursively
