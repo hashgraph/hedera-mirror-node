@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +17,11 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const EntityId = require('./entityId');
-const {InvalidArgumentError} = require("./errors/invalidArgumentError");
+const { InvalidArgumentError } = require('./errors/invalidArgumentError');
 
 class TransactionId {
   constructor(entityId, validStartNs) {
@@ -57,20 +58,19 @@ class TransactionId {
  * Construct transaction ID from string. The string must be in the format of "shard.realm.num-ssssssssss-nnnnnnnnn"
  * @param {string} transactionIdStr
  */
-const fromString = transactionIdStr => {
-    let txIdMatches = transactionIdStr.match(/(\d+)\.(\d+)\.(\d+)-(\d{10})-(\d{9})/);
-    if (txIdMatches === null || txIdMatches.length !== 6) {
-      logger.error(`TransactionId.fromString, invalid transaction ID string ${transactionIdStr}`);
-      let message =
-        'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" ' +
-        'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
-      throw new InvalidArgumentError(message);
-    }
+const fromString = (transactionIdStr) => {
+  const txIdMatches = transactionIdStr.match(/(\d+)\.(\d+)\.(\d+)-(\d{10})-(\d{9})/);
+  if (txIdMatches === null || txIdMatches.length !== 6) {
+    logger.error(`TransactionId.fromString, invalid transaction ID string ${transactionIdStr}`);
+    const message = 'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" '
+      + 'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
+    throw new InvalidArgumentError(message);
+  }
 
-    const entityId = EntityId.fromString(`${txIdMatches[1]}.${txIdMatches[2]}.${txIdMatches[3]}`);
-    const validStartNs = `${txIdMatches[4]}${txIdMatches[5]}`;
+  const entityId = EntityId.fromString(`${txIdMatches[1]}.${txIdMatches[2]}.${txIdMatches[3]}`);
+  const validStartNs = `${txIdMatches[4]}${txIdMatches[5]}`;
 
-    return new TransactionId(entityId, validStartNs);
+  return new TransactionId(entityId, validStartNs);
 };
 
 module.exports = {

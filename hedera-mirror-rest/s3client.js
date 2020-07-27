@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +17,12 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 const AWS = require('aws-sdk');
 const config = require('./config');
-const {InvalidConfigError} = require('./errors/invalidConfigError');
+const { InvalidConfigError } = require('./errors/invalidConfigError');
 
 class S3Client {
   constructor(s3, hasCredentials) {
@@ -29,19 +30,18 @@ class S3Client {
     this.hasCredentials = hasCredentials;
   }
 
-  getObject = (params, callback) => {
+  getObject(params, callback) {
     if (this.hasCredentials) {
       return this.s3.getObject(params, callback);
-    } else {
-      return this.s3.makeUnauthenticatedRequest('getObject', params, callback);
     }
+    return this.s3.makeUnauthenticatedRequest('getObject', params, callback);
   }
 
-  getConfig = () => {
+  getConfig() {
     return this.s3.config;
   }
 
-  getHasCredentials = () => {
+  getHasCredentials() {
     return this.hasCredentials;
   }
 }
@@ -52,12 +52,10 @@ const buildS3ConfigFromStreamsConfig = () => {
   let endpoint;
   if (streamsConfig.endpointOverride) {
     endpoint = streamsConfig.endpointOverride;
-  } else {
-    if (streamsConfig.cloudProvider === 'S3') {
-      endpoint = 'https://s3.amazonaws.com';
-    } else if (streamsConfig.cloudProvider === 'GCP') {
-      endpoint = 'https://storage.googleapis.com';
-    }
+  } else if (streamsConfig.cloudProvider === 'S3') {
+    endpoint = 'https://s3.amazonaws.com';
+  } else if (streamsConfig.cloudProvider === 'GCP') {
+    endpoint = 'https://storage.googleapis.com';
   }
 
   if (!endpoint) {
@@ -65,8 +63,8 @@ const buildS3ConfigFromStreamsConfig = () => {
   }
 
   const s3Config = {
-    endpoint: endpoint,
-    region: streamsConfig.region
+    endpoint,
+    region: streamsConfig.region,
   };
 
   if (!!streamsConfig.accessKey && !!streamsConfig.secretKey) {
@@ -90,5 +88,5 @@ const createS3Client = () => {
 };
 
 module.exports = {
-  createS3Client
-}
+  createS3Client,
+};

@@ -20,15 +20,16 @@
 
 'use strict';
 
-const InvalidConfigErrorMessage = 'Invalid config';
+const { exec } = require('child_process');
 
-class InvalidConfigError extends Error {
-  constructor(errorMessage) {
-    super();
-    this.message = errorMessage === undefined ? InvalidConfigErrorMessage : errorMessage;
-  }
-}
+const isDockerInstalled = function () {
+  return new Promise((resolve) => {
+    exec('docker --version', (err) => {
+      resolve(!err);
+    });
+  });
+};
 
 module.exports = {
-  InvalidConfigError,
+  isDockerInstalled,
 };

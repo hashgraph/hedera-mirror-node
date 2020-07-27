@@ -52,6 +52,9 @@ const server = require('../server');
 const fs = require('fs');
 const integrationDbOps = require('./integrationDbOps.js');
 const integrationDomainOps = require('./integrationDomainOps.js');
+const {S3Ops} = require('./integrationS3Ops');
+const config = require('../config');
+
 let sqlConnection;
 
 beforeAll(async () => {
@@ -256,22 +259,61 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   ]);
 });
 
-let specPath = path.join(__dirname, 'specs');
-fs.readdirSync(specPath).forEach(function (file) {
-  let p = path.join(specPath, file);
-  let specText = fs.readFileSync(p, 'utf8');
-  var spec = JSON.parse(specText);
-  test(`DB integration test - ${file} - ${spec.url}`, async () => {
-    await specSetupSteps(spec.setup);
+describe('DB integration test - spec based', () => {
+  let s3Ops;
+  let serverWithStateProofEnabled;
 
-    let response = await request(server).get(spec.url);
+  beforeAll(async () => {
+    s3Ops = new S3Ops(path.join(__dirname, 'data/s3'));
+    await s3Ops.start();
+    configS3ForStateProof(s3Ops.getEndpointUrl());
+    jest.isolateModules(() => {
+      serverWithStateProofEnabled = require('../server');
+    });
+  });
 
-    expect(response.status).toEqual(spec.responseStatus);
-    expect(JSON.parse(response.text)).toEqual(spec.responseJson);
+  afterAll(async () => {
+    await s3Ops.stop();
+  })
+
+  const configS3ForStateProof = function(endpoint) {
+    config.stateproof = {
+      enabled: true,
+      streams: {
+        network: 'OTHER',
+        cloudProvider: 'S3',
+        endpointOverride: endpoint,
+        region: 'us-east-1',
+        bucketName: 'integration-test-streams',
+        record: {
+          prefix: 'recordstreams/record'
+        }
+      }
+    };
+  };
+
+  const specSetupSteps = async function (spec) {
+    await integrationDbOps.cleanUp();
+    await integrationDomainOps.setUp(spec, sqlConnection);
+  };
+
+  let specPath = path.join(__dirname, 'specs');
+  fs.readdirSync(specPath).forEach(function (file) {
+    let p = path.join(specPath, file);
+    let specText = fs.readFileSync(p, 'utf8');
+    var spec = JSON.parse(specText);
+    test(`DB integration test - ${file} - ${spec.url}`, async () => {
+      await specSetupSteps(spec.setup);
+
+      let response;
+      if (!file.startsWith('stateproof')) {
+        response = await request(server).get(spec.url);
+      } else {
+        response = await request(serverWithStateProofEnabled).get(spec.url);
+      }
+
+      expect(response.status).toEqual(spec.responseStatus);
+      expect(JSON.parse(response.text)).toEqual(spec.responseJson);
+    });
   });
 });
-
-const specSetupSteps = async function (spec) {
-  await integrationDbOps.cleanUp();
-  await integrationDomainOps.setUp(spec, sqlConnection);
-};

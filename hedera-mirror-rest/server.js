@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 'uses strict';
 
 // external libraries
@@ -56,11 +57,11 @@ log4js.configure({
 });
 global.logger = log4js.getLogger();
 
-let port = config.port;
+let {port} = config;
 if (process.env.NODE_ENV === 'test') {
   port = 3000; // Use a dummy port for jest unit tests
 }
-if (port === undefined || isNaN(Number(port))) {
+if (port === undefined || Number.isNaN(Number(port))) {
   logger.error('Server started with unknown port');
   console.log('Please specify the port');
   process.exit(1);
@@ -90,7 +91,7 @@ app.set('port', port);
 app.use(
   bodyParser.urlencoded({
     extended: false,
-  })
+  }),
 );
 app.use(bodyParser.json());
 app.use(compression());
@@ -104,7 +105,7 @@ if (config.metrics.enabled) {
   app.use(metricsHandler());
 }
 
-let apiPrefix = '/api/v1';
+const apiPrefix = '/api/v1';
 
 // accounts routes
 app.getAsync(apiPrefix + '/accounts', accounts.getAccounts);

@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +17,13 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
-const {createS3Client} = require('../s3client');
-const config = require('../config');
 const log4js = require('log4js');
 const AWSMock = require('aws-sdk-mock');
+const { createS3Client } = require('../s3client');
+const config = require('../config');
 
 // create a minimal global logger for createS3Client to log errors.
 global.logger = log4js.getLogger();
@@ -34,13 +35,13 @@ const defaultValidStreamsConfig = {
   secretKey: 'testSecretKey',
   bucketName: 'testBucket',
   record: {
-    prefix: 'recordstreams/record'
-  }
+    prefix: 'recordstreams/record',
+  },
 };
 
 beforeEach(() => {
   config.stateproof = {
-    streams: Object.assign({}, defaultValidStreamsConfig)
+    streams: { ...defaultValidStreamsConfig },
   };
 });
 
@@ -71,12 +72,10 @@ describe('createS3Client with valid config', () => {
     const s3Config = s3Client.getConfig();
     if (streamsConfig.endpointOverride) {
       expect(s3Config.endpoint).toEqual(streamsConfig.endpointOverride);
+    } else if (streamsConfig.cloudProvider === 'S3') {
+      expect(s3Config.endpoint).toEqual('https://s3.amazonaws.com');
     } else {
-      if (streamsConfig.cloudProvider === 'S3') {
-        expect(s3Config.endpoint).toEqual('https://s3.amazonaws.com')
-      } else {
-        expect(s3Config.endpoint).toEqual('https://storage.googleapis.com')
-      }
+      expect(s3Config.endpoint).toEqual('https://storage.googleapis.com');
     }
 
     if (streamsConfig.region) {
@@ -94,7 +93,7 @@ describe('createS3Client with valid config', () => {
       expect(s3Config.credentials).toBeTruthy();
       expect(s3Config.credentials.accessKeyId).toEqual(streamsConfig.accessKey);
     }
-  }
+  };
 
   test('default valid config', () => {
     const s3Client = createS3Client();
@@ -165,16 +164,16 @@ describe('createS3Client with valid config', () => {
 describe('S3Client.getObject', () => {
   const params = {
     Bucket: 'sample-bucket',
-    Key: 'sample-key'
+    Key: 'sample-key',
   };
   const getObjectMessage = 'getObject is called when credentials are provided';
   const makeUnauthenticatedRequestMessage = 'makeUnauthenticatedRequest is called when no credentials are provided';
 
   beforeEach(() => {
-    AWSMock.mock('S3', 'getObject', (params, callback) => {
+    AWSMock.mock('S3', 'getObject', (_params, callback) => {
       callback(null, getObjectMessage);
     });
-    AWSMock.mock('S3', 'makeUnauthenticatedRequest', (method, params, callback) => {
+    AWSMock.mock('S3', 'makeUnauthenticatedRequest', (method, _params, callback) => {
       callback(null, makeUnauthenticatedRequestMessage);
     });
   });
@@ -183,20 +182,24 @@ describe('S3Client.getObject', () => {
     AWSMock.restore();
   });
 
-  test('with credentials provided', (done) => {
+  test('with credentials provided', async () => {
     const s3Client = createS3Client();
-    s3Client.getObject(params, (err, data) => {
-      expect(data).toEqual(getObjectMessage);
-      done();
+    await new Promise((resolve) => {
+      s3Client.getObject(params, (err, data) => {
+        expect(data).toEqual(getObjectMessage);
+        resolve();
+      });
     });
   });
 
-  test('without credentials', (done) => {
+  test('without credentials', async () => {
     setStreamsConfigAttribute('secretKey', '');
     const s3Client = createS3Client();
-    s3Client.getObject(params, (err, data) => {
-      expect(data).toEqual(makeUnauthenticatedRequestMessage);
-      done();
+    await new Promise((resolve) => {
+      s3Client.getObject(params, (err, data) => {
+        expect(data).toEqual(makeUnauthenticatedRequestMessage);
+        resolve();
+      });
     });
   });
 });
