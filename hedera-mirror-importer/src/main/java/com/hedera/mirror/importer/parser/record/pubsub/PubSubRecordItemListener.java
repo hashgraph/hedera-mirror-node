@@ -32,8 +32,9 @@ import org.springframework.integration.MessageTimeoutException;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
 
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
@@ -52,7 +53,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
 
     private final PubSubProperties pubSubProperties;
     private final MessageChannel pubsubOutputChannel;
-    private final NetworkAddressBook networkAddressBook;
+    private final AddressBookService addressBookService;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
@@ -75,24 +76,24 @@ public class PubSubRecordItemListener implements RecordItemListener {
         }
         log.debug("Published transaction : {}", consensusTimestamp);
 
-        FileID fileID = null;
-        byte[] fileBytes = null;
-        boolean isAppendOperation = false;
+        if (addressBookService.isAddressBook(entity)) {
+            FileID fileID = null;
+            byte[] fileBytes = null;
 
-        if (body.hasFileAppend()) {
-            fileID = body.getFileAppend().getFileID();
-            fileBytes = body.getFileAppend().getContents().toByteArray();
-            isAppendOperation = true;
-        } else if (body.hasFileCreate()) {
-            fileID = txRecord.getReceipt().getFileID();
-            fileBytes = body.getFileCreate().getContents().toByteArray();
-        } else if (body.hasFileUpdate()) {
-            fileID = body.getFileUpdate().getFileID();
-            fileBytes = body.getFileUpdate().getContents().toByteArray();
-        }
+            if (body.hasFileAppend()) {
+                fileID = body.getFileAppend().getFileID();
+                fileBytes = body.getFileAppend().getContents().toByteArray();
+            } else if (body.hasFileCreate()) {
+                fileID = txRecord.getReceipt().getFileID();
+                fileBytes = body.getFileCreate().getContents().toByteArray();
+            } else if (body.hasFileUpdate()) {
+                fileID = body.getFileUpdate().getFileID();
+                fileBytes = body.getFileUpdate().getContents().toByteArray();
+            }
 
-        if (networkAddressBook.isAddressBook(entity)) {
-            networkAddressBook.updateFrom(consensusTimestamp, fileBytes, EntityId.of(fileID), isAppendOperation);
+            FileData fileData = new FileData(consensusTimestamp, fileBytes, EntityId.of(fileID), recordItem
+                    .getTransactionType());
+            addressBookService.update(fileData);
         }
     }
 

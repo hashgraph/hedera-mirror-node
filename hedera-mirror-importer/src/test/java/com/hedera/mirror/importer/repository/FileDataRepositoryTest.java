@@ -23,8 +23,11 @@ package com.hedera.mirror.importer.repository;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
 public class FileDataRepositoryTest extends AbstractRepositoryTest {
 
@@ -35,6 +38,8 @@ public class FileDataRepositoryTest extends AbstractRepositoryTest {
         FileData fileData = new FileData();
         fileData.setConsensusTimestamp(transaction.getConsensusNs());
         fileData.setFileData("some file data".getBytes());
+        fileData.setEntityId(EntityId.of("0.0.123", EntityTypeEnum.FILE));
+        fileData.setTransactionType(TransactionTypeEnum.FILECREATE.ordinal());
         fileData = fileDataRepository.save(fileData);
 
         Assertions.assertThat(fileDataRepository.findById(transaction.getConsensusNs()).get())

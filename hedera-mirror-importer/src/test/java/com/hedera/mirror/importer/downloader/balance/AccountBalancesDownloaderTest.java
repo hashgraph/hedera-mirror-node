@@ -36,12 +36,12 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
-       return new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        return new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
     }
 
     @Override
     protected Downloader getDownloader() {
-        return new AccountBalancesDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook,
+        return new AccountBalancesDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (BalanceDownloaderProperties) downloaderProperties, meterRegistry);
     }
 

@@ -23,8 +23,8 @@ package com.hedera.mirror.importer.repository;
 import java.util.List;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.NodeAddress;
+import com.hedera.mirror.importer.domain.AddressBookEntry;
 
-public interface NodeAddressRepository extends CrudRepository<NodeAddress, Long> {
-    List<NodeAddress> findNodeAddressesByConsensusTimestamp(Long consensusTimeStamp);
+public interface AddressBookEntryRepository extends CrudRepository<AddressBookEntry, Long> {
+    List<AddressBookEntry> findAddressBookEntriesByConsensusTimestamp(Long consensusTimeStamp);
 }

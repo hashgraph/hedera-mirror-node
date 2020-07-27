@@ -36,9 +36,9 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
-import com.hedera.mirror.importer.repository.NodeAddressRepository;
 
 public class V1_27_3__Address_BookTest extends IntegrationTest {
     @Resource
@@ -48,7 +48,7 @@ public class V1_27_3__Address_BookTest extends IntegrationTest {
     @Resource
     private AddressBookRepository addressBookRepository;
     @Resource
-    private NodeAddressRepository nodeAddressRepository;
+    private AddressBookEntryRepository addressBookEntryRepository;
     @Resource
     private FileDataRepository fileDataRepository;
 
@@ -87,7 +87,7 @@ public class V1_27_3__Address_BookTest extends IntegrationTest {
 
         assertEquals(7, fileDataRepository.count());
         assertEquals(7, addressBookRepository.count()); // test + bootstrap
-        assertEquals(24, nodeAddressRepository.count());
+        assertEquals(24, addressBookEntryRepository.count());
     }
 
     private FileData fileData(long consensusTimestamp, int nodeAddresses, int fileId, int transactionType) {
@@ -99,7 +99,7 @@ public class V1_27_3__Address_BookTest extends IntegrationTest {
         FileData fileData = new FileData();
         fileData.setConsensusTimestamp(consensusTimestamp);
         fileData.setFileData(contents);
-        fileData.setFileId(EntityId.of(0, 0, fileId, EntityTypeEnum.FILE));
+        fileData.setEntityId(EntityId.of(0, 0, fileId, EntityTypeEnum.FILE));
         fileData.setTransactionType(transactionType);
         return fileData;
     }

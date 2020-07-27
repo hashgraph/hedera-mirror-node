@@ -20,13 +20,20 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.util.List;
+import javax.persistence.CascadeType;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.FileIdConverter;
 
@@ -35,13 +42,12 @@ import com.hedera.mirror.importer.converter.FileIdConverter;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-public class AddressBook {
+@ToString(exclude = {"fileData"})
+public class AddressBook implements Persistable<Long> {
     @Id
     private Long consensusTimestamp; // file create time
 
-    private Long startConsensusTimestamp;
-
-    private Long endConsensusTimestamp;
+    private Long endConsensusTimestamp; // last transaction parsed with this address book
 
     @Convert(converter = FileIdConverter.class)
     private EntityId fileId;
@@ -50,6 +56,17 @@ public class AddressBook {
 
     private byte[] fileData;
 
-    // complete address books fileData will contain valid NodeAddress protos
-    private boolean isComplete;
+    @OneToMany(cascade = CascadeType.PERSIST, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JoinColumn(name = "consensusTimestamp")
+    private List<AddressBookEntry> addressBookEntries;
+
+    @Override
+    public Long getId() {
+        return consensusTimestamp;
+    }
+
+    @Override
+    public boolean isNew() {
+        return true;
+    }
 }

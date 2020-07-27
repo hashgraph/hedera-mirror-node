@@ -12,4 +12,4 @@ TRUNCATE TABLE non_fee_transfer;
 UPDATE t_application_status
 SET status_value = NULL;
 TRUNCATE TABLE address_book RESTART IDENTITY CASCADE;
-TRUNCATE TABLE node_address RESTART IDENTITY CASCADE;
+TRUNCATE TABLE address_book_entry RESTART IDENTITY CASCADE;

@@ -33,17 +33,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.importer.converter.EntityIdConverter;
-import com.hedera.mirror.importer.converter.StringToByteArrayConverter;
 
 @Builder(toBuilder = true)
 @Data
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-public class NodeAddress {
+@ToString(exclude = {"publicKey", "nodeCertHash"})
+public class AddressBookEntry {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,7 +52,6 @@ public class NodeAddress {
 
     private Long consensusTimestamp;
 
-    @Convert(converter = StringToByteArrayConverter.class)
     private String memo;
 
     private String ip;
@@ -59,7 +59,6 @@ public class NodeAddress {
     @Builder.Default
     private int port = 50211;
 
-    @Convert(converter = StringToByteArrayConverter.class)
     private String publicKey;
 
     private long nodeId;
@@ -78,5 +77,9 @@ public class NodeAddress {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String getNodeAccountId() {
+        return nodeAccountId == null ? memo : nodeAccountId.toString();
     }
 }

@@ -42,6 +42,8 @@ import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -57,7 +59,7 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
 
     @Override
     protected Downloader getDownloader() {
-        return new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook,
+        return new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (RecordDownloaderProperties) downloaderProperties, meterRegistry);
     }
 
@@ -77,11 +79,10 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
     @DisplayName("Download and verify V1 files")
     void downloadV1() throws Exception {
         Path addressBook = ResourceUtils.getFile("classpath:addressbook/test-v1").toPath();
-        networkAddressBook.updateFrom(
-                Instant.now().getEpochSecond(),
-                Files.readAllBytes(addressBook),
-                EntityId.of(0, 0, 102, EntityTypeEnum.FILE),
-                false);
+        FileData fileData = new FileData(Instant.now().getEpochSecond(), Files.readAllBytes(addressBook), EntityId
+                .of(0, 0, 102, EntityTypeEnum.FILE), TransactionTypeEnum.FILEUPDATE
+                .ordinal());
+        addressBookService.update(fileData);
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());

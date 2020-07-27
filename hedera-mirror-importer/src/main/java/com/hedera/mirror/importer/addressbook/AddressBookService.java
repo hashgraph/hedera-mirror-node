@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.domain;
+package com.hedera.mirror.importer.addressbook;
 
 /*-
  * ‌
@@ -20,28 +20,16 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Collection;
 
-import com.hedera.mirror.importer.converter.FileIdConverter;
+import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.FileData;
 
-@Data
-@Entity
-@NoArgsConstructor
-@AllArgsConstructor
-public class FileData {
+public interface AddressBookService {
+    void update(FileData fileData);
 
-    @Id
-    private Long consensusTimestamp;
+    Collection<AddressBookEntry> getAddresses();
 
-    private byte[] fileData;
-
-    @Convert(converter = FileIdConverter.class)
-    private EntityId entityId;
-
-    private Integer transactionType;
+    boolean isAddressBook(EntityId entityId);
 }

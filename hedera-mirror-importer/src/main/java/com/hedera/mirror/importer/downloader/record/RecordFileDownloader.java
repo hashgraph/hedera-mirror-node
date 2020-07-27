@@ -31,7 +31,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.downloader.Downloader;
@@ -46,9 +46,15 @@ public class RecordFileDownloader extends Downloader {
 
     public RecordFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
-            NetworkAddressBook networkAddressBook, RecordDownloaderProperties downloaderProperties,
+            AddressBookService addressBookService, RecordDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry) {
-        super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties, meterRegistry);
+        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, meterRegistry);
+
+        streamCloseMetric = Timer.builder("hedera.mirror.stream.close.latency")
+                .description("The difference between the consensus time of the last and first transaction in the " +
+                        "record file")
+                .tag("type", downloaderProperties.getStreamType().toString())
+                .register(meterRegistry);
     }
 
     @Leader

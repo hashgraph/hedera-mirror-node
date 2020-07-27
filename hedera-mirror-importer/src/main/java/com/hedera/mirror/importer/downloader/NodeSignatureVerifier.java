@@ -34,10 +34,10 @@ import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
-import com.hedera.mirror.importer.domain.NodeAddress;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -46,11 +46,11 @@ public class NodeSignatureVerifier {
 
     private final Map<String, PublicKey> nodeIDPubKeyMap;
 
-    public NodeSignatureVerifier(NetworkAddressBook networkAddressBook) {
-        nodeIDPubKeyMap = networkAddressBook
+    public NodeSignatureVerifier(AddressBookService addressBookService) {
+        nodeIDPubKeyMap = addressBookService
                 .getAddresses()
                 .stream()
-                .collect(Collectors.toMap(NodeAddress::getMemo, NodeAddress::getPublicKeyAsObject));
+                .collect(Collectors.toMap(AddressBookEntry::getNodeAccountId, AddressBookEntry::getPublicKeyAsObject));
     }
 
     private static boolean consensusReached(long actualNodes, long expectedNodes) {

@@ -59,12 +59,12 @@ import software.amazon.awssdk.services.s3.model.RequestPayer;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.domain.NodeAddress;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
@@ -74,7 +74,7 @@ public abstract class Downloader {
 
     protected final Logger log = LogManager.getLogger(getClass());
     private final S3AsyncClient s3Client;
-    private final NetworkAddressBook networkAddressBook;
+    private final AddressBookService addressBookService;
     private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
     protected final ApplicationStatusRepository applicationStatusRepository;
     protected final DownloaderProperties downloaderProperties;
@@ -89,11 +89,11 @@ public abstract class Downloader {
     protected final Timer streamCloseMetric;
 
     public Downloader(S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
-                      NetworkAddressBook networkAddressBook, DownloaderProperties downloaderProperties,
+                      AddressBookService addressBookService, DownloaderProperties downloaderProperties,
                       MeterRegistry meterRegistry) {
         this.s3Client = s3Client;
         this.applicationStatusRepository = applicationStatusRepository;
-        this.networkAddressBook = networkAddressBook;
+        this.addressBookService = addressBookService;
         this.downloaderProperties = downloaderProperties;
         this.meterRegistry = meterRegistry;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
@@ -162,9 +162,10 @@ public abstract class Downloader {
         String lastValidSigFileName = lastValidFileName.isEmpty() ? "" : lastValidFileName + "_sig";
         Multimap<Long, FileStreamSignature> sigFilesMap = Multimaps
                 .synchronizedSortedSetMultimap(TreeMultimap.create());
-        Set<String> nodeAccountIds = networkAddressBook.getAddresses()
+
+        Set<String> nodeAccountIds = addressBookService.getAddresses()
                 .stream()
-                .map(NodeAddress::getMemo)
+                .map(AddressBookEntry::getNodeAccountId)
                 .collect(Collectors.toSet());
         List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
         var totalDownloads = new AtomicInteger();
@@ -358,8 +359,9 @@ public abstract class Downloader {
      * the data file into `valid` directory; else download the data file from other valid node folder and compare the
      * hash until we find a match.
      */
-    private void verifySigsAndDownloadDataFiles(Multimap<Long, FileStreamSignature> sigFilesMap) {
-        NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(networkAddressBook);
+    private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
+        // reload address book and keys in case it has been updated by RecordItemParser
+        NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         Path validPath = downloaderProperties.getValidPath();
 
         for (Long groupId : sigFilesMap.keySet()) {

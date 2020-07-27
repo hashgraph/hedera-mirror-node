@@ -58,12 +58,13 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
-import com.hedera.mirror.importer.repository.NodeAddressRepository;
+import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public abstract class AbstractDownloaderTest {
@@ -74,14 +75,14 @@ public abstract class AbstractDownloaderTest {
     @Mock(answer = Answers.RETURNS_SMART_NULLS)
     protected AddressBookRepository addressBookRepository;
     @Mock(answer = Answers.RETURNS_SMART_NULLS)
-    protected NodeAddressRepository nodeAddressRepository;
+    protected FileDataRepository fileDataRepository;
     @TempDir
     protected Path s3Path;
     protected S3Mock s3;
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties commonDownloaderProperties;
     protected MirrorProperties mirrorProperties;
-    protected NetworkAddressBook networkAddressBook;
+    protected AddressBookService addressBookService;
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
     protected Downloader downloader;
@@ -126,7 +127,7 @@ public abstract class AbstractDownloaderTest {
     // Implementation can assume that mirrorProperties and commonDownloaderProperties have been initialized.
     protected abstract DownloaderProperties getDownloaderProperties();
 
-    // Implementations can assume that s3AsyncClient, applicationStatusRepository, networkAddressBook and
+    // Implementations can assume that s3AsyncClient, applicationStatusRepository, addressBookService and
     // downloaderProperties have been initialized.
     protected abstract Downloader getDownloader();
 
@@ -144,7 +145,7 @@ public abstract class AbstractDownloaderTest {
         s3AsyncClient = new MirrorImporterConfiguration(
                 mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry))
                 .s3CloudStorageClient();
-        networkAddressBook = new NetworkAddressBook(mirrorProperties, addressBookRepository, nodeAddressRepository);
+        addressBookService = new AddressBookServiceImpl(mirrorProperties, addressBookRepository, fileDataRepository);
         downloader = getDownloader();
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
@@ -226,11 +227,10 @@ public abstract class AbstractDownloaderTest {
         byte[] addressBook = IOUtils.toByteArray(resource.getInputStream());
         int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
         addressBook = Arrays.copyOfRange(addressBook, 0, index);
-        networkAddressBook.updateFrom(
-                Instant.now().getEpochSecond(),
-                addressBook,
-                EntityId.of(0, 0, 102, EntityTypeEnum.FILE),
-                false);
+        FileData fileData = new FileData(Instant.now().getEpochSecond(), addressBook, EntityId
+                .of(0, 0, 102, EntityTypeEnum.FILE), TransactionTypeEnum.FILEUPDATE
+                .ordinal());
+        addressBookService.update(fileData);
 
         fileCopier.filterDirectories("*0.0.3").copy();
         downloader.download();

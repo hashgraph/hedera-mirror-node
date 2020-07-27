@@ -27,28 +27,27 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.util.CollectionUtils;
 
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 
 @Log4j2
 @Named
 @RequiredArgsConstructor
-public class V1_27_3__Address_Book extends BaseJavaMigration {
+public class V1_27_3__Address_Book {
     //    private final MirrorProperties mirrorProperties;
 //    private final AddressBookRepository addressBookRepository;
 //    private final NodeAddressRepository nodeAddressRepository;
     private final FileDataRepository fileDataRepository;
     //    private final AddressBookListener addressBookListener;
-    private final NetworkAddressBook networkAddressBook;
+    private final AddressBookService addressBookService;
 
-    @Override
+    //    @Override
     public void migrate(Context context) throws Exception {
         // after loading bootstrap address book in sql migration process all file data entries
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -60,14 +59,9 @@ public class V1_27_3__Address_Book extends BaseJavaMigration {
         while (CollectionUtils.isEmpty(fileDataList)) {
             fileDataList.forEach(fileData -> {
                 fileDataEntries.incrementAndGet();
-                // verify fileData has a matching addressBook fileNum
-                if (networkAddressBook.isAddressBook(fileData.getFileId())) {
-                    // call regular transaction parsing flow to parse and ingest address book entry
-                    networkAddressBook
-                            .updateFrom(fileData.getConsensusTimestamp(), fileData.getFileData(), fileData.getFileId(),
-                                    fileData.getTransactionType() == TransactionTypeEnum.FILECREATE.ordinal());
-                    currentConsensusTimestamp.set(fileData.getConsensusTimestamp());
-                }
+                // call regular transaction parsing flow to parse and ingest address book entry
+                addressBookService.update(fileData);
+                currentConsensusTimestamp.set(fileData.getConsensusTimestamp());
             });
 
             fileDataList = getLatestFileData(currentConsensusTimestamp.get(), 100);

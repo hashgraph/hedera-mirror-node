@@ -33,15 +33,11 @@ import com.hedera.mirror.importer.domain.EntityId;
 
 @Transactional
 public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
-    @Query("from AddressBook where consensusTimestamp <= ?1 and fileId = ?2 and isComplete = true order by " +
+    @Query("from AddressBook where consensusTimestamp <= ?1 and fileId = ?2 order by " +
             "consensusTimestamp asc")
     List<AddressBook> findCompleteAddressBooks(long consensusTimestamp, EntityId fileId);
 
     Optional<AddressBook> findTopByFileIdOrderByConsensusTimestampDesc(EntityId fileId);
-
-    Optional<AddressBook> findTopByFileIdAndIsCompleteIsTrueOrderByConsensusTimestampDesc(EntityId fileId);
-
-    Optional<AddressBook> findTopByFileIdAndIsCompleteIsFalseOrderByConsensusTimestampDesc(EntityId fileId);
 
     @Modifying
     @Query("update AddressBook set endConsensusTimestamp = :end where consensusTimestamp = :timestamp")

@@ -50,13 +50,14 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.Entities;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
+import com.hedera.mirror.importer.repository.AddressBookRepository;
+import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
@@ -70,13 +71,20 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     private MirrorProperties mirrorProperties;
 
     @Resource
-    private NetworkAddressBook networkAddressBook;
+    private AddressBookService addressBookService;
 
     @Value("classpath:addressbook/mainnet")
     private File addressBookLarge;
 
     @Value("classpath:addressbook/testnet")
     private File addressBookSmall;
+
+    @Resource
+    protected AddressBookRepository addressBookRepository;
+    @Resource
+    protected AddressBookEntryRepository addressBookEntryRepository;
+    @Resource
+    protected FileDataRepository fileDataRepository;
 
     @BeforeEach
     void before() throws Exception {
@@ -317,7 +325,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         parseRecordItemAndCommit(new RecordItem(transactionUpdate, recordUpdate));
         parseRecordItemAndCommit(new RecordItem(transactionAppend, recordAppend));
 
-        assertThat(networkAddressBook.getAddresses())
+        assertThat(addressBookService.getAddresses())
                 .describedAs("Should overwrite address book with complete update")
                 .hasSize(13);
 
@@ -327,8 +335,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 , () -> assertFileTransaction(transactionBodyAppend, recordAppend, false)
                 , () -> assertFileData(fileAppendTransactionBody.getContents(), recordAppend.getConsensusTimestamp())
                 , () -> assertFileData(fileUpdateTransactionBody.getContents(), recordUpdate.getConsensusTimestamp())
-                , () -> assertAddressBookData(addressBook, true)
-                , () -> assertEquals(13, nodeAddressRepository.count())
+                , () -> assertAddressBookData(addressBook, recordAppend.getConsensusTimestamp())
+                , () -> assertEquals(13, addressBookEntryRepository.count())
                 , () -> assertEquals(2, addressBookRepository.count()) // update and append
         );
     }
@@ -530,14 +538,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
     @Test
     void fileUpdateAddressBookPartial() throws Exception {
-        byte[] addressBookPrevious = FileUtils.readFileToByteArray(addressBookLarge);
-        networkAddressBook.updateFrom(
-                Instant.now().getEpochSecond(),
-                addressBookPrevious,
-                EntityId.of(0, 0, 102, EntityTypeEnum.FILE),
-                false);
-        byte[] addressBook = FileUtils.readFileToByteArray(addressBookSmall);
-        byte[] addressBookUpdate = Arrays.copyOf(addressBook, 6144);
+        byte[] largeAddressBook = FileUtils.readFileToByteArray(addressBookLarge);
+        byte[] addressBookUpdate = Arrays.copyOf(largeAddressBook, largeAddressBook.length / 2);
         Transaction transaction = fileUpdateAllTransaction(
                 FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build(), addressBookUpdate);
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
@@ -550,23 +552,24 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        assertThat(networkAddressBook.getAddresses())
+        assertThat(addressBookService.getAddresses())
                 .describedAs("Should not overwrite address book with partial update")
-                .hasSize(13);
+                .hasSize(4);
 
         assertAll(
                 () -> assertRowCountOnSuccess(),
                 () -> assertFileTransaction(transactionBody, record, false),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertAddressBookData(addressBookUpdate, false)
-                , () -> assertEquals(13, nodeAddressRepository.count())
-                , () -> assertEquals(2, addressBookRepository.count()) // initial and 2 updates
+                () -> assertAddressBookData(addressBookUpdate, record.getConsensusTimestamp())
+                , () -> assertEquals(1, addressBookRepository.count())
+                , () -> assertEquals(4, addressBookEntryRepository.count())
+                , () -> assertEquals(1, fileDataRepository.count())
         );
     }
 
     @Test
     void fileUpdateAddressBookComplete() throws Exception {
-        byte[] addressBook = FileUtils.readFileToByteArray(addressBookSmall);
+        byte[] addressBook = FileUtils.readFileToByteArray(addressBookLarge);
         assertThat(addressBook).hasSizeLessThan(6144);
         Transaction transaction = fileUpdateAllTransaction(
                 FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build(), addressBook);
@@ -580,16 +583,17 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        assertThat(networkAddressBook.getAddresses())
+        assertThat(addressBookService.getAddresses())
                 .describedAs("Should overwrite address book with complete update")
-                .hasSize(4);
+                .hasSize(13);
         assertAll(
                 () -> assertRowCountOnSuccess(),
                 () -> assertFileTransaction(transactionBody, record, false),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertAddressBookData(addressBook, true)
-                , () -> assertEquals(4, nodeAddressRepository.count())
-                , () -> assertEquals(1, addressBookRepository.count()) // initial and new
+                () -> assertAddressBookData(addressBook, record.getConsensusTimestamp())
+                , () -> assertEquals(1, addressBookRepository.count())
+                , () -> assertEquals(13, addressBookEntryRepository.count())
+                , () -> assertEquals(1, fileDataRepository.count())
         );
     }
 
@@ -760,9 +764,9 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         assertArrayEquals(expected.toByteArray(), actualFileData.getFileData());
     }
 
-    private void assertAddressBookData(byte[] expected, boolean complete) {
-        AddressBook actualAddressBook = complete ? networkAddressBook.getCurrentAddressBook() :
-                networkAddressBook.getPartialAddressBook();
+    private void assertAddressBookData(byte[] expected, Timestamp consensusTimestamp) {
+        AddressBook actualAddressBook = addressBookRepository.findById(Utility.timeStampInNanos(consensusTimestamp))
+                .get();
         assertArrayEquals(expected, actualAddressBook.getFileData());
     }
 

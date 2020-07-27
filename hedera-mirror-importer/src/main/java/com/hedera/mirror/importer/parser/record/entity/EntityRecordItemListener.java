@@ -25,7 +25,9 @@ import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
+import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -35,7 +37,7 @@ import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entities;
@@ -63,7 +65,7 @@ import com.hedera.mirror.importer.util.Utility;
 @ConditionOnEntityRecordParser
 public class EntityRecordItemListener implements RecordItemListener {
     private final EntityProperties entityProperties;
-    private final NetworkAddressBook networkAddressBook;
+    private final AddressBookService addressBookService;
     private final EntityRepository entityRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final Predicate<TransactionFilterFields> transactionFilter;
@@ -71,12 +73,12 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final TransactionHandlerFactory transactionHandlerFactory;
 
     public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
-                                    NetworkAddressBook networkAddressBook, EntityRepository entityRepository,
+                                    AddressBookService addressBookService, EntityRepository entityRepository,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
                                     TransactionHandlerFactory transactionHandlerFactory) {
         this.entityProperties = entityProperties;
-        this.networkAddressBook = networkAddressBook;
+        this.addressBookService = addressBookService;
         this.entityRepository = entityRepository;
         this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
         this.entityListener = entityListener;
@@ -104,6 +106,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
         TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(recordItem.getTransactionType());
         log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusNs, entityId);
+
+        // to:do - catch Freeze transaction and update addressBook with last transaction time
 
         TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionTypeEnum);
         if (!transactionFilter.test(transactionFilterFields)) {
@@ -148,36 +152,23 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertContractCreateInstance(consensusNs, body.getContractCreateInstance(), txRecord);
         }
 
-        FileID fileID = null;
-        byte[] fileBytes = null;
-        boolean isAppendOperation = false;
         if (isSuccessful) {
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
             } else if (body.hasCryptoAddLiveHash()) {
                 insertCryptoAddLiveHash(consensusNs, body.getCryptoAddLiveHash());
             } else if (body.hasFileAppend()) {
-                fileID = body.getFileAppend().getFileID();
-                fileBytes = body.getFileAppend().getContents().toByteArray();
-                isAppendOperation = true;
-                insertFileData(consensusNs, fileBytes, fileID, recordItem.getTransactionType());
+                insertFileAppend(consensusNs, body.getFileAppend());
             } else if (body.hasFileCreate()) {
-                fileID = txRecord.getReceipt().getFileID();
-                fileBytes = body.getFileCreate().getContents().toByteArray();
-                insertFileData(consensusNs, fileBytes, fileID, recordItem.getTransactionType());
+                insertFileData(consensusNs, body.getFileCreate().getContents().toByteArray(),
+                        txRecord.getReceipt().getFileID(), TransactionTypeEnum.FILECREATE.ordinal());
             } else if (body.hasFileUpdate()) {
-                fileID = body.getFileUpdate().getFileID();
-                fileBytes = body.getFileUpdate().getContents().toByteArray();
-                insertFileData(consensusNs, fileBytes, fileID, recordItem.getTransactionType());
+                insertFileUpdate(consensusNs, body.getFileUpdate());
             }
         }
 
         entityListener.onTransaction(tx);
         log.debug("Storing transaction: {}", tx);
-
-        if (networkAddressBook.isAddressBook(entityId)) {
-            networkAddressBook.updateFrom(consensusNs, fileBytes, EntityId.of(fileID), isAppendOperation);
-        }
     }
 
     private Transaction buildTransaction(long consensusTimestamp, RecordItem recordItem) {
@@ -258,11 +249,30 @@ public class EntityRecordItemListener implements RecordItemListener {
         entityListener.onTopicMessage(topicMessage);
     }
 
+    private void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody) {
+        byte[] contents = transactionBody.getContents().toByteArray();
+        insertFileData(consensusTimestamp, contents, transactionBody.getFileID(), TransactionTypeEnum.FILEAPPEND
+                .ordinal());
+    }
+
+    private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody) {
+        byte[] contents = transactionBody.getContents().toByteArray();
+        insertFileData(consensusTimestamp, contents, transactionBody.getFileID(), TransactionTypeEnum.FILEUPDATE
+                .ordinal());
+    }
+
     private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID, int transactionTypeEnum) {
-        if (entityProperties.getPersist().isFiles() ||
-                (entityProperties.getPersist().isSystemFiles() && fileID.getFileNum() < 1000)) {
-            entityListener
-                    .onFileData(new FileData(consensusTimestamp, contents, EntityId.of(fileID), transactionTypeEnum));
+        EntityId entityId = EntityId.of(fileID);
+        FileData fileData = new FileData(consensusTimestamp, contents, entityId, transactionTypeEnum);
+
+        if (addressBookService.isAddressBook(entityId)) {
+            // if address book allow immediate persistence instead of waiting for batch
+            addressBookService.update(fileData);
+        } else {
+            if (entityProperties.getPersist().isFiles() ||
+                    (entityProperties.getPersist().isSystemFiles() && entityId.getEntityNum() < 1000)) {
+                entityListener.onFileData(fileData);
+            }
         }
     }
 
