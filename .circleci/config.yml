@@ -337,6 +337,11 @@ jobs:
     steps:
       - checkout
       - run:
+          name: build dependencies
+          command: |
+            helm dependency build charts/hedera-mirror
+            helm dependency build charts/hedera-mirror-common
+      - run:
           name: lint
           command: |
             helm lint charts/hedera-mirror
@@ -344,11 +349,6 @@ jobs:
             helm lint charts/hedera-mirror-grpc
             helm lint charts/hedera-mirror-importer
             helm lint charts/hedera-mirror-rest
-      - run:
-          name: build dependencies
-          command: |
-            helm dependency build charts/hedera-mirror
-            helm dependency build charts/hedera-mirror-common
       - run:
           name: template
           command: |
