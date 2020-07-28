@@ -36,7 +36,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.apache.commons.codec.binary.Hex;
 
-import com.hedera.mirror.importer.converter.EntityIdConverter;
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 
 @Builder(toBuilder = true)
 @Data
@@ -63,7 +63,7 @@ public class AddressBookEntry {
 
     private long nodeId;
 
-    @Convert(converter = EntityIdConverter.class)
+    @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
 
     private byte[] nodeCertHash;

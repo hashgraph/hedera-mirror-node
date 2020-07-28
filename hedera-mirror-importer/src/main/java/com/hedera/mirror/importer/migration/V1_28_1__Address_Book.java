@@ -65,7 +65,8 @@ public class V1_28_1__Address_Book extends BaseJavaMigration {
         while (!CollectionUtils.isEmpty(fileDataList)) {
             fileDataList.forEach(fileData -> {
                 fileDataEntries.incrementAndGet();
-                // call regular transaction parsing flow to parse and ingest address book entry
+
+                // call normal address book file transaction parsing flow to parse and ingest address book entry
                 addressBookService.update(fileData);
                 currentConsensusTimestamp.set(fileData.getConsensusTimestamp());
             });

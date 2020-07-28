@@ -292,7 +292,7 @@ public class RecordFileParser implements FileParser {
      */
     private void updateAddressBook(long startConsensusTimestamp, long endConsensusTimestamp) {
 
-        // to:do - explore whether here or shutdown hook is best place for address book consensusTimestamp boundary sets
+        // to:do - explore whether shutdown hook is a better place for address book consensusTimestamp boundary sets
         Optional<AddressBook> optionalAddressBook = addressBookRepository
                 .findTopByFileIdOrderByConsensusTimestampDesc(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID);
 

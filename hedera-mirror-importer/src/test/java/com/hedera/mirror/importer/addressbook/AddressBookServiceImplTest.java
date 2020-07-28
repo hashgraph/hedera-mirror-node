@@ -260,23 +260,6 @@ public class AddressBookServiceImplTest {
     }
 
     @Test
-    void verifyPreviousAddressBookEndTimeUpdate() {
-        byte[] addressBookBytes = UPDATED.toByteArray();
-        AddressBookService addressBookServiceImpl = new AddressBookServiceImpl(mirrorProperties,
-                addressBookRepository,
-                fileDataRepository);
-        update(addressBookServiceImpl, addressBookBytes, 2L);
-
-        // verify previous address book end date was updated
-        List<AddressBook> addressBookList = addressBookRepository
-                .findCompleteAddressBooks(2L, FILE_ENTITY_ID);
-        assertThat(addressBookList).isNotEmpty().hasSize(2);
-        assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0).isLessThan(2L);
-        assertThat(addressBookList.get(0).getEndConsensusTimestamp()).isGreaterThan(0)
-                .isLessThan(addressBookList.get(1).getConsensusTimestamp());
-    }
-
-    @Test
     void verifyAddressBookUpdateAcrossSessions() {
         // create network book, perform an update and append
         byte[] addressBookBytes = FINAL.toByteArray();

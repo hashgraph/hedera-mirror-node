@@ -104,7 +104,9 @@ public class EntityRecordItemListener implements RecordItemListener {
             log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusNs, e.getMessage());
             entityId = null;
         }
-        TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(recordItem.getTransactionType());
+
+        int transactionType = recordItem.getTransactionType();
+        TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(transactionType);
         log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusNs, entityId);
 
         // to:do - catch Freeze transaction and update addressBook with last transaction time
@@ -158,12 +160,12 @@ public class EntityRecordItemListener implements RecordItemListener {
             } else if (body.hasCryptoAddLiveHash()) {
                 insertCryptoAddLiveHash(consensusNs, body.getCryptoAddLiveHash());
             } else if (body.hasFileAppend()) {
-                insertFileAppend(consensusNs, body.getFileAppend(), recordItem.getTransactionType());
+                insertFileAppend(consensusNs, body.getFileAppend(), transactionType);
             } else if (body.hasFileCreate()) {
                 insertFileData(consensusNs, body.getFileCreate().getContents().toByteArray(),
-                        txRecord.getReceipt().getFileID(), recordItem.getTransactionType());
+                        txRecord.getReceipt().getFileID(), transactionType);
             } else if (body.hasFileUpdate()) {
-                insertFileUpdate(consensusNs, body.getFileUpdate(), recordItem.getTransactionType());
+                insertFileUpdate(consensusNs, body.getFileUpdate(), transactionType);
             }
         }
 

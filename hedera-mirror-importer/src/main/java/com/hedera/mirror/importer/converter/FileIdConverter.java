@@ -21,38 +21,16 @@ package com.hedera.mirror.importer.converter;
  */
 
 import javax.inject.Named;
-import javax.persistence.AttributeConverter;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
-import org.springframework.core.convert.converter.Converter;
 
-import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @Named
 @javax.persistence.Converter
 @ConfigurationPropertiesBinding
-public class FileIdConverter implements AttributeConverter<EntityId, Long>, Converter<String, EntityId> {
-    @Override
-    public Long convertToDatabaseColumn(EntityId entityId) {
-        if (entityId == null) {
-            return null;
-        }
-        return entityId.getId();
-    }
+public class FileIdConverter extends AbstractEntityIdConverter {
 
-    @Override
-    public EntityId convertToEntityAttribute(Long encodedId) {
-        if (encodedId == null) {
-            return null;
-        }
-        EntityId entityId = EntityIdEndec.decode(encodedId);
-        return EntityId
-                .of(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), EntityTypeEnum.FILE);
-    }
-
-    @Override
-    public EntityId convert(String source) {
-        return EntityId.of(source, EntityTypeEnum.FILE); // We just use for config properties and don't need type
+    public FileIdConverter() {
+        super(EntityTypeEnum.FILE);
     }
 }

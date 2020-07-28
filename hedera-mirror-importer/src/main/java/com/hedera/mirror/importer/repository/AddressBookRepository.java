@@ -40,8 +40,6 @@ public interface AddressBookRepository extends CrudRepository<AddressBook, Long>
             "consensusTimestamp asc")
     List<AddressBook> findCompleteAddressBooks(long consensusTimestamp, EntityId fileId);
 
-    //    @Query(value = "from AddressBook where consensusTimestamp <= ?1 and fileId = ?2 order by " +
-//            "consensusTimestamp desc limit 1", nativeQuery = true)
     Optional<AddressBook> findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(long consensusTimestamp, EntityId fileId);
 
     Optional<AddressBook> findTopByFileIdOrderByConsensusTimestampDesc(EntityId fileId);

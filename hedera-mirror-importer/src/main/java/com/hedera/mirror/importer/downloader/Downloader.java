@@ -360,7 +360,6 @@ public abstract class Downloader {
      * hash until we find a match.
      */
     private void verifySigsAndDownloadDataFiles(Multimap<Long, FileStreamSignature> sigFilesMap) {
-        // reload address book and keys in case it has been updated by RecordItemParser
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
         Path validPath = downloaderProperties.getValidPath();
 

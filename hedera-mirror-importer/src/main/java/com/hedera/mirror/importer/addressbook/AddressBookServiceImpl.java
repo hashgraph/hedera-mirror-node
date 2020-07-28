@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.addressbook;
 import com.google.common.collect.ImmutableList;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -102,11 +104,18 @@ public class AddressBookServiceImpl implements AddressBookService {
             // no addressBook present in db, load from classpath
             byte[] addressBookBytes = null;
             try {
-                MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
-                String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
-                Resource resource = new ClassPathResource(resourcePath, getClass());
-                addressBookBytes = IOUtils.toByteArray(resource.getInputStream());
-                log.info("Loading bootstrap address book of {} B from {}", addressBookBytes.length, resource);
+                Path initialAddressBook = mirrorProperties.getInitialAddressBook();
+                if (initialAddressBook != null) {
+                    addressBookBytes = Files.readAllBytes(initialAddressBook);
+                    log.info("Loading bootstrap address book of {} B from {}", addressBookBytes.length,
+                            initialAddressBook);
+                } else {
+                    MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
+                    String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
+                    Resource resource = new ClassPathResource(resourcePath, getClass());
+                    addressBookBytes = IOUtils.toByteArray(resource.getInputStream());
+                    log.info("Loading bootstrap address book of {} B from {}", addressBookBytes.length, resource);
+                }
             } catch (Exception e) {
                 throw new IllegalStateException("Unable to load valid address book from classpath");
             }

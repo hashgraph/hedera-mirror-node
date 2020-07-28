@@ -29,7 +29,7 @@ import lombok.Data;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.mirror.importer.converter.EntityIdConverter;
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
@@ -50,14 +50,14 @@ public class Entities {
     @Column(name = "fk_entity_type_id")
     private Integer entityTypeId;
 
-    @Convert(converter = EntityIdConverter.class)
+    @Convert(converter = AccountIdConverter.class)
     private EntityId autoRenewAccountId;
 
     private Long autoRenewPeriod;
 
     private byte[] key;
 
-    @Convert(converter = EntityIdConverter.class)
+    @Convert(converter = AccountIdConverter.class)
     private EntityId proxyAccountId;
 
     private boolean deleted;
