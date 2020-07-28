@@ -151,9 +151,9 @@ public abstract class Downloader {
 
     /**
      * Download all signature files with a timestamp later than the last valid file. Put signature files into a
-     * multi-map sorted and grouped by the expected closing interval.
+     * multi-map sorted and grouped by the timestamp.
      *
-     * @return a multi-map of expected close interval to signature file objects from different nodes
+     * @return a multi-map of signature file objects from different nodes, grouped by timestamp
      */
     private Multimap<Long, FileStreamSignature> downloadSigFiles() throws InterruptedException {
         String lastValidFileName = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
@@ -168,8 +168,6 @@ public abstract class Downloader {
                 .collect(Collectors.toSet());
         List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
         var totalDownloads = new AtomicInteger();
-        long closeInterval = downloaderProperties.getCloseInterval().toNanos();
-        long lastValidTimestamp = Utility.getTimestampFromFilename(lastValidFileName);
         log.info("Downloading signature files created after file: {}", lastValidSigFileName);
 
         /**
@@ -223,15 +221,8 @@ public abstract class Downloader {
                                 FileStreamSignature fileStreamSignature = new FileStreamSignature();
                                 fileStreamSignature.setFile(sigFile);
                                 fileStreamSignature.setNode(nodeAccountId);
-                                long groupTimestamp = getGroupTimestamp(lastValidTimestamp, closeInterval,
-                                        fileStreamSignature);
-
-                                if (groupTimestamp > 0) {
-                                    sigFilesMap.put(groupTimestamp, fileStreamSignature);
-                                } else {
-                                    log.warn("Ignoring signature associated with the previously processed stream " +
-                                            "file: {}", fileStreamSignature);
-                                }
+                                long timestamp = Utility.getTimestampFromFilename(sigFile.getName());
+                                sigFilesMap.put(timestamp, fileStreamSignature);
                             }
                         } catch (InterruptedException ex) {
                             log.warn("Failed downloading {} in {}", pendingDownload.getS3key(),
@@ -256,35 +247,6 @@ public abstract class Downloader {
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
         }
         return sigFilesMap;
-    }
-
-    /**
-     * Partitions signature files into a time range [T + I/2, T + I * 3/2) where T is the last valid timestamp and I is
-     * the stream close interval. Calculates the start time of the nearest range that includes the timestamp of the
-     * current file.
-     *
-     * @param lastValidTimestamp the last timestamp of the signature that was successfully verified
-     * @param closeInterval      how often the file closes
-     * @param signature          domain object
-     * @return a timestamp representing the start time of the bucket this signature should be associated with
-     */
-    private long getGroupTimestamp(long lastValidTimestamp, long closeInterval, FileStreamSignature signature) {
-        long currentTimestamp = Utility.getTimestampFromFilename(signature.getFile().getName());
-        long groupTimestamp = 0;
-
-        // Initial file has no previous so we can't calculate offset from that
-        if (lastValidTimestamp <= 0) {
-            groupTimestamp = currentTimestamp;
-        } else {
-            double interval = (double) (currentTimestamp - lastValidTimestamp);
-            long bucket = Math.round(interval / closeInterval);
-
-            if (bucket > 0) {
-                groupTimestamp = lastValidTimestamp + bucket * closeInterval + closeInterval / 2;
-            }
-        }
-
-        return groupTimestamp;
     }
 
     /**
@@ -362,17 +324,24 @@ public abstract class Downloader {
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(networkAddressBook);
         Path validPath = downloaderProperties.getValidPath();
 
-        for (Long groupId : sigFilesMap.keySet()) {
+        for (var groupIdIterator = sigFilesMap.keySet().iterator(); groupIdIterator.hasNext(); ) {
             if (ShutdownHelper.isStopping()) {
                 return;
             }
 
             Instant startTime = Instant.now();
+            long groupId = groupIdIterator.next();
             Collection<FileStreamSignature> signatures = sigFilesMap.get(groupId);
             boolean valid = false;
 
             try {
                 nodeSignatureVerifier.verify(signatures);
+            } catch (SignatureVerificationException ex) {
+                if (groupIdIterator.hasNext()) {
+                    log.warn("Signature verification failed but still have files in the batch, try to process the next group", ex);
+                    continue;
+                }
+                throw ex;
             } finally {
                 for (FileStreamSignature signature : signatures) {
                     EntityId nodeAccountId = EntityId.of(signature.getNode(), EntityTypeEnum.ACCOUNT);
@@ -425,7 +394,7 @@ public abstract class Downloader {
             }
 
             if (!valid) {
-                log.error("File could not be verified by at least 1/3 of nodes: {}", signatures);
+                log.error("None of the data files could be verified, signatures: {}", signatures);
             }
 
             streamVerificationMetric.tag("success", String.valueOf(valid))

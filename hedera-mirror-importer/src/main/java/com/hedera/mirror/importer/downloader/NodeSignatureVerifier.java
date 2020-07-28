@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.downloader;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import com.google.common.collect.TreeMultimap;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Collection;
@@ -67,43 +66,18 @@ public class NodeSignatureVerifier {
      * @throws SignatureVerificationException
      */
     public void verify(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
-        Multimap<String, FileStreamSignature> signaturesByName = TreeMultimap.create();
-        signatures.forEach(s -> signaturesByName.put(s.getFile().getName(), s));
-        Collection<String> filenames = signaturesByName.keySet();
-
-        if (filenames.size() > 1) {
-            log.warn("Found {} unique filenames for stream interval: {}", filenames.size(), signatures);
-        }
-
-        for (String filename : filenames) {
-            if (verifyFileGroup(signaturesByName.get(filename))) {
-                return;
-            }
-        }
-
-        throw new SignatureVerificationException("Signature verification failed for files " + filenames + ": " + statusMap(signatures));
-    }
-
-    /**
-     * Since balance files can occasionally generate a file with a different timestamp from different nodes or a rogue
-     * node can send a bad filename, we group files into time buckets then within that bucket check if a particular
-     * filename reaches consensus.
-     *
-     * @param signatures grouped by filename
-     * @return whether this file was verified
-     * @throws SignatureVerificationException
-     */
-    private boolean verifyFileGroup(Collection<FileStreamSignature> signatures) {
         Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
-        String filename = null;
+        String filename = !signatures.isEmpty() ? signatures.stream().findFirst().get().getFile().getName() : null;
         int consensusCount = 0;
-        boolean verified = false;
+
+        final long sigFileCount = signatures.size();
+        final long nodeCount = nodeIDPubKeyMap.size();
+        if (!consensusReached(sigFileCount, nodeCount)) {
+            throw new SignatureVerificationException("Require at least 1/3 signature files to reach consensus, got " +
+                    sigFileCount + " out of " + nodeCount + " for file " + filename + ": " + statusMap(signatures));
+        }
 
         for (FileStreamSignature fileStreamSignature : signatures) {
-            if (filename == null) {
-                filename = fileStreamSignature.getFile().getName();
-            }
-
             Pair<byte[], byte[]> hashAndSig = Utility.extractHashAndSigFromFile(fileStreamSignature.getFile());
             if (hashAndSig == null) {
                 continue;
@@ -124,20 +98,20 @@ public class NodeSignatureVerifier {
 
             if (consensusReached(validatedSignatures.size(), nodeIDPubKeyMap.size())) {
                 consensusCount += validatedSignatures.size();
-                validatedSignatures.stream().forEach(s -> s.setStatus(SignatureStatus.CONSENSUS_REACHED));
+                validatedSignatures.forEach(s -> s.setStatus(SignatureStatus.CONSENSUS_REACHED));
             }
         }
 
-        if (consensusCount == nodeIDPubKeyMap.size()) {
+        if (consensusCount == nodeCount) {
             log.debug("Verified signature file {} reached consensus", filename);
-            verified = true;
+            return;
         } else if (consensusCount > 0) {
             log.warn("Verified signature file {} reached consensus but with some errors: {}", filename,
                     statusMap(signatures));
-            verified = true;
+            return;
         }
 
-        return verified;
+        throw new SignatureVerificationException("Signature verification failed for file " + filename + ": " + statusMap(signatures));
     }
 
     /**
