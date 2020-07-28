@@ -25,7 +25,6 @@ import java.util.Optional;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,12 +34,6 @@ import com.hedera.mirror.importer.domain.FileData;
 
 @CacheConfig(cacheNames = "filedata", cacheManager = CacheConfiguration.EXPIRE_AFTER_30M)
 public interface FileDataRepository extends CrudRepository<FileData, Long> {
-    @Cacheable(key = "{#p0}", sync = true)
-    @Transactional(readOnly = true)
-    List<FileData> findByConsensusTimestampAfterAndEntityIdInOrderByConsensusTimestampAsc(long consensusTimestamp,
-                                                                                          List<EntityId> entityIds,
-                                                                                          Pageable pageable);
-
     @Cacheable(key = "{#p0, #p1, #p2.entityNum, #p3}", sync = true)
     @Transactional(readOnly = true)
     List<FileData> findByConsensusTimestampBetweenAndEntityIdAndTransactionTypeOrderByConsensusTimestampAsc(

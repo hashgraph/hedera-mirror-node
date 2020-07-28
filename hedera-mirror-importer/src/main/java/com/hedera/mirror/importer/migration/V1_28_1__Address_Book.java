@@ -21,6 +21,8 @@ package com.hedera.mirror.importer.migration;
  */
 
 import com.google.common.base.Stopwatch;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,33 +30,33 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
+import org.flywaydb.core.internal.jdbc.JdbcTemplate;
+import org.flywaydb.core.internal.jdbc.RowMapper;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.repository.FileDataRepository;
+import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @Log4j2
 @Named
 public class V1_28_1__Address_Book extends BaseJavaMigration {
-    private final FileDataRepository fileDataRepository;
     private final AddressBookService addressBookService;
+    private final String FILE_DATA_SQL = "select * from file_data where consensus_timestamp > cast(? as " +
+            "nanos_timestamp) and (entity_id = cast(? as int) or entity_id = cast(? as int)) order by " +
+            "consensus_timestamp asc limit cast(? as int)";
+    private JdbcTemplate jdbcTemplate;
 
-    // There's a circular dependency of Flyway -> this -> Repositories/JdbcOperations -> Flyway, so use @Lazy to
-    // break it.
-    // Correct way is to not use repositories and construct manually: new JdbcTemplate(context.getConnection())
-    public V1_28_1__Address_Book(@Lazy AddressBookService addressBookService,
-                                 @Lazy FileDataRepository fileDataRepository) {
+    public V1_28_1__Address_Book(@Lazy AddressBookService addressBookService) {
         this.addressBookService = addressBookService;
-        this.fileDataRepository = fileDataRepository;
     }
 
     @Override
     public void migrate(Context context) throws Exception {
+        jdbcTemplate = new JdbcTemplate(context.getConnection());
         Stopwatch stopwatch = Stopwatch.createStarted();
         AtomicLong currentConsensusTimestamp = new AtomicLong(0);
         AtomicLong fileDataEntries = new AtomicLong(0);
@@ -76,12 +78,19 @@ public class V1_28_1__Address_Book extends BaseJavaMigration {
         log.info("Migration processed {} in {} ms", fileDataEntries.get(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    private List<FileData> getLatestFileData(long consensusTimestamp, int pageSize) {
-        Pageable pageable = PageRequest.of(0, pageSize);
-        List<FileData> fileDataList = fileDataRepository
-                .findByConsensusTimestampAfterAndEntityIdInOrderByConsensusTimestampAsc(consensusTimestamp, List
-                        .of(AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID,
-                                AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID), pageable);
+    private List<FileData> getLatestFileData(long consensusTimestamp, int pageSize) throws SQLException {
+        log.info("Retrieve file_data rows after {} ns with page size {}", consensusTimestamp, pageSize);
+        List<FileData> fileDataList = jdbcTemplate.query(FILE_DATA_SQL, new RowMapper<>() {
+
+            @Override
+            public FileData mapRow(ResultSet rs) throws SQLException {
+                return new FileData(rs.getLong("consensus_timestamp"),
+                        rs.getBytes("file_data"),
+                        EntityIdEndec.decode(rs.getInt("entity_id"), EntityTypeEnum.FILE),
+                        rs.getInt("transaction_type"));
+            }
+        }, consensusTimestamp, AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID
+                .getId(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId(), pageSize);
 
         log.info("Retrieved {} file_data rows for address book processing", fileDataList.size());
         return fileDataList;

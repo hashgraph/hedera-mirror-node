@@ -48,7 +48,7 @@ public abstract class AbstractEntityIdConverter implements AttributeConverter<En
         if (encodedId == null) {
             return null;
         }
-        return EntityIdEndec.decode(encodedId);
+        return EntityIdEndec.decode(encodedId, entityTypeEnum);
     }
 
     @Override

@@ -26,10 +26,14 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
+import javax.sql.DataSource;
+import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.api.migration.Context;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.TestPropertySource;
 
@@ -47,6 +51,8 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 public class V1_28_1__Address_BookTest extends IntegrationTest {
     @Resource
     private V1_28_1__Address_Book migration;
+    @Resource
+    private DataSource dataSource;
     @Resource
     private AddressBookRepository addressBookRepository;
     @Resource
@@ -94,7 +100,7 @@ public class V1_28_1__Address_BookTest extends IntegrationTest {
         fileDataRepository.saveAll(fileDataList);
 
         // migration
-        migration.migrate(null);
+        migration.migrate(new FlywayContext());
 
         assertEquals(11, fileDataRepository.count());
         assertEquals(5, addressBookRepository.count());
@@ -133,7 +139,7 @@ public class V1_28_1__Address_BookTest extends IntegrationTest {
         fileDataRepository.saveAll(fileDataList);
 
         // migration
-        migration.migrate(null);
+        migration.migrate(new FlywayContext());
 
         assertEquals(6, fileDataRepository.count());
         assertEquals(0, addressBookRepository.count());
@@ -165,5 +171,22 @@ public class V1_28_1__Address_BookTest extends IntegrationTest {
                     .setRSAPubKey("rsa+public/key").build());
         }
         return builder.build();
+    }
+
+    private class FlywayContext implements Context {
+
+        @Override
+        public Configuration getConfiguration() {
+            return null;
+        }
+
+        @Override
+        public Connection getConnection() {
+            try {
+                return dataSource.getConnection();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

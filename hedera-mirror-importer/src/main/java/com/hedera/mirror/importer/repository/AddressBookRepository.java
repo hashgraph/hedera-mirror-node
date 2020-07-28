@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.transaction.Transactional;
 import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -40,8 +41,10 @@ public interface AddressBookRepository extends CrudRepository<AddressBook, Long>
             "consensusTimestamp asc")
     List<AddressBook> findCompleteAddressBooks(long consensusTimestamp, EntityId fileId);
 
+    @Cacheable(key = "{#p0, #p1.entityNum}", sync = true)
     Optional<AddressBook> findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(long consensusTimestamp, EntityId fileId);
 
+    @Cacheable(key = "{#p0.entityNum}", sync = true)
     Optional<AddressBook> findTopByFileIdOrderByConsensusTimestampDesc(EntityId fileId);
 
     @Modifying

@@ -33,7 +33,6 @@ import java.util.Optional;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.CollectionUtils;
@@ -54,19 +53,17 @@ public class AddressBookServiceImpl implements AddressBookService {
     public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
     public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
 
-    private final EntityId addressBookEntityId;
     private final MirrorProperties mirrorProperties;
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
     private Collection<AddressBookEntry> addressBookEntries;
 
-    public AddressBookServiceImpl(MirrorProperties mirrorProperties, @Lazy AddressBookRepository addressBookRepository,
-                                  @Lazy FileDataRepository fileDataRepository) {
+    public AddressBookServiceImpl(MirrorProperties mirrorProperties, AddressBookRepository addressBookRepository,
+                                  FileDataRepository fileDataRepository) {
         this.mirrorProperties = mirrorProperties;
         this.addressBookRepository = addressBookRepository;
         this.fileDataRepository = fileDataRepository;
         addressBookEntries = Collections.emptyList();
-        addressBookEntityId = EntityId.of(mirrorProperties.getShard(), 0, 102, EntityTypeEnum.FILE);
         init();
     }
 
@@ -121,7 +118,7 @@ public class AddressBookServiceImpl implements AddressBookService {
             }
 
             try {
-                FileData fileData = new FileData(0L, addressBookBytes, addressBookEntityId,
+                FileData fileData = new FileData(0L, addressBookBytes, ADDRESS_BOOK_102_ENTITY_ID,
                         TransactionTypeEnum.FILECREATE.getProtoId());
                 AddressBook addressBook = parse(fileData);
                 addressBookEntries = addressBook.getAddressBookEntries();
@@ -129,7 +126,6 @@ public class AddressBookServiceImpl implements AddressBookService {
                 throw new IllegalStateException("Unable to parse address book: ", e);
             }
         } else {
-            // addressBook loaded from db
             log.info("Loaded addressBook w {} nodes from DB. ", addressBookEntries.size());
         }
 
@@ -143,8 +139,8 @@ public class AddressBookServiceImpl implements AddressBookService {
      * fileData since  that time for given entityId concatenate all binary data in order and attempt to parse if
      * successful save
      *
-     * @param fileData
-     * @return
+     * @param fileData file data with timestamp, contents, entity type and transactions type for parsing
+     * @return Parsed addressbook object if valid. Null otherwise.
      * @throws Exception
      */
     private AddressBook parse(FileData fileData) throws Exception {
@@ -265,7 +261,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         // get last complete address book
         Optional<AddressBook> optionalAddressBook = addressBookRepository
                 .findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(Instant.now()
-                        .getEpochSecond(), addressBookEntityId);
+                        .getEpochSecond(), ADDRESS_BOOK_102_ENTITY_ID);
 
         if (optionalAddressBook.isPresent()) {
             AddressBook addressBook = optionalAddressBook.get();

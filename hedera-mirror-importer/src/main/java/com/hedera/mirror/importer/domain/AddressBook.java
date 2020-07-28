@@ -45,11 +45,11 @@ import com.hedera.mirror.importer.converter.FileIdConverter;
 @ToString(exclude = {"fileData"})
 public class AddressBook implements Persistable<Long> {
     @Id
-    private Long consensusTimestamp; // file create time
+    private Long consensusTimestamp; // transaction consensusTimestamp
 
     private Long startConsensusTimestamp; // first transaction parsed with this address book
 
-    private Long endConsensusTimestamp; // last transaction parsed with this address book
+    private Long endConsensusTimestamp; // consensusTimestamp 1 ns prior to next address book startConsensusTimestamp
 
     @Convert(converter = FileIdConverter.class)
     private EntityId fileId;
