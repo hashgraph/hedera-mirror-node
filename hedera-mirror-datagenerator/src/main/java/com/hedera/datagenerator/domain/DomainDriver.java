@@ -76,7 +76,8 @@ public class DomainDriver implements ApplicationRunner {
         long currentSimulationTime = properties.getStartTimeSec();
         long totalDurationSec = properties.getTotalDuration().toSeconds();
         long endTime = currentSimulationTime + totalDurationSec;
-        log.info("Simulation time from {} to {} (time period: {}sec)", currentSimulationTime, endTime, totalDurationSec);
+        log.info("Simulation time from {} to {} (time period: {}sec)", currentSimulationTime, endTime,
+                totalDurationSec);
         int numTransactionsGenerated = 0;
         Stopwatch stopwatch = Stopwatch.createStarted();
         // Iterate from start time to end time.
@@ -104,7 +105,6 @@ public class DomainDriver implements ApplicationRunner {
         new EntityGenerator().generateAndWriteEntities(entityManager, domainWriter);
         log.info("Writing data to db");
         sqlEntityListener.onEnd(new RecordFile(0L, 1L, 1L, "", 0L, 1L, "", "", 0)); // writes data to db
-        sqlEntityListener.close();
         domainWriter.flush(); // writes data to db
         log.info("Total time taken: {}", stopwatch);
     }
