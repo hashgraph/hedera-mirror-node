@@ -24,14 +24,13 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "extend": "^3.0.2",
-    "js-yaml": "^3.13.1",
+    "js-yaml": "^3.14.0",
     "lodash": "^4.17.19",
     "log4js": "^4.3.1",
     "mathjs": "^7.1.0",
     "node-cache": "^5.1.0",
     "node-fetch": "^2.6.0",
     "pg": "~7.11.0",
-    "stringstream": "^1.0.0",
     "swagger-stats": "^0.95.17"
   },
   "bundledDependencies": [
@@ -50,7 +49,6 @@
     "node-cache",
     "node-fetch",
     "pg",
-    "stringstream",
     "swagger-stats"
   ],
   "devDependencies": {
@@ -63,6 +61,8 @@
     "eslint-plugin-security": "^1.4.0",
     "husky": "^4.2.5",
     "jest": "^26.1.0",
+    "jest-junit": "^11.1.0",
+    "node-flywaydb": "^3.0.3",
     "jest-junit": "^11.0.1",
     "mock-req-res": "^1.2.0",
     "node-duration": "^1.0.4",
@@ -73,7 +73,7 @@
     "rewire": "^5.0.0",
     "sinon": "^9.0.2",
     "supertest": "^4.0.2",
-    "testcontainers": "^2.12.0"
+    "testcontainers": "^3.2.0"
   },
   "husky": {
     "hooks": {
