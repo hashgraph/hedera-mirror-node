@@ -24,22 +24,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.sql.DataSource;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -64,23 +56,19 @@ import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Log4j2
 @Named
 @ConditionOnEntityRecordParser
-public class SqlEntityListener implements EntityListener, RecordStreamFileListener, Closeable {
+public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
 
     private final DataSource dataSource;
-    private final ExecutorService executorService;
     private final RecordFileRepository recordFileRepository;
-    private final EntityRepository entityRepository;
     private final SqlProperties sqlProperties;
-    private long batchCount;
 
     // init connections, schemas, writers, etc once per process
     private final PgCopy<Transaction> transactionPgCopy;
@@ -91,55 +79,39 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<LiveHash> liveHashPgCopy;
     private final PgCopy<TopicMessage> topicMessagePgCopy;
 
-    private Collection<Transaction> transactions;
-    private Collection<CryptoTransfer> cryptoTransfers;
-    private Collection<NonFeeTransfer> nonFeeTransfers;
-    private Collection<FileData> fileData;
-    private Collection<ContractResult> contractResults;
-    private Collection<LiveHash> liveHashes;
-    private Collection<TopicMessage> topicMessages;
-    private Collection<EntityId> entityIds;
+    private final Collection<Transaction> transactions;
+    private final Collection<CryptoTransfer> cryptoTransfers;
+    private final Collection<NonFeeTransfer> nonFeeTransfers;
+    private final Collection<FileData> fileData;
+    private final Collection<ContractResult> contractResults;
+    private final Collection<LiveHash> liveHashes;
+    private final Collection<TopicMessage> topicMessages;
+    private final Collection<EntityId> entityIds;
 
     // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
     private final Cache entityCache;
-    private final CacheManager cacheManager;
 
     private PreparedStatement sqlInsertEntityId;
     private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
+    private long batchCount;
 
     public SqlEntityListener(SqlProperties properties, DataSource dataSource,
-                             RecordFileRepository recordFileRepository, EntityRepository entityRepository,
-                             MeterRegistry meterRegistry,
+                             RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
                              @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager) {
         this.dataSource = dataSource;
         this.recordFileRepository = recordFileRepository;
-        this.entityRepository = entityRepository;
         sqlProperties = properties;
-        executorService = Executors.newFixedThreadPool(properties.getThreads());
-        this.cacheManager = cacheManager;
-
-        transactionPgCopy = new PgCopy<>(dataSource, Transaction.class, meterRegistry, sqlProperties.getBatchSize());
-        cryptoTransferPgCopy = new PgCopy<>(dataSource, CryptoTransfer.class, meterRegistry, sqlProperties
-                .getBatchSize());
-        nonFeeTransferPgCopy = new PgCopy<>(dataSource, NonFeeTransfer.class, meterRegistry, sqlProperties
-                .getBatchSize());
-        fileDataPgCopy = new PgCopy<>(dataSource, FileData.class, meterRegistry, sqlProperties.getBatchSize());
-        contractResultPgCopy = new PgCopy<>(dataSource, ContractResult.class, meterRegistry, sqlProperties
-                .getBatchSize());
-        liveHashPgCopy = new PgCopy<>(dataSource, LiveHash.class, meterRegistry, sqlProperties.getBatchSize());
-        topicMessagePgCopy = new PgCopy<>(dataSource, TopicMessage.class, meterRegistry, sqlProperties.getBatchSize());
-
         entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
-    }
 
-    @Override
-    public void onStart(StreamFileData streamFileData) {
-        String fileName = FilenameUtils.getName(streamFileData.getFilename());
-        entityIds = new HashSet<>();
-        if (recordFileRepository.findByName(fileName).size() > 0) {
-            throw new DuplicateFileException("File already exists in the database: " + fileName);
-        }
+        transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, properties);
+        cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, properties);
+        nonFeeTransferPgCopy = new PgCopy<>(NonFeeTransfer.class, meterRegistry, properties);
+        fileDataPgCopy = new PgCopy<>(FileData.class, meterRegistry, properties);
+        contractResultPgCopy = new PgCopy<>(ContractResult.class, meterRegistry, properties);
+        liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, properties);
+        topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, properties);
+
         transactions = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
@@ -148,17 +120,27 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         liveHashes = new ArrayList<>();
         entityIds = new HashSet<>();
         topicMessages = new ArrayList<>();
-        batchCount = 0;
+    }
+
+    @Override
+    public void onStart(StreamFileData streamFileData) {
+        String fileName = FilenameUtils.getName(streamFileData.getFilename());
+
+        if (recordFileRepository.findByName(fileName).size() > 0) {
+            throw new DuplicateFileException("File already exists in the database: " + fileName);
+        }
 
         try {
+            cleanup();
             connection = dataSource.getConnection();
-            connection.setAutoCommit(false); // do not auto-commit
+            connection.setAutoCommit(false);
             connection.setClientInfo("ApplicationName", getClass().getSimpleName());
 
             sqlInsertEntityId = connection.prepareStatement("INSERT INTO t_entities " +
                     "(id, entity_shard, entity_realm, entity_num, fk_entity_type_id) " +
                     "VALUES (?, ?, ?, ?, ?) " +
                     "ON CONFLICT DO NOTHING");
+
             sqlNotifyTopicMessage = connection.prepareStatement("select pg_notify('topic_message', ?)");
         } catch (SQLException e) {
             throw new ParserSQLException("Error setting up connection to database", e);
@@ -187,19 +169,31 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             }
         } catch (SQLException e) {
             log.error("Exception while rolling transaction back", e);
+        } finally {
+            cleanup();
         }
     }
 
-    @Override
-    public void close() {
-        executorService.shutdown();
+    private void cleanup() {
+        batchCount = 0;
+        contractResults.clear();
+        cryptoTransfers.clear();
+        entityIds.clear();
+        fileData.clear();
+        liveHashes.clear();
+        nonFeeTransfers.clear();
+        topicMessages.clear();
+        transactions.clear();
     }
 
-    private ExecuteBatchResult executeBatch(PreparedStatement ps) throws SQLException {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        var executeResult = ps.executeBatch();
-        return new ExecuteBatchResult(executeResult == null ? 0 : executeResult.length, stopwatch
-                .elapsed(TimeUnit.MILLISECONDS));
+    private void executeBatch(PreparedStatement ps, String entity) {
+        try {
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            var executeResult = ps.executeBatch();
+            log.info("Inserted {} {} in {}", executeResult.length, entity, stopwatch);
+        } catch (SQLException e) {
+            throw new ParserException(e);
+        }
     }
 
     private void closeConnectionAndStatements() {
@@ -213,27 +207,25 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void executeBatches() {
-        Stopwatch stopwatch = Stopwatch.createStarted();
         try {
-            CompletableFuture.allOf(
-                    CompletableFuture.runAsync(() -> transactionPgCopy.copy(transactions, connection), executorService),
-                    CompletableFuture
-                            .runAsync(() -> cryptoTransferPgCopy.copy(cryptoTransfers, connection), executorService),
-                    CompletableFuture
-                            .runAsync(() -> nonFeeTransferPgCopy.copy(nonFeeTransfers, connection), executorService),
-                    CompletableFuture.runAsync(() -> fileDataPgCopy.copy(fileData, connection), executorService),
-                    CompletableFuture
-                            .runAsync(() -> contractResultPgCopy.copy(contractResults, connection), executorService),
-                    CompletableFuture.runAsync(() -> liveHashPgCopy.copy(liveHashes, connection), executorService),
-                    CompletableFuture
-                            .runAsync(() -> topicMessagePgCopy.copy(topicMessages, connection), executorService),
-                    CompletableFuture.runAsync(() -> persistEntities(), executorService),
-                    CompletableFuture.runAsync(() -> notifyTopicMessages(), executorService)
-            ).get();
-        } catch (InterruptedException | ExecutionException e) {
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            transactionPgCopy.copy(transactions, connection);
+            cryptoTransferPgCopy.copy(cryptoTransfers, connection);
+            nonFeeTransferPgCopy.copy(nonFeeTransfers, connection);
+            fileDataPgCopy.copy(fileData, connection);
+            contractResultPgCopy.copy(contractResults, connection);
+            liveHashPgCopy.copy(liveHashes, connection);
+            topicMessagePgCopy.copy(topicMessages, connection);
+            persistEntities();
+            notifyTopicMessages();
+            log.info("Completed batch inserts in {}", stopwatch);
+        } catch (ParserException e) {
+            throw e;
+        } catch (Exception e) {
             throw new ParserException(e);
+        } finally {
+            cleanup();
         }
-        log.info("Completed batch inserts in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     @Override
@@ -261,11 +253,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             sqlInsertEntityId.setLong(F_ENTITY_ID.ENTITY_NUM.ordinal(), entityId.getEntityNum());
             sqlInsertEntityId.setLong(F_ENTITY_ID.TYPE.ordinal(), entityId.getType());
             sqlInsertEntityId.addBatch();
+            entityIds.add(entityId);
         } catch (SQLException e) {
             throw new ParserSQLException(e);
         }
-
-        entityIds.add(entityId);
     }
 
     @Override
@@ -315,34 +306,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void persistEntities() {
-        try {
-            var entityBatchResult = executeBatch(sqlInsertEntityId);
-            entityIds.forEach(entityId -> entityCache.put(entityId.getId(), null));
-            log.info("Inserted {} entities", entityBatchResult);
-        } catch (SQLException e) {
-            throw new ParserException(e);
-        }
+        executeBatch(sqlInsertEntityId, "entities");
+        entityIds.forEach(entityId -> entityCache.put(entityId.getId(), null));
     }
 
     private void notifyTopicMessages() {
-        try {
-            var topicMessageNotifications = executeBatch(sqlNotifyTopicMessage);
-            log.info("Inserted {} topic notifications", topicMessageNotifications);
-        } catch (SQLException e) {
-            throw new ParserException(e);
-        }
-    }
-
-    @Data
-    @AllArgsConstructor
-    private static class ExecuteBatchResult {
-        int numRows;
-        long timeTakenInMs;
-
-        @Override
-        public String toString() {
-            return numRows + " (" + timeTakenInMs + "ms)";
-        }
+        executeBatch(sqlNotifyTopicMessage, "topic notifications");
     }
 
     enum F_ENTITY_ID {

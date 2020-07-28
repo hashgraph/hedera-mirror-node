@@ -30,12 +30,11 @@ import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
@@ -44,34 +43,35 @@ import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.exception.ParserException;
 
 /**
- * Stateless writer to insert rows into Postgres table using COPY.
+ * Stateless writer to insert rows into PostgreSQL using COPY.
  *
  * @param <T> domain object
  */
 @Log4j2
 public class PgCopy<T> {
-    private final DataSource dataSource;
+
     private final String tableName;
-    private final String columnsCsv;
+    private final String sql;
     private final ObjectWriter writer;
     private final Timer buildCsvDurationMetric;
     private final Timer insertDurationMetric;
-    private final int bufferSize;
+    private final SqlProperties properties;
 
-    public PgCopy(DataSource dataSource, Class<T> tClass, MeterRegistry meterRegistry, int bufferSize) {
-        this.dataSource = dataSource;
-        this.bufferSize = bufferSize;
-        tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, tClass.getSimpleName());
+    public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, SqlProperties properties) {
+        this.properties = properties;
+        tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, entityClass.getSimpleName());
         var mapper = new CsvMapper();
         SimpleModule module = new SimpleModule();
         module.addSerializer(byte[].class, new ByteArrayToHexSerializer());
         mapper.registerModule(module);
-        var schema = mapper.schemaFor(tClass);
+        var schema = mapper.schemaFor(entityClass);
         writer = mapper.writer(schema);
-        columnsCsv = Lists.newArrayList(schema.iterator()).stream()
+        String columnsCsv = Lists.newArrayList(schema.iterator()).stream()
                 .map(CsvSchema.Column::getName)
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
+        sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv);
+
         buildCsvDurationMetric = Timer.builder("hedera.mirror.importer.parse.csv")
                 .description("Time to build csv string")
                 .tag("table", tableName)
@@ -83,39 +83,29 @@ public class PgCopy<T> {
     }
 
     public void copy(Collection<T> items, Connection connection) {
-
-        if (items == null || items.size() == 0) {
+        if (items == null || items.isEmpty()) {
             return;
         }
+
         try {
+            var reader = buildCsv(items);
             Stopwatch stopwatch = Stopwatch.createStarted();
-            var csv = buildCsv(items);
-            var csvBuildDuration = stopwatch.elapsed();
-
-            log.debug("Copying {} rows from buffer of size {} to {} table.", items.size(), bufferSize, tableName);
             CopyManager copyManager = connection.unwrap(PGConnection.class).getCopyAPI();
-            long rowsCount = copyManager.copyIn(
-                    String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv),
-                    new StringReader(csv),
-                    bufferSize);
 
-            var copyDuration = stopwatch.elapsed();
-            insertDurationMetric.record(copyDuration.minus(csvBuildDuration));
-            log.info("Copied {} rows to {} table in {}ms",
-                    rowsCount, tableName, copyDuration.toMillis());
-        } catch (IOException | SQLException e) {
+            long rowsCount = copyManager.copyIn(sql, reader, properties.getBufferSize());
+            insertDurationMetric.record(stopwatch.elapsed());
+            log.info("Copied {} rows to {} table in {}", rowsCount, tableName, stopwatch);
+        } catch (Exception e) {
             throw new ParserException(e);
         }
     }
 
-    private String buildCsv(Collection<T> items) throws IOException {
+    private Reader buildCsv(Collection<T> items) throws IOException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        var csvData = writer.writeValueAsString(items);
-        var csvBuildDuration = stopwatch.elapsed();
-        buildCsvDurationMetric.record(csvBuildDuration);
-        log.trace("{} table: csv string length={} time={}ms", tableName, csvData.length(),
-                csvBuildDuration.toMillis());
-        return csvData;
+        String csv = writer.writeValueAsString(items);
+        buildCsvDurationMetric.record(stopwatch.elapsed());
+        log.trace("CSV for {} of size {} generated in {}", tableName, csv.length(), stopwatch);
+        return new StringReader(csv);
     }
 }
 

@@ -71,10 +71,8 @@ class PgCopyTest extends IntegrationTest {
 
     @BeforeEach
     void beforeEach() throws Exception {
-        cryptoTransferPgCopy = new PgCopy<>(dataSource, CryptoTransfer.class, meterRegistry, sqlProperties
-                .getBatchSize());
-        transactionPgCopy = new PgCopy<>(dataSource, Transaction.class, meterRegistry, sqlProperties
-                .getBatchSize());
+        cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
+        transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
     }
 
     @Test
@@ -113,10 +111,10 @@ class PgCopyTest extends IntegrationTest {
         Connection conn = mock(Connection.class);
         doReturn(conn).when(dataSource).getConnection();
         doReturn(pgConnection).when(conn).unwrap(any());
-        var cryptoTransferPgCopy2 = new PgCopy<>(dataSource, CryptoTransfer.class, meterRegistry, sqlProperties
-                .getBatchSize());
+        var cryptoTransferPgCopy2 = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
         var cryptoTransfers = new HashSet<CryptoTransfer>();
         cryptoTransfers.add(cryptoTransfer(1));
+
         // when
         assertThatThrownBy(() -> cryptoTransferPgCopy2.copy(cryptoTransfers, dataSource.getConnection()))
                 .isInstanceOf(ParserException.class);
