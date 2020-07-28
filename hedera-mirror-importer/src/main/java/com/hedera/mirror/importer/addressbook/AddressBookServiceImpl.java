@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.addressbook;
 import com.google.common.collect.ImmutableList;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.io.ByteArrayOutputStream;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.Optional;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.CollectionUtils;
@@ -47,14 +49,17 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 @Log4j2
 @Named
 public class AddressBookServiceImpl implements AddressBookService {
+    public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
+    public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+
     private final EntityId addressBookEntityId;
     private final MirrorProperties mirrorProperties;
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
     private Collection<AddressBookEntry> addressBookEntries;
 
-    public AddressBookServiceImpl(MirrorProperties mirrorProperties, AddressBookRepository addressBookRepository,
-                                  FileDataRepository fileDataRepository) {
+    public AddressBookServiceImpl(MirrorProperties mirrorProperties, @Lazy AddressBookRepository addressBookRepository,
+                                  @Lazy FileDataRepository fileDataRepository) {
         this.mirrorProperties = mirrorProperties;
         this.addressBookRepository = addressBookRepository;
         this.fileDataRepository = fileDataRepository;
@@ -108,7 +113,7 @@ public class AddressBookServiceImpl implements AddressBookService {
 
             try {
                 FileData fileData = new FileData(0L, addressBookBytes, addressBookEntityId,
-                        TransactionTypeEnum.FILECREATE.ordinal());
+                        TransactionTypeEnum.FILECREATE.getProtoId());
                 AddressBook addressBook = parse(fileData);
                 addressBookEntries = addressBook.getAddressBookEntries();
             } catch (Exception e) {
@@ -124,15 +129,20 @@ public class AddressBookServiceImpl implements AddressBookService {
         }
     }
 
+    /**
+     * find last fileData for given entityId where operation was create/update using consensusTimestamp find all
+     * fileData since  that time for given entityId concatenate all binary data in order and attempt to parse if
+     * successful save
+     *
+     * @param fileData
+     * @return
+     * @throws Exception
+     */
     private AddressBook parse(FileData fileData) throws Exception {
         byte[] addressBookBytes = null;
         AddressBook addressBook = null;
 
-        // step 1: find last fileData for given entityId where operation was create/update
-        // step 2: using consensustimestamp find all fileData since  that time for given entityId
-        // step 3: concatenate all binary data in order and attempt to parse
-        // step 4: if successful save
-        if (fileData.getTransactionType() == TransactionTypeEnum.FILEAPPEND.ordinal()) {
+        if (fileData.getTransactionType() == TransactionTypeEnum.FILEAPPEND.getProtoId()) {
             // concatenate bytes from partial address book file data in db
             if (fileData.getFileData() != null && fileData.getFileData().length > 0) {
                 addressBookBytes = combinePreviousFileDataContents(fileData);
@@ -156,18 +166,19 @@ public class AddressBookServiceImpl implements AddressBookService {
     }
 
     private byte[] combinePreviousFileDataContents(FileData fileData) {
-//        Optional<FileData> optionalFileData = fileDataRepository.findLastNonAppendFileData(fileData.getEntityId());
         Optional<FileData> optionalFileData = fileDataRepository.
-                findTopByEntityIdAndTransactionTypeInOrderByConsensusTimestampDesc(fileData
-                        .getEntityId(), List
-                        .of(TransactionTypeEnum.FILECREATE.ordinal(), TransactionTypeEnum.FILEUPDATE.ordinal()));
+                findTopByConsensusTimestampBeforeAndEntityIdAndTransactionTypeInOrderByConsensusTimestampDesc(fileData
+                        .getConsensusTimestamp(), fileData.getEntityId(), List
+                        .of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
         byte[] combinedBytes = null;
         if (optionalFileData.isPresent()) {
             FileData firstPartialAddressBook = optionalFileData.get();
             long consensusTimeStamp = firstPartialAddressBook.getConsensusTimestamp();
             List<FileData> appendFileDataEntries = fileDataRepository
-                    .findLatestFiles(consensusTimeStamp, firstPartialAddressBook
-                            .getEntityId(), TransactionTypeEnum.FILEAPPEND.ordinal());
+                    .findByConsensusTimestampBetweenAndEntityIdAndTransactionTypeOrderByConsensusTimestampAsc(
+                            consensusTimeStamp + 1, fileData.getConsensusTimestamp() - 1, firstPartialAddressBook
+                                    .getEntityId(),
+                            TransactionTypeEnum.FILEAPPEND.getProtoId());
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             try {
@@ -243,13 +254,13 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     private void loadAddressBookFromDB() {
         // get last complete address book
-        Optional<AddressBook> addressBook = addressBookRepository
-                .findTopByFileIdOrderByConsensusTimestampDesc(addressBookEntityId);
+        Optional<AddressBook> optionalAddressBook = addressBookRepository
+                .findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(Instant.now()
+                        .getEpochSecond(), addressBookEntityId);
 
-        if (addressBook.isPresent()) {
-            addressBookEntries = addressBook.get().getAddressBookEntries();
+        if (optionalAddressBook.isPresent()) {
+            AddressBook addressBook = optionalAddressBook.get();
+            addressBookEntries = addressBook.getAddressBookEntries();
         }
-
-        // if addressbook has no start time, then set.
     }
 }

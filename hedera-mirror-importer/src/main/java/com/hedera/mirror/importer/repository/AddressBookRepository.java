@@ -23,19 +23,26 @@ package com.hedera.mirror.importer.repository;
 import java.util.List;
 import java.util.Optional;
 import javax.transaction.Transactional;
+import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 
+@CacheConfig(cacheNames = "addressbook", cacheManager = CacheConfiguration.NEVER_EXPIRE_LARGE)
 @Transactional
 public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
     @Query("from AddressBook where consensusTimestamp <= ?1 and fileId = ?2 order by " +
             "consensusTimestamp asc")
     List<AddressBook> findCompleteAddressBooks(long consensusTimestamp, EntityId fileId);
+
+    //    @Query(value = "from AddressBook where consensusTimestamp <= ?1 and fileId = ?2 order by " +
+//            "consensusTimestamp desc limit 1", nativeQuery = true)
+    Optional<AddressBook> findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(long consensusTimestamp, EntityId fileId);
 
     Optional<AddressBook> findTopByFileIdOrderByConsensusTimestampDesc(EntityId fileId);
 
@@ -43,4 +50,9 @@ public interface AddressBookRepository extends CrudRepository<AddressBook, Long>
     @Query("update AddressBook set endConsensusTimestamp = :end where consensusTimestamp = :timestamp")
     void updateEndConsensusTimestamp(@Param("timestamp") long consensusTimestamp,
                                      @Param("end") long endConsensusTimestamp);
+
+    @Modifying
+    @Query("update AddressBook set startConsensusTimestamp = :start where consensusTimestamp = :timestamp")
+    void updateStartConsensusTimestamp(@Param("timestamp") long consensusTimestamp,
+                                       @Param("start") long startConsensusTimestamp);
 }

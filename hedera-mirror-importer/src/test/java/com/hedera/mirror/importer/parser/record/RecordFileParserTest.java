@@ -25,7 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -38,6 +40,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,11 +54,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
+import com.hedera.mirror.importer.domain.AddressBook;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,6 +73,8 @@ public class RecordFileParserTest {
     Path dataPath;
     @Mock
     private ApplicationStatusRepository applicationStatusRepository;
+    @Mock
+    private AddressBookRepository addressBookRepository;
     @Mock
     private RecordItemListener recordItemListener;
     @Mock
@@ -86,11 +97,11 @@ public class RecordFileParserTest {
         parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
         parserProperties.init();
-        recordFileParser = new RecordFileParser(applicationStatusRepository, parserProperties,
+        recordFileParser = new RecordFileParser(applicationStatusRepository, addressBookRepository, parserProperties,
                 new SimpleMeterRegistry(), recordItemListener, recordStreamFileListener);
         StreamType streamType = StreamType.RECORD;
         fileCopier = FileCopier
-                .create(Path.of(this.getClass().getClassLoader().getResource("data").getPath()), dataPath)
+                .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
                 .from(streamType.getPath(), "v2", "record0.0.3")
                 .filterFiles("*.rcd")
                 .to(streamType.getPath(), streamType.getValid());
@@ -221,6 +232,58 @@ public class RecordFileParserTest {
         verify(recordStreamFileListener, times(1)).onEnd(any());
     }
 
+    @Test
+    void verifyAddressBookEndPointsSetsOnNewAddressBook() throws Exception {
+        // given
+        fileCopier.copy();
+        String fileName = file1.toString();
+
+        AddressBook addressBook1 = addressBook(ab -> ab.consensusTimestamp(0L).startConsensusTimestamp(0L));
+        AddressBook addressBook2 = addressBook(ab -> ab.consensusTimestamp(2L));
+
+        when(addressBookRepository
+                .findTopByFileIdOrderByConsensusTimestampDesc(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID))
+                .thenReturn(Optional.of(addressBook2));
+        when(addressBookRepository.findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(addressBook2
+                .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID)).thenReturn(Optional
+                .of(addressBook1));
+
+        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
+
+        verify(addressBookRepository, times(1))
+                .updateStartConsensusTimestamp(eq(addressBook2.getConsensusTimestamp()), any());
+        assertThat(addressBook2.getStartConsensusTimestamp()).isNotNull();
+        verify(addressBookRepository, times(1))
+                .updateEndConsensusTimestamp(eq(addressBook1.getConsensusTimestamp()), any());
+        assertThat(addressBook1.getEndConsensusTimestamp()).isNotNull();
+    }
+
+    @Test
+    void verifyAddressBookEndPointsNotSetWhenNoNewAddressBook() throws Exception {
+        // given
+        fileCopier.copy();
+        String fileName = file1.toString();
+
+        AddressBook addressBook = addressBook(ab -> ab.consensusTimestamp(0L).startConsensusTimestamp(0L));
+
+        when(addressBookRepository
+                .findTopByFileIdOrderByConsensusTimestampDesc(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID))
+                .thenReturn(Optional
+                        .of(addressBook));
+        when(addressBookRepository.findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(addressBook
+                .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID)).thenReturn(Optional
+                .empty());
+
+        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
+
+        verify(addressBookRepository, never())
+                .updateStartConsensusTimestamp(any(), any());
+        assertThat(addressBook.getStartConsensusTimestamp()).isNull();
+        verify(addressBookRepository, never())
+                .updateEndConsensusTimestamp(any(), any());
+        assertThat(addressBook.getEndConsensusTimestamp()).isNull();
+    }
+
     // Asserts that recordStreamFileListener.onStart is called wth exactly the given fileNames.
     private void assertOnStart(String... fileNames) {
         ArgumentCaptor<StreamFileData> captor = ArgumentCaptor.forClass(StreamFileData.class);
@@ -276,5 +339,21 @@ public class RecordFileParserTest {
         verify(recordItemListener, times(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)).onItem(any());
         assertOnStart(file1.getPath(), file2.getPath());
         assertOnEnd(recordFile1, recordFile2);
+    }
+
+    private AddressBook addressBook(Consumer<AddressBook.AddressBookBuilder> addressBookCustomizer) {
+
+        AddressBook.AddressBookBuilder builder = AddressBook.builder()
+                .consensusTimestamp(0L)
+                .fileData("address book memo".getBytes())
+                .fileId(EntityId.of("0.0.102", EntityTypeEnum.FILE))
+                .startConsensusTimestamp(null)
+                .endConsensusTimestamp(null);
+
+        if (addressBookCustomizer != null) {
+            addressBookCustomizer.accept(builder);
+        }
+
+        return builder.build();
     }
 }

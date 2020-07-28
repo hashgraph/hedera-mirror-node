@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.downloader.record;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -31,6 +32,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,11 +41,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.ResourceUtils;
 
 import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -79,10 +80,15 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
     @DisplayName("Download and verify V1 files")
     void downloadV1() throws Exception {
         Path addressBook = ResourceUtils.getFile("classpath:addressbook/test-v1").toPath();
-        FileData fileData = new FileData(Instant.now().getEpochSecond(), Files.readAllBytes(addressBook), EntityId
-                .of(0, 0, 102, EntityTypeEnum.FILE), TransactionTypeEnum.FILEUPDATE
-                .ordinal());
-        addressBookService.update(fileData);
+        EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+
+        // simulate network restart
+        byte[] addressBookBytes = Files.readAllBytes(addressBook);
+        long now = Instant.now().getEpochSecond();
+        doReturn(Optional.of(addressBookFromBytes(addressBookBytes, now, entityId))).when(addressBookRepository)
+                .findTopByFileIdOrderByConsensusTimestampDesc(entityId);
+        addressBookService = new AddressBookServiceImpl(mirrorProperties, addressBookRepository, fileDataRepository);
+
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());

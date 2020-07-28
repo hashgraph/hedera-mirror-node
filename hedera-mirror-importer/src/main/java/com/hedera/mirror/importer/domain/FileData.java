@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -27,6 +28,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.FileIdConverter;
 
 @Data
@@ -41,6 +43,7 @@ public class FileData {
     private byte[] fileData;
 
     @Convert(converter = FileIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 
     private Integer transactionType;

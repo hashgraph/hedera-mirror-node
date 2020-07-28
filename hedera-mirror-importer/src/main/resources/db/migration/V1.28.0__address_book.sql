@@ -6,6 +6,7 @@
 create table if not exists address_book
 (
     consensus_timestamp         nanos_timestamp primary key,
+    start_consensus_timestamp   nanos_timestamp null,
     end_consensus_timestamp     nanos_timestamp null,
     file_id                     entity_id       not null,
     node_count                  smallint        null,
@@ -36,17 +37,17 @@ create index if not exists address_book_entry__id_timestamp
 alter table address_book_entry
     add constraint fk__address_book foreign key (consensus_timestamp) references address_book (consensus_timestamp);
 
--- Update t_file_data with fileID
-alter table if exists t_file_data
+-- Update file_data with fileID
+alter table if exists file_data
     add column if not exists entity_id entity_id null,
     add column if not exists transaction_type smallint null;
 
 -- retrieve file_data entity_id and transaction type from transaction table
-update t_file_data
+update file_data
 set entity_id = t.entity_id, transaction_type = t.type
 from transaction t
 where consensus_timestamp = t.consensus_ns;
 
-alter table if exists t_file_data
+alter table if exists file_data
     alter column entity_id set not null,
     alter column transaction_type set not null;

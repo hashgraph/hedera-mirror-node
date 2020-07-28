@@ -269,7 +269,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     void onFileData() throws Exception {
         // given
         FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
-                .of(0, 0, 111, EntityTypeEnum.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.ordinal());
+                .of(0, 0, 111, EntityTypeEnum.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
 
         // when
         sqlEntityListener.onFileData(expectedFileData);

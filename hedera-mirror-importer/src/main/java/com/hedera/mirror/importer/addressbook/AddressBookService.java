@@ -27,9 +27,10 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 
 public interface AddressBookService {
+
+    boolean isAddressBook(EntityId entityId);
+
     void update(FileData fileData);
 
     Collection<AddressBookEntry> getAddresses();
-
-    boolean isAddressBook(EntityId entityId);
 }

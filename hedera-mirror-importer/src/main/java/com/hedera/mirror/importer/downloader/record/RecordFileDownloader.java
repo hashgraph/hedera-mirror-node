@@ -49,12 +49,6 @@ public class RecordFileDownloader extends Downloader {
             AddressBookService addressBookService, RecordDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry) {
         super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, meterRegistry);
-
-        streamCloseMetric = Timer.builder("hedera.mirror.stream.close.latency")
-                .description("The difference between the consensus time of the last and first transaction in the " +
-                        "record file")
-                .tag("type", downloaderProperties.getStreamType().toString())
-                .register(meterRegistry);
     }
 
     @Leader

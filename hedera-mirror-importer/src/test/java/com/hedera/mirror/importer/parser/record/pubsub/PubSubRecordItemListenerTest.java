@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -41,7 +40,6 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -50,14 +48,11 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -65,10 +60,7 @@ import org.springframework.integration.MessageTimeoutException;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
-import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
@@ -79,8 +71,6 @@ import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategyImpl;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
-import com.hedera.mirror.importer.repository.AddressBookRepository;
-import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
@@ -95,16 +85,11 @@ class PubSubRecordItemListenerTest {
     private static final NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy =
             new NonFeeTransferExtractionStrategyImpl();
 
-    private static final NodeAddressBook UPDATED = addressBook(9);
+    private static final NodeAddressBook UPDATED = addressBook(3);
 
     @Mock
     private MessageChannel messageChannel;
-    @Mock(answer = Answers.RETURNS_SMART_NULLS)
-    protected AddressBookRepository addressBookRepository;
-    @Mock(answer = Answers.RETURNS_SMART_NULLS)
-    protected FileDataRepository fileDataRepository;
-    protected MirrorProperties mirrorProperties;
-    @Mock
+    @Mock(lenient = true)
     private AddressBookService addressBookService;
     @Mock
     private TransactionHandler transactionHandler;
@@ -116,12 +101,7 @@ class PubSubRecordItemListenerTest {
         TransactionHandlerFactory transactionHandlerFactory = mock(TransactionHandlerFactory.class);
         pubSubProperties = new PubSubProperties();
         when(transactionHandlerFactory.create(any())).thenReturn(transactionHandler);
-//        when(networkAddressBook.isAddressBook(eq(EntityId.of(ADDRESS_BOOK_FILE_ID)))).thenReturn(true);
-//        doReturn(true).when(networkAddressBook).isAddressBook(EntityId.of(ADDRESS_BOOK_FILE_ID));
-        doReturn(Optional.empty()).when(addressBookRepository)
-                .findTopByFileIdOrderByConsensusTimestampDesc(EntityId.of(ADDRESS_BOOK_FILE_ID));
-        addressBookService = new AddressBookServiceImpl(new MirrorProperties(), addressBookRepository,
-                fileDataRepository);
+        doReturn(true).when(addressBookService).isAddressBook(EntityId.of(ADDRESS_BOOK_FILE_ID));
         pubSubRecordItemListener = new PubSubRecordItemListener(pubSubProperties, messageChannel, addressBookService,
                 nonFeeTransferExtractionStrategy, transactionHandlerFactory);
     }
@@ -216,39 +196,23 @@ class PubSubRecordItemListenerTest {
     @Test
     void testNetworkAddressBookAppend() throws Exception {
         // given
-        byte[] addressBookBytes = UPDATED.toByteArray();
-        int index = addressBookBytes.length / 2;
-        byte[] addressBookBytes1 = Arrays.copyOfRange(addressBookBytes, 0, index);
-        byte[] addressBookBytes2 = Arrays.copyOfRange(addressBookBytes, index, index * 2);
-        Transaction transaction1 = buildTransaction(builder -> {
-            builder.setFileUpdate(FileUpdateTransactionBody.newBuilder()
-                    .setFileID(ADDRESS_BOOK_FILE_ID)
-                    .setContents(ByteString.copyFrom(addressBookBytes1))
-                    .build());
-        });
-
-        TransactionRecord record2 = TransactionRecord.newBuilder()
-                .setConsensusTimestamp(Utility.instantToTimestamp(Instant.ofEpochSecond(0L, 200L)))
-                .setReceipt(TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS).build())
-                .build();
-
-        Transaction transaction2 = buildTransaction(builder -> {
+        byte[] fileContents = new byte[] {0b0, 0b1, 0b10};
+        Transaction transaction = buildTransaction(builder -> {
             builder.setFileAppend(FileAppendTransactionBody.newBuilder()
                     .setFileID(ADDRESS_BOOK_FILE_ID)
-                    .setContents(ByteString.copyFrom(addressBookBytes2))
+                    .setContents(ByteString.copyFrom(fileContents))
                     .build());
         });
 
         // when
+        EntityId entityId = EntityId.of(ADDRESS_BOOK_FILE_ID);
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction1.toByteArray(), DEFAULT_RECORD_BYTES));
-        pubSubRecordItemListener.onItem(new RecordItem(transaction2.toByteArray(), record2.toByteArray()));
+        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        assertThat(addressBookService.getAddresses())
-                .hasSize(4);
-
-        assertAddressBookData(addressBookBytes, record2.getConsensusTimestamp());
+        FileData fileData = new FileData(100L, fileContents, entityId, TransactionTypeEnum.FILEAPPEND
+                .getProtoId());
+        verify(addressBookService).update(fileData);
     }
 
     @Test
@@ -262,18 +226,15 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setFileUpdate(fileUpdate));
 
         // when
+        EntityId entityId = EntityId.of(ADDRESS_BOOK_FILE_ID);
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        FileData fileData = new FileData(1L, fileContents, EntityId
+        FileData fileData = new FileData(100L, fileContents, EntityId
                 .of(ADDRESS_BOOK_FILE_ID), TransactionTypeEnum.FILEUPDATE
-                .ordinal());
-        assertThat(addressBookService.getAddresses())
-                .hasSize(4);
-
-        AddressBook actualAddressBook = addressBookRepository.findById(1L).get();
-        assertArrayEquals(fileContents, actualAddressBook.getFileData());
+                .getProtoId());
+        verify(addressBookService).update(fileData);
     }
 
     private PubSubMessage assertPubSubMessage(Transaction expectedTransaction, int numSendTries) throws Exception {
@@ -313,11 +274,5 @@ class PubSubRecordItemListenerTest {
             builder.addNodeAddress(NodeAddress.newBuilder().setPortno(i).build());
         }
         return builder.build();
-    }
-
-    private void assertAddressBookData(byte[] expected, Timestamp consensusTimestamp) {
-        AddressBook actualAddressBook = addressBookRepository.findById(Utility.timeStampInNanos(consensusTimestamp))
-                .get();
-        assertArrayEquals(expected, actualAddressBook.getFileData());
     }
 }

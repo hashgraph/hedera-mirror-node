@@ -47,6 +47,8 @@ public class AddressBook implements Persistable<Long> {
     @Id
     private Long consensusTimestamp; // file create time
 
+    private Long startConsensusTimestamp; // first transaction parsed with this address book
+
     private Long endConsensusTimestamp; // last transaction parsed with this address book
 
     @Convert(converter = FileIdConverter.class)
@@ -56,7 +58,7 @@ public class AddressBook implements Persistable<Long> {
 
     private byte[] fileData;
 
-    @OneToMany(cascade = CascadeType.PERSIST, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "consensusTimestamp")
     private List<AddressBookEntry> addressBookEntries;
 

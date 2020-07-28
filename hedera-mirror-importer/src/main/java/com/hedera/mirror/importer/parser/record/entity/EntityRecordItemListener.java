@@ -158,12 +158,12 @@ public class EntityRecordItemListener implements RecordItemListener {
             } else if (body.hasCryptoAddLiveHash()) {
                 insertCryptoAddLiveHash(consensusNs, body.getCryptoAddLiveHash());
             } else if (body.hasFileAppend()) {
-                insertFileAppend(consensusNs, body.getFileAppend());
+                insertFileAppend(consensusNs, body.getFileAppend(), recordItem.getTransactionType());
             } else if (body.hasFileCreate()) {
                 insertFileData(consensusNs, body.getFileCreate().getContents().toByteArray(),
-                        txRecord.getReceipt().getFileID(), TransactionTypeEnum.FILECREATE.ordinal());
+                        txRecord.getReceipt().getFileID(), recordItem.getTransactionType());
             } else if (body.hasFileUpdate()) {
-                insertFileUpdate(consensusNs, body.getFileUpdate());
+                insertFileUpdate(consensusNs, body.getFileUpdate(), recordItem.getTransactionType());
             }
         }
 
@@ -249,16 +249,16 @@ public class EntityRecordItemListener implements RecordItemListener {
         entityListener.onTopicMessage(topicMessage);
     }
 
-    private void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody) {
+    private void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody,
+                                  int transactionType) {
         byte[] contents = transactionBody.getContents().toByteArray();
-        insertFileData(consensusTimestamp, contents, transactionBody.getFileID(), TransactionTypeEnum.FILEAPPEND
-                .ordinal());
+        insertFileData(consensusTimestamp, contents, transactionBody.getFileID(), transactionType);
     }
 
-    private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody) {
+    private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody,
+                                  int transactionType) {
         byte[] contents = transactionBody.getContents().toByteArray();
-        insertFileData(consensusTimestamp, contents, transactionBody.getFileID(), TransactionTypeEnum.FILEUPDATE
-                .ordinal());
+        insertFileData(consensusTimestamp, contents, transactionBody.getFileID(), transactionType);
     }
 
     private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID, int transactionTypeEnum) {

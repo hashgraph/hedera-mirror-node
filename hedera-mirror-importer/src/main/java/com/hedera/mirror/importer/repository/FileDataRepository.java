@@ -41,6 +41,10 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
     @Query("from FileData where consensusTimestamp > ?1 order by consensusTimestamp asc")
     List<FileData> findLatest(long consensusTimestamp, Pageable pageable);
 
+    List<FileData> findByConsensusTimestampAfterAndEntityIdInOrderByConsensusTimestampAsc(long consensusTimestamp,
+                                                                                          List<EntityId> entityIds,
+                                                                                          Pageable pageable);
+
     @Cacheable(key = "{#p0}", sync = true)
     @Transactional(readOnly = true)
     @Query("from FileData where consensusTimestamp > ?1 and entityId = ?2 order by consensusTimestamp asc")
@@ -50,6 +54,13 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
     @Query(value = "from FileData where consensusTimestamp > ?1 and entityId = ?2 and transactionType = ?3 order by " +
             "consensusTimestamp asc")
     List<FileData> findLatestFiles(long consensusTimestamp, EntityId entityId, int transactionType);
+
+    @Transactional(readOnly = true)
+//    @Query(value = "from file_data where consensus_timestamp > ?1 and consensus_timestamp < ?2 and entity_id = ?3
+//    and" +
+//            " transaction_type = ?4 order by consensus_timestamp asc", nativeQuery = true)
+    List<FileData> findByConsensusTimestampBetweenAndEntityIdAndTransactionTypeOrderByConsensusTimestampAsc(
+            long start, long end, EntityId entityId, int transactionType);
 
     //    @Cacheable(key = "{#p0.entityNum}", sync = true)
     @Transactional(readOnly = true)
@@ -61,6 +72,11 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
     @Transactional(readOnly = true)
     Optional<FileData> findTopByEntityIdAndTransactionTypeInOrderByConsensusTimestampDesc(EntityId entityId,
                                                                                           List<Integer> transactionTypes);
+
+    @Cacheable(key = "{#p0, #p1.entityNum}", sync = true)
+    @Transactional(readOnly = true)
+    Optional<FileData> findTopByConsensusTimestampBeforeAndEntityIdAndTransactionTypeInOrderByConsensusTimestampDesc(
+            long consensusTimestamp, EntityId entityId, List<Integer> transactionTypes);
 
     @CachePut(key = "{#p0.transactionType, #p0.entityId }")
     @Override

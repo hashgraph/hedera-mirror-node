@@ -326,8 +326,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         parseRecordItemAndCommit(new RecordItem(transactionAppend, recordAppend));
 
         assertThat(addressBookService.getAddresses())
-                .describedAs("Should overwrite address book with complete update")
-                .hasSize(13);
+                .describedAs("Should not overwrite address book with complete update")
+                .hasSize(4);
 
         assertAll(
                 () -> assertRowCountOnTwoFileTransactions()
@@ -337,7 +337,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 , () -> assertFileData(fileUpdateTransactionBody.getContents(), recordUpdate.getConsensusTimestamp())
                 , () -> assertAddressBookData(addressBook, recordAppend.getConsensusTimestamp())
                 , () -> assertEquals(13, addressBookEntryRepository.count())
-                , () -> assertEquals(2, addressBookRepository.count()) // update and append
+                , () -> assertEquals(1, addressBookRepository.count())
+                , () -> assertEquals(2, fileDataRepository.count()) // update and append
         );
     }
 
@@ -559,17 +560,16 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         assertAll(
                 () -> assertRowCountOnSuccess(),
                 () -> assertFileTransaction(transactionBody, record, false),
-                () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertAddressBookData(addressBookUpdate, record.getConsensusTimestamp())
-                , () -> assertEquals(1, addressBookRepository.count())
-                , () -> assertEquals(4, addressBookEntryRepository.count())
+                () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp())
+                , () -> assertEquals(0, addressBookRepository.count())
+                , () -> assertEquals(0, addressBookEntryRepository.count())
                 , () -> assertEquals(1, fileDataRepository.count())
         );
     }
 
     @Test
     void fileUpdateAddressBookComplete() throws Exception {
-        byte[] addressBook = FileUtils.readFileToByteArray(addressBookLarge);
+        byte[] addressBook = FileUtils.readFileToByteArray(addressBookSmall);
         assertThat(addressBook).hasSizeLessThan(6144);
         Transaction transaction = fileUpdateAllTransaction(
                 FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build(), addressBook);
@@ -584,15 +584,14 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         assertThat(addressBookService.getAddresses())
-                .describedAs("Should overwrite address book with complete update")
-                .hasSize(13);
+                .hasSize(4);
         assertAll(
                 () -> assertRowCountOnSuccess(),
                 () -> assertFileTransaction(transactionBody, record, false),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
                 () -> assertAddressBookData(addressBook, record.getConsensusTimestamp())
                 , () -> assertEquals(1, addressBookRepository.count())
-                , () -> assertEquals(13, addressBookEntryRepository.count())
+                , () -> assertEquals(4, addressBookEntryRepository.count())
                 , () -> assertEquals(1, fileDataRepository.count())
         );
     }

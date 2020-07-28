@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -44,6 +45,8 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
+import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
@@ -51,6 +54,7 @@ import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.parser.FileParser;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
@@ -64,6 +68,7 @@ import com.hedera.mirror.importer.util.Utility;
 public class RecordFileParser implements FileParser {
 
     private final ApplicationStatusRepository applicationStatusRepository;
+    private final AddressBookRepository addressBookRepository;
     private final RecordParserProperties parserProperties;
     private final MeterRegistry meterRegistry;
     private final RecordItemListener recordItemListener;
@@ -78,10 +83,12 @@ public class RecordFileParser implements FileParser {
     private final Timer parseLatencyMetric;
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
+                            AddressBookRepository addressBookRepository,
                             RecordParserProperties parserProperties, MeterRegistry meterRegistry,
                             RecordItemListener recordItemListener,
                             RecordStreamFileListener recordStreamFileListener) {
         this.applicationStatusRepository = applicationStatusRepository;
+        this.addressBookRepository = addressBookRepository;
         this.parserProperties = parserProperties;
         this.meterRegistry = meterRegistry;
         this.recordItemListener = recordItemListener;
@@ -162,7 +169,8 @@ public class RecordFileParser implements FileParser {
             recordStreamFileListener.onEnd(recordFile);
             applicationStatusRepository.updateStatusValue(
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
-            // to:do - explore updating addressBook with last transaction time recordFile.getConsensusEnd
+
+            updateAddressBook(recordFile.getConsensusStart(), recordFile.getConsensusEnd());
             recordParserLatencyMetric(recordFile);
             success = true;
         } finally {
@@ -271,6 +279,47 @@ public class RecordFileParser implements FileParser {
             }
         } catch (Exception e) {
             log.error("Error parsing files", e);
+        }
+    }
+
+    /**
+     * Address book updates currently span record files as well as a network shutdown. To account for this verify start
+     * and end of addressbook are set after a record file is processed. If not set based on first and last transaction
+     * in record file
+     *
+     * @param startConsensusTimestamp
+     * @param endConsensusTimestamp
+     */
+    private void updateAddressBook(long startConsensusTimestamp, long endConsensusTimestamp) {
+
+        // to:do - explore whether here or shutdown hook is best place for address book consensusTimestamp boundary sets
+        Optional<AddressBook> optionalAddressBook = addressBookRepository
+                .findTopByFileIdOrderByConsensusTimestampDesc(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID);
+
+        if (optionalAddressBook.isPresent()) {
+            AddressBook addressBook = optionalAddressBook.get();
+
+            // set StartConsensusTimestamp of addressBook as first transaction in record file if not set already
+            if (addressBook.getStartConsensusTimestamp() == null) {
+                addressBook.setStartConsensusTimestamp(startConsensusTimestamp);
+                addressBookRepository
+                        .updateStartConsensusTimestamp(addressBook.getConsensusTimestamp(), startConsensusTimestamp);
+            }
+
+            // close off previous addressBook
+            Optional<AddressBook> previousOptionalAddressBook = addressBookRepository
+                    .findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(addressBook
+                            .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID);
+            if (previousOptionalAddressBook.isPresent()) {
+                AddressBook previousAddressbook = previousOptionalAddressBook.get();
+
+                // set EndConsensusTimestamp of addressBook as first transaction - 1ns in record file if not set already
+                if (previousAddressbook.getEndConsensusTimestamp() == null) {
+                    previousAddressbook.setEndConsensusTimestamp(startConsensusTimestamp - 1);
+                    addressBookRepository.updateEndConsensusTimestamp(previousAddressbook
+                            .getConsensusTimestamp(), startConsensusTimestamp - 1);
+                }
+            }
         }
     }
 }

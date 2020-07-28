@@ -39,7 +39,7 @@ public class FileDataRepositoryTest extends AbstractRepositoryTest {
         fileData.setConsensusTimestamp(transaction.getConsensusNs());
         fileData.setFileData("some file data".getBytes());
         fileData.setEntityId(EntityId.of("0.0.123", EntityTypeEnum.FILE));
-        fileData.setTransactionType(TransactionTypeEnum.FILECREATE.ordinal());
+        fileData.setTransactionType(TransactionTypeEnum.FILECREATE.getProtoId());
         fileData = fileDataRepository.save(fileData);
 
         Assertions.assertThat(fileDataRepository.findById(transaction.getConsensusNs()).get())

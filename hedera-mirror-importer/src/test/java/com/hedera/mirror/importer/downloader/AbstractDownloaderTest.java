@@ -29,6 +29,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Bytes;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import io.findify.s3mock.S3Mock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
@@ -39,8 +41,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import javax.sql.DataSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -62,7 +66,12 @@ import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
+import com.hedera.mirror.importer.domain.AddressBook;
+import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -227,10 +236,13 @@ public abstract class AbstractDownloaderTest {
         byte[] addressBook = IOUtils.toByteArray(resource.getInputStream());
         int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
         addressBook = Arrays.copyOfRange(addressBook, 0, index);
-        FileData fileData = new FileData(Instant.now().getEpochSecond(), addressBook, EntityId
-                .of(0, 0, 102, EntityTypeEnum.FILE), TransactionTypeEnum.FILEUPDATE
-                .ordinal());
-        addressBookService.update(fileData);
+        EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+        long now = Instant.now().getEpochSecond();
+
+        // simulate network restart
+        doReturn(Optional.of(addressBookFromBytes(addressBook, now, entityId))).when(addressBookRepository)
+                .findTopByFileIdOrderByConsensusTimestampDesc(entityId);
+        addressBookService = new AddressBookServiceImpl(mirrorProperties, addressBookRepository, fileDataRepository);
 
         fileCopier.filterDirectories("*0.0.3").copy();
         downloader.download();
@@ -392,5 +404,34 @@ public abstract class AbstractDownloaderTest {
                     .updateStatusValue(eq(downloader.getLastValidDownloadedFileHashKey()), any());
         }
         assertValidFiles(List.of(file2, file1));
+    }
+
+    protected AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId) throws InvalidProtocolBufferException {
+        AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
+                .fileData(contents)
+                .consensusTimestamp(consensusTimestamp)
+                .fileId(entityId);
+
+        NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(contents);
+        List<AddressBookEntry> addressBookEntries = new ArrayList<>();
+        addressBookBuilder.nodeCount(nodeAddressBook.getNodeAddressCount());
+        for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
+                .getNodeAddressList()) {
+            AddressBookEntry addressBookEntry = AddressBookEntry.builder()
+                    .consensusTimestamp(consensusTimestamp)
+                    .memo(nodeAddressProto.getMemo().toStringUtf8())
+                    .ip(nodeAddressProto.getIpAddress().toStringUtf8())
+                    .port(nodeAddressProto.getPortno())
+                    .publicKey(nodeAddressProto.getRSAPubKey())
+                    .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
+                    .nodeId(nodeAddressProto.getNodeId())
+                    .nodeAccountId(EntityId.of(nodeAddressProto.getNodeAccountId()))
+                    .build();
+            addressBookEntries.add(addressBookEntry);
+        }
+
+        addressBookBuilder.addressBookEntries(addressBookEntries);
+
+        return addressBookBuilder.build();
     }
 }
