@@ -3,10 +3,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
-    {{- include "hedera-mirror.labels" . | nindent 4 }}
+    {{- include "hedera-mirror-common.labels" . | nindent 4 }}
     grafana_dashboard: "1"
-  name: {{ include "hedera-mirror.fullname" . }}-dashboards
-  namespace: {{ include "hedera-mirror.namespace" . }}
+  name: {{ include "hedera-mirror-common.fullname" . }}-dashboards
+  namespace: {{ include "hedera-mirror-common.namespace" . }}
 data:
   {{- (.Files.Glob "dashboards/*").AsConfig | nindent 2 }}
 {{- end }}

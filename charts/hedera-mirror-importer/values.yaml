@@ -25,19 +25,19 @@ global:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-importer
-  tag: "" # Default to the chart's app version
+  tag: ""  # Default to the chart's app version
 
 imagePullSecrets: []
 
 labels: {}
 
-livenessProbe:
-  httpGet:
-    path: /actuator/health
-    port: http
-  initialDelaySeconds: 60
-  periodSeconds: 30
-  timeoutSeconds: 2
+livenessProbe: null
+#  httpGet:
+#    path: /actuator/health
+#    port: http
+#  initialDelaySeconds: 60
+#  periodSeconds: 30
+#  timeoutSeconds: 2
 
 nameOverride: ""
 

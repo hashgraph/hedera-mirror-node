@@ -337,13 +337,26 @@ jobs:
     steps:
       - checkout
       - run:
+          name: build dependencies
+          command: |
+            helm dependency update charts/hedera-mirror
+            helm dependency update charts/hedera-mirror-common
+      - run:
           name: lint
           command: |
             helm lint charts/hedera-mirror
+            helm lint charts/hedera-mirror-common
+            helm lint charts/hedera-mirror-grpc
+            helm lint charts/hedera-mirror-importer
+            helm lint charts/hedera-mirror-rest
       - run:
           name: template
           command: |
             helm template charts/hedera-mirror
+            helm template charts/hedera-mirror-common
+            helm template charts/hedera-mirror-grpc
+            helm template charts/hedera-mirror-importer
+            helm template charts/hedera-mirror-rest
 
   release_artifacts:
     docker:

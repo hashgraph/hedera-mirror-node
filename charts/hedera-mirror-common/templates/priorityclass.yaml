@@ -30,4 +30,4 @@ metadata:
 value: 250
 globalDefault: false
 description: "Used for low priority workloads that no workloads depend upon"
-  {{- end -}}
+{{- end -}}
