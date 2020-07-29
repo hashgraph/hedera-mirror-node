@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.downloader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.reset;
@@ -47,7 +48,6 @@ import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -56,8 +56,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
+import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.FileCopier;
@@ -229,23 +228,23 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("Exactly 1/3 consensus")
     void oneThirdConsensus() throws Exception {
-        // Remove last node from current 4 node address book
         MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
-        String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
-        Resource resource = new ClassPathResource(resourcePath, getClass());
-        byte[] addressBook = IOUtils.toByteArray(resource.getInputStream());
+        Path addressBookPath = ResourceUtils.getFile(String
+                .format("classpath:addressbook/%s", hederaNetwork.name().toLowerCase())).toPath();
+        byte[] addressBook = Files.readAllBytes(addressBookPath);
         int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
         addressBook = Arrays.copyOfRange(addressBook, 0, index);
         EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
         long now = Instant.now().getEpochSecond();
 
-        // simulate network restart
-        doReturn(Optional.of(addressBookFromBytes(addressBook, now, entityId))).when(addressBookRepository)
-                .findTopByFileIdOrderByConsensusTimestampDesc(entityId);
+        doReturn(Optional.of(addressBookFromBytes(addressBook, now, entityId)))
+                .when(addressBookRepository)
+                .findLatestAddressBook(anyLong(),
+                        eq(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()));
         addressBookService = new AddressBookServiceImpl(mirrorProperties, addressBookRepository, fileDataRepository);
 
         fileCopier.filterDirectories("*0.0.3").copy();
-        downloader.download();
+        getDownloader().download();
 
         verifyForSuccess();
     }

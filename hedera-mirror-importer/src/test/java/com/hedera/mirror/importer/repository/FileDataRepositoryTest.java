@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import java.util.ArrayList;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -30,20 +32,69 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
 public class FileDataRepositoryTest extends AbstractRepositoryTest {
+    private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityTypeEnum.FILE);
 
     @Test
     void insert() {
         Transaction transaction = insertTransaction("FILECREATE");
 
-        FileData fileData = new FileData();
-        fileData.setConsensusTimestamp(transaction.getConsensusNs());
-        fileData.setFileData("some file data".getBytes());
-        fileData.setEntityId(EntityId.of("0.0.123", EntityTypeEnum.FILE));
-        fileData.setTransactionType(TransactionTypeEnum.FILECREATE.getProtoId());
+        FileData fileData = fileData(transaction.getConsensusNs(), 123, TransactionTypeEnum.FILECREATE.getProtoId());
         fileData = fileDataRepository.save(fileData);
 
         Assertions.assertThat(fileDataRepository.findById(transaction.getConsensusNs()).get())
                 .isNotNull()
                 .isEqualTo(fileData);
+    }
+
+    @Test
+    void findFilesInRange() {
+        List<FileData> fileDataList = new ArrayList<>();
+        fileDataList.add(fileData(1, 123, TransactionTypeEnum.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(2, addressBookEntityId102.getId(), TransactionTypeEnum.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(3, addressBookEntityId102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(4, addressBookEntityId102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(5, addressBookEntityId102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(6, 123, TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(7, 123, TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataRepository.saveAll(fileDataList);
+
+        Assertions.assertThat(fileDataRepository
+                .findFilesInRange(
+                        2, 7, addressBookEntityId102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()))
+                .isNotNull()
+                .hasSize(3)
+                .extracting(FileData::getConsensusTimestamp)
+                .containsSequence(3L, 4L, 5L);
+    }
+
+    @Test
+    void findFilesOfTransactionTypesInRange() {
+        List<FileData> fileDataList = new ArrayList<>();
+        fileDataList.add(fileData(1, 123, TransactionTypeEnum.FILECREATE.getProtoId()));
+        FileData fileData = fileData(2, addressBookEntityId102.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId());
+        fileDataList.add(fileData);
+        fileDataList.add(fileData(3, addressBookEntityId102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(4, addressBookEntityId102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(5, addressBookEntityId102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(6, 123, TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(7, 123, TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataRepository.saveAll(fileDataList);
+
+        List<Integer> transactionTypes = List
+                .of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId());
+        Assertions.assertThat(fileDataRepository
+                .findLatestMatchingFile(
+                        5, addressBookEntityId102.getId(), transactionTypes)).get()
+                .isNotNull()
+                .isEqualTo(fileData);
+    }
+
+    private FileData fileData(long consensusTimestamp, long fileId, int transactionType) {
+        FileData fileData = new FileData();
+        fileData.setConsensusTimestamp(consensusTimestamp);
+        fileData.setFileData("some file data".getBytes());
+        fileData.setEntityId(EntityId.of(0, 0, fileId, EntityTypeEnum.FILE));
+        fileData.setTransactionType(transactionType);
+        return fileData;
     }
 }

@@ -40,9 +40,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ResetCacheTestExecutionListener;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -52,8 +54,10 @@ import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @SpringBootTest
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
+@TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
+        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public class AddressBookServiceImplTest {
 
     private static final NodeAddressBook UPDATED = addressBook(10);
@@ -151,7 +155,7 @@ public class AddressBookServiceImplTest {
         assertEquals(14, addressBookEntryRepository.count());
 
         List<AddressBook> addressBookList = addressBookRepository
-                .findCompleteAddressBooks(3L, FILE_ENTITY_ID);
+                .findLatestAddressBooks(3L, FILE_ENTITY_ID);
         assertThat(addressBookList).isNotEmpty().hasSize(2);
 
         // verify new address book is loaded on restart

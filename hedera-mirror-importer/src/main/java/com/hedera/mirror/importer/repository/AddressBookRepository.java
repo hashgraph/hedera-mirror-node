@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.transaction.Transactional;
 import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -34,24 +34,24 @@ import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 
-@CacheConfig(cacheNames = "addressbook", cacheManager = CacheConfiguration.NEVER_EXPIRE_LARGE)
+@CacheConfig(cacheNames = "address_book", cacheManager = CacheConfiguration.NEVER_EXPIRE_LARGE)
 @Transactional
 public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
+    @Query(value = "select * from address_book where consensus_timestamp <= ?1 and file_id = ?2 order by " +
+            "consensus_timestamp desc limit 1", nativeQuery = true)
+    Optional<AddressBook> findLatestAddressBook(long consensusTimestamp, long encodedFileId);
+
     @Query("from AddressBook where consensusTimestamp <= ?1 and fileId = ?2 order by " +
             "consensusTimestamp asc")
-    List<AddressBook> findCompleteAddressBooks(long consensusTimestamp, EntityId fileId);
+    List<AddressBook> findLatestAddressBooks(long consensusTimestamp, EntityId fileId);
 
-    @Cacheable(key = "{#p0, #p1.entityNum}", sync = true)
-    Optional<AddressBook> findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(long consensusTimestamp, EntityId fileId);
-
-    @Cacheable(key = "{#p0.entityNum}", sync = true)
-    Optional<AddressBook> findTopByFileIdOrderByConsensusTimestampDesc(EntityId fileId);
-
+    @CacheEvict(key = "#p0")
     @Modifying
     @Query("update AddressBook set endConsensusTimestamp = :end where consensusTimestamp = :timestamp")
     void updateEndConsensusTimestamp(@Param("timestamp") long consensusTimestamp,
                                      @Param("end") long endConsensusTimestamp);
 
+    @CacheEvict(key = "#p0")
     @Modifying
     @Query("update AddressBook set startConsensusTimestamp = :start where consensusTimestamp = :timestamp")
     void updateStartConsensusTimestamp(@Param("timestamp") long consensusTimestamp,

@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.downloader.record;
  */
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
@@ -85,8 +86,11 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
         // simulate network restart
         byte[] addressBookBytes = Files.readAllBytes(addressBook);
         long now = Instant.now().getEpochSecond();
-        doReturn(Optional.of(addressBookFromBytes(addressBookBytes, now, entityId))).when(addressBookRepository)
-                .findTopByFileIdOrderByConsensusTimestampDesc(entityId);
+
+        doReturn(Optional.of(addressBookFromBytes(addressBookBytes, now, entityId)))
+                .when(addressBookRepository)
+                .findLatestAddressBook(anyLong(),
+                        eq(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()));
         addressBookService = new AddressBookServiceImpl(mirrorProperties, addressBookRepository, fileDataRepository);
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
@@ -94,7 +98,7 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
         fileCopier.copy();
 
-        downloader.download();
+        getDownloader().download();
 
         verify(applicationStatusRepository).updateStatusValue(
                 ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-07-01T14:13:00.317763Z.rcd");

@@ -37,7 +37,7 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
         AddressBook addressBook = addressBookRepository
                 .save(addressBook(ab -> ab.fileId(addressBookEntityId102), 6, 6));
         assertThat(addressBookRepository
-                .findTopByFileIdOrderByConsensusTimestampDesc(addressBookEntityId102))
+                .findLatestAddressBook(7L, addressBookEntityId102.getId()))
                 .get()
                 .isNotNull()
                 .extracting(AddressBook::getConsensusTimestamp)
@@ -61,7 +61,7 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
                 .save(addressBook(null, 14, 14));
 
         assertThat(addressBookRepository
-                .findCompleteAddressBooks(addressBook4.getConsensusTimestamp(), addressBookEntityId102))
+                .findLatestAddressBooks(addressBook4.getConsensusTimestamp(), addressBookEntityId102))
                 .isNotNull()
                 .extracting(AddressBook::getConsensusTimestamp)
                 .containsSequence(2L, 4L, 6L, 12L)

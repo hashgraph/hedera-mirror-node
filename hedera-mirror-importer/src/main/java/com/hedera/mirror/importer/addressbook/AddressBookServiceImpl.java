@@ -172,17 +172,17 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     private byte[] combinePreviousFileDataContents(FileData fileData) {
         Optional<FileData> optionalFileData = fileDataRepository.
-                findTopByConsensusTimestampBeforeAndEntityIdAndTransactionTypeInOrderByConsensusTimestampDesc(fileData
-                        .getConsensusTimestamp(), fileData.getEntityId(), List
+                findLatestMatchingFile(fileData
+                        .getConsensusTimestamp(), fileData.getEntityId().getId(), List
                         .of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
         byte[] combinedBytes = null;
         if (optionalFileData.isPresent()) {
             FileData firstPartialAddressBook = optionalFileData.get();
             long consensusTimeStamp = firstPartialAddressBook.getConsensusTimestamp();
             List<FileData> appendFileDataEntries = fileDataRepository
-                    .findByConsensusTimestampBetweenAndEntityIdAndTransactionTypeOrderByConsensusTimestampAsc(
+                    .findFilesInRange(
                             consensusTimeStamp + 1, fileData.getConsensusTimestamp() - 1, firstPartialAddressBook
-                                    .getEntityId(),
+                                    .getEntityId().getId(),
                             TransactionTypeEnum.FILEAPPEND.getProtoId());
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -260,8 +260,8 @@ public class AddressBookServiceImpl implements AddressBookService {
     private void loadAddressBookFromDB() {
         // get last complete address book
         Optional<AddressBook> optionalAddressBook = addressBookRepository
-                .findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(Instant.now()
-                        .getEpochSecond(), ADDRESS_BOOK_102_ENTITY_ID);
+                .findLatestAddressBook(Instant.now()
+                        .getEpochSecond(), ADDRESS_BOOK_102_ENTITY_ID.getId());
 
         if (optionalAddressBook.isPresent()) {
             AddressBook addressBook = optionalAddressBook.get();

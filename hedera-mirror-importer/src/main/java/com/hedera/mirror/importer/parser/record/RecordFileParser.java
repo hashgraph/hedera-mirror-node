@@ -170,7 +170,7 @@ public class RecordFileParser implements FileParser {
             applicationStatusRepository.updateStatusValue(
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
 
-            updateAddressBook(recordFile.getConsensusStart(), recordFile.getConsensusEnd());
+            updateAddressBook(recordFile.getConsensusStart());
             recordParserLatencyMetric(recordFile);
             success = true;
         } finally {
@@ -288,13 +288,14 @@ public class RecordFileParser implements FileParser {
      * in record file
      *
      * @param startConsensusTimestamp
-     * @param endConsensusTimestamp
      */
-    private void updateAddressBook(long startConsensusTimestamp, long endConsensusTimestamp) {
+    private void updateAddressBook(long startConsensusTimestamp) {
 
+        log.info("**startConsensusTimestamp: {}", startConsensusTimestamp);
         // to:do - explore whether shutdown hook is a better place for address book consensusTimestamp boundary sets
         Optional<AddressBook> optionalAddressBook = addressBookRepository
-                .findTopByFileIdOrderByConsensusTimestampDesc(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID);
+                .findLatestAddressBook(startConsensusTimestamp, AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID
+                        .getId());
 
         if (optionalAddressBook.isPresent()) {
             AddressBook addressBook = optionalAddressBook.get();
@@ -308,8 +309,8 @@ public class RecordFileParser implements FileParser {
 
             // close off previous addressBook
             Optional<AddressBook> previousOptionalAddressBook = addressBookRepository
-                    .findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(addressBook
-                            .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID);
+                    .findLatestAddressBook(addressBook
+                            .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId());
             if (previousOptionalAddressBook.isPresent()) {
                 AddressBook previousAddressbook = previousOptionalAddressBook.get();
 

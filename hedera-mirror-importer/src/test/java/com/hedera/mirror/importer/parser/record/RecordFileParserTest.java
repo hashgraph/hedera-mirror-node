@@ -86,6 +86,7 @@ public class RecordFileParserTest {
 
     private File file1;
     private File file2;
+    private static final long FILE1_CONSENSUS_START = 1567188600419072000L;
     private static final int NUM_TXNS_FILE_1 = 19;
     private static final int NUM_TXNS_FILE_2 = 15;
     private static RecordFile recordFile1;
@@ -243,11 +244,12 @@ public class RecordFileParserTest {
         AddressBook addressBook2 = addressBook(ab -> ab.consensusTimestamp(2L));
 
         when(addressBookRepository
-                .findTopByFileIdOrderByConsensusTimestampDesc(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID))
+                .findLatestAddressBook(FILE1_CONSENSUS_START, AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID
+                        .getId()))
                 .thenReturn(Optional.of(addressBook2));
-        when(addressBookRepository.findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(addressBook2
-                .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID)).thenReturn(Optional
-                .of(addressBook1));
+        when(addressBookRepository.findLatestAddressBook(addressBook2
+                .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()))
+                .thenReturn(Optional.of(addressBook1));
 
         recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
 
@@ -268,12 +270,13 @@ public class RecordFileParserTest {
         AddressBook addressBook = addressBook(ab -> ab.consensusTimestamp(0L).startConsensusTimestamp(0L));
 
         when(addressBookRepository
-                .findTopByFileIdOrderByConsensusTimestampDesc(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID))
+                .findLatestAddressBook(FILE1_CONSENSUS_START, AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID
+                        .getId()))
+                .thenReturn(Optional.of(addressBook));
+        when(addressBookRepository.findLatestAddressBook(addressBook
+                .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()))
                 .thenReturn(Optional
-                        .of(addressBook));
-        when(addressBookRepository.findTopByConsensusTimestampBeforeAndFileIdOrderByConsensusTimestampDesc(addressBook
-                .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID)).thenReturn(Optional
-                .empty());
+                        .empty());
 
         recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
 
