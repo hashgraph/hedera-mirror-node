@@ -63,7 +63,7 @@
     "jest": "^26.1.0",
     "jest-junit": "^11.1.0",
     "mock-req-res": "^1.2.0",
-    "node-duration": "^1.0.4",
+    "node-duration": "~1.0.4",
     "node-flywaydb": "^3.0.3",
     "nodemon": "^2.0.4",
     "prettier": "^2.0.5",

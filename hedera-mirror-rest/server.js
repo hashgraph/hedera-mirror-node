@@ -18,7 +18,7 @@
  * ‍
  */
 
-'uses strict';
+'use strict';
 
 // external libraries
 const express = require('express');

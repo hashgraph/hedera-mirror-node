@@ -13,7 +13,9 @@
   ],
   "globals": {
     "Atomics": "readonly",
-    "SharedArrayBuffer": "readonly"
+    "SharedArrayBuffer": "readonly",
+    "logger": "readonly",
+    "pool": "readonly"
   },
   "parserOptions": {
     "ecmaVersion": 2020
@@ -28,6 +30,8 @@
     "node/prefer-global/url": ["error", "always"],
     "node/prefer-promises/dns": "error",
     "node/prefer-promises/fs": "error",
-    "max-len": [2, {"code": 120, "tabWidth": 2, "ignoreUrls": true}]
+    "max-len": ["error", {"code": 120, "tabWidth": 2, "ignoreUrls": true}],
+    "strict": ["error", "global"],
+    "global-require": ["warn"]
   }
 }

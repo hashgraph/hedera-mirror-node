@@ -128,95 +128,83 @@ describe('getRCDFileNameByConsensusNs', () => {
 });
 
 describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
-  const makeFakeQueryFn = (addressBookQueryResult, nodeAddressQueryResult) => async (sqlQuery, params) => {
-    const query = sqlQuery.toLowerCase().replace(/[\r\n\t]/gm, ' ');
-    const matches = query.match(/select.*\bfrom\s+(\S+).*/is);
-    const tableName = matches[1];
-
-    switch (tableName) {
-      case 'address_book':
-        return addressBookQueryResult;
-      case 'node_address':
-        return nodeAddressQueryResult;
-      default:
-        throw new Error(`Invalid table name ${tableName}`);
-    }
-  };
-
   const nodeAccountId3 = EntityId.fromString('0.0.3');
   const nodeAccountId4 = EntityId.fromString('0.0.4');
   const nodeAccountId5 = EntityId.fromString('0.0.5');
-  const validAddressBookQueryResult = {
-    rows: [
-      {
-        consensus_timestamp: '1234567891000000001',
-        file_data: 'address book 1 data',
-        node_count: 3,
-      },
-      {
-        consensus_timestamp: '1234567899000000001',
-        file_data: 'address book 2 data',
-        node_count: 3,
-      },
-    ],
-  };
-  const validNodeAddressQueryResult = {
-    rows: [
-      { node_account_id: nodeAccountId3.getEncodedId() },
-      { node_account_id: nodeAccountId4.getEncodedId() },
-      { node_account_id: nodeAccountId5.getEncodedId() },
-    ],
-  };
+  const validNodeAccountIds = _.join([nodeAccountId3.getEncodedId(), nodeAccountId4.getEncodedId(),
+    nodeAccountId5.getEncodedId()], ',');
   const transactionConsensusNs = '1234567899000000021';
 
-  test('with matching address books and node account IDs found', async () => {
-    const queryStub = sinon.stub().callsFake(makeFakeQueryFn(validAddressBookQueryResult, validNodeAddressQueryResult));
+  let queryResult;
+
+  beforeEach(() => {
+    queryResult = {
+      rows: [
+        {
+          consensus_timestamp: '1234567891000000001',
+          file_data: 'address book 1 data',
+          node_count: 3,
+          node_account_ids: validNodeAccountIds,
+        },
+        {
+          consensus_timestamp: '1234567899000000001',
+          file_data: 'address book 2 data',
+          node_count: 3,
+          node_account_ids: validNodeAccountIds,
+        },
+      ],
+    };
+  });
+
+  const expectPassOrToThrow = async (queryResultOrFakeQueryFunc, expectPass) => {
+    const queryStub = sinon.stub();
+    if (typeof queryResultOrFakeQueryFunc === 'function') {
+      queryStub.callsFake(queryResultOrFakeQueryFunc);
+    } else {
+      queryStub.returns(queryResultOrFakeQueryFunc);
+    }
     global.pool = { query: queryStub };
 
-    const result = await stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs);
-    expect(result.addressBooks).toEqual(_.map(validAddressBookQueryResult.rows,
-      (row) => Buffer.from(row.file_data).toString('base64')));
-    expect(result.nodeAccountIds.sort()).toEqual(
-      _.map(validNodeAddressQueryResult.rows, (row) => EntityId.fromEncodedId(row.node_account_id).toString()).sort(),
-    );
+    if (expectPass) {
+      const result = await stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs);
+      expect(result.addressBooks).toEqual(_.map(queryResult.rows,
+        (row) => Buffer.from(row.file_data).toString('base64')));
+      expect(result.nodeAccountIds.sort()).toEqual(
+        _.map(validNodeAccountIds.split(','), (id) => EntityId.fromEncodedId(id).toString()).sort(),
+      );
 
-    expect(queryStub.callCount).toEqual(2);
+      expect(queryStub.callCount).toEqual(1);
+    } else {
+      await expect(stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs)).rejects.toThrow();
+      expect(queryStub.callCount).toEqual(1);
+    }
+  };
+
+  test('with matching address books and node account IDs found', async () => {
+    await expectPassOrToThrow(queryResult, true);
   });
 
   test('with address book not found', async () => {
-    const queryStub = sinon.stub().callsFake(makeFakeQueryFn(emptyQueryResult, validNodeAddressQueryResult));
-    global.pool = { query: queryStub };
-
-    await expect(stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs)).rejects.toThrow();
-    expect(queryStub.callCount).toEqual(1);
+    await expectPassOrToThrow(emptyQueryResult, false);
   });
 
   test('with node address not found', async () => {
-    const queryStub = sinon.stub().callsFake(makeFakeQueryFn(validAddressBookQueryResult, emptyQueryResult));
-    global.pool = { query: queryStub };
-
-    await expect(stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs)).rejects.toThrow();
-    expect(queryStub.callCount).toEqual(2);
+    for (const row of queryResult.rows) {
+      delete row.node_account_ids;
+    }
+    await expectPassOrToThrow(queryResult, false);
   });
 
-  test('with node address count mismatch count in last adddress book', async () => {
-    const queryStub = sinon.stub().callsFake(makeFakeQueryFn(validAddressBookQueryResult, {
-      rows: validNodeAddressQueryResult.rows.slice(1),
-    }));
-    global.pool = { query: queryStub };
-
-    await expect(stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs)).rejects.toThrow();
-    expect(queryStub.callCount).toEqual(2);
+  test('with node address count mismatch count in last address book', async () => {
+    const row = _.last(queryResult.rows);
+    row.node_count += 1;
+    await expectPassOrToThrow(queryResult, false);
   });
 
   test('with db runtime error', async () => {
-    const queryStub = sinon.stub().callsFake(async (sqlQuery, params) => {
+    await expectPassOrToThrow(async () => {
       throw new Error('db runtime error');
-    });
-    global.pool = { query: queryStub };
-
-    await expect(stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs)).rejects.toThrow();
-    expect(queryStub.callCount).toEqual(1);
+    }, false);
   });
 });
 
@@ -291,8 +279,9 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     }));
     stubS3ClientGetObject(getObjectStub);
 
-    await expect(stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths)).rejects.toThrow();
-    expect(getObjectStub.callCount).toEqual(partialFilePaths.length);
+    const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
+    verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, partialFilePaths,
+      _.map([3, 4, 5, 6], (num) => `0.0.${num}`));
   });
 
   test('with download failed for 0.0.3', async () => {
@@ -319,6 +308,20 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
 
     const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
     verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, partialFilePaths, ['0.0.3']);
+  });
+});
+
+describe('canReachConsensus', () => {
+  test('with exactly 1/3 count', () => {
+    expect(stateproof.canReachConsensus(1, 3)).toBeTruthy();
+  });
+
+  test('with more than 1/3 when rounded up', () => {
+    expect(stateproof.canReachConsensus(2, 4)).toBeTruthy();
+  });
+
+  test('with less than 1/3', () => {
+    expect(stateproof.canReachConsensus(1, 4)).toBeFalsy();
   });
 });
 
@@ -388,7 +391,7 @@ describe('getStateProofForTransaction', () => {
   const verifyResponseData = (responseData, recordFileName, addressBooks, nodeAccountIds) => {
     expect(responseData).toBeTruthy();
     expect(responseData.record_file)
-      .toEqual(Buffer.from(`${nodeAccountIds[0]}/${recordFileName}`).toString('base64'));
+      .toEqual(Buffer.from(`0.0.3/${recordFileName}`).toString('base64'));
 
     expect(Object.keys(responseData.signature_files).sort()).toEqual(nodeAccountIds.sort());
     for (const nodeAccountId of nodeAccountIds) {
@@ -398,8 +401,6 @@ describe('getStateProofForTransaction', () => {
 
     expect(responseData.address_books.sort())
       .toEqual(addressBooks.sort());
-    // expect(responseData.address_books.sort())
-    //   .toEqual(_.map(addressBooks, addressBook => Buffer.from(addressBook).toString('base64')).sort());
   };
 
   test('with valid transaction ID and all data successfully retrieved', async () => {

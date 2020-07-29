@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 'use strict';
 
 /**
@@ -44,15 +45,15 @@
  * TEST_DB_PORT (default: 5432)
  * TEST_DB_NAME (default: mirror_node_integration)
  */
-const EntityId = require('../entityId');
-const transactions = require('../transactions.js');
 const path = require('path');
 const request = require('supertest');
-const server = require('../server');
 const fs = require('fs');
+const EntityId = require('../entityId');
+const transactions = require('../transactions.js');
+const server = require('../server');
 const integrationDbOps = require('./integrationDbOps.js');
 const integrationDomainOps = require('./integrationDomainOps.js');
-const {S3Ops} = require('./integrationS3Ops');
+const { S3Ops } = require('./integrationS3Ops');
 const config = require('../config');
 
 let sqlConnection;
@@ -263,6 +264,22 @@ describe('DB integration test - spec based', () => {
   let s3Ops;
   let serverWithStateProofEnabled;
 
+  const configS3ForStateProof = (endpoint) => {
+    config.stateproof = {
+      enabled: true,
+      streams: {
+        network: 'OTHER',
+        cloudProvider: 'S3',
+        endpointOverride: endpoint,
+        region: 'us-east-1',
+        bucketName: 'integration-test-streams',
+        record: {
+          prefix: 'recordstreams/record',
+        },
+      },
+    };
+  };
+
   beforeAll(async () => {
     s3Ops = new S3Ops(path.join(__dirname, 'data/s3'));
     await s3Ops.start();
@@ -274,34 +291,18 @@ describe('DB integration test - spec based', () => {
 
   afterAll(async () => {
     await s3Ops.stop();
-  })
+  });
 
-  const configS3ForStateProof = function(endpoint) {
-    config.stateproof = {
-      enabled: true,
-      streams: {
-        network: 'OTHER',
-        cloudProvider: 'S3',
-        endpointOverride: endpoint,
-        region: 'us-east-1',
-        bucketName: 'integration-test-streams',
-        record: {
-          prefix: 'recordstreams/record'
-        }
-      }
-    };
-  };
-
-  const specSetupSteps = async function (spec) {
+  const specSetupSteps = async (spec) => {
     await integrationDbOps.cleanUp();
     await integrationDomainOps.setUp(spec, sqlConnection);
   };
 
-  let specPath = path.join(__dirname, 'specs');
-  fs.readdirSync(specPath).forEach(function (file) {
-    let p = path.join(specPath, file);
-    let specText = fs.readFileSync(p, 'utf8');
-    var spec = JSON.parse(specText);
+  const specPath = path.join(__dirname, 'specs');
+  fs.readdirSync(specPath).forEach((file) => {
+    const p = path.join(specPath, file);
+    const specText = fs.readFileSync(p, 'utf8');
+    const spec = JSON.parse(specText);
     test(`DB integration test - ${file} - ${spec.url}`, async () => {
       await specSetupSteps(spec.setup);
 

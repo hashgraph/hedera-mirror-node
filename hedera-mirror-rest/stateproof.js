@@ -106,15 +106,22 @@ let getRCDFileNameByConsensusNs = async (consensusNs) => {
  * @returns {Promise<Object>} List of base64 address book data in chronological order and list of node account IDs.
  */
 let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
-  // Get the chain of address books whose consensus_timestamp <= consensusNs
-  let sqlParams = [consensusNs];
-  let sqlQuery = `SELECT consensus_timestamp, file_data, node_count
-       FROM address_book
+  // Get the chain of address books whose consensus_timestamp <= consensusNs, also aggregate the corresponding
+  // node account ids from table address_book_entry
+  const sqlParams = [consensusNs];
+  const sqlQuery = `SELECT
+         ab.consensus_timestampfile_data as consensus_timestamp,
+         file_data,
+         node_count,
+         string_agg(cast (abe.node_account_id as varchar), ',') as node_account_ids
+       FROM address_book ab
+         LEFT JOIN address_book_entry abe
+           on ab.consensus_timestamp = abe.consensus_timestamp
        WHERE consensus_timestamp <= ?
-         AND is_complete = TRUE
          AND file_id = 102
+       GROUP by consensus_timestamp
        ORDER BY consensus_timestamp`;
-  let pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
+  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
   if (logger.isTraceEnabled()) {
     logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${pgSqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
@@ -131,32 +138,24 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
   }
 
   // Get the node addresses at the moment of the last address book's consensus_timestamp
-  const lastAddressBook = _.last(addressBookQueryResult.rows);
-  sqlParams = [lastAddressBook.consensus_timestamp,];
-  sqlQuery = `SELECT node_account_id
-       FROM node_address
-       WHERE consensus_timestamp = ?`;
-  pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${pgSqlQuery}, ${JSON.stringify(sqlParams)}`);
+  const { rows } = addressBookQueryResult;
+  const lastAddressBook = _.last(rows);
+  if (!lastAddressBook.node_account_ids) {
+    throw new DbError('No node account IDs found by the join query');
   }
 
-  let nodeAddressQueryResult;
-  try {
-    nodeAddressQueryResult = await pool.query(pgSqlQuery, sqlParams);
-  } catch (err) {
-    throw new DbError(err.message);
-  }
+  const addressBooks = _.map(rows, (row) => Buffer.from(row.file_data).toString('base64'));
+  const nodeAccountIds = _.map(lastAddressBook.node_account_ids.split(','), (nodeAccountId) => {
+    return EntityId.fromEncodedId(nodeAccountId).toString();
+  });
 
-  if (_.isEmpty(nodeAddressQueryResult.rows)) {
-    throw new NotFoundError('No node address found');
-  } else if (nodeAddressQueryResult.rows.length !== parseInt(lastAddressBook.node_count, 10)) {
+  if (nodeAccountIds.length !== parseInt(lastAddressBook.node_count, 10)) {
     throw new DbError('Number of nodes found mismatch node_count in address book');
   }
 
   return {
-    addressBooks: _.map(addressBookQueryResult.rows, (row) => Buffer.from(row.file_data).toString('base64')),
-    nodeAccountIds: _.map(nodeAddressQueryResult.rows, (row) => EntityId.fromEncodedId(row.node_account_id).toString()),
+    addressBooks,
+    nodeAccountIds,
   };
 };
 
@@ -164,7 +163,7 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
  * Download the file objects (record stream file and signature files) from object storage service
  * @param partialFilePaths list of partial file path to download. partial file path is the path with bucket name and
  *                         record stream prefix stripped.
- * @returns {Promise<Array>} Array of file buffers, match the order of partialFilePaths
+ * @returns {Promise<Array>} Array of file buffers
  */
 let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => {
   const streamsConfig = config.stateproof.streams;
@@ -189,9 +188,10 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
             base64Data,
           });
         })
-        // it's possible some nodes may not have the record stream file / record stream signature file
+        // error may happen for a couple of reasons: 1. the node does not have the requested file, 2. s3 transient error
         // so capture the error and return it, otherwise Promise.all will fail
         .on('error', (err) => {
+          logger.error(`Failed to download ${partialFilePath}`, err);
           resolve({
             partialFilePath,
             err,
@@ -200,19 +200,22 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
     });
   }));
 
-  if (_.every(fileObjects, (fileObject) => !!fileObject.err)) {
-    logger.error('Failed to download all files:', _.map(fileObjects, (fileObject) => fileObject.err.message).join(','));
-    throw new FileDownloadError('Failed to download all files');
-  }
-
   return _.filter(fileObjects, (fileObject) => !fileObject.err);
 };
 
 /**
+ * Check if consensus can be reached given actualCount and expectedCount.
+ * @param {Number} actualCount
+ * @param {Number} expectedCount
+ * @returns {boolean} if consensus can be reached
+ */
+let canReachConsensus = (actualCount, expectedCount) => actualCount >= Math.ceil(expectedCount / 3.0);
+
+/**
  * Handler function for /transactions/:transaction_id/stateproof API.
  * @param {Request} req HTTP request object
- * @param {} res HTTP response object
- * @returns {} none
+ * @param {Response} res HTTP response object
+ * @returns none
  */
 const getStateProofForTransaction = async (req, res) => {
   const transactionId = TransactionId.fromString(req.params.id);
@@ -224,22 +227,15 @@ const getStateProofForTransaction = async (req, res) => {
     ..._.map(nodeAccountIds, (nodeAccountId) => `${nodeAccountId}/${rcdFileName}_sig`),
   );
 
-  // try to download the record stream file from the nodes which have signature files successfully downloaded
-  let rcdFileBase64Data = '';
-  for (const sigFileObject of sigFileObjects) {
-    const nodeAccountIdStr = _.first(sigFileObject.partialFilePath.split('/'));
-    const rcdFilePartialPath = `${nodeAccountIdStr}/${rcdFileName}`;
-    try {
-      const rcdFileObjects = await downloadRecordStreamFilesFromObjectStorage(rcdFilePartialPath);
-      rcdFileBase64Data = _.first(rcdFileObjects).base64Data;
-      break;
-    } catch (err) {
-      log.error(`Failed to download ${rcdFilePartialPath}: ${err.message}`);
-    }
+  if (!canReachConsensus(sigFileObjects.length, nodeAccountIds.length)) {
+    throw new FileDownloadError(`Require at least 1/3 signature files to prove consensus, got ${sigFileObjects.length} `
+      + `out of ${nodeAccountIds.length} for file ${rcdFileName}_sig`);
   }
 
-  if (!rcdFileBase64Data) {
-    throw new FileDownloadError(`Failed to download record file ${rcdFileName}`);
+  // always download the record file from node 0.0.3
+  const rcdFileObjects = await downloadRecordStreamFilesFromObjectStorage(`0.0.3/${rcdFileName}`);
+  if (_.isEmpty(rcdFileObjects)) {
+    throw new FileDownloadError(`Failed to download record file ${rcdFileName} from node 0.0.3`);
   }
 
   const sigFilesMap = {};
@@ -249,7 +245,7 @@ const getStateProofForTransaction = async (req, res) => {
   });
 
   res.locals[constants.responseDataLabel] = {
-    record_file: rcdFileBase64Data,
+    record_file: _.first(rcdFileObjects).base64Data,
     signature_files: sigFilesMap,
     address_books: addressBooks,
   };
@@ -265,5 +261,6 @@ if (process.env.NODE_ENV === 'test') {
     getRCDFileNameByConsensusNs,
     getAddressBooksAndNodeAccountIdsByConsensusNs,
     downloadRecordStreamFilesFromObjectStorage,
+    canReachConsensus,
   });
 }
