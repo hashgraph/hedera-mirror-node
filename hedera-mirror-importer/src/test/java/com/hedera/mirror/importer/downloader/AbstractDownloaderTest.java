@@ -342,6 +342,30 @@ public abstract class AbstractDownloaderTest {
         differentFilenames(getCloseInterval().dividedBy(2L));
     }
 
+    @Test
+    @DisplayName("Download and verify two group of files in the same bucket")
+    void downloadValidFilesInSameBucket() throws Exception {
+        // last valid downloaded file's timestamp is set to file1's timestamp - (I/2 + 1ns), so both file1 and file2
+        // will be in the bucket [lastTimestamp + I/2, lastTimestamp + 3*I/2). Note the interval I is set to twice of
+        // the difference between file1 and file2.
+        Duration interval = getCloseInterval().multipliedBy(2);
+        long file1Timestamp = Utility.getTimestampFromFilename(file1);
+        Instant file1Instant = Instant.ofEpochSecond(file1Timestamp / 1_000_000_000L,
+                file1Timestamp % 1_000_000_000L);
+        Instant lastFileInstant = file1Instant.minus(interval.dividedBy(2).plusNanos(1));
+        StreamType streamType = StreamType.fromFilename(file1);
+        String basename = lastFileInstant.toString().replace(':', '_');
+        String lastFileName = basename + streamType.getSuffix() + "." + streamType.getExtension();
+
+        doReturn(lastFileName).when(applicationStatusRepository).findByStatusCode(downloader.getLastValidDownloadedFileKey());
+
+        fileCopier.copy();
+        downloader.download();
+
+        verifyForSuccess();
+        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
+    }
+
     private void differentFilenames(Duration offset) throws Exception {
         // Copy all files and modify only node 0.0.3's files to have a different timestamp
         StreamType type = downloaderProperties.getStreamType();

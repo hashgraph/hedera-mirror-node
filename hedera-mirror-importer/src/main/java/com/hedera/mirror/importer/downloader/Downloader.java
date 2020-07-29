@@ -153,14 +153,14 @@ public abstract class Downloader {
      * Download all signature files with a timestamp later than the last valid file. Put signature files into a
      * multi-map sorted and grouped by the timestamp.
      *
-     * @return a multi-map of signature file objects from different nodes, grouped by timestamp
+     * @return a multi-map of signature file objects from different nodes, grouped by filename
      */
-    private Multimap<Long, FileStreamSignature> downloadSigFiles() throws InterruptedException {
+    private Multimap<String, FileStreamSignature> downloadSigFiles() throws InterruptedException {
         String lastValidFileName = applicationStatusRepository.findByStatusCode(getLastValidDownloadedFileKey());
         // foo.rcd < foo.rcd_sig. If we read foo.rcd from application stats, we have to start listing from
         // next to 'foo.rcd_sig'.
         String lastValidSigFileName = lastValidFileName.isEmpty() ? "" : lastValidFileName + "_sig";
-        Multimap<Long, FileStreamSignature> sigFilesMap = Multimaps
+        Multimap<String, FileStreamSignature> sigFilesMap = Multimaps
                 .synchronizedSortedSetMultimap(TreeMultimap.create());
         Set<String> nodeAccountIds = networkAddressBook.getAddresses()
                 .stream()
@@ -221,8 +221,7 @@ public abstract class Downloader {
                                 FileStreamSignature fileStreamSignature = new FileStreamSignature();
                                 fileStreamSignature.setFile(sigFile);
                                 fileStreamSignature.setNode(nodeAccountId);
-                                long timestamp = Utility.getTimestampFromFilename(sigFile.getName());
-                                sigFilesMap.put(timestamp, fileStreamSignature);
+                                sigFilesMap.put(sigFile.getName(), fileStreamSignature);
                             }
                         } catch (InterruptedException ex) {
                             log.warn("Failed downloading {} in {}", pendingDownload.getS3key(),
@@ -320,7 +319,7 @@ public abstract class Downloader {
      * the data file into `valid` directory; else download the data file from other valid node folder and compare the
      * hash until we find a match.
      */
-    private void verifySigsAndDownloadDataFiles(Multimap<Long, FileStreamSignature> sigFilesMap) {
+    private void verifySigsAndDownloadDataFiles(Multimap<String, FileStreamSignature> sigFilesMap) {
         NodeSignatureVerifier nodeSignatureVerifier = new NodeSignatureVerifier(networkAddressBook);
         Path validPath = downloaderProperties.getValidPath();
 
@@ -330,7 +329,7 @@ public abstract class Downloader {
             }
 
             Instant startTime = Instant.now();
-            long groupId = groupIdIterator.next();
+            String groupId = groupIdIterator.next();
             Collection<FileStreamSignature> signatures = sigFilesMap.get(groupId);
             boolean valid = false;
 

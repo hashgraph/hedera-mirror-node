@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.downloader;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import java.io.File;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Collection;
@@ -57,17 +58,21 @@ public class NodeSignatureVerifier {
     }
 
     /**
-     * Verifies that the signature files are signed by corresponding node's PublicKey. For valid signature files, we
-     * compare their hashes to see if at least 1/3 with the same filename have hashes that match. If a signature is
-     * valid, we put the hash in its content and its file to the map, to see if at least 1/3 valid signatures have the
-     * same hash.
+     * Verifies that the signature files satisfy the consensus requirement:
+     * <ol>
+     *  <li>At least 1/3 signature files are present</li>
+     *  <li>For a signature file, we validate it by checking if it's signed by corresponding node's PublicKey. For valid
+     *      signature files, we compare their hashes to see if at least 1/3 have hashes that match. If a signature is
+     *      valid, we put the hash in its content and its file to the map, to see if at lest 1/3 valid signatures have
+     *      the same hash</li>
+     * </ol>
      *
-     * @param signatures a list of a sig files which have the same timestamp
+     * @param signatures a list of signature files which have the same filename
      * @throws SignatureVerificationException
      */
     public void verify(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
         Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
-        String filename = !signatures.isEmpty() ? signatures.stream().findFirst().get().getFile().getName() : null;
+        String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst().orElse(null);
         int consensusCount = 0;
 
         final long sigFileCount = signatures.size();
@@ -96,7 +101,7 @@ public class NodeSignatureVerifier {
         for (String key : signatureHashMap.keySet()) {
             Collection<FileStreamSignature> validatedSignatures = signatureHashMap.get(key);
 
-            if (canReachConsensus(validatedSignatures.size(), nodeIDPubKeyMap.size())) {
+            if (canReachConsensus(validatedSignatures.size(), nodeCount)) {
                 consensusCount += validatedSignatures.size();
                 validatedSignatures.forEach(s -> s.setStatus(SignatureStatus.CONSENSUS_REACHED));
             }
