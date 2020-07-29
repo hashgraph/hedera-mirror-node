@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.downloader.balance;
  */
 
 import java.nio.file.Path;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,11 @@ public class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     @Override
     protected Path getTestDataDir() {
         return Path.of("accountBalances");
+    }
+
+    @Override
+    protected Duration getCloseInterval() {
+        return Duration.ofMinutes(15L);
     }
 
     @BeforeEach

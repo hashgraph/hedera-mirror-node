@@ -32,10 +32,6 @@ public interface DownloaderProperties {
 
     int getBatchSize();
 
-    Duration getCloseInterval();
-
-    void setCloseInterval(Duration closeInterval);
-
     CommonDownloaderProperties getCommon();
 
     MirrorProperties getMirrorProperties();
