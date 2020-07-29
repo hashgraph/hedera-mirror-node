@@ -52,7 +52,7 @@ public class NodeSignatureVerifier {
                 .collect(Collectors.toMap(NodeAddress::getId, NodeAddress::getPublicKeyAsObject));
     }
 
-    private static boolean consensusReached(long actualNodes, long expectedNodes) {
+    private static boolean canReachConsensus(long actualNodes, long expectedNodes) {
         return actualNodes >= Math.ceil(expectedNodes / 3.0);
     }
 
@@ -72,7 +72,7 @@ public class NodeSignatureVerifier {
 
         final long sigFileCount = signatures.size();
         final long nodeCount = nodeIDPubKeyMap.size();
-        if (!consensusReached(sigFileCount, nodeCount)) {
+        if (!canReachConsensus(sigFileCount, nodeCount)) {
             throw new SignatureVerificationException("Require at least 1/3 signature files to reach consensus, got " +
                     sigFileCount + " out of " + nodeCount + " for file " + filename + ": " + statusMap(signatures));
         }
@@ -96,7 +96,7 @@ public class NodeSignatureVerifier {
         for (String key : signatureHashMap.keySet()) {
             Collection<FileStreamSignature> validatedSignatures = signatureHashMap.get(key);
 
-            if (consensusReached(validatedSignatures.size(), nodeIDPubKeyMap.size())) {
+            if (canReachConsensus(validatedSignatures.size(), nodeIDPubKeyMap.size())) {
                 consensusCount += validatedSignatures.size();
                 validatedSignatures.forEach(s -> s.setStatus(SignatureStatus.CONSENSUS_REACHED));
             }
