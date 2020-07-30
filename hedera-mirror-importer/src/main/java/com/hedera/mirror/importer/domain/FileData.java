@@ -48,8 +48,7 @@ public class FileData {
 
     private Integer transactionType;
 
-//    @Transient
-//    public boolean isAppend() {
-//        return transactionType == TransactionTypeEnum.FILEAPPEND.getProtoId();
-//    }
+    public boolean transactionTypeIsAppend() {
+        return transactionType == TransactionTypeEnum.FILEAPPEND.getProtoId();
+    }
 }

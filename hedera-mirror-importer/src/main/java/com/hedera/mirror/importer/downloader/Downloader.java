@@ -46,7 +46,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,7 +59,6 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -163,10 +161,7 @@ public abstract class Downloader {
         Multimap<String, FileStreamSignature> sigFilesMap = Multimaps
                 .synchronizedSortedSetMultimap(TreeMultimap.create());
 
-        Set<String> nodeAccountIds = addressBookService.getCurrent().getEntries()
-                .stream()
-                .map(AddressBookEntry::getNodeAccountId)
-                .collect(Collectors.toSet());
+        Set<String> nodeAccountIds = addressBookService.getCurrent().getNodeSet();
         List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
         var totalDownloads = new AtomicInteger();
         log.info("Downloading signature files created after file: {}", lastValidSigFileName);

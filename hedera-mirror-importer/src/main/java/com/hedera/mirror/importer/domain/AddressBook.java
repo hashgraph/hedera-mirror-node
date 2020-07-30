@@ -21,6 +21,8 @@ package com.hedera.mirror.importer.domain;
  */
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.persistence.CascadeType;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -70,5 +72,11 @@ public class AddressBook implements Persistable<Long> {
     @Override
     public boolean isNew() {
         return true;
+    }
+
+    public Set<String> getNodeSet() {
+        return entries.stream()
+                .map(AddressBookEntry::getNodeAccountId)
+                .collect(Collectors.toSet());
     }
 }

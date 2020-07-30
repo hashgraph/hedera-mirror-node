@@ -109,7 +109,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(transactionType);
         log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusNs, entityId);
 
-        // to:do - catch Freeze transaction and update addressBook with last transaction time
+        // to:do - exclude Freeze from Filter transaction type
 
         TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionTypeEnum);
         if (!transactionFilter.test(transactionFilterFields)) {
@@ -167,6 +167,10 @@ public class EntityRecordItemListener implements RecordItemListener {
             } else if (body.hasFileUpdate()) {
                 insertFileUpdate(consensusNs, body.getFileUpdate(), transactionType);
             }
+        }
+
+        if (transactionType == TransactionTypeEnum.FREEZE.getProtoId()) {
+            addressBookService.loadAddressBook();
         }
 
         entityListener.onTransaction(tx);

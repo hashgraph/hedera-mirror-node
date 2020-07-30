@@ -164,9 +164,7 @@ public class AddressBookServiceImplTest {
         assertThat(addressBookList).isNotEmpty().hasSize(2);
 
         // verify new address book is loaded on restart
-        addressBookServiceImpl = new AddressBookServiceImpl(mirrorProperties,
-                addressBookRepository,
-                fileDataRepository);
+        addressBookServiceImpl.loadAddressBook();
         assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(UPDATED.getNodeAddressCount());
     }
 
@@ -211,9 +209,7 @@ public class AddressBookServiceImplTest {
         assertEquals(14, addressBookEntryRepository.count());
 
         // verify new address book is loaded on restart
-        addressBookServiceImpl = new AddressBookServiceImpl(mirrorProperties,
-                addressBookRepository,
-                fileDataRepository);
+        addressBookServiceImpl.loadAddressBook();
         assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(UPDATED.getNodeAddressCount());
     }
 
@@ -293,9 +289,7 @@ public class AddressBookServiceImplTest {
         assertAddressBookData(FINAL.toByteArray(), 2);
 
         // verify new address book is loaded on restart
-        addressBookServiceImpl = new AddressBookServiceImpl(mirrorProperties,
-                addressBookRepository,
-                fileDataRepository);
+        addressBookServiceImpl.loadAddressBook();
         assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(FINAL.getNodeAddressCount());
     }
 
@@ -360,9 +354,7 @@ public class AddressBookServiceImplTest {
         assertEquals(3, addressBookRepository.count());
 
         // verify new address book is loaded on restart
-        addressBookServiceImpl = new AddressBookServiceImpl(mirrorProperties,
-                addressBookRepository,
-                fileDataRepository);
+        addressBookServiceImpl.loadAddressBook();
         assertThat(addressBookServiceImpl.getCurrent().getEntries())
                 .hasSize(UPDATED.getNodeAddressCount());
     }

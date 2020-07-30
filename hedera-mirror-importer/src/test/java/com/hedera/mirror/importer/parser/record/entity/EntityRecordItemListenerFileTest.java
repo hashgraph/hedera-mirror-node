@@ -346,6 +346,28 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 , () -> assertEquals(1, addressBookRepository.count())
                 , () -> assertEquals(2, fileDataRepository.count()) // update and append
         );
+
+        // verify new address book is loaded after FREEZE transaction is received
+        Transaction transactionFreeze = buildTransaction(builder -> builder.getFreezeBuilder()
+                .setEndHour(1)
+                .setEndMin(2)
+                .setStartHour(3)
+                .setStartMin(4)
+                .setUpdateFile(FileID.newBuilder().setFileNum(5).build()));
+        TransactionBody transactionBody = TransactionBody.parseFrom(transactionFreeze.getBodyBytes());
+        TransactionRecord recordFreeze = transactionRecord(transactionBody);
+
+        parseRecordItemAndCommit(new RecordItem(transactionFreeze, recordFreeze));
+
+        AddressBook newAddressBook = addressBookService.getCurrent();
+        assertAll(
+                () -> assertThat(newAddressBook.getConsensusTimestamp())
+                        .isEqualTo(Utility.timeStampInNanos(recordAppend.getConsensusTimestamp())),
+                () -> assertThat(newAddressBook.getEntries())
+                        .describedAs("Should overwrite address book with new update")
+                        .hasSize(13),
+                () -> assertArrayEquals(addressBook, newAddressBook.getFileData())
+        );
     }
 
     @Test

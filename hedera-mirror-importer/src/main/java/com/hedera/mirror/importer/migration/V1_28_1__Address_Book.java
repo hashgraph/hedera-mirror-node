@@ -69,8 +69,9 @@ public class V1_28_1__Address_Book extends BaseJavaMigration {
         Stopwatch stopwatch = Stopwatch.createStarted();
         AtomicLong currentConsensusTimestamp = new AtomicLong(0);
         AtomicLong fileDataEntries = new AtomicLong(0);
-
         byte[] addressBookBytes;
+
+        // retrieve bootstrap address book from filesystem or classpath
         try {
             Path initialAddressBook = mirrorProperties.getInitialAddressBook();
             if (initialAddressBook != null) {
@@ -85,7 +86,7 @@ public class V1_28_1__Address_Book extends BaseJavaMigration {
                 log.info("Loading bootstrap address book of {} B from {}", addressBookBytes.length, resource);
             }
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to load valid address book from classpath");
+            throw new IllegalStateException("Unable to load bootstrap address book", e);
         }
 
         FileData bootStrapFileData = new FileData(0L, addressBookBytes,
@@ -93,7 +94,7 @@ public class V1_28_1__Address_Book extends BaseJavaMigration {
                 TransactionTypeEnum.FILECREATE.getProtoId());
         addressBookService.update(bootStrapFileData);
 
-        // starting from consensusTimeStamp = 0 retrieve pages of fileData entries
+        // starting from consensusTimeStamp = 0 retrieve pages of fileData entries for historic address books
         int pageSize = 1000; // option to parameterize this
         List<FileData> fileDataList = getLatestFileData(currentConsensusTimestamp.get(), pageSize);
         while (!CollectionUtils.isEmpty(fileDataList)) {

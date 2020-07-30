@@ -31,4 +31,6 @@ public interface AddressBookService {
     void update(FileData fileData);
 
     AddressBook getCurrent();
+
+    void loadAddressBook();
 }
