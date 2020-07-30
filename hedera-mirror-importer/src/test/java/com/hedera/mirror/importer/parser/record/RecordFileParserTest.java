@@ -25,8 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -253,11 +251,9 @@ public class RecordFileParserTest {
 
         recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
 
-        verify(addressBookRepository, times(1))
-                .updateStartConsensusTimestamp(eq(addressBook2.getConsensusTimestamp()), anyLong());
+        verify(addressBookRepository, times(1)).save(addressBook2);
         assertThat(addressBook2.getStartConsensusTimestamp()).isNotNull();
-        verify(addressBookRepository, times(1))
-                .updateEndConsensusTimestamp(eq(addressBook1.getConsensusTimestamp()), anyLong());
+        verify(addressBookRepository, times(1)).save(addressBook1);
         assertThat(addressBook1.getEndConsensusTimestamp()).isNotNull();
     }
 
@@ -280,11 +276,9 @@ public class RecordFileParserTest {
 
         recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
 
-        verify(addressBookRepository, never())
-                .updateStartConsensusTimestamp(anyLong(), anyLong());
+        verify(addressBookRepository, never()).save(any());
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(0);
-        verify(addressBookRepository, never())
-                .updateEndConsensusTimestamp(anyLong(), anyLong());
+        verify(addressBookRepository, never()).save(any());
         assertThat(addressBook.getEndConsensusTimestamp()).isNull();
     }
 

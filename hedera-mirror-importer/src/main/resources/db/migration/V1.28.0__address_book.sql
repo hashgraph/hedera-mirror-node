@@ -9,33 +9,26 @@ create table if not exists address_book
     start_consensus_timestamp   nanos_timestamp null,
     end_consensus_timestamp     nanos_timestamp null,
     file_id                     entity_id       not null,
-    node_count                  smallint        null,
+    node_count                  int             null,
     file_data                   bytea           not null
 );
 
-create index if not exists address_book__fileId
-    on address_book (consensus_timestamp, file_id);
-
--- add node address table
+-- add address book entry table
 create table if not exists address_book_entry
 (
     id                      serial          primary key,
-    consensus_timestamp     nanos_timestamp not null,
+    consensus_timestamp     nanos_timestamp references address_book (consensus_timestamp),
     ip                      varchar(128)    null,
     port                    integer         null,
-    memo                    varchar(128)    not null,
+    memo                    varchar(128)    null,
     public_key              varchar(1024)   null,
     node_id                 bigint          null,
     node_account_id         entity_id       null,
     node_cert_hash          bytea           null
 );
 
-create index if not exists address_book_entry__id_timestamp
-    on address_book_entry (id, consensus_timestamp);
-
--- add foreign key
-alter table address_book_entry
-    add constraint fk__address_book foreign key (consensus_timestamp) references address_book (consensus_timestamp);
+create index if not exists address_book_entry__timestamp
+    on address_book_entry (consensus_timestamp);
 
 -- Update file_data with fileID
 alter table if exists file_data

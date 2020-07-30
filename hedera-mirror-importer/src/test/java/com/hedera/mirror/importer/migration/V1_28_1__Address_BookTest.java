@@ -102,9 +102,9 @@ public class V1_28_1__Address_BookTest extends IntegrationTest {
         // migration
         migration.migrate(new FlywayContext());
 
-        assertEquals(11, fileDataRepository.count());
-        assertEquals(5, addressBookRepository.count());
-        assertEquals(33, addressBookEntryRepository.count());
+        assertEquals(12, fileDataRepository.count());
+        assertEquals(6, addressBookRepository.count());
+        assertEquals(37, addressBookEntryRepository.count());
     }
 
     @Test
@@ -141,9 +141,10 @@ public class V1_28_1__Address_BookTest extends IntegrationTest {
         // migration
         migration.migrate(new FlywayContext());
 
-        assertEquals(6, fileDataRepository.count());
-        assertEquals(0, addressBookRepository.count());
-        assertEquals(0, addressBookEntryRepository.count());
+        assertEquals(7, fileDataRepository.count());
+        // only boot strap address book
+        assertEquals(1, addressBookRepository.count());
+        assertEquals(4, addressBookEntryRepository.count());
     }
 
     private FileData fileData(long consensusTimestamp, int nodeAddresses, int fileId, int transactionType) {

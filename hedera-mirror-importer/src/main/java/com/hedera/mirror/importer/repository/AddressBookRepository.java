@@ -22,20 +22,12 @@ package com.hedera.mirror.importer.repository;
 
 import java.util.List;
 import java.util.Optional;
-import javax.transaction.Transactional;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.query.Param;
 
-import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 
-@CacheConfig(cacheNames = "address_book", cacheManager = CacheConfiguration.NEVER_EXPIRE_LARGE)
-@Transactional
 public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
     @Query(value = "select * from address_book where consensus_timestamp <= ?1 and file_id = ?2 order by " +
             "consensus_timestamp desc limit 1", nativeQuery = true)
@@ -44,16 +36,4 @@ public interface AddressBookRepository extends CrudRepository<AddressBook, Long>
     @Query("from AddressBook where consensusTimestamp <= ?1 and fileId = ?2 order by " +
             "consensusTimestamp asc")
     List<AddressBook> findLatestAddressBooks(long consensusTimestamp, EntityId fileId);
-
-    @CacheEvict(key = "#p0")
-    @Modifying
-    @Query("update AddressBook set endConsensusTimestamp = :end where consensusTimestamp = :timestamp")
-    void updateEndConsensusTimestamp(@Param("timestamp") long consensusTimestamp,
-                                     @Param("end") long endConsensusTimestamp);
-
-    @CacheEvict(key = "#p0")
-    @Modifying
-    @Query("update AddressBook set startConsensusTimestamp = :start where consensusTimestamp = :timestamp")
-    void updateStartConsensusTimestamp(@Param("timestamp") long consensusTimestamp,
-                                       @Param("start") long startConsensusTimestamp);
 }

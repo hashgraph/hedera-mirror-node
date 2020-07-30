@@ -123,7 +123,7 @@ public class AddressBookServiceImplTest {
                 addressBookRepository,
                 fileDataRepository);
 
-        assertThat(addressBookServiceImpl.getAddresses())
+        assertThat(addressBookServiceImpl.getCurrent().getEntries())
                 .describedAs("Loads default address book from classpath")
                 .hasSize(4);
         assertEquals(1, addressBookRepository.count());
@@ -149,7 +149,12 @@ public class AddressBookServiceImplTest {
                 fileDataRepository);
         update(addressBookServiceImpl, addressBookBytes, 2L);
 
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        // assert current addressBook is unchanged
+        AddressBook addressBook = addressBookServiceImpl.getCurrent();
+        assertThat(addressBook.getConsensusTimestamp()).isEqualTo(0L);
+        assertThat(addressBook.getEntries()).hasSize(INITIAL_NODE_COUNT);
+
+        // assert repositories contain updates
         assertAddressBookData(UPDATED.toByteArray(), 2);
         assertEquals(2, addressBookRepository.count());
         assertEquals(14, addressBookEntryRepository.count());
@@ -162,7 +167,7 @@ public class AddressBookServiceImplTest {
         addressBookServiceImpl = new AddressBookServiceImpl(mirrorProperties,
                 addressBookRepository,
                 fileDataRepository);
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(UPDATED.getNodeAddressCount());
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(UPDATED.getNodeAddressCount());
     }
 
     @Test
@@ -176,7 +181,7 @@ public class AddressBookServiceImplTest {
                 fileDataRepository);
         update(addressBookServiceImpl, addressBookPartial, 1L);
 
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(INITIAL_NODE_COUNT);
         assertEquals(1, addressBookRepository.count());
         assertEquals(4, addressBookEntryRepository.count());
     }
@@ -193,13 +198,13 @@ public class AddressBookServiceImplTest {
                 addressBookRepository,
                 fileDataRepository);
         update(addressBookServiceImpl, addressBookBytes1, 1L);
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(INITIAL_NODE_COUNT);
 
         append(addressBookServiceImpl, addressBookBytes2, 2L);
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(INITIAL_NODE_COUNT);
 
         append(addressBookServiceImpl, addressBookBytes3, 3L);
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(INITIAL_NODE_COUNT);
         assertAddressBookData(addressBookBytes, 3);
 
         assertEquals(2, addressBookRepository.count());
@@ -209,7 +214,7 @@ public class AddressBookServiceImplTest {
         addressBookServiceImpl = new AddressBookServiceImpl(mirrorProperties,
                 addressBookRepository,
                 fileDataRepository);
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(UPDATED.getNodeAddressCount());
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(UPDATED.getNodeAddressCount());
     }
 
     @Test
@@ -223,7 +228,7 @@ public class AddressBookServiceImplTest {
                 fileDataRepository);
         update(addressBookServiceImpl, addressBookBytes1, 1L);
 
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(INITIAL_NODE_COUNT);
 
         assertEquals(1, addressBookRepository.count());
         assertEquals(4, addressBookEntryRepository.count());
@@ -237,7 +242,7 @@ public class AddressBookServiceImplTest {
         update(addressBookServiceImpl, new byte[] {}, 1L);
         append(addressBookServiceImpl, new byte[] {}, 2L);
 
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(INITIAL_NODE_COUNT);
         assertAddressBookData(initialAddressBook(), 0);
         assertEquals(1, addressBookRepository.count());
         assertEquals(4, addressBookEntryRepository.count());
@@ -279,19 +284,19 @@ public class AddressBookServiceImplTest {
         // create new address book and submit another append to complete file
         addressBookServiceImpl = new AddressBookServiceImpl(mirrorProperties, addressBookRepository,
                 fileDataRepository);
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(INITIAL_NODE_COUNT);
 
         append(addressBookServiceImpl, addressBookBytes2, 2L);
 
         // verify valid address book and repository update
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(INITIAL_NODE_COUNT);
         assertAddressBookData(FINAL.toByteArray(), 2);
 
         // verify new address book is loaded on restart
         addressBookServiceImpl = new AddressBookServiceImpl(mirrorProperties,
                 addressBookRepository,
                 fileDataRepository);
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(FINAL.getNodeAddressCount());
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(FINAL.getNodeAddressCount());
     }
 
     @Test
@@ -320,7 +325,7 @@ public class AddressBookServiceImplTest {
         assertEquals(INITIAL_NODE_COUNT, addressBookEntryRepository.count());
         assertEquals(1, addressBookRepository.count()); // initial and 102 update
 
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(INITIAL_NODE_COUNT);
 
         // perform file 101 update and verify only partial address book is changed
         EntityId file101ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
@@ -339,13 +344,13 @@ public class AddressBookServiceImplTest {
         assertAddressBookData(initialAddressBook(), 0);
 
         // verify partial bytes match 101 complete address book update
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(INITIAL_NODE_COUNT);
 
         // perform file 102 append
         append(addressBookServiceImpl, addressBookBytes2, 4L);
 
         // verify address book and node addresses are updated
-        assertThat(addressBookServiceImpl.getAddresses()).hasSize(INITIAL_NODE_COUNT);
+        assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(INITIAL_NODE_COUNT);
 
         // 4 (initial)  + 15 (101 update) + 12 (102 update)
         assertEquals(INITIAL_NODE_COUNT + UPDATED.getNodeAddressCount() + FINAL
@@ -358,7 +363,7 @@ public class AddressBookServiceImplTest {
         addressBookServiceImpl = new AddressBookServiceImpl(mirrorProperties,
                 addressBookRepository,
                 fileDataRepository);
-        assertThat(addressBookServiceImpl.getAddresses())
+        assertThat(addressBookServiceImpl.getCurrent().getEntries())
                 .hasSize(UPDATED.getNodeAddressCount());
     }
 

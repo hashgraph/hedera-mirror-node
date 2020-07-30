@@ -303,8 +303,7 @@ public class RecordFileParser implements FileParser {
             // set StartConsensusTimestamp of addressBook as first transaction in record file if not set already
             if (addressBook.getStartConsensusTimestamp() == null) {
                 addressBook.setStartConsensusTimestamp(startConsensusTimestamp);
-                addressBookRepository
-                        .updateStartConsensusTimestamp(addressBook.getConsensusTimestamp(), startConsensusTimestamp);
+                addressBookRepository.save(addressBook);
             }
 
             // close off previous addressBook
@@ -317,8 +316,7 @@ public class RecordFileParser implements FileParser {
                 // set EndConsensusTimestamp of addressBook as first transaction - 1ns in record file if not set already
                 if (previousAddressbook.getEndConsensusTimestamp() == null) {
                     previousAddressbook.setEndConsensusTimestamp(startConsensusTimestamp - 1);
-                    addressBookRepository.updateEndConsensusTimestamp(previousAddressbook
-                            .getConsensusTimestamp(), startConsensusTimestamp - 1);
+                    addressBookRepository.save(previousAddressbook);
                 }
             }
         }

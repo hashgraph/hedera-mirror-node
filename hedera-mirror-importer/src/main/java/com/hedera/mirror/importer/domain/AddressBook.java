@@ -60,7 +60,7 @@ public class AddressBook implements Persistable<Long> {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "consensusTimestamp")
-    private List<AddressBookEntry> addressBookEntries;
+    private List<AddressBookEntry> entries;
 
     @Override
     public Long getId() {

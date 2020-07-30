@@ -23,11 +23,11 @@ package com.hedera.mirror.importer.addressbook;
 import com.google.common.collect.ImmutableList;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Named;
@@ -35,7 +35,6 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AddressBook;
@@ -44,6 +43,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 
@@ -56,14 +56,14 @@ public class AddressBookServiceImpl implements AddressBookService {
     private final MirrorProperties mirrorProperties;
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
-    private Collection<AddressBookEntry> addressBookEntries;
+    private AddressBook addressBook;
 
     public AddressBookServiceImpl(MirrorProperties mirrorProperties, AddressBookRepository addressBookRepository,
                                   FileDataRepository fileDataRepository) {
         this.mirrorProperties = mirrorProperties;
         this.addressBookRepository = addressBookRepository;
         this.fileDataRepository = fileDataRepository;
-        addressBookEntries = Collections.emptyList();
+        addressBook = null;
         init();
     }
 
@@ -77,27 +77,25 @@ public class AddressBookServiceImpl implements AddressBookService {
         try {
             parse(fileData);
         } catch (Exception e) {
-            log.warn("Unable to parse address book: {}", e.getMessage());
+            log.error("Unable to parse address book", e);
         }
     }
 
     @Override
-    public Collection<AddressBookEntry> getAddresses() {
-        return addressBookEntries;
+    public AddressBook getCurrent() {
+        return addressBook;
     }
 
     @Override
     public boolean isAddressBook(EntityId entityId) {
-        return entityId != null && entityId.getType() == EntityTypeEnum.FILE.getId() &&
-                (entityId.getEntityNum() == 101 || entityId.getEntityNum() == 102)
-                && entityId.getShardNum() == 0 && entityId.getRealmNum() == 0;
+        return ADDRESS_BOOK_101_ENTITY_ID.equals(entityId) || ADDRESS_BOOK_102_ENTITY_ID.equals(entityId);
     }
 
     private void init() {
         // load most recent addressBook
         loadAddressBookFromDB();
 
-        if (CollectionUtils.isEmpty(addressBookEntries)) {
+        if (addressBook == null) {
             // no addressBook present in db, load from classpath
             byte[] addressBookBytes = null;
             try {
@@ -120,16 +118,15 @@ public class AddressBookServiceImpl implements AddressBookService {
             try {
                 FileData fileData = new FileData(0L, addressBookBytes, ADDRESS_BOOK_102_ENTITY_ID,
                         TransactionTypeEnum.FILECREATE.getProtoId());
-                AddressBook addressBook = parse(fileData);
-                addressBookEntries = addressBook.getAddressBookEntries();
+                addressBook = parse(fileData);
             } catch (Exception e) {
                 throw new IllegalStateException("Unable to parse address book: ", e);
             }
         } else {
-            log.info("Loaded addressBook w {} nodes from DB. ", addressBookEntries.size());
+            log.info("Loaded addressBook w {} nodes from DB. ", addressBook.getNodeCount());
         }
 
-        if (getAddresses().isEmpty()) {
+        if (addressBook == null) {
             throw new IllegalStateException("Unable to load a valid address book with node addresses");
         }
     }
@@ -144,9 +141,11 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @throws Exception
      */
     private AddressBook parse(FileData fileData) throws Exception {
-        byte[] addressBookBytes = null;
-        AddressBook addressBook = null;
+        if (fileData == null || !isAddressBook(fileData.getEntityId())) {
+            return null;
+        }
 
+        byte[] addressBookBytes = null;
         if (fileData.getTransactionType() == TransactionTypeEnum.FILEAPPEND.getProtoId()) {
             // concatenate bytes from partial address book file data in db
             if (fileData.getFileData() != null && fileData.getFileData().length > 0) {
@@ -161,10 +160,11 @@ public class AddressBookServiceImpl implements AddressBookService {
         // store fileData information
         fileDataRepository.save(fileData);
 
-        addressBook = buildAddressBook(addressBookBytes, fileData.getConsensusTimestamp(), fileData
+        AddressBook addressBook = buildAddressBook(addressBookBytes, fileData.getConsensusTimestamp(), fileData
                 .getEntityId());
         if (addressBook != null) {
-            saveAddressBook(addressBook);
+            addressBookRepository.save(addressBook);
+            log.info("Saved new address book to db: {}", addressBook);
         }
 
         return addressBook;
@@ -185,7 +185,7 @@ public class AddressBookServiceImpl implements AddressBookService {
                                     .getEntityId().getId(),
                             TransactionTypeEnum.FILEAPPEND.getProtoId());
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(firstPartialAddressBook.getFileData().length);
             try {
                 bos.write(firstPartialAddressBook.getFileData());
                 for (int i = 0; i < appendFileDataEntries.size(); i++) {
@@ -194,9 +194,12 @@ public class AddressBookServiceImpl implements AddressBookService {
 
                 bos.write(fileData.getFileData());
                 combinedBytes = bos.toByteArray();
-            } catch (Exception ex) {
-                log.error("Error concatenating partial address book fileData entries", ex);
+            } catch (IOException ex) {
+                throw new InvalidDatasetException("Error concatenating partial address book fileData entries", ex);
             }
+        } else {
+            throw new IllegalStateException("Missing FileData entry. FileAppend expects a corresponding " +
+                    "FileCreate/FileUpdate entry");
         }
 
         return combinedBytes;
@@ -217,7 +220,7 @@ public class AddressBookServiceImpl implements AddressBookService {
                     Collection<AddressBookEntry> addressBookEntryCollection =
                             retrieveNodeAddressesFromAddressBook(nodeAddressBook, consensusTimestamp);
 
-                    addressBookBuilder.addressBookEntries((List<AddressBookEntry>) addressBookEntryCollection);
+                    addressBookBuilder.entries((List<AddressBookEntry>) addressBookEntryCollection);
                 }
             }
         } catch (Exception e) {
@@ -252,11 +255,6 @@ public class AddressBookServiceImpl implements AddressBookService {
         return builder.build();
     }
 
-    private void saveAddressBook(AddressBook addressBook) {
-        addressBookRepository.save(addressBook);
-        log.info("Saved new address book to db: {}", addressBook);
-    }
-
     private void loadAddressBookFromDB() {
         // get last complete address book
         Optional<AddressBook> optionalAddressBook = addressBookRepository
@@ -264,8 +262,7 @@ public class AddressBookServiceImpl implements AddressBookService {
                         .getEpochSecond(), ADDRESS_BOOK_102_ENTITY_ID.getId());
 
         if (optionalAddressBook.isPresent()) {
-            AddressBook addressBook = optionalAddressBook.get();
-            addressBookEntries = addressBook.getAddressBookEntries();
+            addressBook = optionalAddressBook.get();
         }
     }
 }

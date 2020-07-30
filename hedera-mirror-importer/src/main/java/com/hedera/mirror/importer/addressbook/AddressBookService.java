@@ -20,9 +20,7 @@ package com.hedera.mirror.importer.addressbook;
  * ‍
  */
 
-import java.util.Collection;
-
-import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 
@@ -32,5 +30,5 @@ public interface AddressBookService {
 
     void update(FileData fileData);
 
-    Collection<AddressBookEntry> getAddresses();
+    AddressBook getCurrent();
 }

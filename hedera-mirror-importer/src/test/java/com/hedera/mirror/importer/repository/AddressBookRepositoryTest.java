@@ -85,7 +85,7 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
                 .fileData("address book memo".getBytes())
                 .nodeCount(nodeCount)
                 .fileId(addressBookEntityId102)
-                .addressBookEntries(addressBookEntryList);
+                .entries(addressBookEntryList);
 
         if (addressBookCustomizer != null) {
             addressBookCustomizer.accept(builder);
@@ -117,7 +117,7 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
                 () -> assertArrayEquals(expected.getFileData(), actual.getFileData()),
                 () -> assertEquals(expected.getConsensusTimestamp(), actual.getConsensusTimestamp()),
                 () -> assertEquals(expected.getNodeCount(), actual.getNodeCount()),
-                () -> assertEquals(expected.getAddressBookEntries().size(), actual.getAddressBookEntries().size())
+                () -> assertEquals(expected.getEntries().size(), actual.getEntries().size())
         );
     }
 }

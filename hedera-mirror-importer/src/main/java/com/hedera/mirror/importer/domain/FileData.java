@@ -47,4 +47,9 @@ public class FileData {
     private EntityId entityId;
 
     private Integer transactionType;
+
+//    @Transient
+//    public boolean isAppend() {
+//        return transactionType == TransactionTypeEnum.FILEAPPEND.getProtoId();
+//    }
 }

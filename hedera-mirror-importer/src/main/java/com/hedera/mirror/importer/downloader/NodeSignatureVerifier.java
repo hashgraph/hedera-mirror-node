@@ -48,7 +48,8 @@ public class NodeSignatureVerifier {
 
     public NodeSignatureVerifier(AddressBookService addressBookService) {
         nodeIDPubKeyMap = addressBookService
-                .getAddresses()
+                .getCurrent()
+                .getEntries()
                 .stream()
                 .collect(Collectors.toMap(AddressBookEntry::getNodeAccountId, AddressBookEntry::getPublicKeyAsObject));
     }
@@ -72,11 +73,12 @@ public class NodeSignatureVerifier {
      */
     public void verify(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
         Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
-        String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst().orElse(null);
+        String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst()
+                .orElse(null);
         int consensusCount = 0;
 
-        final long sigFileCount = signatures.size();
-        final long nodeCount = nodeIDPubKeyMap.size();
+        long sigFileCount = signatures.size();
+        long nodeCount = nodeIDPubKeyMap.size();
         if (!canReachConsensus(sigFileCount, nodeCount)) {
             throw new SignatureVerificationException("Require at least 1/3 signature files to reach consensus, got " +
                     sigFileCount + " out of " + nodeCount + " for file " + filename + ": " + statusMap(signatures));

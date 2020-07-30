@@ -51,6 +51,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.Entities;
 import com.hedera.mirror.importer.domain.FileData;
@@ -61,6 +62,8 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
+    private static final FileID ADDRESS_BOOK_FILEID = FileID.newBuilder().setShardNum(0).setRealmNum(0)
+            .setFileNum(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getEntityNum()).build();
     private static final FileID fileId = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1001).build();
     private static final byte[] FILE_CONTENTS = {'a', 'b', 'c'};
 
@@ -308,24 +311,27 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         byte[] addressBook = FileUtils.readFileToByteArray(addressBookLarge);
         byte[] addressBookUpdate = Arrays.copyOf(addressBook, 6144);
         byte[] addressBookAppend = Arrays.copyOfRange(addressBook, 6144, addressBook.length);
-        FileID fileID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build();
 
         // Initial address book update
-        Transaction transactionUpdate = fileUpdateAllTransaction(fileID, addressBookUpdate);
+        Transaction transactionUpdate = fileUpdateAllTransaction(ADDRESS_BOOK_FILEID, addressBookUpdate);
         TransactionBody transactionBodyUpdate = TransactionBody.parseFrom(transactionUpdate.getBodyBytes());
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBodyUpdate.getFileUpdate();
-        TransactionRecord recordUpdate = transactionRecord(transactionBodyUpdate, fileID);
+        TransactionRecord recordUpdate = transactionRecord(transactionBodyUpdate, ADDRESS_BOOK_FILEID);
 
         // Address book append
-        Transaction transactionAppend = fileAppendTransaction(fileID, addressBookAppend);
+        Transaction transactionAppend = fileAppendTransaction(ADDRESS_BOOK_FILEID, addressBookAppend);
         TransactionBody transactionBodyAppend = TransactionBody.parseFrom(transactionAppend.getBodyBytes());
         FileAppendTransactionBody fileAppendTransactionBody = transactionBodyAppend.getFileAppend();
-        TransactionRecord recordAppend = transactionRecord(transactionBodyAppend, fileID);
+        TransactionRecord recordAppend = transactionRecord(transactionBodyAppend, ADDRESS_BOOK_FILEID);
 
         parseRecordItemAndCommit(new RecordItem(transactionUpdate, recordUpdate));
         parseRecordItemAndCommit(new RecordItem(transactionAppend, recordAppend));
 
-        assertThat(addressBookService.getAddresses())
+        // verify current address book is unchanged
+        AddressBook currentAddressBook = addressBookService.getCurrent();
+        assertThat(currentAddressBook.getConsensusTimestamp())
+                .isNotEqualTo(Utility.timeStampInNanos(recordAppend.getConsensusTimestamp()));
+        assertThat(currentAddressBook.getEntries())
                 .describedAs("Should not overwrite address book with complete update")
                 .hasSize(4);
 
@@ -541,19 +547,17 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileUpdateAddressBookPartial() throws Exception {
         byte[] largeAddressBook = FileUtils.readFileToByteArray(addressBookLarge);
         byte[] addressBookUpdate = Arrays.copyOf(largeAddressBook, largeAddressBook.length / 2);
-        Transaction transaction = fileUpdateAllTransaction(
-                FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build(), addressBookUpdate);
+        Transaction transaction = fileUpdateAllTransaction(ADDRESS_BOOK_FILEID, addressBookUpdate);
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
-        TransactionRecord record = transactionRecord(transactionBody,
-                FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
+        TransactionRecord record = transactionRecord(transactionBody, ADDRESS_BOOK_FILEID);
 
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        assertThat(addressBookService.getAddresses())
+        assertThat(addressBookService.getCurrent().getEntries())
                 .describedAs("Should not overwrite address book with partial update")
                 .hasSize(4);
 
@@ -571,20 +575,23 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     void fileUpdateAddressBookComplete() throws Exception {
         byte[] addressBook = FileUtils.readFileToByteArray(addressBookSmall);
         assertThat(addressBook).hasSizeLessThan(6144);
-        Transaction transaction = fileUpdateAllTransaction(
-                FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build(), addressBook);
+        Transaction transaction = fileUpdateAllTransaction(ADDRESS_BOOK_FILEID, addressBook);
         TransactionBody transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
-        TransactionRecord record = transactionRecord(transactionBody,
-                FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(102).build());
+        TransactionRecord record = transactionRecord(transactionBody, ADDRESS_BOOK_FILEID);
 
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        assertThat(addressBookService.getAddresses())
+        // verify current address book is unchanged
+        AddressBook currentAddressBook = addressBookService.getCurrent();
+        assertThat(currentAddressBook.getConsensusTimestamp())
+                .isNotEqualTo(Utility.timeStampInNanos(record.getConsensusTimestamp()));
+        assertThat(currentAddressBook.getEntries())
                 .hasSize(4);
+
         assertAll(
                 () -> assertRowCountOnSuccess(),
                 () -> assertFileTransaction(transactionBody, record, false),

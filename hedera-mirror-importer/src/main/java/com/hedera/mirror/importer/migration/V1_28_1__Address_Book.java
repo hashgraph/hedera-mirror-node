@@ -21,6 +21,8 @@ package com.hedera.mirror.importer.migration;
  */
 
 import com.google.common.base.Stopwatch;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -28,30 +30,37 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.IOUtils;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 import org.flywaydb.core.internal.jdbc.JdbcTemplate;
 import org.flywaydb.core.internal.jdbc.RowMapper;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.util.CollectionUtils;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @Log4j2
 @Named
 public class V1_28_1__Address_Book extends BaseJavaMigration {
     private final AddressBookService addressBookService;
+    private final MirrorProperties mirrorProperties;
     private final String FILE_DATA_SQL = "select * from file_data where consensus_timestamp > cast(? as " +
-            "nanos_timestamp) and (entity_id = cast(? as int) or entity_id = cast(? as int)) order by " +
+            "nanos_timestamp) and entity_id in (101, 102) order by " +
             "consensus_timestamp asc limit cast(? as int)";
     private JdbcTemplate jdbcTemplate;
 
-    public V1_28_1__Address_Book(@Lazy AddressBookService addressBookService) {
+    public V1_28_1__Address_Book(MirrorProperties mirrorProperties, @Lazy AddressBookService addressBookService) {
         this.addressBookService = addressBookService;
+        this.mirrorProperties = mirrorProperties;
     }
 
     @Override
@@ -60,6 +69,29 @@ public class V1_28_1__Address_Book extends BaseJavaMigration {
         Stopwatch stopwatch = Stopwatch.createStarted();
         AtomicLong currentConsensusTimestamp = new AtomicLong(0);
         AtomicLong fileDataEntries = new AtomicLong(0);
+
+        byte[] addressBookBytes;
+        try {
+            Path initialAddressBook = mirrorProperties.getInitialAddressBook();
+            if (initialAddressBook != null) {
+                addressBookBytes = Files.readAllBytes(initialAddressBook);
+                log.info("Loading bootstrap address book of {} B from {}", addressBookBytes.length,
+                        initialAddressBook);
+            } else {
+                MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
+                String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
+                Resource resource = new ClassPathResource(resourcePath, getClass());
+                addressBookBytes = IOUtils.toByteArray(resource.getInputStream());
+                log.info("Loading bootstrap address book of {} B from {}", addressBookBytes.length, resource);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to load valid address book from classpath");
+        }
+
+        FileData bootStrapFileData = new FileData(0L, addressBookBytes,
+                AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID,
+                TransactionTypeEnum.FILECREATE.getProtoId());
+        addressBookService.update(bootStrapFileData);
 
         // starting from consensusTimeStamp = 0 retrieve pages of fileData entries
         int pageSize = 1000; // option to parameterize this
@@ -89,8 +121,7 @@ public class V1_28_1__Address_Book extends BaseJavaMigration {
                         EntityIdEndec.decode(rs.getInt("entity_id"), EntityTypeEnum.FILE),
                         rs.getInt("transaction_type"));
             }
-        }, consensusTimestamp, AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID
-                .getId(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId(), pageSize);
+        }, consensusTimestamp, pageSize);
 
         log.info("Retrieved {} file_data rows for address book processing", fileDataList.size());
         return fileDataList;

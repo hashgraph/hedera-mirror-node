@@ -163,7 +163,7 @@ public abstract class Downloader {
         Multimap<String, FileStreamSignature> sigFilesMap = Multimaps
                 .synchronizedSortedSetMultimap(TreeMultimap.create());
 
-        Set<String> nodeAccountIds = addressBookService.getAddresses()
+        Set<String> nodeAccountIds = addressBookService.getCurrent().getEntries()
                 .stream()
                 .map(AddressBookEntry::getNodeAccountId)
                 .collect(Collectors.toSet());
@@ -338,7 +338,8 @@ public abstract class Downloader {
                 nodeSignatureVerifier.verify(signatures);
             } catch (SignatureVerificationException ex) {
                 if (groupIdIterator.hasNext()) {
-                    log.warn("Signature verification failed but still have files in the batch, try to process the next group", ex);
+                    log.warn("Signature verification failed but still have files in the batch, try to process the " +
+                            "next group", ex);
                     continue;
                 }
                 throw ex;

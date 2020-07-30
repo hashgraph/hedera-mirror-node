@@ -2,7 +2,6 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Instant;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
@@ -41,30 +40,6 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
                 .isNotNull()
                 .extracting(AddressBookEntry::getId)
                 .containsSequence(1L, 2L, 3L);
-    }
-
-    @Test
-    void retrieveNodeAddressesForGivenAddressBook() {
-        Long addressBook1ConsensusTimeStamp = Instant.now().getEpochSecond();
-
-        addressBookRepository.save(addressBook(ab -> ab.consensusTimestamp(addressBook1ConsensusTimeStamp)));
-        addressBookEntryRepository.save(addressBookEntry(na -> na.consensusTimestamp(addressBook1ConsensusTimeStamp)));
-
-        Long addressBook2ConsensusTimeStamp = addressBook1ConsensusTimeStamp + 1;
-        addressBookRepository.save(addressBook(ab -> ab.consensusTimestamp(addressBook2ConsensusTimeStamp)));
-        AddressBookEntry addressBookEntry1 = addressBookEntryRepository
-                .save(addressBookEntry(na -> na.consensusTimestamp(addressBook2ConsensusTimeStamp)));
-        AddressBookEntry addressBookEntry2 = addressBookEntryRepository
-                .save(addressBookEntry(na -> na.consensusTimestamp(addressBook2ConsensusTimeStamp)));
-
-        Long addressBook3ConsensusTimeStamp = addressBook2ConsensusTimeStamp + 2;
-        addressBookRepository.save(addressBook(ab -> ab.consensusTimestamp(addressBook3ConsensusTimeStamp)));
-        addressBookEntryRepository.save(addressBookEntry(na -> na.consensusTimestamp(addressBook3ConsensusTimeStamp)));
-        addressBookEntryRepository.save(addressBookEntry(na -> na.consensusTimestamp(addressBook3ConsensusTimeStamp)));
-        assertThat(addressBookEntryRepository
-                .findAddressBookEntriesByConsensusTimestamp(addressBookEntry1.getConsensusTimestamp()))
-                .isNotNull()
-                .containsSequence(addressBookEntry1, addressBookEntry2);
     }
 
     private AddressBookEntry addressBookEntry(Consumer<AddressBookEntry.AddressBookEntryBuilder> nodeAddressCustomizer) {

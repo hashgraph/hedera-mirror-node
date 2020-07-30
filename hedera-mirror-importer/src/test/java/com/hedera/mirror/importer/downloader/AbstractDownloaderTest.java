@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.downloader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.reset;
@@ -37,6 +36,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,8 +45,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import javax.sql.DataSource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +60,6 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
@@ -70,9 +67,7 @@ import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
-import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 public abstract class AbstractDownloaderTest {
@@ -80,17 +75,14 @@ public abstract class AbstractDownloaderTest {
 
     @Mock(answer = Answers.RETURNS_SMART_NULLS)
     protected ApplicationStatusRepository applicationStatusRepository;
-    @Mock(answer = Answers.RETURNS_SMART_NULLS)
-    protected AddressBookRepository addressBookRepository;
-    @Mock(answer = Answers.RETURNS_SMART_NULLS)
-    protected FileDataRepository fileDataRepository;
+    @Mock(lenient = true)
+    protected AddressBookService addressBookService;
     @TempDir
     protected Path s3Path;
     protected S3Mock s3;
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties commonDownloaderProperties;
     protected MirrorProperties mirrorProperties;
-    protected AddressBookService addressBookService;
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
     protected Downloader downloader;
@@ -146,14 +138,13 @@ public abstract class AbstractDownloaderTest {
     }
 
     @BeforeEach
-    void beforeEach(TestInfo testInfo) {
+    void beforeEach(TestInfo testInfo) throws IOException {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
 
         initProperties();
         s3AsyncClient = new MirrorImporterConfiguration(
                 mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry))
                 .s3CloudStorageClient();
-        addressBookService = new AddressBookServiceImpl(mirrorProperties, addressBookRepository, fileDataRepository);
         downloader = getDownloader();
 
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
@@ -164,6 +155,14 @@ public abstract class AbstractDownloaderTest {
 
         s3 = S3Mock.create(S3_MOCK_PORT, s3Path.toString());
         s3.start();
+
+        MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
+        Path addressBookPath = ResourceUtils.getFile(String
+                .format("classpath:addressbook/%s", hederaNetwork.name().toLowerCase())).toPath();
+        byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
+        EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+        long now = Instant.now().getEpochSecond();
+        doReturn(addressBookFromBytes(addressBookBytes, now, entityId)).when(addressBookService).getCurrent();
     }
 
     @AfterEach
@@ -231,17 +230,12 @@ public abstract class AbstractDownloaderTest {
         MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
         Path addressBookPath = ResourceUtils.getFile(String
                 .format("classpath:addressbook/%s", hederaNetwork.name().toLowerCase())).toPath();
-        byte[] addressBook = Files.readAllBytes(addressBookPath);
-        int index = Bytes.lastIndexOf(addressBook, (byte) '\n');
-        addressBook = Arrays.copyOfRange(addressBook, 0, index);
+        byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
+        int index = Bytes.lastIndexOf(addressBookBytes, (byte) '\n');
+        addressBookBytes = Arrays.copyOfRange(addressBookBytes, 0, index);
         EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
         long now = Instant.now().getEpochSecond();
-
-        doReturn(Optional.of(addressBookFromBytes(addressBook, now, entityId)))
-                .when(addressBookRepository)
-                .findLatestAddressBook(anyLong(),
-                        eq(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()));
-        addressBookService = new AddressBookServiceImpl(mirrorProperties, addressBookRepository, fileDataRepository);
+        doReturn(addressBookFromBytes(addressBookBytes, now, entityId)).when(addressBookService).getCurrent();
 
         fileCopier.filterDirectories("*0.0.3").copy();
         getDownloader().download();
@@ -384,7 +378,8 @@ public abstract class AbstractDownloaderTest {
         String basename = lastFileInstant.toString().replace(':', '_');
         String lastFileName = basename + streamType.getSuffix() + "." + streamType.getExtension();
 
-        doReturn(lastFileName).when(applicationStatusRepository).findByStatusCode(downloader.getLastValidDownloadedFileKey());
+        doReturn(lastFileName).when(applicationStatusRepository)
+                .findByStatusCode(downloader.getLastValidDownloadedFileKey());
 
         fileCopier.copy();
         downloader.download();
@@ -453,7 +448,7 @@ public abstract class AbstractDownloaderTest {
             addressBookEntries.add(addressBookEntry);
         }
 
-        addressBookBuilder.addressBookEntries(addressBookEntries);
+        addressBookBuilder.entries(addressBookEntries);
 
         return addressBookBuilder.build();
     }
