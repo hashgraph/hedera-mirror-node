@@ -46,9 +46,6 @@ public class BalanceDownloaderProperties implements DownloaderProperties {
     @Min(1)
     private int batchSize = 15;
 
-    @NotNull
-    private Duration closeInterval = Duration.ofMinutes(15L);
-
     private boolean enabled = true;
 
     @NotNull

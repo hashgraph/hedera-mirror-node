@@ -46,9 +46,6 @@ public class RecordDownloaderProperties implements DownloaderProperties {
     @Min(1)
     private int batchSize = 40;
 
-    @NotNull
-    private Duration closeInterval = Duration.ofSeconds(2L);
-
     private boolean enabled = true;
 
     @NotNull

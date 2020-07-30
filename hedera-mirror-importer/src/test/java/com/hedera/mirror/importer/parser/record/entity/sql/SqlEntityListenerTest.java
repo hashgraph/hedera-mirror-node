@@ -24,31 +24,18 @@ import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.Reader;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.RandomUtils;
 import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
-import org.postgresql.copy.CopyManager;
 import org.postgresql.jdbc.PgConnection;
-import org.springframework.cache.CacheManager;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -251,15 +238,12 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
         sqlEntityListener.onEntityId(entityId);
 
-        boolean rollback = false;
-        try {
-            completeFileAndCommit();
-        } catch (Exception ex) {
-            sqlEntityListener.onError();
-            rollback = true;
-        }
+        assertThatThrownBy(() -> completeFileAndCommit())
+                .isInstanceOf(ParserException.class)
+                .extracting(Throwable::getCause)
+                .isInstanceOf(SQLException.class);
+        sqlEntityListener.onError();
 
-        assertThat(rollback).isTrue();
         assertEquals(0, topicMessageRepository.count());
         assertEquals(0, cryptoTransferRepository.count());
         assertEquals(0, entityRepository.count());
@@ -375,39 +359,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.count()).isEqualTo(1);
         assertThat(recordFileRepository.findByName(fileName)).hasSize(1);
-    }
-
-    @Test
-    void testExceptionInCopyPropagatesUp() throws Exception {
-        // given
-        SQLException exception = new SQLException("test exception");
-        CopyManager copyManager = mock(CopyManager.class);
-        doThrow(exception).when(copyManager).copyIn(any(), (Reader) any(), anyInt());
-        PGConnection pgConnection = mock(PGConnection.class);
-        doReturn(copyManager).when(pgConnection).getCopyAPI();
-        Connection conn = mock(Connection.class);
-        PreparedStatement statement = mock(PreparedStatement.class);
-        doReturn(pgConnection).when(conn).unwrap(any());
-        doReturn(statement).when(conn).prepareStatement(any());
-        DataSource dataSource = mock(DataSource.class);
-        doReturn(conn).when(dataSource).getConnection();
-        CacheManager cacheManager = mock(CacheManager.class);
-        var sqlEntityListener2 = new SqlEntityListener(
-                sqlProperties, dataSource, recordFileRepository, entityRepository, new SimpleMeterRegistry(),
-                cacheManager);
-        sqlEntityListener2.onStart(new StreamFileData(fileName, null));
-        sqlEntityListener2.onTransaction(makeTransaction());
-
-        // when, then
-        assertThatThrownBy(() -> sqlEntityListener2.onEnd(
-                new RecordFile(0L, 0L, null, fileName, 0L, 0L, UUID.randomUUID().toString(), "", 0)))
-                .isInstanceOf(ParserException.class)
-                .extracting(Throwable::getCause)
-                .isInstanceOf(ExecutionException.class)
-                .extracting(Throwable::getCause)
-                .isInstanceOf(ParserException.class)
-                .extracting(Throwable::getCause)
-                .isSameAs(exception);
     }
 
     static <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {

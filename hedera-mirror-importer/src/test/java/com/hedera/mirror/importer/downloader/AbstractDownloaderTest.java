@@ -96,8 +96,6 @@ public abstract class AbstractDownloaderTest {
     protected Downloader downloader;
     protected Path validPath;
     protected MeterRegistry meterRegistry = new LoggingMeterRegistry();
-    @Mock(answer = Answers.RETURNS_SMART_NULLS)
-    protected DataSource dataSource;
     protected String file1;
     protected String file2;
 
@@ -140,6 +138,8 @@ public abstract class AbstractDownloaderTest {
     protected abstract Downloader getDownloader();
 
     protected abstract Path getTestDataDir();
+
+    protected abstract Duration getCloseInterval();
 
     boolean isSigFile(Path path) {
         return path.toString().endsWith("_sig");
@@ -348,25 +348,49 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("Different filenames, same interval, lower bound")
     void differentFilenamesSameIntervalLower() throws Exception {
-        differentFilenames(downloaderProperties.getCloseInterval().dividedBy(2L).negated());
+        differentFilenames(getCloseInterval().dividedBy(2L).negated());
     }
 
     @Test
     @DisplayName("Different filenames, same interval, upper bound")
     void differentFilenamesSameIntervalUpper() throws Exception {
-        differentFilenames(downloaderProperties.getCloseInterval().dividedBy(2L).minusNanos(1));
+        differentFilenames(getCloseInterval().dividedBy(2L).minusNanos(1));
     }
 
     @Test
     @DisplayName("Different filenames, previous interval")
     void differentFilenamesPreviousInterval() throws Exception {
-        differentFilenames(downloaderProperties.getCloseInterval().dividedBy(2L).negated().minusNanos(2));
+        differentFilenames(getCloseInterval().dividedBy(2L).negated().minusNanos(2));
     }
 
     @Test
     @DisplayName("Different filenames, next interval")
     void differentFilenamesNextInterval() throws Exception {
-        differentFilenames(downloaderProperties.getCloseInterval().dividedBy(2L));
+        differentFilenames(getCloseInterval().dividedBy(2L));
+    }
+
+    @Test
+    @DisplayName("Download and verify two group of files in the same bucket")
+    void downloadValidFilesInSameBucket() throws Exception {
+        // last valid downloaded file's timestamp is set to file1's timestamp - (I/2 + 1ns), so both file1 and file2
+        // will be in the bucket [lastTimestamp + I/2, lastTimestamp + 3*I/2). Note the interval I is set to twice of
+        // the difference between file1 and file2.
+        Duration interval = getCloseInterval().multipliedBy(2);
+        long file1Timestamp = Utility.getTimestampFromFilename(file1);
+        Instant file1Instant = Instant.ofEpochSecond(file1Timestamp / 1_000_000_000L,
+                file1Timestamp % 1_000_000_000L);
+        Instant lastFileInstant = file1Instant.minus(interval.dividedBy(2).plusNanos(1));
+        StreamType streamType = StreamType.fromFilename(file1);
+        String basename = lastFileInstant.toString().replace(':', '_');
+        String lastFileName = basename + streamType.getSuffix() + "." + streamType.getExtension();
+
+        doReturn(lastFileName).when(applicationStatusRepository).findByStatusCode(downloader.getLastValidDownloadedFileKey());
+
+        fileCopier.copy();
+        downloader.download();
+
+        verifyForSuccess();
+        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
     }
 
     private void differentFilenames(Duration offset) throws Exception {
@@ -376,7 +400,7 @@ public abstract class AbstractDownloaderTest {
         Path basePath = fileCopier.getTo().resolve(type.getNodePrefix() + "0.0.3");
 
         // Construct a new filename with the offset added to the last valid file
-        long nanoOffset = downloaderProperties.getCloseInterval().plus(offset).toNanos();
+        long nanoOffset = getCloseInterval().plus(offset).toNanos();
         long timestamp = Utility.getTimestampFromFilename(file1) + nanoOffset;
         String baseFilename = Instant.ofEpochSecond(0, timestamp).toString().replace(':', '_') + type.getSuffix() + ".";
 

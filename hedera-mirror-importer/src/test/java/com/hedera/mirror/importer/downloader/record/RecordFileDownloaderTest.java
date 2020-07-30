@@ -70,11 +70,15 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
         return Paths.get("recordstreams", "v2");
     }
 
+    @Override
+    protected Duration getCloseInterval() {
+        return Duration.ofSeconds(5L);
+    }
+
     @BeforeEach
     void beforeEach() {
         file1 = "2019-08-30T18_10_00.419072Z.rcd";
         file2 = "2019-08-30T18_10_05.249678Z.rcd";
-        downloaderProperties.setCloseInterval(Duration.ofSeconds(5)); // Test rcd files use older 5s interval
     }
 
     @Test

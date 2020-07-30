@@ -66,7 +66,7 @@
         <java.version>11</java.version>
         <javax.version>1</javax.version>
         <jib.version>2.4.0</jib.version>
-        <jmeter.version>5.2.1</jmeter.version>
+        <jmeter.version>5.3</jmeter.version>
         <micrometer-jvm-extras.version>0.2.0</micrometer-jvm-extras.version>
         <protobuf.version>3.11.1</protobuf.version>
         <release.version>${project.version}</release.version> <!-- Used to replace release versions in all files -->
@@ -85,7 +85,7 @@
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
-                <version>Hoxton.SR4</version>
+                <version>Hoxton.SR6</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

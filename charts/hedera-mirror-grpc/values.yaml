@@ -30,7 +30,7 @@ hpa:
 image:
   pullPolicy: IfNotPresent
   repository: gcr.io/mirrornode/hedera-mirror-grpc
-  tag: "" # Default to the chart's app version
+  tag: ""  # Default to the chart's app version
 
 imagePullSecrets: []
 

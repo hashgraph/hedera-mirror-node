@@ -8,4 +8,4 @@ WORKDIR /usr/src/app
 COPY --from=build /usr/src/app .
 COPY . ./
 USER node
-CMD npm start
+CMD npm start --no-update-notifier

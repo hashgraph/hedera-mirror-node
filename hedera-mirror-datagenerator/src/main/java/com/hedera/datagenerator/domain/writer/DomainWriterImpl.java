@@ -52,8 +52,7 @@ public class DomainWriterImpl implements DomainWriter {
     public DomainWriterImpl(DataSource dataSource, EntityRepository entityRepository, SqlProperties sqlProperties) throws SQLException {
         this.dataSource = dataSource;
         this.entityRepository = entityRepository;
-        accountBalancePgCopy = new PgCopy<>(dataSource, AccountBalance.class, new SimpleMeterRegistry(), sqlProperties
-                .getBatchSize());
+        accountBalancePgCopy = new PgCopy<>(AccountBalance.class, new SimpleMeterRegistry(), sqlProperties);
         accountBalances = new HashSet<>();
         entities = new HashSet<>();
         this.sqlProperties = sqlProperties;
