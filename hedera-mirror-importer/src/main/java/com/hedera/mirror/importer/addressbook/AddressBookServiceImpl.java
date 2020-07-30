@@ -81,8 +81,8 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         if (optionalAddressBook.isPresent()) {
             AddressBook addressBook = optionalAddressBook.get();
-            log.info("Loaded addressBook from {} with nodes ({}).", addressBook.getConsensusTimestamp(), addressBook
-                    .getNodeSet());
+            log.info("Loaded addressBook from {} with nodes ({}).", addressBook.getStartConsensusTimestamp(),
+                    addressBook.getNodeSet());
             return addressBook;
         }
 
@@ -104,7 +104,7 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @return Parsed addressbook object if valid. Null otherwise.
      * @throws Exception
      */
-    private AddressBook parse(FileData fileData) {
+    private void parse(FileData fileData) {
         byte[] addressBookBytes = null;
         if (fileData.transactionTypeIsAppend()) {
             // concatenate bytes from partial address book file data in db
@@ -114,26 +114,23 @@ public class AddressBookServiceImpl implements AddressBookService {
         }
 
         // store fileData information
-        fileDataRepository.save(fileData);
+        fileData = fileDataRepository.save(fileData);
 
         AddressBook addressBook = buildAddressBook(addressBookBytes, fileData.getConsensusTimestamp(), fileData
                 .getEntityId());
         if (addressBook != null) {
-            addressBookRepository.save(addressBook);
+            addressBook = addressBookRepository.save(addressBook);
             log.info("Saved new address book to db: {}", addressBook);
 
             // update previous addressBook
-            updateAddressBook(addressBook.getConsensusTimestamp(), fileData.getConsensusTimestamp());
+            updateAddressBook(addressBook.getStartConsensusTimestamp(), fileData.getConsensusTimestamp());
         }
-
-        return addressBook;
     }
 
     private byte[] combinePreviousFileDataContents(FileData fileData) {
-        Optional<FileData> optionalFileData = fileDataRepository.
-                findLatestMatchingFile(fileData
-                        .getConsensusTimestamp(), fileData.getEntityId().getId(), List
-                        .of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        Optional<FileData> optionalFileData = fileDataRepository.findLatestMatchingFile(
+                fileData.getConsensusTimestamp(), fileData.getEntityId().getId(),
+                List.of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
         byte[] combinedBytes = null;
         if (optionalFileData.isPresent()) {
             FileData firstPartialAddressBook = optionalFileData.get();
@@ -165,10 +162,10 @@ public class AddressBookServiceImpl implements AddressBookService {
     }
 
     private AddressBook buildAddressBook(byte[] addressBookBytes, long consensusTimestamp, EntityId fileID) {
+        long startConsensusTimestamp = consensusTimestamp + 1;
         AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
                 .fileData(addressBookBytes)
-                .consensusTimestamp(consensusTimestamp)
-                .startConsensusTimestamp(consensusTimestamp + 1)
+                .startConsensusTimestamp(startConsensusTimestamp)
                 .fileId(fileID);
 
         try {
@@ -178,7 +175,7 @@ public class AddressBookServiceImpl implements AddressBookService {
                 if (nodeAddressBook.getNodeAddressCount() > 0) {
                     addressBookBuilder.nodeCount(nodeAddressBook.getNodeAddressCount());
                     Collection<AddressBookEntry> addressBookEntryCollection =
-                            retrieveNodeAddressesFromAddressBook(nodeAddressBook, consensusTimestamp);
+                            retrieveNodeAddressesFromAddressBook(nodeAddressBook, startConsensusTimestamp);
 
                     addressBookBuilder.entries((List<AddressBookEntry>) addressBookEntryCollection);
                 }
@@ -220,26 +217,27 @@ public class AddressBookServiceImpl implements AddressBookService {
      * and end of addressbook are set after a record file is processed. If not set based on first and last transaction
      * in record file
      *
-     * @param currentAddressBookConsensusTimestamp
+     * @param currentAddressBookStartConsensusTimestamp
      */
-    private void updateAddressBook(long currentAddressBookConsensusTimestamp, long transactionConsensusTimestamp) {
+    private void updateAddressBook(long currentAddressBookStartConsensusTimestamp, long transactionConsensusTimestamp) {
         // close off previous addressBook
         Optional<AddressBook> previousOptionalAddressBook = addressBookRepository
-                .findLatestAddressBook(currentAddressBookConsensusTimestamp,
+                .findLatestAddressBook(currentAddressBookStartConsensusTimestamp - 1,
                         AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID
                                 .getId());
         if (previousOptionalAddressBook.isPresent()) {
             AddressBook previousAddressBook = previousOptionalAddressBook.get();
 
             // set EndConsensusTimestamp of addressBook as first transaction - 1ns in record file if not set already
-            if (previousAddressBook.getEndConsensusTimestamp() == null) {
+            if (previousAddressBook.getStartConsensusTimestamp() != currentAddressBookStartConsensusTimestamp &&
+                    previousAddressBook.getEndConsensusTimestamp() == null) {
                 previousAddressBook.setEndConsensusTimestamp(transactionConsensusTimestamp);
                 addressBookRepository.save(previousAddressBook);
                 log.info("Setting endConsensusTimestamp of previous AddressBook ({}) to {}",
-                        transactionConsensusTimestamp);
+                        previousAddressBook.getStartConsensusTimestamp(), transactionConsensusTimestamp);
             }
         } else {
-            log.warn("No previous address book found before {}", currentAddressBookConsensusTimestamp);
+            log.warn("No previous address book found before {}", currentAddressBookStartConsensusTimestamp);
         }
     }
 }

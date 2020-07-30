@@ -5,8 +5,7 @@
 -- add address book table
 create table if not exists address_book
 (
-    consensus_timestamp         nanos_timestamp primary key,
-    start_consensus_timestamp   nanos_timestamp null,
+    start_consensus_timestamp   nanos_timestamp primary key,
     end_consensus_timestamp     nanos_timestamp null,
     file_id                     entity_id       not null,
     node_count                  int             null,
@@ -17,7 +16,7 @@ create table if not exists address_book
 create table if not exists address_book_entry
 (
     id                      serial          primary key,
-    consensus_timestamp     nanos_timestamp references address_book (consensus_timestamp),
+    consensus_timestamp     nanos_timestamp references address_book (start_consensus_timestamp),
     ip                      varchar(128)    null,
     port                    integer         null,
     memo                    varchar(128)    null,

@@ -46,12 +46,12 @@ import com.hedera.mirror.importer.converter.FileIdConverter;
 @AllArgsConstructor
 @ToString(exclude = {"fileData"})
 public class AddressBook implements Persistable<Long> {
+    // consensusTimestamp + 1ns of transaction containing final fileAppend operation
     @Id
-    private Long consensusTimestamp; // transaction consensusTimestamp
+    private Long startConsensusTimestamp;
 
-    private Long startConsensusTimestamp; // first transaction parsed with this address book
-
-    private Long endConsensusTimestamp; // consensusTimestamp 1 ns prior to next address book startConsensusTimestamp
+    // consensusTimestamp of transaction containing final fileAppend operation of next address book
+    private Long endConsensusTimestamp;
 
     @Convert(converter = FileIdConverter.class)
     private EntityId fileId;
@@ -66,12 +66,12 @@ public class AddressBook implements Persistable<Long> {
 
     @Override
     public Long getId() {
-        return consensusTimestamp;
+        return startConsensusTimestamp;
     }
 
     @Override
     public boolean isNew() {
-        return true;
+        return startConsensusTimestamp == null;
     }
 
     public Set<String> getNodeSet() {

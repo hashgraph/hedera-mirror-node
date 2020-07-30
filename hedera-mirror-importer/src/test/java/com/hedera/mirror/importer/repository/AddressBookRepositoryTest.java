@@ -26,62 +26,62 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
     @Test
     void save() {
         AddressBook addressBook = addressBookRepository.save(addressBook(null, 4, 4));
-        addressBooksMatch(addressBook, addressBookRepository.findById(addressBook.getConsensusTimestamp())
+        addressBooksMatch(addressBook, addressBookRepository.findById(addressBook.getStartConsensusTimestamp())
                 .get());
     }
 
     @Test
     void findLatestAddressBook() {
-        addressBookRepository.save(addressBook(ab -> ab.fileId(addressBookEntityId102), 2, 2));
-        addressBookRepository.save(addressBook(ab -> ab.fileId(addressBookEntityId101), 4, 4));
+        addressBookRepository.save(addressBook(ab -> ab.fileId(addressBookEntityId102), 1, 2));
+        addressBookRepository.save(addressBook(ab -> ab.fileId(addressBookEntityId101), 3, 4));
         AddressBook addressBook = addressBookRepository
-                .save(addressBook(ab -> ab.fileId(addressBookEntityId102), 6, 6));
+                .save(addressBook(ab -> ab.fileId(addressBookEntityId102), 5, 6));
         assertThat(addressBookRepository
                 .findLatestAddressBook(7L, addressBookEntityId102.getId()))
                 .get()
                 .isNotNull()
-                .extracting(AddressBook::getConsensusTimestamp)
+                .extracting(AddressBook::getStartConsensusTimestamp)
                 .isEqualTo(6L);
     }
 
     @Test
     void findAddressBooks() {
-        AddressBook addressBook1 = addressBookRepository.save(addressBook(null, 2, 2));
+        AddressBook addressBook1 = addressBookRepository.save(addressBook(null, 1, 2));
         AddressBook addressBook2 = addressBookRepository
-                .save(addressBook(null, 4, 4));
+                .save(addressBook(null, 3, 4));
         AddressBook addressBook3 = addressBookRepository
-                .save(addressBook(null, 6, 6));
+                .save(addressBook(null, 5, 6));
         addressBookRepository
-                .save(addressBook(ab -> ab.fileId(addressBookEntityId101), 8, 8));
+                .save(addressBook(ab -> ab.fileId(addressBookEntityId101), 7, 8));
         addressBookRepository
-                .save(addressBook(ab -> ab.fileId(addressBookEntityId101), 10, 10));
+                .save(addressBook(ab -> ab.fileId(addressBookEntityId101), 9, 10));
         AddressBook addressBook4 = addressBookRepository
-                .save(addressBook(null, 12, 12));
+                .save(addressBook(null, 11, 12));
         AddressBook addressBook5 = addressBookRepository
-                .save(addressBook(null, 14, 14));
+                .save(addressBook(null, 13, 14));
 
         assertThat(addressBookRepository
-                .findLatestAddressBooks(addressBook4.getConsensusTimestamp(), addressBookEntityId102))
+                .findLatestAddressBooks(addressBook4.getStartConsensusTimestamp(), addressBookEntityId102))
                 .isNotNull()
-                .extracting(AddressBook::getConsensusTimestamp)
+                .extracting(AddressBook::getStartConsensusTimestamp)
                 .containsSequence(2L, 4L, 6L, 12L)
                 .doesNotContain(14L);
     }
 
     private AddressBook addressBook(Consumer<AddressBook.AddressBookBuilder> addressBookCustomizer,
                                     long consensusTimestamp, int nodeCount) {
+        long startConsensusTimestamp = consensusTimestamp + 1;
         List<AddressBookEntry> addressBookEntryList = new ArrayList<>();
         for (int i = 0; i < nodeCount; i++) {
             long id = i;
             long nodeId = 3 + i;
             addressBookEntryList
-                    .add(addressBookEntry(a -> a.consensusTimestamp(consensusTimestamp).memo("0.0." + nodeId)
+                    .add(addressBookEntry(a -> a.consensusTimestamp(startConsensusTimestamp).memo("0.0." + nodeId)
                             .nodeId(nodeId).nodeAccountId(EntityId.of("0.0.5", EntityTypeEnum.ACCOUNT))));
         }
 
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
-                .consensusTimestamp(consensusTimestamp)
-                .startConsensusTimestamp(consensusTimestamp + 1)
+                .startConsensusTimestamp(startConsensusTimestamp)
                 .fileData("address book memo".getBytes())
                 .nodeCount(nodeCount)
                 .fileId(addressBookEntityId102)
@@ -115,7 +115,7 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
         assertAll(
                 () -> assertNotNull(actual),
                 () -> assertArrayEquals(expected.getFileData(), actual.getFileData()),
-                () -> assertEquals(expected.getConsensusTimestamp(), actual.getConsensusTimestamp()),
+                () -> assertEquals(expected.getStartConsensusTimestamp(), actual.getStartConsensusTimestamp()),
                 () -> assertEquals(expected.getNodeCount(), actual.getNodeCount()),
                 () -> assertEquals(expected.getEntries().size(), actual.getEntries().size())
         );

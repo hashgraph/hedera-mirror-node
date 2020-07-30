@@ -47,7 +47,6 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 @AllArgsConstructor
 @ToString(exclude = {"publicKey", "nodeCertHash"})
 public class AddressBookEntry {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -62,7 +62,7 @@ public class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
     private AddressBook addressBook(Consumer<AddressBook.AddressBookBuilder> addressBookCustomizer) {
 
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
-                .consensusTimestamp(0L)
+                .startConsensusTimestamp(0L)
                 .fileData("address book memo".getBytes())
                 .fileId(addressBookEntityId102);
 

@@ -29,11 +29,10 @@ import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 
 public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
-    @Query(value = "select * from address_book where consensus_timestamp <= ?1 and file_id = ?2 order by " +
-            "consensus_timestamp desc limit 1", nativeQuery = true)
+    @Query(value = "select * from address_book where start_consensus_timestamp <= ?1 and file_id = ?2 order by " +
+            "start_consensus_timestamp desc limit 1", nativeQuery = true)
     Optional<AddressBook> findLatestAddressBook(long consensusTimestamp, long encodedFileId);
 
-    @Query("from AddressBook where consensusTimestamp <= ?1 and fileId = ?2 order by " +
-            "consensusTimestamp asc")
+    @Query("from AddressBook where startConsensusTimestamp <= ?1 and fileId = ?2 order by startConsensusTimestamp asc")
     List<AddressBook> findLatestAddressBooks(long consensusTimestamp, EntityId fileId);
 }

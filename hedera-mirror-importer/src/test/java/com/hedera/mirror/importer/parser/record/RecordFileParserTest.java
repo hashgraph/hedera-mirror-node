@@ -289,10 +289,9 @@ public class RecordFileParserTest {
     private AddressBook addressBook(Consumer<AddressBook.AddressBookBuilder> addressBookCustomizer) {
 
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
-                .consensusTimestamp(0L)
+                .startConsensusTimestamp(0L)
                 .fileData("address book memo".getBytes())
                 .fileId(EntityId.of("0.0.102", EntityTypeEnum.FILE))
-                .startConsensusTimestamp(null)
                 .endConsensusTimestamp(null);
 
         if (addressBookCustomizer != null) {

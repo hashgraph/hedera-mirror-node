@@ -427,7 +427,7 @@ public abstract class AbstractDownloaderTest {
     protected AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId) throws InvalidProtocolBufferException {
         AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
                 .fileData(contents)
-                .consensusTimestamp(consensusTimestamp)
+                .startConsensusTimestamp(consensusTimestamp + 1)
                 .fileId(entityId);
 
         NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(contents);

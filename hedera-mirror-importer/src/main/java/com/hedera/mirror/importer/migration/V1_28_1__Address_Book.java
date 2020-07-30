@@ -29,15 +29,16 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
+import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
-import org.flywaydb.core.internal.jdbc.JdbcTemplate;
-import org.flywaydb.core.internal.jdbc.RowMapper;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.MirrorProperties;
@@ -53,19 +54,21 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 public class V1_28_1__Address_Book extends BaseJavaMigration {
     private final AddressBookService addressBookService;
     private final MirrorProperties mirrorProperties;
-    private final String FILE_DATA_SQL = "select * from file_data where consensus_timestamp > cast(? as " +
-            "nanos_timestamp) and entity_id in (101, 102) order by " +
-            "consensus_timestamp asc limit cast(? as int)";
+    private final DataSource dataSource;
+    private final String FILE_DATA_SQL = "select * from file_data where consensus_timestamp > ? and entity_id " +
+            "in (101, 102) order by consensus_timestamp asc limit ?";
     private JdbcTemplate jdbcTemplate;
 
-    public V1_28_1__Address_Book(MirrorProperties mirrorProperties, @Lazy AddressBookService addressBookService) {
+    public V1_28_1__Address_Book(MirrorProperties mirrorProperties, @Lazy AddressBookService addressBookService,
+                                 DataSource dataSource) {
         this.addressBookService = addressBookService;
         this.mirrorProperties = mirrorProperties;
+        this.dataSource = dataSource;
     }
 
     @Override
     public void migrate(Context context) throws Exception {
-        jdbcTemplate = new JdbcTemplate(context.getConnection());
+        jdbcTemplate = new JdbcTemplate(dataSource);
         Stopwatch stopwatch = Stopwatch.createStarted();
         AtomicLong currentConsensusTimestamp = new AtomicLong(0);
         AtomicLong fileDataEntries = new AtomicLong(0);
@@ -113,16 +116,18 @@ public class V1_28_1__Address_Book extends BaseJavaMigration {
 
     private List<FileData> getLatestFileData(long consensusTimestamp, int pageSize) throws SQLException {
         log.info("Retrieve file_data rows after {} ns with page size {}", consensusTimestamp, pageSize);
-        List<FileData> fileDataList = jdbcTemplate.query(FILE_DATA_SQL, new RowMapper<>() {
-
-            @Override
-            public FileData mapRow(ResultSet rs) throws SQLException {
-                return new FileData(rs.getLong("consensus_timestamp"),
-                        rs.getBytes("file_data"),
-                        EntityIdEndec.decode(rs.getInt("entity_id"), EntityTypeEnum.FILE),
-                        rs.getInt("transaction_type"));
-            }
-        }, consensusTimestamp, pageSize);
+        List<FileData> fileDataList = jdbcTemplate.query(
+                FILE_DATA_SQL,
+                new Object[] {consensusTimestamp, pageSize},
+                new RowMapper<>() {
+                    @Override
+                    public FileData mapRow(ResultSet rs, int rowNum) throws SQLException {
+                        return new FileData(rs.getLong("consensus_timestamp"),
+                                rs.getBytes("file_data"),
+                                EntityIdEndec.decode(rs.getInt("entity_id"), EntityTypeEnum.FILE),
+                                rs.getInt("transaction_type"));
+                    }
+                });
 
         log.info("Retrieved {} file_data rows for address book processing", fileDataList.size());
         return fileDataList;

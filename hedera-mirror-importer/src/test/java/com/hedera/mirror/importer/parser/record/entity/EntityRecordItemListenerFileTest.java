@@ -330,8 +330,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         // verify current address book is updated
         AddressBook newAddressBook = addressBookService.getCurrent();
         assertAll(
-                () -> assertThat(newAddressBook.getConsensusTimestamp())
-                        .isEqualTo(Utility.timeStampInNanos(recordAppend.getConsensusTimestamp())),
+                () -> assertThat(newAddressBook.getStartConsensusTimestamp())
+                        .isEqualTo(Utility.timeStampInNanos(recordAppend.getConsensusTimestamp()) + 1),
                 () -> assertThat(newAddressBook.getEntries())
                         .describedAs("Should overwrite address book with new update")
                         .hasSize(13),
@@ -593,10 +593,9 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 () -> assertFileTransaction(transactionBody, record, false),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
                 () -> assertAddressBookData(addressBook, record.getConsensusTimestamp()),
-                () -> assertThat(currentAddressBook.getConsensusTimestamp())
-                        .isEqualTo(Utility.timeStampInNanos(record.getConsensusTimestamp())),
-                () -> assertThat(currentAddressBook.getEntries())
-                        .hasSize(4)
+                () -> assertThat(currentAddressBook.getStartConsensusTimestamp())
+                        .isEqualTo(Utility.timeStampInNanos(record.getConsensusTimestamp()) + 1),
+                () -> assertThat(currentAddressBook.getEntries()).hasSize(4)
                 , () -> assertEquals(1, addressBookRepository.count())
                 , () -> assertEquals(4, addressBookEntryRepository.count())
                 , () -> assertEquals(1, fileDataRepository.count())
@@ -771,7 +770,8 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
     }
 
     private void assertAddressBookData(byte[] expected, Timestamp consensusTimestamp) {
-        AddressBook actualAddressBook = addressBookRepository.findById(Utility.timeStampInNanos(consensusTimestamp))
+        // addressBook.getStartConsensusTimestamp = transaction.consensusTimestamp + 1ns
+        AddressBook actualAddressBook = addressBookRepository.findById(Utility.timeStampInNanos(consensusTimestamp) + 1)
                 .get();
         assertArrayEquals(expected, actualAddressBook.getFileData());
     }

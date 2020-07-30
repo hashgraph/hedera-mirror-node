@@ -78,25 +78,25 @@ public class V1_28_1__Address_BookTest extends IntegrationTest {
         // inserts fileData
         List<FileData> fileDataList = new ArrayList<>();
         // 101 create w 3 nodes
-        fileDataList.add(fileData(1L, 3, 101, TransactionTypeEnum.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(5L, 3, 101, TransactionTypeEnum.FILECREATE.getProtoId()));
 
         // 101 update -> append w 5 nodes
-        fileDataList.add(fileData(2L, mediumAddressBookBytes1, 101, TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(3L, mediumAddressBookBytes2, 101, TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(10L, mediumAddressBookBytes1, 101, TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(15L, mediumAddressBookBytes2, 101, TransactionTypeEnum.FILEAPPEND.getProtoId()));
 
         // 102 update -> append w 5 nodes
-        fileDataList.add(fileData(4L, mediumAddressBookBytes1, 102, TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(5L, mediumAddressBookBytes2, 102, TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(20L, mediumAddressBookBytes1, 102, TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(25L, mediumAddressBookBytes2, 102, TransactionTypeEnum.FILEAPPEND.getProtoId()));
 
         // 101 update -> append -> append w 10 nodes
-        fileDataList.add(fileData(6L, largeAddressBookBytes1, 101, TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(7L, largeAddressBookBytes2, 101, TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(8L, largeAddressBookBytes3, 101, TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(30L, largeAddressBookBytes1, 101, TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(35L, largeAddressBookBytes2, 101, TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(40L, largeAddressBookBytes3, 101, TransactionTypeEnum.FILEAPPEND.getProtoId()));
 
         // 102 update -> append -> append w 10 nodes
-        fileDataList.add(fileData(9L, largeAddressBookBytes1, 102, TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(10L, largeAddressBookBytes2, 102, TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(11L, largeAddressBookBytes3, 102, TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(45L, largeAddressBookBytes1, 102, TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(50L, largeAddressBookBytes2, 102, TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(51L, largeAddressBookBytes3, 102, TransactionTypeEnum.FILEAPPEND.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
         // migration
