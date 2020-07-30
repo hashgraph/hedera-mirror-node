@@ -65,7 +65,6 @@ public class RecordFileParser implements FileParser {
 
     private final ApplicationStatusRepository applicationStatusRepository;
     private final RecordParserProperties parserProperties;
-    private final MeterRegistry meterRegistry;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
 
@@ -83,7 +82,6 @@ public class RecordFileParser implements FileParser {
                             RecordStreamFileListener recordStreamFileListener) {
         this.applicationStatusRepository = applicationStatusRepository;
         this.parserProperties = parserProperties;
-        this.meterRegistry = meterRegistry;
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
 

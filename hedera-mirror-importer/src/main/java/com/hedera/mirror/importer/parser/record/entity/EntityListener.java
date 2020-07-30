@@ -34,19 +34,28 @@ import com.hedera.mirror.importer.exception.ImporterException;
  * Handlers for items parsed during processing of record stream.
  */
 public interface EntityListener {
-    void onTransaction(Transaction transaction) throws ImporterException;
 
-    void onEntityId(EntityId entityId) throws ImporterException;
+    default void onContractResult(ContractResult contractResult) throws ImporterException {
+    }
 
-    void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException;
+    default void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
+    }
 
-    void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException;
+    default void onEntityId(EntityId entityId) throws ImporterException {
+    }
 
-    void onTopicMessage(TopicMessage topicMessage) throws ImporterException;
+    default void onFileData(FileData fileData) throws ImporterException {
+    }
 
-    void onContractResult(ContractResult contractResult) throws ImporterException;
+    default void onLiveHash(LiveHash liveHash) throws ImporterException {
+    }
 
-    void onFileData(FileData fileData) throws ImporterException;
+    default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
+    }
 
-    void onLiveHash(LiveHash liveHash) throws ImporterException;
+    default void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
+    }
+
+    default void onTransaction(Transaction transaction) throws ImporterException {
+    }
 }

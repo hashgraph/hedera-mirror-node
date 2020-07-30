@@ -37,6 +37,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.core.annotation.Order;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
@@ -60,6 +61,7 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Log4j2
 @Named
+@Order(0)
 @ConditionOnEntityRecordParser
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
 
@@ -92,7 +94,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Cache entityCache;
 
     private PreparedStatement sqlInsertEntityId;
-    private PreparedStatement sqlNotifyTopicMessage;
     private Connection connection;
     private long batchCount;
 
@@ -140,8 +141,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     "(id, entity_shard, entity_realm, entity_num, fk_entity_type_id) " +
                     "VALUES (?, ?, ?, ?, ?) " +
                     "ON CONFLICT DO NOTHING");
-
-            sqlNotifyTopicMessage = connection.prepareStatement("select pg_notify('topic_message', ?)");
         } catch (SQLException e) {
             throw new ParserSQLException("Error setting up connection to database", e);
         }
@@ -199,7 +198,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void closeConnectionAndStatements() {
         try {
             sqlInsertEntityId.close();
-            sqlNotifyTopicMessage.close();
             connection.close();
         } catch (SQLException e) {
             throw new ParserSQLException("Error closing connection", e);
@@ -217,7 +215,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             liveHashPgCopy.copy(liveHashes, connection);
             topicMessagePgCopy.copy(topicMessages, connection);
             persistEntities();
-            notifyTopicMessages();
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
             throw e;
@@ -272,22 +269,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
         topicMessages.add(topicMessage);
-
-        try {
-            if (sqlProperties.isNotifyTopicMessage()) {
-                String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
-                if (json.length() >= sqlProperties.getMaxJsonPayloadSize()) {
-                    log.warn("Unable to notify large payload of size {}B: {}", json.length(), topicMessage);
-                    return;
-                }
-                sqlNotifyTopicMessage.setString(1, json);
-                sqlNotifyTopicMessage.addBatch();
-            }
-        } catch (SQLException e) {
-            throw new ParserSQLException(e);
-        } catch (Exception e) {
-            throw new ParserException(e);
-        }
     }
 
     @Override
@@ -308,10 +289,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void persistEntities() {
         executeBatch(sqlInsertEntityId, "entities");
         entityIds.forEach(entityId -> entityCache.put(entityId.getId(), null));
-    }
-
-    private void notifyTopicMessages() {
-        executeBatch(sqlNotifyTopicMessage, "topic notifications");
     }
 
     enum F_ENTITY_ID {
