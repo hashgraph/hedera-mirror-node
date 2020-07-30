@@ -51,7 +51,8 @@ public class NodeSignatureVerifier {
                 .getCurrent()
                 .getEntries()
                 .stream()
-                .collect(Collectors.toMap(AddressBookEntry::getNodeAccountId, AddressBookEntry::getPublicKeyAsObject));
+                .collect(Collectors
+                        .toMap(AddressBookEntry::getNodeAccountIdString, AddressBookEntry::getPublicKeyAsObject));
     }
 
     private static boolean canReachConsensus(long actualNodes, long expectedNodes) {

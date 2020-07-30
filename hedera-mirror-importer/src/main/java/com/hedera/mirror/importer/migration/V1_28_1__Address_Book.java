@@ -93,16 +93,16 @@ public class V1_28_1__Address_Book extends BaseJavaMigration {
                 AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID,
                 TransactionTypeEnum.FILECREATE.getProtoId());
         addressBookService.update(bootStrapFileData);
+        fileDataEntries.incrementAndGet();
 
         // starting from consensusTimeStamp = 0 retrieve pages of fileData entries for historic address books
         int pageSize = 1000; // option to parameterize this
         List<FileData> fileDataList = getLatestFileData(currentConsensusTimestamp.get(), pageSize);
         while (!CollectionUtils.isEmpty(fileDataList)) {
             fileDataList.forEach(fileData -> {
-                fileDataEntries.incrementAndGet();
-
-                // call normal address book file transaction parsing flow to parse and ingest address book entry
+                // call normal address book file transaction parsing flow to parse and ingest address book contents
                 addressBookService.update(fileData);
+                fileDataEntries.incrementAndGet();
                 currentConsensusTimestamp.set(fileData.getConsensusTimestamp());
             });
 

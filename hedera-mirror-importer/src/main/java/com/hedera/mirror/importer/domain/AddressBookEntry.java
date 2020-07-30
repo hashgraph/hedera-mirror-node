@@ -29,12 +29,14 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.apache.commons.codec.binary.Hex;
+import org.springframework.context.annotation.Lazy;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 
@@ -79,7 +81,17 @@ public class AddressBookEntry {
         }
     }
 
-    public String getNodeAccountId() {
-        return nodeAccountId == null ? memo : nodeAccountId.toString();
+    public EntityId getNodeAccountId() {
+        if (nodeAccountId == null) {
+            return memo == null ? null : EntityId.of(memo, EntityTypeEnum.ACCOUNT);
+        }
+
+        return nodeAccountId;
+    }
+
+    @Lazy
+    @Transient
+    public String getNodeAccountIdString() {
+        return nodeAccountId == null ? memo : nodeAccountId.entityIdToString();
     }
 }

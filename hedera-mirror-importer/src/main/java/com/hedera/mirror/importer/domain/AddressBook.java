@@ -60,7 +60,7 @@ public class AddressBook implements Persistable<Long> {
 
     private byte[] fileData;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "consensusTimestamp")
     private List<AddressBookEntry> entries;
 
@@ -76,7 +76,7 @@ public class AddressBook implements Persistable<Long> {
 
     public Set<String> getNodeSet() {
         return entries.stream()
-                .map(AddressBookEntry::getNodeAccountId)
+                .map(AddressBookEntry::getNodeAccountIdString)
                 .collect(Collectors.toSet());
     }
 }

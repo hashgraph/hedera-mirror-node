@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -45,8 +44,6 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
-import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
@@ -170,7 +167,6 @@ public class RecordFileParser implements FileParser {
             applicationStatusRepository.updateStatusValue(
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
 
-            updateAddressBook(recordFile.getConsensusStart());
             recordParserLatencyMetric(recordFile);
             success = true;
         } finally {
@@ -279,46 +275,6 @@ public class RecordFileParser implements FileParser {
             }
         } catch (Exception e) {
             log.error("Error parsing files", e);
-        }
-    }
-
-    /**
-     * Address book updates currently span record files as well as a network shutdown. To account for this verify start
-     * and end of addressbook are set after a record file is processed. If not set based on first and last transaction
-     * in record file
-     *
-     * @param startConsensusTimestamp
-     */
-    private void updateAddressBook(long startConsensusTimestamp) {
-
-        log.info("**startConsensusTimestamp: {}", startConsensusTimestamp);
-        // to:do - explore whether shutdown hook is a better place for address book consensusTimestamp boundary sets
-        Optional<AddressBook> optionalAddressBook = addressBookRepository
-                .findLatestAddressBook(startConsensusTimestamp, AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID
-                        .getId());
-
-        if (optionalAddressBook.isPresent()) {
-            AddressBook addressBook = optionalAddressBook.get();
-
-            // set StartConsensusTimestamp of addressBook as first transaction in record file if not set already
-            if (addressBook.getStartConsensusTimestamp() == null) {
-                addressBook.setStartConsensusTimestamp(startConsensusTimestamp);
-                addressBookRepository.save(addressBook);
-            }
-
-            // close off previous addressBook
-            Optional<AddressBook> previousOptionalAddressBook = addressBookRepository
-                    .findLatestAddressBook(addressBook
-                            .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId());
-            if (previousOptionalAddressBook.isPresent()) {
-                AddressBook previousAddressbook = previousOptionalAddressBook.get();
-
-                // set EndConsensusTimestamp of addressBook as first transaction - 1ns in record file if not set already
-                if (previousAddressbook.getEndConsensusTimestamp() == null) {
-                    previousAddressbook.setEndConsensusTimestamp(startConsensusTimestamp - 1);
-                    addressBookRepository.save(previousAddressbook);
-                }
-            }
         }
     }
 }

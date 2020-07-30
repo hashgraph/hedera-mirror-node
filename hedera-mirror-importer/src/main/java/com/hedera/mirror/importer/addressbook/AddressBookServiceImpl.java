@@ -29,12 +29,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Named;
+import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.io.IOUtils;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -48,40 +45,13 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
+@AllArgsConstructor
 public class AddressBookServiceImpl implements AddressBookService {
     public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
     public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
 
-    private final MirrorProperties mirrorProperties;
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
-    private AddressBook addressBook;
-
-    public AddressBookServiceImpl(MirrorProperties mirrorProperties, AddressBookRepository addressBookRepository,
-                                  FileDataRepository fileDataRepository) {
-        this.mirrorProperties = mirrorProperties;
-        this.addressBookRepository = addressBookRepository;
-        this.fileDataRepository = fileDataRepository;
-        addressBook = null;
-        init();
-    }
-
-    @Override
-    public void loadAddressBook() {
-        // get last address book
-        Instant now = Instant.now();
-        long consensus_timestamp = Utility.convertToNanos(Instant.now().getEpochSecond(), now.getNano());
-        Optional<AddressBook> optionalAddressBook = addressBookRepository
-                .findLatestAddressBook(consensus_timestamp, ADDRESS_BOOK_102_ENTITY_ID.getId());
-
-        if (optionalAddressBook.isPresent()) {
-            addressBook = optionalAddressBook.get();
-            log.info("Loaded addressBook from {} with nodes ({}).", addressBook.getConsensusTimestamp(), addressBook
-                    .getNodeSet());
-        } else {
-            log.warn("No addressBooks before {} were found", consensus_timestamp);
-        }
-    }
 
     @Override
     public void update(FileData fileData) {
@@ -104,38 +74,25 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     @Override
     public AddressBook getCurrent() {
-        return addressBook;
+        Instant now = Instant.now();
+        long consensus_timestamp = Utility.convertToNanos(Instant.now().getEpochSecond(), now.getNano());
+        Optional<AddressBook> optionalAddressBook = addressBookRepository
+                .findLatestAddressBook(consensus_timestamp, ADDRESS_BOOK_102_ENTITY_ID.getId());
+
+        if (optionalAddressBook.isPresent()) {
+            AddressBook addressBook = optionalAddressBook.get();
+            log.info("Loaded addressBook from {} with nodes ({}).", addressBook.getConsensusTimestamp(), addressBook
+                    .getNodeSet());
+            return addressBook;
+        }
+
+        log.warn("No addressBooks before {} were found.", consensus_timestamp);
+        return null;
     }
 
     @Override
     public boolean isAddressBook(EntityId entityId) {
         return ADDRESS_BOOK_101_ENTITY_ID.equals(entityId) || ADDRESS_BOOK_102_ENTITY_ID.equals(entityId);
-    }
-
-    private void init() {
-        // load most recent addressBook
-        loadAddressBook();
-
-        // load from classpath
-        if (addressBook == null) {
-            try {
-                MirrorProperties.HederaNetwork hederaNetwork = mirrorProperties.getNetwork();
-                String resourcePath = String.format("/addressbook/%s", hederaNetwork.name().toLowerCase());
-                Resource resource = new ClassPathResource(resourcePath, getClass());
-                byte[] addressBookBytes = IOUtils.toByteArray(resource.getInputStream());
-                log.info("Loading bootstrap address book of {} B from {}", addressBookBytes.length, resource);
-                FileData bootStrapFileData = new FileData(0L, addressBookBytes,
-                        AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID,
-                        TransactionTypeEnum.FILECREATE.getProtoId());
-                addressBook = parse(bootStrapFileData);
-            } catch (Exception e) {
-                throw new IllegalStateException("Unable to load bootstrap address book");
-            }
-        }
-
-        if (addressBook == null) {
-            throw new IllegalStateException("Unable to load a valid address book with node addresses");
-        }
     }
 
     /**
@@ -164,6 +121,9 @@ public class AddressBookServiceImpl implements AddressBookService {
         if (addressBook != null) {
             addressBookRepository.save(addressBook);
             log.info("Saved new address book to db: {}", addressBook);
+
+            // update previous addressBook
+            updateAddressBook(addressBook.getConsensusTimestamp(), fileData.getConsensusTimestamp());
         }
 
         return addressBook;
@@ -208,6 +168,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
                 .fileData(addressBookBytes)
                 .consensusTimestamp(consensusTimestamp)
+                .startConsensusTimestamp(consensusTimestamp + 1)
                 .fileId(fileID);
 
         try {
@@ -252,5 +213,33 @@ public class AddressBookServiceImpl implements AddressBookService {
         }
 
         return builder.build();
+    }
+
+    /**
+     * Address book updates currently span record files as well as a network shutdown. To account for this verify start
+     * and end of addressbook are set after a record file is processed. If not set based on first and last transaction
+     * in record file
+     *
+     * @param currentAddressBookConsensusTimestamp
+     */
+    private void updateAddressBook(long currentAddressBookConsensusTimestamp, long transactionConsensusTimestamp) {
+        // close off previous addressBook
+        Optional<AddressBook> previousOptionalAddressBook = addressBookRepository
+                .findLatestAddressBook(currentAddressBookConsensusTimestamp,
+                        AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID
+                                .getId());
+        if (previousOptionalAddressBook.isPresent()) {
+            AddressBook previousAddressBook = previousOptionalAddressBook.get();
+
+            // set EndConsensusTimestamp of addressBook as first transaction - 1ns in record file if not set already
+            if (previousAddressBook.getEndConsensusTimestamp() == null) {
+                previousAddressBook.setEndConsensusTimestamp(transactionConsensusTimestamp);
+                addressBookRepository.save(previousAddressBook);
+                log.info("Setting endConsensusTimestamp of previous AddressBook ({}) to {}",
+                        transactionConsensusTimestamp);
+            }
+        } else {
+            log.warn("No previous address book found before {}", currentAddressBookConsensusTimestamp);
+        }
     }
 }

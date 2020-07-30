@@ -26,7 +26,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -39,7 +38,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
@@ -53,7 +51,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -230,56 +227,6 @@ public class RecordFileParserTest {
         verify(recordItemListener, times(NUM_TXNS_FILE_1)).onItem(any());
         verify(recordStreamFileListener, times(2)).onStart(any());
         verify(recordStreamFileListener, times(1)).onEnd(any());
-    }
-
-    @Test
-    void verifyAddressBookEndPointsSetsOnNewAddressBook() throws Exception {
-        // given
-        fileCopier.copy();
-        String fileName = file1.toString();
-
-        AddressBook addressBook1 = addressBook(ab -> ab.consensusTimestamp(0L).startConsensusTimestamp(0L));
-        AddressBook addressBook2 = addressBook(ab -> ab.consensusTimestamp(2L));
-
-        when(addressBookRepository
-                .findLatestAddressBook(FILE1_CONSENSUS_START, AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID
-                        .getId()))
-                .thenReturn(Optional.of(addressBook2));
-        when(addressBookRepository.findLatestAddressBook(addressBook2
-                .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()))
-                .thenReturn(Optional.of(addressBook1));
-
-        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
-
-        verify(addressBookRepository, times(1)).save(addressBook2);
-        assertThat(addressBook2.getStartConsensusTimestamp()).isNotNull();
-        verify(addressBookRepository, times(1)).save(addressBook1);
-        assertThat(addressBook1.getEndConsensusTimestamp()).isNotNull();
-    }
-
-    @Test
-    void verifyAddressBookEndPointsNotSetWhenNoNewAddressBook() throws Exception {
-        // given
-        fileCopier.copy();
-        String fileName = file1.toString();
-
-        AddressBook addressBook = addressBook(ab -> ab.consensusTimestamp(0L).startConsensusTimestamp(0L));
-
-        when(addressBookRepository
-                .findLatestAddressBook(FILE1_CONSENSUS_START, AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID
-                        .getId()))
-                .thenReturn(Optional.of(addressBook));
-        when(addressBookRepository.findLatestAddressBook(addressBook
-                .getConsensusTimestamp(), AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()))
-                .thenReturn(Optional
-                        .empty());
-
-        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
-
-        verify(addressBookRepository, never()).save(any());
-        assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(0);
-        verify(addressBookRepository, never()).save(any());
-        assertThat(addressBook.getEndConsensusTimestamp()).isNull();
     }
 
     // Asserts that recordStreamFileListener.onStart is called wth exactly the given fileNames.

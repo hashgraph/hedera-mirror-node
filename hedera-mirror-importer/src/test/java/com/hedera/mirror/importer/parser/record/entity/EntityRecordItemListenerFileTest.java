@@ -327,13 +327,16 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         parseRecordItemAndCommit(new RecordItem(transactionUpdate, recordUpdate));
         parseRecordItemAndCommit(new RecordItem(transactionAppend, recordAppend));
 
-        // verify current address book is unchanged
-        AddressBook currentAddressBook = addressBookService.getCurrent();
-        assertThat(currentAddressBook.getConsensusTimestamp())
-                .isNotEqualTo(Utility.timeStampInNanos(recordAppend.getConsensusTimestamp()));
-        assertThat(currentAddressBook.getEntries())
-                .describedAs("Should not overwrite address book with complete update")
-                .hasSize(4);
+        // verify current address book is updated
+        AddressBook newAddressBook = addressBookService.getCurrent();
+        assertAll(
+                () -> assertThat(newAddressBook.getConsensusTimestamp())
+                        .isEqualTo(Utility.timeStampInNanos(recordAppend.getConsensusTimestamp())),
+                () -> assertThat(newAddressBook.getEntries())
+                        .describedAs("Should overwrite address book with new update")
+                        .hasSize(13),
+                () -> assertArrayEquals(addressBook, newAddressBook.getFileData())
+        );
 
         assertAll(
                 () -> assertRowCountOnTwoFileTransactions()
@@ -345,28 +348,6 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 , () -> assertEquals(13, addressBookEntryRepository.count())
                 , () -> assertEquals(1, addressBookRepository.count())
                 , () -> assertEquals(2, fileDataRepository.count()) // update and append
-        );
-
-        // verify new address book is loaded after FREEZE transaction is received
-        Transaction transactionFreeze = buildTransaction(builder -> builder.getFreezeBuilder()
-                .setEndHour(1)
-                .setEndMin(2)
-                .setStartHour(3)
-                .setStartMin(4)
-                .setUpdateFile(FileID.newBuilder().setFileNum(5).build()));
-        TransactionBody transactionBody = TransactionBody.parseFrom(transactionFreeze.getBodyBytes());
-        TransactionRecord recordFreeze = transactionRecord(transactionBody);
-
-        parseRecordItemAndCommit(new RecordItem(transactionFreeze, recordFreeze));
-
-        AddressBook newAddressBook = addressBookService.getCurrent();
-        assertAll(
-                () -> assertThat(newAddressBook.getConsensusTimestamp())
-                        .isEqualTo(Utility.timeStampInNanos(recordAppend.getConsensusTimestamp())),
-                () -> assertThat(newAddressBook.getEntries())
-                        .describedAs("Should overwrite address book with new update")
-                        .hasSize(13),
-                () -> assertArrayEquals(addressBook, newAddressBook.getFileData())
         );
     }
 
@@ -579,14 +560,12 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        assertThat(addressBookService.getCurrent().getEntries())
-                .describedAs("Should not overwrite address book with partial update")
-                .hasSize(4);
-
+        AddressBook currentAddressBook = addressBookService.getCurrent();
         assertAll(
                 () -> assertRowCountOnSuccess(),
                 () -> assertFileTransaction(transactionBody, record, false),
-                () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp())
+                () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
+                () -> assertThat(currentAddressBook).isNull()
                 , () -> assertEquals(0, addressBookRepository.count())
                 , () -> assertEquals(0, addressBookEntryRepository.count())
                 , () -> assertEquals(1, fileDataRepository.count())
@@ -607,18 +586,17 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        // verify current address book is unchanged
+        // verify current address book is changed
         AddressBook currentAddressBook = addressBookService.getCurrent();
-        assertThat(currentAddressBook.getConsensusTimestamp())
-                .isNotEqualTo(Utility.timeStampInNanos(record.getConsensusTimestamp()));
-        assertThat(currentAddressBook.getEntries())
-                .hasSize(4);
-
         assertAll(
                 () -> assertRowCountOnSuccess(),
                 () -> assertFileTransaction(transactionBody, record, false),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertAddressBookData(addressBook, record.getConsensusTimestamp())
+                () -> assertAddressBookData(addressBook, record.getConsensusTimestamp()),
+                () -> assertThat(currentAddressBook.getConsensusTimestamp())
+                        .isEqualTo(Utility.timeStampInNanos(record.getConsensusTimestamp())),
+                () -> assertThat(currentAddressBook.getEntries())
+                        .hasSize(4)
                 , () -> assertEquals(1, addressBookRepository.count())
                 , () -> assertEquals(4, addressBookEntryRepository.count())
                 , () -> assertEquals(1, fileDataRepository.count())

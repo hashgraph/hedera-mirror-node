@@ -169,10 +169,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
         }
 
-        if (transactionType == TransactionTypeEnum.FREEZE.getProtoId()) {
-            addressBookService.loadAddressBook();
-        }
-
         entityListener.onTransaction(tx);
         log.debug("Storing transaction: {}", tx);
     }

@@ -103,6 +103,11 @@ public class EntityId implements Serializable {
         return new EntityId(entityShard, entityRealm, entityNum, type.getId());
     }
 
+    public String entityIdToString() {
+        return String.format("%d.%d.%d", getShardNum(),
+                getRealmNum(), getEntityNum());
+    }
+
     public Entities toEntity() {
         Entities entity = new Entities();
         entity.setId(id);
