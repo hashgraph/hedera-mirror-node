@@ -20,15 +20,19 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
-import lombok.Value;
+import java.io.File;
+import java.util.stream.Stream;
 
-@Value
-public final class NumberedLine {
-    int lineNumber;
-    String value;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.domain.AccountBalanceItem;
 
-    @Override
-    public String toString() {
-        return lineNumber + ":" + value;
-    }
+public interface BalanceFileReader {
+    /**
+     * Reads a account balance file, parses the header to get the consensus timestamp, and returns a stream of
+     * <code>AccountBalanceItem</code> objects, one such object per valid account balance line.
+     * @param file The account balances file object
+     * @return A stream of <code>AccountBalanceItem</code> objects
+     * @exception InvalidDatasetException if a fatal parsing error occurs
+     */
+    Stream<AccountBalanceItem> read(File file);
 }

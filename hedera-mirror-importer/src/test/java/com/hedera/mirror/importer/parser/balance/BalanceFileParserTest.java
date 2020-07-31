@@ -32,7 +32,6 @@ import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,7 +43,6 @@ import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceSetRepository;
 
-@Disabled("Works standalone and in CircleCI, but not with Maven + TestContainers due to starting multiple PostgreSQLs")
 public class BalanceFileParserTest extends IntegrationTest {
 
     @TempDir
@@ -168,9 +166,9 @@ public class BalanceFileParserTest extends IntegrationTest {
     }
 
     @lombok.Value
-    private class BalanceFile {
-        private final long consensusTimestamp;
-        private final long count;
-        private final String filename;
+    private static class BalanceFile {
+        long consensusTimestamp;
+        long count;
+        String filename;
     }
 }
