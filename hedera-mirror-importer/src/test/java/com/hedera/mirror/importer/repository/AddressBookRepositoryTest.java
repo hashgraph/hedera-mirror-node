@@ -44,30 +44,6 @@ public class AddressBookRepositoryTest extends AbstractRepositoryTest {
                 .isEqualTo(6L);
     }
 
-    @Test
-    void findAddressBooks() {
-        AddressBook addressBook1 = addressBookRepository.save(addressBook(null, 1, 2));
-        AddressBook addressBook2 = addressBookRepository
-                .save(addressBook(null, 3, 4));
-        AddressBook addressBook3 = addressBookRepository
-                .save(addressBook(null, 5, 6));
-        addressBookRepository
-                .save(addressBook(ab -> ab.fileId(addressBookEntityId101), 7, 8));
-        addressBookRepository
-                .save(addressBook(ab -> ab.fileId(addressBookEntityId101), 9, 10));
-        AddressBook addressBook4 = addressBookRepository
-                .save(addressBook(null, 11, 12));
-        AddressBook addressBook5 = addressBookRepository
-                .save(addressBook(null, 13, 14));
-
-        assertThat(addressBookRepository
-                .findLatestAddressBooks(addressBook4.getStartConsensusTimestamp(), addressBookEntityId102))
-                .isNotNull()
-                .extracting(AddressBook::getStartConsensusTimestamp)
-                .containsSequence(2L, 4L, 6L, 12L)
-                .doesNotContain(14L);
-    }
-
     private AddressBook addressBook(Consumer<AddressBook.AddressBookBuilder> addressBookCustomizer,
                                     long consensusTimestamp, int nodeCount) {
         long startConsensusTimestamp = consensusTimestamp + 1;

@@ -94,7 +94,7 @@ public class RecordFileParserTest {
         parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
         parserProperties.init();
-        recordFileParser = new RecordFileParser(applicationStatusRepository, addressBookRepository, parserProperties,
+        recordFileParser = new RecordFileParser(applicationStatusRepository, parserProperties,
                 new SimpleMeterRegistry(), recordItemListener, recordStreamFileListener);
         StreamType streamType = StreamType.RECORD;
         fileCopier = FileCopier

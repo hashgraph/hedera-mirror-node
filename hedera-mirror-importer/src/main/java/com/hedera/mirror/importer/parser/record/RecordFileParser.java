@@ -51,7 +51,6 @@ import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.parser.FileParser;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
-import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
@@ -65,7 +64,6 @@ import com.hedera.mirror.importer.util.Utility;
 public class RecordFileParser implements FileParser {
 
     private final ApplicationStatusRepository applicationStatusRepository;
-    private final AddressBookRepository addressBookRepository;
     private final RecordParserProperties parserProperties;
     private final MeterRegistry meterRegistry;
     private final RecordItemListener recordItemListener;
@@ -80,12 +78,10 @@ public class RecordFileParser implements FileParser {
     private final Timer parseLatencyMetric;
 
     public RecordFileParser(ApplicationStatusRepository applicationStatusRepository,
-                            AddressBookRepository addressBookRepository,
                             RecordParserProperties parserProperties, MeterRegistry meterRegistry,
                             RecordItemListener recordItemListener,
                             RecordStreamFileListener recordStreamFileListener) {
         this.applicationStatusRepository = applicationStatusRepository;
-        this.addressBookRepository = addressBookRepository;
         this.parserProperties = parserProperties;
         this.meterRegistry = meterRegistry;
         this.recordItemListener = recordItemListener;

@@ -53,6 +53,11 @@ public class AddressBookServiceImpl implements AddressBookService {
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
 
+    /**
+     * Updates mirror node with new address book details provided in fileData object
+     *
+     * @param fileData file data entry containing address book bytes
+     */
     @Override
     public void update(FileData fileData) {
         if (!isAddressBook(fileData.getEntityId())) {
@@ -72,37 +77,38 @@ public class AddressBookServiceImpl implements AddressBookService {
         }
     }
 
+    /**
+     * Retrieves the latest address book from db
+     *
+     * @return returns AddressBook containing network node details
+     */
     @Override
     public AddressBook getCurrent() {
         Instant now = Instant.now();
-        long consensus_timestamp = Utility.convertToNanos(Instant.now().getEpochSecond(), now.getNano());
-        Optional<AddressBook> optionalAddressBook = addressBookRepository
-                .findLatestAddressBook(consensus_timestamp, ADDRESS_BOOK_102_ENTITY_ID.getId());
+        long consensusTimestamp = Utility.convertToNanos(Instant.now().getEpochSecond(), now.getNano());
 
-        if (optionalAddressBook.isPresent()) {
-            AddressBook addressBook = optionalAddressBook.get();
-            log.info("Loaded addressBook from {} with nodes ({}).", addressBook.getStartConsensusTimestamp(),
-                    addressBook.getNodeSet());
-            return addressBook;
-        }
-
-        log.warn("No addressBooks before {} were found.", consensus_timestamp);
-        return null;
+        return addressBookRepository
+                .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
+                .orElseThrow(() -> new IllegalStateException("No valid address book found in DB"));
     }
 
+    /**
+     * Checks if provided EntityId is a valid AddressBook file EntityId
+     *
+     * @param entityId file  entity id
+     * @return returns true if valid address book EntityId
+     */
     @Override
     public boolean isAddressBook(EntityId entityId) {
         return ADDRESS_BOOK_101_ENTITY_ID.equals(entityId) || ADDRESS_BOOK_102_ENTITY_ID.equals(entityId);
     }
 
     /**
-     * find last fileData for given entityId where operation was create/update using consensusTimestamp find all
-     * fileData since  that time for given entityId concatenate all binary data in order and attempt to parse if
-     * successful save
+     * Parses provided fileData object into an AddressBook object if valid and stores into db. Saves fileData into db
+     * regardless for reference. Also updates previous address book endConsensusTimestamp based on new address books
+     * startConsensusTimestamp
      *
-     * @param fileData file data with timestamp, contents, entity type and transactions type for parsing
-     * @return Parsed addressbook object if valid. Null otherwise.
-     * @throws Exception
+     * @param fileData file data with timestamp, contents, entityId and transaction type for parsing
      */
     private void parse(FileData fileData) {
         byte[] addressBookBytes = null;
@@ -123,10 +129,17 @@ public class AddressBookServiceImpl implements AddressBookService {
             log.info("Saved new address book to db: {}", addressBook);
 
             // update previous addressBook
-            updateAddressBook(addressBook.getStartConsensusTimestamp(), fileData.getConsensusTimestamp());
+            updatePreviousAddressBook(addressBook.getStartConsensusTimestamp(), fileData.getConsensusTimestamp());
         }
     }
 
+    /**
+     * Concatenates byte arrays of first fileCreate/fileUpdate transaction and intermediate fileAppend entries that make
+     * up the potential addressBook
+     *
+     * @param fileData file data entry containing address book bytes
+     * @return
+     */
     private byte[] combinePreviousFileDataContents(FileData fileData) {
         Optional<FileData> optionalFileData = fileDataRepository.findLatestMatchingFile(
                 fileData.getConsensusTimestamp(), fileData.getEntityId().getId(),
@@ -161,6 +174,16 @@ public class AddressBookServiceImpl implements AddressBookService {
         return combinedBytes;
     }
 
+    /**
+     * Creates a AddressBook object given address book byte array contents. Attempts to convert contents into a valid
+     * NodeAddressBook proto. If successful the NodeAddressBook details including AddressBookEntry entries are extracted
+     * and added to AddressBook object.
+     *
+     * @param addressBookBytes   byte array representation of AddressBookEntry proto
+     * @param consensusTimestamp transaction consensusTimestamp
+     * @param fileID             address book file id
+     * @return
+     */
     private AddressBook buildAddressBook(byte[] addressBookBytes, long consensusTimestamp, EntityId fileID) {
         long startConsensusTimestamp = consensusTimestamp + 1;
         AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
@@ -188,6 +211,15 @@ public class AddressBookServiceImpl implements AddressBookService {
         return addressBookBuilder.build();
     }
 
+    /**
+     * Extracts a collection of AddressBookEntry domain objects from NodeAddressBook proto. Sets provided
+     * consensusTimestamp as the consensusTimestamp of each address book entry to ensure mapping to a single
+     * AddressBook
+     *
+     * @param nodeAddressBook    node address book proto
+     * @param consensusTimestamp transaction consensusTimestamp
+     * @return
+     */
     private Collection<AddressBookEntry> retrieveNodeAddressesFromAddressBook(NodeAddressBook nodeAddressBook,
                                                                               long consensusTimestamp) {
         ImmutableList.Builder<AddressBookEntry> builder = ImmutableList.builder();
@@ -214,12 +246,14 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     /**
      * Address book updates currently span record files as well as a network shutdown. To account for this verify start
-     * and end of addressbook are set after a record file is processed. If not set based on first and last transaction
+     * and end of addressBook are set after a record file is processed. If not set based on first and last transaction
      * in record file
      *
-     * @param currentAddressBookStartConsensusTimestamp
+     * @param currentAddressBookStartConsensusTimestamp start of current address book
+     * @param transactionConsensusTimestamp             consensusTimestamp of current transaction
      */
-    private void updateAddressBook(long currentAddressBookStartConsensusTimestamp, long transactionConsensusTimestamp) {
+    private void updatePreviousAddressBook(long currentAddressBookStartConsensusTimestamp,
+                                           long transactionConsensusTimestamp) {
         // close off previous addressBook
         Optional<AddressBook> previousOptionalAddressBook = addressBookRepository
                 .findLatestAddressBook(currentAddressBookStartConsensusTimestamp - 1,

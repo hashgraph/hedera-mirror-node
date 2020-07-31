@@ -31,7 +31,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -122,7 +121,9 @@ public class AddressBookServiceImplTest {
         AddressBookService addressBookServiceImpl = new AddressBookServiceImpl(
                 addressBookRepository,
                 fileDataRepository);
-        assertThat(addressBookServiceImpl.getCurrent()).isNull();
+        assertThrows(IllegalStateException.class, () -> {
+            addressBookServiceImpl.getCurrent();
+        });
     }
 
     @Test
@@ -143,9 +144,8 @@ public class AddressBookServiceImplTest {
         assertEquals(1, addressBookRepository.count());
         assertEquals(UPDATED.getNodeAddressCount(), addressBookEntryRepository.count());
 
-        List<AddressBook> addressBookList = addressBookRepository
-                .findLatestAddressBooks(3L, FILE_ENTITY_ID);
-        assertThat(addressBookList).isNotEmpty().hasSize(1);
+        assertEquals(1, addressBookRepository.count());
+        assertEquals(10, addressBookEntryRepository.count());
     }
 
     @Test
@@ -159,8 +159,10 @@ public class AddressBookServiceImplTest {
                 fileDataRepository);
         update(addressBookServiceImpl, addressBookPartial, 1L);
 
-        // for tests current address book will be null in tests. In production migration will ensure DB population
-        assertThat(addressBookServiceImpl.getCurrent()).isNull();
+        // bootstrap address book will be missing in most tests. In production migration will ensure DB population
+        assertThrows(IllegalStateException.class, () -> {
+            addressBookServiceImpl.getCurrent();
+        });
 
         assertEquals(0, addressBookRepository.count());
         assertEquals(0, addressBookEntryRepository.count());
@@ -178,12 +180,16 @@ public class AddressBookServiceImplTest {
                 addressBookRepository,
                 fileDataRepository);
 
-        // for tests current address book will be null in tests. In production migration will ensure DB population
+        // bootstrap address book will be missing in most tests. In production migration will ensure DB population
         update(addressBookServiceImpl, addressBookBytes1, 1L);
-        assertThat(addressBookServiceImpl.getCurrent()).isNull();
+        assertThrows(IllegalStateException.class, () -> {
+            addressBookServiceImpl.getCurrent();
+        });
 
         append(addressBookServiceImpl, addressBookBytes2, 3L);
-        assertThat(addressBookServiceImpl.getCurrent()).isNull();
+        assertThrows(IllegalStateException.class, () -> {
+            addressBookServiceImpl.getCurrent();
+        });
 
         append(addressBookServiceImpl, addressBookBytes3, 5L);
         assertThat(addressBookServiceImpl.getCurrent().getEntries()).hasSize(UPDATED.getNodeAddressCount());
@@ -208,7 +214,9 @@ public class AddressBookServiceImplTest {
                 fileDataRepository);
         update(addressBookServiceImpl, addressBookBytes1, 1L);
 
-        assertThat(addressBookServiceImpl.getCurrent()).isNull();
+        assertThrows(IllegalStateException.class, () -> {
+            addressBookServiceImpl.getCurrent();
+        });
 
         assertEquals(0, addressBookRepository.count());
         assertEquals(0, addressBookEntryRepository.count());
@@ -222,7 +230,9 @@ public class AddressBookServiceImplTest {
         update(addressBookServiceImpl, new byte[] {}, 1L);
         append(addressBookServiceImpl, new byte[] {}, 2L);
 
-        assertThat(addressBookServiceImpl.getCurrent()).isNull();
+        assertThrows(IllegalStateException.class, () -> {
+            addressBookServiceImpl.getCurrent();
+        });
         assertEquals(0, addressBookRepository.count());
         assertEquals(0, addressBookEntryRepository.count());
     }
@@ -260,8 +270,11 @@ public class AddressBookServiceImplTest {
         update(addressBookServiceImpl, addressBookBytes1, 1L);
 
         // create new address book and submit another append to complete file
-        addressBookServiceImpl = new AddressBookServiceImpl(addressBookRepository, fileDataRepository);
-        assertThat(addressBookServiceImpl.getCurrent()).isNull();
+        AddressBookService addressBookServiceImpl2 = new AddressBookServiceImpl(addressBookRepository,
+                fileDataRepository);
+        assertThrows(IllegalStateException.class, () -> {
+            addressBookServiceImpl2.getCurrent();
+        });
 
         append(addressBookServiceImpl, addressBookBytes2, 3L);
 
@@ -298,7 +311,9 @@ public class AddressBookServiceImplTest {
         assertEquals(0, addressBookEntryRepository.count());
         assertEquals(0, addressBookRepository.count()); // initial and 102 update
 
-        assertThat(addressBookServiceImpl.getCurrent()).isNull();
+        assertThrows(IllegalStateException.class, () -> {
+            addressBookServiceImpl.getCurrent();
+        });
 
         // perform file 101 update and verify only partial address book is changed
         EntityId file101ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
@@ -317,7 +332,9 @@ public class AddressBookServiceImplTest {
         assertEquals(1, addressBookRepository.count());
 
         // verify current address book bytes still match original load and not 101 update and append
-        assertThat(addressBookServiceImpl.getCurrent()).isNull();
+        assertThrows(IllegalStateException.class, () -> {
+            addressBookServiceImpl.getCurrent();
+        });
 
         // perform file 102 append
         append(addressBookServiceImpl, addressBookBytes2, 7L);

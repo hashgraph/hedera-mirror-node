@@ -560,15 +560,16 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        AddressBook currentAddressBook = addressBookService.getCurrent();
+        assertThrows(IllegalStateException.class, () -> {
+            addressBookService.getCurrent();
+        });
         assertAll(
                 () -> assertRowCountOnSuccess(),
                 () -> assertFileTransaction(transactionBody, record, false),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertThat(currentAddressBook).isNull()
-                , () -> assertEquals(0, addressBookRepository.count())
-                , () -> assertEquals(0, addressBookEntryRepository.count())
-                , () -> assertEquals(1, fileDataRepository.count())
+                () -> assertEquals(0, addressBookRepository.count()),
+                () -> assertEquals(0, addressBookEntryRepository.count()),
+                () -> assertEquals(1, fileDataRepository.count())
         );
     }
 
