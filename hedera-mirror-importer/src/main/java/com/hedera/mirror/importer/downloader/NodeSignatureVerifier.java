@@ -34,10 +34,10 @@ import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
-import com.hedera.mirror.importer.domain.NodeAddress;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -46,11 +46,13 @@ public class NodeSignatureVerifier {
 
     private final Map<String, PublicKey> nodeIDPubKeyMap;
 
-    public NodeSignatureVerifier(NetworkAddressBook networkAddressBook) {
-        nodeIDPubKeyMap = networkAddressBook
-                .getAddresses()
+    public NodeSignatureVerifier(AddressBookService addressBookService) {
+        nodeIDPubKeyMap = addressBookService
+                .getCurrent()
+                .getEntries()
                 .stream()
-                .collect(Collectors.toMap(NodeAddress::getId, NodeAddress::getPublicKeyAsObject));
+                .collect(Collectors
+                        .toMap(AddressBookEntry::getNodeAccountIdString, AddressBookEntry::getPublicKeyAsObject));
     }
 
     private static boolean canReachConsensus(long actualNodes, long expectedNodes) {
@@ -72,11 +74,12 @@ public class NodeSignatureVerifier {
      */
     public void verify(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
         Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
-        String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst().orElse(null);
+        String filename = signatures.stream().map(FileStreamSignature::getFile).map(File::getName).findFirst()
+                .orElse(null);
         int consensusCount = 0;
 
-        final long sigFileCount = signatures.size();
-        final long nodeCount = nodeIDPubKeyMap.size();
+        long sigFileCount = signatures.size();
+        long nodeCount = nodeIDPubKeyMap.size();
         if (!canReachConsensus(sigFileCount, nodeCount)) {
             throw new SignatureVerificationException("Require at least 1/3 signature files to reach consensus, got " +
                     sigFileCount + " out of " + nodeCount + " for file " + filename + ": " + statusMap(signatures));

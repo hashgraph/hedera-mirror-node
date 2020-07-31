@@ -30,7 +30,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.downloader.Downloader;
@@ -47,9 +47,9 @@ public class EventFileDownloader extends Downloader {
 
     public EventFileDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
-            NetworkAddressBook networkAddressBook, EventDownloaderProperties downloaderProperties,
+            AddressBookService addressBookService, EventDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry, EventFileReader eventFileReader) {
-        super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties, meterRegistry);
+        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, meterRegistry);
         this.eventFileReader = eventFileReader;
     }
 

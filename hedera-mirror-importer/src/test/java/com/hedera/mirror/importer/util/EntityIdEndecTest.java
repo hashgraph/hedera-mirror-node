@@ -1,6 +1,7 @@
 package com.hedera.mirror.importer.util;
 
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityTypeEnum.FILE;
 import static com.hedera.mirror.importer.util.EntityIdEndec.NUM_BITS;
 import static com.hedera.mirror.importer.util.EntityIdEndec.REALM_BITS;
 import static com.hedera.mirror.importer.util.EntityIdEndec.SHARD_BITS;
@@ -22,7 +23,8 @@ class EntityIdEndecTest {
             "0, 0, 10, 10",
             "0, 0, 4294967295, 4294967295",
             "10, 10, 10, 2814792716779530",
-            "32767, 65535, 4294967295, 9223372036854775807", // max +ve for shard, max for realm, max for num = max +ve long
+            "32767, 65535, 4294967295, 9223372036854775807", // max +ve for shard, max for realm, max for num = max
+            // +ve long
             "32767, 0, 0, 9223090561878065152"
     })
     void testEntityEncoding(long shard, long realm, long num, long encodedId) {
@@ -62,18 +64,18 @@ class EntityIdEndecTest {
             "10, 0, 0, 10",
             "4294967295, 0, 0, 4294967295",
             "2814792716779530, 10, 10, 10",
-            "9223372036854775807, 32767, 65535, 4294967295", // max +ve for shard, max for realm, max for num = max +ve long
+            "9223372036854775807, 32767, 65535, 4294967295", // max +ve for shard, max for realm, max for num = max
+            // +ve long
             "9223090561878065152, 32767, 0, 0"
     })
     void testEntityDecoding(long encodedId, long shard, long realm, long num) {
-        assertThat(EntityIdEndec.decode(encodedId)).isEqualTo(EntityId.of(shard, realm, num, ACCOUNT));
+        assertThat(EntityIdEndec.decode(encodedId, ACCOUNT)).isEqualTo(EntityId.of(shard, realm, num, ACCOUNT));
     }
 
     @Test
     void throwsExceptionDecoding() {
         assertThrows(InvalidEntityException.class, () -> {
-            EntityIdEndec.decode(-1);
+            EntityIdEndec.decode(-1, FILE);
         });
     }
-
 }

@@ -24,16 +24,35 @@ import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-
+import javax.persistence.Convert;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Transient;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.apache.commons.codec.binary.Hex;
 
-@Builder
-@Value
-public class NodeAddress {
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 
-    private String id;
+@Builder(toBuilder = true)
+@Data
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString(exclude = {"publicKey", "nodeCertHash"})
+public class AddressBookEntry {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long consensusTimestamp;
+
+    private String memo;
 
     private String ip;
 
@@ -41,6 +60,13 @@ public class NodeAddress {
     private int port = 50211;
 
     private String publicKey;
+
+    private long nodeId;
+
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId nodeAccountId;
+
+    private byte[] nodeCertHash;
 
     public PublicKey getPublicKeyAsObject() {
         try {
@@ -51,5 +77,18 @@ public class NodeAddress {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public EntityId getNodeAccountId() {
+        if (nodeAccountId == null) {
+            return memo == null ? null : EntityId.of(memo, EntityTypeEnum.ACCOUNT);
+        }
+
+        return nodeAccountId;
+    }
+
+    @Transient
+    public String getNodeAccountIdString() {
+        return nodeAccountId == null ? memo : nodeAccountId.entityIdToString();
     }
 }

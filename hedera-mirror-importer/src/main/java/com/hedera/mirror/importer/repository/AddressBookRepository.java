@@ -20,20 +20,14 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.domain.AddressBook;
 
-public interface FileDataRepository extends CrudRepository<FileData, Long> {
-    @Query(value = "select * from file_data where consensus_timestamp between ?1 and ?2 and entity_id " +
-            "= ?3 and transaction_type = ?4 order by consensus_timestamp asc", nativeQuery = true)
-    List<FileData> findFilesInRange(long start, long end, long encodedEntityId, int transactionType);
-
-    @Query(value = "select * from file_data where consensus_timestamp < ?1 and entity_id = ?2 and transaction_type in" +
-            " (?3) order by consensus_timestamp desc limit 1", nativeQuery = true)
-    Optional<FileData> findLatestMatchingFile(long consensusTimestamp, long encodedEntityId,
-                                              List<Integer> transactionTypes);
+public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
+    @Query(value = "select * from address_book where start_consensus_timestamp <= ?1 and file_id = ?2 order by " +
+            "start_consensus_timestamp desc limit 1", nativeQuery = true)
+    Optional<AddressBook> findLatestAddressBook(long consensusTimestamp, long encodedFileId);
 }
