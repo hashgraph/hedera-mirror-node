@@ -44,7 +44,7 @@
     "swagger-stats"
   ],
   "devDependencies": {
-    "codecov": "^3.7.1",
+    "codecov": "^3.7.2",
     "husky": "^4.2.5",
     "jest": "^26.2.2",
     "jest-junit": "^11.1.0",
