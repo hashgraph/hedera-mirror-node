@@ -38,6 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,11 +51,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.AddressBook;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
+import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +70,8 @@ public class RecordFileParserTest {
     @Mock
     private ApplicationStatusRepository applicationStatusRepository;
     @Mock
+    private AddressBookRepository addressBookRepository;
+    @Mock
     private RecordItemListener recordItemListener;
     @Mock
     private RecordStreamFileListener recordStreamFileListener;
@@ -74,6 +81,7 @@ public class RecordFileParserTest {
 
     private File file1;
     private File file2;
+    private static final long FILE1_CONSENSUS_START = 1567188600419072000L;
     private static final int NUM_TXNS_FILE_1 = 19;
     private static final int NUM_TXNS_FILE_2 = 15;
     private static RecordFile recordFile1;
@@ -90,7 +98,7 @@ public class RecordFileParserTest {
                 new SimpleMeterRegistry(), recordItemListener, recordStreamFileListener);
         StreamType streamType = StreamType.RECORD;
         fileCopier = FileCopier
-                .create(Path.of(this.getClass().getClassLoader().getResource("data").getPath()), dataPath)
+                .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
                 .from(streamType.getPath(), "v2", "record0.0.3")
                 .filterFiles("*.rcd")
                 .to(streamType.getPath(), streamType.getValid());
@@ -276,5 +284,20 @@ public class RecordFileParserTest {
         verify(recordItemListener, times(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)).onItem(any());
         assertOnStart(file1.getPath(), file2.getPath());
         assertOnEnd(recordFile1, recordFile2);
+    }
+
+    private AddressBook addressBook(Consumer<AddressBook.AddressBookBuilder> addressBookCustomizer) {
+
+        AddressBook.AddressBookBuilder builder = AddressBook.builder()
+                .startConsensusTimestamp(0L)
+                .fileData("address book memo".getBytes())
+                .fileId(EntityId.of("0.0.102", EntityTypeEnum.FILE))
+                .endConsensusTimestamp(null);
+
+        if (addressBookCustomizer != null) {
+            addressBookCustomizer.accept(builder);
+        }
+
+        return builder.build();
     }
 }

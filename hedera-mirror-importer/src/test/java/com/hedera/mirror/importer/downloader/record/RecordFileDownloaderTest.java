@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.downloader.record;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -29,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +41,8 @@ import org.springframework.util.ResourceUtils;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -54,7 +58,7 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
 
     @Override
     protected Downloader getDownloader() {
-        return new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook,
+        return new RecordFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (RecordDownloaderProperties) downloaderProperties, meterRegistry);
     }
 
@@ -63,24 +67,32 @@ public class RecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest
         return Paths.get("recordstreams", "v2");
     }
 
+    @Override
+    protected Duration getCloseInterval() {
+        return Duration.ofSeconds(5L);
+    }
+
     @BeforeEach
     void beforeEach() {
         file1 = "2019-08-30T18_10_00.419072Z.rcd";
         file2 = "2019-08-30T18_10_05.249678Z.rcd";
-        downloaderProperties.setCloseInterval(Duration.ofSeconds(5)); // Test rcd files use older 5s interval
     }
 
     @Test
     @DisplayName("Download and verify V1 files")
     void downloadV1() throws Exception {
         Path addressBook = ResourceUtils.getFile("classpath:addressbook/test-v1").toPath();
-        networkAddressBook.update(Files.readAllBytes(addressBook));
+        EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+        byte[] addressBookBytes = Files.readAllBytes(addressBook);
+        long now = Instant.now().getEpochSecond();
+        doReturn(addressBookFromBytes(addressBookBytes, now, entityId)).when(addressBookService).getCurrent();
+
         fileCopier = FileCopier.create(Utility.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
         fileCopier.copy();
 
-        downloader.download();
+        getDownloader().download();
 
         verify(applicationStatusRepository).updateStatusValue(
                 ApplicationStatusCode.LAST_VALID_DOWNLOADED_RECORD_FILE, "2019-07-01T14:13:00.317763Z.rcd");

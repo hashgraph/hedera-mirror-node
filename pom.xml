@@ -4,7 +4,7 @@
 
     <groupId>com.hedera</groupId>
     <artifactId>hedera-mirror-node</artifactId>
-    <version>0.16.0-SNAPSHOT</version>
+    <version>0.16.0-rc1</version>
     <description>Hedera Mirror Node mirrors data from Hedera nodes and serves it via an API</description>
     <inceptionYear>2019</inceptionYear>
     <modelVersion>4.0.0</modelVersion>
@@ -57,7 +57,6 @@
         <docker-maven-plugin.version>0.33.0</docker-maven-plugin.version>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
-        <docker.skip.deployer>true</docker.skip.deployer>
         <docker.tag.version>${project.version}</docker.tag.version>
         <grpc.version>1.29.0</grpc.version>
         <hedera-protobuf.version>0.6.0-alpha1</hedera-protobuf.version>
@@ -66,11 +65,11 @@
         <java.version>11</java.version>
         <javax.version>1</javax.version>
         <jib.version>2.4.0</jib.version>
-        <jmeter.version>5.2.1</jmeter.version>
+        <jmeter.version>5.3</jmeter.version>
         <micrometer-jvm-extras.version>0.2.0</micrometer-jvm-extras.version>
         <protobuf.version>3.11.1</protobuf.version>
         <release.version>${project.version}</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.3.0</release.chartVersion>
+        <release.chartVersion>0.4.0</release.chartVersion>
         <embedded.testcontainers.version>1.62</embedded.testcontainers.version>
     </properties>
 
@@ -85,7 +84,7 @@
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
-                <version>Hoxton.SR6</version>
+                <version>Hoxton.SR7</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -144,7 +143,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.0.0-M4</version>
+                    <version>3.0.0-M5</version>
                     <configuration>
                         <!-- Jacoco prepare-agent builds some command-line params without -->
                         <!-- which jacoco will not instrument. Hence it is important to add -->
@@ -329,26 +328,6 @@
                     <skipPoms>false</skipPoms>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>io.fabric8</groupId>
-                <artifactId>docker-maven-plugin</artifactId>
-                <inherited>false</inherited>
-                <configuration>
-                    <images>
-                        <image>
-                            <build>
-                                <contextDir>${project.basedir}/charts</contextDir>
-                                <dockerFile>${project.basedir}/charts/marketplace/gcp/Dockerfile</dockerFile>
-                                <args>
-                                    <tag>${docker.tag.version}</tag>
-                                </args>
-                            </build>
-                            <name>${docker.push.repository}/hedera-mirror-node/deployer:${docker.tag.version}</name>
-                        </image>
-                    </images>
-                    <skip>${docker.skip.deployer}</skip>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
@@ -393,7 +372,7 @@
                                 </replacement>
                                 <replacement>
                                     <token>
-                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|rest|test):)[0-9a-z.-]+]]></token>
+                                        <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|rest|test):)[0-9a-zA-Z.-]+]]></token>
                                     <value>${release.version}</value>
                                 </replacement>
                             </replacements>

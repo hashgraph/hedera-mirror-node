@@ -162,6 +162,7 @@ public class RecordFileParser implements FileParser {
             recordStreamFileListener.onEnd(recordFile);
             applicationStatusRepository.updateStatusValue(
                     ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH, recordFile.getFileHash());
+
             recordParserLatencyMetric(recordFile);
             success = true;
         } finally {

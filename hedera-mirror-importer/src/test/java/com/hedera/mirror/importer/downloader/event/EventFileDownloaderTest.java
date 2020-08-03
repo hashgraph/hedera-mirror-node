@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.downloader.event;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,13 +46,18 @@ public class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest 
 
     @Override
     protected Downloader getDownloader() {
-        return new EventFileDownloader(s3AsyncClient, applicationStatusRepository, networkAddressBook,
+        return new EventFileDownloader(s3AsyncClient, applicationStatusRepository, addressBookService,
                 (EventDownloaderProperties) downloaderProperties, meterRegistry, new EventFileReaderImpl());
     }
 
     @Override
     protected Path getTestDataDir() {
         return Paths.get("eventsStreams", "v3");
+    }
+
+    @Override
+    protected Duration getCloseInterval() {
+        return Duration.ofSeconds(5L);
     }
 
     @Test

@@ -1,6 +1,6 @@
 {
   "name": "hedera-mirror-rest",
-  "version": "0.16.0-SNAPSHOT",
+  "version": "0.16.0-rc1",
   "description": "Hedera Mirror Node REST API",
   "main": "server.js",
   "private": true,
@@ -28,9 +28,9 @@
     "lodash": "^4.17.19",
     "log4js": "^4.3.1",
     "mathjs": "^7.1.0",
-    "node-cache": "^5.1.0",
+    "node-cache": "^5.1.2",
     "node-fetch": "^2.6.0",
-    "pg": "~7.11.0",
+    "pg": "~8.3.0",
     "swagger-stats": "^0.95.17"
   },
   "bundledDependencies": [
@@ -53,14 +53,14 @@
   ],
   "devDependencies": {
     "aws-sdk-mock": "^5.1.0",
-    "codecov": "^3.7.1",
+    "codecov": "^3.7.2",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-jest": "^23.19.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-security": "^1.4.0",
     "husky": "^4.2.5",
-    "jest": "^26.1.0",
+    "jest": "^26.2.2",
     "jest-junit": "^11.1.0",
     "mock-req-res": "^1.2.0",
     "node-duration": "~1.0.4",

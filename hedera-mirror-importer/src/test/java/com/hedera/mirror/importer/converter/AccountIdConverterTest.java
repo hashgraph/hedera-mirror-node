@@ -27,8 +27,8 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
 
-class EntityIdConverterTest {
-    EntityIdConverter converter = new EntityIdConverter();
+class AccountIdConverterTest {
+    AccountIdConverter converter = new AccountIdConverter();
 
     @Test
     void testForNulls() {

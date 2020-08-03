@@ -1,13 +1,13 @@
 {{ $ingress := .Values.prometheus.grafana.ingress }}
 {{ $name := printf "%s-grafana" .Release.Name }}
-{{ $namespace := include "hedera-mirror.namespace" . }}
+{{ $namespace := include "hedera-mirror-common.namespace" . }}
 
 {{- if and .Values.prometheus.enabled .Values.prometheus.grafana.enabled $ingress.middleware.enabled -}}
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   labels:
-    {{- include "hedera-mirror.labels" . | nindent 4 }}
+    {{- include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}
   namespace: {{ $namespace }}
 spec:
@@ -24,7 +24,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   labels:
-    {{- include "hedera-mirror.labels" . | nindent 4 }}
+    {{- include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}-ip-whitelist
   namespace: {{ $namespace }}
 spec:
@@ -37,7 +37,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   labels:
-    {{- include "hedera-mirror.labels" . | nindent 4 }}
+    {{- include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}-connection-limit
   namespace: {{ $namespace }}
 spec:
@@ -52,7 +52,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   labels:
-    {{- include "hedera-mirror.labels" . | nindent 4 }}
+    {{- include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}-circuit-breaker
   namespace: {{ $namespace }}
 spec:
@@ -64,7 +64,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   labels:
-    {{- include "hedera-mirror.labels" . | nindent 4 }}
+    {{- include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}-rate-limit
   namespace: {{ $namespace }}
 spec:
@@ -76,7 +76,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   labels:
-    {{- include "hedera-mirror.labels" . | nindent 4 }}
+    {{- include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ $name }}-strip-prefix
   namespace: {{ $namespace }}
 spec:
