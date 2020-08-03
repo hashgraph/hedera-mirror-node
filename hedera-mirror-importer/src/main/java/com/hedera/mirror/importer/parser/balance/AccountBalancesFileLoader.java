@@ -31,13 +31,11 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.inject.Named;
 import javax.sql.DataSource;
-
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
-
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.domain.AccountBalanceItem;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -164,19 +162,30 @@ public final class AccountBalancesFileLoader {
         }
 
         try {
+            int count = 0;
             for (var accountBalanceItem : accountBalanceItemList) {
                 EntityId accountId = accountBalanceItem.getAccountId();
                 long realmNum = accountId.getRealmNum();
                 long accountNum = accountId.getEntityNum();
+                long consensusTimestamp = accountBalanceItem.getConsensusTimestamp();
+                long balance = accountBalanceItem.getBalance();
 
-                insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), accountBalanceItem.getConsensusTimestamp());
-                insertBalanceStatement.setShort(F_INSERT_BALANCE.ACCOUNT_REALM_NUM.ordinal(), (short) realmNum);
-                insertBalanceStatement.setInt(F_INSERT_BALANCE.ACCOUNT_NUM.ordinal(), (int) accountNum);
-                insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), accountBalanceItem.getBalance());
-                insertBalanceStatement.addBatch();
+                try {
+                    insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
+                    insertBalanceStatement.setShort(F_INSERT_BALANCE.ACCOUNT_REALM_NUM.ordinal(), (short) realmNum);
+                    insertBalanceStatement.setInt(F_INSERT_BALANCE.ACCOUNT_NUM.ordinal(), (int) accountNum);
+                    insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), balance);
+                    insertBalanceStatement.addBatch();
+                    count++;
+                } catch(SQLException ex) {
+                    log.error("Failed to add account balance to the batch", ex);
+                }
             }
 
             accountBalanceItemList.clear();
+            if (count == 0) {
+                return 0;
+            }
             var result = insertBalanceStatement.executeBatch();
             return (int)Arrays.stream(result).filter(code -> code != Statement.EXECUTE_FAILED).count();
         } catch(SQLException ex) {
