@@ -28,7 +28,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-import com.hedera.mirror.importer.addressbook.NetworkAddressBook;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.leader.Leader;
@@ -41,9 +41,9 @@ public class AccountBalancesDownloader extends Downloader {
 
     public AccountBalancesDownloader(
             S3AsyncClient s3Client, ApplicationStatusRepository applicationStatusRepository,
-            NetworkAddressBook networkAddressBook, BalanceDownloaderProperties downloaderProperties,
+            AddressBookService addressBookService, BalanceDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry) {
-        super(s3Client, applicationStatusRepository, networkAddressBook, downloaderProperties, meterRegistry);
+        super(s3Client, applicationStatusRepository, addressBookService, downloaderProperties, meterRegistry);
     }
 
     @Leader

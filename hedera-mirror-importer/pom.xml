@@ -19,7 +19,7 @@
     <properties>
         <commons-io.version>2.6</commons-io.version>
         <guava.version>29.0-jre</guava.version>
-        <s3mock.version>0.2.5</s3mock.version>
+        <s3mock.version>0.2.6</s3mock.version>
         <testcontainers.version>1.14.3</testcontainers.version>
     </properties>
 

@@ -29,7 +29,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import com.hedera.mirror.importer.converter.EntityIdConverter;
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
@@ -42,7 +42,7 @@ public class Transaction {
     @Id
     private Long consensusNs;
 
-    @Convert(converter = EntityIdConverter.class)
+    @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId nodeAccountId;
 
@@ -52,7 +52,7 @@ public class Transaction {
 
     private Integer result;
 
-    @Convert(converter = EntityIdConverter.class)
+    @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
 
@@ -60,7 +60,7 @@ public class Transaction {
 
     private Long initialBalance;
 
-    @Convert(converter = EntityIdConverter.class)
+    @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId entityId;
 

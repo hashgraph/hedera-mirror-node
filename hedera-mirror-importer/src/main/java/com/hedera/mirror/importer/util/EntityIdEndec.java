@@ -33,14 +33,10 @@ import com.hedera.mirror.importer.exception.InvalidEntityException;
  * operations too. That's because javascript's (REST server) support for bitwise operations is very limited (truncates
  * numbers to 32 bits internally before bitwise operation).
  * <p/>
- * Format: <br/>
- * First bit (sign bit) is left 0. <br/>
- * Next 15 bits are for shard, followed by 16 bits for realm, and then 32 bits for entity num. <br/>
- * This encoding will support following ranges: <br/>
- * shard: 0 - 32767 <br/>
- * realm: 0 - 65535 <br/>
- * num: 0 - 4294967295 <br/>
- * Placing entity num in the end has the advantage that encoded ids <= 4294967295 will also be human readable.
+ * Format: <br/> First bit (sign bit) is left 0. <br/> Next 15 bits are for shard, followed by 16 bits for realm, and
+ * then 32 bits for entity num. <br/> This encoding will support following ranges: <br/> shard: 0 - 32767 <br/> realm: 0
+ * - 65535 <br/> num: 0 - 4294967295 <br/> Placing entity num in the end has the advantage that encoded ids <=
+ * 4294967295 will also be human readable.
  */
 @Log4j2
 public class EntityIdEndec {
@@ -63,13 +59,13 @@ public class EntityIdEndec {
                 (shardNum & SHARD_MASK) << (REALM_BITS + NUM_BITS);
     }
 
-    public static EntityId decode(long encodedId) {
+    public static EntityId decode(long encodedId, EntityTypeEnum entityTypeEnum) {
         if (encodedId < 0) {
             throw new InvalidEntityException("encodedId can not be negative: " + encodedId);
         }
         long shard = encodedId >> (REALM_BITS + NUM_BITS);
         long realm = (encodedId >> NUM_BITS) & REALM_MASK;
         long num = encodedId & NUM_MASK;
-        return EntityId.of(shard, realm, num, EntityTypeEnum.ACCOUNT);
+        return EntityId.of(shard, realm, num, entityTypeEnum);
     }
 }

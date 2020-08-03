@@ -27,7 +27,7 @@ import javax.persistence.Id;
 import lombok.Data;
 import lombok.ToString;
 
-import com.hedera.mirror.importer.converter.EntityIdConverter;
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
@@ -44,7 +44,7 @@ public class TopicMessage {
 
     private byte[] message;
 
-    @Convert(converter = EntityIdConverter.class)
+    @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
 

@@ -84,7 +84,7 @@
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
-                <version>Hoxton.SR6</version>
+                <version>Hoxton.SR7</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -143,7 +143,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.0.0-M4</version>
+                    <version>3.0.0-M5</version>
                     <configuration>
                         <!-- Jacoco prepare-agent builds some command-line params without -->
                         <!-- which jacoco will not instrument. Hence it is important to add -->

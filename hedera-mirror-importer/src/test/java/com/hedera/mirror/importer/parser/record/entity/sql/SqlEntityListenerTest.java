@@ -49,6 +49,7 @@ import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
@@ -251,7 +252,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onFileData() throws Exception {
         // given
-        FileData expectedFileData = new FileData(11L, "file data".getBytes());
+        FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
+                .of(0, 0, 111, EntityTypeEnum.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
 
         // when
         sqlEntityListener.onFileData(expectedFileData);
