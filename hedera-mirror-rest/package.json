@@ -20,7 +20,7 @@
     "express": "^4.17.1",
     "extend": "^3.0.2",
     "js-yaml": "^3.14.0",
-    "log4js": "^4.3.1",
+    "log4js": "^6.3.0",
     "mathjs": "^7.1.0",
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.0",
