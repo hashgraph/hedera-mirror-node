@@ -301,9 +301,12 @@ describe('DB integration test - spec based', () => {
 
   const uploadFilesToS3 = async (endpoint) => {
     const dataPath = path.join(s3TestDataRoot, bucketName);
+    // use fake accessKeyId and secreteAccessKey, otherwise upload will fail
     const s3client = new S3({
       endpoint,
       region: 'us-east-1',
+      accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+      secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
       s3ForcePathStyle: true,
     });
 
