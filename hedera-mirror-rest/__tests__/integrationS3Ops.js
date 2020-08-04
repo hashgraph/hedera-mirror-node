@@ -60,7 +60,7 @@ class S3Ops {
         const res = await axios.get(healthEndpoint);
         const { data } = res;
         if (data.services && data.services.s3 && data.services.s3 === 'running') {
-          break;
+          return;
         }
       } catch (err) {
         //
@@ -69,9 +69,7 @@ class S3Ops {
       await new Promise((r) => setTimeout(r, 200));
     }
 
-    if (timeout) {
-      throw new Error('localstack s3 service health check failed in 15s');
-    }
+    throw new Error('localstack s3 service health check failed in 15s');
   }
 
   async stop() {

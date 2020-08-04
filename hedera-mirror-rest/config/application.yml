@@ -27,6 +27,7 @@ hedera:
           network: 'DEMO'
           cloudProvider: 'S3'
           endpointOverride:
+          gcpProjectId:
           region: 'us-east-1'
           accessKey:
           secretKey:

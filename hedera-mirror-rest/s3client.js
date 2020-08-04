@@ -21,20 +21,35 @@
 'use strict';
 
 const AWS = require('aws-sdk');
+const parseUrl = require('url-parse');
 const config = require('./config');
 const { InvalidConfigError } = require('./errors/invalidConfigError');
 
 class S3Client {
-  constructor(s3, hasCredentials) {
+  constructor(s3, hasCredentials, gcpProjectId) {
     this.s3 = s3;
     this.hasCredentials = hasCredentials;
+    this.gcpProjectId = gcpProjectId;
   }
 
   getObject(params, callback) {
+    let request;
     if (this.hasCredentials) {
-      return this.s3.getObject(params, callback);
+      request = this.s3.getObject(params, callback);
+    } else {
+      request = this.s3.makeUnauthenticatedRequest('getObject', params, callback);
     }
-    return this.s3.makeUnauthenticatedRequest('getObject', params, callback);
+
+    if (this.gcpProjectId) {
+      const projectId = this.gcpProjectId;
+      request.on('build', () => {
+        const urlPath = parseUrl(request.httpRequest.path, true);
+        urlPath.query.userProject = projectId;
+        request.httpRequest.path = urlPath.toString();
+      });
+    }
+
+    return request;
   }
 
   getConfig() {
@@ -79,7 +94,10 @@ const buildS3ConfigFromStreamsConfig = () => {
     logger.info('Building s3Config with no credentials');
   }
 
-  return s3Config;
+  return {
+    s3Config,
+    gcpProjectId: streamsConfig.gcpProjectId,
+  };
 };
 
 /**
@@ -87,8 +105,8 @@ const buildS3ConfigFromStreamsConfig = () => {
  * @returns {S3Client}
  */
 const createS3Client = () => {
-  const s3Config = buildS3ConfigFromStreamsConfig();
-  return new S3Client(new AWS.S3(s3Config), !!s3Config.accessKeyId);
+  const { s3Config, gcpProjectId } = buildS3ConfigFromStreamsConfig();
+  return new S3Client(new AWS.S3(s3Config), !!s3Config.accessKeyId, gcpProjectId);
 };
 
 module.exports = {

@@ -31,7 +31,8 @@
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.0",
     "pg": "~8.3.0",
-    "swagger-stats": "^0.95.17"
+    "swagger-stats": "^0.95.17",
+    "url-parse": "^1.4.7"
   },
   "bundledDependencies": [
     "asn1js",
@@ -49,7 +50,8 @@
     "node-cache",
     "node-fetch",
     "pg",
-    "swagger-stats"
+    "swagger-stats",
+    "url-parse"
   ],
   "devDependencies": {
     "aws-sdk-mock": "^5.1.0",

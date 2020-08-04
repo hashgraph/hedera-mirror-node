@@ -1,5 +1,5 @@
 {
-  "description": "Stateproof api calls with valid transaction ID but transaction not found",
+  "description": "Stateproof api calls with invalid transaction ID",
   "setup": {
     "sqlscripts": [
       "data/db/stateproof/address_book.sql",
