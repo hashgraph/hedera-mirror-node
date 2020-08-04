@@ -30,17 +30,23 @@ const defaultS3Port = 4566;
 
 class S3Ops {
   async start() {
-    const isInstalled = await isDockerInstalled();
-    if (!isInstalled) {
-      throw new Error('docker is not installed, cannot start localstack container for mock s3 service');
-    }
+    if (!process.env.TEST_S3_HOST) {
+      const isInstalled = await isDockerInstalled();
+      if (!isInstalled) {
+        throw new Error('docker is not installed, cannot start localstack container for mock s3 service');
+      }
 
-    const container = await new GenericContainer(localStackImageName, localstackImageTag)
-      .withEnv('SERVICES', 's3')
-      .withExposedPorts(defaultS3Port)
-      .start();
-    this.container = container;
-    this.port = container.getMappedPort(defaultS3Port);
+      const container = await new GenericContainer(localStackImageName, localstackImageTag)
+        .withEnv('SERVICES', 's3')
+        .withExposedPorts(defaultS3Port)
+        .start();
+      this.container = container;
+      this.hostname = 'localhost';
+      this.port = container.getMappedPort(defaultS3Port);
+    } else {
+      this.hostname = process.env.TEST_S3_HOST;
+      this.port = defaultS3Port;
+    }
 
     let timeout = false;
     new Promise((r) => setTimeout(() => {
@@ -64,16 +70,18 @@ class S3Ops {
     }
 
     if (timeout) {
-      throw new Error('localstack s3 service health check failed in 10s');
+      throw new Error('localstack s3 service health check failed in 15s');
     }
   }
 
   async stop() {
-    await this.container.stop();
+    if (this.container) {
+      await this.container.stop();
+    }
   }
 
   getEndpointUrl() {
-    return `http://localhost:${this.port}`;
+    return `http://${this.hostname}:${this.port}`;
   }
 }
 

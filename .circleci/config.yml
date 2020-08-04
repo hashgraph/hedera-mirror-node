@@ -286,6 +286,9 @@ jobs:
           POSTGRES_DB: mirror_node_integration
           POSTGRES_USER: mirror_node
           POSTGRES_PASSWORD: mirror_node_pass
+      - image: localstack/localstack:0.11.3
+        environment:
+          SERVICES: s3
     steps:
       - checkout
       - restore_cache:
@@ -310,6 +313,7 @@ jobs:
           environment:
             TEST_DB_HOST: "127.0.0.1"
             TEST_DB_NAME: "mirror_node_integration"
+            TEST_S3_HOST: "127.0.0.1"
       - store_artifacts:
           path: hedera-mirror-rest/target/jest-junit
           destination: /rest-jest
