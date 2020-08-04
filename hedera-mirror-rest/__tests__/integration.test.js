@@ -48,6 +48,8 @@
 const path = require('path');
 const request = require('supertest');
 const fs = require('fs');
+const S3 = require('aws-sdk/clients/s3');
+const crypto = require('crypto');
 const EntityId = require('../entityId');
 const transactions = require('../transactions.js');
 const server = require('../server');
@@ -261,8 +263,10 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 });
 
 describe('DB integration test - spec based', () => {
+  const bucketName = 'hedera-demo-streams';
+  const s3TestDataRoot = path.join(__dirname, 'data/s3');
+
   let s3Ops;
-  let serverWithStateProofEnabled;
 
   const configS3ForStateProof = (endpoint) => {
     config.stateproof = {
@@ -272,7 +276,7 @@ describe('DB integration test - spec based', () => {
         cloudProvider: 'S3',
         endpointOverride: endpoint,
         region: 'us-east-1',
-        bucketName: 'integration-test-streams',
+        bucketName,
         record: {
           prefix: 'recordstreams/record',
         },
@@ -280,13 +284,56 @@ describe('DB integration test - spec based', () => {
     };
   };
 
+  const walk = async (dir) => {
+    let files = await fs.promises.readdir(dir);
+    files = await Promise.all(files.map(async (file) => {
+      const filePath = path.join(dir, file);
+      const stats = await fs.promises.stat(filePath);
+      if (stats.isDirectory()) {
+        return walk(filePath);
+      } else if (stats.isFile()) {
+        return filePath;
+      }
+    }));
+
+    return files.reduce((all, folderContents) => all.concat(folderContents), []);
+  };
+
+  const uploadFilesToS3 = async (endpoint) => {
+    const dataPath = path.join(s3TestDataRoot, bucketName);
+    const s3client = new S3({
+      endpoint,
+      region: 'us-east-1',
+      s3ForcePathStyle: true,
+    });
+
+    logger.debug(`creating s3 bucket ${bucketName}`);
+    await s3client.makeUnauthenticatedRequest('createBucket', {
+      Bucket: bucketName,
+    }).promise();
+
+    logger.debug('uploading file objects to mock s3 service');
+    const s3ObjectKeys = [];
+    for (const filePath of await walk(dataPath)) {
+      const s3ObjectKey = path.relative(dataPath, filePath);
+      const fileStream = fs.createReadStream(filePath);
+      await s3client.upload({
+        Bucket: bucketName,
+        Key: s3ObjectKey,
+        Body: fileStream,
+        ACL: 'public-read',
+      }).promise();
+      s3ObjectKeys.push(s3ObjectKey);
+    }
+    logger.debug(`uploaded ${s3ObjectKeys.length} file objects: ${s3ObjectKeys}`);
+  };
+
   beforeAll(async () => {
-    s3Ops = new S3Ops(path.join(__dirname, 'data/s3'));
+    jest.setTimeout(40000);
+    s3Ops = new S3Ops();
     await s3Ops.start();
     configS3ForStateProof(s3Ops.getEndpointUrl());
-    jest.isolateModules(() => {
-      serverWithStateProofEnabled = require('../server');
-    });
+    await uploadFilesToS3(s3Ops.getEndpointUrl());
   });
 
   afterAll(async () => {
@@ -298,6 +345,26 @@ describe('DB integration test - spec based', () => {
     await integrationDomainOps.setUp(spec, sqlConnection);
   };
 
+  const md5 = (data) => crypto.createHash('md5').update(data).digest('hex');
+
+  const transformStateProofResponse = (jsonObj) => {
+    if (jsonObj.record_file) {
+      jsonObj.record_file = md5(jsonObj.record_file);
+    }
+
+    if (jsonObj.address_books) {
+      jsonObj.address_books.forEach((addressBook, index) => {
+        jsonObj.address_books[index] = md5(addressBook);
+      });
+    }
+
+    if (jsonObj.signature_files) {
+      Object.keys(jsonObj.signature_files).forEach((nodeAccountId) => {
+        jsonObj.signature_files[nodeAccountId] = md5(jsonObj.signature_files[nodeAccountId]);
+      });
+    }
+  };
+
   const specPath = path.join(__dirname, 'specs');
   fs.readdirSync(specPath).forEach((file) => {
     const p = path.join(specPath, file);
@@ -305,16 +372,14 @@ describe('DB integration test - spec based', () => {
     const spec = JSON.parse(specText);
     test(`DB integration test - ${file} - ${spec.url}`, async () => {
       await specSetupSteps(spec.setup);
-
-      let response;
-      if (!file.startsWith('stateproof')) {
-        response = await request(server).get(spec.url);
-      } else {
-        response = await request(serverWithStateProofEnabled).get(spec.url);
-      }
+      const response = await request(server).get(spec.url);
 
       expect(response.status).toEqual(spec.responseStatus);
-      expect(JSON.parse(response.text)).toEqual(spec.responseJson);
+      const jsonObj = JSON.parse(response.text);
+      if (file.startsWith('stateproof')) {
+        transformStateProofResponse(jsonObj);
+      }
+      expect(jsonObj).toEqual(spec.responseJson);
     });
   });
 });

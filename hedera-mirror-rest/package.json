@@ -53,6 +53,7 @@
   ],
   "devDependencies": {
     "aws-sdk-mock": "^5.1.0",
+    "axios": "^0.19.2",
     "codecov": "^3.7.2",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.0",
@@ -63,7 +64,6 @@
     "jest": "^26.2.2",
     "jest-junit": "^11.1.0",
     "mock-req-res": "^1.2.0",
-    "node-duration": "~1.0.4",
     "node-flywaydb": "^3.0.3",
     "nodemon": "^2.0.4",
     "prettier": "^2.0.5",

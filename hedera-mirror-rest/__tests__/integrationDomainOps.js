@@ -21,6 +21,7 @@
 
 const fs = require('fs');
 const math = require('mathjs');
+const path = require('path');
 const EntityId = require('../entityId');
 
 const NETWORK_FEE = 1;
@@ -239,7 +240,9 @@ const addTopicMessage = async function (message) {
 
 const addSqlScript = async function (sqlScript) {
   const sqlScriptPath = path.join(__dirname, sqlScript);
-  await sqlConnection.query(fs.readFileSync(sqlScriptPath));
+  const script = fs.readFileSync(sqlScriptPath, { encoding: 'utf8' });
+  logger.debug(`loading sql script ${sqlScript}`);
+  await sqlConnection.query(script);
 };
 
 module.exports = {

@@ -119,7 +119,7 @@ app.getAsync(apiPrefix + '/transactions', transactions.getTransactions);
 app.getAsync(apiPrefix + '/transactions/:id', transactions.getOneTransaction);
 
 // stateproof route
-if (config.stateproof.enabled) {
+if (config.stateproof.enabled || process.env.NODE_ENV === 'test') {
   logger.info('stateproof REST API is enabled, install handler');
   app.getAsync(apiPrefix + '/transactions/:id/stateproof', stateproof.getStateProofForTransaction);
 } else {

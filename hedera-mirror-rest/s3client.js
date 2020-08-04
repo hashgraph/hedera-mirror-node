@@ -50,12 +50,15 @@ const buildS3ConfigFromStreamsConfig = () => {
   const streamsConfig = config.stateproof.streams;
 
   let endpoint;
+  let s3ForcePathStyle = false;
   if (streamsConfig.endpointOverride) {
     endpoint = streamsConfig.endpointOverride;
+    s3ForcePathStyle = true;
   } else if (streamsConfig.cloudProvider === 'S3') {
     endpoint = 'https://s3.amazonaws.com';
   } else if (streamsConfig.cloudProvider === 'GCP') {
     endpoint = 'https://storage.googleapis.com';
+    s3ForcePathStyle = true;
   }
 
   if (!endpoint) {
@@ -65,6 +68,7 @@ const buildS3ConfigFromStreamsConfig = () => {
   const s3Config = {
     endpoint,
     region: streamsConfig.region,
+    s3ForcePathStyle,
   };
 
   if (!!streamsConfig.accessKey && !!streamsConfig.secretKey) {

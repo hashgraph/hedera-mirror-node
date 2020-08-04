@@ -20,20 +20,15 @@
 
 'use strict';
 
+const axios = require('axios');
 const { GenericContainer } = require('testcontainers');
-const { Duration, TemporalUnit } = require('node-duration');
 const { isDockerInstalled } = require('./integrationUtils');
 
 const localStackImageName = 'localstack/localstack';
 const localstackImageTag = '0.11.3';
 const defaultS3Port = 4566;
-const DATA_DIR = '/tmp/localstack/data';
 
 class S3Ops {
-  constructor(dataDir) {
-    this.dataDir = dataDir;
-  }
-
   async start() {
     const isInstalled = await isDockerInstalled();
     if (!isInstalled) {
@@ -42,19 +37,35 @@ class S3Ops {
 
     const container = await new GenericContainer(localStackImageName, localstackImageTag)
       .withEnv('SERVICES', 's3')
-      .withEnv('DATA_DIR', DATA_DIR)
-      .withBindMount(this.dataDir, DATA_DIR)
       .withExposedPorts(defaultS3Port)
-      .withHealthCheck({
-        test: "curl -f http://localhost:4566/health | grep 's3'",
-        interval: new Duration(1, TemporalUnit.SECONDS),
-        timeout: new Duration(3, TemporalUnit.SECONDS),
-        retries: 10,
-        startPeriod: new Duration(1, TemporalUnit.SECONDS),
-      })
       .start();
     this.container = container;
     this.port = container.getMappedPort(defaultS3Port);
+
+    let timeout = false;
+    new Promise((r) => setTimeout(() => {
+      timeout = true;
+      r();
+    }, 15000));
+
+    const healthEndpoint = `${this.getEndpointUrl()}/health`;
+    while (!timeout) {
+      try {
+        const res = await axios.get(healthEndpoint);
+        const { data } = res;
+        if (data.services && data.services.s3 && data.services.s3 === 'running') {
+          break;
+        }
+      } catch (err) {
+        //
+      }
+
+      await new Promise((r) => setTimeout(r, 200));
+    }
+
+    if (timeout) {
+      throw new Error('localstack s3 service health check failed in 10s');
+    }
   }
 
   async stop() {

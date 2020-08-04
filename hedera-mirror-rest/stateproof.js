@@ -43,7 +43,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId) => {
        FROM transaction
        WHERE payer_account_id = ?
          AND valid_start_ns = ?
-         AND result = 0`; // only the successful transaction
+         AND result = 22`; // only the successful transaction
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
   if (logger.isTraceEnabled()) {
     logger.trace(`getSuccessfulTransactionConsensusNs: ${pgSqlQuery}, ${JSON.stringify(sqlParams)}`);
@@ -73,7 +73,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId) => {
  * @returns {Promise<String>} RCD file name
  */
 let getRCDFileNameByConsensusNs = async (consensusNs) => {
-  const sqlParams = [consensusNs];
+  const sqlParams = [consensusNs, consensusNs];
   const sqlQuery = `SELECT name
        FROM record_file
        WHERE consensus_start <= ?
@@ -110,17 +110,17 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
   // node account ids from table address_book_entry
   const sqlParams = [consensusNs];
   const sqlQuery = `SELECT
-         ab.consensus_timestampfile_data as consensus_timestamp,
          file_data,
          node_count,
-         string_agg(cast (abe.node_account_id as varchar), ',') as node_account_ids
+         string_agg(memo, ',') AS memos,
+         string_agg(cast(abe.node_account_id AS VARCHAR), ',') AS node_account_ids
        FROM address_book ab
-         LEFT JOIN address_book_entry abe
-           on ab.consensus_timestamp = abe.consensus_timestamp
-       WHERE consensus_timestamp <= ?
+       LEFT JOIN address_book_entry abe
+         ON ab.start_consensus_timestamp = abe.consensus_timestamp
+       WHERE start_consensus_timestamp <= ?
          AND file_id = 102
-       GROUP by consensus_timestamp
-       ORDER BY consensus_timestamp`;
+       GROUP BY start_consensus_timestamp
+       ORDER BY start_consensus_timestamp`;
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
   if (logger.isTraceEnabled()) {
     logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${pgSqlQuery}, ${JSON.stringify(sqlParams)}`);
@@ -137,22 +137,21 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
     throw new NotFoundError('No address book found');
   }
 
-  // Get the node addresses at the moment of the last address book's consensus_timestamp
   const { rows } = addressBookQueryResult;
   const lastAddressBook = _.last(rows);
-  if (!lastAddressBook.node_account_ids) {
-    throw new DbError('No node account IDs found by the join query');
+
+  let nodeAccountIds = [];
+  if (lastAddressBook.node_account_ids) {
+    nodeAccountIds = _.map(lastAddressBook.node_account_ids.split(','), (id) => EntityId.fromEncodedId(id).toString());
+  } else if (lastAddressBook.memos) {
+    nodeAccountIds = lastAddressBook.memos.split(',');
+  }
+
+  if (nodeAccountIds.length !== parseInt(lastAddressBook.node_count, 10)) {
+    throw new DbError('Number of nodes found mismatch node_count in latest address book');
   }
 
   const addressBooks = _.map(rows, (row) => Buffer.from(row.file_data).toString('base64'));
-  const nodeAccountIds = _.map(lastAddressBook.node_account_ids.split(','), (nodeAccountId) => {
-    return EntityId.fromEncodedId(nodeAccountId).toString();
-  });
-
-  if (nodeAccountIds.length !== parseInt(lastAddressBook.node_count, 10)) {
-    throw new DbError('Number of nodes found mismatch node_count in address book');
-  }
-
   return {
     addressBooks,
     nodeAccountIds,
@@ -191,7 +190,7 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
         // error may happen for a couple of reasons: 1. the node does not have the requested file, 2. s3 transient error
         // so capture the error and return it, otherwise Promise.all will fail
         .on('error', (err) => {
-          logger.error(`Failed to download ${partialFilePath}`, err);
+          logger.error(`Failed to download ${JSON.stringify(params)}`, err);
           resolve({
             partialFilePath,
             err,
@@ -206,10 +205,10 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
 /**
  * Check if consensus can be reached given actualCount and expectedCount.
  * @param {Number} actualCount
- * @param {Number} expectedCount
+ * @param {Number} totalCount
  * @returns {boolean} if consensus can be reached
  */
-let canReachConsensus = (actualCount, expectedCount) => actualCount >= Math.ceil(expectedCount / 3.0);
+let canReachConsensus = (actualCount, totalCount) => actualCount >= Math.ceil(totalCount / 3.0);
 
 /**
  * Handler function for /transactions/:transaction_id/stateproof API.
