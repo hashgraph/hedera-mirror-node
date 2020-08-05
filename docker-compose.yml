@@ -46,3 +46,14 @@ services:
     tty: true
     ports:
       - 5551:5551
+
+  rosetta:
+    build:
+      context: ./hedera-mirror-rosetta
+      dockerfile: ./Dockerfile
+    environment:
+      HEDERA_MIRROR_ROSETTA_DB_HOST: db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 5700:5700
