@@ -9,6 +9,7 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/services"
+	"github.com/jinzhu/gorm"
 	"github.com/joho/godotenv"
 
 	"os"
@@ -19,6 +20,7 @@ import (
 func NewBlockchainRouter(
 	network *types.NetworkIdentifier,
 	asserter *asserter.Asserter,
+	dbClient *gorm.DB
 ) http.Handler {
 
 	blockAPIService := services.NewBlockAPIService(network)
@@ -52,7 +54,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	router := NewBlockchainRouter(network, asserter)
+	router := NewBlockchainRouter(network, asserter, dbClient)
 	loggedRouter := server.LoggerMiddleware(router)
 	corsRouter := server.CorsMiddleware(loggedRouter)
 	log.Printf("Listening on port %s\n", os.Getenv("PORT"))
