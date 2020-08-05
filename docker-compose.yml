@@ -54,6 +54,7 @@ services:
     environment:
       HEDERA_MIRROR_REST_DB_HOST: db
     restart: unless-stopped
-    tty: true
     ports:
       - 5700:5700
+    depends_on:
+      - "db"

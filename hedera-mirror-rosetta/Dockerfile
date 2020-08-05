@@ -1,9 +1,9 @@
-FROM golang:1.13-alpine as build
+FROM golang:1.13 as build
 WORKDIR /tmp/src/hedera-mirror-rosetta
 COPY . .
-RUN go build -o main .
+RUN go build -o main ./cmd
 
-FROM alpine
+FROM ubuntu
 WORKDIR $GOPATH/src/hedera-mirror-rosetta
 COPY --from=build /tmp/src/hedera-mirror-rosetta/main .
 COPY . .
