@@ -41,14 +41,13 @@ public class AccountBalanceItem {
 
     @Override
     public String toString() {
-        Instant instant = Instant.ofEpochSecond(consensusTimestamp / 1_000_000_000L,
-                consensusTimestamp % 1_000_000_000L);
-        return String.format("%d.%d.%d=%d,%s", accountId.getShardNum(), accountId.getRealmNum(),
-                accountId.getEntityNum(), balance, instant);
+        Instant instant = Instant.ofEpochSecond(0, consensusTimestamp);
+        return String.format("%s=%d,%s", accountId.entityIdToString(), balance, instant);
     }
 
     /**
      * Creates an AccountBalanceItem object from a line in the balances csv file and its consensus timestamp.
+     * The account balance line is in the format of "shard,realm,account,balance".
      * @param line A line from the balances csv file
      * @param consensusTimestamp The consensus timestamp of the account balance line
      * @return A new <code>AccountBalanceItem</code> object

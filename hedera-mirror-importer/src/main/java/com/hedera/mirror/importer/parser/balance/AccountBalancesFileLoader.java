@@ -29,6 +29,7 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Stream;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.NonNull;
@@ -99,11 +100,11 @@ public final class AccountBalancesFileLoader {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement insertSetStatement = connection.prepareStatement(INSERT_SET_STATEMENT);
              PreparedStatement insertBalanceStatement = connection.prepareStatement(INSERT_BALANCE_STATEMENT);
-             PreparedStatement updateSetStatement = connection.prepareStatement(UPDATE_SET_STATEMENT);) {
+             PreparedStatement updateSetStatement = connection.prepareStatement(UPDATE_SET_STATEMENT);
+             Stream<AccountBalanceItem> stream = balanceFileReader.read(balanceFile)) {
             long consensusTimestamp = -1;
             List<AccountBalanceItem> accountBalanceItemList = new LinkedList<>();
 
-            var stream = balanceFileReader.read(balanceFile);
             var iter = stream.iterator();
             while (iter.hasNext()) {
                 AccountBalanceItem accountBalanceItem = iter.next();
