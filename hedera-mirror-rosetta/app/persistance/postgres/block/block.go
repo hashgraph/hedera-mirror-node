@@ -32,7 +32,7 @@ func NewBlockRepository(dbClient *gorm.DB) *BlockRepository {
 func (br *BlockRepository) FindByIndex(index int64) *types.Block {
 	rf := &recordFile{}
 	br.dbClient.Find(rf, index)
-	parentRf := br.findParentRf(rf.PrevHash)
+	parentRf := br.findRecordFileByHash(rf.PrevHash)
 
 	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash}
 }
@@ -40,7 +40,7 @@ func (br *BlockRepository) FindByIndex(index int64) *types.Block {
 func (br *BlockRepository) FindByHash(hash string) *types.Block {
 	rf := &recordFile{}
 	br.dbClient.Where(&recordFile{FileHash: hash}).Find(rf)
-	parentRf := br.findParentRf(rf.PrevHash)
+	parentRf := br.findRecordFileByHash(rf.PrevHash)
 
 	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash}
 }
@@ -48,12 +48,12 @@ func (br *BlockRepository) FindByHash(hash string) *types.Block {
 func (br *BlockRepository) FindByIndentifier(index int64, hash string) *types.Block {
 	rf := &recordFile{}
 	br.dbClient.Where(&recordFile{ID: index, FileHash: hash}).Find(rf)
-	parentRf := br.findParentRf(rf.PrevHash)
+	parentRf := br.findRecordFileByHash(rf.PrevHash)
 
 	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash}
 }
 
-func (br *BlockRepository) findParentRf(hash string) *recordFile {
+func (br *BlockRepository) findRecordFileByHash(hash string) *recordFile {
 	parentRf := &recordFile{}
 	br.dbClient.Where(&recordFile{FileHash: hash}).Find(parentRf)
 	return parentRf
