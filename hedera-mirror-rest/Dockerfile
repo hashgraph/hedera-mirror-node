@@ -1,11 +1,16 @@
-FROM node:13.12.0-alpine3.11 as build
-WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm install --no-package-lock
+FROM node:14.7.0-alpine3.12
+LABEL maintainer="mirrornode@hedera.com"
 
-FROM node:13.12.0-alpine3.11
-WORKDIR /usr/src/app
-COPY --from=build /usr/src/app .
-COPY . ./
+# Setup
+WORKDIR /home/node/app/
+RUN chown -R node:node .
+COPY --chown=node:node . ./
 USER node
-CMD npm start --no-update-notifier
+
+# Build
+ENV NODE_ENV production
+RUN npm ci --only=production && npm cache clean --force --loglevel=error
+
+# Run
+EXPOSE 5551
+CMD ["node", "server.js"]
