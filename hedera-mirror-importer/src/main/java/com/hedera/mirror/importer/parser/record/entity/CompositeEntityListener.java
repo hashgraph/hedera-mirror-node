@@ -46,10 +46,7 @@ public class CompositeEntityListener implements EntityListener {
     private final List<EntityListener> entityListeners;
 
     private <T> void onEach(BiConsumer<EntityListener, T> consumer, T t) {
-        entityListeners.forEach(entityListener -> {
-            log.info("Sending to {}", entityListener.getClass().getSimpleName());
-            consumer.accept(entityListener, t);
-        });
+        entityListeners.forEach(entityListener -> consumer.accept(entityListener, t));
     }
 
     @Override

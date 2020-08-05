@@ -43,6 +43,7 @@ public class CompositeTopicListener implements TopicListener {
     private final ListenerProperties listenerProperties;
     private final NotifyingTopicListener notifyingTopicListener;
     private final PollingTopicListener pollingTopicListener;
+    private final RedisTopicListener redisTopicListener;
     private final SharedPollingTopicListener sharedPollingTopicListener;
     private final MeterRegistry meterRegistry;
     private Timer consensusToPublishTimer;
@@ -74,6 +75,8 @@ public class CompositeTopicListener implements TopicListener {
                 return notifyingTopicListener;
             case POLL:
                 return pollingTopicListener;
+            case REDIS:
+                return redisTopicListener;
             case SHARED_POLL:
                 return sharedPollingTopicListener;
             default:
