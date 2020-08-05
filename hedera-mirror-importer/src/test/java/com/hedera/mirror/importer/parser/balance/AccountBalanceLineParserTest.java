@@ -14,7 +14,7 @@ class AccountBalanceLineParserTest {
     private static final long timestamp = 1596340377922333444L;
     private static final long systemShardNum = 0;
 
-    @DisplayName("Construct AccountBalanceItem from string")
+    @DisplayName("Parse account balance line")
     @ParameterizedTest(name = "from \"{0}\"")
     @CsvSource(value = {
             "'0,0,123,700';false;0;123;700",
@@ -38,7 +38,7 @@ class AccountBalanceLineParserTest {
             "'';true;;;",
             ";true;;;"
     }, delimiter = ';')
-    void testOf(String line, boolean expectThrow, Integer expectedRealm, Integer expectedAccount, Long expectedBalance) {
+    void parse(String line, boolean expectThrow, Integer expectedRealm, Integer expectedAccount, Long expectedBalance) {
         AccountBalanceLineParser parser = new AccountBalanceLineParser();
         if (!expectThrow) {
             AccountBalance accountBalance = parser.parse(line, timestamp, systemShardNum);
