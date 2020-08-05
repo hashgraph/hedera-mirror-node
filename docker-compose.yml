@@ -57,3 +57,5 @@ services:
     tty: true
     ports:
       - 5700:5700
+    depends_on:
+      - "db"
