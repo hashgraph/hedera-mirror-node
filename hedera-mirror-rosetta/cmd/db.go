@@ -11,7 +11,7 @@ import (
 
 // Establish connection to the Postgres Database
 func connectToDb() *gorm.DB {
-	hostArg := os.Getenv("HEDERA_MIRROR_REST_DB_HOST")
+	hostArg := os.Getenv("HEDERA_MIRROR_ROSETTA_DB_HOST")
 	dbPortArg := os.Getenv("DB_PORT")
 	dbUserArg := os.Getenv("DB_USER")
 	dbNameArg := os.Getenv("DB_NAME")
