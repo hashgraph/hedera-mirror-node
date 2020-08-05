@@ -12,7 +12,7 @@ spec:
     enable: true
     force: true
     timeout: 500
-    wait: true
+    wait: false
   timeout: 500
   wait: false
   values:
