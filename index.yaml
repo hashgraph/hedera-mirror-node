@@ -1,0 +1,23 @@
+apiVersion: v1
+entries:
+  hedera-mirror-importer:
+  - apiVersion: v1
+    appVersion: 0.16.0-rc1
+    created: "2020-08-05T23:36:12.033463494Z"
+    description: Hedera Mirror Importer downloads and validates file streams from
+      the cloud and imports them into the database
+    digest: dbd7898a43b541c72ba917c753f0fc6b936265f9bcaa71de64e6d068f4b7f35b
+    home: https://github.com/hashgraph/hedera-mirror-node
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    maintainers:
+    - name: ijungmann
+    - name: Nana-EC
+    - name: steven-sheehy
+    - name: xin-hedera
+    name: hedera-mirror-importer
+    sources:
+    - https://github.com/hashgraph/hedera-mirror-node
+    urls:
+    - https://github.com/hashgraph/hedera-mirror-node/releases/download/hedera-mirror-importer-0.4.0/hedera-mirror-importer-0.4.0.tgz
+    version: 0.4.0
+generated: "2020-08-05T23:36:11.924105282Z"
