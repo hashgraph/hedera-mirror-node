@@ -1,0 +1,13 @@
+# This file contains application defaults and shouldn't be modified. See docs/configuration.md for how to override.
+hedera:
+  mirror:
+    rosetta:
+      db:
+        host: 127.0.0.1
+        name: mirror_node
+        password: mirror_node_pass
+        port: 5432
+        username: mirror_node
+      port: 5700
+      network: DEMO
+      shard: 0

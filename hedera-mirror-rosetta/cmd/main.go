@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-
 	"log"
 	"net/http"
 
@@ -12,9 +11,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistance/postgres/block"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services"
 	"github.com/jinzhu/gorm"
-	"github.com/joho/godotenv"
-
-	"os"
 )
 
 // NewBlockchainRouter creates a Mux http.Handler from a collection
@@ -29,20 +25,15 @@ func NewBlockchainRouter(network *types.NetworkIdentifier, asserter *asserter.As
 }
 
 func main() {
-	args := os.Args[1:]
-	if len(args) > 0 {
-		godotenv.Load(args[0])
-	} else {
-		godotenv.Load()
-	}
-
-	dbClient := connectToDb()
-	defer dbClient.Close()
+	config := LoadConfig()
 
 	network := &types.NetworkIdentifier{
-		Blockchain: os.Getenv("BLOCKCHAIN"),
-		Network:    os.Getenv("NETWORK"),
+		Blockchain: "Hedera",
+		Network:    config.Hedera.Mirror.Rosetta.Network,
 	}
+
+	dbClient := connectToDb(config.Hedera.Mirror.Rosetta.Db)
+	defer dbClient.Close()
 
 	asserter, err := asserter.NewServer(
 		[]string{"Transfer"},
@@ -56,6 +47,6 @@ func main() {
 	router := NewBlockchainRouter(network, asserter, dbClient)
 	loggedRouter := server.LoggerMiddleware(router)
 	corsRouter := server.CorsMiddleware(loggedRouter)
-	log.Printf("Listening on port %s\n", os.Getenv("PORT"))
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("PORT")), corsRouter))
+	log.Printf("Listening on port %s\n", config.Hedera.Mirror.Rosetta.Port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", config.Hedera.Mirror.Rosetta.Port), corsRouter))
 }

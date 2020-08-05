@@ -167,3 +167,26 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.metrics.config.password`         | mirror_api_metrics_pass | The REST API metrics password to access the dashboard                                          |
 | `hedera.mirror.rest.metrics.config.uriPath`          | '/swagger'              | The REST API metrics uri path                                                                  |
 | `hedera.mirror.rest.shard`                           | 0                       | The default shard number that this mirror node participates in                                 |
+
+
+## Rosetta API
+
+The Rosetta API supports loading configuration from YAML. By default, it loads a file named
+`application.yml` in each of the search paths (see below).
+The configuration is loaded in the following order with the latter configuration overwriting (technically recursively
+merged into) the current configuration:
+
+1. `./config/application.yml`
+2. `./application.yml`
+
+The following table lists the available properties along with thteir default values.
+| Name                                                    | Default                 | Description                                                                                    |
+| ------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `hedera.mirror.rosetta.db.host`                         | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
+| `hedera.mirror.rosetta.db.name`                         | mirror_node             | The name of the database                                                                       |
+| `hedera.mirror.rosetta.db.password`                     | mirror_api_pass         | The database password the processor uses to connect. **Should be changed from default**        |
+| `hedera.mirror.rosetta.db.port`                         | 5432                    | The port used to connect to the database                                                       |
+| `hedera.mirror.rosetta.db.username`                     | mirror_api              | The username the processor uses to connect to the database                                     |
+| `hedera.mirror.rosetta.port`                            | 5700                    | The REST API port                                                                              |
+| `hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
+| `hedera.mirror.rosetta.shard`                           | 0                       | The default shard number that this mirror node participates in                                 |

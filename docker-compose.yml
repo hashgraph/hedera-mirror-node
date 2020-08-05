@@ -55,6 +55,8 @@ services:
       HEDERA_MIRROR_ROSETTA_DB_HOST: db
     restart: unless-stopped
     tty: true
+    volumes:
+      - ./application.yml:/src/hedera-mirror-rosetta/application.yml
     ports:
       - 5700:5700
     depends_on:
