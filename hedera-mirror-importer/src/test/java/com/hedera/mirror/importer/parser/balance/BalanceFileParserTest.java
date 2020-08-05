@@ -164,11 +164,4 @@ public class BalanceFileParserTest extends IntegrationTest {
                             balanceFile.getCount());
         }
     }
-
-    @lombok.Value
-    private static class BalanceFile {
-        long consensusTimestamp;
-        long count;
-        String filename;
-    }
 }

@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
+import com.google.common.base.Splitter;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,8 +35,8 @@ import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.domain.AccountBalanceItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -46,24 +47,28 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
     private static final String COLUMN_HEADER_PREFIX = "shard";
 
     private final int fileBufferSize;
+    private final long systemShardNum;
+    private final AccountBalanceLineParser parser;
 
-    public BalanceFileReaderImplV2(BalanceParserProperties balanceParserProperties) {
+    public BalanceFileReaderImplV2(BalanceParserProperties balanceParserProperties, AccountBalanceLineParser parser) {
         this.fileBufferSize = balanceParserProperties.getFileBufferSize();
+        this.systemShardNum = balanceParserProperties.getMirrorProperties().getShard();
+        this.parser = parser;
     }
 
     @Override
-    public Stream<AccountBalanceItem> read(File file) {
+    public Stream<AccountBalance> read(File file) {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)), fileBufferSize);
             final long consensusTimestamp = parseHeaderForConsensusTimestamp(reader);
 
-            Stream<AccountBalanceItem> stream = reader.lines()
+            Stream<AccountBalance> stream = reader.lines()
                     .map(String::trim)
                     .filter(Predicate.not(String::isEmpty))
                     .map(line -> {
                         try {
-                            return AccountBalanceItem.of(line, consensusTimestamp);
-                        } catch(IllegalArgumentException ex) {
+                            return parser.parse(line, consensusTimestamp, systemShardNum);
+                        } catch(InvalidDatasetException ex) {
                             log.error(ex);
                             return null;
                         }

@@ -26,8 +26,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
 import javax.inject.Named;
@@ -35,9 +35,8 @@ import javax.sql.DataSource;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.domain.AccountBalanceItem;
 import com.hedera.mirror.importer.util.Utility;
 
 /**
@@ -68,17 +67,13 @@ public final class AccountBalancesFileLoader {
         IS_COMPLETE, CONSENSUS_TIMESTAMP
     }
 
-    private final long systemShardNum;
     private final int insertBatchSize;
-
     private final DataSource dataSource;
     private final BalanceFileReader balanceFileReader;
 
     public AccountBalancesFileLoader(BalanceParserProperties balanceParserProperties, DataSource dataSource,
             BalanceFileReader balanceFileReader) {
-        this.systemShardNum = balanceParserProperties.getMirrorProperties().getShard();
         this.insertBatchSize = balanceParserProperties.getBatchSize();
-
         this.dataSource = dataSource;
         this.balanceFileReader = balanceFileReader;
     }
@@ -91,7 +86,7 @@ public final class AccountBalancesFileLoader {
     public boolean loadAccountBalances(@NonNull File balanceFile) {
         log.info("Starting processing account balances file {}", balanceFile.getPath());
         final String fileName = balanceFile.getName();
-        long timestampFromFileName = Utility.getTimestampFromFilename(balanceFile.getName());
+        long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
         int validItemCount = 0;
         int insertedItemCount = 0;
         boolean complete = false;
@@ -101,39 +96,33 @@ public final class AccountBalancesFileLoader {
              PreparedStatement insertSetStatement = connection.prepareStatement(INSERT_SET_STATEMENT);
              PreparedStatement insertBalanceStatement = connection.prepareStatement(INSERT_BALANCE_STATEMENT);
              PreparedStatement updateSetStatement = connection.prepareStatement(UPDATE_SET_STATEMENT);
-             Stream<AccountBalanceItem> stream = balanceFileReader.read(balanceFile)) {
+             Stream<AccountBalance> stream = balanceFileReader.read(balanceFile)) {
             long consensusTimestamp = -1;
-            List<AccountBalanceItem> accountBalanceItemList = new LinkedList<>();
+            List<AccountBalance> accountBalanceList = new ArrayList<>();
 
             var iter = stream.iterator();
             while (iter.hasNext()) {
-                AccountBalanceItem accountBalanceItem = iter.next();
+                AccountBalance accountBalance = iter.next();
                 if (consensusTimestamp == -1) {
-                    consensusTimestamp = accountBalanceItem.getConsensusTimestamp();
+                    consensusTimestamp = accountBalance.getId().getConsensusTimestamp();
                     if (timestampFromFileName != consensusTimestamp) {
                         // The assumption is that the dataset has been validated via signatures and running hashes, so it is
                         // the "next" dataset, and the consensus timestamp in it is correct.
                         // The fact that the filename timestamp and timestamp in the file differ should still be investigated.
                         log.error("Account balance dataset timestamp mismatch! Processing can continue, but this must be " +
                                         "investigated! Dataset {} internal timestamp {} filename timestamp {}.",
-                                balanceFile.getName(), consensusTimestamp, timestampFromFileName);
+                                fileName, consensusTimestamp, timestampFromFileName);
                     }
 
                     insertAccountBalanceSet(insertSetStatement, consensusTimestamp);
                 }
 
-                if (accountBalanceItem.getAccountId().getShardNum() != systemShardNum) {
-                    log.error("Invalid account shardNum ({}), expect ({}), from account balance {}",
-                            accountBalanceItem.getAccountId().getShardNum(), systemShardNum, accountBalanceItem);
-                    continue;
-                }
-
                 validItemCount++;
-                accountBalanceItemList.add(accountBalanceItem);
-                insertedItemCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceItemList, insertBatchSize);
+                accountBalanceList.add(accountBalance);
+                insertedItemCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
             }
 
-            insertedItemCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceItemList, 1);
+            insertedItemCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
             complete = (insertedItemCount == validItemCount);
             updateAccountBalanceSet(updateSetStatement, complete, consensusTimestamp);
         } catch (InvalidDatasetException | SQLException ex) {
@@ -157,25 +146,20 @@ public final class AccountBalancesFileLoader {
     }
 
     private int tryInsertBatchAccountBalance(PreparedStatement insertBalanceStatement,
-            List<AccountBalanceItem> accountBalanceItemList, int threshold) {
-        if (accountBalanceItemList.size() < threshold) {
+            List<AccountBalance> accountBalanceList, int threshold) {
+        if (accountBalanceList.size() < threshold) {
             return 0;
         }
 
         try {
             int count = 0;
-            for (var accountBalanceItem : accountBalanceItemList) {
-                EntityId accountId = accountBalanceItem.getAccountId();
-                long realmNum = accountId.getRealmNum();
-                long accountNum = accountId.getEntityNum();
-                long consensusTimestamp = accountBalanceItem.getConsensusTimestamp();
-                long balance = accountBalanceItem.getBalance();
-
+            for (var accountBalance : accountBalanceList) {
+                AccountBalance.AccountBalanceId id = accountBalance.getId();
                 try {
-                    insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
-                    insertBalanceStatement.setShort(F_INSERT_BALANCE.ACCOUNT_REALM_NUM.ordinal(), (short) realmNum);
-                    insertBalanceStatement.setInt(F_INSERT_BALANCE.ACCOUNT_NUM.ordinal(), (int) accountNum);
-                    insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), balance);
+                    insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp());
+                    insertBalanceStatement.setShort(F_INSERT_BALANCE.ACCOUNT_REALM_NUM.ordinal(), (short)id.getAccountRealmNum());
+                    insertBalanceStatement.setInt(F_INSERT_BALANCE.ACCOUNT_NUM.ordinal(), id.getAccountNum());
+                    insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), accountBalance.getBalance());
                     insertBalanceStatement.addBatch();
                     count++;
                 } catch(SQLException ex) {
@@ -183,7 +167,7 @@ public final class AccountBalancesFileLoader {
                 }
             }
 
-            accountBalanceItemList.clear();
+            accountBalanceList.clear();
             if (count == 0) {
                 return 0;
             }

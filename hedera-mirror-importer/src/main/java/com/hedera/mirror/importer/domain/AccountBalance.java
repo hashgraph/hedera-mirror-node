@@ -24,11 +24,14 @@ import java.io.Serializable;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 public class AccountBalance implements Persistable<AccountBalance.AccountBalanceId> {
 
@@ -48,6 +51,8 @@ public class AccountBalance implements Persistable<AccountBalance.AccountBalance
     }
 
     @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
     @Embeddable
     public static class AccountBalanceId implements Serializable {
 
