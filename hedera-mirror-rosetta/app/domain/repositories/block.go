@@ -5,5 +5,7 @@ import (
 )
 
 type BlockRepository interface {
-	FindById(id string) *types.Block
+	FindByIndex(index int64) *types.Block
+	FindByHash(hash string) *types.Block
+	FindByIndentifier(index int64, hash string) *types.Block
 }

@@ -5,7 +5,10 @@ import (
 )
 
 type Block struct {
-	Id           string
+	ID           int64
+	Hash         string
+	ParentID     int64
+	ParentHash   string
 	Transactions []Transaction
 }
 
