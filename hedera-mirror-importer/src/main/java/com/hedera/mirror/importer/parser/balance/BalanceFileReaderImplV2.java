@@ -60,7 +60,7 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
             BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)), fileBufferSize);
             final long consensusTimestamp = parseHeaderForConsensusTimestamp(reader);
 
-            Stream<AccountBalance> stream = reader.lines()
+            return reader.lines()
                     .map(line -> {
                         try {
                             return parser.parse(line, consensusTimestamp, systemShardNum);
@@ -69,14 +69,13 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
                             return null;
                         }
                     })
-                    .filter(Objects::nonNull);
-            stream.onClose(() -> {
-                try {
-                    reader.close();
-                } catch(Exception ex) {
-                }
-            });
-            return stream;
+                    .filter(Objects::nonNull)
+                    .onClose(() -> {
+                        try {
+                            reader.close();
+                        } catch(Exception ex) {
+                        }
+                    });
         } catch(IOException ex) {
             throw new InvalidDatasetException("Error reading account balance file", ex);
         }
