@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/coinbase/rosetta-sdk-go/asserter"
 	"github.com/coinbase/rosetta-sdk-go/server"
@@ -16,12 +17,14 @@ import (
 // NewBlockchainRouter creates a Mux http.Handler from a collection
 // of server controllers.
 func NewBlockchainRouter(network *types.NetworkIdentifier, asserter *asserter.Asserter, dbClient *gorm.DB) http.Handler {
+	networkAPIService := services.NewNetworkAPIService(network)
+	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
 	blockRepo := block.NewBlockRepository(dbClient)
 	blockAPIService := services.NewBlockAPIService(network, blockRepo)
 	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter)
 
-	return server.NewRouter(blockAPIController)
+	return server.NewRouter(networkAPIController, blockAPIController)
 }
 
 func main() {
@@ -29,7 +32,10 @@ func main() {
 
 	network := &types.NetworkIdentifier{
 		Blockchain: "Hedera",
-		Network:    config.Hedera.Mirror.Rosetta.Network,
+		Network:    strings.ToLower(config.Hedera.Mirror.Rosetta.Network),
+		SubNetworkIdentifier: &types.SubNetworkIdentifier{
+			Network: fmt.Sprintf("shard %s realm %s", config.Hedera.Mirror.Rosetta.Shard, config.Hedera.Mirror.Rosetta.Realm),
+		},
 	}
 
 	dbClient := connectToDb(config.Hedera.Mirror.Rosetta.Db)

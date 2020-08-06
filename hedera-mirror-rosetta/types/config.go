@@ -17,6 +17,7 @@ type Rosetta struct {
 	Db      Db     `yaml:"db"`
 	Port    string `yaml:"port"`
 	Shard   string `yaml:"shard"`
+	Realm   string `yaml:"realm"`
 }
 
 type Db struct {

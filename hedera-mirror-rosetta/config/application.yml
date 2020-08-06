@@ -11,3 +11,4 @@ hedera:
       port: 5700
       network: DEMO
       shard: 0
+      realm: 0
