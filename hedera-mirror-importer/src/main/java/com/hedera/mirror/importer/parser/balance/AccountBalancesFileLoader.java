@@ -27,7 +27,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import javax.inject.Named;
@@ -87,8 +86,8 @@ public final class AccountBalancesFileLoader {
         log.info("Starting processing account balances file {}", balanceFile.getPath());
         final String fileName = balanceFile.getName();
         long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
-        int validItemCount = 0;
-        int insertedItemCount = 0;
+        int validCount = 0;
+        int insertedCount = 0;
         boolean complete = false;
         Stopwatch stopwatch = Stopwatch.createStarted();
 
@@ -117,13 +116,13 @@ public final class AccountBalancesFileLoader {
                     insertAccountBalanceSet(insertSetStatement, consensusTimestamp);
                 }
 
-                validItemCount++;
+                validCount++;
                 accountBalanceList.add(accountBalance);
-                insertedItemCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
+                insertedCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
             }
 
-            insertedItemCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
-            complete = (insertedItemCount == validItemCount);
+            insertedCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
+            complete = (insertedCount == validCount);
             updateAccountBalanceSet(updateSetStatement, complete, consensusTimestamp);
         } catch (InvalidDatasetException | SQLException ex) {
             log.error("Failed to load account balances file " + fileName, ex);
@@ -131,10 +130,10 @@ public final class AccountBalancesFileLoader {
 
         if (complete) {
             log.info("Successfully processed account balances file {} with {} out of {} records inserted in {}",
-                    fileName, insertedItemCount, validItemCount, stopwatch);
+                    fileName, insertedCount, validCount, stopwatch);
         } else {
             log.error("ERRORS processing account balances file {} with {} out of {} records inserted in {}", fileName,
-                    insertedItemCount, validItemCount, stopwatch);
+                    insertedCount, validCount, stopwatch);
         }
 
         return complete;
@@ -145,38 +144,43 @@ public final class AccountBalancesFileLoader {
         insertSetStatement.execute();
     }
 
-    private int tryInsertBatchAccountBalance(PreparedStatement insertBalanceStatement,
-            List<AccountBalance> accountBalanceList, int threshold) {
+    private int tryInsertBatchAccountBalance(PreparedStatement insertBalanceStatement, List<AccountBalance> accountBalanceList, int threshold) {
         if (accountBalanceList.size() < threshold) {
             return 0;
         }
 
-        try {
-            int count = 0;
-            for (var accountBalance : accountBalanceList) {
-                AccountBalance.AccountBalanceId id = accountBalance.getId();
-                try {
-                    insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp());
-                    insertBalanceStatement.setShort(F_INSERT_BALANCE.ACCOUNT_REALM_NUM.ordinal(), (short)id.getAccountRealmNum());
-                    insertBalanceStatement.setInt(F_INSERT_BALANCE.ACCOUNT_NUM.ordinal(), id.getAccountNum());
-                    insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), accountBalance.getBalance());
-                    insertBalanceStatement.addBatch();
-                    count++;
-                } catch(SQLException ex) {
-                    log.error("Failed to add account balance to the batch", ex);
-                }
+        int batchSize = 0;
+        for (var accountBalance : accountBalanceList) {
+            AccountBalance.AccountBalanceId id = accountBalance.getId();
+            try {
+                insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp());
+                insertBalanceStatement.setShort(F_INSERT_BALANCE.ACCOUNT_REALM_NUM.ordinal(), (short)id.getAccountRealmNum());
+                insertBalanceStatement.setInt(F_INSERT_BALANCE.ACCOUNT_NUM.ordinal(), id.getAccountNum());
+                insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), accountBalance.getBalance());
+                insertBalanceStatement.addBatch();
+                batchSize++;
+            } catch(SQLException ex) {
+                log.error("Failed to add account balance to the batch", ex);
             }
+        }
 
-            accountBalanceList.clear();
-            if (count == 0) {
-                return 0;
-            }
-            var result = insertBalanceStatement.executeBatch();
-            return (int)Arrays.stream(result).filter(code -> code != Statement.EXECUTE_FAILED).count();
-        } catch(SQLException ex) {
-            log.error("Failed to batch insert account balances", ex);
+        accountBalanceList.clear();
+        if (batchSize == 0) {
             return 0;
         }
+
+        int insertedCount = 0;
+        try {
+            var result = insertBalanceStatement.executeBatch();
+            for (int code : result) {
+                if (code != Statement.EXECUTE_FAILED) {
+                    insertedCount++;
+                }
+            }
+        } catch(SQLException ex) {
+            log.error("Failed to batch insert account balances", ex);
+        }
+        return insertedCount;
     }
 
     private void updateAccountBalanceSet(PreparedStatement updateSetStatement, boolean complete, long consensusTimestamp)  throws SQLException {

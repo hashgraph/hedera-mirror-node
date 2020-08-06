@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
-import com.google.common.base.Splitter;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,7 +29,6 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -63,8 +61,6 @@ public class BalanceFileReaderImplV2 implements BalanceFileReader {
             final long consensusTimestamp = parseHeaderForConsensusTimestamp(reader);
 
             Stream<AccountBalance> stream = reader.lines()
-                    .map(String::trim)
-                    .filter(Predicate.not(String::isEmpty))
                     .map(line -> {
                         try {
                             return parser.parse(line, consensusTimestamp, systemShardNum);
