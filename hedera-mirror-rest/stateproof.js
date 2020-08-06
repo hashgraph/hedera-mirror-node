@@ -21,7 +21,6 @@
 'use strict';
 
 const _ = require('lodash');
-const utils = require('./utils');
 const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
@@ -41,17 +40,16 @@ let getSuccessfulTransactionConsensusNs = async (transactionId) => {
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const sqlQuery = `SELECT consensus_ns
        FROM transaction
-       WHERE payer_account_id = ?
-         AND valid_start_ns = ?
+       WHERE payer_account_id = $1
+         AND valid_start_ns = $2
          AND result = 22`; // only the successful transaction
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getSuccessfulTransactionConsensusNs: ${pgSqlQuery}, ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getSuccessfulTransactionConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
 
   let result;
   try {
-    result = await pool.query(pgSqlQuery, sqlParams);
+    result = await pool.query(sqlQuery, sqlParams);
   } catch (err) {
     throw new DbError(err.message);
   }
@@ -60,7 +58,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId) => {
   if (_.isEmpty(rows)) {
     throw new NotFoundError('Transaction not found');
   } else if (rows.length > 1) {
-    throw new DbError('Invalid state, more than one transactions found');
+    throw new DbError('Invalid state, more than one transaction found');
   }
 
   return _.first(rows).consensus_ns;
@@ -73,19 +71,18 @@ let getSuccessfulTransactionConsensusNs = async (transactionId) => {
  * @returns {Promise<String>} RCD file name
  */
 let getRCDFileNameByConsensusNs = async (consensusNs) => {
-  const sqlParams = [consensusNs, consensusNs];
+  const sqlParams = [consensusNs];
   const sqlQuery = `SELECT name
        FROM record_file
-       WHERE consensus_start <= ?
-         AND consensus_end >= ?`;
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
+       WHERE consensus_start <= $1
+         AND consensus_end >= $1`;
   if (logger.isTraceEnabled()) {
-    logger.trace(`getRCDFileNameByConsensusNs: ${pgSqlQuery}, ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getRCDFileNameByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
 
   let result;
   try {
-    result = await pool.query(pgSqlQuery, sqlParams);
+    result = await pool.query(sqlQuery, sqlParams);
   } catch (err) {
     throw new DbError(err.message);
   }
@@ -94,7 +91,7 @@ let getRCDFileNameByConsensusNs = async (consensusNs) => {
   if (_.isEmpty(rows)) {
     throw new NotFoundError('No matching RCD file found');
   } else if (rows.length > 1) {
-    throw new DbError('Invalid state, more than one RCD files found');
+    throw new DbError('Invalid state, more than one RCD file found');
   }
 
   return _.first(rows).name;
@@ -117,18 +114,17 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
        FROM address_book ab
        LEFT JOIN address_book_entry abe
          ON ab.start_consensus_timestamp = abe.consensus_timestamp
-       WHERE start_consensus_timestamp <= ?
+       WHERE start_consensus_timestamp <= $1
          AND file_id = 102
        GROUP BY start_consensus_timestamp
        ORDER BY start_consensus_timestamp`;
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${pgSqlQuery}, ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
 
   let addressBookQueryResult;
   try {
-    addressBookQueryResult = await pool.query(pgSqlQuery, sqlParams);
+    addressBookQueryResult = await pool.query(sqlQuery, sqlParams);
   } catch (err) {
     throw new DbError(err.message);
   }

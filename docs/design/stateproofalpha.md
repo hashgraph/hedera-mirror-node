@@ -7,7 +7,8 @@ until [full state proof](https://www.hedera.com/blog/state-proofs-on-hedera) is 
 
 ## Goals
 
-- Provide a State Proof REST API for clients to retrieve data for a transaction to prove its validity
+- Provide a State Proof REST API for clients to retrieve the record file containing the transaction, the corresponding
+signature files, and history of address books up until the point for a transaction to prove its validity
 
 
 ## REST API

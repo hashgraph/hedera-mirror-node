@@ -106,7 +106,7 @@ describe('getRCDFileNameByConsensusNs', () => {
 
     const fileName = await stateproof.getRCDFileNameByConsensusNs(consensusNs);
     expect(fileName).toEqual(expectedRCDFileName);
-    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusNs, consensusNs]);
+    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusNs]);
   });
 
   test('with record file not found', async () => {
@@ -114,7 +114,7 @@ describe('getRCDFileNameByConsensusNs', () => {
     global.pool = { query: fakeQuery };
 
     await expect(stateproof.getRCDFileNameByConsensusNs(consensusNs)).rejects.toThrow();
-    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusNs, consensusNs]);
+    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusNs]);
   });
 
   test('with db query error', async () => {
@@ -122,7 +122,7 @@ describe('getRCDFileNameByConsensusNs', () => {
     global.pool = { query: fakeQuery };
 
     await expect(stateproof.getRCDFileNameByConsensusNs(consensusNs)).rejects.toThrow();
-    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusNs, consensusNs]);
+    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusNs]);
   });
 });
 

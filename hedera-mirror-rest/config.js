@@ -122,12 +122,10 @@ function parseStateProofStreamsConfig() {
   const config = getConfig();
   if (!config.stateproof) {
     config.stateproof = {
-      enabled: false
-    }
+      enabled: false,
+    };
   } else if (!config.stateproof.streams || !config.stateproof.streams.network) {
-    config.stateproof.streams = Object.assign({
-      network: 'DEMO',
-    }, config.stateproof.streams);
+    config.stateproof.streams = { network: 'DEMO', ...config.stateproof.streams };
   }
 
   const stateProofConfig = config.stateproof;
