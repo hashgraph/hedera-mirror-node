@@ -16,6 +16,9 @@ spec:
   timeout: 500
   wait: false
   values:
+    grpc:
+      image:
+        tag: master-f447c37a7e53c8f6164c0fe39f2e19e9efef1c19
     importer:
       config:
         hedera:
@@ -24,8 +27,13 @@ spec:
               downloader:
                 cloudProvider: GCP
               network: TESTNET
+      image:
+        tag: master-f447c37a7e53c8f6164c0fe39f2e19e9efef1c19
     postgresql:
       enabled: false
+    rest:
+      image:
+        tag: master-f447c37a7e53c8f6164c0fe39f2e19e9efef1c19
   valuesFrom:
     - chartFileRef:
         path: values-prod.yaml
