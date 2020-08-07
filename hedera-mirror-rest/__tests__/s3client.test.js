@@ -22,6 +22,7 @@
 
 const log4js = require('log4js');
 const AWSMock = require('aws-sdk-mock');
+const querystring = require('querystring');
 const { createS3Client } = require('../s3client');
 const config = require('../config');
 
@@ -45,8 +46,8 @@ beforeEach(() => {
   };
 });
 
-const setStreamsConfigAttribute = (name, value) => {
-  config.stateproof.streams[name] = value;
+const overrideStreamsConfig = (override) => {
+  config.stateproof.streams = Object.assign(config.stateproof.streams, override);
 };
 
 describe('createS3Client with invalid config', () => {
@@ -58,7 +59,7 @@ describe('createS3Client with invalid config', () => {
   });
 
   test('invalid cloudProvider', () => {
-    setStreamsConfigAttribute('cloudProvider', 'badprovider');
+    overrideStreamsConfig({ cloudProvider: 'badprovider' });
     expect(() => {
       createS3Client();
     }).toThrow();
@@ -66,7 +67,7 @@ describe('createS3Client with invalid config', () => {
 });
 
 describe('createS3Client with valid config', () => {
-  const verifyForSuccess = (streamsConfig, s3Client) => {
+  const verifyForSuccess = async (streamsConfig, s3Client) => {
     expect(s3Client).toBeTruthy();
 
     const s3Config = s3Client.getConfig();
@@ -93,71 +94,84 @@ describe('createS3Client with valid config', () => {
       expect(s3Config.credentials).toBeTruthy();
       expect(s3Config.credentials.accessKeyId).toEqual(streamsConfig.accessKey);
     }
+
+    if (streamsConfig.cloudProvider === 'GCP' && streamsConfig.gcpProjectId) {
+      const request = s3Client.getObject({
+        Bucket: 'demo-bucket',
+        Key: 'foobar/foobar.txt',
+      });
+      try {
+        await request.promise();
+      } catch (err) {
+        //
+      }
+      expect(querystring.parse(request.httpRequest.search())).toEqual({ userProject: streamsConfig.gcpProjectId });
+    }
   };
 
-  test('default valid config', () => {
-    const s3Client = createS3Client();
-    verifyForSuccess(config.stateproof.streams, s3Client);
-  });
+  const testSpecs = [
+    {
+      name: 'default valid config',
+    },
+    {
+      name: 'valid config with cloudProvider S3',
+      override: { cloudProvider: 'S3' },
+    },
+    {
+      name: 'valid config with cloudProvider gcp',
+      override: { cloudProvider: 'GCP' },
+    },
+    {
+      name: 'valid config with cloudProvider gcp',
+      override: { cloudProvider: 'GCP' },
+    },
+    {
+      name: 'valid config with cloudProvider gcp and gcpProjectId',
+      override: {
+        cloudProvider: 'GCP',
+        gcpProjectId: 'demoGcpProject',
+      },
+    },
+    {
+      name: 'valid config with region "us-west-1"',
+      override: { region: 'us-west-1' },
+    },
+    {
+      name: 'valid config with endpointOverride',
+      override: { endpointOverride: 'us-south-north-1' },
+    },
+    {
+      name: 'valid config with null region',
+      override: { region: null },
+    },
+    {
+      name: 'valid config with empty region',
+      override: { region: '' },
+    },
+    {
+      name: 'valid config with null accessKey',
+      override: { accessKey: null },
+    },
+    {
+      name: 'valid config with empty accessKey',
+      override: { accessKey: '' },
+    },
+    {
+      name: 'valid config with null secretKey',
+      override: { secretKey: null },
+    },
+    {
+      name: 'valid config with empty secretKey',
+      override: { secretKey: '' },
+    },
+  ];
 
-  test('valid config with cloudProvider S3', () => {
-    setStreamsConfigAttribute('cloudProvider', 'S3');
-    const s3Client = createS3Client();
-    verifyForSuccess(config.stateproof.streams, s3Client);
-  });
-
-  test('valid config with cloudProvider gcp', () => {
-    setStreamsConfigAttribute('cloudProvider', 'GCP');
-    const s3Client = createS3Client();
-    verifyForSuccess(config.stateproof.streams, s3Client);
-  });
-
-  test('valid config with region "us-west-1"', () => {
-    setStreamsConfigAttribute('region', 'us-west-1');
-    const s3Client = createS3Client();
-    verifyForSuccess(config.stateproof.streams, s3Client);
-  });
-
-  test('valid config with endpointOverride', () => {
-    setStreamsConfigAttribute('endpointOverride', 'us-south-north-1');
-    const s3Client = createS3Client();
-    verifyForSuccess(config.stateproof.streams, s3Client);
-  });
-
-  test('valid config with null region', () => {
-    setStreamsConfigAttribute('region', null);
-    const s3Client = createS3Client();
-    verifyForSuccess(config.stateproof.streams, s3Client);
-  });
-
-  test('valid config with empty region', () => {
-    setStreamsConfigAttribute('region', '');
-    const s3Client = createS3Client();
-    verifyForSuccess(config.stateproof.streams, s3Client);
-  });
-
-  test('null accessKey', () => {
-    setStreamsConfigAttribute('accessKey', null);
-    const s3Client = createS3Client();
-    verifyForSuccess(config.stateproof.streams, s3Client);
-  });
-
-  test('empty accessKey', () => {
-    setStreamsConfigAttribute('accessKey', '');
-    const s3Client = createS3Client();
-    verifyForSuccess(config.stateproof.streams, s3Client);
-  });
-
-  test('null secretKey', () => {
-    setStreamsConfigAttribute('secretKey', null);
-    const s3Client = createS3Client();
-    verifyForSuccess(config.stateproof.streams, s3Client);
-  });
-
-  test('empty secretKey', () => {
-    setStreamsConfigAttribute('secretKey', '');
-    const s3Client = createS3Client();
-    verifyForSuccess(config.stateproof.streams, s3Client);
+  testSpecs.forEach((spec) => {
+    test(spec.name, async () => {
+      overrideStreamsConfig(spec.override);
+      const s3Client = createS3Client();
+      await verifyForSuccess(config.stateproof.streams, s3Client);
+    });
   });
 });
 
@@ -193,7 +207,7 @@ describe('S3Client.getObject', () => {
   });
 
   test('without credentials', async () => {
-    setStreamsConfigAttribute('secretKey', '');
+    overrideStreamsConfig({ secretKey: '' });
     const s3Client = createS3Client();
     await new Promise((resolve) => {
       s3Client.getObject(params, (err, data) => {

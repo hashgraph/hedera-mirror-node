@@ -21,7 +21,7 @@
 'use strict';
 
 const AWS = require('aws-sdk');
-const parseUrl = require('url-parse');
+const querystring = require('querystring');
 const config = require('./config');
 const { InvalidConfigError } = require('./errors/invalidConfigError');
 
@@ -41,11 +41,14 @@ class S3Client {
     }
 
     if (this.gcpProjectId) {
-      const projectId = this.gcpProjectId;
+      const userProject = this.gcpProjectId;
       request.on('build', () => {
-        const urlPath = parseUrl(request.httpRequest.path, true);
-        urlPath.query.userProject = projectId;
-        request.httpRequest.path = urlPath.toString();
+        const { httpRequest } = request;
+        const query = {
+          ...querystring.parse(httpRequest.search()),
+          userProject,
+        };
+        httpRequest.path = `${httpRequest.pathname()}?${querystring.stringify(query)}`;
       });
     }
 
@@ -94,9 +97,14 @@ const buildS3ConfigFromStreamsConfig = () => {
     logger.info('Building s3Config with no credentials');
   }
 
+  let gcpProjectId;
+  if (streamsConfig.cloudProvider === 'GCP') {
+    gcpProjectId = streamsConfig.gcpProjectId;
+  }
+
   return {
     s3Config,
-    gcpProjectId: streamsConfig.gcpProjectId,
+    gcpProjectId,
   };
 };
 

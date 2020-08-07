@@ -199,7 +199,7 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
 };
 
 /**
- * Check if consensus can be reached given actualCount and expectedCount.
+ * Check if consensus can be reached given actualCount and totalCount.
  * @param {Number} actualCount
  * @param {Number} totalCount
  * @returns {boolean} if consensus can be reached

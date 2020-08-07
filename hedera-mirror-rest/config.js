@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,18 +18,20 @@
  * ‍
  */
 
+'use strict';
+
 const extend = require('extend');
 const fs = require('fs');
 const yaml = require('js-yaml');
 const path = require('path');
-const {InvalidConfigError} = require('./errors/invalidConfigError');
+const { InvalidConfigError } = require('./errors/invalidConfigError');
 
 let configName = 'application';
 if (process.env.CONFIG_NAME) {
   configName = process.env.CONFIG_NAME;
 }
 
-let config = {};
+const config = {};
 let loaded = false;
 
 function load(configPath) {
@@ -50,7 +52,7 @@ function load(configPath) {
 
 function loadYaml(configFile) {
   try {
-    let doc = yaml.safeLoad(fs.readFileSync(configFile, 'utf8'));
+    const doc = yaml.safeLoad(fs.readFileSync(configFile, 'utf8'));
     console.log(`Loaded configuration source: ${configFile}`);
     extend(true, config, doc);
   } catch (err) {
@@ -170,7 +172,7 @@ function parseStateProofStreamsConfig() {
 
   if (!streamsConfig.record || !streamsConfig.record.prefix) {
     streamsConfig.record = {
-      prefix: 'recordstreams/record'
+      prefix: 'recordstreams/record',
     };
   }
 

@@ -59,7 +59,7 @@ class TransactionId {
  * @param {string} transactionIdStr
  */
 const fromString = (transactionIdStr) => {
-  const txIdMatches = transactionIdStr.match(/(\d+)\.(\d+)\.(\d+)-(\d{10})-(\d{9})/);
+  const txIdMatches = transactionIdStr.match(/^(\d+)\.(\d+)\.(\d+)-(\d{10})-(\d{9})$/);
   if (txIdMatches === null || txIdMatches.length !== 6) {
     logger.error(`TransactionId.fromString, invalid transaction ID string ${transactionIdStr}`);
     const message = 'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" '
