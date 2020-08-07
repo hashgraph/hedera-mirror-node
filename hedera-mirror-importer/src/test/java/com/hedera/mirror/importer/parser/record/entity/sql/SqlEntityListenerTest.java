@@ -226,6 +226,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
         TopicMessage topicMessage = getTopicMessage();
 
         TopicMessage topicMessage2 = getTopicMessage();
+        topicMessage2.setConsensusTimestamp(2L);
+        topicMessage2.setSequenceNumber(2L);
         topicMessage2.setMessage(RandomUtils.nextBytes(10000)); // Just exceeds 8000B
 
         CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
