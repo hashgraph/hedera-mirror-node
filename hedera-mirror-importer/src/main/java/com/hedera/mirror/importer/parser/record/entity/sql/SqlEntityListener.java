@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import javax.inject.Named;
 import javax.sql.DataSource;
-import javax.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
@@ -141,8 +140,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             throw new ParserSQLException("Error setting up connection to database", e);
         }
     }
-
-    @Transactional
+    
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
