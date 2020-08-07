@@ -39,7 +39,7 @@ func NewBlockRepository(dbClient *gorm.DB) *BlockRepository {
 // FindByIndex retrieves a block by given Index
 func (br *BlockRepository) FindByIndex(index int64) (*types.Block, error) {
 	rf := &recordFile{}
-	if br.dbClient.Find(rf, index).RecordNotFound() {
+	if br.dbClient.Where(&recordFile{ConsensusStart: index}).Find(rf).RecordNotFound() {
 		return nil, errors.New("block not found")
 	}
 
@@ -47,7 +47,7 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
+	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
 }
 
 // FindByHash retrieves a block by a given Hash
@@ -61,13 +61,13 @@ func (br *BlockRepository) FindByHash(hash string) (*types.Block, error) {
 		return nil, err
 	}
 
-	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
+	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
 }
 
 // FindByIndentifier retrivies a block by Index && Hash
 func (br *BlockRepository) FindByIndentifier(index int64, hash string) (*types.Block, error) {
 	rf := &recordFile{}
-	if br.dbClient.Where(&recordFile{ID: index, FileHash: hash}).Find(rf).RecordNotFound() {
+	if br.dbClient.Where(&recordFile{ConsensusStart: index, FileHash: hash}).Find(rf).RecordNotFound() {
 		return nil, errors.New("block not found")
 	}
 	parentRf, err := br.constructParentRecordFile(rf)
@@ -75,13 +75,13 @@ func (br *BlockRepository) FindByIndentifier(index int64, hash string) (*types.B
 		return nil, err
 	}
 
-	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
+	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
 }
 
 // RetrieveLatest retries the latest block
 func (br *BlockRepository) RetrieveLatest() (*types.Block, error) {
 	rf := &recordFile{}
-	if br.dbClient.Where(fmt.Sprintf("consensus_end = (SELECT MAX(consensus_end) FROM %s)", rf.TableName())).Find(rf).RecordNotFound() {
+	if br.dbClient.Where(fmt.Sprintf("consensus_start = (SELECT MAX(consensus_start) FROM %s)", rf.TableName())).Find(rf).RecordNotFound() {
 		return nil, errors.New("block not found")
 	}
 
@@ -89,7 +89,7 @@ func (br *BlockRepository) RetrieveLatest() (*types.Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
+	return &types.Block{Hash: rf.FileHash, ParentIndex: parentRf.ConsensusStart, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
 }
 
 func (br *BlockRepository) findRecordFileByHash(hash string) (*recordFile, error) {
