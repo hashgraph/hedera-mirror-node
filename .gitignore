@@ -39,6 +39,8 @@ hedera-mirror-*/application.yml
 /db/
 *.log
 !/charts/**/*.tgz
+secret.yaml
+secret.yml
 
 ### VisualStudioCode ###
 .vscode/
