@@ -21,194 +21,171 @@ package com.hedera.mirror.importer.parser.balance;
  */
 
 import com.google.common.base.Stopwatch;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
+import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.time.Instant;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
-import lombok.Getter;
+import javax.inject.Named;
+import javax.sql.DataSource;
+import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.util.DatabaseUtilities;
-import com.hedera.mirror.importer.util.TimestampConverter;
+import com.hedera.mirror.importer.util.Utility;
 
 /**
  * Parse an account balances file and load it into the database.
  */
 @Log4j2
-public final class AccountBalancesFileLoader implements AutoCloseable {
-    private final Path filePath;
-    private final Instant filenameTimestamp;
-    private final AccountBalancesDataset dataset;
-    private final TimestampConverter timestampConverter = new TimestampConverter();
+@Named
+public final class AccountBalancesFileLoader {
+    private static final String INSERT_SET_STATEMENT = "insert into account_balance_sets (consensus_timestamp) " +
+            "values (?) on conflict do nothing;";
+    private static final String INSERT_BALANCE_STATEMENT = "insert into account_balance " +
+            "(consensus_timestamp, account_realm_num, account_num, balance) values (?, ?, ?, ?) on conflict do nothing;";
+    private static final String UPDATE_SET_STATEMENT = "update account_balance_sets set is_complete = ?, " +
+            "processing_end_timestamp = now() at time zone 'utc' where consensus_timestamp = ? and is_complete = false;";
+
+    enum F_INSERT_SET {
+        ZERO,
+        CONSENSUS_TIMESTAMP
+    }
+
+    enum F_INSERT_BALANCE {
+        ZERO,
+        CONSENSUS_TIMESTAMP, ACCOUNT_REALM_NUM, ACCOUNT_NUM, BALANCE
+    }
+
+    enum F_UPDATE_SET {
+        ZERO,
+        IS_COMPLETE, CONSENSUS_TIMESTAMP
+    }
+
     private final int insertBatchSize;
-    private final long systemShardNum;
-    @Getter
-    private int validRowCount;
-    private boolean loaded;
+    private final DataSource dataSource;
+    private final BalanceFileReader balanceFileReader;
 
-    /**
-     * Read an account balances dataset from a file and begin preprocessing the dataset (ie - reading the header).
-     *
-     * @throws IllegalArgumentException if the filename doesn't match known/required format (to extract consensus
-     *                                  timestamp)
-     * @throws InvalidDatasetException  invalid file header
-     * @throws FileNotFoundException
-     */
-    public AccountBalancesFileLoader(BalanceParserProperties balanceProperties, Path filePath) throws IllegalArgumentException, InvalidDatasetException,
-            FileNotFoundException {
-        this.filePath = filePath;
-        log.info("Starting processing account balances file {}", filePath.getFileName());
-        systemShardNum = balanceProperties.getMirrorProperties().getShard();
-        var info = new AccountBalancesFileInfo(filePath);
-        filenameTimestamp = info.getFilenameTimestamp();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath
-                .toFile())), balanceProperties.getFileBufferSize());
-        dataset = new AccountBalancesDatasetV2(filePath.getFileName().toString(), reader);
-        insertBatchSize = balanceProperties.getBatchSize();
-    }
-
-    /**
-     * Process a line (CSV account balance line) and insert it into the DB (or skip it if empty).
-     */
-    private void processLine(PreparedStatement ps, long consensusTimestamp, NumberedLine line)
-            throws InvalidDatasetException, SQLException {
-        String[] cols = line.getValue().split(",");
-        if (4 != cols.length) {
-            throw new InvalidDatasetException(String.format(
-                    "Invalid line in account balances file %s:line(%d):%s",
-                    filePath, line.getLineNumber(), line.getValue()));
-        }
-
-        var shardNum = Long.valueOf(cols[0]);
-        if (shardNum != systemShardNum) {
-            throw new InvalidDatasetException(String.format(
-                    "Invalid shardNum %d in account balances file %s:line(%d):%s",
-                    shardNum, filePath, line.getLineNumber(), line.getValue()));
-        }
-
-        try {
-            ps.setLong(1, consensusTimestamp);
-            ps.setShort(2, Short.valueOf(cols[1])); // realm_num
-            ps.setInt(3, Integer.valueOf(cols[2])); // num
-            ps.setLong(4, Long.valueOf(cols[3])); // balance (hbar_tinybars);
-            ps.addBatch();
-        } catch (NumberFormatException e) {
-            throw new InvalidDatasetException(String.format("Invalid line in account balances file %s:line(%d):%s",
-                    filePath, line.getLineNumber(), line.getValue()));
-        }
-    }
-
-    /**
-     * @return true if all lines in the stream were successfully inserted; false, if any errors were seen.
-     */
-    private boolean processRecordStream(PreparedStatement ps, long consensusTimestamp,
-                                        Stream<NumberedLine> stream) {
-        var state = new Object() {
-            int recordsInCurrentBatch = 0;
-            boolean insertSuccess = true;
-        };
-        stream.forEachOrdered((line) -> {
-            try {
-                if (line.getValue().isEmpty()) {
-                    return;
-                }
-                processLine(ps, consensusTimestamp, line);
-                ++validRowCount;
-                ++state.recordsInCurrentBatch;
-                if (state.recordsInCurrentBatch >= insertBatchSize) {
-                    state.recordsInCurrentBatch = 0;
-                    ps.executeBatch();
-                }
-            } catch (InvalidDatasetException | SQLException e) {
-                log.error(e);
-                state.insertSuccess = false;
-            }
-        });
-        // Process any remaining insert batches.
-        if (state.recordsInCurrentBatch > 0) {
-            try {
-                ps.executeBatch();
-            } catch (SQLException e) {
-                log.error(e);
-                state.insertSuccess = false;
-            }
-        }
-        return state.insertSuccess;
+    public AccountBalancesFileLoader(BalanceParserProperties balanceParserProperties, DataSource dataSource,
+            BalanceFileReader balanceFileReader) {
+        this.insertBatchSize = balanceParserProperties.getBatchSize();
+        this.dataSource = dataSource;
+        this.balanceFileReader = balanceFileReader;
     }
 
     /**
      * Process the file and load all the data into the database.
      *
-     * @return true on success (if the file was completely and full processed).
+     * @return true on success (if the file was completely and fully processed).
      */
-    public boolean loadAccountBalances() {
-        if (loaded) {
-            throw new RuntimeException(toString() + " loadBalances() called more than once");
-        }
-        loaded = true;
+    public boolean loadAccountBalances(@NonNull File balanceFile) {
+        log.info("Starting processing account balances file {}", balanceFile.getPath());
+        final String fileName = balanceFile.getName();
+        long timestampFromFileName = Utility.getTimestampFromFilename(fileName);
+        int validCount = 0;
+        int insertedCount = 0;
+        boolean complete = false;
+        Stopwatch stopwatch = Stopwatch.createStarted();
 
-        var consensusTimestamp = dataset.getConsensusTimestamp();
-        if (!filenameTimestamp.equals(consensusTimestamp)) {
-            // The assumption is that the dataset has been validated via signatures and running hashes, so it is
-            // the "next" dataset, and the consensus timestamp in it is correct.
-            // The fact that the filename timestamp and timestamp in the file differ should still be investigated.
-            log.error("Account balance dataset timestamp mismatch! Processing can continue, but this must be " +
-                            "investigated! Dataset {} internal timestamp {} filename timestamp {}.",
-                    filePath.getFileName(), filenameTimestamp, consensusTimestamp);
-        }
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement insertSetStatement = connection.prepareStatement(INSERT_SET_STATEMENT);
+             PreparedStatement insertBalanceStatement = connection.prepareStatement(INSERT_BALANCE_STATEMENT);
+             PreparedStatement updateSetStatement = connection.prepareStatement(UPDATE_SET_STATEMENT);
+             Stream<AccountBalance> stream = balanceFileReader.read(balanceFile)) {
+            long consensusTimestamp = -1;
+            List<AccountBalance> accountBalanceList = new ArrayList<>();
 
-        // consensusTimestamp (from file) has been signed, filenameTimestamp has not.
-        var longConsensusTimestamp = timestampConverter.toNanosecondLong(consensusTimestamp);
+            var iter = stream.iterator();
+            while (iter.hasNext()) {
+                AccountBalance accountBalance = iter.next();
+                if (consensusTimestamp == -1) {
+                    consensusTimestamp = accountBalance.getId().getConsensusTimestamp();
+                    if (timestampFromFileName != consensusTimestamp) {
+                        // The assumption is that the dataset has been validated via signatures and running hashes, so it is
+                        // the "next" dataset, and the consensus timestamp in it is correct.
+                        // The fact that the filename timestamp and timestamp in the file differ should still be investigated.
+                        log.error("Account balance dataset timestamp mismatch! Processing can continue, but this must be " +
+                                        "investigated! Dataset {} internal timestamp {} filename timestamp {}.",
+                                fileName, consensusTimestamp, timestampFromFileName);
+                    }
 
-        //
-        // 1) insert row into account_balance_sets.
-        // 2) stream insert all the account_balance records.
-        // 3) update/close the account_balance_set.
-        //
-        var stopwatch = Stopwatch.createStarted();
-        try (Connection conn = DatabaseUtilities.getConnection()) {
-            Stream<NumberedLine> stream = dataset.getRecordStream();
+                    insertAccountBalanceSet(insertSetStatement, consensusTimestamp);
+                }
 
-            var insertSet = conn.prepareStatement(
-                    "insert into account_balance_sets (consensus_timestamp) values (?) on conflict do nothing " +
-                            "returning is_complete, processing_start_timestamp;");
-            var insertBalance = conn.prepareStatement(
-                    "insert into account_balance (consensus_timestamp, account_realm_num, account_num, balance) " +
-                            "values (?, ?, ?, ?) on conflict do nothing;");
-            var updateSet = conn.prepareStatement(
-                    "update account_balance_sets set is_complete = true, processing_end_timestamp = now() at time " +
-                            "zone 'utc' where consensus_timestamp = ? and is_complete = false;");
-
-            insertSet.setLong(1, longConsensusTimestamp);
-            insertSet.execute();
-
-            if (processRecordStream(insertBalance, longConsensusTimestamp, stream)) {
-                updateSet.setLong(1, longConsensusTimestamp);
-                updateSet.execute();
-                log.info("Successfully processed account balances file {} with {} records in {}", filePath.getFileName(),
-                        validRowCount, stopwatch);
-                return true;
-            } else {
-                log.error("ERRORS processing account balances file {} with {} records in {}", filePath,
-                        validRowCount, stopwatch);
+                validCount++;
+                accountBalanceList.add(accountBalance);
+                insertedCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, insertBatchSize);
             }
-        } catch (SQLException | InvalidDatasetException e) {
-            log.error("Exception processing account balances file {}", filePath, e);
+
+            insertedCount += tryInsertBatchAccountBalance(insertBalanceStatement, accountBalanceList, 1);
+            complete = (insertedCount == validCount);
+            updateAccountBalanceSet(updateSetStatement, complete, consensusTimestamp);
+        } catch (InvalidDatasetException | SQLException ex) {
+            log.error("Failed to load account balances file " + fileName, ex);
         }
-        return false;
+
+        if (complete) {
+            log.info("Successfully processed account balances file {} with {} out of {} records inserted in {}",
+                    fileName, insertedCount, validCount, stopwatch);
+        } else {
+            log.error("ERRORS processing account balances file {} with {} out of {} records inserted in {}", fileName,
+                    insertedCount, validCount, stopwatch);
+        }
+
+        return complete;
     }
 
-    @Override
-    public void close() throws Exception {
-        if (null != dataset) {
-            dataset.close();
+    private void insertAccountBalanceSet(PreparedStatement insertSetStatement, long consensusTimestamp) throws SQLException {
+        insertSetStatement.setLong(F_INSERT_SET.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
+        insertSetStatement.execute();
+    }
+
+    private int tryInsertBatchAccountBalance(PreparedStatement insertBalanceStatement, List<AccountBalance> accountBalanceList, int threshold) {
+        if (accountBalanceList.size() < threshold) {
+            return 0;
         }
+
+        int batchSize = 0;
+        for (var accountBalance : accountBalanceList) {
+            AccountBalance.AccountBalanceId id = accountBalance.getId();
+            try {
+                insertBalanceStatement.setLong(F_INSERT_BALANCE.CONSENSUS_TIMESTAMP.ordinal(), id.getConsensusTimestamp());
+                insertBalanceStatement.setShort(F_INSERT_BALANCE.ACCOUNT_REALM_NUM.ordinal(), (short)id.getAccountRealmNum());
+                insertBalanceStatement.setInt(F_INSERT_BALANCE.ACCOUNT_NUM.ordinal(), id.getAccountNum());
+                insertBalanceStatement.setLong(F_INSERT_BALANCE.BALANCE.ordinal(), accountBalance.getBalance());
+                insertBalanceStatement.addBatch();
+                batchSize++;
+            } catch(SQLException ex) {
+                log.error("Failed to add account balance to the batch", ex);
+            }
+        }
+
+        accountBalanceList.clear();
+        if (batchSize == 0) {
+            return 0;
+        }
+
+        int insertedCount = 0;
+        try {
+            var result = insertBalanceStatement.executeBatch();
+            for (int code : result) {
+                if (code != Statement.EXECUTE_FAILED) {
+                    insertedCount++;
+                }
+            }
+        } catch(SQLException ex) {
+            log.error("Failed to batch insert account balances", ex);
+        }
+        return insertedCount;
+    }
+
+    private void updateAccountBalanceSet(PreparedStatement updateSetStatement, boolean complete, long consensusTimestamp)  throws SQLException {
+        updateSetStatement.setBoolean(F_UPDATE_SET.IS_COMPLETE.ordinal(), complete);
+        updateSetStatement.setLong(F_UPDATE_SET.CONSENSUS_TIMESTAMP.ordinal(), consensusTimestamp);
+        updateSetStatement.execute();
     }
 }

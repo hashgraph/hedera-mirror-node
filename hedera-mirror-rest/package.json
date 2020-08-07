@@ -22,7 +22,7 @@
     "js-yaml": "^3.14.0",
     "log4js": "^4.3.1",
     "mathjs": "^7.1.0",
-    "node-cache": "^5.1.0",
+    "node-cache": "^5.1.2",
     "node-fetch": "^2.6.0",
     "pg": "~8.3.0",
     "swagger-stats": "^0.95.17"
@@ -44,9 +44,9 @@
     "swagger-stats"
   ],
   "devDependencies": {
-    "codecov": "^3.7.1",
+    "codecov": "^3.7.2",
     "husky": "^4.2.5",
-    "jest": "^26.1.0",
+    "jest": "^26.2.2",
     "jest-junit": "^11.1.0",
     "node-flywaydb": "^3.0.3",
     "nodemon": "^2.0.4",

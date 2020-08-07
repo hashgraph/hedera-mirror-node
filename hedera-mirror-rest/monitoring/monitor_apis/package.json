@@ -22,7 +22,7 @@
     "shelljs": "^0.8.4"
   },
   "devDependencies": {
-    "jest": "^26.1.0",
+    "jest": "^26.2.2",
     "nodemon": "^2.0.4",
     "supertest": "^4.0.2"
   }

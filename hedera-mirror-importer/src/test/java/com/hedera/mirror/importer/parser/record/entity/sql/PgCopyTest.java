@@ -38,6 +38,8 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import org.apache.commons.lang3.RandomUtils;
+import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
@@ -47,9 +49,11 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 class PgCopyTest extends IntegrationTest {
@@ -62,9 +66,12 @@ class PgCopyTest extends IntegrationTest {
     private CryptoTransferRepository cryptoTransferRepository;
     @Resource
     private TransactionRepository transactionRepository;
+    @Resource
+    private TopicMessageRepository topicMessageRepository;
 
     private PgCopy<CryptoTransfer> cryptoTransferPgCopy;
     private PgCopy<Transaction> transactionPgCopy;
+    private PgCopy<TopicMessage> topicMessagePgCopy;
 
     @Resource
     private SqlProperties sqlProperties;
@@ -73,6 +80,7 @@ class PgCopyTest extends IntegrationTest {
     void beforeEach() throws Exception {
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, sqlProperties);
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, sqlProperties);
+        topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, sqlProperties);
     }
 
     @Test
@@ -126,6 +134,19 @@ class PgCopyTest extends IntegrationTest {
         assertThat(cryptoTransferRepository.count()).isEqualTo(0);
     }
 
+    @Test
+    void testLargeConsensusSubmitMessage() throws SQLException {
+        var topicMessages = new HashSet<TopicMessage>();
+        topicMessages.add(topicMessage(1, 6000)); // max 6KiB
+        topicMessages.add(topicMessage(2, 6000));
+        topicMessages.add(topicMessage(3, 6000));
+        topicMessages.add(topicMessage(4, 6000));
+
+        topicMessagePgCopy.copy(topicMessages, dataSource.getConnection());
+
+        assertThat(topicMessageRepository.findAll()).hasSize(4).containsExactlyInAnyOrderElementsOf(topicMessages);
+    }
+
     private CryptoTransfer cryptoTransfer(long consensusTimestamp) {
         return new CryptoTransfer(consensusTimestamp, 1L, EntityId.of(0L, 1L, 2L, EntityTypeEnum.ACCOUNT));
     }
@@ -148,5 +169,17 @@ class PgCopyTest extends IntegrationTest {
         transaction.setChargedTxFee(1L);
         transaction.setInitialBalance(0L);
         return transaction;
+    }
+
+    private TopicMessage topicMessage(long consensusNs, int messageSize) {
+        TopicMessage topicMessage = new TopicMessage();
+        topicMessage.setConsensusTimestamp(consensusNs);
+        topicMessage.setMessage(RandomUtils.nextBytes(messageSize)); // Just exceeds 8000B
+        topicMessage.setRealmNum(0);
+        topicMessage.setRunningHash(Strings.toByteArray("running hash"));
+        topicMessage.setRunningHashVersion(2);
+        topicMessage.setSequenceNumber(consensusNs);
+        topicMessage.setTopicNum(1001);
+        return topicMessage;
     }
 }

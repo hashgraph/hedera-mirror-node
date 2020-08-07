@@ -35,8 +35,11 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 public class BalanceFileParser extends FileWatcher {
 
-    public BalanceFileParser(BalanceParserProperties parserProperties) {
+    private final AccountBalancesFileLoader accountBalancesFileLoader;
+
+    public BalanceFileParser(BalanceParserProperties parserProperties, AccountBalancesFileLoader accountBalancesFileLoader) {
         super(parserProperties);
+        this.accountBalancesFileLoader = accountBalancesFileLoader;
     }
 
     /**
@@ -65,11 +68,8 @@ public class BalanceFileParser extends FileWatcher {
         }
     }
 
-    private void parseBalanceFile(File balanceFile) throws Exception {
-        BalanceParserProperties balanceParserProperties = (BalanceParserProperties) parserProperties;
-        AccountBalancesFileLoader loader = new AccountBalancesFileLoader(balanceParserProperties, balanceFile.toPath());
-
-        if (loader.loadAccountBalances()) {
+    private void parseBalanceFile(File balanceFile) {
+        if (accountBalancesFileLoader.loadAccountBalances(balanceFile)) {
             if (parserProperties.isKeepFiles()) {
                 Utility.archiveFile(balanceFile, parserProperties.getParsedPath());
             } else {
