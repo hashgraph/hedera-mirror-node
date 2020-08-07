@@ -96,7 +96,7 @@ public class PgCopy<T> {
             insertDurationMetric.record(stopwatch.elapsed());
             log.info("Copied {} rows to {} table in {}", rowsCount, tableName, stopwatch);
         } catch (Exception e) {
-            throw new ParserException(e);
+            throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
         }
     }
 
