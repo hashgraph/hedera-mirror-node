@@ -22,23 +22,20 @@ package com.hedera.mirror.importer.parser.record;
 
 import static com.hedera.mirror.importer.domain.ApplicationStatusCode.LAST_PROCESSED_RECORD_HASH;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.FileInputStream;
-import java.nio.file.Files;
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,15 +48,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
-import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -69,8 +62,6 @@ public class RecordFileParserTest {
     Path dataPath;
     @Mock
     private ApplicationStatusRepository applicationStatusRepository;
-    @Mock
-    private AddressBookRepository addressBookRepository;
     @Mock
     private RecordItemListener recordItemListener;
     @Mock
@@ -86,9 +77,11 @@ public class RecordFileParserTest {
     private static final int NUM_TXNS_FILE_2 = 15;
     private static RecordFile recordFile1;
     private static RecordFile recordFile2;
+    private static StreamFileData streamFileData1;
+    private static StreamFileData streamFileData2;
 
     @BeforeEach
-    void before() {
+    void before() throws FileNotFoundException {
         var mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
         parserProperties = new RecordParserProperties(mirrorProperties);
@@ -100,10 +93,11 @@ public class RecordFileParserTest {
         fileCopier = FileCopier
                 .create(Path.of(getClass().getClassLoader().getResource("data").getPath()), dataPath)
                 .from(streamType.getPath(), "v2", "record0.0.3")
-                .filterFiles("*.rcd")
-                .to(streamType.getPath(), streamType.getValid());
-        file1 = parserProperties.getValidPath().resolve("2019-08-30T18_10_00.419072Z.rcd").toFile();
-        file2 = parserProperties.getValidPath().resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
+                .filterFiles("*.rcd");
+
+        fileCopier.copy();
+        file1 = dataPath.resolve("2019-08-30T18_10_00.419072Z.rcd").toFile();
+        file2 = dataPath.resolve("2019-08-30T18_10_05.249678Z.rcd").toFile();
         recordFile1 = new RecordFile(1567188600419072000L, 1567188604906443001L, null, file1.getName(), 0L, 0L,
                 "591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda",
                 "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", 2);
@@ -111,75 +105,59 @@ public class RecordFileParserTest {
         recordFile2 = new RecordFile(1567188605249678000L, 1567188609705382001L, null, file2.getName(), 0L, 0L,
                 "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36",
                 recordFile1.getFileHash(), 2);
+
+        streamFileData1 = new StreamFileData(file1.toString(), new FileInputStream(file1));
+        streamFileData2 = new StreamFileData(file2.toString(), new FileInputStream(file2));
     }
 
     @Test
     void parse() throws Exception {
         // given
-        fileCopier.copy();
-
-        // when
+        parserProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-09-01T00:00:00.000000Z"));
         when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("")
-                .thenReturn(recordFile1.getFileHash());
-        recordFileParser.parse();
-
-        // then
-        assertAllProcessed();
-    }
-
-    @Test
-    void parseAndKeepFiles() throws Exception {
-        // given
-        parserProperties.setKeepFiles(true);
-        fileCopier.copy();
+                .thenReturn(recordFile1.getFileHash(), recordFile2.getFileHash());
 
         // when
-        when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("")
-                .thenReturn(recordFile1.getFileHash());
-        recordFileParser.parse();
+        recordFileParser.parse(streamFileData1);
+        assertProcessedFile(streamFileData1, recordFile1, NUM_TXNS_FILE_1);
+
+        recordFileParser.parse(streamFileData2);
 
         // then
+        verify(recordStreamFileListener, never()).onError();
         assertAllProcessed();
-    }
-
-    @Test
-    void noFiles() throws Exception {
-        // when
-        recordFileParser.parse();
-
-        // then
-        assertParsedFiles();
-        verifyNoInteractions(recordItemListener);
-        verifyNoInteractions(recordStreamFileListener);
     }
 
     @Test
     void invalidFile() throws Exception {
         // given
-        fileCopier.copy();
         FileUtils.writeStringToFile(file1, "corrupt", "UTF-8");
+        streamFileData1 = new StreamFileData(file1.toString(), new FileInputStream(file1));
 
         // when
-        recordFileParser.parse();
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            recordFileParser.parse(streamFileData1);
+        });
 
         // then
-        assertValidFiles();
-        verifyNoInteractions(recordItemListener);
+        verify(recordStreamFileListener).onStart(streamFileData1);
+        verify(recordStreamFileListener, never()).onEnd(recordFile1);
         verify(recordStreamFileListener).onError();
     }
 
     @Test
-    void hashMismatch() throws Exception {
+    void hashMismatch() {
         // given
         when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
-        fileCopier.copy();
 
         // when
-        recordFileParser.parse();
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            recordFileParser.parse(streamFileData1);
+        });
 
         // then
-        assertValidFiles();
-        verifyNoInteractions(recordItemListener);
+        verify(recordStreamFileListener).onStart(streamFileData1);
+        verify(recordStreamFileListener, never()).onEnd(any());
         verify(recordStreamFileListener).onError();
     }
 
@@ -188,45 +166,61 @@ public class RecordFileParserTest {
         // given
         parserProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2019-09-01T00:00:00.000000Z"));
         when(applicationStatusRepository.findByStatusCode(LAST_PROCESSED_RECORD_HASH)).thenReturn("123");
-        fileCopier.copy();
 
         // when
-        recordFileParser.parse();
+        recordFileParser.parse(streamFileData1);
 
         // then
-        assertAllProcessed();
+        verify(recordStreamFileListener, never()).onError();
+        assertProcessedFile(streamFileData1, recordFile1, NUM_TXNS_FILE_1);
     }
 
     @Test
-    void failureProcessingItemShouldRollback() throws Exception {
+    void failureProcessingItemShouldRollback() {
         // given
-        fileCopier.copy();
         doThrow(ParserSQLException.class).when(recordItemListener).onItem(any());
 
         // when
-        recordFileParser.parse();
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            recordFileParser.parse(streamFileData1);
+        });
 
         // then
-        assertValidFiles();
+        verify(recordStreamFileListener).onStart(streamFileData1);
+        verify(recordStreamFileListener, never()).onEnd(recordFile1);
         verify(recordStreamFileListener).onError();
     }
 
     @Test
-    void skipFileOnDuplicateFileException() throws Exception {
+    void skipFileOnDuplicateFileException() {
         // given
-        fileCopier.copy();
-        String fileName = file1.toString();
-        recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
+        recordFileParser.parse(streamFileData1);
         doThrow(DuplicateFileException.class).when(recordStreamFileListener).onStart(any());
 
         // when: load same file again
         // then: throws exception
         Assertions.assertThrows(DuplicateFileException.class, () -> {
-            recordFileParser.loadRecordFile(new StreamFileData(fileName, new FileInputStream(file1)));
+            recordFileParser.parse(streamFileData1);
         });
         verify(recordItemListener, times(NUM_TXNS_FILE_1)).onItem(any());
         verify(recordStreamFileListener, times(2)).onStart(any());
         verify(recordStreamFileListener, times(1)).onEnd(any());
+    }
+
+    @Test
+    void verifyRollbackOnErrorAfterPersistence() throws Exception {
+        // given
+        String fileName = file1.toString();
+        doThrow(ParserSQLException.class).when(applicationStatusRepository).updateStatusValue(any(), any());
+
+        // when
+        Assertions.assertThrows(ParserSQLException.class, () -> {
+            recordFileParser.parse(streamFileData2);
+        });
+
+        // then
+        assertProcessedFile(streamFileData2, recordFile2, NUM_TXNS_FILE_2);
+        verify(recordStreamFileListener).onError();
     }
 
     // Asserts that recordStreamFileListener.onStart is called wth exactly the given fileNames.
@@ -252,52 +246,17 @@ public class RecordFileParserTest {
         }
     }
 
-    // Asserts that parsed directory contains exactly the files with given fileNames
-    private void assertParsedFiles(String... fileNames) throws Exception {
-        assertThat(Files.walk(parserProperties.getParsedPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(fileNames.length)
-                .extracting(Path::getFileName)
-                .extracting(Path::toString)
-                .contains(fileNames);
-    }
-
-    // Asserts that valid files are untouched i.e. neither deleted, nor moved
-    private void assertValidFiles() {
-        assertTrue(Files.exists(file1.toPath()));
-        assertTrue(Files.exists(file2.toPath()));
+    private void assertProcessedFile(StreamFileData streamFileData, RecordFile recordFile, int numTransactions) throws Exception {
+        // assert mock interactions
+        verify(recordItemListener, times(numTransactions)).onItem(any());
+        assertOnStart(streamFileData.getFilename());
+        assertOnEnd(recordFile);
     }
 
     private void assertAllProcessed() throws Exception {
-        // assert no valid files when processing completes successfully
-        assertFalse(Files.exists(file1.toPath()));
-        assertFalse(Files.exists(file2.toPath()));
-
-        // assert parsed files are moved/deleted.
-        if (parserProperties.isKeepFiles()) {
-            assertParsedFiles(file1.getName(), file2.getName());
-        } else {
-            assertParsedFiles(); // assert no files in parsed directory
-        }
-
         // assert mock interactions
         verify(recordItemListener, times(NUM_TXNS_FILE_1 + NUM_TXNS_FILE_2)).onItem(any());
-        assertOnStart(file1.getPath(), file2.getPath());
+        assertOnStart(streamFileData1.getFilename(), streamFileData2.getFilename());
         assertOnEnd(recordFile1, recordFile2);
-    }
-
-    private AddressBook addressBook(Consumer<AddressBook.AddressBookBuilder> addressBookCustomizer) {
-
-        AddressBook.AddressBookBuilder builder = AddressBook.builder()
-                .startConsensusTimestamp(0L)
-                .fileData("address book memo".getBytes())
-                .fileId(EntityId.of("0.0.102", EntityTypeEnum.FILE))
-                .endConsensusTimestamp(null);
-
-        if (addressBookCustomizer != null) {
-            addressBookCustomizer.accept(builder);
-        }
-
-        return builder.build();
     }
 }

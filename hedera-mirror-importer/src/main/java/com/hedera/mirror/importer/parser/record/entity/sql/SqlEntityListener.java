@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import javax.inject.Named;
 import javax.sql.DataSource;
+import javax.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -147,6 +148,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
     }
 
+    @Transactional
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();

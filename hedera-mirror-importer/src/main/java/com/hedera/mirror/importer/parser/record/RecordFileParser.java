@@ -25,34 +25,22 @@ import com.google.common.collect.ImmutableMap;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import javax.inject.Named;
+import javax.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.io.FileUtils;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
-import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.parser.FileParser;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ApplicationStatusRepository;
-import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 
 /**
@@ -135,11 +123,13 @@ public class RecordFileParser implements FileParser {
     }
 
     /**
-     * Given a service record name, read and parse and return as a list of service record pair
+     * Given a stream file data representing an rcd file from the service parse record items and persist changes
      *
      * @param streamFileData containing information about file to be processed
      */
-    public void loadRecordFile(StreamFileData streamFileData) {
+    @Override
+    @Transactional
+    public void parse(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
 
         recordStreamFileListener.onStart(streamFileData);
@@ -165,6 +155,10 @@ public class RecordFileParser implements FileParser {
 
             recordParserLatencyMetric(recordFile);
             success = true;
+        } catch (Exception ex) {
+            log.warn("Failed to parse {}", streamFileData.getFilename(), ex);
+            recordStreamFileListener.onError(); // rollback changes
+            throw ex;
         } finally {
             var elapsedTimeMillis = Duration.between(startTime, Instant.now()).toMillis();
             var rate = elapsedTimeMillis > 0 ? (int) (1000.0 * counter.get() / elapsedTimeMillis) : 0;
@@ -192,42 +186,6 @@ public class RecordFileParser implements FileParser {
                 .record(Duration.between(consensusTimestamp, Instant.now()));
     }
 
-    /**
-     * read and parse a list of record files
-     *
-     * @throws Exception
-     */
-    private void loadRecordFiles(List<String> filePaths) {
-        Collections.sort(filePaths);
-        for (String filePath : filePaths) {
-            if (ShutdownHelper.isStopping()) {
-                return;
-            }
-
-            File file = new File(filePath);
-
-            try (InputStream fileInputStream = new FileInputStream(file)) {
-                loadRecordFile(new StreamFileData(filePath, fileInputStream));
-
-                if (parserProperties.isKeepFiles()) {
-                    Utility.archiveFile(file, parserProperties.getParsedPath());
-                } else {
-                    FileUtils.deleteQuietly(file);
-                }
-            } catch (FileNotFoundException e) {
-                log.warn("File does not exist {}", filePath);
-                return;
-            } catch (Exception e) {
-                log.error("Error parsing file {}", filePath, e);
-                recordStreamFileListener.onError();
-                if (!(e instanceof DuplicateFileException)) { // if DuplicateFileException, continue with other
-                    // files
-                    return;
-                }
-            }
-        }
-    }
-
     private void recordParserLatencyMetric(RecordFile recordFile) {
         try {
             long recordFileLoadEndMillis = recordFile.getLoadEnd() * 1_000; // s -> ms
@@ -237,40 +195,6 @@ public class RecordFileParser implements FileParser {
         } catch (Exception ex) {
             log.warn("Error calculating duration between recordFileLoadEnd: '{}' and recordFileConsensusEnd: {}",
                     recordFile.getLoadEnd(), recordFile.getConsensusEnd());
-        }
-    }
-
-    @Override
-    @Scheduled(fixedRateString = "${hedera.mirror.importer.parser.record.frequency:100}")
-    public void parse() {
-        if (ShutdownHelper.isStopping()) {
-            return;
-        }
-        Path path = parserProperties.getValidPath();
-        log.debug("Parsing record files from {}", path);
-        try {
-            File file = path.toFile();
-            if (file.isDirectory()) {
-
-                String[] files = file.list();
-                Arrays.sort(files);           // sorted by name (timestamp)
-
-                // add directory prefix to get full path
-                List<String> fullPaths = Arrays.asList(files).stream()
-                        .map(s -> file + "/" + s)
-                        .collect(Collectors.toList());
-
-                if (fullPaths != null && fullPaths.size() != 0) {
-                    log.trace("Processing record files: {}", fullPaths);
-                    loadRecordFiles(fullPaths);
-                } else {
-                    log.debug("No files to parse");
-                }
-            } else {
-                log.error("Input parameter is not a folder: {}", path);
-            }
-        } catch (Exception e) {
-            log.error("Error parsing files", e);
         }
     }
 }
