@@ -106,23 +106,23 @@ func (tr *TransactionRepository) GetStatuses() map[int]string {
 
 // FindByTimestamp retrieves Transaction by given timestmap
 func (tr *TransactionRepository) FindByTimestamp(timestamp int64) *types.Transaction {
-	t := &transaction{}
-	tr.dbClient.Find(t, timestamp)
+	t := transaction{}
+	tr.dbClient.Find(&t, timestamp)
 	tResult := tr.constructTransaction(t)
-	return &tResult
+	return tResult
 }
 
 // FindBetween retrieves all Transactions between the provided start and end timestamp
-func (tr *TransactionRepository) FindBetween(start int64, end int64) ([]types.Transaction, error) {
+func (tr *TransactionRepository) FindBetween(start int64, end int64) ([]*types.Transaction, error) {
 	if start > end {
 		return nil, errors.New("start must be before end")
 	}
 	tArray := []transaction{}
 	tr.dbClient.Where("consensus_ns >= ? AND consensus_ns <= ?", start, end).Find(&tArray)
 
-	res := make([]types.Transaction, len(tArray))
+	res := make([]*types.Transaction, len(tArray))
 	for i, t := range tArray {
-		res[i] = tr.constructTransaction(&t)
+		res[i] = tr.constructTransaction(t)
 	}
 	return res, nil
 }
@@ -145,8 +145,8 @@ func (tr *TransactionRepository) retrieveTransactionStatuses() []transactionStat
 	return statuses
 }
 
-func (tr *TransactionRepository) constructTransaction(t *transaction) types.Transaction {
-	tResult := types.Transaction{ID: t.constructID()}
+func (tr *TransactionRepository) constructTransaction(t transaction) *types.Transaction {
+	tResult := &types.Transaction{ID: t.constructID()}
 
 	ctArray := tr.findCryptoTransfers(t.ConsensusNS)
 	oArray := tr.constructOperations(ctArray, tr.types[t.Type], tr.statuses[t.Result])
@@ -155,10 +155,10 @@ func (tr *TransactionRepository) constructTransaction(t *transaction) types.Tran
 	return tResult
 }
 
-func (tr *TransactionRepository) constructOperations(ctArray []cryptoTransfer, transactionType string, transactionStatus string) []types.Operation {
-	oArray := make([]types.Operation, len(ctArray))
+func (tr *TransactionRepository) constructOperations(ctArray []cryptoTransfer, transactionType string, transactionStatus string) []*types.Operation {
+	oArray := make([]*types.Operation, len(ctArray))
 	for i, ct := range ctArray {
-		oArray[i] = types.Operation{Index: int64(i), Type: transactionType, Status: transactionStatus, EntityID: ct.EntityID, Amount: ct.Amount}
+		oArray[i] = &types.Operation{Index: int64(i), Type: transactionType, Status: transactionStatus, EntityID: ct.EntityID, Amount: ct.Amount}
 	}
 	return oArray
 }

@@ -1,9 +1,14 @@
 package block
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/jinzhu/gorm"
 )
+
+const genesisPreviousHash = "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 
 type recordFile struct {
 	ID             int64  `gorm:"type:bigint;primary_key"`
@@ -32,34 +37,80 @@ func NewBlockRepository(dbClient *gorm.DB) *BlockRepository {
 }
 
 // FindByIndex retrieves a block by given Index
-func (br *BlockRepository) FindByIndex(index int64) *types.Block {
+func (br *BlockRepository) FindByIndex(index int64) (*types.Block, error) {
 	rf := &recordFile{}
-	br.dbClient.Find(rf, index)
-	parentRf := br.findRecordFileByHash(rf.PrevHash)
+	if br.dbClient.Find(rf, index).RecordNotFound() {
+		return nil, errors.New("block not found")
+	}
 
-	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash, Timestamp: rf.ConsensusEnd}
+	parentRf, err := br.constructParentRecordFile(rf)
+	if err != nil {
+		return nil, err
+	}
+	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
 }
 
 // FindByHash retrieves a block by a given Hash
-func (br *BlockRepository) FindByHash(hash string) *types.Block {
+func (br *BlockRepository) FindByHash(hash string) (*types.Block, error) {
 	rf := &recordFile{}
-	br.dbClient.Where(&recordFile{FileHash: hash}).Find(rf)
-	parentRf := br.findRecordFileByHash(rf.PrevHash)
+	if br.dbClient.Where(&recordFile{FileHash: hash}).Find(rf).RecordNotFound() {
+		return nil, errors.New("block not found")
+	}
+	parentRf, err := br.constructParentRecordFile(rf)
+	if err != nil {
+		return nil, err
+	}
 
-	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash, Timestamp: rf.ConsensusEnd}
+	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
 }
 
 // FindByIndentifier retrivies a block by Index && Hash
-func (br *BlockRepository) FindByIndentifier(index int64, hash string) *types.Block {
+func (br *BlockRepository) FindByIndentifier(index int64, hash string) (*types.Block, error) {
 	rf := &recordFile{}
-	br.dbClient.Where(&recordFile{ID: index, FileHash: hash}).Find(rf)
-	parentRf := br.findRecordFileByHash(rf.PrevHash)
+	if br.dbClient.Where(&recordFile{ID: index, FileHash: hash}).Find(rf).RecordNotFound() {
+		return nil, errors.New("block not found")
+	}
+	parentRf, err := br.constructParentRecordFile(rf)
+	if err != nil {
+		return nil, err
+	}
 
-	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash, Timestamp: rf.ConsensusEnd}
+	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
 }
 
-func (br *BlockRepository) findRecordFileByHash(hash string) *recordFile {
+// RetrieveLatest retries the latest block
+func (br *BlockRepository) RetrieveLatest() (*types.Block, error) {
+	rf := &recordFile{}
+	if br.dbClient.Where(fmt.Sprintf("consensus_end = (SELECT MAX(consensus_end) FROM %s)", rf.TableName())).Find(rf).RecordNotFound() {
+		return nil, errors.New("block not found")
+	}
+
+	parentRf, err := br.constructParentRecordFile(rf)
+	if err != nil {
+		return nil, err
+	}
+	return &types.Block{ID: rf.ID, Hash: rf.FileHash, ParentID: parentRf.ID, ParentHash: parentRf.FileHash, ConsensusStart: rf.ConsensusStart, ConsensusEnd: rf.ConsensusEnd}, nil
+}
+
+func (br *BlockRepository) findRecordFileByHash(hash string) (*recordFile, error) {
 	parentRf := &recordFile{}
-	br.dbClient.Where(&recordFile{FileHash: hash}).Find(parentRf)
-	return parentRf
+	if br.dbClient.Where(&recordFile{FileHash: hash}).Find(parentRf).RecordNotFound() {
+		return nil, errors.New("block not found")
+	}
+	return parentRf, nil
+}
+
+func (br *BlockRepository) constructParentRecordFile(rf *recordFile) (*recordFile, error) {
+	var parentRf = &recordFile{}
+	var err error
+	// Handle the egde case for querying first block
+	if rf.PrevHash == genesisPreviousHash {
+		parentRf = rf
+	} else {
+		parentRf, err = br.findRecordFileByHash(rf.PrevHash)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return parentRf, nil
 }

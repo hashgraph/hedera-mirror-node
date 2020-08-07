@@ -10,6 +10,7 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistance/postgres/block"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistance/postgres/transaction"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services"
 	"github.com/jinzhu/gorm"
 )
@@ -17,11 +18,13 @@ import (
 // NewBlockchainRouter creates a Mux http.Handler from a collection
 // of server controllers.
 func NewBlockchainRouter(network *types.NetworkIdentifier, asserter *asserter.Asserter, dbClient *gorm.DB) http.Handler {
+	blockRepo := block.NewBlockRepository(dbClient)
+	transactionRepo := transaction.NewTransactionRepository(dbClient)
+
 	networkAPIService := services.NewNetworkAPIService(network)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
-	blockRepo := block.NewBlockRepository(dbClient)
-	blockAPIService := services.NewBlockAPIService(network, blockRepo)
+	blockAPIService := services.NewBlockAPIService(network, blockRepo, transactionRepo)
 	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter)
 
 	return server.NewRouter(networkAPIController, blockAPIController)
