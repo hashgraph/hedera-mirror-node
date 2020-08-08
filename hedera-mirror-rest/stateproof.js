@@ -26,9 +26,9 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const s3client = require('./s3client');
-const { DbError } = require('./errors/dbError');
-const { NotFoundError } = require('./errors/notFoundError');
-const { FileDownloadError } = require('./errors/fileDownloadError');
+const {DbError} = require('./errors/dbError');
+const {NotFoundError} = require('./errors/notFoundError');
+const {FileDownloadError} = require('./errors/fileDownloadError');
 
 /**
  * Get the consensus_ns of the transaction. Throws exception if no such successful transaction found or multiple such
@@ -54,7 +54,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId) => {
     throw new DbError(err.message);
   }
 
-  const { rows } = result;
+  const {rows} = result;
   if (_.isEmpty(rows)) {
     throw new NotFoundError('Transaction not found');
   } else if (rows.length > 1) {
@@ -74,8 +74,8 @@ let getRCDFileNameByConsensusNs = async (consensusNs) => {
   const sqlParams = [consensusNs];
   const sqlQuery = `SELECT name
        FROM record_file
-       WHERE consensus_start <= $1
-         AND consensus_end >= $1`;
+       WHERE consensus_end >= $1
+       LIMIT 1`;
   if (logger.isTraceEnabled()) {
     logger.trace(`getRCDFileNameByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
@@ -87,11 +87,9 @@ let getRCDFileNameByConsensusNs = async (consensusNs) => {
     throw new DbError(err.message);
   }
 
-  const { rows } = result;
+  const {rows} = result;
   if (_.isEmpty(rows)) {
     throw new NotFoundError('No matching RCD file found');
-  } else if (rows.length > 1) {
-    throw new DbError('Invalid state, more than one RCD file found');
   }
 
   return _.first(rows).name;
@@ -133,7 +131,7 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
     throw new NotFoundError('No address book found');
   }
 
-  const { rows } = addressBookQueryResult;
+  const {rows} = addressBookQueryResult;
   const lastAddressBook = _.last(rows);
 
   let nodeAccountIds = [];
@@ -161,39 +159,43 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
  * @returns {Promise<Array>} Array of file buffers
  */
 let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => {
-  const streamsConfig = config.stateproof.streams;
+  const {bucketName} = config.stateproof.streams;
+  const recordStreamPrefix = 'recordstreams/record';
   const s3Client = s3client.createS3Client();
 
-  const fileObjects = await Promise.all(_.map(partialFilePaths, async (partialFilePath) => {
-    const params = {
-      Bucket: streamsConfig.bucketName,
-      Key: `${streamsConfig.record.prefix}${partialFilePath}`,
-    };
+  const fileObjects = await Promise.all(
+    _.map(partialFilePaths, async (partialFilePath) => {
+      const params = {
+        Bucket: bucketName,
+        Key: `${recordStreamPrefix}${partialFilePath}`,
+      };
 
-    return new Promise((resolve) => {
-      let base64Data = '';
-      s3Client.getObject(params)
-        .createReadStream()
-        .on('data', (chunk) => {
-          base64Data += Buffer.from(chunk).toString('base64');
-        })
-        .on('end', () => {
-          resolve({
-            partialFilePath,
-            base64Data,
+      return new Promise((resolve) => {
+        let base64Data = '';
+        s3Client
+          .getObject(params)
+          .createReadStream()
+          .on('data', (chunk) => {
+            base64Data += Buffer.from(chunk).toString('base64');
+          })
+          .on('end', () => {
+            resolve({
+              partialFilePath,
+              base64Data,
+            });
+          })
+          // error may happen for a couple of reasons: 1. the node does not have the requested file, 2. s3 transient
+          // error. so capture the error and return it, otherwise Promise.all will fail
+          .on('error', (err) => {
+            logger.error(`Failed to download ${JSON.stringify(params)}`, err);
+            resolve({
+              partialFilePath,
+              err,
+            });
           });
-        })
-        // error may happen for a couple of reasons: 1. the node does not have the requested file, 2. s3 transient error
-        // so capture the error and return it, otherwise Promise.all will fail
-        .on('error', (err) => {
-          logger.error(`Failed to download ${JSON.stringify(params)}`, err);
-          resolve({
-            partialFilePath,
-            err,
-          });
-        });
-    });
-  }));
+      });
+    })
+  );
 
   return _.filter(fileObjects, (fileObject) => !fileObject.err);
 };
@@ -216,15 +218,17 @@ const getStateProofForTransaction = async (req, res) => {
   const transactionId = TransactionId.fromString(req.params.id);
   const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId);
   const rcdFileName = await getRCDFileNameByConsensusNs(consensusNs);
-  const { addressBooks, nodeAccountIds } = await getAddressBooksAndNodeAccountIdsByConsensusNs(consensusNs);
+  const {addressBooks, nodeAccountIds} = await getAddressBooksAndNodeAccountIdsByConsensusNs(consensusNs);
 
   const sigFileObjects = await downloadRecordStreamFilesFromObjectStorage(
-    ..._.map(nodeAccountIds, (nodeAccountId) => `${nodeAccountId}/${rcdFileName}_sig`),
+    ..._.map(nodeAccountIds, (nodeAccountId) => `${nodeAccountId}/${rcdFileName}_sig`)
   );
 
   if (!canReachConsensus(sigFileObjects.length, nodeAccountIds.length)) {
-    throw new FileDownloadError(`Require at least 1/3 signature files to prove consensus, got ${sigFileObjects.length} `
-      + `out of ${nodeAccountIds.length} for file ${rcdFileName}_sig`);
+    throw new FileDownloadError(
+      `Require at least 1/3 signature files to prove consensus, got ${sigFileObjects.length}` +
+        ` out of ${nodeAccountIds.length} for file ${rcdFileName}_sig`
+    );
   }
 
   // always download the record file from node 0.0.3

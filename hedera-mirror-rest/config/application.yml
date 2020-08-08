@@ -32,5 +32,3 @@ hedera:
           accessKey:
           secretKey:
           bucketName:
-          record:
-            prefix: 'recordstreams/record'

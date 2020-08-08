@@ -39,7 +39,6 @@ const setUp = async function (testDataJson, sqlconn) {
   await loadCryptoTransfers(testDataJson['cryptotransfers']);
   await loadTransactions(testDataJson['transactions']);
   await loadTopicMessages(testDataJson['topicmessages']);
-  await loadSqlScripts(testDataJson['sqlscripts']);
 };
 
 const loadAccounts = async function (accounts) {
@@ -89,16 +88,6 @@ const loadTopicMessages = async function (messages) {
 
   for (let i = 0; i < messages.length; ++i) {
     await addTopicMessage(messages[i]);
-  }
-};
-
-const loadSqlScripts = async function (sqlScripts) {
-  if (!sqlScripts) {
-    return;
-  }
-
-  for (const sqlScript of sqlScripts) {
-    await addSqlScript(sqlScript);
   }
 };
 
@@ -236,13 +225,6 @@ const addTopicMessage = async function (message) {
       message.running_hash_version,
     ]
   );
-};
-
-const addSqlScript = async function (sqlScript) {
-  const sqlScriptPath = path.join(__dirname, sqlScript);
-  const script = fs.readFileSync(sqlScriptPath, { encoding: 'utf8' });
-  logger.debug(`loading sql script ${sqlScript}`);
-  await sqlConnection.query(script);
 };
 
 module.exports = {

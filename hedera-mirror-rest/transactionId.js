@@ -20,13 +20,15 @@
 
 'use strict';
 
+const long = require('long');
 const EntityId = require('./entityId');
-const { InvalidArgumentError } = require('./errors/invalidArgumentError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 class TransactionId {
-  constructor(entityId, validStartNs) {
+  constructor(entityId, validStartSeconds, validStartNanos) {
     this.entityId = entityId;
-    this.validStartNs = validStartNs;
+    this.validStartSeconds = validStartSeconds;
+    this.validStartNanos = validStartNanos;
   }
 
   /**
@@ -40,7 +42,7 @@ class TransactionId {
    * @returns {string} validStartNs of the transaction ID
    */
   getValidStartNs() {
-    return this.validStartNs;
+    return `${this.validStartSeconds}${String(this.validStartNanos).padStart(9, '0')}`;
   }
 
   /**
@@ -48,9 +50,7 @@ class TransactionId {
    * @returns {string}
    */
   toString() {
-    const seconds = this.validStartNs.slice(0, 10);
-    const nanos = this.validStartNs.slice(10);
-    return `${this.entityId.toString()}-${seconds}-${nanos}`;
+    return `${this.entityId.toString()}-${this.validStartSeconds}-${this.validStartNanos}`;
   }
 }
 
@@ -59,18 +59,23 @@ class TransactionId {
  * @param {string} transactionIdStr
  */
 const fromString = (transactionIdStr) => {
-  const txIdMatches = transactionIdStr.match(/^(\d+)\.(\d+)\.(\d+)-(\d{10})-(\d{9})$/);
+  const txIdMatches = transactionIdStr.match(/^(\d+)\.(\d+)\.(\d+)-(\d{1,19})-(\d{1,9})$/);
+  const message =
+    'Invalid Transaction id. Please use "shard.realm.num-sss-nnn" format where sss are seconds and nnn are nanoseconds';
   if (txIdMatches === null || txIdMatches.length !== 6) {
     logger.error(`TransactionId.fromString, invalid transaction ID string ${transactionIdStr}`);
-    const message = 'Invalid Transaction id. Please use "shard.realm.num-ssssssssss-nnnnnnnnn" '
-      + 'format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds';
     throw new InvalidArgumentError(message);
   }
 
   const entityId = EntityId.fromString(`${txIdMatches[1]}.${txIdMatches[2]}.${txIdMatches[3]}`);
-  const validStartNs = `${txIdMatches[4]}${txIdMatches[5]}`;
+  const seconds = long.fromString(txIdMatches[4]);
+  const nanos = parseInt(txIdMatches[5], 10);
+  if (seconds.lessThan(0)) {
+    logger.error(`TransactionId.fromString, invalid transaction ID string ${transactionIdStr}: seconds overflow`);
+    throw new InvalidArgumentError(message);
+  }
 
-  return new TransactionId(entityId, validStartNs);
+  return new TransactionId(entityId, seconds, nanos);
 };
 
 module.exports = {

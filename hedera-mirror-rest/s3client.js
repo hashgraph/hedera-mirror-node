@@ -23,7 +23,7 @@
 const AWS = require('aws-sdk');
 const querystring = require('querystring');
 const config = require('./config');
-const { InvalidConfigError } = require('./errors/invalidConfigError');
+const {InvalidConfigError} = require('./errors/invalidConfigError');
 
 class S3Client {
   constructor(s3, hasCredentials, gcpProjectId) {
@@ -43,7 +43,7 @@ class S3Client {
     if (this.gcpProjectId) {
       const userProject = this.gcpProjectId;
       request.on('build', () => {
-        const { httpRequest } = request;
+        const {httpRequest} = request;
         const query = {
           ...querystring.parse(httpRequest.search()),
           userProject,
@@ -113,7 +113,7 @@ const buildS3ConfigFromStreamsConfig = () => {
  * @returns {S3Client}
  */
 const createS3Client = () => {
-  const { s3Config, gcpProjectId } = buildS3ConfigFromStreamsConfig();
+  const {s3Config, gcpProjectId} = buildS3ConfigFromStreamsConfig();
   return new S3Client(new AWS.S3(s3Config), !!s3Config.accessKeyId, gcpProjectId);
 };
 

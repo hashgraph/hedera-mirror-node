@@ -21,8 +21,8 @@
 'use strict';
 
 const axios = require('axios');
-const { GenericContainer } = require('testcontainers');
-const { isDockerInstalled } = require('./integrationUtils');
+const {GenericContainer} = require('testcontainers');
+const {isDockerInstalled} = require('./integrationUtils');
 
 const localStackImageName = 'localstack/localstack';
 const localstackImageTag = '0.11.3';
@@ -49,16 +49,18 @@ class S3Ops {
     }
 
     let timeout = false;
-    new Promise((r) => setTimeout(() => {
-      timeout = true;
-      r();
-    }, 15000));
+    new Promise((r) =>
+      setTimeout(() => {
+        timeout = true;
+        r();
+      }, 15000)
+    );
 
     const healthEndpoint = `${this.getEndpointUrl()}/health`;
     while (!timeout) {
       try {
         const res = await axios.get(healthEndpoint);
-        const { data } = res;
+        const {data} = res;
         if (data.services && data.services.s3 && data.services.s3 === 'running') {
           return;
         }

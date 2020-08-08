@@ -55,7 +55,7 @@ const transactions = require('../transactions.js');
 const server = require('../server');
 const integrationDbOps = require('./integrationDbOps.js');
 const integrationDomainOps = require('./integrationDomainOps.js');
-const { S3Ops } = require('./integrationS3Ops');
+const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
 
 let sqlConnection;
@@ -286,15 +286,17 @@ describe('DB integration test - spec based', () => {
 
   const walk = async (dir) => {
     let files = await fs.promises.readdir(dir);
-    files = await Promise.all(files.map(async (file) => {
-      const filePath = path.join(dir, file);
-      const stats = await fs.promises.stat(filePath);
-      if (stats.isDirectory()) {
-        return walk(filePath);
-      } else if (stats.isFile()) {
-        return filePath;
-      }
-    }));
+    files = await Promise.all(
+      files.map(async (file) => {
+        const filePath = path.join(dir, file);
+        const stats = await fs.promises.stat(filePath);
+        if (stats.isDirectory()) {
+          return walk(filePath);
+        } else if (stats.isFile()) {
+          return filePath;
+        }
+      })
+    );
 
     return files.reduce((all, folderContents) => all.concat(folderContents), []);
   };
@@ -311,21 +313,25 @@ describe('DB integration test - spec based', () => {
     });
 
     logger.debug(`creating s3 bucket ${bucketName}`);
-    await s3client.makeUnauthenticatedRequest('createBucket', {
-      Bucket: bucketName,
-    }).promise();
+    await s3client
+      .makeUnauthenticatedRequest('createBucket', {
+        Bucket: bucketName,
+      })
+      .promise();
 
     logger.debug('uploading file objects to mock s3 service');
     const s3ObjectKeys = [];
     for (const filePath of await walk(dataPath)) {
       const s3ObjectKey = path.relative(dataPath, filePath);
       const fileStream = fs.createReadStream(filePath);
-      await s3client.upload({
-        Bucket: bucketName,
-        Key: s3ObjectKey,
-        Body: fileStream,
-        ACL: 'public-read',
-      }).promise();
+      await s3client
+        .upload({
+          Bucket: bucketName,
+          Key: s3ObjectKey,
+          Body: fileStream,
+          ACL: 'public-read',
+        })
+        .promise();
       s3ObjectKeys.push(s3ObjectKey);
     }
     logger.debug(`uploaded ${s3ObjectKeys.length} file objects: ${s3ObjectKeys}`);
@@ -343,9 +349,23 @@ describe('DB integration test - spec based', () => {
     await s3Ops.stop();
   });
 
+  const loadSqlScripts = async (sqlScripts) => {
+    if (!sqlScripts) {
+      return;
+    }
+
+    for (const sqlScript of sqlScripts) {
+      const sqlScriptPath = path.join(__dirname, sqlScript);
+      const script = fs.readFileSync(sqlScriptPath, {encoding: 'utf8'});
+      logger.debug(`loading sql script ${sqlScript}`);
+      await integrationDbOps.runSqlQuery(script);
+    }
+  };
+
   const specSetupSteps = async (spec) => {
     await integrationDbOps.cleanUp();
     await integrationDomainOps.setUp(spec, sqlConnection);
+    await loadSqlScripts(spec.sqlscripts);
   };
 
   const md5 = (data) => crypto.createHash('md5').update(data).digest('hex');

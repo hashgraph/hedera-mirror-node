@@ -20,7 +20,7 @@
 
 'use strict';
 
-const { exec } = require('child_process');
+const {exec} = require('child_process');
 
 const isDockerInstalled = function () {
   return new Promise((resolve) => {

@@ -19,13 +19,13 @@
  */
 'use strict';
 
-const { GenericContainer } = require('testcontainers');
-const { exec } = require('child_process');
+const {GenericContainer} = require('testcontainers');
+const {exec} = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const SqlConnectionPool = require('pg').Pool;
 const utils = require('../utils');
-const { isDockerInstalled } = require('./integrationUtils');
+const {isDockerInstalled} = require('./integrationUtils');
 
 //
 // Docker & DB management

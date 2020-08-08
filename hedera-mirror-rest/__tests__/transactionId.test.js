@@ -32,15 +32,13 @@ describe('TransactionId from invalid transaction ID string', () => {
     'bad-string',
     'bad.entity.id-badseconds-badnanos',
     '0.0.1',
-    '0.0.1-2-3',
-    '0.0.1-1234567891-0',
-    '0.0.1-1-999999999',
     '0.0.1-1234567891-0000000000',
-    '0.0.1-12345678910-000000000',
     '0.0.1-1234567891-000000000 ',
     ' 0.0.1-1234567891-000000000',
     '0.0.1- 1234567891-000000000',
     '0.0.1-1234567891- 000000000',
+    '0.0.1-9223372036854775809-0',
+    '0.0.1--9--0',
   ];
 
   invalidTransactionIdStrs.forEach((invalidTransactionIdStr) => {
@@ -53,14 +51,31 @@ describe('TransactionId from invalid transaction ID string', () => {
 });
 
 describe('TransactionId toString', () => {
-  const transactionIdStrs = [
-    '0.0.1-1234567891-000000000',
-    '32767.65535.4294967295-1234567891-999999999',
+  const testSpecs = [
+    {
+      input: '0.0.1-1234567891-000000000',
+      expected: '0.0.1-1234567891-0',
+    },
+    {
+      input: '0.0.1-1234567891-0',
+    },
+    {
+      input: '0.0.1-0-0',
+    },
+    {
+      input: '0.0.1-01-0',
+      expected: '0.0.1-1-0',
+    },
+    {
+      input: '32767.65535.4294967295-9223372036854775807-999999999',
+    },
   ];
 
-  transactionIdStrs.forEach((transactionIdStr) => {
-    test(transactionIdStr, () => {
-      expect(TransactionId.fromString(transactionIdStr).toString()).toEqual(transactionIdStr);
+  testSpecs.forEach((testSpec) => {
+    test(testSpec.input, () => {
+      const {input} = testSpec;
+      const expected = testSpec.expected ? testSpec.expected : input;
+      expect(TransactionId.fromString(input).toString()).toEqual(expected);
     });
   });
 });
@@ -72,7 +87,7 @@ describe('TransactionId getEntityId', () => {
       entityId: EntityId.fromString('0.0.1'),
     },
     {
-      transactionIdStr: '32767.65535.4294967295-1234567891-999999999',
+      transactionIdStr: '32767.65535.4294967295-9223372036854775807-999999999',
       entityId: EntityId.fromString('32767.65535.4294967295'),
     },
   ];
@@ -87,12 +102,16 @@ describe('TransactionId getEntityId', () => {
 describe('TransactionId getValidStartNs', () => {
   const testSpecs = [
     {
-      transactionIdStr: '0.0.1-1234567891-000000000',
+      transactionIdStr: '0.0.1-1234567891-0',
       validStartNs: '1234567891000000000',
     },
     {
-      transactionIdStr: '0.0.1-9999999999-999999999',
-      validStartNs: '9999999999999999999',
+      transactionIdStr: '0.0.1-9223372036854775807-1',
+      validStartNs: '9223372036854775807000000001',
+    },
+    {
+      transactionIdStr: '0.0.1-9223372036854775807-999999999',
+      validStartNs: '9223372036854775807999999999',
     },
   ];
 

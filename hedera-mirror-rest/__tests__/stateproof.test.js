@@ -22,8 +22,8 @@
 
 const _ = require('lodash');
 const log4js = require('log4js');
-const { mockRequest, mockResponse } = require('mock-req-res');
-const { Readable } = require('stream');
+const {mockRequest, mockResponse} = require('mock-req-res');
+const {Readable} = require('stream');
 const rewire = require('rewire');
 const sinon = require('sinon');
 const constants = require('../constants');
@@ -60,36 +60,42 @@ const verifyFakeCallCountAndLastCallParamsArg = (fake, expectedCount, expectedLa
 describe('getSuccessfulTransactionConsensusNs', () => {
   const expectedValidConsensusNs = '1234567891000000001';
   const validQueryResult = {
-    rows: [{ consensus_ns: expectedValidConsensusNs }],
+    rows: [{consensus_ns: expectedValidConsensusNs}],
   };
   const transactionId = TransactionId.fromString('0.0.1-1234567891-000111222');
 
   test('with transaction found in db table', async () => {
     const fakeQuery = sinon.fake.resolves(validQueryResult);
-    global.pool = { query: fakeQuery };
+    global.pool = {query: fakeQuery};
 
     const consensusNs = await stateproof.getSuccessfulTransactionConsensusNs(transactionId);
     expect(consensusNs).toEqual(expectedValidConsensusNs);
-    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1,
-      [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()]);
+    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
+      transactionId.getEntityId().getEncodedId(),
+      transactionId.getValidStartNs(),
+    ]);
   });
 
   test('with transaction not found', async () => {
     const fakeQuery = sinon.fake.resolves(emptyQueryResult);
-    global.pool = { query: fakeQuery };
+    global.pool = {query: fakeQuery};
 
     await expect(stateproof.getSuccessfulTransactionConsensusNs(transactionId)).rejects.toThrow();
-    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1,
-      [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()]);
+    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
+      transactionId.getEntityId().getEncodedId(),
+      transactionId.getValidStartNs(),
+    ]);
   });
 
   test('with db query error', async () => {
     const fakeQuery = sinon.fake.rejects(new Error('db runtime error'));
-    global.pool = { query: fakeQuery };
+    global.pool = {query: fakeQuery};
 
     await expect(stateproof.getSuccessfulTransactionConsensusNs(transactionId)).rejects.toThrow();
-    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1,
-      [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()]);
+    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
+      transactionId.getEntityId().getEncodedId(),
+      transactionId.getValidStartNs(),
+    ]);
   });
 });
 
@@ -97,12 +103,12 @@ describe('getRCDFileNameByConsensusNs', () => {
   const consensusNs = '1578342501111222333';
   const expectedRCDFileName = '2020-02-09T18_30_25.001721Z.rcd';
   const validQueryResult = {
-    rows: [{ name: expectedRCDFileName }],
+    rows: [{name: expectedRCDFileName}],
   };
 
   test('with record file found', async () => {
     const fakeQuery = sinon.fake.resolves(validQueryResult);
-    global.pool = { query: fakeQuery };
+    global.pool = {query: fakeQuery};
 
     const fileName = await stateproof.getRCDFileNameByConsensusNs(consensusNs);
     expect(fileName).toEqual(expectedRCDFileName);
@@ -111,7 +117,7 @@ describe('getRCDFileNameByConsensusNs', () => {
 
   test('with record file not found', async () => {
     const fakeQuery = sinon.fake.resolves(emptyQueryResult);
-    global.pool = { query: fakeQuery };
+    global.pool = {query: fakeQuery};
 
     await expect(stateproof.getRCDFileNameByConsensusNs(consensusNs)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusNs]);
@@ -119,7 +125,7 @@ describe('getRCDFileNameByConsensusNs', () => {
 
   test('with db query error', async () => {
     const fakeQuery = sinon.fake.rejects(new Error('db runtime error'));
-    global.pool = { query: fakeQuery };
+    global.pool = {query: fakeQuery};
 
     await expect(stateproof.getRCDFileNameByConsensusNs(consensusNs)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusNs]);
@@ -179,7 +185,7 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
       queryResult = queryResultOrFakeQueryFunc;
       queryStub.returns(queryResultOrFakeQueryFunc);
     }
-    global.pool = { query: queryStub };
+    global.pool = {query: queryStub};
 
     if (expectPass) {
       const result = await stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs);
@@ -189,8 +195,9 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
       let expectedNodeAccountIds;
       const lastRow = _.last(queryResult.rows);
       if (lastRow.node_account_ids) {
-        expectedNodeAccountIds = _.map(lastRow.node_account_ids.split(','),
-          (id) => EntityId.fromEncodedId(id).toString());
+        expectedNodeAccountIds = _.map(lastRow.node_account_ids.split(','), (id) =>
+          EntityId.fromEncodedId(id).toString()
+        );
       } else {
         expectedNodeAccountIds = lastRow.memos.split(',');
       }
@@ -203,7 +210,8 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
     }
   };
 
-  const selectQueryResult = (hasNodeAccountIds) => hasNodeAccountIds ? queryResultWithNodeAccountIds : queryResultWithMemos;
+  const selectQueryResult = (hasNodeAccountIds) =>
+    hasNodeAccountIds ? queryResultWithNodeAccountIds : queryResultWithMemos;
 
   const testSpecs = [
     {
@@ -277,14 +285,16 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
   const verifyGetObjectStubAndReturnedFileObjects = (getObjectStub, fileObjects, partialFilePaths, failedNodes) => {
     let succeededPartialFilePaths = partialFilePaths;
     if (failedNodes) {
-      succeededPartialFilePaths = _.filter(partialFilePaths,
-        (partialFilePath) => _.every(failedNodes, (failedNode) => !partialFilePath.startsWith(failedNode)));
+      succeededPartialFilePaths = _.filter(partialFilePaths, (partialFilePath) =>
+        _.every(failedNodes, (failedNode) => !partialFilePath.startsWith(failedNode))
+      );
     }
 
     expect(_.map(fileObjects, (file) => file.partialFilePath).sort()).toEqual(succeededPartialFilePaths.sort());
     for (const fileObject of fileObjects) {
-      expect(fileObject.base64Data)
-        .toEqual(Buffer.from(config.stateproof.streams.record.prefix + fileObject.partialFilePath).toString('base64'));
+      expect(fileObject.base64Data).toEqual(
+        Buffer.from(config.stateproof.streams.record.prefix + fileObject.partialFilePath).toString('base64')
+      );
     }
     expect(getObjectStub.callCount).toEqual(partialFilePaths.length);
   };
@@ -326,8 +336,12 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     stubS3ClientGetObject(getObjectStub);
 
     const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
-    verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, partialFilePaths,
-      _.map([3, 4, 5, 6], (num) => `0.0.${num}`));
+    verifyGetObjectStubAndReturnedFileObjects(
+      getObjectStub,
+      fileObjects,
+      partialFilePaths,
+      _.map([3, 4, 5, 6], (num) => `0.0.${num}`)
+    );
   });
 
   test('with download failed for 0.0.3', async () => {
@@ -376,12 +390,7 @@ describe('getStateProofForTransaction', () => {
   let req;
   let res;
 
-  const allNodeAccountIds = [
-    '0.0.3',
-    '0.0.4',
-    '0.0.5',
-    '0.0.6',
-  ];
+  const allNodeAccountIds = ['0.0.3', '0.0.4', '0.0.5', '0.0.6'];
   const defaultTransactionIdStr = '0.0.1-1234567891-111222333';
   const defaultTransactionConsensusNs = '1234567898111222333';
   const defaultRecordFilename = '2020-02-09T18_30_25.001721Z.rcd';
@@ -411,14 +420,16 @@ describe('getStateProofForTransaction', () => {
 
     defaultGetSuccessfulTransactionConsensusNsStub = sinon.stub().resolves(defaultTransactionConsensusNs);
     defaultGetRCDFileNameByConsensusNsStub = sinon
-      .stub(stateproof, 'getRCDFileNameByConsensusNs').resolves(defaultRecordFilename);
+      .stub(stateproof, 'getRCDFileNameByConsensusNs')
+      .resolves(defaultRecordFilename);
     defaultGetAddressBooksAndNodeAccountIdsByConsensusNsStub = sinon
-      .stub().resolves(defaultAddressBooksAndNodeAccountIdsResult);
-    defaultDownloadRecordStreamFilesFromObjectStorageStub = sinon.stub()
-      .callsFake(async (...partialFilePaths) => _.map(
-        partialFilePaths,
-        (path) => makeFileObjectFromPartialFilePath(path),
-      ));
+      .stub()
+      .resolves(defaultAddressBooksAndNodeAccountIdsResult);
+    defaultDownloadRecordStreamFilesFromObjectStorageStub = sinon
+      .stub()
+      .callsFake(async (...partialFilePaths) =>
+        _.map(partialFilePaths, (path) => makeFileObjectFromPartialFilePath(path))
+      );
     alwaysThrowErrorStub = sinon.stub().throws(new Error('always throw error'));
   });
 
@@ -426,7 +437,7 @@ describe('getStateProofForTransaction', () => {
     getSuccessfulTransactionConsensusNsStub,
     getRCDFileNameByConsensusNsStub,
     getAddressBooksAndNodeAccountIdsByConsensusNsStub,
-    downloadRecordStreamFilesFromObjectStorageStub,
+    downloadRecordStreamFilesFromObjectStorageStub
   ) => {
     stateproofRewired.__set__({
       getSuccessfulTransactionConsensusNs: getSuccessfulTransactionConsensusNsStub,
@@ -438,17 +449,16 @@ describe('getStateProofForTransaction', () => {
 
   const verifyResponseData = (responseData, recordFileName, addressBooks, nodeAccountIds) => {
     expect(responseData).toBeTruthy();
-    expect(responseData.record_file)
-      .toEqual(Buffer.from(`0.0.3/${recordFileName}`).toString('base64'));
+    expect(responseData.record_file).toEqual(Buffer.from(`0.0.3/${recordFileName}`).toString('base64'));
 
     expect(Object.keys(responseData.signature_files).sort()).toEqual(nodeAccountIds.sort());
     for (const nodeAccountId of nodeAccountIds) {
-      expect(responseData.signature_files[nodeAccountId])
-        .toEqual(Buffer.from(`${nodeAccountId}/${recordFileName}_sig`).toString('base64'));
+      expect(responseData.signature_files[nodeAccountId]).toEqual(
+        Buffer.from(`${nodeAccountId}/${recordFileName}_sig`).toString('base64')
+      );
     }
 
-    expect(responseData.address_books.sort())
-      .toEqual(addressBooks.sort());
+    expect(responseData.address_books.sort()).toEqual(addressBooks.sort());
   };
 
   test('with valid transaction ID and all data successfully retrieved', async () => {
@@ -456,15 +466,18 @@ describe('getStateProofForTransaction', () => {
       defaultGetSuccessfulTransactionConsensusNsStub,
       defaultGetRCDFileNameByConsensusNsStub,
       defaultGetAddressBooksAndNodeAccountIdsByConsensusNsStub,
-      defaultDownloadRecordStreamFilesFromObjectStorageStub,
+      defaultDownloadRecordStreamFilesFromObjectStorageStub
     );
 
     req.params.id = defaultTransactionIdStr;
     await stateproofRewired.getStateProofForTransaction(req, res);
 
-    verifyResponseData(res.locals[constants.responseDataLabel], defaultRecordFilename,
+    verifyResponseData(
+      res.locals[constants.responseDataLabel],
+      defaultRecordFilename,
       defaultAddressBooksAndNodeAccountIdsResult.addressBooks,
-      defaultAddressBooksAndNodeAccountIdsResult.nodeAccountIds);
+      defaultAddressBooksAndNodeAccountIdsResult.nodeAccountIds
+    );
 
     expect(defaultGetSuccessfulTransactionConsensusNsStub.calledOnce).toBeTruthy();
     expect(defaultGetSuccessfulTransactionConsensusNsStub.args[0][0].toString()).toEqual(defaultTransactionIdStr);
@@ -476,13 +489,14 @@ describe('getStateProofForTransaction', () => {
     expect(defaultGetAddressBooksAndNodeAccountIdsByConsensusNsStub.args[0][0]).toEqual(defaultTransactionConsensusNs);
 
     expect(defaultDownloadRecordStreamFilesFromObjectStorageStub.callCount).toBeGreaterThanOrEqual(1);
-    const { nodeAccountIds } = defaultAddressBooksAndNodeAccountIdsResult;
+    const {nodeAccountIds} = defaultAddressBooksAndNodeAccountIdsResult;
     const expectedPartialFilePaths = [
       `${nodeAccountIds[0]}/${defaultRecordFilename}`,
       ..._.map(nodeAccountIds, (nodeAccountId) => `${nodeAccountId}/${defaultRecordFilename}_sig`),
     ].sort();
-    expect(_.flatten(defaultDownloadRecordStreamFilesFromObjectStorageStub.args).sort())
-      .toEqual(expectedPartialFilePaths);
+    expect(_.flatten(defaultDownloadRecordStreamFilesFromObjectStorageStub.args).sort()).toEqual(
+      expectedPartialFilePaths
+    );
   });
 
   test('with invalid transaction ID', async () => {
@@ -490,7 +504,7 @@ describe('getStateProofForTransaction', () => {
       defaultGetSuccessfulTransactionConsensusNsStub,
       defaultGetRCDFileNameByConsensusNsStub,
       defaultGetAddressBooksAndNodeAccountIdsByConsensusNsStub,
-      defaultDownloadRecordStreamFilesFromObjectStorageStub,
+      defaultDownloadRecordStreamFilesFromObjectStorageStub
     );
 
     req.params.id = '0.0.a-abcd-ddfff';
@@ -507,7 +521,7 @@ describe('getStateProofForTransaction', () => {
       alwaysThrowErrorStub,
       defaultGetRCDFileNameByConsensusNsStub,
       defaultGetAddressBooksAndNodeAccountIdsByConsensusNsStub,
-      defaultDownloadRecordStreamFilesFromObjectStorageStub,
+      defaultDownloadRecordStreamFilesFromObjectStorageStub
     );
 
     req.params.id = defaultTransactionIdStr;
@@ -524,7 +538,7 @@ describe('getStateProofForTransaction', () => {
       defaultGetSuccessfulTransactionConsensusNsStub,
       alwaysThrowErrorStub,
       defaultGetAddressBooksAndNodeAccountIdsByConsensusNsStub,
-      defaultDownloadRecordStreamFilesFromObjectStorageStub,
+      defaultDownloadRecordStreamFilesFromObjectStorageStub
     );
 
     req.params.id = defaultTransactionIdStr;
@@ -541,7 +555,7 @@ describe('getStateProofForTransaction', () => {
       defaultGetSuccessfulTransactionConsensusNsStub,
       defaultGetRCDFileNameByConsensusNsStub,
       alwaysThrowErrorStub,
-      defaultDownloadRecordStreamFilesFromObjectStorageStub,
+      defaultDownloadRecordStreamFilesFromObjectStorageStub
     );
 
     req.params.id = defaultTransactionIdStr;
@@ -558,7 +572,7 @@ describe('getStateProofForTransaction', () => {
       defaultGetSuccessfulTransactionConsensusNsStub,
       defaultGetRCDFileNameByConsensusNsStub,
       defaultGetAddressBooksAndNodeAccountIdsByConsensusNsStub,
-      alwaysThrowErrorStub,
+      alwaysThrowErrorStub
     );
 
     req.params.id = defaultTransactionIdStr;
@@ -572,15 +586,16 @@ describe('getStateProofForTransaction', () => {
 
   test('with downloadRecordStreamFilesFromObjectStorage fail to download all record stream files', async () => {
     const failAllRecordFileDownloadStub = sinon.stub().callsFake(async (...partialFilePaths) => {
-      return _.reject(partialFilePaths, (path) => path.endsWith('.rcd'))
-        .map((path) => makeFileObjectFromPartialFilePath(path));
+      return _.reject(partialFilePaths, (path) => path.endsWith('.rcd')).map((path) =>
+        makeFileObjectFromPartialFilePath(path)
+      );
     });
 
     rewireAllDependency(
       defaultGetSuccessfulTransactionConsensusNsStub,
       defaultGetRCDFileNameByConsensusNsStub,
       defaultGetAddressBooksAndNodeAccountIdsByConsensusNsStub,
-      failAllRecordFileDownloadStub,
+      failAllRecordFileDownloadStub
     );
 
     req.params.id = defaultTransactionIdStr;
@@ -601,24 +616,27 @@ describe('getStateProofForTransaction', () => {
           return true;
         }
         return false;
-      })
-        .map((path) => makeFileObjectFromPartialFilePath(path));
+      }).map((path) => makeFileObjectFromPartialFilePath(path));
     });
 
     rewireAllDependency(
       defaultGetSuccessfulTransactionConsensusNsStub,
       defaultGetRCDFileNameByConsensusNsStub,
       defaultGetAddressBooksAndNodeAccountIdsByConsensusNsStub,
-      failOneSignatureFileDownloadStub,
+      failOneSignatureFileDownloadStub
     );
 
     req.params.id = defaultTransactionIdStr;
     await stateproofRewired.getStateProofForTransaction(req, res);
 
-    let { nodeAccountIds } = defaultAddressBooksAndNodeAccountIdsResult;
+    let {nodeAccountIds} = defaultAddressBooksAndNodeAccountIdsResult;
     nodeAccountIds = _.reject(nodeAccountIds, (nodeAccountId) => nodeAccountId === failedNodeAccountId);
-    verifyResponseData(res.locals[constants.responseDataLabel], defaultRecordFilename,
-      defaultAddressBooksAndNodeAccountIdsResult.addressBooks, nodeAccountIds);
+    verifyResponseData(
+      res.locals[constants.responseDataLabel],
+      defaultRecordFilename,
+      defaultAddressBooksAndNodeAccountIdsResult.addressBooks,
+      nodeAccountIds
+    );
 
     expect(defaultGetSuccessfulTransactionConsensusNsStub.callCount).toEqual(1);
     expect(defaultGetRCDFileNameByConsensusNsStub.callCount).toEqual(1);
@@ -632,15 +650,14 @@ describe('getStateProofForTransaction', () => {
       return _.reject(partialFilePaths, (path) => {
         const nodeAccountId = _.first(path.split('/'));
         return path.endsWith('_sig') && nodesToFail.includes(nodeAccountId);
-      })
-        .map((path) => makeFileObjectFromPartialFilePath(path));
+      }).map((path) => makeFileObjectFromPartialFilePath(path));
     });
 
     rewireAllDependency(
       defaultGetSuccessfulTransactionConsensusNsStub,
       defaultGetRCDFileNameByConsensusNsStub,
       defaultGetAddressBooksAndNodeAccountIdsByConsensusNsStub,
-      failSignatureFileDownloadStub,
+      failSignatureFileDownloadStub
     );
 
     req.params.id = defaultTransactionIdStr;

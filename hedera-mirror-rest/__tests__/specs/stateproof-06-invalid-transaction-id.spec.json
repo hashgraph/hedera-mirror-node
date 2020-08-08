@@ -8,13 +8,13 @@
       "data/db/stateproof/transaction.sql"
     ]
   },
-  "url": "/api/v1/transactions/0.0.94139-11965562-313194/stateproof",
+  "url": "/api/v1/transactions/0.0.94139-ss-nn/stateproof",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Invalid Transaction id. Please use \"shard.realm.num-ssssssssss-nnnnnnnnn\" format where ssss are 10 digits seconds and nnn are 9 digits nanoseconds"
+          "message": "Invalid Transaction id. Please use \"shard.realm.num-sss-nnn\" format where sss are seconds and nnn are nanoseconds"
         }
       ]
     }

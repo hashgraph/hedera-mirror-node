@@ -24,7 +24,7 @@ const extend = require('extend');
 const fs = require('fs');
 const yaml = require('js-yaml');
 const path = require('path');
-const { InvalidConfigError } = require('./errors/invalidConfigError');
+const {InvalidConfigError} = require('./errors/invalidConfigError');
 
 let configName = 'application';
 if (process.env.CONFIG_NAME) {
@@ -39,7 +39,7 @@ function load(configPath) {
     return;
   }
 
-  let configFile = path.join(configPath, configName + '.yml');
+  let configFile = path.join(configPath, `${configName}.yml`);
   if (fs.existsSync(configFile)) {
     loadYaml(configFile);
   }
@@ -121,59 +121,26 @@ function getConfig() {
 }
 
 function parseStateProofStreamsConfig() {
-  const config = getConfig();
-  if (!config.stateproof) {
-    config.stateproof = {
-      enabled: false,
-    };
-  } else if (!config.stateproof.streams || !config.stateproof.streams.network) {
-    config.stateproof.streams = { network: 'DEMO', ...config.stateproof.streams };
-  }
+  const defaultBucketNames = {
+    DEMO: 'hedera-demo-streams',
+    MAINNET: 'hedera-stable-mainnet-streams',
+    TESTNET: 'hedera-stable-testnet-streams',
+    OTHER: null,
+  };
 
-  const stateProofConfig = config.stateproof;
-  const streamsConfig = stateProofConfig.streams;
-
-  if (!stateProofConfig.enabled) {
+  const {stateproof} = getConfig();
+  if (!stateproof || !stateproof.enabled) {
     return;
   }
 
+  const {streams: streamsConfig} = stateproof;
   // set default bucketName depending on network
-  switch (streamsConfig.network) {
-    case 'DEMO':
-      if (!streamsConfig.bucketName) {
-        streamsConfig.bucketName = 'hedera-demo-streams';
-      }
-      break;
-    case 'MAINNET':
-      if (!streamsConfig.bucketName) {
-        streamsConfig.bucketName = 'hedera-stable-mainnet-streams';
-      }
-      break;
-    case 'TESTNET':
-      if (!streamsConfig.bucketName) {
-        streamsConfig.bucketName = 'hedera-stable-testnet-streams';
-      }
-      break;
-    case 'OTHER':
-      break;
-    default:
-      const message = `unknown network ${streamsConfig.network}`;
-      console.log(message);
-      throw new InvalidConfigError(message);
+  if (!Object.prototype.hasOwnProperty.call(defaultBucketNames, streamsConfig.network)) {
+    throw new InvalidConfigError(`unknown network ${streamsConfig.network}`);
   }
 
-  if (!streamsConfig.cloudProvider) {
-    streamsConfig.cloudProvider = 'S3';
-  }
-
-  if (!streamsConfig.region) {
-    streamsConfig.region = 'us-east-1';
-  }
-
-  if (!streamsConfig.record || !streamsConfig.record.prefix) {
-    streamsConfig.record = {
-      prefix: 'recordstreams/record',
-    };
+  if (!streamsConfig.bucketName) {
+    streamsConfig.bucketName = defaultBucketNames[streamsConfig.network];
   }
 
   if (!streamsConfig.bucketName) {
