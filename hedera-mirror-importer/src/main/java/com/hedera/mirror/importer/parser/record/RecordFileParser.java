@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Named;
-import javax.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -130,7 +129,7 @@ public class RecordFileParser implements FileParser {
      * @param streamFileData containing information about file to be processed
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void parse(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
 
