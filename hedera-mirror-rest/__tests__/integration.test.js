@@ -57,6 +57,7 @@ const integrationDbOps = require('./integrationDbOps.js');
 const integrationDomainOps = require('./integrationDomainOps.js');
 const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
+const {cloudProviders} = require('../constants');
 
 let sqlConnection;
 
@@ -273,13 +274,10 @@ describe('DB integration test - spec based', () => {
       enabled: true,
       streams: {
         network: 'OTHER',
-        cloudProvider: 'S3',
+        cloudProvider: cloudProviders.S3,
         endpointOverride: endpoint,
         region: 'us-east-1',
         bucketName,
-        record: {
-          prefix: 'recordstreams/record',
-        },
       },
     };
   };

@@ -25,6 +25,7 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 const path = require('path');
 const {InvalidConfigError} = require('./errors/invalidConfigError');
+const {cloudProviders, networks, defaultBucketNames} = require('./constants');
 
 let configName = 'application';
 if (process.env.CONFIG_NAME) {
@@ -121,13 +122,6 @@ function getConfig() {
 }
 
 function parseStateProofStreamsConfig() {
-  const defaultBucketNames = {
-    DEMO: 'hedera-demo-streams',
-    MAINNET: 'hedera-stable-mainnet-streams',
-    TESTNET: 'hedera-stable-testnet-streams',
-    OTHER: null,
-  };
-
   const {stateproof} = getConfig();
   if (!stateproof || !stateproof.enabled) {
     return;
@@ -135,7 +129,7 @@ function parseStateProofStreamsConfig() {
 
   const {streams: streamsConfig} = stateproof;
   // set default bucketName depending on network
-  if (!Object.prototype.hasOwnProperty.call(defaultBucketNames, streamsConfig.network)) {
+  if (!Object.values(networks).includes(streamsConfig.network)) {
     throw new InvalidConfigError(`unknown network ${streamsConfig.network}`);
   }
 
@@ -147,7 +141,7 @@ function parseStateProofStreamsConfig() {
     throw new InvalidConfigError('stateproof.streams.bucketName must be set');
   }
 
-  if (streamsConfig.cloudProvider !== 'S3' && streamsConfig.cloudProvider !== 'GCP') {
+  if (!Object.values(cloudProviders).includes(streamsConfig.cloudProvider)) {
     throw new InvalidConfigError(`unsupported object storage service provider ${streamsConfig.cloudProvider}`);
   }
 }

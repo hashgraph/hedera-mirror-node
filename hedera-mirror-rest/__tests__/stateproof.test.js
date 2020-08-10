@@ -297,6 +297,11 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
       );
     }
     expect(getObjectStub.callCount).toEqual(partialFilePaths.length);
+    for (const args of getObjectStub.args) {
+      const params = args[0];
+      expect(params.Key.startsWith('recordstreams/record')).toBeTruthy();
+      expect(params.RequestPayer).toEqual('requester');
+    }
   };
 
   test('with all files downloaded successfully', async () => {

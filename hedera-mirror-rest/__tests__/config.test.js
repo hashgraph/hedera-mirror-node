@@ -24,6 +24,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const yaml = require('js-yaml');
+const {cloudProviders, defaultBucketNames, networks} = require('../constants');
 
 let tempDir;
 const custom = {
@@ -45,7 +46,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  fs.rmdirSync(tempDir, { recursive: true });
+  fs.rmdirSync(tempDir, {recursive: true});
   cleanup();
 });
 
@@ -169,9 +170,10 @@ describe('Override stateproof config', () => {
     return require('../config');
   };
 
-  const getStreamsConfigByNetworkAndOverride = (network, override) => {
+  const getExpectedStreamsConfig = (override) => {
+    // the default without network
     const streamsConfig = {
-      network,
+      network: networks.DEMO,
       cloudProvider: 'S3',
       region: 'us-east-1',
       accessKey: null,
@@ -179,132 +181,97 @@ describe('Override stateproof config', () => {
       gcpProjectId: null,
       secretKey: null,
     };
-
-    switch (network) {
-      case 'DEMO':
-        streamsConfig.bucketName = 'hedera-demo-streams';
-        break;
-      case 'MAINNET':
-        streamsConfig.bucketName = 'hedera-stable-mainnet-streams';
-        break;
-      case 'TESTNET':
-        streamsConfig.bucketName = 'hedera-stable-testnet-streams';
-        break;
-      case 'OTHER':
-        streamsConfig.network = network;
-        break;
-      default:
-        break;
+    Object.assign(streamsConfig, override);
+    if (!streamsConfig.bucketName) {
+      streamsConfig.bucketName = defaultBucketNames[streamsConfig.network];
     }
-
-    return Object.assign(streamsConfig, override);
+    return streamsConfig;
   };
 
-  test('by default stateproof should be disabled', () => {
-    const config = loadConfigWithCustomStateproofConfig({});
-    expect(config.stateproof.enabled).toBeFalsy();
-  });
+  const testSpecs = [
+    {
+      name: 'by default stateproof should be disabled',
+      enabled: false,
+    },
+    {
+      name: 'when stateproof enabled with no streams section the default should be populated',
+      enabled: true,
+      expectThrow: false,
+    },
+    ...[networks.DEMO, networks.MAINNET, networks.TESTNET].map((network) => {
+      return {
+        name: `when stateproof enabled with just streams network set to ${network} other fields should get default`,
+        enabled: true,
+        override: {network},
+        expectThrow: false,
+      };
+    }),
+    {
+      name: 'when override all allowed fields',
+      enabled: true,
+      override: {
+        network: networks.DEMO,
+        cloudProvider: cloudProviders.GCP,
+        endpointOverride: 'https://alternative.object.storage.service',
+        region: 'us-east-west-3',
+        gpProjectId: 'sampleProject',
+        accessKey: 'FJHGRY',
+        secretKey: 'IRPLKGJUIEOR=FweGR',
+        bucketName: 'override-alternative-streams',
+      },
+      expectThrow: false,
+    },
+    {
+      name: 'when network is OTHER and bucketName is set',
+      enabled: true,
+      override: {network: networks.OTHER, bucketName: 'other-streams'},
+      expectThrow: false,
+    },
+    {
+      name: 'with unsupported network',
+      enabled: true,
+      override: {network: 'unknown'},
+      expectThrow: true,
+    },
+    {
+      name: 'with invalid cloudProvider',
+      enabled: true,
+      override: {network: networks.OTHER, cloudProvider: 'invalid'},
+      expectThrow: true,
+    },
+    {
+      name: 'with OTHER network but bucketName set to null',
+      enabled: true,
+      override: {network: networks.OTHER, bucketName: null},
+      expectThrow: true,
+    },
+    {
+      name: 'with OTHER network but bucketName set to empty',
+      enabled: true,
+      override: {network: networks.OTHER, bucketName: ''},
+      expectThrow: true,
+    },
+  ];
 
-  test('when stateproof enabled with no streams section the default should be populated', () => {
-    const customStateproofConfig = {enabled: true};
-    const config = loadConfigWithCustomStateproofConfig(customStateproofConfig);
+  testSpecs.forEach((testSpec) => {
+    test(testSpec.name, () => {
+      const customConfig = {enabled: testSpec.enabled};
+      customConfig.streams = testSpec.override ? testSpec.override : {};
 
-    expect(config.stateproof.enabled).toBeTruthy();
-    expect(config.stateproof.streams).toEqual(getStreamsConfigByNetworkAndOverride('DEMO'));
-  });
-
-  ['DEMO', 'MAINNET', 'TESTNET'].forEach((network) => {
-    test(`when stateproof enabled with just streams network set to ${network} other fields should get default`, () => {
-      const config = loadConfigWithCustomStateproofConfig({enabled: true, streams: {network}});
-
-      expect(config.stateproof.enabled).toBeTruthy();
-      expect(config.stateproof.streams).toEqual(getStreamsConfigByNetworkAndOverride(network));
+      if (!testSpec.expectThrow) {
+        const config = loadConfigWithCustomStateproofConfig(customConfig);
+        if (testSpec.enabled) {
+          expect(config.stateproof.enabled).toBeTruthy();
+          expect(config.stateproof.streams).toEqual(getExpectedStreamsConfig(testSpec.override));;
+        } else {
+          expect(config.stateproof.enabled).toBeFalsy();
+        }
+      } else {
+        expect(() => {
+          loadConfigWithCustomStateproofConfig(customConfig);
+        }).toThrow();
+      }
     });
-  });
-
-  test('when override all allowed fields', () => {
-    const network = 'DEMO';
-    const customStateproofConfig = {
-      enabled: true,
-      streams: {
-        network,
-      },
-    };
-    const override = {
-      cloudProvider: 'GCP',
-      endpointOverride: 'https://alternative.object.storage.service',
-      region: 'us-east-west-3',
-      gpProjectId: 'sampleProject',
-      accessKey: 'FJHGRY',
-      secretKey: 'IRPLKGJUIEOR=FweGR',
-      bucketName: 'override-alternative-streams',
-    };
-    Object.assign(customStateproofConfig.streams, override);
-
-    const config = loadConfigWithCustomStateproofConfig(customStateproofConfig);
-
-    expect(config.stateproof.enabled).toBeTruthy();
-    expect(config.stateproof.streams).toEqual(getStreamsConfigByNetworkAndOverride(network, override));
-  });
-
-  test('when network is OTHER and bucketName is set', () => {
-    const network = 'OTHER';
-    const customStateproofConfig = {
-      enabled: true,
-      streams: {
-        network,
-        bucketName: 'other-streams',
-      },
-    };
-    const config = loadConfigWithCustomStateproofConfig(customStateproofConfig);
-
-    expect(config.stateproof.enabled).toBeTruthy();
-    expect(config.stateproof.streams).toEqual(
-      getStreamsConfigByNetworkAndOverride(network, {
-        bucketName: 'other-streams',
-      })
-    );
-  });
-
-  test('with unsupported network', () => {
-    const customStateproofConfig = {
-      enabled: true,
-      streams: {
-        network: 'unknown',
-      },
-    };
-
-    expect(() => {
-      loadConfigWithCustomStateproofConfig(customStateproofConfig);
-    }).toThrow();
-  });
-
-  test('with invalid cloudProvider', () => {
-    const customStateproofConfig = {
-      enabled: true,
-      streams: {
-        network: 'OTHER',
-        cloudProvider: 'invalid',
-      },
-    };
-
-    expect(() => {
-      loadConfigWithCustomStateproofConfig(customStateproofConfig);
-    }).toThrow();
-  });
-
-  test('with OTHER network but no bucketName', () => {
-    const customStateproofConfig = {
-      enabled: true,
-      streams: {
-        network: 'OTHER',
-        bucketName: null,
-      },
-    };
-
-    expect(() => {
-      loadConfigWithCustomStateproofConfig(customStateproofConfig);
-    }).toThrow();
   });
 });
 

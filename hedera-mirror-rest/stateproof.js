@@ -159,8 +159,8 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
  * @returns {Promise<Array>} Array of file buffers
  */
 let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => {
-  const {bucketName} = config.stateproof.streams;
   const recordStreamPrefix = 'recordstreams/record';
+  const {bucketName} = config.stateproof.streams;
   const s3Client = s3client.createS3Client();
 
   const fileObjects = await Promise.all(
@@ -168,6 +168,7 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
       const params = {
         Bucket: bucketName,
         Key: `${recordStreamPrefix}${partialFilePath}`,
+        RequestPayer: 'requester',
       };
 
       return new Promise((resolve) => {

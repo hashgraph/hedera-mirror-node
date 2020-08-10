@@ -23,7 +23,7 @@
 const AWS = require('aws-sdk');
 const querystring = require('querystring');
 const config = require('./config');
-const {InvalidConfigError} = require('./errors/invalidConfigError');
+const {cloudProviders, defaultCloudProviderEndpoints} = require('./constants');
 
 class S3Client {
   constructor(s3, hasCredentials, gcpProjectId) {
@@ -65,46 +65,30 @@ class S3Client {
 }
 
 const buildS3ConfigFromStreamsConfig = () => {
-  const streamsConfig = config.stateproof.streams;
+  const {cloudProvider, endpointOverride, gcpProjectId, accessKey, secretKey, region} = config.stateproof.streams;
+  const hasEndpointOverride = !!endpointOverride;
+  const isGCP = cloudProvider === cloudProviders.GCP;
 
-  let endpoint;
-  let s3ForcePathStyle = false;
-  if (streamsConfig.endpointOverride) {
-    endpoint = streamsConfig.endpointOverride;
-    s3ForcePathStyle = true;
-  } else if (streamsConfig.cloudProvider === 'S3') {
-    endpoint = 'https://s3.amazonaws.com';
-  } else if (streamsConfig.cloudProvider === 'GCP') {
-    endpoint = 'https://storage.googleapis.com';
-    s3ForcePathStyle = true;
-  }
-
-  if (!endpoint) {
-    throw new InvalidConfigError("Empty endpoint, can't build s3Config");
-  }
+  const endpoint = hasEndpointOverride ? endpointOverride : defaultCloudProviderEndpoints[cloudProvider];
+  const s3ForcePathStyle = hasEndpointOverride || isGCP;
 
   const s3Config = {
     endpoint,
-    region: streamsConfig.region,
+    region,
     s3ForcePathStyle,
   };
 
-  if (!!streamsConfig.accessKey && !!streamsConfig.secretKey) {
+  if (!!accessKey && !!secretKey) {
     logger.info('Building s3Config with provided access/secret key');
-    s3Config.accessKeyId = streamsConfig.accessKey;
-    s3Config.secretAccessKey = streamsConfig.secretKey;
+    s3Config.accessKeyId = accessKey;
+    s3Config.secretAccessKey = secretKey;
   } else {
     logger.info('Building s3Config with no credentials');
   }
 
-  let gcpProjectId;
-  if (streamsConfig.cloudProvider === 'GCP') {
-    gcpProjectId = streamsConfig.gcpProjectId;
-  }
-
   return {
     s3Config,
-    gcpProjectId,
+    gcpProjectId: isGCP ? gcpProjectId : null,
   };
 };
 
