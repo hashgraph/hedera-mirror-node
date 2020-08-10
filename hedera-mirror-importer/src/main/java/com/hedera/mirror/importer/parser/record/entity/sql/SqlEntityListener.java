@@ -140,7 +140,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             throw new ParserSQLException("Error setting up connection to database", e);
         }
     }
-    
+
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
