@@ -207,22 +207,6 @@ public class RecordFileParserTest {
         verify(recordStreamFileListener, times(1)).onEnd(any());
     }
 
-    @Test
-    void verifyRollbackOnErrorAfterPersistence() throws Exception {
-        // given
-        String fileName = file1.toString();
-        doThrow(ParserSQLException.class).when(applicationStatusRepository).updateStatusValue(any(), any());
-
-        // when
-        Assertions.assertThrows(ParserSQLException.class, () -> {
-            recordFileParser.parse(streamFileData2);
-        });
-
-        // then
-        assertProcessedFile(streamFileData2, recordFile2, NUM_TXNS_FILE_2);
-        verify(recordStreamFileListener).onError();
-    }
-
     // Asserts that recordStreamFileListener.onStart is called wth exactly the given fileNames.
     private void assertOnStart(String... fileNames) {
         ArgumentCaptor<StreamFileData> captor = ArgumentCaptor.forClass(StreamFileData.class);

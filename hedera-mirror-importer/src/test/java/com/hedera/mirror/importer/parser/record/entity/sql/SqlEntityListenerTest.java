@@ -22,10 +22,8 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Resource;
@@ -51,7 +49,6 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.DuplicateFileException;
-import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -217,38 +214,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertExistsAndEquals(topicMessageRepository, topicMessage, topicMessage.getConsensusTimestamp());
         assertThat(notifications).isNull();
         connection.close();
-    }
-
-    @Test
-    void verifyRollback() {
-        sqlProperties.setMaxJsonPayloadSize(Integer.MAX_VALUE);
-        // given
-        TopicMessage topicMessage = getTopicMessage();
-
-        TopicMessage topicMessage2 = getTopicMessage();
-        topicMessage2.setConsensusTimestamp(2L);
-        topicMessage2.setSequenceNumber(2L);
-        topicMessage2.setMessage(RandomUtils.nextBytes(10000)); // Just exceeds 8000B
-
-        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
-
-        EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
-
-        // when
-        sqlEntityListener.onTopicMessage(topicMessage);
-        sqlEntityListener.onTopicMessage(topicMessage2); // error causing submission
-        sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
-        sqlEntityListener.onEntityId(entityId);
-
-        assertThatThrownBy(() -> completeFileAndCommit())
-                .isInstanceOf(ParserException.class)
-                .extracting(Throwable::getCause)
-                .isInstanceOf(SQLException.class);
-        sqlEntityListener.onError();
-
-        assertEquals(0, topicMessageRepository.count());
-        assertEquals(0, cryptoTransferRepository.count());
-        assertEquals(0, entityRepository.count());
     }
 
     @Test

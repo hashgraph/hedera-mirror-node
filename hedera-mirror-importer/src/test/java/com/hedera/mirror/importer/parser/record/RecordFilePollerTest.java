@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,7 @@ public class RecordFilePollerTest {
     private FileCopier fileCopier;
     private RecordFilePoller recordFilePoller;
     private RecordParserProperties parserProperties;
+    private MirrorProperties mirrorProperties;
 
     private File file1;
     private File file2;
@@ -66,7 +68,7 @@ public class RecordFilePollerTest {
 
     @BeforeEach
     void before() {
-        var mirrorProperties = new MirrorProperties();
+        mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
         parserProperties = new RecordParserProperties(mirrorProperties);
         parserProperties.setKeepFiles(false);
@@ -120,7 +122,18 @@ public class RecordFilePollerTest {
         recordFilePoller.poll();
 
         // then
-        assertParsedFiles();
+        verifyNoInteractions(recordFileParser);
+    }
+
+    @Test
+    void pathNotDirectory() throws Exception {
+        // when
+        fileCopier.copy();
+        parserProperties.getMirrorProperties().setDataPath(dataPath.resolve("file.txt"));
+        recordFilePoller.poll();
+
+        // then
+        assertValidFiles();
         verifyNoInteractions(recordFileParser);
     }
 
@@ -131,7 +144,7 @@ public class RecordFilePollerTest {
         List<StreamFileData> actualArgs = captor.getAllValues();
         assertThat(actualArgs)
                 .extracting(StreamFileData::getFilename)
-                .contains(fileNames);
+                .isEqualTo(Arrays.asList(fileNames));
     }
 
     // Asserts that parsed directory contains exactly the files with given fileNames

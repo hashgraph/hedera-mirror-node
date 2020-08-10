@@ -133,7 +133,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         try {
             cleanup();
             connection = dataSource.getConnection();
-            connection.setAutoCommit(false);
             connection.setClientInfo("ApplicationName", getClass().getSimpleName());
 
             sqlInsertEntityId = connection.prepareStatement("INSERT INTO t_entities " +
@@ -146,32 +145,19 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             throw new ParserSQLException("Error setting up connection to database", e);
         }
     }
-    
+
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
 
-        try {
-            connection.commit();
-            recordFileRepository.save(recordFile);
-            closeConnectionAndStatements();
-        } catch (SQLException e) {
-            throw new ParserSQLException(e);
-        }
+        recordFileRepository.save(recordFile);
+        closeConnectionAndStatements();
     }
 
     @Override
     public void onError() {
-        try {
-            if (connection != null) {
-                connection.rollback();
-                closeConnectionAndStatements();
-            }
-        } catch (SQLException e) {
-            log.error("Exception while rolling transaction back", e);
-        } finally {
-            cleanup();
-        }
+        closeConnectionAndStatements();
+        cleanup();
     }
 
     private void cleanup() {
@@ -198,9 +184,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void closeConnectionAndStatements() {
         try {
-            sqlInsertEntityId.close();
-            sqlNotifyTopicMessage.close();
-            connection.close();
+            if (connection != null) {
+                sqlInsertEntityId.close();
+                sqlNotifyTopicMessage.close();
+                connection.close();
+            }
         } catch (SQLException e) {
             throw new ParserSQLException("Error closing connection", e);
         }

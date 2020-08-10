@@ -26,16 +26,12 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import com.hedera.mirror.importer.exception.DuplicateFileException;
 import com.hedera.mirror.importer.parser.FilePoller;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 import com.hedera.mirror.importer.util.ShutdownHelper;
@@ -63,16 +59,16 @@ public class RecordFilePoller implements FilePoller {
             if (file.isDirectory()) {
 
                 String[] files = file.list();
+                if (files == null) {
+                    log.debug("No files found in directory {}", file.getPath());
+                    return;
+                }
+
                 Arrays.sort(files);           // sorted by name (timestamp)
 
-                // add directory prefix to get full path
-                List<String> fullPaths = Arrays.asList(files).stream()
-                        .map(s -> file + "/" + s)
-                        .collect(Collectors.toList());
-
-                if (fullPaths != null && fullPaths.size() != 0) {
-                    log.trace("Processing record files: {}", fullPaths);
-                    loadRecordFiles(fullPaths);
+                if (files.length != 0) {
+                    log.trace("Processing record files: {}", files);
+                    loadRecordFiles(files);
                 } else {
                     log.debug("No files to parse");
                 }
@@ -89,17 +85,18 @@ public class RecordFilePoller implements FilePoller {
      *
      * @throws Exception
      */
-    private void loadRecordFiles(List<String> filePaths) {
-        Collections.sort(filePaths);
+    private void loadRecordFiles(String[] filePaths) {
+        Path validPath = parserProperties.getValidPath();
         for (String filePath : filePaths) {
             if (ShutdownHelper.isStopping()) {
                 return;
             }
 
-            File file = new File(filePath);
+            // get file from full path
+            File file = validPath.resolve(filePath).toFile();
 
             try (InputStream fileInputStream = new FileInputStream(file)) {
-                recordFileParser.parse(new StreamFileData(filePath, fileInputStream));
+                recordFileParser.parse(new StreamFileData(file.getAbsolutePath(), fileInputStream));
 
                 if (parserProperties.isKeepFiles()) {
                     Utility.archiveFile(file, parserProperties.getParsedPath());
@@ -111,10 +108,6 @@ public class RecordFilePoller implements FilePoller {
                 return;
             } catch (Exception e) {
                 log.error("Error parsing file {}", filePath, e);
-                if (!(e instanceof DuplicateFileException)) { // if DuplicateFileException, continue with other
-                    // files
-                    return;
-                }
             }
         }
     }
