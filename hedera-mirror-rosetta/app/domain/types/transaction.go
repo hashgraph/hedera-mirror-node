@@ -11,16 +11,20 @@ type Transaction struct {
 }
 
 // FromRosettaTransaction populates domain type Transaction from Rosetta type Transaction
-func (t *Transaction) FromRosettaTransaction(rTransaction *rTypes.Transaction) {
-	t.ID = rTransaction.TransactionIdentifier.Hash
-
+func FromRosettaTransaction(rTransaction *rTypes.Transaction) (*Transaction, *rTypes.Error) {
 	operations := make([]*Operation, len(rTransaction.Operations))
 	for i, rosettaO := range rTransaction.Operations {
-		o := &Operation{}
-		o.FromRosettaOperation(rosettaO)
+		o, err := FromRosettaOperation(rosettaO)
+		if err != nil {
+			return nil, err
+		}
 		operations[i] = o
 	}
-	t.Operations = operations
+
+	return &Transaction{
+		ID:         rTransaction.TransactionIdentifier.Hash,
+		Operations: operations,
+	}, nil
 }
 
 // ToRosettaTransaction returns Rosetta type Transaction from the current domain type Transaction

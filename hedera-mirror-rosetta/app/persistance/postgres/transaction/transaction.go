@@ -1,8 +1,8 @@
 package transaction
 
 import (
-	"encoding/hex"
 	"fmt"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 
@@ -63,8 +63,13 @@ func (transactionStatus) TableName() string {
 	return "t_transaction_results"
 }
 
+// The current format used is {payer-ID}-{valid_start_seconds}-{valid_start_nanos}-{node-ID}
 func (t *transaction) constructID() string {
-	return fmt.Sprintf("%s@%d", hex.EncodeToString(t.TransactionHash), t.NodeAccountID) // TODO we will have to settle on the TX ID. For now using the TX (Hash@NodeID)
+	payerID := constructAccount(t.PayerAccountID)
+	nodeID := constructAccount(t.NodeAccountID)
+	formattedTime := float64(t.ValidStartNS) / float64(1e9)
+
+	return fmt.Sprintf("%s-%.9f-%s", payerID.FormatToString(), formattedTime, nodeID.FormatToString())
 }
 
 // TransactionRepository struct that has connection to the Database
@@ -159,7 +164,16 @@ func (tr *TransactionRepository) constructTransaction(t transaction) *types.Tran
 func (tr *TransactionRepository) constructOperations(ctArray []cryptoTransfer, transactionType string, transactionStatus string) []*types.Operation {
 	oArray := make([]*types.Operation, len(ctArray))
 	for i, ct := range ctArray {
-		oArray[i] = &types.Operation{Index: int64(i), Type: transactionType, Status: transactionStatus, EntityID: ct.EntityID, Amount: ct.Amount}
+		a := constructAccount(ct.EntityID)
+		oArray[i] = &types.Operation{Index: int64(i), Type: transactionType, Status: transactionStatus, Account: a, Amount: ct.Amount}
 	}
 	return oArray
+}
+
+func constructAccount(encodedID int64) *types.Account {
+	acc, err := types.NewAccountFromEncodedID(encodedID)
+	if err != nil {
+		panic(fmt.Sprintf("Cannot create Account ID from encoded DB ID: %d", encodedID))
+	}
+	return acc
 }

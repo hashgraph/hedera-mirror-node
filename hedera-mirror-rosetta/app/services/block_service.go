@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
@@ -37,15 +38,17 @@ func (s *BlockAPIService) Block(ctx context.Context, request *rTypes.BlockReques
 	} else {
 		block, err = s.blockRepo.RetrieveLatest()
 	}
-	// TODO fix the error handling
+
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO fix the error handling
 	tArray, err := s.transactionRepo.FindBetween(block.ConsensusStart, block.ConsensusEnd)
-	block.Transactions = tArray
+	if err != nil {
+		return nil, err
+	}
 
+	block.Transactions = tArray
 	rBlock := block.ToRosettaBlock()
 	return &rTypes.BlockResponse{
 		Block: rBlock,
