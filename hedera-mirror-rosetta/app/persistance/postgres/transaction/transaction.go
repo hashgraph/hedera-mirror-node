@@ -2,8 +2,9 @@ package transaction
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/jinzhu/gorm"
@@ -113,9 +114,9 @@ func (tr *TransactionRepository) FindByTimestamp(timestamp int64) *types.Transac
 }
 
 // FindBetween retrieves all Transactions between the provided start and end timestamp
-func (tr *TransactionRepository) FindBetween(start int64, end int64) ([]*types.Transaction, error) {
+func (tr *TransactionRepository) FindBetween(start int64, end int64) ([]*types.Transaction, *rTypes.Error) {
 	if start > end {
-		return nil, errors.New("start must be before end")
+		return nil, errors.Errors[errors.StartMustBeBeforeEnd]
 	}
 	tArray := []transaction{}
 	tr.dbClient.Where("consensus_ns >= ? AND consensus_ns <= ?", start, end).Find(&tArray)

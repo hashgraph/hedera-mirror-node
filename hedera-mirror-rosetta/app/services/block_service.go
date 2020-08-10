@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
@@ -28,7 +27,7 @@ func NewBlockAPIService(network *rTypes.NetworkIdentifier, blockRepo repositorie
 // Block implements the /block endpoint.
 func (s *BlockAPIService) Block(ctx context.Context, request *rTypes.BlockRequest) (*rTypes.BlockResponse, *rTypes.Error) {
 	var block = &types.Block{}
-	var err error
+	var err *rTypes.Error
 	if request.BlockIdentifier.Hash != nil && request.BlockIdentifier.Index != nil {
 		block, err = s.blockRepo.FindByIndentifier(*request.BlockIdentifier.Index, *request.BlockIdentifier.Hash)
 	} else if request.BlockIdentifier.Hash == nil {
@@ -40,7 +39,7 @@ func (s *BlockAPIService) Block(ctx context.Context, request *rTypes.BlockReques
 	}
 	// TODO fix the error handling
 	if err != nil {
-		return nil, &rTypes.Error{}
+		return nil, err
 	}
 
 	// TODO fix the error handling
