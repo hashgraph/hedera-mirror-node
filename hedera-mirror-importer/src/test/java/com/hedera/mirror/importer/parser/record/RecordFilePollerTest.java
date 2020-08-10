@@ -23,6 +23,9 @@ package com.hedera.mirror.importer.parser.record;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -38,12 +41,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.StreamFileData;
 
 @ExtendWith(MockitoExtension.class)
@@ -135,6 +140,34 @@ public class RecordFilePollerTest {
         // then
         assertValidFiles();
         verifyNoInteractions(recordFileParser);
+    }
+
+    @Test
+    void fileNotFoundFromRecordFileParser() {
+        // given
+        fileCopier.copy();
+        RecordParserProperties mockParserProperties = Mockito.mock(RecordParserProperties.class);
+        doReturn(Path.of("/var/folders/tmp")).when(mockParserProperties).getValidPath();
+        recordFilePoller = new RecordFilePoller(mockParserProperties, recordFileParser);
+
+        // when
+        recordFilePoller.poll();
+
+        // then
+        assertValidFiles();
+    }
+
+    @Test
+    void errorFromRecordFileParser() {
+        // when
+        fileCopier.copy();
+        doThrow(ParserException.class).when(recordFileParser).parse(any());
+
+        // when
+        recordFilePoller.poll();
+
+        // then
+        assertValidFiles();
     }
 
     // Asserts that recordFileParser.parse is called wth exactly the given fileNames.

@@ -59,19 +59,15 @@ public class RecordFilePoller implements FilePoller {
             if (file.isDirectory()) {
 
                 String[] files = file.list();
-                if (files == null) {
-                    log.debug("No files found in directory {}", file.getPath());
+                if (files == null || files.length == 0) {
+                    log.debug("No files to parse in directory {}", file.getPath());
                     return;
                 }
 
                 Arrays.sort(files);           // sorted by name (timestamp)
 
-                if (files.length != 0) {
-                    log.trace("Processing record files: {}", files);
-                    loadRecordFiles(files);
-                } else {
-                    log.debug("No files to parse");
-                }
+                log.trace("Processing record files: {}", files);
+                loadRecordFiles(files);
             } else {
                 log.error("Input parameter is not a folder: {}", path);
             }
