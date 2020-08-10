@@ -107,7 +107,7 @@ public class RecordFilePoller implements FilePoller {
                 log.warn("File does not exist {}", filePath);
                 return;
             } catch (Exception e) {
-                log.error("Error parsing file {}", filePath, e);
+                log.error(String.format("Error parsing file %s", filePath), e);
             }
         }
     }

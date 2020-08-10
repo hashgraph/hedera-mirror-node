@@ -31,8 +31,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Named;
-import javax.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.ApplicationStatusCode;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -129,7 +129,7 @@ public class RecordFileParser implements FileParser {
      * @param streamFileData containing information about file to be processed
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void parse(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
 
@@ -164,8 +164,8 @@ public class RecordFileParser implements FileParser {
         } finally {
             var elapsedTimeMillis = Duration.between(startTime, Instant.now()).toMillis();
             var rate = elapsedTimeMillis > 0 ? (int) (1000.0 * counter.get() / elapsedTimeMillis) : 0;
-            log.info("Finished parsing {} transactions from record file {} in {}ms ({}/s)",
-                    counter, streamFileData.getFilename(), elapsedTimeMillis, rate);
+            log.info("Finished parsing {} transactions from record file {} in {}ms ({}/s). Success: {}",
+                    counter, streamFileData.getFilename(), elapsedTimeMillis, rate, success);
             parseDurationMetrics.get(success).record(elapsedTimeMillis, TimeUnit.MILLISECONDS);
         }
     }

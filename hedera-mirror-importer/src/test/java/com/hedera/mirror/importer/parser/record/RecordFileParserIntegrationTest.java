@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.test.annotation.Commit;
 
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -49,8 +48,6 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Log4j2
-//@SpringBootTest
-//@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 public class RecordFileParserIntegrationTest extends IntegrationTest {
 
     @TempDir
@@ -111,13 +108,16 @@ public class RecordFileParserIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    @Commit
     void parse() {
         // when
         recordFileParser.parse(streamFileData);
 
         // then
-        assertEquals(NUM_TXNS_FILE, transactionRepository.count());
-        assertEquals(NUM_ENTITIES_FILE, entityRepository.count());
+        verifyFinalDatabaseState(NUM_TXNS_FILE, NUM_ENTITIES_FILE);
+    }
+
+    void verifyFinalDatabaseState(int postTransactionTransactionCount, int postTransactionEntityCount) {
+        assertEquals(postTransactionTransactionCount, transactionRepository.count());
+        assertEquals(postTransactionEntityCount, entityRepository.count());
     }
 }
