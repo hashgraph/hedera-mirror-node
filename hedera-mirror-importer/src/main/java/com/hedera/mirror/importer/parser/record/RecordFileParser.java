@@ -129,7 +129,7 @@ public class RecordFileParser implements FileParser {
      * @param streamFileData containing information about file to be processed
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional
     public void parse(StreamFileData streamFileData) {
         Instant startTime = Instant.now();
 
