@@ -269,9 +269,6 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     config.stateproof = {
       streams: {
         bucketName: 'test-bucket-name',
-        record: {
-          prefix: 'recordstreams/record',
-        },
       },
     };
   });
@@ -293,13 +290,13 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     expect(_.map(fileObjects, (file) => file.partialFilePath).sort()).toEqual(succeededPartialFilePaths.sort());
     for (const fileObject of fileObjects) {
       expect(fileObject.base64Data).toEqual(
-        Buffer.from(config.stateproof.streams.record.prefix + fileObject.partialFilePath).toString('base64')
+        Buffer.from(constants.recordStreamPrefix + fileObject.partialFilePath).toString('base64')
       );
     }
     expect(getObjectStub.callCount).toEqual(partialFilePaths.length);
     for (const args of getObjectStub.args) {
       const params = args[0];
-      expect(params.Key.startsWith('recordstreams/record')).toBeTruthy();
+      expect(params.Key.startsWith(constants.recordStreamPrefix)).toBeTruthy();
       expect(params.RequestPayer).toEqual('requester');
     }
   };

@@ -87,6 +87,8 @@ const defaultBucketNames = {
   [networks.OTHER]: null,
 };
 
+const recordStreamPrefix = 'recordstreams/record';
+
 module.exports = {
   entityColumns,
   filterKeys,
@@ -99,4 +101,5 @@ module.exports = {
   defaultCloudProviderEndpoints,
   networks,
   defaultBucketNames,
+  recordStreamPrefix,
 };
