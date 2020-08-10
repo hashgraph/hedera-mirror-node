@@ -352,7 +352,7 @@ jobs:
       - restore_maven_cache
       - run:
           name: Running maven deploy
-          command: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
+          command: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTest
 
   cleanup_images:
     <<: *machine_ubuntu
