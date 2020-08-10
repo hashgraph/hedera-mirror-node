@@ -104,6 +104,7 @@ public class RecordFilePoller implements FilePoller {
                 return;
             } catch (Exception e) {
                 log.error(String.format("Error parsing file %s", filePath), e);
+                return;
             }
         }
     }

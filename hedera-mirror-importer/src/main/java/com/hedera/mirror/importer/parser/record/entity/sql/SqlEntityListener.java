@@ -190,7 +190,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                 connection.close();
             }
         } catch (SQLException e) {
-            throw new ParserSQLException("Error closing connection", e);
+            log.error("Error closing connection", e);
         }
     }
 
