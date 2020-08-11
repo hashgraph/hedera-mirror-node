@@ -27,7 +27,10 @@ func NewBlockchainRouter(network *types.NetworkIdentifier, asserter *asserter.As
 	blockAPIService := services.NewBlockAPIService(network, blockRepo, transactionRepo)
 	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter)
 
-	return server.NewRouter(networkAPIController, blockAPIController)
+	mempoolAPIService := services.NewMempoolAPIService()
+	mempoolAPIController := server.NewMempoolAPIController(mempoolAPIService, asserter)
+
+	return server.NewRouter(networkAPIController, blockAPIController, mempoolAPIController)
 }
 
 func main() {
