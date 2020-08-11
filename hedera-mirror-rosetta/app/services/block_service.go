@@ -2,11 +2,11 @@ package services
 
 import (
 	"context"
-
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 )
 
 // BlockAPIService implements the server.BlockAPIServicer interface.
@@ -30,11 +30,13 @@ func (s *BlockAPIService) Block(ctx context.Context, request *rTypes.BlockReques
 	var block = &types.Block{}
 	var err *rTypes.Error
 	if request.BlockIdentifier.Hash != nil && request.BlockIdentifier.Index != nil {
-		block, err = s.blockRepo.FindByIdentifier(*request.BlockIdentifier.Index, *request.BlockIdentifier.Hash)
+		h := hex.SafeRemoveHexPrefix(*request.BlockIdentifier.Hash)
+		block, err = s.blockRepo.FindByIdentifier(*request.BlockIdentifier.Index, h)
 	} else if request.BlockIdentifier.Hash == nil {
 		block, err = s.blockRepo.FindByIndex(*request.BlockIdentifier.Index)
 	} else if request.BlockIdentifier.Index == nil {
-		block, err = s.blockRepo.FindByHash(*request.BlockIdentifier.Hash)
+		h := hex.SafeRemoveHexPrefix(*request.BlockIdentifier.Hash)
+		block, err = s.blockRepo.FindByHash(h)
 	} else {
 		block, err = s.blockRepo.RetrieveLatest()
 	}
@@ -60,7 +62,19 @@ func (s *BlockAPIService) BlockTransaction(
 	ctx context.Context,
 	request *rTypes.BlockTransactionRequest,
 ) (*rTypes.BlockTransactionResponse, *rTypes.Error) {
+	h := hex.SafeRemoveHexPrefix(request.BlockIdentifier.Hash)
+	block, err := s.blockRepo.FindByIdentifier(request.BlockIdentifier.Index, h)
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO
-	return &rTypes.BlockTransactionResponse{}, nil
+	transaction, err := s.transactionRepo.FindByIdentifierInBlock(request.TransactionIdentifier.Hash, block.ConsensusStart, block.ConsensusEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	rTransaction := transaction.ToRosettaTransaction()
+	return &rTypes.BlockTransactionResponse{
+		Transaction: rTransaction,
+	}, nil
 }

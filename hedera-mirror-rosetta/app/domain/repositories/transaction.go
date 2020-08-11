@@ -7,9 +7,10 @@ import (
 
 // TransactionRepository Interface that all TransactionRepository structs must implement
 type TransactionRepository interface {
+	FindByIdentifierInBlock(identifier string, consensusStart int64, consensusEnd int64) (*types.Transaction, *rTypes.Error)
 	FindByTimestamp(timestamp int64) *types.Transaction
 	FindBetween(start int64, end int64) ([]*types.Transaction, *rTypes.Error)
-	GetTypes() map[int]string
-	GetTypesAsArray() []string
-	GetStatuses() map[int]string
+	Types() map[int]string
+	TypesAsArray() []string
+	Statuses() map[int]string
 }

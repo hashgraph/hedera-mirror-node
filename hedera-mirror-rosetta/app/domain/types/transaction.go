@@ -22,7 +22,7 @@ func FromRosettaTransaction(rTransaction *rTypes.Transaction) (*Transaction, *rT
 	}
 
 	return &Transaction{
-		ID:         rTransaction.TransactionIdentifier.Hash,
+		ID:         rTransaction.TransactionIdentifier.Hash, // TODO this must be fixed. The ID must not be the Hash but a more complex construction specified in the TransactionRepository
 		Operations: operations,
 	}, nil
 }

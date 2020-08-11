@@ -31,6 +31,11 @@ func NewAccountFromEncodedID(encodedID int64) (*Account, error) {
 	}, err
 }
 
+// ComputeEncodedID - returns the encoded ID from the Shard, Realm and Number
+func (a *Account) ComputeEncodedID() (int64, error) {
+	return services.Encode(a.Shard, a.Realm, a.Number)
+}
+
 // FormatToString - returns the string representation of the account
 func (a *Account) FormatToString() string {
 	return fmt.Sprintf("%d.%d.%d", a.Shard, a.Realm, a.Number)
@@ -38,15 +43,33 @@ func (a *Account) FormatToString() string {
 
 // FromRosettaAccount populates domain type Account from Rosetta type Account
 func FromRosettaAccount(rAccount *rTypes.AccountIdentifier) (*Account, *rTypes.Error) {
-	inputs := strings.Split(rAccount.Address, ".")
+	return AccountFromString(rAccount.Address)
+}
+
+// ToRosettaAccount returns Rosetta type Account from the current domain type Account
+func (a *Account) ToRosettaAccount() *rTypes.AccountIdentifier {
+	return &rTypes.AccountIdentifier{
+		Address: a.FormatToString(),
+	}
+}
+
+// AccountFromString populates domain type Account from String Account
+func AccountFromString(account string) (*Account, *rTypes.Error) {
+	inputs := strings.Split(account, ".")
 	if len(inputs) != 3 {
 		return nil, errors.Errors[errors.InvalidAccount]
 	}
 
 	shard, err := strconv.Atoi(inputs[0])
-	realm, err1 := strconv.Atoi(inputs[1])
-	number, err2 := strconv.Atoi(inputs[2])
-	if err != nil || err1 != nil || err2 != nil {
+	if err != nil {
+		return nil, errors.Errors[errors.InvalidAccount]
+	}
+	realm, err := strconv.Atoi(inputs[1])
+	if err != nil {
+		return nil, errors.Errors[errors.InvalidAccount]
+	}
+	number, err := strconv.Atoi(inputs[2])
+	if err != nil {
 		return nil, errors.Errors[errors.InvalidAccount]
 	}
 
@@ -55,11 +78,4 @@ func FromRosettaAccount(rAccount *rTypes.AccountIdentifier) (*Account, *rTypes.E
 		Realm:  int64(realm),
 		Number: int64(number),
 	}, nil
-}
-
-// ToRosettaAccount returns Rosetta type Account from the current domain type Account
-func (a *Account) ToRosettaAccount() *rTypes.AccountIdentifier {
-	return &rTypes.AccountIdentifier{
-		Address: a.FormatToString(),
-	}
 }

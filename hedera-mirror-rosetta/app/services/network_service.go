@@ -27,7 +27,7 @@ func (n NetworkService) NetworkList(ctx context.Context, request *types.Metadata
 
 func (n NetworkService) NetworkOptions(ctx context.Context, request *types.NetworkRequest) (*types.NetworkOptionsResponse, *types.Error) {
 	// TODO: Remove after migration has been added
-	statuses := maphelper.GetStringValuesFromIntStringMap(n.transactionRepo.GetStatuses())
+	statuses := maphelper.GetStringValuesFromIntStringMap(n.transactionRepo.Statuses())
 	operationStatuses := make([]*types.OperationStatus, 0, len(statuses))
 
 	for _, v := range statuses {
@@ -41,7 +41,7 @@ func (n NetworkService) NetworkOptions(ctx context.Context, request *types.Netwo
 		Version: n.version,
 		Allow: &types.Allow{
 			OperationStatuses:       operationStatuses,
-			OperationTypes:          n.transactionRepo.GetTypesAsArray(),
+			OperationTypes:          n.transactionRepo.TypesAsArray(),
 			Errors:                  maphelper.GetErrorValuesFromStringErrorMap(errors.Errors),
 			HistoricalBalanceLookup: false,
 		},
@@ -62,12 +62,12 @@ func (n NetworkService) NetworkStatus(ctx context.Context, request *types.Networ
 	return &types.NetworkStatusResponse{
 		CurrentBlockIdentifier: &types.BlockIdentifier{
 			Index: latestBlock.ConsensusStart,
-			Hash:  hex.FormatHex(latestBlock.Hash),
+			Hash:  hex.SafeAddHexPrefix(latestBlock.Hash),
 		},
 		CurrentBlockTimestamp: latestBlock.ConsensusStart,
 		GenesisBlockIdentifier: &types.BlockIdentifier{
 			Index: genesisBlock.ConsensusStart,
-			Hash:  hex.FormatHex(genesisBlock.Hash),
+			Hash:  hex.SafeAddHexPrefix(genesisBlock.Hash),
 		},
 		// TODO: Add after migration has been added
 		Peers: nil,

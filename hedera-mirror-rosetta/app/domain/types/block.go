@@ -2,6 +2,7 @@ package types
 
 import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 )
 
 // Block is domain level struct used to represent Block conceptual mapping in Hedera
@@ -26,11 +27,11 @@ func FromRosettaBlock(rBlock *rTypes.Block) (*Block, *rTypes.Error) {
 	}
 
 	return &Block{
-		Hash:           rBlock.BlockIdentifier.Hash,
+		Hash:           hex.SafeRemoveHexPrefix(rBlock.BlockIdentifier.Hash),
 		ConsensusStart: rBlock.BlockIdentifier.Index,
 		ConsensusEnd:   rBlock.Timestamp,
 		ParentIndex:    rBlock.ParentBlockIdentifier.Index,
-		ParentHash:     rBlock.ParentBlockIdentifier.Hash,
+		ParentHash:     hex.SafeRemoveHexPrefix(rBlock.ParentBlockIdentifier.Hash),
 		Transactions:   transactions,
 	}, nil
 }
@@ -43,9 +44,15 @@ func (b *Block) ToRosettaBlock() *rTypes.Block {
 	}
 
 	return &rTypes.Block{
-		BlockIdentifier:       &rTypes.BlockIdentifier{Index: b.ConsensusStart, Hash: b.Hash},
-		ParentBlockIdentifier: &rTypes.BlockIdentifier{Index: b.ParentIndex, Hash: b.ParentHash},
-		Timestamp:             b.ConsensusEnd,
-		Transactions:          transactions,
+		BlockIdentifier: &rTypes.BlockIdentifier{
+			Index: b.ConsensusStart,
+			Hash:  hex.SafeAddHexPrefix(b.Hash),
+		},
+		ParentBlockIdentifier: &rTypes.BlockIdentifier{
+			Index: b.ParentIndex,
+			Hash:  hex.SafeAddHexPrefix(b.ParentHash),
+		},
+		Timestamp:    b.ConsensusEnd,
+		Transactions: transactions,
 	}
 }
