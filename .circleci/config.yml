@@ -399,7 +399,7 @@ jobs:
                 if [[ $major == v* ]]; then
                   major=${major:1}
                 fi
-                DOCKER_TAG_OVERRIDE="-Ddocker.tags.0=${major}.${minor} -Djib.to.tags=${major}.${minor} -Ddocker.skip.deployer=false"
+                DOCKER_TAG_OVERRIDE="-Ddocker.tags.0=${major}.${minor} -Djib.to.tags=${major}.${minor}"
             fi
             ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests ${DOCKER_TAG_OVERRIDE}
 
