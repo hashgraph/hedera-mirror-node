@@ -82,6 +82,7 @@ describe('createS3Client with valid config', () => {
       Bucket: 'demo-bucket',
       Key: 'foobar/foobar.txt',
     });
+    request.on('send', () => request.abort());
     try {
       await request.promise();
     } catch (err) {
