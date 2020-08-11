@@ -20,14 +20,8 @@ export RELEASE="mirror1"
 To install the wrapper chart:
 
 ```shell script
-$ helm upgrade --install "${RELEASE}" charts/hedera-mirror
-```
-
-Note that dependent charts are already downloaded and checked in, allowing for a quicker and repeatable installation without
-any external dependencies. If you make changes to a sub chart or want to update other dependent charts, please run:
-
-```shell script
-$ helm dependency update charts/hedera-mirror
+$ helm repo add hedera https://hashgraph.github.io/hedera-mirror-node/charts
+$ helm upgrade --install "${RELEASE}" hedera/hedera-mirror
 ```
 
 ## Testing
