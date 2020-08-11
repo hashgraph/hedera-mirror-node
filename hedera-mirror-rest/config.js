@@ -137,6 +137,7 @@ function parseStateProofStreamsConfig() {
   }
 
   if (!streamsConfig.bucketName) {
+    // the default for network 'OTHER' is null, throw err if it's not configured
     throw new InvalidConfigError('stateproof.streams.bucketName must be set');
   }
 
