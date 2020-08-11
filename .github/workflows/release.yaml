@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v1
 
       - name: Publish helm chart
-        uses: steven-sheehy/helm-gh-pages@target-dir
+        uses: stefanprodan/helm-gh-pages@master
         with:
           target_dir: charts
           token: ${{ secrets.REPO_RW_TOKEN }}

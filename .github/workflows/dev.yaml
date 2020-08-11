@@ -27,8 +27,10 @@ jobs:
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
         service_account_key: ${{ secrets.GCR_KEY }}
-    - run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
-    - run: ./mvnw ${MAVEN_CLI_OPTS} deploy -Ddocker.tag.version=cd-${GITHUB_SHA} -Djib.to.tags=cd-${GITHUB_SHA}
+    - name: Configure Docker
+      run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
+    - name: Build and push images
+      run: ./mvnw ${MAVEN_CLI_OPTS} deploy -Ddocker.tag.version=master-${GITHUB_SHA} -Djib.to.tags=master-${GITHUB_SHA}
   deploy:
     needs: images
     runs-on: ubuntu-latest
@@ -39,7 +41,7 @@ jobs:
     - name: Update dev tag
       run: |-
         sed -i "s/ref: .*/ref: ${GITHUB_SHA}/" ./dev/helmrelease.yaml
-        sed -i "s/tag: .*/tag: cd-${GITHUB_SHA}/" ./dev/helmrelease.yaml
+        sed -i "s/tag: .*/tag: master-${GITHUB_SHA}/" ./dev/helmrelease.yaml
       shell: bash
     - uses: stefanzweifel/git-auto-commit-action@v4.4.0
       with:
