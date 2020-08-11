@@ -19,9 +19,7 @@
  */
 'use strict';
 
-const fs = require('fs');
 const math = require('mathjs');
-const path = require('path');
 const EntityId = require('../entityId');
 
 const NETWORK_FEE = 1;

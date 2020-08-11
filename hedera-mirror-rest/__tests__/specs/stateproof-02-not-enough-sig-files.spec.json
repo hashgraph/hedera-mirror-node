@@ -1,5 +1,9 @@
 {
   "description": "Stateproof api calls with valid transaction ID but not enough signature files",
+  "extendedDescription": [
+    "There is only one node with the signature file 2019-10-11T13_33_25.526889Z.rcd_sig, so even though the ",
+    "transaction's record file is found, the number of signature files found can't prove its consensus."
+  ],
   "setup": {
     "sqlscripts": [
       "data/db/stateproof/address_book.sql",

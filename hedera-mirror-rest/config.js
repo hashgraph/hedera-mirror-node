@@ -128,7 +128,6 @@ function parseStateProofStreamsConfig() {
   }
 
   const {streams: streamsConfig} = stateproof;
-  // set default bucketName depending on network
   if (!Object.values(networks).includes(streamsConfig.network)) {
     throw new InvalidConfigError(`unknown network ${streamsConfig.network}`);
   }

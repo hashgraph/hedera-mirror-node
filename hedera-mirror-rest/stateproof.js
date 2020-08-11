@@ -75,6 +75,7 @@ let getRCDFileNameByConsensusNs = async (consensusNs) => {
   const sqlQuery = `SELECT name
        FROM record_file
        WHERE consensus_end >= $1
+       ORDER BY consensus_end
        LIMIT 1`;
   if (logger.isTraceEnabled()) {
     logger.trace(`getRCDFileNameByConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
@@ -89,9 +90,10 @@ let getRCDFileNameByConsensusNs = async (consensusNs) => {
 
   const {rows} = result;
   if (_.isEmpty(rows)) {
-    throw new NotFoundError('No matching RCD file found');
+    throw new NotFoundError(`No matching RCD file found with ${consensusNs} in the range`);
   }
 
+  logger.debug(`Found RCD file ${_.first(rows).name} for consensus timestamp ${consensusNs}`);
   return _.first(rows).name;
 };
 
@@ -101,8 +103,8 @@ let getRCDFileNameByConsensusNs = async (consensusNs) => {
  * @returns {Promise<Object>} List of base64 address book data in chronological order and list of node account IDs.
  */
 let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
-  // Get the chain of address books whose consensus_timestamp <= consensusNs, also aggregate the corresponding
-  // node account ids from table address_book_entry
+  // Get the chain of address books whose start_consensus_timestamp <= consensusNs, also aggregate the corresponding
+  // memo and node account ids from table address_book_entry
   const sqlParams = [consensusNs];
   const sqlQuery = `SELECT
          file_data,
@@ -145,6 +147,7 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
     throw new DbError('Number of nodes found mismatch node_count in latest address book');
   }
 
+  logger.debug(`Found the list of nodes "${nodeAccountIds}" for consensus timestamp ${consensusNs}`);
   const addressBooks = _.map(rows, (row) => Buffer.from(row.file_data).toString('base64'));
   return {
     addressBooks,
@@ -197,7 +200,14 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
     })
   );
 
-  return _.filter(fileObjects, (fileObject) => !fileObject.err);
+  const downloaded = _.filter(fileObjects, (fileObject) => !fileObject.err);
+  logger.debug(
+    `Downloaded ${downloaded.length} file objects from bucket ${bucketName}: ${_.map(
+      downloaded,
+      (fileObj) => fileObj.partialFilePath
+    )}`
+  );
+  return downloaded;
 };
 
 /**
