@@ -5,6 +5,7 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/jinzhu/gorm"
@@ -105,12 +106,16 @@ func (tr *TransactionRepository) GetTypes() map[int]string {
 	return tr.types
 }
 
+func (tr *TransactionRepository) GetTypesAsArray() []string {
+	return maphelper.GetStringValuesFromIntStringMap(tr.types)
+}
+
 // GetStatuses returns map of all Transaction Statuses
 func (tr *TransactionRepository) GetStatuses() map[int]string {
 	return tr.statuses
 }
 
-// FindByTimestamp retrieves Transaction by given timestmap
+// FindByTimestamp retrieves Transaction by given timestamp
 func (tr *TransactionRepository) FindByTimestamp(timestamp int64) *types.Transaction {
 	t := transaction{}
 	tr.dbClient.Find(&t, timestamp)

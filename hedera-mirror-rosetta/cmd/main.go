@@ -17,11 +17,11 @@ import (
 
 // NewBlockchainRouter creates a Mux http.Handler from a collection
 // of server controllers.
-func NewBlockchainRouter(network *types.NetworkIdentifier, asserter *asserter.Asserter, dbClient *gorm.DB) http.Handler {
+func NewBlockchainRouter(network *types.NetworkIdentifier, asserter *asserter.Asserter, version *types.Version, dbClient *gorm.DB) http.Handler {
 	blockRepo := block.NewBlockRepository(dbClient)
 	transactionRepo := transaction.NewTransactionRepository(dbClient)
 
-	networkAPIService := services.NewNetworkAPIService(network)
+	networkAPIService := services.NewNetworkAPIService(network, version, blockRepo, transactionRepo)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
 	blockAPIService := services.NewBlockAPIService(network, blockRepo, transactionRepo)
@@ -41,6 +41,12 @@ func main() {
 		},
 	}
 
+	version := &types.Version{
+		RosettaVersion:    config.Hedera.Mirror.Rosetta.ApiVersion,
+		NodeVersion:       config.Hedera.Mirror.Rosetta.NodeVersion,
+		MiddlewareVersion: &config.Hedera.Mirror.Rosetta.Version,
+	}
+
 	dbClient := connectToDb(config.Hedera.Mirror.Rosetta.Db)
 	defer dbClient.Close()
 
@@ -53,7 +59,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	router := NewBlockchainRouter(network, asserter, dbClient)
+	router := NewBlockchainRouter(network, asserter, version, dbClient)
 	loggedRouter := server.LoggerMiddleware(router)
 	corsRouter := server.CorsMiddleware(loggedRouter)
 	log.Printf("Listening on port %s\n", config.Hedera.Mirror.Rosetta.Port)

@@ -191,3 +191,4 @@ The following table lists the available properties along with thteir default val
 | `hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET` or `OTHER`             |
 | `hedera.mirror.rosetta.shard`                           | 0                       | The default shard number that this mirror node participates in                                 |
 | `hedera.mirror.rosetta.realm`                           | 0                       | The default realm number within the shard                                                      |
+| `hedera.mirror.rosetta.apiVersion`                      | 0                       | The version of the Rosetta interface the implementation adheres to                             |

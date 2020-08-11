@@ -2,13 +2,16 @@
 hedera:
   mirror:
     rosetta:
+      apiVersion: 1.4.1
       db:
         host: 127.0.0.1
         name: mirror_node
         password: mirror_node_pass
         port: 5432
         username: mirror_node
-      port: 5700
       network: DEMO
-      shard: 0
+      nodeVersion: 0
+      port: 5700
       realm: 0
+      shard: 0
+      version: 0.16

@@ -30,7 +30,7 @@ func (s *BlockAPIService) Block(ctx context.Context, request *rTypes.BlockReques
 	var block = &types.Block{}
 	var err *rTypes.Error
 	if request.BlockIdentifier.Hash != nil && request.BlockIdentifier.Index != nil {
-		block, err = s.blockRepo.FindByIndentifier(*request.BlockIdentifier.Index, *request.BlockIdentifier.Hash)
+		block, err = s.blockRepo.FindByIdentifier(*request.BlockIdentifier.Index, *request.BlockIdentifier.Hash)
 	} else if request.BlockIdentifier.Hash == nil {
 		block, err = s.blockRepo.FindByIndex(*request.BlockIdentifier.Index)
 	} else if request.BlockIdentifier.Index == nil {
