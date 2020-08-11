@@ -6,7 +6,7 @@ on:
       - v*
 
 jobs:
-  helm-release:
+  helm:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
